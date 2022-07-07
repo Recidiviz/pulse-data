@@ -40,6 +40,7 @@ import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
 import ValidationDetailView from "./Validation/ValidationDetailView";
 import ValidationStatusView from "./Validation/ValidationStatusView";
+import StateUserPermissionsView from "./StateUserPermissionsView";
 
 const App = (): JSX.Element => {
   const location = useLocation();
@@ -137,6 +138,11 @@ const App = (): JSX.Element => {
                 Upload Raw Files
               </Link>
             </Menu.Item>
+            <Menu.Item key={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}>
+              <Link to={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}>
+                State User Permissions
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
           <Menu.ItemGroup title="Justice Counts Tools">
             <Menu.Item key={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}>
@@ -216,6 +222,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}
             component={UploadRawFilesView}
+          />
+          <Route
+            path={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}
+            component={StateUserPermissionsView}
           />
           <Route
             path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}
