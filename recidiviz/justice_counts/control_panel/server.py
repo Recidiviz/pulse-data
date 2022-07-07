@@ -129,8 +129,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
             "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com;"
             "object-src 'none'; "
             "img-src * data:; "
-            # TODO(#13507) Replace unsafe-inline with a nonce
+            # TODO(#13507) Replace unsafe-inline for style-src and script-src with a nonce
             "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
+            "script-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com 'unsafe-inline';"
             "font-src 'self' https://fonts.gstatic.com; "
             "worker-src blob:; "
             "frame-ancestors 'none'; "
