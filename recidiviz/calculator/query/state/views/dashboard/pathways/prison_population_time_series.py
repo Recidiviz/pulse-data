@@ -105,6 +105,12 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
     LEFT JOIN get_last_updated  USING (state_code)
     {filter_to_enabled_states}
     AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
+    # TODO(#13850) Remove age_group filter for US_MI when Pathways is on the new backend
+    AND CASE
+        WHEN state_code = "US_MI" THEN
+            age_group = "ALL"
+        ELSE true
+    END
     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     ORDER BY year, month
 """
