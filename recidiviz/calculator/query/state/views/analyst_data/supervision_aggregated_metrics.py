@@ -136,7 +136,7 @@ WITH date_range AS (
     SELECT DISTINCT
         "YEAR" AS period,
         DATE_TRUNC(date, QUARTER) AS start_date,
-        DATE_ADD(DATE_TRUNC(date, YEAR), INTERVAL 364 DAY) AS end_date,
+        DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 364 DAY) AS end_date,
     FROM
         date_range 
 )
@@ -336,6 +336,7 @@ USING
 GROUP BY {index_cols}, period, start_date, end_date
 ORDER BY {index_cols}, period, start_date DESC
 """
+
     return view_id, view_description, query_template
 
 
