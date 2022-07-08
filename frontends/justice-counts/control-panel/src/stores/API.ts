@@ -24,6 +24,7 @@ export interface RequestProps {
   path: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
   body?: Record<string, unknown>;
+  retrying?: boolean;
 }
 
 class API {
@@ -68,6 +69,7 @@ class API {
     path,
     method,
     body,
+    retrying = false,
   }: RequestProps): Promise<Body | Response | string> {
     try {
       if (!this.authStore.getToken) {
@@ -87,6 +89,15 @@ class API {
       });
 
       if (response.status >= 400) {
+        const responseText = await response.clone().text();
+
+        if (responseText.includes("The CSRF token has expired.") && !retrying) {
+          await this.initSession();
+          return runInAction(() =>
+            this.request({ path, method, body, retrying: true })
+          );
+        }
+
         const responseCopy = response.clone();
         const responseJson = await responseCopy.json();
         trackNetworkError(
@@ -96,7 +107,6 @@ class API {
           responseJson.description
         );
       }
-
       return response;
     } catch (error) {
       if (error instanceof Error) {
