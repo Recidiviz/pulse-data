@@ -42,7 +42,11 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
 )
 
 # The states in the Pathways views that will be grouping by level 2 incarceration locations.
-PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = ['"US_ID"', '"US_TN"']
+PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = [
+    '"US_ID"',
+    '"US_TN"',
+    '"US_CO"',
+]
 PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS: str = (
     f"({', '.join(PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES)})"
 )
@@ -61,6 +65,7 @@ STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode.US_ND: "elite_externalmovements",
     StateCode.US_TN: "OffenderMovement",
     StateCode.US_MI: "ADH_OFFENDER_EXTERNAL_MOVEMENT",
+    StateCode.US_CO: "eomis_externalmovement",
 }
 
 # Select the raw table that ultimately powers a state's supervision pathways calculations.

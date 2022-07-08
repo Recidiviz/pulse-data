@@ -107,7 +107,7 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
     AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
     # TODO(#13850) Remove age_group filter for US_MI when Pathways is on the new backend
     AND CASE
-        WHEN state_code = "US_MI" THEN
+        WHEN state_code IN ("US_MI", "US_CO") THEN
             age_group = "ALL"
         ELSE true
     END
