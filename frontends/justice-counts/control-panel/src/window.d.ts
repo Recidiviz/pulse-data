@@ -24,6 +24,7 @@ declare global {
   interface Window {
     // values added from `app_public_config.js`
     APP_CONFIG: Record<string, string>;
+    SEGMENT_KEY: string;
 
     // Segment's analytics.js
     analytics: SegmentAnalytics.AnalyticsJS;
