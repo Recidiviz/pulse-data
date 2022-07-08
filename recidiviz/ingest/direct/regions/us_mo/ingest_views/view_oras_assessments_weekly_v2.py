@@ -24,21 +24,38 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
     SELECT
-        * EXCEPT(E01, E03) -- Omitting download dates to create query result stability
+        OFFENDER_NAME,
+        AGENCY_NAME,
+        DATE_OF_BIRTH,
+        GENDER,
+        ETHNICITY,
+        DOC_ID,
+        ASSESSMENT_TYPE,
+        RISK_LEVEL,
+        OVERRIDE_RISK_LEVEL,
+        OVERRIDE_RISK_REASON,
+        ASSESSMENT_OUTCOME,
+        ASSESSMENT_STATUS,
+        SCORE,
+        DATE_CREATED,
+        USER_CREATED,
+        RACE,
+        BIRTH_DATE,
+        CREATED_DATE
     FROM
-        {FOCTEST_ORAS_ASSESSMENTS_WEEKLY}
+        {ORAS_WEEKLY_SUMMARY_UPDATE}
     WHERE
-        E18 = 'Complete'
+        ASSESSMENT_STATUS = 'Complete'
     -- explicitly filter out any test data from UCCI
-        AND E10 NOT LIKE '%Test%'
-        AND E10 NOT LIKE '%test%';
+        AND OFFENDER_NAME NOT LIKE '%Test%'
+        AND OFFENDER_NAME NOT LIKE '%test%';
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_mo",
-    ingest_view_name="oras_assessments_weekly",
+    ingest_view_name="oras_assessments_weekly_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="E04",
+    order_by_cols="DOC_ID",
 )
 
 if __name__ == "__main__":

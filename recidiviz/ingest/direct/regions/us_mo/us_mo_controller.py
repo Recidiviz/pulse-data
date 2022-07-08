@@ -31,10 +31,6 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
     legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentLevel,
-    StateAssessmentType,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -83,8 +79,6 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     DOC_ID,
     FIELD_KEY_SEQ,
     MOST_RECENT_SENTENCE_STATUS_DATE,
-    ORAS_ASSESSMENT_ID,
-    ORAS_ASSESSMENTS_DOC_ID,
     PERIOD_CLOSE_CODE,
     PERIOD_CLOSE_CODE_SUBTYPE,
     SENTENCE_KEY_SEQ,
@@ -344,21 +338,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionViolationResponseDecision.WARRANT_ISSUED: [
             "A",  # Capias,
         ],
-        StateAssessmentType.INTERNAL_UNKNOWN: [
-            "Diversion Instrument"  # One record with this entry in DB.
-        ],
-        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING: [
-            "Community Supervision Screening Tool - 9 Items"
-        ],
-        StateAssessmentType.ORAS_COMMUNITY_SUPERVISION: ["Community Supervision Tool"],
-        StateAssessmentType.ORAS_PRISON_INTAKE: ["Prison Intake Tool"],
-        StateAssessmentType.ORAS_REENTRY: ["Reentry Tool", "Reentry Instrument"],
-        StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY: ["Supplemental Reentry Tool"],
-        StateAssessmentLevel.LOW: ["Low"],
-        StateAssessmentLevel.LOW_MEDIUM: ["Low/Moderate"],
-        StateAssessmentLevel.MEDIUM: ["Moderate"],
-        StateAssessmentLevel.HIGH: ["High"],
-        StateAssessmentLevel.VERY_HIGH: ["Very High"],
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
@@ -438,7 +417,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             # SQL Preprocessing View
-            "oras_assessments_weekly": self._generate_assessment_id_coords,
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._generate_incarceration_period_id_coords,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._generate_incarceration_period_id_coords,
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": self._generate_supervision_period_id_coords,
@@ -464,7 +442,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         file_tags = [
             # SQL Preprocessing View
             "tak001_offender_identification",
-            "oras_assessments_weekly",
+            "oras_assessments_weekly_v2",
             "tak022_tak023_tak025_tak026_offender_sentence_institution",
             "tak022_tak024_tak025_tak026_offender_sentence_supervision",
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
@@ -523,7 +501,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
             # SQL Preprocessing View
-            "oras_assessments_weekly",
+            "oras_assessments_weekly_v2",
             "tak022_tak023_tak025_tak026_offender_sentence_institution",
             "tak022_tak024_tak025_tak026_offender_sentence_supervision",
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
@@ -906,19 +884,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return {
             sentence_coords.class_name: sentence_coords.field_value,
         }
-
-    @classmethod
-    def _generate_assessment_id_coords(
-        cls, _gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> IngestFieldCoordinates:
-
-        doc_id = row.get(ORAS_ASSESSMENTS_DOC_ID, "")
-        person_assessment_id = row.get(ORAS_ASSESSMENT_ID, "")
-        return IngestFieldCoordinates(
-            "state_assessment",
-            "state_assessment_id",
-            f"{doc_id}-{person_assessment_id}",
-        )
 
     @classmethod
     def _generate_supervision_sentence_id_coords(
