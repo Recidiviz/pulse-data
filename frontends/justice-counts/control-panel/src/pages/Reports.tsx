@@ -20,12 +20,14 @@ import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import checkmarkIcon from "../components/assets/status-check-icon.png";
 import Loading from "../components/Loading";
 import { Onboarding } from "../components/Onboarding";
 import {
   AdditionalEditorsTooltip,
   Badge,
   Cell,
+  EmptySelectionCircle,
   FilterBar,
   FilterBy,
   FilterOptions,
@@ -39,6 +41,7 @@ import {
   ReportsHeader,
   ReportsPageTitle,
   Row,
+  SelectedCheckmark,
   Table,
 } from "../components/Reports";
 import { Permission, ReportOverview } from "../shared/types";
@@ -76,6 +79,18 @@ const Reports: React.FC = () => {
   const [showAdditionalEditorsTooltip, setShowAdditionalEditorsTooltip] =
     useState<number>();
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [reportsToDelete, setReportsToDelete] = useState<number[]>([]);
+
+  const enterSelectionMode = () => setSelectionMode(true);
+  const exitSelectionMode = () => setSelectionMode(false);
+  const clearAllReportsToDelete = () => setReportsToDelete([]);
+  const addOrRemoveReportToDelete = (reportID: number) =>
+    setReportsToDelete((prev) =>
+      !prev.includes(reportID)
+        ? [...prev, reportID]
+        : prev.filter((id) => id !== reportID)
+    );
 
   const filterReportsBy = (
     e: React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -161,11 +176,27 @@ const Reports: React.FC = () => {
               <Fragment key={report.id}>
                 <Row
                   onClick={() => {
-                    navigate(`/reports/${report.id}`);
+                    if (!selectionMode) {
+                      navigate(`/reports/${report.id}`);
+                    } else {
+                      addOrRemoveReportToDelete(report.id);
+                    }
                   }}
+                  selected={
+                    selectionMode && reportsToDelete.includes(report.id)
+                  }
                 >
                   {/* Report Period */}
                   <Cell id="report_period">
+                    {selectionMode && (
+                      <>
+                        {reportsToDelete.includes(report.id) ? (
+                          <SelectedCheckmark src={checkmarkIcon} alt="" />
+                        ) : (
+                          <EmptySelectionCircle />
+                        )}
+                      </>
+                    )}
                     {printReportTitle(
                       report.month,
                       report.year,
@@ -262,14 +293,50 @@ const Reports: React.FC = () => {
 
           {/* Admin Only: Manage Reports */}
           {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
-            <ReportActions>
-              <ReportActionsItem>
-                Select <ReportActionsSelectIcon />
-              </ReportActionsItem>
-              <ReportActionsItem onClick={() => navigate("/reports/create")}>
-                New <ReportActionsNewIcon />
-              </ReportActionsItem>
-            </ReportActions>
+            <>
+              <ReportActions>
+                {!selectionMode && (
+                  <>
+                    <ReportActionsItem onClick={enterSelectionMode}>
+                      Select <ReportActionsSelectIcon />
+                    </ReportActionsItem>
+                    <ReportActionsItem
+                      onClick={() => navigate("/reports/create")}
+                    >
+                      New <ReportActionsNewIcon />
+                    </ReportActionsItem>
+                  </>
+                )}
+
+                {selectionMode && (
+                  <>
+                    <ReportActionsItem
+                      disabled={reportsToDelete.length === 0}
+                      onClick={() => {
+                        if (reportsToDelete.length > 0) {
+                          reportStore.deleteReports(reportsToDelete);
+                          exitSelectionMode();
+                          clearAllReportsToDelete();
+                        }
+                      }}
+                    >
+                      Delete{" "}
+                      <ReportActionsSelectIcon
+                        disabled={reportsToDelete.length === 0}
+                      />
+                    </ReportActionsItem>
+                    <ReportActionsItem
+                      onClick={() => {
+                        exitSelectionMode();
+                        clearAllReportsToDelete();
+                      }}
+                    >
+                      Done
+                    </ReportActionsItem>
+                  </>
+                )}
+              </ReportActions>
+            </>
           )}
         </FilterBar>
 
