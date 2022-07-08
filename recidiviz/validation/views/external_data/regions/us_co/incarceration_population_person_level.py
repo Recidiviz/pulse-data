@@ -32,10 +32,13 @@ VIEW_QUERY_TEMPLATE = """
     CASE 
         WHEN FAC_CD ='AC' THEN 'ACC'
         WHEN FAC_CD ='AV' THEN 'AVCF'
+        WHEN FAC_CD = 'AT' THEN 'ALLCTYJAIL'
         WHEN FAC_CD ='LF' THEN 'LCF'
         WHEN FAC_CD ='LV' THEN 'LVCF'
+        WHEN FAC_CD ='CM' THEN 'COMMUNITY CORRECTIONS'
+        WHEN FAC_CD = 'CR' THEN 'JAIL BCKLG'
         WHEN FAC_CD ='BF' THEN 'BCCF'
-        WHEN FAC_CD ='BM' THEN 'BVMC'
+        WHEN FAC_CD ='BM' THEN 'BVCF' # Buena Vista Minimum Center to General BV in new system
         WHEN FAC_CD ='DU' THEN 'DRDC'
         WHEN FAC_CD ='DW' THEN 'DWCF'
         WHEN FAC_CD ='BV' THEN 'BVCF'
