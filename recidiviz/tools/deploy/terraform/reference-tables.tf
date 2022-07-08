@@ -428,3 +428,58 @@ module "us_mi_incarceration_facility_names_table" {
 ]
 EOF
 }
+
+module "us_co_incarceration_facility_names_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_co_incarceration_facility_names"
+  schema     = <<EOF
+[
+  {
+    "name": "facility_code",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "facility_name",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
+
+module "us_co_incarceration_facility_map_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_co_incarceration_facility_map"
+  schema     = <<EOF
+[
+  {
+    "name": "level_1_incarceration_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "level_2_incarceration_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "level_3_incarceration_location_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}

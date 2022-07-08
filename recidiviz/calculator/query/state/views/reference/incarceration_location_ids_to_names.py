@@ -131,6 +131,38 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 facility_name AS level_1_incarceration_location_name,
                 facility_code AS level_1_incarceration_location_alias
         FROM `{project_id}.{external_reference_dataset}.us_mi_incarceration_facility_names`
+    ),
+    co_location_names AS (
+        WITH level_2_names AS (
+            SELECT
+                facility_code as level_2_id,
+                facility_name as level_2_name
+            from `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+        ),
+        level_3_names AS (
+            SELECT
+                facility_code as level_3_id,
+                facility_name as level_3_name
+            from `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+        )
+        SELECT
+            DISTINCT
+                'US_CO' AS state_code,
+                level_3_incarceration_location_external_id AS level_3_incarceration_location_external_id,
+                level_3_name AS level_3_incarceration_location_name,
+                level_2_incarceration_location_external_id,
+                level_2_name as level_2_incarceration_location_name,
+                facility_code AS level_1_incarceration_location_external_id,
+                facility_name AS level_1_incarceration_location_name,
+                facility_code AS level_1_incarceration_location_alias
+        FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_map`
+        LEFT JOIN
+            `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+        ON level_1_incarceration_location_external_id = facility_code
+        LEFT JOIN level_2_names
+        ON level_2_incarceration_location_external_id = level_2_id
+        LEFT JOIN level_3_names
+        ON level_3_incarceration_location_external_id = level_3_id
     )
     SELECT * FROM me_location_names
     UNION ALL
@@ -141,6 +173,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     SELECT * FROM tn_location_names
     UNION ALL
     SELECT * FROM mi_location_names
+    UNION ALL
+    SELECT * FROM co_location_names
     """
 
 INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
