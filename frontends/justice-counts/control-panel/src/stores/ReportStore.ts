@@ -189,13 +189,18 @@ class ReportStore {
     try {
       const response = (await this.api.request({
         path: `/api/reports`,
-        body: { reportIDs },
+        body: { report_ids: reportIDs },
         method: "DELETE",
       })) as Response;
 
       if (response.status !== 200) {
         throw new Error("There was an issue deleting these reports.");
       }
+
+      runInAction(() => {
+        this.resetState();
+        this.getReportOverviews();
+      });
 
       return response;
     } catch (error) {

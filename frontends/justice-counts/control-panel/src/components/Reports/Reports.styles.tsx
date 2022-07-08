@@ -67,36 +67,51 @@ export const FilterBy = styled.div<{ selected?: boolean }>`
 
 export const ReportActions = styled.div`
   display: flex;
-  color: ${palette.solid.blue};
 `;
 
-export const ReportActionsItem = styled.div`
+export const ReportActionsItem = styled.div<{
+  disabled?: boolean;
+}>`
   display: flex;
   align-items: center;
   margin-left: 16px;
   transition: 0.2s ease;
+  color: ${({ disabled }) =>
+    disabled ? palette.highlight.grey8 : palette.solid.blue};
 
   &:hover {
-    cursor: pointer;
-    opacity: 0.8;
+    ${({ disabled }) =>
+      !disabled
+        ? `
+        cursor: pointer;
+        opacity: 0.8;
+      `
+        : `
+        cursor: default;
+      `}
   }
 `;
 
-export const ReportActionsSelectIcon = styled.div`
+export const ReportActionsSelectIcon = styled.div<{
+  disabled?: boolean;
+}>`
   width: 11px;
   height: 11px;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-left: 4.5px;
-  border: 1px solid ${palette.solid.blue};
+  border: 1px solid
+    ${({ disabled }) =>
+      disabled ? palette.highlight.grey8 : palette.solid.blue};
   border-radius: 50%;
 
   &::after {
     content: "";
     height: 1px;
     width: 6px;
-    background-color: ${palette.solid.blue};
+    background-color: ${({ disabled }) =>
+      disabled ? palette.highlight.grey8 : palette.solid.blue};
   }
 `;
 
@@ -116,6 +131,7 @@ export const Table = styled.div`
 
 export const Row = styled.div<{
   noHover?: boolean;
+  selected?: boolean;
 }>`
   width: 100%;
   display: flex;
@@ -127,6 +143,8 @@ export const Row = styled.div<{
   transition: 0.3s ease;
   ${({ noHover }) =>
     noHover ? typography.sizeCSS.normal : typography.sizeCSS.large}
+  ${({ selected }) =>
+    selected && `background-color: ${palette.solid.lightgreen};`}
 
   &:hover {
     ${({ noHover }) =>
@@ -262,4 +280,18 @@ export const NoReportsDisplay = styled.div`
   justify-content: center;
   align-items: center;
   margin-top: 50px;
+`;
+
+export const EmptySelectionCircle = styled.div`
+  width: 16px;
+  height: 16px;
+  border: 1px solid ${palette.highlight.grey4};
+  border-radius: 50%;
+  margin-right: 8px;
+`;
+
+export const SelectedCheckmark = styled.img`
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
 `;
