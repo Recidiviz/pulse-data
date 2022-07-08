@@ -125,13 +125,14 @@ def create_app(config: Optional[Config] = None) -> Flask:
             response.headers[
                 "Strict-Transport-Security"
             ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
-        response.headers["Content-Security-Policy"] = (
+        # TODO(#13905) Turn off report-only after testing that changes aren't reporting any issues
+        response.headers["Content-Security-Policy-Report-Only"] = (
             "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com;"
             "object-src 'none'; "
             "img-src * data:; "
             # TODO(#13507) Replace unsafe-inline for style-src and script-src with a nonce
             "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
-            "script-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com 'unsafe-inline';"
+            "script-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com https://cdn.segment.com;"
             "font-src 'self' https://fonts.gstatic.com; "
             "worker-src blob:; "
             "frame-ancestors 'none'; "

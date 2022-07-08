@@ -18,19 +18,14 @@
 import { UpdatedMetricsValues } from "./shared/types";
 
 const TEST_SENDING_ANALYTICS = false; // used for testing sending analytics in development
+const LOG_ANALYTICS = false; // used for logging analytics being sent
 
 export const identify = (
   userId: string,
   metadata?: Record<string, unknown>
 ): void => {
   const fullMetadata = metadata || {};
-  if (
-    (process.env.NODE_ENV !== "development" &&
-      process.env.NODE_ENV !== "test") ||
-    TEST_SENDING_ANALYTICS
-  ) {
-    window.analytics.identify(userId, fullMetadata);
-  } else {
+  if (LOG_ANALYTICS) {
     // eslint-disable-next-line
     console.log(
       `[Analytics] Identifying user id: ${userId}, with metadata: ${JSON.stringify(
@@ -38,23 +33,31 @@ export const identify = (
       )}`
     );
   }
-};
-
-const track = (eventName: string, metadata?: Record<string, unknown>): void => {
-  const fullMetadata = metadata || {};
   if (
     (process.env.NODE_ENV !== "development" &&
       process.env.NODE_ENV !== "test") ||
     TEST_SENDING_ANALYTICS
   ) {
-    window.analytics.track(eventName, fullMetadata);
-  } else {
+    window.analytics.identify(userId, fullMetadata);
+  }
+};
+
+const track = (eventName: string, metadata?: Record<string, unknown>): void => {
+  const fullMetadata = metadata || {};
+  if (LOG_ANALYTICS) {
     // eslint-disable-next-line
     console.log(
       `[Analytics] Tracking event name: ${eventName}, with metadata: ${JSON.stringify(
         fullMetadata
       )}`
     );
+  }
+  if (
+    (process.env.NODE_ENV !== "development" &&
+      process.env.NODE_ENV !== "test") ||
+    TEST_SENDING_ANALYTICS
+  ) {
+    window.analytics.track(eventName, fullMetadata);
   }
 };
 
