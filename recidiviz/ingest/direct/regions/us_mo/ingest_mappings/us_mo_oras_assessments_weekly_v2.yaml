@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment_weekly_v2` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDER_NAME
+  - AGENCY_NAME
+  - DATE_OF_BIRTH
+  - GENDER
+  - ETHNICITY
+  - DOC_ID
+  - ASSESSMENT_TYPE
+  - RISK_LEVEL
+  - OVERRIDE_RISK_LEVEL
+  - OVERRIDE_RISK_REASON
+  - ASSESSMENT_OUTCOME
+  - ASSESSMENT_STATUS
+  - SCORE
+  - DATE_CREATED
+  - USER_CREATED
+  - RACE
+  - BIRTH_DATE
+  - CREATED_DATE
+unused_columns:
+  - OFFENDER_NAME
+  - AGENCY_NAME
+  - DATE_OF_BIRTH
+  - GENDER
+  - ETHNICITY
+  - OVERRIDE_RISK_LEVEL
+  - OVERRIDE_RISK_REASON
+  - ASSESSMENT_OUTCOME
+  - ASSESSMENT_STATUS
+  - DATE_CREATED # Duplicate of CREATED_DATE
+  - USER_CREATED
+  - RACE
+  - BIRTH_DATE
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - CREATED_DATE
+                - ASSESSMENT_TYPE
+          assessment_date: CREATED_DATE
+          assessment_type:
+            $enum_mapping:
+              $raw_text: ASSESSMENT_TYPE
+              $mappings:
+                StateAssessmentType.INTERNAL_UNKNOWN:
+                  - "Diversion Instrument" # One record with this entry in DB.
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING:
+                  - "Community Supervision Screening Tool - 9 Items"
+                StateAssessmentType.ORAS_COMMUNITY_SUPERVISION:
+                  - "Community Supervision Tool"
+                StateAssessmentType.ORAS_PRISON_INTAKE:
+                  - "Prison Intake Tool"
+                StateAssessmentType.ORAS_REENTRY:
+                  - "Reentry Tool"
+                  - "Reentry Instrument"
+                StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY:
+                  - "Supplemental Reentry Tool"
+          assessment_level:
+            $enum_mapping:
+              $raw_text: RISK_LEVEL
+              $mappings:
+                StateAssessmentLevel.LOW:
+                  - "Low"
+                StateAssessmentLevel.LOW_MEDIUM:
+                  - "Low/Moderate"
+                StateAssessmentLevel.MEDIUM:
+                  - "Moderate"
+                StateAssessmentLevel.HIGH:
+                  - "High"
+                StateAssessmentLevel.VERY_HIGH:
+                  - "Very High"
+          assessment_score: SCORE
+#  - FOCLIST # Assessment Seq No - Handled manually in the controller

@@ -5,6 +5,7 @@ data_classification: source
 primary_key_cols:
   - DOC_ID
   - CREATED_DATE
+  - ASSESSMENT_TYPE
 columns:
   - name: OFFENDER_NAME
     description: |-
@@ -22,7 +23,7 @@ columns:
     description: |-
       Person Ethnicity
   - name: DOC_ID
-    git description: |-
+    description: |-
       DOC ID Number
   - name: ASSESSMENT_TYPE
     description: |-
