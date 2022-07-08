@@ -135,7 +135,7 @@ WITH date_range AS (
     
     SELECT DISTINCT
         "YEAR" AS period,
-        DATE_TRUNC(date, YEAR) AS start_date,
+        DATE_TRUNC(date, QUARTER) AS start_date,
         DATE_ADD(DATE_TRUNC(date, YEAR), INTERVAL 364 DAY) AS end_date,
     FROM
         date_range 
