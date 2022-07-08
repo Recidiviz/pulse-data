@@ -41,7 +41,8 @@ def get_existing_entity(
         # TODO(#4477): Instead of making an assumption about how the property name is formed from the column name, use
         # an Entity method here to follow the foreign key relationship.
         if column.name.endswith("_id"):
-            value = getattr(ingested_entity, column.name[: -len("_id")]).id
+            obj = getattr(ingested_entity, column.name[: -len("_id")])
+            value = obj.id if obj is not None else None
         else:
             value = getattr(ingested_entity, column.name)
         # Cast to the type because array types aren't deduced properly. If value is None, we don't want

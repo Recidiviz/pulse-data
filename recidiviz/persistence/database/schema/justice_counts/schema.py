@@ -32,6 +32,7 @@ import enum
 import re
 from typing import Any, Dict, List, Optional, TypeVar
 
+from sqlalchemy import BOOLEAN
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     DeclarativeMeta,
@@ -468,7 +469,12 @@ class Datapoint(JusticeCountsBase):
 
     id = Column(Integer, autoincrement=True)
 
-    report_id = Column(Integer, nullable=False)
+    # Report datapoints will have a non-null report_id.
+    report_id = Column(Integer, nullable=True)
+
+    # Agency datapoints will have a non-null source_id.
+    source_id = Column(Integer, nullable=True)
+
     metric_definition_key = Column(String, nullable=False)
 
     # Datapoints that are not contexts will not have a context key.
@@ -481,8 +487,8 @@ class Datapoint(JusticeCountsBase):
     # represented by a start date (inclusive) and an end date (exclusive).
     # The data could represent an instant measurement, where the start and end are equal,
     # or a window, e.g. ADP over the last month.
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=False)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
 
     # Maps dimension identifier to dimension enum value
     # (e.g {"global/gender/restricted": "FEMALE"})
@@ -491,6 +497,10 @@ class Datapoint(JusticeCountsBase):
     # Numeric value of this datapoint. All non-null values are saved as strings.
     # datapoints that represent unreported metric values will have a value of None.
     value = Column(String, nullable=True)
+
+    # Agency datapoints will have an a non-null enabled value. Disabled metrics will have
+    # a value of False and enabled metrics will have a value of True.
+    enabled = Column(BOOLEAN, nullable=True)
 
     __table_args__ = tuple(
         [
@@ -502,12 +512,18 @@ class Datapoint(JusticeCountsBase):
                 dimension_identifier_to_member,
                 context_key,
                 metric_definition_key,
+                source_id,
+                name="unique_datapoint",
             ),
             ForeignKeyConstraint([report_id], [Report.id], ondelete="CASCADE"),
+            ForeignKeyConstraint(
+                [source_id], [Source.id], name="source_foreign_key_constraint"
+            ),
         ]
     )
 
     report = relationship(Report, back_populates="datapoints")
+    source = relationship(Source)
     datapoint_histories = relationship(
         "DatapointHistory",
         back_populates="datapoint",
