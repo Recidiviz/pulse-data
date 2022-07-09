@@ -32,6 +32,8 @@ firebase functions:config:get > .runtimeconfig.json
 yarn serve
 ```
 
+#### If you are using a macOS with the latest version for Monterey, take care to disable `Airplay Receiver` in `Sharing` settings in `System Preferences` from being on port `5000`.
+
 ## Linting
 
 ```

@@ -1,5 +1,6 @@
 import express = require("express");
 import cors = require("cors");
+import rateLimit from "express-rate-limit";
 import firebaseAdmin = require("firebase-admin");
 import functions = require("firebase-functions");
 import jwt = require("express-jwt");
@@ -10,6 +11,13 @@ const auth0Config = functions.config().auth0;
 
 const app = express();
 app.use(cors());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // each IP address gets 100 requests per 15 minutes
+  standardHeaders: true, // return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // disabling the `X-RateLimit-*` headers
+});
 
 const jwtCheck = jwt({
   secret: jwks.expressJwtSecret({
@@ -43,5 +51,7 @@ app.post("/", jwtCheck, async (req, res) => {
     });
   }
 });
+
+app.use(limiter);
 
 export default app;

@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.2",
     "express-jwt": "^6.1.0",
+    "express-rate-limit": "^6.4.0",
     "firebase-admin": "^9.8.0",
     "firebase-functions": "^3.14.1",
     "jwks-rsa": "^2.0.5"
