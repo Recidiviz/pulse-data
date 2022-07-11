@@ -173,6 +173,7 @@ output:
                               - "77" # Court Resentenced to Probation
                               - "127" # Reinstated on Probation
                               - "150" # Reinstated on Parole from TRV
+                              - "110" # Out of State Case Activated in Michigan for Parole Suprvn
                             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                               - "36" # Discharged on the Maximum without Parole
                               - "28" # Released from SAI - Complete
