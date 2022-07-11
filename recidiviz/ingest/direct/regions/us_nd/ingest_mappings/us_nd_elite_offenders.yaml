@@ -29,6 +29,13 @@ output:
       $person_name:
         $given_names: FIRST_NAME
         $surname: LAST_NAME
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: FIRST_NAME
+              $surname: LAST_NAME
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
     gender:
       $enum_mapping:
         $raw_text: SEX_CODE
