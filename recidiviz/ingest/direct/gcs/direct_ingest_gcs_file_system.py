@@ -160,7 +160,7 @@ def _to_normalized_file_path_from_normalized_path(
 
     utc_iso_timestamp_str = parts.utc_upload_datetime.strftime("%Y-%m-%dT%H:%M:%S:%f")
 
-    suffix_str = f"_{parts.filename_suffix}" if parts.filename_suffix else ""
+    suffix_str = f"-{parts.filename_suffix}" if parts.filename_suffix else ""
     base_file_name = f"{parts.file_tag}{suffix_str}"
 
     path_to_return = build_function(

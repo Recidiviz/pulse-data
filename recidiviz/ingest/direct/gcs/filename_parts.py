@@ -67,7 +67,7 @@ class DirectIngestRawFilenameParts:
     date_str: str = attr.ib()
     # May contain letters, numbers, and the '_' char. If it contains numbers trailing an _, it must be a RAW_DATA file type.
     file_tag: str = attr.ib()
-    # Must start a number and be separated from the file_tag by a '_' char.
+    # Must start a number and be separated from the file_tag by a '-' char.
     filename_suffix: Optional[str] = attr.ib()
     extension: str = attr.ib()
 
@@ -76,7 +76,7 @@ class DirectIngestRawFilenameParts:
 
     @stripped_file_name.default
     def _stripped_file_name(self) -> str:
-        suffix_str = f"_{self.filename_suffix}" if self.filename_suffix else ""
+        suffix_str = f"-{self.filename_suffix}" if self.filename_suffix else ""
         return f"{self.file_tag}{suffix_str}"
 
 

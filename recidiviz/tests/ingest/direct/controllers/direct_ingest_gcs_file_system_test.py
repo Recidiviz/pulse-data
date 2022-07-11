@@ -125,7 +125,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         self.fully_process_file(
             datetime.datetime.now(),
-            GcsfsFilePath(bucket_name="my_bucket", blob_name="test_file_2.csv"),
+            GcsfsFilePath(bucket_name="my_bucket", blob_name="test_file-2.csv"),
         )
 
     def test_direct_ingest_file_moves_with_file_types(self) -> None:
@@ -142,7 +142,7 @@ class TestDirectIngestGcsFileSystem(TestCase):
 
         self.fully_process_file(
             datetime.datetime.now(),
-            GcsfsFilePath(bucket_name="my_bucket", blob_name="test_file_2.csv"),
+            GcsfsFilePath(bucket_name="my_bucket", blob_name="test_file-2.csv"),
         )
 
     def test_move_to_storage_with_conflict_with_file_types(self) -> None:
@@ -217,5 +217,23 @@ class TestPathNormalization(TestCase):
             to_normalized_unprocessed_raw_file_name(
                 original_file_name,
                 datetime.datetime(2019, 8, 12, 0, 0, 0),
+            ),
+        )
+
+    def test_to_normalized_unprocessed_file_path_from_normalized_path_with_suffix(
+        self,
+    ) -> None:
+        original_file_path = (
+            "gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/"
+            "processed_2019-08-12T00:00:00:000000_raw_test_file_tag-2.csv"
+        )
+        expected_file_path = (
+            "gs://test-bucket-direct-ingest-state-storage/us_nd/2019/08/12/"
+            "unprocessed_2019-08-12T00:00:00:000000_raw_test_file_tag-2.csv"
+        )
+        self.assertEqual(
+            expected_file_path,
+            to_normalized_unprocessed_file_path_from_normalized_path(
+                original_file_path
             ),
         )
