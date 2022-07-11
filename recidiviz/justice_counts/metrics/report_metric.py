@@ -125,7 +125,8 @@ class ReportedAggregatedDimension:
             "helper_text": dimension_definition.helper_text,
             "required": dimension_definition.required,
             "should_sum_to_total": dimension_definition.should_sum_to_total,
-            "display_name": dimension_definition.dimension.display_name(),
+            "display_name": dimension_definition.display_name
+            or dimension_definition.dimension.display_name(),
             "dimensions": self.dimension_to_json(),
         }
 

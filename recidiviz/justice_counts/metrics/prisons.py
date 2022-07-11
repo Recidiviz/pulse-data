@@ -161,7 +161,13 @@ admissions = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PrisonPopulationType, required=False)
+        AggregatedDimension(
+            dimension=PrisonPopulationType,
+            required=False,
+            # Prison Population Type and Admission Type are the same thing;
+            # name this the latter for clarity since it's the Admission metric
+            display_name="Prison Admission Type",
+        )
     ],
 )
 
