@@ -534,7 +534,7 @@ const PublishConfirmation: React.FC<{
               the arrows to show the data for any disaggregations.
             </ConfirmationSubTitle>
             <TopPublishConfirmButton onClick={toggleConfirmationDialogue}>
-              Cancel
+              Back to Data Entry
             </TopPublishConfirmButton>
             <TopPublishConfirmPublishButton
               onClick={publishReport}
@@ -551,7 +551,7 @@ const PublishConfirmation: React.FC<{
       </ConfirmationDialogue>
       <MobileButtonContainer>
         <PublishConfirmButton onClick={toggleConfirmationDialogue}>
-          Cancel
+          Back to Data Entry
         </PublishConfirmButton>
         <PublishConfirmPublishButton
           onClick={publishReport}
