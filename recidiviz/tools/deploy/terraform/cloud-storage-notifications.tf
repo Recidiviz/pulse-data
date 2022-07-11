@@ -45,6 +45,7 @@ module "handle_state_dashboard_user_restrictions_file" {
   service_account_email = data.google_app_engine_default_service_account.default.email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = local.app_engine_iap_client
+  filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
 }
 
 module "handle_new_case_triage_etl" {
