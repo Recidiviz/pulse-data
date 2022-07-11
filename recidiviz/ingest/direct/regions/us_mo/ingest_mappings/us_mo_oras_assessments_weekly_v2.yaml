@@ -56,8 +56,10 @@ output:
               $mappings:
                 StateAssessmentType.INTERNAL_UNKNOWN:
                   - "Diversion Instrument" # One record with this entry in DB.
+                  - "Prison Screening Tool"
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING:
                   - "Community Supervision Screening Tool - 9 Items"
+                  - "Community Supervision Screening Tool - 4 Items"
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION:
                   - "Community Supervision Tool"
                 StateAssessmentType.ORAS_PRISON_INTAKE:
@@ -77,6 +79,8 @@ output:
                   - "Low/Moderate"
                 StateAssessmentLevel.MEDIUM:
                   - "Moderate"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "Moderate/High"
                 StateAssessmentLevel.HIGH:
                   - "High"
                 StateAssessmentLevel.VERY_HIGH:
