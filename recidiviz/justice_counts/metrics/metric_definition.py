@@ -96,11 +96,14 @@ class AggregatedDimension:
     """
 
     dimension: Type[DimensionBase]
-    # Whether this disaggregation is requested but not required.
+    # Whether this disaggregation is requested but not required
     required: bool
     # Whether the disaggregated values should sum to the total metric value
     should_sum_to_total: bool = False
-    # Text displayed above aggregated dimension breakdowns
+    # Text displayed as label in frontend
+    # If not specified, falls back to DimensionBase.display_name
+    display_name: Optional[str] = None
+    # Text displayed above aggregated dimension breakdowns.
     helper_text: Optional[str] = None
     # If disabled, don't send to the frontend to render
     # TODO(#13225) Remove SheriffBudgetType and get rid of this property
