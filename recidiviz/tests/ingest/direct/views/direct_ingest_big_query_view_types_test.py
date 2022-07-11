@@ -267,7 +267,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2, col3",
-            normalized_columns=f"col1, update_datetime, {expected_datetime_cols_clause}",
+            normalized_columns=f"col1, {expected_datetime_cols_clause}",
             supplemental_order_by_clause="",
         )
 
@@ -333,7 +333,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2",
-            normalized_columns=f"col1, update_datetime, {expected_datetime_cols_clause}",
+            normalized_columns=f"col1, {expected_datetime_cols_clause}",
             supplemental_order_by_clause="",
         )
 
@@ -386,50 +386,48 @@ ORDER BY col1, col2;"""
 
         expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @my_update_timestamp_param_name
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-),
-file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @my_update_timestamp_param_name
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+),
+file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @my_update_timestamp_param_name
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
@@ -596,27 +594,26 @@ ORDER BY col1, col2;"""
 
         expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @my_update_timestamp_param_name
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @my_update_timestamp_param_name
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 ),
 tagFullHistoricalExport_generated_view AS (
     WITH max_update_datetime AS (
@@ -635,26 +632,26 @@ tagFullHistoricalExport_generated_view AS (
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
-    normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
-    ),
     rows_with_recency_rank AS (
         SELECT
             COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN tagFullHistoricalExport_generated_view
@@ -710,27 +707,26 @@ ORDER BY col1, col2;"""
 
         expected_date_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @my_param
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @my_param
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
@@ -830,50 +826,48 @@ ORDER BY col1, col2;"""
 
         expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-),
-file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @update_timestamp
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+),
+file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 ),
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
@@ -982,56 +976,53 @@ ORDER BY col1, col2;"""
         )
 
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @my_update_timestamp_param_name
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @my_update_timestamp_param_name
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @my_update_timestamp_param_name
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 );
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
 USING (col1)
 ORDER BY col1, col2;"""
-
         self.assertEqual(
             expected_parameterized_view_query,
             view.expanded_view_query(
@@ -1113,50 +1104,48 @@ ORDER BY col1, col2;"""
         )
 
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @update_timestamp
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 );
 WITH
 foo AS (SELECT * FROM bar)
@@ -1253,50 +1242,48 @@ ORDER BY col1, col2
         )
 
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-);
-CREATE TEMP TABLE file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @update_timestamp
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 );
 CREATE TEMP TABLE my_destination_table AS (
 
@@ -1388,50 +1375,48 @@ OPTIONS(
 
 WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @update_timestamp
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
-    )
-
-    SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
-),
-file_tag_second_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_second`
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
         WHERE
             update_datetime <= @update_timestamp
     ),
-    rows_with_recency_rank AS (
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
+    )
+    SELECT *
+    FROM normalized_rows
+),
+file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 ),
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
@@ -1485,27 +1470,26 @@ ORDER BY col1, col2;"""
 
         expected_parameterized_view_query = f"""WITH
 file_tag_first_generated_view AS (
-    WITH normalized_rows AS (
-        SELECT
-            *
-        FROM
-            `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE
-            update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
-    ),
-    rows_with_recency_rank AS (
+    WITH rows_with_recency_rank AS (
         SELECT
             col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
-            normalized_rows
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+    ),
+    normalized_rows AS (
+        SELECT
+            *
+        FROM
+            rows_with_recency_rank
+        WHERE
+            recency_rank = 1
     )
-
     SELECT *
-    EXCEPT (recency_rank)
-    FROM rows_with_recency_rank
-    WHERE recency_rank = 1
+    FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}
