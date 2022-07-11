@@ -40,27 +40,26 @@ UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 # A parametrized query for looking at the most recent row for each primary key, among rows with update datetimes
 # before a certain date.
 RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
-WITH normalized_rows AS (
-    SELECT
-        {{normalized_columns}}
-    FROM
-        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE
-        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
-),
-rows_with_recency_rank AS (
+WITH rows_with_recency_rank AS (
     SELECT
         {{columns_clause}},
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
-        normalized_rows
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE
+        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+),
+normalized_rows AS (
+    SELECT
+        {{normalized_columns}}
+    FROM
+        rows_with_recency_rank
+    WHERE
+        recency_rank = 1
 )
-
 SELECT *
-EXCEPT (recency_rank)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM normalized_rows
 """
 
 RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = f"""
@@ -80,50 +79,49 @@ max_file_id AS (
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
 ),
-normalized_rows AS (
-    SELECT
-        {{normalized_columns}}
-    FROM
-        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE
-        file_id = (SELECT file_id FROM max_file_id)
-),
 rows_with_recency_rank AS (
     SELECT
         {{columns_clause}},
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
-        normalized_rows
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE
+        file_id = (SELECT file_id FROM max_file_id)
+),
+normalized_rows AS (
+    SELECT
+        {{normalized_columns}}
+    FROM
+        rows_with_recency_rank
+    WHERE
+        recency_rank = 1
 )
 SELECT *
-EXCEPT (recency_rank)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM normalized_rows
 """
 
 
 # A query for looking at the most recent row for each primary key
 RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
-WITH normalized_rows AS (
-    SELECT
-        {normalized_columns}
-    FROM
-        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
-),
-rows_with_recency_rank AS (
+WITH rows_with_recency_rank AS (
     SELECT
         {columns_clause},
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM
-        normalized_rows
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+),
+normalized_rows AS (
+    SELECT
+        {normalized_columns}
+    FROM
+        rows_with_recency_rank
+    WHERE
+        recency_rank = 1
 )
-
 SELECT *
-EXCEPT (recency_rank)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM normalized_rows
 """
 
 RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = """
@@ -141,26 +139,26 @@ max_file_id AS (
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
 ),
-normalized_rows AS (
-    SELECT
-        {normalized_columns}
-    FROM
-        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
-    WHERE
-        file_id = (SELECT file_id FROM max_file_id)
-),
 rows_with_recency_rank AS (
     SELECT
         {columns_clause},
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM
-        normalized_rows
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+    WHERE
+        file_id = (SELECT file_id FROM max_file_id)
+)
+normalized_rows AS (
+    SELECT
+        {normalized_columns}
+    FROM
+        rows_with_recency_rank
+    WHERE
+        recency_rank = 1
 )
 SELECT *
-EXCEPT (recency_rank)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM normalized_rows
 """
 
 DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
@@ -303,7 +301,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             else raw_file_config.available_datetime_cols
         )
 
-        return f"{non_datetime_col_str}, update_datetime, " + (
+        return f"{non_datetime_col_str}, " + (
             ", ".join(
                 [
                     StrictStringFormatter().format(
