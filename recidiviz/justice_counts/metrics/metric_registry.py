@@ -18,18 +18,17 @@
 
 import itertools
 
-import attr
-
 from recidiviz.justice_counts.metrics import (
     courts,
     defense,
     jails,
     law_enforcement,
+    parole,
     prisons,
+    probation,
     prosecution,
     supervision,
 )
-from recidiviz.persistence.database.schema.justice_counts import schema
 
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
 # should be "checked in" here
@@ -92,6 +91,20 @@ METRICS = [
     supervision.reconviction_while_on_supervision,
     supervision.supervision_terminations,
     supervision.supervision_violations,
+    parole.annual_budget,
+    parole.total_staff,
+    parole.individuals_under_supervision,
+    parole.new_supervision_cases,
+    parole.reconviction_while_on_supervision,
+    parole.supervision_terminations,
+    parole.supervision_violations,
+    probation.annual_budget,
+    probation.total_staff,
+    probation.individuals_under_supervision,
+    probation.new_supervision_cases,
+    probation.reconviction_while_on_supervision,
+    probation.supervision_terminations,
+    probation.supervision_violations,
 ]
 
 METRICS_BY_SYSTEM = {}
@@ -99,22 +112,6 @@ for k, g in itertools.groupby(
     sorted(METRICS, key=lambda x: x.system.value), lambda x: x.system.value
 ):
     METRICS_BY_SYSTEM[k] = list(g)
-
-# Supervision metrics should be split into Parole and Probation.
-# If an agency belongs to Supervision system, they should report both Parole
-# and Probation metrics (but separately). If an agency belongs to just one
-# or the other, they are only responsible for reporting those metrics.
-supervision_metrics = list(METRICS_BY_SYSTEM[schema.System.SUPERVISION.value])
-parole_metrics = [
-    attr.evolve(metric, system=schema.System.PAROLE) for metric in supervision_metrics
-]
-probation_metrics = [
-    attr.evolve(metric, system=schema.System.PROBATION)
-    for metric in supervision_metrics
-]
-METRICS_BY_SYSTEM[schema.System.SUPERVISION.value] = parole_metrics + probation_metrics
-METRICS_BY_SYSTEM[schema.System.PAROLE.value] = parole_metrics
-METRICS_BY_SYSTEM[schema.System.PROBATION.value] = probation_metrics
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key
 # is unique across all metrics
