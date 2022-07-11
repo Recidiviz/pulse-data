@@ -17,7 +17,7 @@
 """Defines admin panel routes for ingest operations."""
 import logging
 from http import HTTPStatus
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from flask import Blueprint, Response, jsonify, request
 from google.cloud import storage
@@ -621,3 +621,20 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route("/api/ingest_operations/all_ingest_instance_statuses")
+    @requires_gae_auth
+    def _all_ingest_instance_statuses() -> Tuple[Response, HTTPStatus]:
+        all_instance_statuses = (
+            get_ingest_operations_store().get_all_current_ingest_instance_statuses()
+        )
+
+        all_instance_statuses_strings: Dict[str, Dict[str, Optional[str]]] = {}
+
+        for instance_state_code, instances in all_instance_statuses.items():
+            all_instance_statuses_strings[instance_state_code.value] = {
+                instance.value: curr_status.value if curr_status is not None else None
+                for instance, curr_status in instances.items()
+            }
+
+        return jsonify(all_instance_statuses_strings), HTTPStatus.OK

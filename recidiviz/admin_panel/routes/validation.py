@@ -38,7 +38,7 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         state_code_info = fetch_state_codes(all_state_codes)
         return jsonify(state_code_info), HTTPStatus.OK
 
-    @admin_panel.route("api/validation_metadata/status", methods=["POST"])
+    @admin_panel.route("/api/validation_metadata/status", methods=["POST"])
     @requires_gae_auth
     def fetch_validation_metadata_status() -> Tuple[bytes, HTTPStatus]:
         records = get_validation_status_store().get_most_recent_validation_results()
@@ -48,7 +48,7 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         )
 
     @admin_panel.route(
-        "api/validation_metadata/status/<validation_name>/<state_code>",
+        "/api/validation_metadata/status/<validation_name>/<state_code>",
         methods=["POST"],
     )
     @requires_gae_auth
@@ -64,7 +64,7 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         )
 
     @admin_panel.route(
-        "api/validation_metadata/error_table/<validation_name>/<state_code>",
+        "/api/validation_metadata/error_table/<validation_name>/<state_code>",
         methods=["POST"],
     )
     @requires_gae_auth
