@@ -1028,6 +1028,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 [
                     self.test_schema_objects.test_report_supervision,
                     self.test_schema_objects.test_report_parole,
+                    self.test_schema_objects.test_report_parole_probation,
                     self.test_schema_objects.test_user_A,
                 ]
             )
@@ -1045,14 +1046,20 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
+            parole_probation_metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    report=self.test_schema_objects.test_report_parole_probation,
+                ),
+                key=lambda x: x.key,
+            )
 
-            # Supervision report should have metrics for Parole and Probation
+            # Supervision report should have one copy of metrics
             supervision_metric_systems = {
                 metric.metric_definition.system.value for metric in supervision_metrics
             }
             self.assertEqual(
                 supervision_metric_systems,
-                {schema.System.PAROLE.value, schema.System.PROBATION.value},
+                {schema.System.SUPERVISION.value},
             )
 
             # Parole report should just have metrics for Parole
@@ -1060,3 +1067,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 metric.metric_definition.system.value for metric in parole_metrics
             }
             self.assertEqual(parole_metric_systems, {schema.System.PAROLE.value})
+
+            # Parole/Probation report should just have metrics for Parole and Probation
+            parole_probation_metric_systems = {
+                metric.metric_definition.system.value
+                for metric in parole_probation_metrics
+            }
+            self.assertEqual(
+                parole_probation_metric_systems,
+                {schema.System.PAROLE.value, schema.System.PROBATION.value},
+            )

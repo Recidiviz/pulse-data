@@ -124,6 +124,12 @@ class JusticeCountsSchemaTestObjects:
             fips_county_code="us_ca_san_francisco",
             system=schema.System.PAROLE,
         )
+        self.test_agency_E = schema.Agency(
+            name="Agency Epsilon",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PAROLE.value, schema.System.PROBATION.value],
+        )
 
         # Auth0 Users
         self.test_auth0_user: Auth0User = {
@@ -174,27 +180,12 @@ class JusticeCountsSchemaTestObjects:
             last_modified_at=datetime.datetime.fromisoformat("2022-07-05T08:00:00"),
             created_at=datetime.date.fromisoformat("2021-12-30"),
         )
-        self.test_report_supervision = schema.Report(
-            source=self.test_agency_C,
-            type="MONTHLY",
-            instance="generated_instance_id",
-            status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=datetime.date.fromisoformat("2022-06-01"),
-            date_range_end=datetime.date.fromisoformat("2022-07-01"),
-            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
-            created_at=datetime.date.fromisoformat("2022-05-30"),
+        self.test_report_supervision = self.get_report_for_agency(
+            agency=self.test_agency_C
         )
-        self.test_report_parole = schema.Report(
-            source=self.test_agency_D,
-            type="MONTHLY",
-            instance="generated_instance_id",
-            status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=datetime.date.fromisoformat("2022-06-01"),
-            date_range_end=datetime.date.fromisoformat("2022-07-01"),
-            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
-            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
-            created_at=datetime.date.fromisoformat("2022-05-30"),
+        self.test_report_parole = self.get_report_for_agency(agency=self.test_agency_D)
+        self.test_report_parole_probation = self.get_report_for_agency(
+            agency=self.test_agency_E
         )
 
         # Metrics
@@ -221,6 +212,22 @@ class JusticeCountsSchemaTestObjects:
                     }
                 )
             ],
+        )
+
+    @staticmethod
+    def get_report_for_agency(
+        agency: schema.Agency, frequency: str = "MONTHLY"
+    ) -> schema.Report:
+        return schema.Report(
+            source=agency,
+            type=frequency,
+            instance="generated_instance_id",
+            status=schema.ReportStatus.NOT_STARTED,
+            date_range_start=datetime.date.fromisoformat("2022-06-01"),
+            date_range_end=datetime.date.fromisoformat("2022-07-01"),
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            created_at=datetime.date.fromisoformat("2022-05-30"),
         )
 
     @staticmethod
