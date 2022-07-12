@@ -33,7 +33,6 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.types import assert_type, non_optional
 
@@ -55,15 +54,25 @@ class JusticeCountsUser:
         }
 
 
-def add_justice_counts_tools_routes(bp: Blueprint) -> None:
-    """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
+_auth0_client = None
 
-    if environment.in_development() or environment.in_gcp():
-        auth0 = Auth0Client(  # nosec
+
+def _get_auth0_client() -> Auth0Client:
+    """Returns a Justice Counts Auth0 client, lazily generating one if we have not
+    already.
+    """
+    global _auth0_client
+    if not _auth0_client:
+        _auth0_client = Auth0Client(  # nosec
             domain_secret_name="justice_counts_auth0_api_domain",
             client_id_secret_name="justice_counts_auth0_api_client_id",
             client_secret_secret_name="justice_counts_auth0_api_client_secret",
         )
+    return _auth0_client
+
+
+def add_justice_counts_tools_routes(bp: Blueprint) -> None:
+    """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
 
     @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
     @requires_gae_auth
@@ -125,7 +134,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         """Returns all UserAccount records. Joins the records in our database with the
         records obtained by the Auth0 management API.
         """
-        auth0_users = auth0.get_all_users()
+        auth0_users = _get_auth0_client().get_all_users()
 
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -159,7 +168,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     name=name,
                 )
                 _update_auth0_user_app_metadata(
-                    auth0_client=auth0,
+                    auth0_client=_get_auth0_client(),
                     auth0_user_id=auth0_user_id,
                     agency_ids=agency_ids,
                 )
