@@ -72,6 +72,7 @@ output:
                   - "11" # Voluntarily Returned
                   - "12" # Placed in Jail Temporarily (CO call on general)
                   - "13" # Initial Classification
+                  - "15" # Violation
                   - "16" # Close Status
                   - "17" # Program Placement
                   - "19" # GP Placement
