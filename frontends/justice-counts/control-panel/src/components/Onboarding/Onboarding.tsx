@@ -29,7 +29,7 @@ import {
 } from "../Reports/ReportDataEntry.styles";
 import { showToast } from "../Toast";
 
-const OnboardingContainer = styled.div`
+export const OnboardingContainer = styled.div`
   width: 100vw;
   height: 100vh;
   display: flex;
@@ -42,7 +42,7 @@ const OnboardingContainer = styled.div`
   color: ${palette.solid.white};
 `;
 
-const OnboardingIntroContainer = styled.div`
+export const OnboardingBackdropContainer = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
@@ -355,7 +355,7 @@ type OnboardingTopics = "reportsview" | "dataentryview";
 
 const OnboardingIntro = ({ closeIntro }: { closeIntro: () => void }) => {
   return (
-    <OnboardingIntroContainer>
+    <OnboardingBackdropContainer>
       <OnboardingIntroModal>
         <LogoImage src={logo} alt="" />
         <OnboardingTitle>
@@ -378,7 +378,7 @@ const OnboardingIntro = ({ closeIntro }: { closeIntro: () => void }) => {
           Let’s Get Started
         </OnboardingIntroGetStartedButton>
       </OnboardingIntroModal>
-    </OnboardingIntroContainer>
+    </OnboardingBackdropContainer>
   );
 };
 

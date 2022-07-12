@@ -20,6 +20,7 @@ import React, { ReactElement, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 
 import { trackNavigation } from "./analytics";
+import { PageWrapper } from "./components/Forms";
 import Header from "./components/Header";
 import CreateReports from "./components/Reports/CreateReport";
 import ReportDataEntry from "./components/Reports/ReportDataEntry";
@@ -34,14 +35,16 @@ const App: React.FC = (): ReactElement => {
 
   return (
     <>
-      <Header />
+      <PageWrapper>
+        <Header />
 
-      <Routes>
-        <Route path="/" element={<Reports />} />
-        <Route path="/reports/create" element={<CreateReports />} />
-        <Route path="/reports/:id" element={<ReportDataEntry />} />
-        <Route path="/settings" element={<AccountSettings />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Reports />} />
+          <Route path="/reports/create" element={<CreateReports />} />
+          <Route path="/reports/:id" element={<ReportDataEntry />} />
+          <Route path="/settings" element={<AccountSettings />} />
+        </Routes>
+      </PageWrapper>
     </>
   );
 };
