@@ -158,6 +158,8 @@ columns:
         description: Initial Classification
       - value: "14"
         description: Returned to Sending State
+      - value: "15"
+        description: Violation
       - value: "16"
         description: Close Status
       - value: "17"
