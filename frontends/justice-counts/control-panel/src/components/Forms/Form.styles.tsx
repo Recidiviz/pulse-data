@@ -26,6 +26,7 @@ import {
 } from "../Reports/ReportDataEntry.styles";
 
 export const PageWrapper = styled.div`
+  height: 100%;
   width: 100%;
   display: flex;
   justify-content: center;

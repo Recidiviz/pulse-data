@@ -126,7 +126,7 @@ const ReportDataEntry = () => {
   }
 
   return (
-    <PageWrapper>
+    <>
       <ReportSummaryPanel
         reportID={reportID}
         activeMetric={activeMetric}
@@ -152,7 +152,7 @@ const ReportDataEntry = () => {
           reportID={reportID}
         />
       )}
-    </PageWrapper>
+    </>
   );
 };
 

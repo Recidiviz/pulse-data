@@ -126,7 +126,8 @@ export const ReportActionsNewIcon = styled(ReportActionsSelectIcon)`
 `;
 
 export const Table = styled.div`
-  padding: 286px 0 50px 0;
+  width: 100%;
+  padding: 190px 0 50px 0;
 `;
 
 export const Row = styled.div<{

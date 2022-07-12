@@ -89,13 +89,15 @@ class API {
       });
 
       if (response.status >= 400) {
-        const responseText = await response.clone().text();
+        if (!retrying) {
+          const responseText = await response.clone().text();
 
-        if (responseText.includes("The CSRF token has expired.") && !retrying) {
-          await this.initSession();
-          return runInAction(() =>
-            this.request({ path, method, body, retrying: true })
-          );
+          if (responseText.includes("The CSRF token has expired.")) {
+            await this.initSession();
+            return runInAction(() =>
+              this.request({ path, method, body, retrying: true })
+            );
+          }
         }
 
         const responseCopy = response.clone();

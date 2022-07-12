@@ -46,7 +46,7 @@ import {
   Title,
 } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
-import { Onboarding } from "../Onboarding";
+import { Onboarding, OnboardingDataEntrySummary } from "../Onboarding";
 import { showToast } from "../Toast";
 import {
   AdditionalContextInput,
@@ -388,6 +388,7 @@ const DataEntryForm: React.FC<{
       </Form>
 
       {/* Onboarding */}
+
       {userStore.onboardingTopicsCompleted?.dataentryview === false &&
         showOnboarding && (
           <Onboarding
@@ -395,6 +396,8 @@ const DataEntryForm: React.FC<{
             topic="dataentryview"
           />
         )}
+
+      <OnboardingDataEntrySummary />
     </>
   );
 };
