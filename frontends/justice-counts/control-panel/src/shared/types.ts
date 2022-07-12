@@ -111,12 +111,17 @@ export interface CreateReportFormValuesType extends Record<string, unknown> {
   isRecurring: boolean;
 }
 
+export interface FormError {
+  message: string;
+  info?: string;
+}
+
 export interface FormContexts {
-  [contextKey: string]: { value?: string; error?: string };
+  [contextKey: string]: { value?: string; error?: FormError };
 }
 
 export interface FormDimensions {
-  [dimensionKey: string]: { value?: string; error?: string };
+  [dimensionKey: string]: { value?: string; error?: FormError };
 }
 
 export interface FormDisaggregations {
@@ -134,7 +139,7 @@ export interface FormReport {
 }
 
 export interface FormStoreMetricValue {
-  [metricKey: string]: { value?: string; error?: string };
+  [metricKey: string]: { value?: string; error?: FormError };
 }
 export interface FormStoreMetricValues {
   [reportID: string]: FormStoreMetricValue;

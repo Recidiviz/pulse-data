@@ -64,7 +64,7 @@ test("Required input label with value expected to shrink position, font-size and
 test("Error description appears in document", () => {
   render(
     <TextInput
-      error="Please enter valid number."
+      error={{ message: "Please enter valid number." }}
       type="text"
       label="Total Staff"
       valueLabel="People"
@@ -84,7 +84,7 @@ test("Error description appears in document", () => {
 test("Error state changes text input colors to red", () => {
   render(
     <TextInput
-      error="Please enter valid number."
+      error={{ message: "Please enter valid number." }}
       type="text"
       name="Total Staff"
       id="Total Staff"

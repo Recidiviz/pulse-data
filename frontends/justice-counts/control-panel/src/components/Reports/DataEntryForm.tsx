@@ -32,7 +32,7 @@ import {
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
   BinaryRadioGroupWrapper,
-  ErrorLabel,
+  ErrorWithTooltip,
   Form,
   GoBackToReportsOverviewLink,
   Metric,
@@ -84,8 +84,10 @@ const DataEntryFormRequiredChip = styled(RequiredChip)`
   margin-right: 16px;
 `;
 
-const DataEntryFormErrorLabel = styled(ErrorLabel)`
-  top: 140px;
+const DataEntryFormErrorWithTooltipContainer = styled.div`
+  position: absolute;
+  width: 100%;
+  top: 70px;
 `;
 
 const AdditionalContextLabel = styled.div`
@@ -290,6 +292,10 @@ const DataEntryForm: React.FC<{
               {metric.contexts.length > 0 &&
                 metric.contexts.map((context, contextIndex) => {
                   if (context.type === "MULTIPLE_CHOICE") {
+                    const contextError =
+                      formStore.contexts?.[reportID]?.[metric.key]?.[
+                        context.key
+                      ]?.error;
                     return (
                       <BinaryRadioGroupContainer key={context.key}>
                         <BinaryRadioGroupQuestion>
@@ -335,22 +341,10 @@ const DataEntryForm: React.FC<{
                         </BinaryRadioGroupClearButton>
 
                         {/* Error */}
-                        {formStore.contexts?.[reportID]?.[metric.key]?.[
-                          context.key
-                        ]?.error && (
-                          <DataEntryFormErrorLabel
-                            error={
-                              formStore.contexts?.[reportID]?.[metric.key]?.[
-                                context.key
-                              ]?.error
-                            }
-                          >
-                            {
-                              formStore.contexts?.[reportID]?.[metric.key]?.[
-                                context.key
-                              ]?.error
-                            }
-                          </DataEntryFormErrorLabel>
+                        {contextError && (
+                          <DataEntryFormErrorWithTooltipContainer>
+                            <ErrorWithTooltip error={contextError} />
+                          </DataEntryFormErrorWithTooltipContainer>
                         )}
                       </BinaryRadioGroupContainer>
                     );
