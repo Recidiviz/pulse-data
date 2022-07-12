@@ -103,7 +103,7 @@ export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
       position: sticky;
       top: 64px;
       background: ${palette.solid.white};
-      z-index: 1;
+      z-index: 2;
       margin-right: -1px;
       margin-left: -1px;
   `}

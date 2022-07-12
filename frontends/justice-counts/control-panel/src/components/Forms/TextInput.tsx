@@ -18,7 +18,9 @@
 import React, { InputHTMLAttributes, useState } from "react";
 import styled from "styled-components/macro";
 
+import { FormError } from "../../shared/types";
 import { rem } from "../../utils";
+import infoRedIcon from "../assets/info-red-icon.png";
 import statusCheckIcon from "../assets/status-check-icon.png";
 import statusErrorIcon from "../assets/status-error-icon.png";
 import { palette, typography } from "../GlobalStyles";
@@ -155,6 +157,10 @@ export const ErrorLabel = styled.span<ErrorLabelProps>`
   margin-top: 8px;
   position: absolute;
   ${({ multiline }) => `top: ${multiline ? "200" : "71"}px;`};
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
 `;
 
 export const LabelChipPosition = styled.span`
@@ -186,9 +192,62 @@ export const InputTooltip = styled.div`
   color: ${palette.solid.white};
 `;
 
+export const ErrorIconContainer = styled.span`
+  transform: translate(1px, -1px);
+  flex-grow: 1;
+  z-index: 1;
+`;
+
+export const ErrorInfo = styled.div`
+  position: absolute;
+  background-color: ${palette.solid.red};
+  color: ${palette.solid.white};
+  border-radius: 4px;
+  z-index: 1;
+  padding: 16px;
+  max-width: 300px;
+  bottom: 24px;
+`;
+
+interface ErrorWithTooltipProps {
+  error: FormError;
+  disabled?: boolean;
+  multiline?: boolean;
+}
+
+export const ErrorWithTooltip: React.FC<ErrorWithTooltipProps> = ({
+  error,
+  disabled,
+  multiline,
+}): JSX.Element => {
+  const [showErrorInfo, setShowErrorInfo] = useState<boolean>();
+  return (
+    <ErrorLabel
+      isDisabled={disabled}
+      error={error.message}
+      multiline={multiline}
+    >
+      {error.message}
+      {error?.info && (
+        <ErrorIconContainer>
+          <img
+            src={infoRedIcon}
+            alt=""
+            width="16px"
+            height="16px"
+            onMouseEnter={() => setShowErrorInfo(true)}
+            onMouseLeave={() => setShowErrorInfo(false)}
+          />
+          {showErrorInfo && <ErrorInfo>{error.info}</ErrorInfo>}
+        </ErrorIconContainer>
+      )}
+    </ErrorLabel>
+  );
+};
+
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  error?: string;
+  error?: FormError;
   valueLabel?: string;
   multiline?: boolean;
   persistLabel?: boolean;
@@ -206,7 +265,8 @@ export const TextInput: React.FC<TextInputProps> = ({
   ...props
 }): JSX.Element => {
   const [showTooltip, setShowTooltip] = useState<boolean>();
-  const { name, required, value, disabled } = props;
+  const [showErrorInfo, setShowErrorInfo] = useState<boolean>();
+  const { name, value, disabled } = props;
 
   const showTooltipIfTruncated = (
     e: React.MouseEvent<HTMLInputElement, MouseEvent>
@@ -231,7 +291,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         disabled={disabled}
         as={multiline ? "textarea" : "input"}
         multiline={multiline}
-        error={error}
+        error={error?.message}
         id={`input-${name}`}
         placeholder={placeholder}
         persistLabel={persistLabel}
@@ -243,7 +303,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         inputHasValue={Boolean(value)}
         isDisabled={disabled}
         persistLabel={persistLabel}
-        error={error}
+        error={error?.message}
       >
         {label}
       </InputLabel>
@@ -252,19 +312,22 @@ export const TextInput: React.FC<TextInputProps> = ({
 
       {/* Error Description (appears below text input) */}
       {error && (
-        <ErrorLabel isDisabled={disabled} error={error} multiline={multiline}>
-          {error}
-        </ErrorLabel>
+        <ErrorWithTooltip
+          error={error}
+          disabled={disabled}
+          multiline={multiline}
+        />
       )}
 
       {/* Label Chip (appears inside of text input on the right) */}
 
       {/* Chip: Required */}
-      {required && !error && !value && (
+      {/* Disable the Required Chip for now. Refer to https://github.com/Recidiviz/pulse-data/pull/13849 for more information */}
+      {/* {required && !error && !value && (
         <LabelChipPosition>
           <RequiredChip />
         </LabelChipPosition>
-      )}
+      )} */}
 
       {/* Chip: Error Status */}
       {error && (

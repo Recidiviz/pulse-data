@@ -18,6 +18,7 @@
 import { makeAutoObservable } from "mobx";
 
 import {
+  FormError,
   FormStoreContextValues,
   FormStoreDisaggregationValues,
   FormStoreMetricValues,
@@ -322,7 +323,7 @@ class FormStore {
 
     const updateFieldErrorMessage = (
       operation: "ADD" | "DELETE" | "ADD TO METRIC",
-      message?: string
+      error?: FormError
     ) => {
       /**
        * Overall metric: !key1 && !key2
@@ -331,15 +332,15 @@ class FormStore {
        */
       if (operation === "ADD") {
         if (key1 && key2) {
-          this.disaggregations[reportID][metricKey][key1][key2].error = message;
+          this.disaggregations[reportID][metricKey][key1][key2].error = error;
         } else if (key1 && !key2) {
-          this.contexts[reportID][metricKey][key1].error = message;
+          this.contexts[reportID][metricKey][key1].error = error;
         } else {
-          this.metricsValues[reportID][metricKey].error = message;
+          this.metricsValues[reportID][metricKey].error = error;
         }
       }
       if (operation === "ADD TO METRIC") {
-        this.metricsValues[reportID][metricKey].error = message;
+        this.metricsValues[reportID][metricKey].error = error;
       }
       if (operation === "DELETE") {
         if (key1 && key2) {
@@ -374,18 +375,18 @@ class FormStore {
       if (!this.metricsValues[reportID][metricKey]) {
         this.metricsValues[reportID][metricKey] = {};
       }
-      updateFieldErrorMessage(
-        "ADD TO METRIC",
-        "You are also required to enter a value for the metric."
-      );
+      updateFieldErrorMessage("ADD TO METRIC", {
+        message: "You are also required to enter a value for this field.",
+        info: "Because you have entered data for this metric, you are also required to fill out this value. If you do not have this data, please leave all fields in this metric (including disaggregations and contexts) blank.",
+      });
     }
 
     /** Raise Error */
     if (isRequiredButEmpty) {
-      updateFieldErrorMessage(
-        "ADD",
-        "You are also required to enter a value for this field."
-      );
+      updateFieldErrorMessage("ADD", {
+        message: "You are also required to enter a value for this field.",
+        info: "Because you have entered data for this metric, you are also required to fill out this value. If you do not have this data, please leave all fields in this metric (including disaggregations and contexts) blank.",
+      });
       return;
     }
 
@@ -398,7 +399,9 @@ class FormStore {
     if (validationType === "NUMBER") {
       /** Raise Error */
       if (!isPositiveNumber) {
-        updateFieldErrorMessage("ADD", "Please enter a valid number.");
+        updateFieldErrorMessage("ADD", {
+          message: "Please enter a valid number.",
+        });
         return;
       }
     }
