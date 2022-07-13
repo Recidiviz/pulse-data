@@ -41,7 +41,7 @@ from recidiviz.metrics.export.view_export_manager import export_blueprint
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
+from recidiviz.tests.metrics.export.view_export_cloud_task_manager_test import (
     CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
 from recidiviz.utils.environment import GCPEnvironment

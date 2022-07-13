@@ -20,7 +20,6 @@ from typing import Optional
 
 from mock import create_autospec
 
-from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.utils.regions import Region
 
 
@@ -30,7 +29,6 @@ def fake_region(
     agency_type: str = "prison",
     environment: str = "local",
     jurisdiction_id: str = "unknown",
-    scraper: Optional[BaseScraper] = None,
     region_module: Optional[ModuleType] = None,
     is_direct_ingest: bool = True,
     is_stoppable: Optional[bool] = None,
@@ -42,7 +40,6 @@ def fake_region(
     region.environment = environment
     region.jurisdiction_id = jurisdiction_id
     region.region_module = region_module
-    region.get_scraper.return_value = scraper
     region.is_direct_ingest = is_direct_ingest
     region.is_stoppable = is_stoppable
 
