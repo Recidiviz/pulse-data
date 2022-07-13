@@ -272,7 +272,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "50",  # Case Opened in Error
             "51",  # ?? Not in data dictionary
         ],
-        StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION: [
+        StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION: [
             "44",  # Conviction and return to prison to serve detainer sentence
         ],
         StateSupervisionPeriodTerminationReason.REVOCATION: [
