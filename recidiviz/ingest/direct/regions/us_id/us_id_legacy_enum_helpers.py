@@ -92,7 +92,7 @@ def supervision_termination_reason_mapper(
         INCARCERATION_FACILITY_TYPE,
         OTHER_FACILITY_TYPE,
     ):  # Going to incarceration.
-        return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
+        return StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION
     if label == FUGITIVE_FACILITY_TYPE:  # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
