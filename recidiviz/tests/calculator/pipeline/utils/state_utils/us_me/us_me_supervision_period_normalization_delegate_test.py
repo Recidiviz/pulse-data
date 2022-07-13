@@ -231,7 +231,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             state_code=StateCode.US_ME.value,
             start_date=date(2009, 1, 1),
             termination_date=date(2010, 1, 7),
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
         supervision_sentences = [
             StateSupervisionSentence.new_with_defaults(
@@ -261,7 +261,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             state_code=StateCode.US_ME.value,
             start_date=date(2009, 1, 1),
             termination_date=date(2009, 12, 26),
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
         supervision_sentences = [
             StateSupervisionSentence.new_with_defaults(
@@ -321,11 +321,11 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             state_code=StateCode.US_ME.value,
             start_date=date(2009, 1, 1),
             termination_date=date(2010, 1, 7),
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
         supervision_sentences: List[StateSupervisionSentence] = []
         self.assertEqual(
-            StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
             self._build_delegate(
                 assessments=[]
             ).supervision_termination_reason_override(

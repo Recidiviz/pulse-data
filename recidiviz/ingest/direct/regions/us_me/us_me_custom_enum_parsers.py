@@ -588,6 +588,6 @@ def parse_supervision_termination_reason(
     ):
         # These could be directly to a DOC Facility if in a Community Confinement program, or a revocation
         # which will be updated to REVOCATION reason in the entity normalization step.
-        return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
+        return StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION
 
     return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
