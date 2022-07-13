@@ -975,7 +975,7 @@ class StateSupervisionPeriod(
 
     def __attrs_post_init__(self) -> None:
         if (
-            self.state_code in ("US_TN")
+            self.state_code in ("US_TN", "US_ID")
             and self.termination_reason
             == StateSupervisionPeriodTerminationReason.DISMISSED
         ):
