@@ -38,7 +38,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     TimePeriod,
 )
 from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
@@ -117,7 +117,8 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
 
     def test_metrics_base(self) -> None:
         results = {}
-        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        # TODO(#13950): Replace with StateCode
+        metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         for dimension_mapping in self.query_builder.dimension_mappings:
             results[dimension_mapping.dimension] = metric_fetcher.fetch(
                 self.query_builder,
@@ -137,7 +138,7 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
         ...
 
     def test_metrics_base(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(
@@ -201,7 +202,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         }
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
@@ -215,7 +216,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is dropped from the counts"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER, time_period=TimePeriod.MONTHS_0_6
@@ -272,7 +273,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         }
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
@@ -288,7 +289,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is filtered out of the 6 month count"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.FACILITY,
@@ -372,7 +373,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
         }
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.DISTRICT,
@@ -392,7 +393,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
 
     def test_filter_time_period(self) -> None:
         """Tests that person 5 is not included, as the transition occurred more than 6 months ago"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
@@ -491,7 +492,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
         ]
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
             FetchMetricParams(
                 filters={
@@ -538,7 +539,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
 
     def test_filter_time_period(self) -> None:
         """Tests that person id 6 is not included in the response"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             FetchMetricParams(time_period=TimePeriod.MONTHS_0_6),
         )
@@ -682,7 +683,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
         }
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
@@ -703,7 +704,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 5 is not included in the counts"""
-        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.SUPERVISION_DISTRICT,

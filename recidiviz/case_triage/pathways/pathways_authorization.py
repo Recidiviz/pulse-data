@@ -25,7 +25,7 @@ from flask import request
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
@@ -51,7 +51,8 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
 
     requested_state = request.view_args["state"]
 
-    if not StateCode.is_state_code(requested_state):
+    # TODO(#13950): Replace with StateCode
+    if not _FakeStateCode.is_state_code(requested_state):
         raise FlaskException(
             code="valid_state_required",
             description="A valid state must be passed to the route",

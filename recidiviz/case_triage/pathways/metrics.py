@@ -28,7 +28,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 ALL_METRICS: List[MetricQueryBuilder] = [
@@ -39,12 +39,15 @@ ALL_METRICS: List[MetricQueryBuilder] = [
     SupervisionToPrisonTransitionsCount,
 ]
 
-ENABLED_METRICS_BY_STATE: Dict[StateCode, List[MetricQueryBuilder]] = {
-    StateCode.US_ID: ALL_METRICS,
-    StateCode.US_ME: ALL_METRICS,
-    StateCode.US_ND: ALL_METRICS,
-    StateCode.US_MO: ALL_METRICS,
-    StateCode.US_TN: ALL_METRICS,
+# TODO(#13950): Replace with StateCode
+ENABLED_METRICS_BY_STATE: Dict[_FakeStateCode, List[MetricQueryBuilder]] = {
+    _FakeStateCode.US_ID: ALL_METRICS,
+    _FakeStateCode.US_ME: ALL_METRICS,
+    _FakeStateCode.US_ND: ALL_METRICS,
+    _FakeStateCode.US_MO: ALL_METRICS,
+    _FakeStateCode.US_TN: ALL_METRICS,
+    _FakeStateCode.US_XX: ALL_METRICS,
+    _FakeStateCode.US_YY: ALL_METRICS,
 }
 
 ENABLED_METRICS_BY_STATE_BY_NAME = {

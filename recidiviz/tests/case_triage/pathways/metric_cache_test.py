@@ -31,7 +31,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     LibertyToPrisonTransitionsCount,
     TimePeriod,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 
 
 class PathwaysMetricCacheTest(TestCase):
@@ -42,8 +42,9 @@ class PathwaysMetricCacheTest(TestCase):
         self.query_builder = LibertyToPrisonTransitionsCount
 
         self.metric_cache = PathwaysMetricCache(
-            state_code=StateCode.US_XX,
-            metric_fetcher=PathwaysMetricFetcher(state_code=StateCode.US_XX),
+            # TODO(#13950): Replace with StateCode
+            state_code=_FakeStateCode.US_XX,
+            metric_fetcher=PathwaysMetricFetcher(state_code=_FakeStateCode.US_XX),
             redis=self.redis,
         )
 
