@@ -148,7 +148,7 @@ rows_with_recency_rank AS (
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
     WHERE
         file_id = (SELECT file_id FROM max_file_id)
-)
+),
 normalized_rows AS (
     SELECT
         {normalized_columns}
