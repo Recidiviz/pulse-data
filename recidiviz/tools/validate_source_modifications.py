@@ -119,7 +119,7 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
             # the common_path will end up being the docs directory (docs/endpoints). So in this case,
             # we will add the next immediate top-level directories to the set that should be modified,
             # since that directory is the url_prefix that will be affixed to the endpoint.
-            # (e.g. docs/endpoints/single_count, docs/endpoints/scraper)
+            # (e.g. docs/endpoints/export, docs/endpoints/view_update)
             {"/".join(top_level_dir.split("/")[:3]) for top_level_dir in markdown_paths}
             if common_path == ENDPOINT_DOCS_DIRECTORY
             else {common_path}

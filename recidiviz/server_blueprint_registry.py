@@ -27,30 +27,15 @@ from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
-from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.ingest.justice_counts.control import justice_counts_control
-from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
-from recidiviz.ingest.scrape.scraper_control import scraper_control
-from recidiviz.ingest.scrape.scraper_status import scraper_status
-from recidiviz.ingest.scrape.worker import worker
 from recidiviz.metrics.export.view_export_manager import export_blueprint
-from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     cloud_sql_to_bq_blueprint,
 )
 from recidiviz.practices.etl.routes import get_practices_etl_blueprint
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
-# TODO(#13703): Delete scraper_blueprints_with_url_prefixes and associated endpoints.
-scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (batch_blueprint, "/batch"),
-    (infer_release_blueprint, "/infer_release"),
-    (scraper_control, "/scraper"),
-    (scraper_status, "/scraper"),
-    (worker, "/scraper"),
-    (store_single_count_blueprint, "/single_count"),
-]
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (admin_panel_blueprint, "/admin"),
     (auth_endpoint_blueprint, "/auth"),
@@ -68,8 +53,4 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
 
 
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    all_blueprints_with_url_prefixes = (
-        scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
-    )
-
-    return all_blueprints_with_url_prefixes
+    return default_blueprints_with_url_prefixes

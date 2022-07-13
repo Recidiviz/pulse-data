@@ -18,10 +18,8 @@
 import datetime
 import json
 import logging
-from http import HTTPStatus
 from typing import Dict, List, Optional, Set, Tuple
 
-from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.common.ingest_metadata import (
@@ -31,9 +29,8 @@ from recidiviz.common.ingest_metadata import (
 from recidiviz.ingest.models import ingest_info_pb2, serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo, Person
 from recidiviz.ingest.models.scrape_key import ScrapeKey
-from recidiviz.ingest.scrape import scrape_phase, sessions
+from recidiviz.ingest.scrape import sessions
 from recidiviz.ingest.scrape.constants import ScrapeType
-from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import Task
 from recidiviz.persistence import datastore_ingest_info, persistence
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -41,11 +38,8 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.utils import monitoring, regions
-from recidiviz.utils.auth.gae import requires_gae_auth
 
 FAILED_TASK_THRESHOLD = 0.1
-
-batch_blueprint = Blueprint("batch", __name__)
 
 m_batch_count = measure.MeasureInt(
     "persistence/batch_persistence/batch_count",
@@ -241,61 +235,3 @@ def persist_to_database(
 
     logging.error("No ingest infos received from Datastore")
     return False
-
-
-@batch_blueprint.route("/read_and_persist")
-@requires_gae_auth
-def read_and_persist() -> Tuple[str, HTTPStatus]:
-    """Reads all of the messages from Datastore for a region and persists
-    them to the database.
-    """
-
-    region = request.args.get("region")
-
-    if not isinstance(region, str):
-        raise ValueError(f"Expected string region, found [{region}]")
-
-    batch_tags = {
-        monitoring.TagKey.STATUS: "COMPLETED",
-        monitoring.TagKey.PERSISTED: False,
-    }
-    # Note: measurements must be second so it receives the region tag.
-    with monitoring.push_tags(
-        {monitoring.TagKey.REGION: region}
-    ), monitoring.measurements(batch_tags) as measurements:
-        measurements.measure_int_put(m_batch_count, 1)
-
-        session = sessions.get_most_recent_completed_session(
-            region, ScrapeType.BACKGROUND
-        )
-
-        if not session:
-            raise ValueError(
-                f"Most recent session for region [{region}] is unexpectedly None"
-            )
-
-        scrape_type = session.scrape_type
-
-        try:
-            did_persist = persist_to_database(region, session.start)
-            batch_tags[monitoring.TagKey.PERSISTED] = did_persist
-        except Exception as e:
-            logging.exception(
-                "An exception occurred in read and persist: %s", type(e).__name__
-            )
-            batch_tags[monitoring.TagKey.STATUS] = f"ERROR: {type(e).__name__}"
-            sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
-            raise BatchPersistError(region, scrape_type) from e
-
-        if did_persist:
-            next_phase = scrape_phase.next_phase(request.endpoint)
-            sessions.update_phase(session, scrape_phase.ScrapePhase.RELEASE)
-            if next_phase:
-                logging.info("Enqueueing %s for region %s.", next_phase, region)
-                ScraperCloudTaskManager().create_scraper_phase_task(
-                    region_code=region, url=url_for(next_phase)
-                )
-            return "", HTTPStatus.OK
-
-        sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
-        return "", HTTPStatus.ACCEPTED
