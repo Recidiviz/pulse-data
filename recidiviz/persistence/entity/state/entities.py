@@ -973,6 +973,17 @@ class StateSupervisionPeriod(
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.termination_date
 
+    def __attrs_post_init__(self) -> None:
+        if (
+            self.state_code in ("US_TN")
+            and self.termination_reason
+            == StateSupervisionPeriodTerminationReason.DISMISSED
+        ):
+            raise ValueError(
+                "StateSupervisionPeriodTerminationReason.DISMISSED is deprecated for "
+                f"state_code : [{self.state_code}]. This value should not be used."
+            )
+
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):

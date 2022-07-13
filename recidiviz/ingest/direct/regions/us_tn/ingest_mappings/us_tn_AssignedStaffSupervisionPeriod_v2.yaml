@@ -115,7 +115,7 @@ output:
                   # Only 1 instance, in 2001.
                   - TWR # Transfer to work release
 
-                StateSupervisionPeriodTerminationReason.DISMISSED:
+                StateSupervisionPeriodTerminationReason.VACATED:
                   - RVR # Rescinded
           supervision_type:
             $conditional:
