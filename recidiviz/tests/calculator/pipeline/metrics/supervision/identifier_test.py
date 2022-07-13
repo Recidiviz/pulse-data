@@ -86,8 +86,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
     UsIdSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    SupervisionTypeSpan,
-    UsMoSentenceStatus,
+    UsMoIncarcerationSentence,
+    UsMoSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
@@ -144,10 +144,6 @@ from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalizatio
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
-)
-from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
-    FakeUsMoIncarcerationSentence,
-    FakeUsMoSupervisionSentence,
 )
 
 _STATE_CODE = "US_XX"
@@ -2404,106 +2400,62 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
         )
 
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2017, 1, 1),
-                completion_date=date(2018, 5, 19),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=supervision_period_start_date,
-                    end_date=supervision_period_termination_date,
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_start_date,
-                            status_code="15I1000",
-                            status_description="New Court Probation",
-                        )
-                    ],
-                    end_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_termination_date,
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                        )
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=supervision_period_termination_date,
-                    end_date=None,
-                    supervision_type=None,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_termination_date,
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                        )
-                    ],
-                    end_critical_statuses=None,
-                ),
+        base_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            completion_date=date(2018, 5, 19),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+        )
+
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+            sentence=base_supervision_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_supervision_sentence.external_id,
+                    "sentence_status_external_id": f"{base_supervision_sentence.external_id}-3",
+                    "status_code": "15I1000",
+                    "status_date": "20180305",
+                    "status_description": "New Court Probation",
+                },
+                {
+                    "sentence_external_id": base_supervision_sentence.external_id,
+                    "sentence_status_external_id": f"{base_supervision_sentence.external_id}-4",
+                    "status_code": "99O1000",
+                    "status_date": "20180519",
+                    "status_description": "Court Probation Discharge",
+                },
             ],
         )
 
-        incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
-            StateIncarcerationSentence.new_with_defaults(
-                state_code="US_MO",
-                incarceration_sentence_id=123,
-                external_id="is1",
-                start_date=date(2017, 1, 1),
-                completion_date=date(2018, 5, 19),
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=supervision_period_start_date,
-                    end_date=supervision_period_termination_date,
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_start_date,
-                            status_code="15I1000",
-                            status_description="New Court Probation",
-                        )
-                    ],
-                    end_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_termination_date,
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                        )
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=supervision_period_termination_date,
-                    end_date=None,
-                    supervision_type=None,
-                    start_critical_statuses=[
-                        UsMoSentenceStatus(
-                            sentence_external_id="123",
-                            sentence_status_external_id="test-status-2",
-                            status_date=supervision_period_termination_date,
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                        )
-                    ],
-                    end_critical_statuses=None,
-                ),
+        base_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_MO",
+            incarceration_sentence_id=123,
+            external_id="is1",
+            start_date=date(2017, 1, 1),
+            completion_date=date(2018, 5, 19),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(
+            sentence=base_incarceration_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_incarceration_sentence.external_id,
+                    "sentence_status_external_id": f"{base_incarceration_sentence.external_id}-3",
+                    "status_code": "15I1000",
+                    "status_date": "20180305",
+                    "status_description": "New Court Probation",
+                },
+                {
+                    "sentence_external_id": base_incarceration_sentence.external_id,
+                    "sentence_status_external_id": f"{base_incarceration_sentence.external_id}-4",
+                    "status_code": "99O1000",
+                    "status_date": "20180519",
+                    "status_description": "Court Probation Discharge",
+                },
             ],
         )
 

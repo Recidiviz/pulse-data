@@ -24,8 +24,8 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
     clear_entity_id_index_cache,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    SupervisionTypeSpan,
     UsMoSentenceStatus,
+    UsMoSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_normalization_delegate import (
     UsMoSupervisionNormalizationDelegate,
@@ -44,9 +44,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-)
-from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
-    FakeUsMoSupervisionSentence,
 )
 
 
@@ -104,73 +101,46 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             ],
         )
 
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2020, 9, 1),
-                completion_date=date(2020, 10, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 1),
-                    end_date=date(2020, 9, 15),
-                    supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="40O1010",
-                            status_description="Parole Release",
-                            status_date=date(2020, 9, 1),
-                        )
-                    ],
-                    end_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O2010",
-                            status_description="Parole Discharge",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 15),
-                    end_date=date(2020, 10, 1),
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O2010",
-                            status_description="Parole Discharge",
-                            status_date=date(2020, 9, 15),
-                        ),
-                        self._build_sentence_status(
-                            status_code="15I1000",
-                            status_description="New Court Probation",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                    end_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                            status_date=date(2020, 10, 1),
-                        )
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=date(2020, 10, 1),
-                    end_date=None,
-                    supervision_type=None,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                            status_date=date(2020, 10, 1),
-                        )
-                    ],
-                    end_critical_statuses=None,
-                ),
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2020, 9, 1),
+            completion_date=date(2020, 10, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+        )
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+            sentence=base_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-1",
+                    "status_code": "40O1010",
+                    "status_date": "20200901",
+                    "status_description": "Parole Release",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-2",
+                    "status_code": "99O2010",
+                    "status_date": "20200915",
+                    "status_description": "Parole Discharge",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-3",
+                    "status_code": "15I1000",
+                    "status_date": "20200915",
+                    "status_description": "New Court Probation",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-4",
+                    "status_code": "99O1000",
+                    "status_date": "20201001",
+                    "status_description": "Court Probation Discharge",
+                },
             ],
         )
 
@@ -230,73 +200,46 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         self.assertEqual(expected_periods, results)
 
     def test_split_periods_based_on_sentences_no_periods(self) -> None:
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2020, 9, 1),
-                completion_date=date(2020, 10, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 1),
-                    end_date=date(2020, 9, 15),
-                    supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="40O1010",
-                            status_description="Parole Release",
-                            status_date=date(2020, 9, 1),
-                        )
-                    ],
-                    end_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O2010",
-                            status_description="Parole Discharge",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 15),
-                    end_date=date(2020, 10, 1),
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O2010",
-                            status_description="Parole Discharge",
-                            status_date=date(2020, 9, 15),
-                        ),
-                        self._build_sentence_status(
-                            status_code="15I1000",
-                            status_description="New Court Probation",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                    end_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                            status_date=date(2020, 10, 1),
-                        )
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=date(2020, 10, 1),
-                    end_date=None,
-                    supervision_type=None,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O1000",
-                            status_description="Court Probation Discharge",
-                            status_date=date(2020, 10, 1),
-                        )
-                    ],
-                    end_critical_statuses=None,
-                ),
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2020, 9, 1),
+            completion_date=date(2020, 10, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+        )
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+            sentence=base_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-1",
+                    "status_code": "40O1010",
+                    "status_date": "20200901",
+                    "status_description": "Parole Release",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-2",
+                    "status_code": "99O2010",
+                    "status_date": "20200915",
+                    "status_description": "Parole Discharge",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-3",
+                    "status_code": "15I1000",
+                    "status_date": "20200915",
+                    "status_description": "New Court Probation",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-4",
+                    "status_code": "99O1000",
+                    "status_date": "20201001",
+                    "status_description": "Court Probation Discharge",
+                },
             ],
         )
 
@@ -349,49 +292,39 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             supervision_type=None,
         )
 
-        supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
-            StateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2020, 9, 1),
-                completion_date=date(2020, 10, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-            ),
-            supervision_type_spans=[
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 1),
-                    end_date=date(2020, 9, 15),
-                    supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="40O1010",
-                            status_description="Parole Release",
-                            status_date=date(2020, 9, 1),
-                        )
-                    ],
-                    end_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="99O2010",
-                            status_description="Parole Discharge",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                ),
-                SupervisionTypeSpan(
-                    start_date=date(2020, 9, 15),
-                    end_date=None,
-                    supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-                    start_critical_statuses=[
-                        self._build_sentence_status(
-                            status_code="15I1000",
-                            status_description="New Court Probation",
-                            status_date=date(2020, 9, 15),
-                        ),
-                    ],
-                    end_critical_statuses=None,
-                ),
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2020, 9, 1),
+            completion_date=date(2020, 10, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+        )
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+            sentence=base_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-1",
+                    "status_code": "40O1010",
+                    "status_date": "20200901",
+                    "status_description": "Parole Release",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-2",
+                    "status_code": "99O2010",
+                    "status_date": "20200915",
+                    "status_description": "Parole Discharge",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-3",
+                    "status_code": "15I1000",
+                    "status_date": "20200915",
+                    "status_description": "New Court Probation",
+                },
             ],
         )
 

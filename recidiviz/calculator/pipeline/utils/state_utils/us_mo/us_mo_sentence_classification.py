@@ -504,9 +504,7 @@ class UsMoIncarcerationSentence(
         cls,
         sentence: StateIncarcerationSentence,
         sentence_statuses_raw: List[Dict[str, Any]],
-        subclass_args: Optional[Dict[str, Any]] = None,
     ) -> "UsMoIncarcerationSentence":
-        subclass_args = subclass_args if subclass_args else {}
         sentence_statuses_converted = [
             UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
             for status_dict_raw in sentence_statuses_raw
@@ -516,7 +514,6 @@ class UsMoIncarcerationSentence(
             **sentence.__dict__,
             "base_sentence": sentence,
             "sentence_statuses": sentence_statuses_converted,
-            **subclass_args,
         }
 
         return cls(**sentence_dict)  # type: ignore
@@ -531,9 +528,7 @@ class UsMoSupervisionSentence(
         cls,
         sentence: StateSupervisionSentence,
         sentence_statuses_raw: List[Dict[str, Any]],
-        subclass_args: Optional[Dict[str, Any]] = None,
     ) -> "UsMoSupervisionSentence":
-        subclass_args = subclass_args if subclass_args else {}
         sentence_statuses_converted = [
             UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
             for status_dict_raw in sentence_statuses_raw
@@ -542,7 +537,6 @@ class UsMoSupervisionSentence(
             **sentence.__dict__,
             "base_sentence": sentence,
             "sentence_statuses": sentence_statuses_converted,
-            **subclass_args,
         }
 
         return cls(**sentence_dict)  # type: ignore
