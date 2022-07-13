@@ -20,7 +20,7 @@
 import os
 import string
 from functools import partial
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy
 from faker import Faker
@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
+    DirectIngestRawDataTableUnnormalizedLatestRowsView,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
@@ -153,7 +153,7 @@ class RawDataFixturesGenerator:
 
     def build_query_for_raw_table(
         self,
-        table: str,
+        raw_table_view: DirectIngestRawDataTableUnnormalizedLatestRowsView,
         person_external_id_columns: List[str],
     ) -> str:
 
@@ -166,7 +166,7 @@ class RawDataFixturesGenerator:
         )
 
         id_filter_condition = (
-            f"WHERE {person_external_id_column} IN ({filter_by_values})"
+            f"AND {person_external_id_column} IN ({filter_by_values})"
             if person_external_id_column
             else ""
         )
@@ -177,14 +177,14 @@ class RawDataFixturesGenerator:
                     f" OR {person_external_id_column} IN ({filter_by_values})"
                 )
 
-        query_str = f"SELECT * FROM {table} {id_filter_condition};"
+        query_str = f"{raw_table_view.view_query}{id_filter_condition};"
         print(query_str)
         return query_str
 
     def validate_dateset_and_view_exist(
         self, raw_table_config: DirectIngestRawFileConfig
-    ) -> Tuple[DirectIngestRawDataTableLatestView, bigquery.DatasetReference]:
-        raw_table_view = DirectIngestRawDataTableLatestView(
+    ) -> DirectIngestRawDataTableUnnormalizedLatestRowsView:
+        raw_table_view = DirectIngestRawDataTableUnnormalizedLatestRowsView(
             project_id=self.project_id,
             region_code=self.region_code,
             raw_file_config=raw_table_config,
@@ -192,15 +192,15 @@ class RawDataFixturesGenerator:
             should_deploy_predicate=(lambda: False),
         )
         dataset_ref = bigquery.DatasetReference.from_string(
-            raw_table_view.dataset_id, default_project=raw_table_view.project
+            raw_table_view.raw_table_dataset_id, default_project=raw_table_view.project
         )
         if not self.bq_client.table_exists(
-            dataset_ref, table_id=raw_table_view.view_id
+            dataset_ref, table_id=raw_table_view.raw_file_config.file_tag
         ):
             raise Exception(
-                f"Table [{raw_table_view.dataset_id}].[{raw_table_view.view_id}] does not exist, exiting."
+                f"Table [{raw_table_view.raw_table_dataset_id}].[{raw_table_view.raw_file_config.file_tag}] does not exist, exiting."
             )
-        return raw_table_view, dataset_ref
+        return raw_table_view
 
     def randomize_column_data(
         self,
@@ -284,9 +284,7 @@ class RawDataFixturesGenerator:
         """Queries BigQuery for the provided raw table and writes the results to CSV."""
         for raw_table_config in self.ingest_view_raw_table_configs:
             raw_table_file_tag = raw_table_config.file_tag
-            raw_table_view, dataset_ref = self.validate_dateset_and_view_exist(
-                raw_table_config
-            )
+            raw_table_view = self.validate_dateset_and_view_exist(raw_table_config)
 
             # Write fixtures to this path
             output_fixture_path = self.get_output_fixture_path(raw_table_file_tag)
@@ -310,7 +308,7 @@ class RawDataFixturesGenerator:
                 )
 
             query_str = self.build_query_for_raw_table(
-                table=f"{self.project_id}.{dataset_ref.dataset_id}.{raw_table_view.view_id}",
+                raw_table_view=raw_table_view,
                 person_external_id_columns=person_external_id_columns,
             )
 

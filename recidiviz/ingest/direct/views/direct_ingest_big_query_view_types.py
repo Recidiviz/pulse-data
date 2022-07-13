@@ -18,7 +18,7 @@
 import re
 import string
 from enum import Enum, auto
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import attr
 
@@ -101,9 +101,8 @@ SELECT *
 FROM normalized_rows
 """
 
-
 # A query for looking at the most recent row for each primary key
-RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
+RAW_DATA_UNNORMALIZED_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
     SELECT
         {columns_clause},
@@ -111,20 +110,13 @@ WITH rows_with_recency_rank AS (
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
-),
-normalized_rows AS (
-    SELECT
-        {normalized_columns}
-    FROM
-        rows_with_recency_rank
-    WHERE
-        recency_rank = 1
 )
-SELECT *
-FROM normalized_rows
+SELECT * EXCEPT (recency_rank)
+FROM rows_with_recency_rank
+WHERE recency_rank = 1
 """
 
-RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = """
+RAW_DATA_UNNORMALIZED_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = """
 WITH max_update_datetime AS (
     SELECT
         MAX(update_datetime) AS update_datetime
@@ -148,17 +140,27 @@ rows_with_recency_rank AS (
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
     WHERE
         file_id = (SELECT file_id FROM max_file_id)
-),
-normalized_rows AS (
-    SELECT
-        {normalized_columns}
-    FROM
-        rows_with_recency_rank
-    WHERE
-        recency_rank = 1
 )
-SELECT *
-FROM normalized_rows
+SELECT * EXCEPT (recency_rank)
+FROM rows_with_recency_rank
+WHERE recency_rank = 1
+"""
+
+# A query for looking at the most recent row for each primary key with normalized column values
+RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = f"""
+WITH unnormalized_latest AS (
+{RAW_DATA_UNNORMALIZED_LATEST_VIEW_QUERY_TEMPLATE}
+)
+SELECT {{normalized_columns}}
+FROM unnormalized_latest
+"""
+
+RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = f"""
+WITH unnormalized_latest AS (
+{RAW_DATA_UNNORMALIZED_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE}
+)
+SELECT {{normalized_columns}}
+FROM unnormalized_latest
 """
 
 DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
@@ -217,13 +219,13 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides] = None,
-        include_undocumented_columns: bool = False,
+        **additional_query_template_kwargs: Any,
     ):
         view_dataset_id = raw_latest_views_dataset_for_region(
             region_code=region_code.lower(),
             sandbox_dataset_prefix=None,
         )
-        raw_table_dataset_id = raw_tables_dataset_for_region(
+        self.raw_table_dataset_id = raw_tables_dataset_for_region(
             region_code,
             sandbox_dataset_prefix=None,
         )
@@ -231,23 +233,20 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(
             raw_file_config
         )
-        normalized_columns = self._normalized_columns_for_config(
-            raw_file_config, include_undocumented_columns
-        )
         super().__init__(
             project_id=project_id,
             dataset_id=view_dataset_id,
             view_id=view_id,
             description=description,
             view_query_template=view_query_template,
-            raw_table_dataset_id=raw_table_dataset_id,
+            raw_table_dataset_id=self.raw_table_dataset_id,
             raw_table_name=raw_file_config.file_tag,
             raw_table_primary_key_str=raw_file_config.primary_key_str,
             columns_clause=columns_clause,
-            normalized_columns=normalized_columns,
             supplemental_order_by_clause=supplemental_order_by_clause,
             address_overrides=address_overrides,
             should_deploy_predicate=should_deploy_predicate,
+            **additional_query_template_kwargs,
         )
         self.raw_file_config = raw_file_config
 
@@ -286,8 +285,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         return columns_str
 
     @staticmethod
-    def _normalized_columns_for_config(
-        raw_file_config: DirectIngestRawFileConfig, include_undocumented_columns: bool
+    def normalized_columns_for_config(
+        raw_file_config: DirectIngestRawFileConfig,
+        include_undocumented_columns: bool,
     ) -> str:
         # Right now this only performs normalization for datetime columns, but in the future
         # this method can be expanded to normalize other values.
@@ -330,8 +330,8 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
 
 
 class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
-    """A BigQuery view with a query for the given |raw_table_name|, which when used will load the most up-to-date values
-    of all rows in that table.
+    """A BigQuery view with a query for the given |raw_table_name|, which when used will
+    load the most up-to-date normalized values of all rows in that table.
     """
 
     def __init__(
@@ -359,16 +359,20 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
             raw_file_config=raw_file_config,
             address_overrides=address_overrides,
             should_deploy_predicate=should_deploy_predicate,
+            normalized_columns=self.normalized_columns_for_config(
+                raw_file_config, include_undocumented_columns=False
+            ),
         )
 
 
-# NOTE: BigQuery does not support parametrized queries for views, so we can't actually upload this as a view until this
-# issue is resolved: https://issuetracker.google.com/issues/35905221. For now, we construct it like a BigQueryView, but
-# just use the view_query field to get a query we can execute to pull data in direct ingest.
+# NOTE: BigQuery does not support parametrized queries for views, so we can't actually
+# upload this as a view until this issue is resolved: https://issuetracker.google.com/issues/35905221.
+# For now, we construct it like a BigQueryView, but just use the view_query field to get
+# a query we can execute to pull data in direct ingest.
 class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView):
-    """A view with a parametrized query for the given |raw_file_config|. The caller is responsible for filling out
-    the parameter. When used, this query will load all rows in the provided table up to the date of the provided date
-    parameter.
+    """A view with a parametrized query for the given |raw_file_config|. The caller is
+    responsible for filling out the parameter. When used, this query will load all rows
+    in the provided table up to the date of the provided date parameter.
     """
 
     def __init__(
@@ -393,8 +397,42 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
             description=description,
             view_query_template=view_query_template,
             raw_file_config=raw_file_config,
-            include_undocumented_columns=include_undocumented_columns,
             should_deploy_predicate=None,
+            normalized_columns=self.normalized_columns_for_config(
+                raw_file_config, include_undocumented_columns
+            ),
+        )
+
+
+class DirectIngestRawDataTableUnnormalizedLatestRowsView(
+    DirectIngestRawDataTableBigQueryView
+):
+    """A view with a query for the most recent rows for a given raw data table. The values
+    are not normalized."""
+
+    def __init__(
+        self,
+        *,
+        project_id: str = None,
+        region_code: str,
+        raw_file_config: DirectIngestRawFileConfig,
+        should_deploy_predicate: Optional[Callable[[], bool]],
+    ) -> None:
+        view_id = f"{raw_file_config.file_tag}_unnormalized_latest_rows"
+        description = f"{raw_file_config.file_tag} unnormalized latest rows view"
+        view_query_template = (
+            RAW_DATA_UNNORMALIZED_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
+            if raw_file_config.always_historical_export
+            else RAW_DATA_UNNORMALIZED_LATEST_VIEW_QUERY_TEMPLATE
+        )
+        super().__init__(
+            project_id=project_id,
+            region_code=region_code,
+            view_id=view_id,
+            description=description,
+            view_query_template=view_query_template,
+            raw_file_config=raw_file_config,
+            should_deploy_predicate=should_deploy_predicate,
         )
 
 

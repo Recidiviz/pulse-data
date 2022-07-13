@@ -466,7 +466,7 @@ FROM periods
 WHERE status = 'IN' AND (next_status = 'OUT' OR next_status IS NULL)
 """
 
-# TODO(#12834) Add ingest view tests.
+# TODO(#13970) Add ingest view tests.
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_mi",
     ingest_view_name="incarceration_periods",
