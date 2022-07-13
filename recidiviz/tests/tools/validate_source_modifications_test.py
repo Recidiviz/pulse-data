@@ -158,17 +158,17 @@ class CheckAssertionsTest(unittest.TestCase):
     def test_endpoint_docs_unhappy(self) -> None:
         modified_files = [
             "recidiviz/ingest/direct/direct_ingest_control.py",
-            "recidiviz/ingest/aggregate/single_count.py",
+            "recidiviz/metrics/export/view_export_manager.py",
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
-                frozenset(["recidiviz/ingest/aggregate/single_count.py"]),
-                frozenset(["docs/endpoints/single_count/single_count.md"]),
+                frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
+                frozenset(["docs/endpoints/direct"]),
                 "endpoints_docs",
             ),
             (
-                frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
-                frozenset(["docs/endpoints/direct"]),
+                frozenset(["recidiviz/metrics/export/view_export_manager.py"]),
+                frozenset(["docs/endpoints/export"]),
                 "endpoints_docs",
             ),
         ]
