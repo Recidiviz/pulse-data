@@ -141,6 +141,7 @@ class GCSFileSystem:
         path: GcsfsFilePath,
         contents_handle: FileContentsHandle,
         content_type: str,
+        timeout: int = 60,
     ) -> None:
         """Uploads contents in handle via a file stream to a file path."""
 
@@ -397,11 +398,12 @@ class GCSFileSystemImpl(GCSFileSystem):
         path: GcsfsFilePath,
         contents_handle: FileContentsHandle,
         content_type: str,
+        timeout: int = 60,
     ) -> None:
         bucket = self.storage_client.bucket(path.bucket_name)
         with contents_handle.open("rb") as file_stream:
             bucket.blob(path.blob_name).upload_from_file(
-                file_stream, content_type=content_type
+                file_stream, content_type=content_type, timeout=timeout
             )
 
     @retry.Retry(predicate=retry_predicate)
