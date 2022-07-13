@@ -534,6 +534,10 @@ WITH date_array AS (
         date,
         DATE_DIFF(date, first_officer_date, DAY) AS officer_tenure_days,
         COUNT(DISTINCT c.person_id) AS caseload_all,
+        # caseload transcending office
+        SUM(COUNT(DISTINCT c.person_id)) OVER (
+            PARTITION BY b.state_code, b.supervising_officer_external_id, date
+        ) AS caseload_all_officer,
         COUNT(DISTINCT IF(compartment_level_1 = "SUPERVISION_OUT_OF_STATE", 
             c.person_id, NULL)) AS caseload_out_of_state,
         COUNT(DISTINCT IF(compartment_level_2 IN ("PAROLE", "DUAL"), c.person_id, NULL)
@@ -659,8 +663,7 @@ WITH date_array AS (
 ##################
 
 # Aggregate all event metrics. All aggregation functions should account for duplicated rows (i.e., using COUNT DISTINCT).
-,
-event_metrics_agg AS (
+, event_metrics_agg AS (
     SELECT
         # index columns
         {join_columns},
@@ -743,14 +746,18 @@ event_metrics_agg AS (
 )
 
 # Aggregate all window metrics
-,
-window_metrics_agg AS
+, window_metrics_agg AS
 (
     SELECT
         # index columns
         {join_columns},
         # assignments to officer-office within year
         COUNT(DISTINCT window_metrics.person_id) AS new_clients_assigned,
+        
+        # new clients assigned, transcending office
+        SUM(COUNT(DISTINCT window_metrics.person_id)) OVER (
+            PARTITION BY state_code, supervising_officer_external_id, date
+        ) AS new_clients_assigned_officer,
 
         # window metrics since initial officer-office assignment
         SUM(window_metrics.days_employed_1yr) AS days_employed_1yr,
@@ -773,8 +780,7 @@ window_metrics_agg AS
 )
 
 # Join caseload attributes, event metrics, and window metrics
-SELECT
-    *
+SELECT *
 FROM
     caseload_attributes
 LEFT JOIN event_metrics_agg

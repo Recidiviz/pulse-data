@@ -182,6 +182,7 @@ WITH date_range AS (
         
         # sum within {level} on `date`
         SUM(caseload_all) AS caseload_all,
+        AVG(caseload_all_officer) AS avg_caseload_all_officer,
         SUM(caseload_out_of_state) AS caseload_out_of_state,
         SUM(caseload_parole) AS caseload_parole,
         SUM(caseload_probation) AS caseload_probation,
@@ -240,14 +241,25 @@ WITH date_range AS (
         SUM(contacts_home_visit) AS contacts_home_visit,
         SUM(caseload_no_completed_contact_past_1yr) AS caseload_no_completed_contact_past_1yr,
         SUM(new_clients_assigned) AS new_clients_assigned,
+        AVG(new_clients_assigned_officer) AS avg_new_clients_assigned_officer,
         SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
         SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
         SUM(days_to_first_incarceration_1yr) AS days_to_first_incarceration_1yr,
         SUM(days_employed_1yr) AS days_employed_1yr,
         SUM(max_days_stable_employment_1yr) AS max_days_stable_employment_1yr,
         SUM(num_unique_employers_1yr) AS num_unique_employers_1yr,
-    FROM
-        `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
+    FROM (
+        # keep one observation per officer-date for officer metrics that transcend office
+        SELECT
+            * EXCEPT(caseload_all_officer, new_clients_assigned_officer),
+            IF(ROW_NUMBER() OVER w = 1, caseload_all_officer, NULL) AS caseload_all_officer,
+            IF(ROW_NUMBER() OVER w = 1, new_clients_assigned_officer, NULL) AS new_clients_assigned_officer,
+        FROM
+            `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
+        WINDOW w AS (
+            PARTITION BY {index_cols}{", supervising_officer_external_id" if level != "officer" else ""}, date
+        )
+    )
     GROUP BY {index_cols}, date
 )
 
@@ -263,6 +275,7 @@ SELECT
     
     # caseload attributes, averaged across days
     AVG(caseload_all) AS avg_daily_caseload,
+    AVG(avg_caseload_all_officer) AS avg_daily_caseload_officer,
     AVG(caseload_out_of_state) AS avg_caseload_out_of_state,
     AVG(caseload_parole) AS avg_caseload_parole,
     AVG(caseload_probation) AS avg_caseload_probation,
@@ -317,6 +330,7 @@ SELECT
     SUM(contacts_home_visit) AS contacts_home_visit,
     AVG(caseload_no_completed_contact_past_1yr) AS avg_caseload_no_completed_contact_past_1yr,
     SUM(new_clients_assigned) AS new_clients_assigned,
+    SUM(avg_new_clients_assigned_officer) AS avg_new_clients_assigned_officer,
     SUM(days_since_assignment_1yr) AS days_since_assignment_1yr,
     SUM(days_incarcerated_1yr) AS days_incarcerated_1yr,
     SUM(days_to_first_incarceration_1yr) AS days_to_first_incarceration_1yr,
