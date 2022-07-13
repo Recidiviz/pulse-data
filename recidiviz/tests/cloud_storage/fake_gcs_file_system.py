@@ -197,6 +197,7 @@ class FakeGCSFileSystem(GCSFileSystem):
         path: GcsfsFilePath,
         contents_handle: FileContentsHandle,
         content_type: str,
+        timeout: int = 60,
     ) -> None:
         temp_path = generate_random_temp_path()
         if isinstance(contents_handle, LocalFileContentsHandle):

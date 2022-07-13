@@ -146,10 +146,13 @@ class BrokenGCSFSFakeSystem(FakeGCSFileSystem):
         path: GcsfsFilePath,
         contents_handle: FileContentsHandle,
         content_type: str,
+        timeout: int = 60,
     ) -> None:
         if "file1" in path.abs_path():
             raise IOError
-        super().upload_from_contents_handle_stream(path, contents_handle, content_type)
+        super().upload_from_contents_handle_stream(
+            path, contents_handle, content_type, timeout
+        )
 
     def delete(self, path: GcsfsFilePath) -> None:
         raise ValueError

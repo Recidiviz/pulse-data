@@ -246,9 +246,10 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         path: GcsfsFilePath,
         contents_handle: FileContentsHandle,
         content_type: str,
+        timeout: int = 60,
     ) -> None:
         return self.gcs_file_system.upload_from_contents_handle_stream(
-            path, contents_handle, content_type
+            path, contents_handle, content_type, timeout
         )
 
     def ls_with_blob_prefix(
