@@ -312,6 +312,7 @@ state_supervision_period_termination_reason_return_to_incarceration = (
 )
 state_supervision_period_termination_reason_revocation = "REVOCATION"
 state_supervision_period_termination_reason_suspension = "SUSPENSION"
+state_supervision_period_termination_reason_vacated = "VACATED"
 
 # state_supervision_case_type_entry.py
 state_supervision_case_type_domestic_violence = "DOMESTIC_VIOLENCE"

@@ -74,6 +74,7 @@ SUPERVISION_TERMINATION_REASON_ORDERED_PRIORITY = [
     StateSupervisionPeriodTerminationReason.PARDONED,
     StateSupervisionPeriodTerminationReason.COMMUTED,
     StateSupervisionPeriodTerminationReason.DISMISSED,
+    StateSupervisionPeriodTerminationReason.VACATED,
     StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     StateSupervisionPeriodTerminationReason.INVESTIGATION,
