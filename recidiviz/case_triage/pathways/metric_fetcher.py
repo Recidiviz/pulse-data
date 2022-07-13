@@ -28,14 +28,15 @@ from recidiviz.case_triage.pathways.metric_queries import (
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 
 
 @attr.s(auto_attribs=True)
 class PathwaysMetricFetcher:
     """Interface for fetching metrics from Cloud SQL"""
 
-    state_code: StateCode
+    # TODO(#13950): Replace with StateCode
+    state_code: _FakeStateCode
     database_manager: PathwaysDatabaseManager = attr.ib(factory=PathwaysDatabaseManager)
 
     @cached_property

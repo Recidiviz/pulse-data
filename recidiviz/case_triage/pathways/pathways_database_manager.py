@@ -22,7 +22,7 @@ from sqlalchemy.orm import sessionmaker
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -54,7 +54,8 @@ class PathwaysDatabaseManager:
             for state_code, database_key in self.database_keys.items()
         }
 
-    def get_pathways_session(self, state_code: StateCode) -> sessionmaker:
+    # TODO(#13950): Replace with StateCode
+    def get_pathways_session(self, state_code: _FakeStateCode) -> sessionmaker:
         if state_code.value not in get_pathways_enabled_states():
             raise ValueError(f"StateCode {state_code} does not have Pathways enabled")
 
