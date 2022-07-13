@@ -291,6 +291,9 @@ state_supervision_period_supervision_level_unsupervised = "UNSUPERVISED"
 state_supervision_period_supervision_level_unassigned = "UNASSIGNED"
 
 state_supervision_period_termination_reason_absconsion = "ABSCONSION"
+state_supervision_period_termination_reason_admitted_to_incarceration = (
+    "ADMITTED_TO_INCARCERATION"
+)
 state_supervision_period_termination_reason_commuted = "COMMUTED"
 state_supervision_period_termination_reason_death = "DEATH"
 state_supervision_period_termination_reason_discharge = "DISCHARGE"

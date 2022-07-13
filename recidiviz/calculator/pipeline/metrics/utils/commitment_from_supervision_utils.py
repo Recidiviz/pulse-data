@@ -341,6 +341,7 @@ def _get_commitment_from_supervision_supervision_period(
         prioritized_termination_reasons = [
             StateSupervisionPeriodTerminationReason.REVOCATION,
             StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         ]
         prioritize_a = period_a.termination_reason in prioritized_termination_reasons
         prioritize_b = period_b.termination_reason in prioritized_termination_reasons

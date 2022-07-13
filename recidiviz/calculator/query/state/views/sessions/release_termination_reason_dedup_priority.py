@@ -66,6 +66,7 @@ SUPERVISION_TERMINATION_REASON_ORDERED_PRIORITY = [
     StateSupervisionPeriodTerminationReason.DISCHARGE,
     StateSupervisionPeriodTerminationReason.EXPIRATION,
     StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+    StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
     StateSupervisionPeriodTerminationReason.REVOCATION,
     StateSupervisionPeriodTerminationReason.ABSCONSION,
     StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,

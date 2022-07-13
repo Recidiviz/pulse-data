@@ -1118,6 +1118,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriodTerminationReason.ABSCONSION,
             StateSupervisionPeriodTerminationReason.REVOCATION,
             StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         ):
             return True, False
 
