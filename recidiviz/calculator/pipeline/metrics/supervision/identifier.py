@@ -1109,6 +1109,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriodTerminationReason.DISMISSED,
             StateSupervisionPeriodTerminationReason.EXPIRATION,
             StateSupervisionPeriodTerminationReason.PARDONED,
+            StateSupervisionPeriodTerminationReason.VACATED,
         ):
             return True, True
 

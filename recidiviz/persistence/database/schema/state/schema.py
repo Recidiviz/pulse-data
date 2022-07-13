@@ -378,6 +378,7 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration,
     state_enum_strings.state_supervision_period_termination_reason_revocation,
     state_enum_strings.state_supervision_period_termination_reason_suspension,
+    state_enum_strings.state_supervision_period_termination_reason_vacated,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_supervision_period_termination_reason",

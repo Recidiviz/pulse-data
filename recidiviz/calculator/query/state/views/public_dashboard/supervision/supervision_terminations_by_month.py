@@ -39,7 +39,7 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
         month,
         supervision_type,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
-        LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','DISMISSED','EXPIRATION','PARDONED')) as successful_termination,
+        LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','DISMISSED','EXPIRATION','PARDONED', 'VACATED')) as successful_termination,
         person_id,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`,
       {district_dimension}

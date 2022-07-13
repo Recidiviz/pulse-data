@@ -395,6 +395,7 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     SUSPENSION = (
         state_enum_strings.state_supervision_period_termination_reason_suspension
     )
+    VACATED = state_enum_strings.state_supervision_period_termination_reason_vacated
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -443,7 +444,7 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "pardoned, there is immediate release from any active form of incarceration or "
     "supervision related to the pardoned conviction. This is different from `COMMUTED` "
     "because the person’s conviction is completely cleared when they are pardoned. "
-    "This is distinct from `DISMISSED`, because the conviction is still legally valid, "
+    "This is distinct from `VACATED`, because the conviction is still legally valid, "
     "it has just been forgiven.",
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: "Used when a "
     "person’s period of absconsion has ended. See "
@@ -473,6 +474,13 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "person has transferred to a new supervising officer, or when an attribute of the "
     "supervision period has changed (e.g. when the person is downgraded to a lower "
     "`StateSupervisionLevel`).",
+    StateSupervisionPeriodTerminationReason.VACATED: "Used when a person is "
+    "discharged because the legal judgment on their conviction has become legally "
+    "void, their conviction has been overturned, or their case has been dismissed. "
+    "When a sentence is vacated, there is immediate release from any active form of "
+    "incarceration or supervision related to the vacated conviction. This is distinct "
+    "from `PARDONED`, because the sentence was cleared as a result of it being deemed "
+    "legally void.",
 }
 
 
@@ -553,6 +561,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     "REVOKED": StateSupervisionPeriodTerminationReason.REVOCATION,
     "SUSPENDED": StateSupervisionPeriodTerminationReason.SUSPENSION,
     "SUSPENSION": StateSupervisionPeriodTerminationReason.SUSPENSION,
+    "VACATED": StateSupervisionPeriodTerminationReason.VACATED,
 }
 
 
