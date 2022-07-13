@@ -203,7 +203,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             termination_date=date(2010, 3, 30),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
             supervision_site="XXX",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
