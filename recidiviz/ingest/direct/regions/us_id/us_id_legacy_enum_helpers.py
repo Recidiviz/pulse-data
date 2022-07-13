@@ -114,7 +114,7 @@ def _supervision_history_termination_reason_mapper(
     if location_name in DECEASED_LOCATION_NAMES:
         return StateSupervisionPeriodTerminationReason.DEATH
     if location_name == DISMISSED_LOCATION_NAME:
-        return StateSupervisionPeriodTerminationReason.DISMISSED
+        return StateSupervisionPeriodTerminationReason.VACATED
     if location_name in PARDONED_LOCATION_NAMES:
         return StateSupervisionPeriodTerminationReason.PARDONED
 
