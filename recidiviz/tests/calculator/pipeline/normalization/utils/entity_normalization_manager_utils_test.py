@@ -243,7 +243,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2017, 5, 1),
             termination_date=datetime.date(2018, 2, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
 
         with self.assertRaises(ValueError):

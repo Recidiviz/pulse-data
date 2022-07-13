@@ -361,6 +361,9 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_absconsion
     )
+    ADMITTED_TO_INCARCERATION = (
+        state_enum_strings.state_supervision_period_termination_reason_admitted_to_incarceration
+    )
     COMMUTED = state_enum_strings.state_supervision_period_termination_reason_commuted
     DEATH = state_enum_strings.state_supervision_period_termination_reason_death
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
@@ -416,6 +419,12 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     StateSupervisionPeriodTerminationReason.ABSCONSION: "Used when a person is "
     "absconding (when the person on supervision has stopped reporting to their "
     "supervising officer, and the officer cannot contact or locate them).",
+    StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION: "Used when a "
+    "person’s supervision has ended because the person has been admitted to "
+    "incarceration. If the raw data indicates that this admission is due to a "
+    "revocation of supervision, then `REVOCATION` should be used. All other "
+    "terminations due to admissions to incarceration from supervision should use "
+    "this value.",
     StateSupervisionPeriodTerminationReason.COMMUTED: "Describes a person being "
     "discharged from supervision because their sentence has been commuted. "
     "“Commutation” is a reduction of a sentence to a lesser period of time. This is "
@@ -541,6 +550,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     "ABSCOND": StateSupervisionPeriodTerminationReason.ABSCONSION,
     "ABSCONDED": StateSupervisionPeriodTerminationReason.ABSCONSION,
     "ABSCONSION": StateSupervisionPeriodTerminationReason.ABSCONSION,
+    "ADMITTED TO INCARCERATION": StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
     "COMMUTED": StateSupervisionPeriodTerminationReason.COMMUTED,
     "DEATH": StateSupervisionPeriodTerminationReason.DEATH,
     "DECEASED": StateSupervisionPeriodTerminationReason.DEATH,
