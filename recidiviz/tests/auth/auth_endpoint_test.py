@@ -92,6 +92,9 @@ class AuthEndpointTests(TestCase):
             self.dashboard_user_restrictions_by_email_url = flask.url_for(
                 "auth_endpoint_blueprint.dashboard_user_restrictions_by_email"
             )
+            self.dashboard_user_restrictions = flask.url_for(
+                "auth_endpoint_blueprint.dashboard_user_restrictions"
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -428,3 +431,103 @@ class AuthEndpointTests(TestCase):
                 b"region_code US_MO: Session error",
                 response.data,
             )
+
+    def test_dashboard_user_restrictions_pass(self) -> None:
+        user_1 = generate_fake_user_restrictions(
+            email="test@domain.org",
+            region_code="US_ND",
+            allowed_supervision_location_ids="1, 2",
+            include_hash=False,
+        )
+        add_users_to_database_session(self.database_key, [user_1])
+        with self.app.test_request_context():
+            expected_restrictions = [
+                {
+                    "allowed_supervision_location_ids": "1, 2",
+                    "allowed_supervision_location_level": "level_1_supervision_location",
+                    "can_access_case_triage": False,
+                    "can_access_leadership_dashboard": True,
+                    "restricted_user_email": "test@domain.org",
+                    "routes": None,
+                    "should_see_beta_charts": False,
+                    "state_code": "US_ND",
+                }
+            ]
+        response = self.client.get(
+            self.dashboard_user_restrictions,
+            headers=self.headers,
+        )
+        self.assertEqual(expected_restrictions, json.loads(response.data))
+
+    def test_dashboard_user_restrictions_multiple_users(self) -> None:
+        user_1 = generate_fake_user_restrictions(
+            email="test@domain.org",
+            region_code="US_ND",
+            allowed_supervision_location_ids="1, 2",
+            include_hash=False,
+        )
+        user_2 = generate_fake_user_restrictions(
+            email="secondtest@domain.org",
+            region_code="US_PA",
+            allowed_supervision_location_ids="1",
+            include_hash=False,
+            should_see_beta_charts=True,
+            routes={"A": "B", "B": "C"},
+        )
+        user_3 = generate_fake_user_restrictions(
+            email="thirdtest@domain.org",
+            region_code="US_ME",
+            allowed_supervision_location_ids="A, B, C",
+            can_access_leadership_dashboard=False,
+            include_hash=False,
+            can_access_case_triage=True,
+        )
+        add_users_to_database_session(self.database_key, [user_1, user_2, user_3])
+        with self.app.test_request_context():
+            expected_restrictions = [
+                {
+                    "allowed_supervision_location_ids": "1, 2",
+                    "allowed_supervision_location_level": "level_1_supervision_location",
+                    "can_access_case_triage": False,
+                    "can_access_leadership_dashboard": True,
+                    "restricted_user_email": "test@domain.org",
+                    "routes": None,
+                    "should_see_beta_charts": False,
+                    "state_code": "US_ND",
+                },
+                {
+                    "allowed_supervision_location_ids": "1",
+                    "allowed_supervision_location_level": "level_1_supervision_location",
+                    "can_access_case_triage": False,
+                    "can_access_leadership_dashboard": True,
+                    "restricted_user_email": "secondtest@domain.org",
+                    "routes": {"A": "B", "B": "C"},
+                    "should_see_beta_charts": True,
+                    "state_code": "US_PA",
+                },
+                {
+                    "allowed_supervision_location_ids": "A, B, C",
+                    "allowed_supervision_location_level": "level_1_supervision_location",
+                    "can_access_case_triage": True,
+                    "can_access_leadership_dashboard": False,
+                    "restricted_user_email": "thirdtest@domain.org",
+                    "routes": None,
+                    "should_see_beta_charts": False,
+                    "state_code": "US_ME",
+                },
+            ]
+        response = self.client.get(
+            self.dashboard_user_restrictions,
+            headers=self.headers,
+        )
+        self.assertEqual(expected_restrictions, json.loads(response.data))
+
+    def test_dashboard_user_restrictions_no_users(self) -> None:
+        add_users_to_database_session(self.database_key, [])
+        with self.app.test_request_context():
+            expected_restrictions: list[str] = []
+        response = self.client.get(
+            self.dashboard_user_restrictions,
+            headers=self.headers,
+        )
+        self.assertEqual(expected_restrictions, json.loads(response.data))
