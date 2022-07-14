@@ -23,7 +23,7 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Mapping, Tuple, Union
 
 import sqlalchemy.orm.exc
-from flask import Blueprint, request
+from flask import Blueprint, Response, jsonify, request
 from sqlalchemy import func
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
@@ -297,3 +297,22 @@ def _validate_region_code(region_code: str) -> None:
         raise ValueError(
             f"Unknown region_code [{region_code}] received, must be a valid state code."
         )
+
+
+@auth_endpoint_blueprint.route("/dashboard_user_restrictions", methods=["GET"])
+@requires_gae_auth
+def dashboard_user_restrictions() -> Response:
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    # TODO(#8046): Don't use the deprecated session fetcher
+    session = SessionFactory.deprecated__for_database(database_key=database_key)
+    user_restrictions = session.query(
+        DashboardUserRestrictions.restricted_user_email,
+        DashboardUserRestrictions.state_code,
+        DashboardUserRestrictions.allowed_supervision_location_ids,
+        DashboardUserRestrictions.allowed_supervision_location_level,
+        DashboardUserRestrictions.can_access_leadership_dashboard,
+        DashboardUserRestrictions.can_access_case_triage,
+        DashboardUserRestrictions.should_see_beta_charts,
+        DashboardUserRestrictions.routes,
+    )
+    return jsonify([dict(r) for r in user_restrictions])
