@@ -25,7 +25,7 @@ level_1_incarceration_location_external_id,level_2_incarceration_location_extern
 "CWCF",CWCF,""
 "D.O.I.",FEDERAL,""
 "DCC",DCC,LEVEL_I_FACIITY
-"DRDC",DRCD,LEVEL_V_FACILITY
+"DRDC",DRDC,LEVEL_V_FACILITY
 "DWCF",DWCF,LEVEL_V_FACILITY
 "EXT PLACE",OOS,""
 "FCF",FCF,LEVEL_III_FACILITY
@@ -40,7 +40,7 @@ level_1_incarceration_location_external_id,level_2_incarceration_location_extern
 "ICCS-C",CC,""
 "INTERSTCOM",OOS,""
 "IS PAROLE",OOS,""
-"ISP-INMATE","ISP-1",""
+"ISP-INMATE","ISP-I",""
 "JAIL BCKLG",CJ,""
 "JAILCNTRCT",CJ,""
 "KCCC",KCCC,""
@@ -54,7 +54,7 @@ level_1_incarceration_location_external_id,level_2_incarceration_location_extern
 "PAROLE FAC","PAROLE FAC","PAROLE FAC"
 "PRERELEASE",PRERELEASE,""
 "PUEBLO MIN","PUEBLO MIN",""
-"RCC",FCC,LEVEL_I_FACIITY
+"RCC",RCC,LEVEL_I_FACIITY
 "REV CRTC",CJ,""
 "RRK",CC,""
 "SCC",SCC,LEVEL_I_FACIITY
