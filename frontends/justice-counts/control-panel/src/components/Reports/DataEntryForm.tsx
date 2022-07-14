@@ -284,6 +284,7 @@ const DataEntryForm: React.FC<{
                   reportMetrics={reportMetrics}
                   metric={metric}
                   updateFieldDescription={updateFieldDescription}
+                  disabled={isPublished}
                 />
               )}
 
@@ -310,15 +311,17 @@ const DataEntryForm: React.FC<{
                             context={context}
                             contextIndex={contextIndex}
                             options={context.multiple_choice_options}
+                            disabled={isPublished}
                           />
                         </BinaryRadioGroupWrapper>
                         <BinaryRadioGroupClearButton
                           onClick={() => {
                             if (
-                              formStore.contexts?.[reportID]?.[metric.key]?.[
+                              !isPublished &&
+                              (formStore.contexts?.[reportID]?.[metric.key]?.[
                                 context.key
                               ]?.value ||
-                              context.value
+                                context.value)
                             ) {
                               formStore.resetBinaryInput(
                                 reportID,
@@ -336,6 +339,7 @@ const DataEntryForm: React.FC<{
                               debouncedSave(metric.key);
                             }
                           }}
+                          disabled={isPublished}
                         >
                           Clear Input
                         </BinaryRadioGroupClearButton>
@@ -368,6 +372,7 @@ const DataEntryForm: React.FC<{
                         clearFieldDescription={() =>
                           updateFieldDescription(undefined)
                         }
+                        disabled={isPublished}
                       />
                     </Fragment>
                   );
@@ -382,6 +387,7 @@ const DataEntryForm: React.FC<{
               e.preventDefault();
               toggleConfirmationDialogue();
             }}
+            isPublished={isPublished}
           />
         </DataEntryFormPublishButtonContainer>
         <OpacityGradient />
