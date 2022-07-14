@@ -92,6 +92,9 @@ module "dashboard-user-restrictions-bucket" {
   name_suffix = "dashboard-user-restrictions"
 }
 
+# TODO(#13703): Figure out what we want to do with this data and whether we still want
+#  to manage this bucket, which contains data from deprecated state aggregate scrapers,
+#  via TF.
 module "state-aggregate-reports" {
   source = "./modules/cloud-storage-bucket"
 
@@ -241,6 +244,9 @@ module "practices-etl-data-archive" {
   ]
 }
 
+# TODO(#13703): Figure out what we want to do with this data and whether we still want
+#  to manage this bucket, which contains data from deprecated state aggregate scrapers,
+#  via TF.
 module "processed-state-aggregates" {
   source = "./modules/cloud-storage-bucket"
 
@@ -378,4 +384,14 @@ resource "google_storage_bucket" "dataflow-templates-scratch" {
   versioning {
     enabled = true
   }
+}
+
+# This bucket contains legacy county direct ingest data from Vera.
+module "direct-ingest-county-storage" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id    = var.project_id
+  location      = var.direct_ingest_region
+  storage_class = "REGIONAL"
+  name_suffix   = "direct-ingest-county-storage"
 }

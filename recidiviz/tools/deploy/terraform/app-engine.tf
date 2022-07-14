@@ -19,43 +19,6 @@
 data "google_app_engine_default_service_account" "default" {}
 
 resource "google_app_engine_application_url_dispatch_rules" "request_routes" {
-  # Scrapers
-  dispatch_rules {
-    domain  = "*"
-    path    = "/aggregate/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/batch/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/infer_release/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/ingest/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/scraper/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/scrape_aggregate_reports/*"
-    service = "scrapers"
-  }
-  dispatch_rules {
-    domain  = "*"
-    path    = "/single_count/*"
-    service = "scrapers"
-  }
-
   # Default
   dispatch_rules {
     domain  = "*"

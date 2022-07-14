@@ -17,7 +17,7 @@
 
 # TODO(#6160): Rename this module to better reflect what it actually is doing for us.
 module "state_direct_ingest_buckets_and_accounts" {
-  for_each = toset(keys(local.direct_ingest_state_manifests))
+  for_each = toset(keys(local.direct_ingest_region_manifests))
   source   = "./modules/state-direct-ingest-resources"
 
   state_code                                 = each.key
@@ -25,7 +25,7 @@ module "state_direct_ingest_buckets_and_accounts" {
   is_production                              = local.is_production
   project_id                                 = var.project_id
   state_admin_role                           = google_project_iam_custom_role.state-admin-role.name
-  region_manifest                            = local.direct_ingest_state_manifests[each.key]
+  region_manifest                            = local.direct_ingest_region_manifests[each.key]
   v2_cloudsql_instance_name                  = module.state_database_v2.instance_name
   v2_cloudsql_instance_id                    = module.state_database_v2.cloudsql_instance_id
   v2_cloudsql_instance_region                = module.state_database_v2.region
