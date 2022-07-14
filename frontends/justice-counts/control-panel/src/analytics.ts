@@ -194,3 +194,15 @@ export const trackNavigation = (screen: string): void => {
     screen,
   });
 };
+
+export const trackLoadTime = (
+  path: string,
+  method: string,
+  loadTime: number
+): void => {
+  track("load_time", {
+    path,
+    method,
+    loadTime,
+  });
+};
