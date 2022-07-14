@@ -17,7 +17,7 @@
 
 import { makeAutoObservable, runInAction, when } from "mobx";
 
-import { trackNetworkError } from "../analytics";
+import { trackLoadTime, trackNetworkError } from "../analytics";
 import { AuthStore } from "../components/Auth";
 
 export interface RequestProps {
@@ -72,6 +72,7 @@ class API {
     retrying = false,
   }: RequestProps): Promise<Body | Response | string> {
     try {
+      const startTime = Date.now();
       if (!this.authStore.getToken) {
         return Promise.reject();
       }
@@ -108,7 +109,11 @@ class API {
           response.status,
           responseJson.description
         );
+      } else {
+        const loadTime = Date.now() - startTime;
+        trackLoadTime(path, method, loadTime);
       }
+
       return response;
     } catch (error) {
       if (error instanceof Error) {
