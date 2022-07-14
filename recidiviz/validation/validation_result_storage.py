@@ -22,10 +22,13 @@ from typing import Any, Dict, List, Optional, cast
 
 import attr
 import cattr
+import pytz
+from google.cloud import bigquery
 from opencensus.trace import execution_context
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common import serialization
 from recidiviz.utils import environment
 from recidiviz.validation.validation_models import (
@@ -145,8 +148,10 @@ class ValidationResultForStorage:
         return unstructured
 
 
+VALIDATION_RESULTS_DATASET_ID = "validation_results"
+
 VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
-    dataset_id="validation_results", table_id="validation_results"
+    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validation_results"
 )
 
 
@@ -165,4 +170,79 @@ def store_validation_results_in_big_query(
         bq_client.dataset_ref_for_id(VALIDATION_RESULTS_BIGQUERY_ADDRESS.dataset_id),
         VALIDATION_RESULTS_BIGQUERY_ADDRESS.table_id,
         [result.to_serializable() for result in validation_results],
+    )
+
+
+CLOUD_TASK_ID_COL = "cloud_task_id"
+VALIDATION_RUN_ID_COL = "run_id"
+SUCCESS_TIMESTAMP_COL = "success_timestamp"
+NUM_VALIDATIONS_RUN_COL = "num_validations_run"
+VALIDATIONS_RUNTIME_SEC_COL = "validations_runtime_sec"
+
+VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS = BigQueryAddress(
+    dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validations_completion_tracker"
+)
+
+
+def store_validation_run_completion_in_big_query(
+    validation_run_id: str,
+    num_validations_run: int,
+    validations_runtime_sec: int,
+    cloud_task_id: str,
+) -> None:
+    """Persists a row to BQ that indicates that a particular validation run has
+    completed without crashing. This row will be used by our Airflow DAG to determine
+    whether we can continue.
+    """
+
+    if not environment.in_gcp():
+        logging.info(
+            "Skipping storing validation run completion in BigQuery for task [%s].",
+            cloud_task_id,
+        )
+        return
+
+    bq_client = BigQueryClientImpl()
+    success_row_streamer = BigQueryRowStreamer(
+        bq_client=bq_client,
+        table_address=VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
+        table_schema=[
+            bigquery.SchemaField(
+                name=CLOUD_TASK_ID_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=VALIDATION_RUN_ID_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=SUCCESS_TIMESTAMP_COL,
+                field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=NUM_VALIDATIONS_RUN_COL,
+                field_type=bigquery.enums.SqlTypeNames.INT64.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=VALIDATIONS_RUNTIME_SEC_COL,
+                field_type=bigquery.enums.SqlTypeNames.INT64.value,
+                mode="REQUIRED",
+            ),
+        ],
+    )
+
+    success_row_streamer.stream_rows(
+        [
+            {
+                CLOUD_TASK_ID_COL: cloud_task_id,
+                VALIDATION_RUN_ID_COL: validation_run_id,
+                SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
+                NUM_VALIDATIONS_RUN_COL: num_validations_run,
+                VALIDATIONS_RUNTIME_SEC_COL: validations_runtime_sec,
+            }
+        ]
     )
