@@ -84,3 +84,12 @@ module "case-triage-db-operations-queue" {
   region                    = var.app_engine_region
   max_dispatches_per_second = 100
 }
+
+# Queue used to process tasks that run our validations.
+module "validations-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name         = "validations"
+  region             = var.app_engine_region
+  max_retry_attempts = 1
+}

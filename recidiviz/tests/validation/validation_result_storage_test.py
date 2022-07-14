@@ -19,6 +19,7 @@ import datetime
 import unittest
 
 import pytz
+from freezegun import freeze_time
 from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
@@ -40,6 +41,7 @@ from recidiviz.validation.validation_models import (
 from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
     store_validation_results_in_big_query,
+    store_validation_run_completion_in_big_query,
 )
 
 
@@ -544,3 +546,53 @@ class TestValidationResultStorage(unittest.TestCase):
                 },
             ],
         )
+
+    @freeze_time("2022-01-01")
+    @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
+    @patch("recidiviz.big_query.big_query_client.bigquery.Client")
+    def test_store_completion(self, mock_bigquery_client_class: MagicMock) -> None:
+        # Arrange
+        mock_bigquery_client = mock_bigquery_client_class.return_value
+        mock_bigquery_client.insert_rows.return_value = []
+        mock_bigquery_client.get_table.return_value = "table_object"
+
+        # Act
+        store_validation_run_completion_in_big_query(
+            validation_run_id="abc123",
+            num_validations_run=10,
+            cloud_task_id="my-task-id",
+            validations_runtime_sec=5,
+        )
+
+        # Assert
+        mock_bigquery_client.insert_rows.assert_called_once_with(
+            "table_object",
+            [
+                {
+                    "cloud_task_id": "my-task-id",
+                    "run_id": "abc123",
+                    "success_timestamp": "2022-01-01T00:00:00+00:00",
+                    "num_validations_run": 10,
+                    "validations_runtime_sec": 5,
+                }
+            ],
+        )
+
+    @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=False))
+    @patch("recidiviz.big_query.big_query_client.bigquery.Client")
+    def test_store_completion_not_in_gcp(
+        self, mock_bigquery_client_class: MagicMock
+    ) -> None:
+        # Arrange
+        mock_bigquery_client = mock_bigquery_client_class.return_value
+
+        # Act
+        store_validation_run_completion_in_big_query(
+            validation_run_id="abc123",
+            num_validations_run=10,
+            cloud_task_id="my-task-id",
+            validations_runtime_sec=5,
+        )
+
+        # Assert
+        mock_bigquery_client.insert_rows.assert_not_called()
