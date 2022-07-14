@@ -15,11 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# TODO(#4690): The direct-ingest-county cloud function is not included because its entry
-# point is `direct_ingest_county`, which no longer exists in our codebase!!
-# If we get approval to delete it, we will remove this comment. Otherwise,
-# we will find the right endpoint and fold it into this file.
-
 data "google_secret_manager_secret_version" "sendgrid_api_key" {
   secret = "sendgrid_api_key"
 }

@@ -23,15 +23,5 @@ locals {
     for f in local.direct_ingest_region_manifest_paths : upper(dirname(f)) => yamldecode(file("${local.direct_ingest_regions_package}/${f}"))
   }
 
-  direct_ingest_state_manifests = {
-    # State codes follow format 'US_XX' so are 5 chars long.
-    for region_code, manifest in local.direct_ingest_region_manifests: region_code => manifest if length(region_code) == 5
-  }
-
   sftp_state_alpha_codes = yamldecode(file("${path.module}/config/sftp_state_alpha_codes.yaml"))
-
-  # County codes follow format 'US_XX_YY..' so are longer than 5 chars long.
-  direct_ingest_county_manifests = {
-    for region_code, manifest in local.direct_ingest_region_manifests: region_code => manifest if length(region_code) > 5
-  }
 }
