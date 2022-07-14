@@ -398,7 +398,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -420,7 +420,7 @@ file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -606,7 +606,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -644,7 +644,7 @@ tagFullHistoricalExport_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -719,7 +719,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -838,7 +838,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -860,7 +860,7 @@ file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -988,7 +988,7 @@ ORDER BY col1, col2;"""
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1010,7 +1010,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1116,7 +1116,7 @@ ORDER BY col1, col2;"""
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1138,7 +1138,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1254,7 +1254,7 @@ ORDER BY col1, col2
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1276,7 +1276,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1387,7 +1387,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1409,7 +1409,7 @@ file_tag_second_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
@@ -1482,7 +1482,7 @@ file_tag_first_generated_view AS (
     ),
     normalized_rows AS (
         SELECT
-            *
+            * EXCEPT (recency_rank)
         FROM
             rows_with_recency_rank
         WHERE
