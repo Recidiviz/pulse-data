@@ -52,13 +52,13 @@ WITH rows_with_recency_rank AS (
 ),
 normalized_rows AS (
     SELECT
-        {{normalized_columns}}
+        * EXCEPT (recency_rank)
     FROM
         rows_with_recency_rank
     WHERE
         recency_rank = 1
 )
-SELECT *
+SELECT {{normalized_columns}}
 FROM normalized_rows
 """
 
@@ -91,13 +91,13 @@ rows_with_recency_rank AS (
 ),
 normalized_rows AS (
     SELECT
-        {{normalized_columns}}
+        * EXCEPT (recency_rank)
     FROM
         rows_with_recency_rank
     WHERE
         recency_rank = 1
 )
-SELECT *
+SELECT {{normalized_columns}}
 FROM normalized_rows
 """
 
