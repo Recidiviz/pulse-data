@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { UpdatedMetricsValues } from "./shared/types";
+import { UpdatedMetricsValues, UserAgency } from "./shared/types";
 
 const TEST_SENDING_ANALYTICS = false; // used for testing sending analytics in development
 const LOG_ANALYTICS = false; // used for logging analytics being sent
@@ -61,21 +61,40 @@ const track = (eventName: string, metadata?: Record<string, unknown>): void => {
   }
 };
 
-export const trackReportCreated = (reportId: number): void => {
+export const trackReportCreated = (
+  reportId: number,
+  agency?: UserAgency
+): void => {
   track("frontend_report_created", {
     reportId,
+    agencyId: agency?.id,
+    agencyName: agency?.name,
+    agencyFips: agency?.fips_county_code,
+    agencyState: agency?.state_code,
+    agencySystem: agency?.system,
+    agencySystems: agency?.systems,
   });
 };
 
-export const trackReportNotStartedToDraft = (reportId: number): void => {
+export const trackReportNotStartedToDraft = (
+  reportId: number,
+  agency?: UserAgency
+): void => {
   track("frontend_report_not_started_to_draft", {
     reportId,
+    agencyId: agency?.id,
+    agencyName: agency?.name,
+    agencyFips: agency?.fips_county_code,
+    agencyState: agency?.state_code,
+    agencySystem: agency?.system,
+    agencySystems: agency?.systems,
   });
 };
 
 export const trackReportPublished = (
   reportId: number,
-  metrics: UpdatedMetricsValues[]
+  metrics: UpdatedMetricsValues[],
+  agency?: UserAgency
 ): void => {
   const metricsReported = metrics.reduce((res: string[], metric) => {
     if (metric.value !== null) {
@@ -120,6 +139,27 @@ export const trackReportPublished = (
     metricsReportedWithContextCount,
     metricsReportedWithDisaggregationsCount,
     totalMetricsCount,
+    agencyId: agency?.id,
+    agencyName: agency?.name,
+    agencyFips: agency?.fips_county_code,
+    agencyState: agency?.state_code,
+    agencySystem: agency?.system,
+    agencySystems: agency?.systems,
+  });
+};
+
+export const trackReportUnpublished = (
+  reportId: number,
+  agency?: UserAgency
+): void => {
+  track("frontend_report_unpublished", {
+    reportId,
+    agencyId: agency?.id,
+    agencyName: agency?.name,
+    agencyFips: agency?.fips_county_code,
+    agencyState: agency?.state_code,
+    agencySystem: agency?.system,
+    agencySystems: agency?.systems,
   });
 };
 

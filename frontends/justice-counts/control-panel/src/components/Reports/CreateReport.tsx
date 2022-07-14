@@ -94,7 +94,7 @@ const initialCreateReportFormValues: CreateReportFormValuesType = {
 };
 
 const CreateReport = () => {
-  const { reportStore } = useStore();
+  const { reportStore, userStore } = useStore();
   const navigate = useNavigate();
   const [createReportFormValues, setCreateReportFormValues] = useState(
     initialCreateReportFormValues
@@ -142,7 +142,10 @@ const CreateReport = () => {
         navigate("/");
         showToast("The report was successfully created", true);
         const report = (await response.json()) as ReportOverview;
-        trackReportCreated(report.id);
+        const agency = userStore.userAgencies?.find(
+          (a) => a.id === report.agency_id
+        );
+        trackReportCreated(report.id, agency);
         return;
       }
       if (response.status === 400) {

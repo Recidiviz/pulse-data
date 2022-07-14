@@ -193,7 +193,9 @@ const DataEntryForm: React.FC<{
     if (response.status === 200) {
       showToast("Saved", false, "grey");
       if (oldStatus === "NOT_STARTED" && status === "DRAFT") {
-        trackReportNotStartedToDraft(reportID);
+        const agencyID = reportStore.reportOverviews[reportID]?.agency_id;
+        const agency = userStore.userAgencies?.find((a) => a.id === agencyID);
+        trackReportNotStartedToDraft(reportID, agency);
       }
     } else {
       showToast("Failed to save", false, "red");

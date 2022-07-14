@@ -16,14 +16,10 @@
 // =============================================================================
 import { makeAutoObservable, runInAction, when } from "mobx";
 
-import { AuthStore } from "../components/Auth";
+import { APP_METADATA_CLAIM, AuthStore } from "../components/Auth";
 import { showToast } from "../components/Toast";
+import { UserAgency } from "../shared/types";
 import API from "./API";
-
-type UserAgency = {
-  name: string;
-  id: number;
-};
 
 type UserSettingsRequestBody = {
   name: string | null;
@@ -176,7 +172,7 @@ class UserStore {
         this.currentAgencyId = this.getInitialAgencyId();
         this.userInfoLoaded = true;
         this.onboardingTopicsCompleted = this.authStore.user?.[
-          "https://dashboard.recidiviz.org/app_metadata"
+          APP_METADATA_CLAIM
         ]?.onboarding_topics_completed || {
           reportsview: false,
           dataentryview: false,

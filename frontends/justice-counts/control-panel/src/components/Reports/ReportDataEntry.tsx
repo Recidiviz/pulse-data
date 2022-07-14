@@ -20,6 +20,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import { trackReportUnpublished } from "../../analytics";
 import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
@@ -65,6 +66,9 @@ const ReportDataEntry = () => {
           undefined,
           4000
         );
+        const agencyID = reportStore.reportOverviews[reportID]?.agency_id;
+        const agency = userStore.userAgencies?.find((a) => a.id === agencyID);
+        trackReportUnpublished(reportID, agency);
       } else {
         showToast(
           `Something went wrong unpublishing the ${printReportTitle(

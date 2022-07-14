@@ -467,7 +467,7 @@ const PublishConfirmation: React.FC<{
 }> = ({ toggleConfirmationDialogue, reportID }) => {
   const [isPublishable, setIsPublishable] = useState(false);
   const [metricsPreview, setMetricsPreview] = useState<MetricWithErrors[]>();
-  const { formStore, reportStore } = useStore();
+  const { formStore, reportStore, userStore } = useStore();
   const navigate = useNavigate();
 
   const publishReport = async () => {
@@ -493,7 +493,9 @@ const PublishConfirmation: React.FC<{
           )} report!`,
           true
         );
-        trackReportPublished(reportID, finalMetricsToPublish);
+        const agencyID = reportStore.reportOverviews[reportID]?.agency_id;
+        const agency = userStore.userAgencies?.find((a) => a.id === agencyID);
+        trackReportPublished(reportID, finalMetricsToPublish, agency);
       } else {
         showToast(
           `Something went wrong publishing the ${printReportTitle(
