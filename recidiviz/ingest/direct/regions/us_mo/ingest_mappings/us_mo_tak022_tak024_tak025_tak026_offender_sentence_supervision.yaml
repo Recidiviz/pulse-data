@@ -66,8 +66,6 @@ unused_columns:
   - BS_NRN # Unused - Offender Name Reference Number
   - BS_POF # TODO(#2604) - What is this? - not in TAK table index
   - BS_ACL # TODO(#2604) - What is this? - not in TAK table index
-  - BS_CCI # Unused - Sentence Concurrent/Consecutive Ind
-  - BS_CRQ # Unused - Sentence Concurrent/Consecutive Xref
   - BS_CRC # Unused - Court Circuit
   - BS_CRD # Unused - Court Division
   - BS_PLE # TODO(#2607) - Sentence Plea - Add a plea_type enum on the state_charge
@@ -150,6 +148,15 @@ output:
     supervision_sentences:
       - StateSupervisionSentence:
           external_id: $variable(sentence_external_id)
+          sentence_metadata:
+            $conditional:
+              - $if:
+                  $not_null: BS_CCI
+                $then:
+                  $concat:
+                    $values:
+                      - BS_CCI # Sentence Concurrent/Consecutive Ind
+                      - BS_CRQ # Sentence Concurrent/Consecutive Xref
           supervision_type:
             $enum_mapping:
               $raw_text: SENTENCE_TYPE
