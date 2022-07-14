@@ -26,6 +26,9 @@ import qs from "qs";
 
 import { identify } from "../../analytics";
 
+export const APP_METADATA_CLAIM =
+  "https://dashboard.recidiviz.org/app_metadata";
+
 interface AuthStoreProps {
   authSettings: Auth0ClientOptions | undefined;
 }

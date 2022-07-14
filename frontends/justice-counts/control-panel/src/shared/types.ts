@@ -20,6 +20,15 @@ export enum Permission {
   SWITCH_AGENCIES = "switch_agencies",
 }
 
+export interface UserAgency {
+  name: string;
+  id: number;
+  fips_county_code: string;
+  state_code: string;
+  system: string;
+  systems: string[];
+}
+
 export type ReportFrequency = "MONTHLY" | "ANNUAL";
 
 export type ReportStatus = "NOT_STARTED" | "DRAFT" | "PUBLISHED";
