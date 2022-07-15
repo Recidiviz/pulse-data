@@ -97,7 +97,9 @@ monitoring.register_views([failed_validations_view, failed_to_run_validations_vi
 validation_manager_blueprint = Blueprint("validation_manager", __name__)
 
 # TODO(#13775): Delete this endpoint once we have verified Airflow orchestration works.
-@validation_manager_blueprint.route("/test_validate_orchestration")
+@validation_manager_blueprint.route(
+    "/test_validate_orchestration", methods=["GET", "POST"]
+)
 @requires_gae_auth
 def test_handle_validation_request() -> Tuple[str, HTTPStatus]:
     """TEST ONLY API endpoint that that enables us to validate Airflow orchestration."""
@@ -119,7 +121,7 @@ def test_handle_validation_request() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@validation_manager_blueprint.route("/validate")
+@validation_manager_blueprint.route("/validate", methods=["GET", "POST"])
 @requires_gae_auth
 def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
