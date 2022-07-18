@@ -332,7 +332,7 @@ def _get_commitment_from_supervision_supervision_period(
     )
 
     # If there's more than one recently terminated period with the same
-    # termination_date, prioritize the ones with REVOCATION or RETURN_TO_INCARCERATION
+    # termination_date, prioritize the ones with REVOCATION or ADMITTED_TO_INCARCERATION
     # termination_reasons
     def _same_date_sort_override(
         period_a: NormalizedStateSupervisionPeriod,
@@ -340,7 +340,6 @@ def _get_commitment_from_supervision_supervision_period(
     ) -> int:
         prioritized_termination_reasons = [
             StateSupervisionPeriodTerminationReason.REVOCATION,
-            StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
             StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         ]
         prioritize_a = period_a.termination_reason in prioritized_termination_reasons
