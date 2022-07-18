@@ -1,0 +1,8 @@
+# Configuration for which validations to run for region US_CA.
+
+region_code: US_CA
+# TODO(#14025): Enable validations for US_CA.
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []
