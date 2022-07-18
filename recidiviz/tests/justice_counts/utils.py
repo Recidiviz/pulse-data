@@ -17,7 +17,7 @@
 """Implements tests for the Justice Counts Control Panel backend API."""
 
 import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from unittest import TestCase
 
 import pytest
@@ -27,6 +27,7 @@ from recidiviz.auth.auth0_client import Auth0User, JusticeCountsAuth0AppMetadata
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    ForceType,
     OffenseType,
     SheriffBudgetType,
 )
@@ -263,6 +264,81 @@ class JusticeCountsSchemaTestObjects:
             if include_disaggregations
             else [],
         )
+
+    @staticmethod
+    def get_agency_datapoints(
+        use_reenabled_breakdown: bool = False,
+        include_contexts: bool = False,
+        use_disabled_disaggregation: bool = False,
+        use_partially_disabled_disaggregation: bool = False,
+        is_metric_enabled: bool = True,
+    ) -> Dict[str, Any]:
+        """Returns metric dictionaries that are formatted in /metrics/update [POST] style"""
+        metric_json = {
+            "key": law_enforcement.annual_budget.key,
+            "enabled": is_metric_enabled,
+        }
+        if use_partially_disabled_disaggregation:
+            metric_json = {
+                "key": law_enforcement.calls_for_service.key,
+                "enabled": True,
+                "disaggregations": [
+                    {
+                        "enabled": True,
+                        "key": CallType.dimension_identifier(),
+                        "dimensions": {
+                            CallType.UNKNOWN.name: False,
+                            CallType.EMERGENCY.name: False,
+                        },
+                    }
+                ],
+            }
+        if use_disabled_disaggregation:
+            metric_json = {
+                "key": law_enforcement.officer_use_of_force_incidents.key,
+                "enabled": True,
+                "disaggregations": [
+                    {
+                        "enabled": False,
+                        "key": ForceType.dimension_identifier(),
+                    }
+                ],
+            }
+        if use_reenabled_breakdown:
+            metric_json = {
+                "key": law_enforcement.calls_for_service.key,
+                "enabled": True,
+                "disaggregations": [
+                    {
+                        "enabled": True,
+                        "key": CallType.dimension_identifier(),
+                        "dimensions": {CallType.UNKNOWN.name: True},
+                    }
+                ],
+            }
+
+        if include_contexts:
+            metric_json["contexts"] = [
+                {
+                    "key": ContextKey.ADDITIONAL_CONTEXT.name,
+                    "value": "this additional context provides contexts",
+                }
+            ]
+
+        return metric_json
+
+    @staticmethod
+    def get_agency_datapoints_request(
+        agency_id: int,
+    ) -> Dict[str, Any]:
+        return {
+            "agency_id": agency_id,
+            "metrics": [
+                JusticeCountsSchemaTestObjects.get_agency_datapoints(
+                    include_contexts=True, use_disabled_disaggregation=True
+                )
+            ],
+        }
 
     @staticmethod
     def get_reported_calls_for_service_metric(
