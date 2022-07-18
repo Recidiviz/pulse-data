@@ -34,7 +34,6 @@ EMULATOR_STARTUP_TIMEOUT_SEC = 30
 def emulator(request: Any) -> None:
     # Lazy imports here to avoid slow top-level import when running pytest for any tests
     # pylint: disable=import-outside-toplevel
-    from recidiviz.ingest.scrape import sessions
     from recidiviz.utils import pubsub_helper
 
     datastore_emulator, pubsub_emulator = _start_emulators()
@@ -42,7 +41,6 @@ def emulator(request: Any) -> None:
     # These environment variables can only be set while these tests are
     # running as they also impact ndb/testbed behavior
     prior_environs = _write_emulator_environs()
-    sessions.clear_ds()
     pubsub_helper.clear_publisher()
     pubsub_helper.clear_subscriber()
 
@@ -51,7 +49,6 @@ def emulator(request: Any) -> None:
         pubsub_emulator.terminate()
 
         _restore_environs(prior_environs)
-        sessions.clear_ds()
         pubsub_helper.clear_publisher()
         pubsub_helper.clear_subscriber()
 
