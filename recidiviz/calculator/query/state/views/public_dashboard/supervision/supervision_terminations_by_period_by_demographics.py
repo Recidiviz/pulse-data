@@ -40,7 +40,7 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
     WITH supervision_terminations AS (
       SELECT 
         state_code,
-        LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','DISMISSED','EXPIRATION','PARDONED', 'VACATED')) as successful_termination,
+        LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','EXPIRATION','PARDONED', 'VACATED')) as successful_termination,
         person_id,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,

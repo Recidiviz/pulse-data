@@ -54,7 +54,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         *
       FROM supervision_periods
       WHERE termination_date IS NOT NULL
-         AND termination_reason IN ('COMMUTED', 'DISMISSED', 'DISCHARGE', 'EXPIRATION', 'PARDONED', 'VACATED')
+         AND termination_reason IN ('COMMUTED', 'DISCHARGE', 'EXPIRATION', 'PARDONED', 'VACATED')
          AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 3 YEAR))
     ),
     overlapping_open_period AS (
