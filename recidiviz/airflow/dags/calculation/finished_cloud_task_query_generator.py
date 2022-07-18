@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implementation of the BQResultSensorQueryGenerator that returns a query
-that produces a row when the most recently triggered view rematerialization task has
-completed.
+that produces a row when the most cloud task queued by a particular
+CloudTasksTaskCreateOperator has completed.
 """
 
 from typing import Dict
@@ -39,20 +39,24 @@ except ImportError:
     )
 
 
-class FinishedRematerializationTaskQueryGenerator(
-    BQResultSensorQueryGenerator, LoggingMixin
-):
+class FinishedCloudTaskQueryGenerator(BQResultSensorQueryGenerator, LoggingMixin):
     """Implementation of the BQResultSensorQueryGenerator that returns a query
-    that produces a row when the most recently triggered view rematerialization task has
-    completed.
+    that produces a row when the most cloud task queued by a particular
+    CloudTasksTaskCreateOperator has completed.
     """
 
     def __init__(
-        self, project_id: str, cloud_task_create_operator_task_id: str
+        self,
+        project_id: str,
+        cloud_task_create_operator_task_id: str,
+        tracker_dataset_id: str,
+        tracker_table_id: str,
     ) -> None:
         super().__init__()
         self.project_id = project_id
         self.cloud_task_create_operator_task_id = cloud_task_create_operator_task_id
+        self.tracker_dataset_id = tracker_dataset_id
+        self.tracker_table_id = tracker_table_id
 
     def get_query(self, operator: BQResultSensor, context: Dict) -> str:
         task_path = self.get_last_queued_task_path(
@@ -62,7 +66,7 @@ class FinishedRematerializationTaskQueryGenerator(
         cloud_task_id = task_path_parts["task"]
 
         return f"""SELECT *
-FROM `{self.project_id}.view_update_metadata.rematerialization_tracker`
+FROM `{self.project_id}.{self.tracker_dataset_id}.{self.tracker_table_id}`
 WHERE cloud_task_id = '{cloud_task_id}';"""
 
     def get_last_queued_task_path(
