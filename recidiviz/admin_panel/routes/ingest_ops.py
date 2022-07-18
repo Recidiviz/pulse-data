@@ -172,9 +172,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         lock_manager = DirectIngestRegionLockManager.for_state_ingest(
             state_code, ingest_instance
         )
-        if not lock_manager.can_proceed():
+        # Assert that we still have the lock. We do not check `can_proceed` as we do not
+        # want to yield to any other tasks (e.g. if the export takes a subsequent lock).
+        # So long as we still have our lock it is safe to proceed.
+        if not lock_manager.is_locked():
             return (
-                "other locks blocking ingest have been acquired; aborting operation",
+                "ingest lock no longer held; aborting operation",
                 HTTPStatus.CONFLICT,
             )
 
@@ -224,9 +227,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         lock_manager = DirectIngestRegionLockManager.for_state_ingest(
             state_code, ingest_instance=import_to_ingest_instance
         )
-        if not lock_manager.can_proceed():
+        # Assert that we still have the lock. We do not check `can_proceed` as we do not
+        # want to yield to any other tasks (e.g. if the export takes a subsequent lock).
+        # So long as we still have our lock it is safe to proceed.
+        if not lock_manager.is_locked():
             return (
-                "other locks blocking ingest have been acquired; aborting operation",
+                "ingest lock no longer held; aborting operation",
                 HTTPStatus.CONFLICT,
             )
 
