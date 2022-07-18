@@ -131,6 +131,12 @@ class JusticeCountsSchemaTestObjects:
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PAROLE.value, schema.System.PROBATION.value],
         )
+        self.test_agency_F = schema.Agency(
+            name="Agency Gamma",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PROSECUTION.value],
+        )
 
         # Auth0 Users
         self.test_auth0_user: Auth0User = {
@@ -238,13 +244,17 @@ class JusticeCountsSchemaTestObjects:
         patrol_value: Optional[int] = 33334,
         include_contexts: bool = True,
         include_disaggregations: bool = True,
+        nullify_contexts_and_disaggregations: bool = False,
     ) -> ReportMetric:
         return ReportMetric(
             key=law_enforcement.annual_budget.key,
             value=value,
             contexts=[
                 ReportedContext(
-                    key=ContextKey.PRIMARY_FUNDING_SOURCE, value="government"
+                    key=ContextKey.PRIMARY_FUNDING_SOURCE,
+                    value="government"
+                    if not nullify_contexts_and_disaggregations
+                    else None,
                 ),
                 ReportedContext(
                     key=ContextKey.ADDITIONAL_CONTEXT,
@@ -256,8 +266,12 @@ class JusticeCountsSchemaTestObjects:
             aggregated_dimensions=[
                 ReportedAggregatedDimension(
                     dimension_to_value={
-                        SheriffBudgetType.DETENTION: detention_value,
-                        SheriffBudgetType.PATROL: patrol_value,
+                        SheriffBudgetType.DETENTION: detention_value
+                        if not nullify_contexts_and_disaggregations
+                        else None,
+                        SheriffBudgetType.PATROL: patrol_value
+                        if not nullify_contexts_and_disaggregations
+                        else None,
                     }
                 )
             ]

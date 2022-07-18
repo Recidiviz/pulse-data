@@ -17,7 +17,7 @@
 """Interface for working with the Reports model."""
 import datetime
 import itertools
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 from sqlalchemy.orm import Query, Session, lazyload
@@ -265,15 +265,8 @@ class ReportInterface:
             if frequency == ReportingFrequency.MONTHLY.value
             else ReportingFrequency.ANNUAL.value
         )
-        date_range_start = datetime.date(year, month, 1)
-        date_range_end = (
-            datetime.date(
-                year if month != 12 else (year + 1),
-                ((month + 1) if month != 12 else 1),
-                1,
-            )
-            if frequency == ReportingFrequency.MONTHLY.value
-            else datetime.date(year + 1, month, 1)
+        date_range_start, date_range_end = ReportInterface.get_date_range(
+            year=year, month=month, frequency=frequency
         )
         return schema.Report(
             source_id=agency_id,
@@ -292,6 +285,25 @@ class ReportInterface:
             is_recurring=is_recurring,
             recurring_report=recurring_report,
         )
+
+    @staticmethod
+    def get_date_range(
+        year: int, month: int, frequency: str
+    ) -> Tuple[datetime.date, datetime.date]:
+        """Given a year, month, and reporting frequency, determine the
+        start and end date for the report.
+        """
+        date_range_start = datetime.date(year, month, 1)
+        date_range_end = (
+            datetime.date(
+                year if month != 12 else (year + 1),
+                ((month + 1) if month != 12 else 1),
+                1,
+            )
+            if frequency == ReportingFrequency.MONTHLY.value
+            else datetime.date(year + 1, month, 1)
+        )
+        return (date_range_start, date_range_end)
 
     @staticmethod
     def get_editor_ids_to_names(
@@ -367,7 +379,7 @@ class ReportInterface:
 
         # Next, add a datapoint for each dimension
         all_dimensions_to_values: Dict[DimensionBase, Optional[float]] = {}
-        for reported_aggregated_dimension in report_metric.aggregated_dimensions or []:
+        for reported_aggregated_dimension in report_metric.aggregated_dimensions:
             all_dimensions_to_values.update(
                 reported_aggregated_dimension.dimension_to_value
             )
@@ -376,28 +388,38 @@ class ReportInterface:
             for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                 aggregated_dimension.dimension.dimension_identifier()
             ]:
+                if d not in all_dimensions_to_values:
+                    # If this dimension wasn't reported, skip it. Don't add a blank
+                    # datapoint, which will overwrite any previously reported values.
+                    continue
+
                 DatapointInterface.add_datapoint(
                     session=session,
                     user_account=user_account,
                     current_time=current_time,
                     metric_definition_key=metric_definition.key,
                     report=report,
-                    value=all_dimensions_to_values.get(d),
+                    value=all_dimensions_to_values[d],
                     dimension=d,
                 )
 
         # Finally, add a datapoint for each context
         context_key_to_value = {
-            context.key: context.value for context in report_metric.contexts or []
+            context.key: context.value for context in report_metric.contexts
         }
         for context in metric_definition.contexts or []:
+            if context.key not in context_key_to_value:
+                # If this context wasn't reported, skip it. Don't add a blank
+                # datapoint, which will overwrite any previously reported values.
+                continue
+
             DatapointInterface.add_datapoint(
                 session=session,
                 user_account=user_account,
                 current_time=current_time,
                 metric_definition_key=metric_definition.key,
                 report=report,
-                value=context_key_to_value.get(context.key),
+                value=context_key_to_value[context.key],
                 context_key=context.key,
                 value_type=context.value_type,
             )

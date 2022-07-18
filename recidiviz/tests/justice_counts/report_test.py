@@ -431,7 +431,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 5)
+            self.assertEqual(len(total_datapoints), 3)
             # There should be no datapoints with values associated with the metric
             queried_datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -440,7 +440,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(len(queried_datapoints_with_value), 0)
             queried_datapoints_without_value = session.query(schema.Datapoint).all()
-            self.assertEqual(len(queried_datapoints_without_value), 5)
+            self.assertEqual(len(queried_datapoints_without_value), 3)
 
     def test_add_incomplete_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -541,7 +541,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 16)
+            self.assertEqual(len(total_datapoints), 9)
 
             # We should have nine datapoints with non-null values: one for aggregated (total) residents
             # and eight for each race and ethnicity
@@ -981,7 +981,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
             self.assertEqual(len(datapoints_with_value), 4)
+            self.assertEqual(datapoints_with_value[0].get_value(), 100000)
+            self.assertEqual(datapoints_with_value[1].get_value(), 33334)
+            self.assertEqual(datapoints_with_value[2].get_value(), 66666)
+            self.assertEqual(datapoints_with_value[3].get_value(), "government")
 
+            # If user doesn't include contexts at all, this doesn't delete anything.
+            # To delete them, you'd have to specifically include them with values
+            # of None or empty string.
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 include_contexts=False
             )
@@ -999,14 +1006,32 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 3)
-            self.assertEqual(datapoints_with_value[0].get_value(), 100000)
-            self.assertEqual(datapoints_with_value[1].get_value(), 33334)
-            self.assertEqual(datapoints_with_value[2].get_value(), 66666)
+            self.assertEqual(len(datapoints_with_value), 4)
 
-            # User does not report metric at all
+            # If user explicitly sets metric value as None, but doesn't include disaggregations or contexts,
+            # the metric value will be changed, but disaggregations and contexts will be left alone. You have
+            # to explicitly set values to None to delete them.
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 value=None, include_disaggregations=False, include_contexts=False
+            )
+
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=self.test_schema_objects.test_report_monthly,
+                report_metric=report_metric,
+                user_account=self.test_schema_objects.test_user_A,
+            )
+            datapoints_with_value = (
+                session.query(schema.Datapoint)
+                .filter(schema.Datapoint.value.is_not(None))
+                .all()
+            )
+            # 3 and not 4 because the aggregate metric value did change to None
+            self.assertEqual(len(datapoints_with_value), 3)
+
+            # Here's how we actually delete everything
+            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                value=None, nullify_contexts_and_disaggregations=True
             )
 
             ReportInterface.add_or_update_metric(
