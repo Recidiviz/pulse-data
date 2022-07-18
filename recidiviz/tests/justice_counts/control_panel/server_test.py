@@ -39,6 +39,7 @@ from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOpt
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
+    Datapoint,
     Report,
     ReportingFrequency,
     ReportStatus,
@@ -466,6 +467,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             user_response.json["permissions"] if user_response.json else [],
             [ControlPanelPermission.RECIDIVIZ_ADMIN.value],
         )
+
+    def test_update_metric_settings(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        request_body = self.test_schema_objects.get_agency_datapoints_request(
+            agency_id=agency.id
+        )
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            response = self.client.post(
+                "/api/metrics/update",
+                json=request_body,
+            )
+        self.assertEqual(response.status_code, 200)
+        agency_datapoints = self.session.query(Datapoint).all()
+        # 5 breakdown datapoints and one context datapoint
+        self.assertEqual(len(agency_datapoints), 6)
 
     def test_session(self) -> None:
         # Add data

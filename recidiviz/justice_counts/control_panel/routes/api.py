@@ -33,6 +33,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     get_user_account_id,
     raise_if_user_is_unauthorized,
 )
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import (
     JusticeCountsBadRequestError,
     JusticeCountsPermissionError,
@@ -308,6 +309,25 @@ def get_api_blueprint(
 
             report_ids = map(int, report_ids)
             ReportInterface.delete_reports_by_id(current_session, report_ids=report_ids)
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/metrics/update", methods=["POST"])
+    @auth_decorator
+    @raise_if_user_is_unauthorized
+    def update_metric_settings() -> Response:
+        try:
+            request_json = assert_type(request.json, dict)
+            agency_id = assert_type(request_json.get("agency_id"), int)
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency_id
+            )
+            for metric_json in request_json.get("metrics", []):
+                DatapointInterface.update_agency_metric(
+                    session=current_session, metric_json=metric_json, agency=agency
+                )
+
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
