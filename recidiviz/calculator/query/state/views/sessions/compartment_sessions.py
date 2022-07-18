@@ -488,7 +488,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 AND (prev_end_reason = 'RELEASED_IN_ERROR' OR next_start_reason = 'RETURN_FROM_ERRONEOUS_RELEASE') AS inferred_erroneous,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'SUPERVISION'
-                AND (prev_end_reason in ('REVOCATION','RETURN_TO_INCARCERATION', 'ADMITTED_TO_INCARCERATION') 
+                AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION') 
                     OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
