@@ -20,14 +20,12 @@ import unittest
 
 from werkzeug.datastructures import MultiDict
 
-from recidiviz.ingest.scrape import constants
 from recidiviz.utils import params
 
 PARAMS: MultiDict = MultiDict(
     [
         ("region", "us_mo"),
         ("batch_id", "12345"),
-        ("scrape_type", constants.ScrapeType.BACKGROUND),
         ("region", "us_wa"),
         ("false_bool_param", "False"),
         ("true_bool_param", "true"),
