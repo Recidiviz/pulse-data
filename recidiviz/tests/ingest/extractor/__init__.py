@@ -14,6 +14,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""TODO(#8905): Move this package inside recidiviz/ingest/direct once mappings v2
-migration is complete.
+"""TODO(#8905): Delete this package once mappings v2 migration is complete.
 """

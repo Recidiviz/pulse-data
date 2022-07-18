@@ -1,6 +1,0 @@
-key_mappings:
-  person.name: person.full_name
-  person.custody_status: booking.custody_status
-  person.bookings.id: booking.booking_id
-  person.bookings.charges.name: charge.name
-  person.bookings.charges.class: charge.charge_class

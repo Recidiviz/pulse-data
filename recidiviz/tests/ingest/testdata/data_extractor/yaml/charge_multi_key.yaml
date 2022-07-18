@@ -1,5 +1,0 @@
-key_mappings:
-  Bond Number: bond.bond_id
-
-multi_key_mapping:
-  Charge Description: charge.name
