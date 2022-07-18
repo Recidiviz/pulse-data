@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-key_mappings:
-  Inmate No: person.person_id
-  Gender: person.gender
-  "Booking #": booking.booking_id
-  Booking Date-Time: booking.admission_date
-  Reporting Agency: booking.facility
-
-multi_key_mapping:
-  Statute Code: charge.statute
-  Description: charge.name
-  CaseNumber: charge.case_number
-  Arrest DateTime: arrest.arrest_date
-  Bond Amount: bond.amount
-  Bond Type: bond.bond_type
-  Next Court Date: charge.next_court_date
+"""TODO(#8905): Delete this package once mappings v2 migration is complete.
+"""
