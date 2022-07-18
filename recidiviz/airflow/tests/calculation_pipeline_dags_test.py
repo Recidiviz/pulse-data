@@ -43,6 +43,8 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
+_TRIGGER_VALIDATIONS_TASK_ID = "trigger_validations_task"
+_WAIT_FOR_VALIDATIONS_TASK_ID = "wait_for_validations_completion"
 
 
 @patch(
@@ -146,6 +148,51 @@ class TestCalculationPipelineDags(unittest.TestCase):
                     _WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids
                 )
 
+    def test_rematerialization_upstream_of_validation(
+        self,
+    ) -> None:
+        """Tests that view rematerialization happens before the validations run."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            wait_for_materialization_downstream_dag = dag.partial_subset(
+                task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
+                include_downstream=True,
+                include_upstream=False,
+            )
+
+            self.assertNotEqual(
+                0, len(wait_for_materialization_downstream_dag.task_ids)
+            )
+
+            self.assertIn(
+                _TRIGGER_VALIDATIONS_TASK_ID,
+                wait_for_materialization_downstream_dag.task_ids,
+            )
+
+    def test_trigger_validations_upstream_of_wait(self) -> None:
+        """Tests that the validations trigger happens directly before we wait
+        for the validations to finish.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            self.assertNotEqual(0, len(dag.task_ids))
+
+            wait_subdag = dag.partial_subset(
+                task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID,
+                include_downstream=False,
+                include_upstream=True,
+            )
+            wait_task = one(wait_subdag.leaves)
+
+            self.assertEqual(_WAIT_FOR_VALIDATIONS_TASK_ID, wait_task.task_id)
+            self.assertEqual(
+                {_TRIGGER_VALIDATIONS_TASK_ID}, wait_task.upstream_task_ids
+            )
+
     def test_rematerialization_downstream_of_all_pipelines(
         self,
     ) -> None:
@@ -215,4 +262,24 @@ class TestCalculationPipelineDags(unittest.TestCase):
             self.assertEqual(
                 trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
                 "/view_update/rematerialize_all_deployed_views",
+            )
+
+    def test_validations_endpoint(self) -> None:
+        """Tests that validation triggers the proper endpoint."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            dag = dag_bag.dags[dag_id]
+            trigger_cloud_task_task = dag.get_task(_TRIGGER_VALIDATIONS_TASK_ID)
+
+            if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+                raise ValueError(
+                    f"Expected type CloudTasksTaskCreateOperator, found "
+                    f"[{type(trigger_cloud_task_task)}]."
+                )
+
+            self.assertEqual("validations", trigger_cloud_task_task.queue_name)
+
+            self.assertEqual(
+                trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+                "/validation_manager/validate",
             )

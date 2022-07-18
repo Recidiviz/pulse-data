@@ -36,8 +36,8 @@ from google.cloud.tasks_v2 import CloudTasksClient
 # Cloud Composer environment at the top-level. However, for unit tests, we still need to
 # import the recidiviz-top-level.
 try:
-    from calculation.finished_rematerialization_task_query_generator import (  # type: ignore
-        FinishedRematerializationTaskQueryGenerator,
+    from calculation.finished_cloud_task_query_generator import (  # type: ignore
+        FinishedCloudTaskQueryGenerator,
     )
     from operators.bq_result_sensor import BQResultSensor  # type: ignore
     from operators.iap_httprequest_operator import (  # type: ignore
@@ -51,8 +51,8 @@ try:
         PIPELINE_AGNOSTIC_EXPORTS,
     )
 except ImportError:
-    from recidiviz.airflow.dags.calculation.finished_rematerialization_task_query_generator import (
-        FinishedRematerializationTaskQueryGenerator,
+    from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
+        FinishedCloudTaskQueryGenerator,
     )
     from recidiviz.airflow.dags.operators.bq_result_sensor import (
         BQResultSensor,
@@ -180,6 +180,34 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
     )
 
 
+def trigger_validations_operator() -> CloudTasksTaskCreateOperator:
+    queue_location = "us-east1"
+    queue_name = "validations"
+    task_path = CloudTasksClient.task_path(
+        project_id,
+        location=queue_location,
+        queue=queue_name,
+        task=uuid.uuid4().hex,
+    )
+    task = tasks_v2.types.Task(
+        name=task_path,
+        app_engine_http_request={
+            "http_method": "POST",
+            "relative_uri": "/validation_manager/validate",
+            "body": json.dumps({}).encode(),
+        },
+    )
+    return CloudTasksTaskCreateOperator(
+        task_id="trigger_validations_task",
+        location=queue_location,
+        queue_name=queue_name,
+        task=task,
+        # This will trigger the task regardless of the failure or success of the
+        # upstream pipelines.
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+
 def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> None:
     """This represents the overall execution of our calculation pipelines.
 
@@ -203,13 +231,33 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
 
     wait_for_rematerialize = BQResultSensor(
         task_id="wait_for_view_rematerialization_success",
-        query_generator=FinishedRematerializationTaskQueryGenerator(
+        query_generator=FinishedCloudTaskQueryGenerator(
             project_id=project_id,
             cloud_task_create_operator_task_id=trigger_view_rematerialize.task_id,
+            tracker_dataset_id="view_update_metadata",
+            tracker_table_id="rematerialization_tracker",
         ),
     )
 
-    update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
+    trigger_validations = trigger_validations_operator()
+
+    wait_for_validations = BQResultSensor(
+        task_id="wait_for_validations_completion",
+        query_generator=FinishedCloudTaskQueryGenerator(
+            project_id=project_id,
+            cloud_task_create_operator_task_id=trigger_validations.task_id,
+            tracker_dataset_id="validation_results",
+            tracker_table_id="validations_completion_tracker",
+        ),
+    )
+
+    (
+        update_normalized_state
+        >> trigger_view_rematerialize
+        >> wait_for_rematerialize
+        >> trigger_validations
+        >> wait_for_validations
+    )
 
     # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
     #  calculation month counts

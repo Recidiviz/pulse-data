@@ -78,7 +78,6 @@ def main(
         re.compile(validation_name_filter) if validation_name_filter else None
     )
     execute_validation(
-        rematerialize_views=False,
         region_code_filter=region_code_filter,
         validation_name_filter=validation_regex,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
