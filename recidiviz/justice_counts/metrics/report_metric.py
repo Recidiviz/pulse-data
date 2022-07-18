@@ -168,11 +168,9 @@ class ReportMetric:
     value: Optional[float] = attr.field()
 
     # Additional context that the agency reported on this metric
-    contexts: Optional[List[ReportedContext]] = attr.field(default=None)
+    contexts: List[ReportedContext] = attr.field(factory=list)
     # Values for aggregated dimensions
-    aggregated_dimensions: Optional[List[ReportedAggregatedDimension]] = attr.field(
-        default=None
-    )
+    aggregated_dimensions: List[ReportedAggregatedDimension] = attr.field(factory=list)
 
     # TODO(#12418) [Backend] Figure out when/when not to validate ReportMetrics
     enforce_validation: Optional[bool] = False
@@ -187,7 +185,7 @@ class ReportMetric:
 
         dimension_identifier_to_reported_dimension = {
             dimension.dimension_identifier(): dimension
-            for dimension in self.aggregated_dimensions or {}
+            for dimension in self.aggregated_dimensions
         }
         for dimension_definition in self.metric_definition.aggregated_dimensions or []:
             dimension_identifier = dimension_definition.dimension_identifier()
@@ -284,7 +282,7 @@ class ReportMetric:
             ],
             "contexts": [
                 c.to_json(context_definition=context_key_to_context_definition[c.key])
-                for c in self.contexts or []
+                for c in self.contexts
             ],
             "disaggregations": [
                 d.to_json(
@@ -292,7 +290,7 @@ class ReportMetric:
                         d.dimension_identifier()
                     ]
                 )
-                for d in self.aggregated_dimensions or []
+                for d in self.aggregated_dimensions
             ],
         }
 
