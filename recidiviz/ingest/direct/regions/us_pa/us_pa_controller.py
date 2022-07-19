@@ -226,7 +226,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionSentenceSupervisionType.PROBATION: [
             "Y",  # Yes means Probation; anything else means Parole
         ],
-        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
+        StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: [
             "02",  # Paroled from SCI to PBPP Supervision
             "B2",  # Released according to Boot Camp Law
             "R2",  # RSAT Parole
