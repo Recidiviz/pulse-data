@@ -2172,7 +2172,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             state_code="US_ID",
             supervision_site="DISTRICT_1|OFFICE_2",
             custodial_authority_raw_text="US_ID_DOC",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             start_date=date(2018, 3, 5),
             termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
