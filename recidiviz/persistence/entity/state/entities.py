@@ -993,7 +993,7 @@ class StateSupervisionPeriod(
                 f"deprecated for state_code: [{self.state_code}]. This value should not be used."
             )
         if (
-            self.state_code in ("US_ID", "US_PA", "US_MO")
+            self.state_code in ("US_ID", "US_PA", "US_MO", "US_ME")
             and self.admission_reason
             == StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
         ):
