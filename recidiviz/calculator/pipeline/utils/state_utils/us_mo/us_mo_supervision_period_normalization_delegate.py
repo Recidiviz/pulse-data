@@ -71,7 +71,9 @@ class UsMoSupervisionNormalizationDelegate(
         incarceration_sentences: Optional[List[StateIncarcerationSentence]],
         supervision_sentences: Optional[List[StateSupervisionSentence]],
     ) -> List[StateSupervisionPeriod]:
-        """Generates supervision periods based on sentences and critical statuses.
+        """Generates supervision periods based on sentences and critical statuses
+        that denote changes in supervision type.
+
         This assumes that the input supervision periods are already chronologically
         sorted."""
         if incarceration_sentences is None or supervision_sentences is None:
@@ -83,12 +85,16 @@ class UsMoSupervisionNormalizationDelegate(
 
         sentences = itertools.chain(incarceration_sentences, supervision_sentences)
         supervision_type_spans: List[SupervisionTypeSpan] = []
+        all_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]] = defaultdict(set)
         for sentence in sentences:
             if not isinstance(sentence, UsMoSentenceMixin):
                 raise ValueError(
                     f"Unexpected type for sentence: {type(sentence)}. "
                     f"Found sentence: {sentence}."
                 )
+            for status in sentence.sentence_statuses:
+                if status.status_date:
+                    all_statuses_by_date[status.status_date].add(status)
             for supervision_type_span in sentence.supervision_type_spans:
                 supervision_type_spans.append(supervision_type_span)
 
@@ -107,9 +113,6 @@ class UsMoSupervisionNormalizationDelegate(
         ] = self._get_periods_by_critical_date(
             time_periods=supervision_type_spans, critical_dates=start_dates
         )
-        critical_statuses_by_date: Dict[
-            date, Set[UsMoSentenceStatus]
-        ] = self._get_critical_statuses_by_date(supervision_type_spans)
 
         new_supervision_periods: List[StateSupervisionPeriod] = []
         for time_span in time_spans:
@@ -123,15 +126,13 @@ class UsMoSupervisionNormalizationDelegate(
                 continue
 
             admission_reason_raw_text = self._get_statuses_raw_text_for_date(
-                critical_statuses_by_date, start_date
+                all_statuses_by_date, start_date
             )
             admission_reason = supervision_period_admission_reason_mapper(
                 normalize(admission_reason_raw_text, remove_punctuation=True)
             )
             termination_reason_raw_text = (
-                self._get_statuses_raw_text_for_date(
-                    critical_statuses_by_date, end_date
-                )
+                self._get_statuses_raw_text_for_date(all_statuses_by_date, end_date)
                 if end_date
                 else None
             )
@@ -242,29 +243,6 @@ class UsMoSupervisionNormalizationDelegate(
                     result[critical_date].append(period)
         return result
 
-    def _get_critical_statuses_by_date(
-        self,
-        supervision_type_spans: List[SupervisionTypeSpan],
-    ) -> Dict[date, Set[UsMoSentenceStatus]]:
-        """Obtain both the start and optional end critical statuses and build a
-        dictionary of statuses keyed by date."""
-        critical_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]] = defaultdict(
-            set
-        )
-        for supervision_type_span in supervision_type_spans:
-            critical_statuses_by_date[supervision_type_span.start_date].update(
-                supervision_type_span.start_critical_statuses
-            )
-            if supervision_type_span.end_date:
-                if not supervision_type_span.end_critical_statuses:
-                    raise ValueError(
-                        "Expected nonnull end_critical_statuses for type span with nonnull end_date"
-                    )
-                critical_statuses_by_date[supervision_type_span.end_date].update(
-                    supervision_type_span.end_critical_statuses
-                )
-        return critical_statuses_by_date
-
     def _get_period_supervision_type(
         self,
         new_time_span: Tuple[date, Optional[date]],
@@ -288,19 +266,19 @@ class UsMoSupervisionNormalizationDelegate(
 
     def _get_statuses_raw_text_for_date(
         self,
-        critical_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]],
+        all_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]],
         status_date: date,
     ) -> str:
-        """Obtain the ingest-style raw text with the critical statuses to populate the
+        """Obtain the ingest-style raw text with the statuses to populate the
         admission/termination reason raw text fields."""
-        critical_statuses = sorted(
+        statuses = sorted(
             set(
-                critical_day_status.status_code
-                for critical_day_status in critical_statuses_by_date[status_date]
+                day_status.status_code
+                for day_status in all_statuses_by_date[status_date]
             )
         )
         return (
-            ",".join(critical_statuses)
-            if critical_statuses
+            ",".join(statuses)
+            if statuses
             else StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value
         )

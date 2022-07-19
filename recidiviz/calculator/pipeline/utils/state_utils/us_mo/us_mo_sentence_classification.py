@@ -245,12 +245,6 @@ class SupervisionTypeSpan(DurationMixin):
     # until present day.
     end_date: Optional[date] = attr.ib()
 
-    # Critical sentence statuses associated with the supervision_type start date
-    start_critical_statuses: List[UsMoSentenceStatus] = attr.ib()
-
-    # Critical sentence statuses associated with the supervision_type end date
-    end_critical_statuses: Optional[List[UsMoSentenceStatus]] = attr.ib()
-
     @property
     def duration(self) -> DateRange:
         return DateRange.from_maybe_open_range(
@@ -330,10 +324,6 @@ class UsMoSentenceMixin(Generic[SentenceType]):
                     start_date=start_date,
                     end_date=end_date,
                     supervision_type=supervision_type,
-                    start_critical_statuses=critical_statuses_by_day[start_date],
-                    end_critical_statuses=critical_statuses_by_day[end_date]
-                    if end_date
-                    else None,
                 )
             )
 
