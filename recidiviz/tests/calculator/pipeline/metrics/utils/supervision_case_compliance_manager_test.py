@@ -1319,7 +1319,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             state_code=StateCode.US_ID.value,
             custodial_authority_raw_text="US_ID_DOC",
             start_date=start_date,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
@@ -1365,7 +1365,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             state_code=StateCode.US_ID.value,
             custodial_authority_raw_text="US_ID_DOC",
             start_date=start_date,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
@@ -1713,7 +1713,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             state_code=StateCode.US_ID.value,
             custodial_authority_raw_text="US_ID_DOC",
             start_date=start_date,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
@@ -1751,7 +1751,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             state_code=StateCode.US_ID.value,
             custodial_authority_raw_text="US_ID_DOC",
             start_date=start_date,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
@@ -1797,7 +1797,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             state_code=StateCode.US_ID.value,
             custodial_authority_raw_text="US_ID_DOC",
             start_date=start_date,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 

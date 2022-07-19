@@ -68,7 +68,7 @@ def supervision_admission_reason_mapper(
         INCARCERATION_FACILITY_TYPE,
         OTHER_FACILITY_TYPE,
     ):  # Coming from incarceration.
-        return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+        return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
     if label == FUGITIVE_FACILITY_TYPE:  # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
