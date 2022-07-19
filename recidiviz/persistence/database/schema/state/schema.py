@@ -333,6 +333,7 @@ state_incarceration_period_release_reason = Enum(
 state_supervision_period_admission_reason = Enum(
     state_enum_strings.state_supervision_period_admission_reason_absconsion,
     state_enum_strings.state_supervision_period_admission_reason_conditional_release,
+    state_enum_strings.state_supervision_period_admission_reason_release_from_incarceration,
     state_enum_strings.state_supervision_period_admission_reason_court_sentence,
     state_enum_strings.state_supervision_period_admission_reason_investigation,
     state_enum_strings.state_supervision_period_admission_reason_transfer_from_other_jurisdiction,
