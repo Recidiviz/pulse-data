@@ -900,7 +900,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=supervision_level,
         )
@@ -947,7 +947,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=supervision_level,
         )
@@ -1042,7 +1042,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=supervision_level,
         )
@@ -1219,7 +1219,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=StateSupervisionLevel.LIMITED,
         )
@@ -1265,7 +1265,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=supervision_level,
         )
@@ -1370,7 +1370,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=supervision_level,
         )
@@ -1559,7 +1559,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             state_code="US_PA",
             custodial_authority_raw_text="US_PA_DOC",
             start_date=start_of_supervision,
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
