@@ -597,7 +597,7 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         "99O2035",  # Offender declared absconder - from TAK026 BW$SCD
         "65L9100",  # Offender declared absconder - from TAK026 BW$SCD
     ],
-    StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
+    StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: [
         # All 40O* statuses correspond to being released from an
         # institution to supervision.
         "40O0010",  # Emer Board RF Housing-Release
