@@ -110,7 +110,7 @@ ALL_SUPERVISION_STATUSES = (
         "ACTIVE",
     ]
 )
-CONDITIONAL_RELEASE_STATUSES = [COMMUNITY_CONFINEMENT_STATUS, PAROLE_STATUS]
+RELEASE_FROM_INCARCERATION_STATUSES = [COMMUNITY_CONFINEMENT_STATUS, PAROLE_STATUS]
 INACTIVE_STATUS = "INACTIVE"
 
 # Location types are from the CIS_908_CCS_LOCATION.Cis_9080_Ccs_Location_Type_Cd column
@@ -509,12 +509,12 @@ def parse_supervision_admission_reason(
 
     if (
         current_jurisdiction_location_type in DOC_FACILITY_LOCATION_TYPES
-        or current_status in CONDITIONAL_RELEASE_STATUSES
+        or current_status in RELEASE_FROM_INCARCERATION_STATUSES
     ) and _previously_not_on_supervision(
         previous_jurisdiction_location_type, previous_status
     ):
         # Released early from incarceration to a community confinement program
-        return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+        return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
 
     if (
         previous_jurisdiction_location_type in OTHER_JURISDICTION_LOCATION_TYPES
