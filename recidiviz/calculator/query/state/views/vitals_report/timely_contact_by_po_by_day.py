@@ -55,7 +55,7 @@ WITH overdue_contacts AS (
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
 
-    SELECT
+    SELECT DISTINCT
         overdue_contacts.state_code,
         overdue_contacts.date_of_supervision,
         IFNULL(overdue_contacts.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
@@ -65,9 +65,6 @@ WITH overdue_contacts AS (
         sup_pop.supervisees_requiring_contact AS supervisees_requiring_contact,
         IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_contact - total_overdue), sup_pop.supervisees_requiring_contact), 1) * 100 AS timely_contact,
     FROM overdue_contacts
-    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
-        ON overdue_contacts.state_code = locations.state_code
-        AND {vitals_state_specific_join_with_supervision_location_ids}
     INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = overdue_contacts.state_code
         AND sup_pop.date_of_supervision = overdue_contacts.date_of_supervision
@@ -82,11 +79,7 @@ TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=TIMELY_CONTACT_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=TIMELY_CONTACT_BY_PO_BY_DAY_DESCRIPTION,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    vitals_state_specific_join_with_supervision_location_ids=state_specific_query_strings.vitals_state_specific_join_with_supervision_location_ids(
-        "overdue_contacts"
-    ),
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_contacts"
     ),
