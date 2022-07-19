@@ -18,6 +18,7 @@
 import unittest
 from datetime import date
 
+import attr
 import mock
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
@@ -360,6 +361,92 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         results = self.delegate.split_periods_based_on_sentences(
             person_id=self.person_id,
             supervision_periods=[supervision_period],
+            incarceration_sentences=[],
+            supervision_sentences=[supervision_sentence],
+        )
+
+        self.assertEqual(expected_periods, results)
+
+    def test_split_periods_based_on_sentences_absconsion(self) -> None:
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            external_id="sp1",
+            state_code="US_MO",
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            admission_reason_raw_text="15I1000",
+            start_date=date(2020, 9, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            termination_reason_raw_text="65L9100",
+            termination_date=date(2020, 9, 15),
+            supervision_type=None,
+        )
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            external_id="sp1",
+            state_code="US_MO",
+            admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
+            admission_reason_raw_text="65L9100",
+            start_date=date(2020, 9, 15),
+            termination_reason=StateSupervisionPeriodTerminationReason.SUSPENSION,
+            termination_reason_raw_text="65O2015",
+            termination_date=date(2020, 10, 1),
+            supervision_type=None,
+        )
+
+        base_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2020, 9, 1),
+            completion_date=date(2020, 10, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.SUSPENDED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+        )
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+            sentence=base_sentence,
+            sentence_statuses_raw=[
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-1",
+                    "status_code": "15I1000",
+                    "status_date": "20200901",
+                    "status_description": "New Court Probation",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-2",
+                    "status_code": "65L9100",
+                    "status_date": "20200915",
+                    "status_description": "Offender Declared Absconder",
+                },
+                {
+                    "sentence_external_id": base_sentence.external_id,
+                    "sentence_status_external_id": f"{base_sentence.external_id}-3",
+                    "status_code": "65O2015",
+                    "status_date": "20201001",
+                    "status_description": "Court Probation Suspension",
+                },
+            ],
+        )
+
+        expected_periods = [
+            attr.evolve(
+                supervision_period_1,
+                external_id=None,
+                supervision_period_id=29000070008912345,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+            attr.evolve(
+                supervision_period_2,
+                external_id=None,
+                supervision_period_id=29000070008912346,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+        ]
+
+        results = self.delegate.split_periods_based_on_sentences(
+            person_id=self.person_id,
+            supervision_periods=[supervision_period_1, supervision_period_2],
             incarceration_sentences=[],
             supervision_sentences=[supervision_sentence],
         )
