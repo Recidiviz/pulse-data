@@ -36,10 +36,10 @@ class TestJusticeCountsBulkUploadHelpers(TestCase):
                 for metricfile in filename_to_metricfile.values()
             }
             registered_metric_keys = {
-                m.key for m in METRICS_BY_SYSTEM[system.value] if not m.disabled
+                m.key for m in METRICS_BY_SYSTEM[system] if not m.disabled
             }
             if metric_keys != registered_metric_keys:
                 raise ValueError(
-                    f"{system.value} has the following registered metric keys: {registered_metric_keys} "
+                    f"{system} has the following registered metric keys: {registered_metric_keys} "
                     f"and the following metric keys in SYSTEM_TO_FILENAME_TO_METRICFILE: {metric_keys}."
                 )

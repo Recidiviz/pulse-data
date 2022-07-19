@@ -113,7 +113,7 @@ PROSECUTION_METRIC_FILES = [
 # The `test_metricfile_list` unit test ensures that this dictionary includes
 # all metrics registered for each system.
 SYSTEM_TO_FILENAME_TO_METRICFILE = {
-    schema.System.PROSECUTION: {
+    schema.System.PROSECUTION.value: {
         metricfile.filename: metricfile for metricfile in PROSECUTION_METRIC_FILES
     },
 }
