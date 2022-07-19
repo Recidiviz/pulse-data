@@ -22,7 +22,6 @@ import re
 import uuid
 from concurrent import futures
 from http import HTTPStatus
-from time import sleep
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
@@ -91,30 +90,6 @@ monitoring.register_views([failed_validations_view, failed_to_run_validations_vi
 
 
 validation_manager_blueprint = Blueprint("validation_manager", __name__)
-
-# TODO(#13775): Delete this endpoint once we have verified Airflow orchestration works.
-@validation_manager_blueprint.route(
-    "/test_validate_orchestration", methods=["GET", "POST"]
-)
-@requires_gae_auth
-def test_handle_validation_request() -> Tuple[str, HTTPStatus]:
-    """TEST ONLY API endpoint that that enables us to validate Airflow orchestration."""
-    cloud_task_id = get_current_cloud_task_id()
-    start_datetime = datetime.datetime.now()
-    sleep(3)
-    num_validations_run = 5
-    end_datetime = datetime.datetime.now()
-
-    runtime_sec = int((end_datetime - start_datetime).total_seconds())
-
-    store_validation_run_completion_in_big_query(
-        validation_run_id="dummy_run_id",
-        num_validations_run=num_validations_run,
-        cloud_task_id=cloud_task_id,
-        validations_runtime_sec=runtime_sec,
-    )
-
-    return "", HTTPStatus.OK
 
 
 @validation_manager_blueprint.route("/validate", methods=["GET", "POST"])
