@@ -65,8 +65,8 @@ class UsNdSupervisionNormalizationDelegate(
                 == StateSupervisionPeriodSupervisionType.PAROLE
             ):
                 # If the person is under parole supervision, the current admission
-                # reason should be CONDITIONAL_RELEASE
-                return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+                # reason should be RELEASE_FROM_INCARCERATION
+                return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
             if (
                 supervision_period.supervision_type
                 == StateSupervisionPeriodSupervisionType.PROBATION

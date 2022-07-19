@@ -768,7 +768,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         result = deserialize_entity_factories.StateSupervisionPeriodFactory.deserialize(
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PAR",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             admission_reason_raw_text="CR",
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_reason_raw_text="D",
@@ -788,7 +788,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         expected_result = entities.StateSupervisionPeriod(
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PAR",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             admission_reason_raw_text="CR",
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_reason_raw_text="D",

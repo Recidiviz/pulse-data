@@ -47,7 +47,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionPeriod(
             supervision_type="PAROLE",
-            admission_reason="CONDITIONAL_RELEASE",
+            admission_reason="RELEASE_FROM_INCARCERATION",
             termination_reason="DISCHARGE",
             supervision_level=None,
             state_supervision_period_id="SUPERVISION_ID",
@@ -71,8 +71,8 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         expected_result = entities.StateSupervisionPeriod(
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_raw_text="PAROLE",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            admission_reason_raw_text="CONDITIONAL_RELEASE",
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            admission_reason_raw_text="RELEASE_FROM_INCARCERATION",
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_reason_raw_text="DISCHARGE",
             supervision_level=None,

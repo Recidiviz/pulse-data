@@ -242,7 +242,7 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             start_date=datetime.date(2017, 5, 1),
             termination_date=datetime.date(2018, 2, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
 

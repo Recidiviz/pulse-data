@@ -45,7 +45,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -80,7 +80,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -144,7 +144,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
         )
 
@@ -246,7 +246,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
@@ -304,7 +304,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
         )
@@ -360,7 +360,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
         )
@@ -418,7 +418,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
@@ -478,7 +478,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -510,7 +510,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -544,7 +544,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
