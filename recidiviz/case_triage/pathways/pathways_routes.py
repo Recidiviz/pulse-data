@@ -25,6 +25,10 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas import load_api_schema
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (
+    get_dimension_transformer,
+)
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE_BY_NAME
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
@@ -58,13 +62,19 @@ def match_filter_string(value: str) -> Optional[str]:
 def load_filters_from_query_string() -> Dict[str, List[str]]:
     filters: Dict[str, List[str]] = defaultdict(list)
 
-    for key, values in request.args.to_dict(flat=False).items():
-        filter_dimension = match_filter_string(key)
+    if "time_period" in request.args:
+        filters["time_period"] = [request.args["time_period"]]
+
+    for param_key, values in request.args.to_dict(flat=False).items():
+        filter_dimension = match_filter_string(param_key)
 
         if filter_dimension:
             filters[filter_dimension] = [*filters[filter_dimension], *values]
 
-    return filters
+    return {
+        filter_dimension: get_dimension_transformer(Dimension(filter_dimension))(values)
+        for filter_dimension, values in filters.items()
+    }
 
 
 def create_pathways_api_blueprint() -> Blueprint:
@@ -124,10 +134,9 @@ def create_pathways_api_blueprint() -> Blueprint:
         source_data: Dict[str, Any] = {
             "filters": load_filters_from_query_string(),
         }
-        for arg in ["group", "time_period"]:
-            arg_value = request.args.get(arg)
-            if arg_value:
-                source_data[arg] = arg_value
+
+        if "group" in request.args:
+            source_data["group"] = request.args["group"]
 
         fetch_metric_params_schema = load_api_schema(
             FETCH_METRIC_SCHEMAS_BY_NAME[metric_name],

@@ -14,24 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-""" Dimension enumeration for Pathways metrics"""
-import enum
+""" Contains exceptions for Pathways """
+
+import attr
 
 
-class Dimension(enum.Enum):
-    AGE_GROUP = "age_group"
-    FACILITY = "facility"
-    GENDER = "gender"
-    JUDICIAL_DISTRICT = "judicial_district"
-    LENGTH_OF_STAY = "length_of_stay"
-    PRIOR_LENGTH_OF_INCARCERATION = "prior_length_of_incarceration"
-    RACE = "race"
-    SUPERVISING_OFFICER = "supervising_officer"
-    SUPERVISION_DISTRICT = "supervision_district"
-    # TODO(#13552): Remove this once FE uses supervision_district
-    DISTRICT = "district"
-    SUPERVISION_LEVEL = "supervision_level"
-    SUPERVISION_START_DATE = "supervision_start_date"
-    SUPERVISION_TYPE = "supervision_type"
-    TIME_PERIOD = "time_period"
-    YEAR_MONTH = "year_month"
+@attr.s(auto_attribs=True)
+class MetricMappingError(ValueError):
+    message: str

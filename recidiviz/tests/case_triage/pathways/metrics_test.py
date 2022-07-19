@@ -24,18 +24,21 @@ from unittest.case import TestCase
 
 import pytest
 
-from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metric_queries import (
     CountByDimensionMetricParams,
+    DimensionOperation,
     FetchMetricParams,
     LibertyToPrisonTransitionsCount,
     MetricQueryBuilder,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
+    SupervisionPopulationByDimensionCount,
+    SupervisionPopulationOverTimeCount,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
-    TimePeriod,
 )
 from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
 from recidiviz.common.constants.states import _FakeStateCode
@@ -43,6 +46,8 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
     PrisonToSupervisionTransitions,
+    SupervisionPopulationByDimension,
+    SupervisionPopulationOverTime,
     SupervisionToLibertyTransitions,
     SupervisionToPrisonTransitions,
 )
@@ -120,10 +125,13 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
         # TODO(#13950): Replace with StateCode
         metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         for dimension_mapping in self.query_builder.dimension_mappings:
-            results[dimension_mapping.dimension] = metric_fetcher.fetch(
-                self.query_builder,
-                self.query_builder.build_params({"group": dimension_mapping.dimension}),
-            )
+            if DimensionOperation.GROUP in dimension_mapping.operations:
+                results[dimension_mapping.dimension] = metric_fetcher.fetch(
+                    self.query_builder,
+                    self.query_builder.build_params(
+                        {"group": dimension_mapping.dimension}
+                    ),
+                )
 
         for dimension, expected_counts in self.all_expected_counts.items():
             self.test.assertEqual(expected_counts, results.get(dimension))
@@ -219,7 +227,8 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
-                group=Dimension.GENDER, time_period=TimePeriod.MONTHS_0_6
+                group=Dimension.GENDER,
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
             ),
         )
 
@@ -293,7 +302,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.FACILITY,
-                time_period=TimePeriod.MONTHS_0_6,
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
             ),
         )
 
@@ -397,7 +406,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
-                time_period=TimePeriod.MONTHS_0_6,
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
             ),
         )
 
@@ -541,7 +550,9 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
         """Tests that person id 6 is not included in the response"""
         results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
-            FetchMetricParams(time_period=TimePeriod.MONTHS_0_6),
+            FetchMetricParams(
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
+            ),
         )
 
         self.test.assertEqual(
@@ -708,7 +719,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.SUPERVISION_DISTRICT,
-                time_period=TimePeriod.MONTHS_0_6,
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
             ),
         )
 
@@ -716,6 +727,152 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
             [
                 {"supervision_district": "DISTRICT_10", "count": 2},
                 {"supervision_district": "DISTRICT_18", "count": 2},
+            ],
+            results,
+        )
+
+
+class TestSupervisionPopulationOverTimeCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for SupervisionPopulationCount metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return SupervisionPopulationOverTime
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return SupervisionPopulationOverTimeCount
+
+    @property
+    def all_expected_counts(
+        self,
+    ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        return {
+            Dimension.YEAR_MONTH: [
+                {
+                    "year": 2022,
+                    "month": 1,
+                    "count": 2,
+                },
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "count": 2,
+                },
+            ],
+        }
+
+    def test_metrics_filter(self) -> None:
+        # TODO(#13950): Replace with StateCode
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.YEAR_MONTH,
+                filters={
+                    Dimension.SUPERVISION_DISTRICT: ["OTHER"],
+                },
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {
+                    "year": 2022,
+                    "month": 1,
+                    "count": 1,
+                },
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "count": 1,
+                },
+            ],
+            results,
+        )
+
+    def test_filter_time_period(self) -> None:
+        # TODO(#13950): Replace with StateCode
+        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.YEAR_MONTH,
+                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "count": 2,
+                }
+            ],
+            results,
+        )
+
+
+class TestSupervisionPopulationByDimensionCount(
+    PathwaysCountByMetricTestBase, TestCase
+):
+    """Test for SupervisionPopulationByDimensionCount metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return SupervisionPopulationByDimension
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return SupervisionPopulationByDimensionCount
+
+    @property
+    def all_expected_counts(
+        self,
+    ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        return {
+            Dimension.SUPERVISION_LEVEL: [
+                {"supervision_level": "HIGH", "count": 1},
+                {"supervision_level": "MINIMUM", "count": 1},
+            ],
+            Dimension.DISTRICT: [
+                {"district": "District 1", "count": 1},
+                {"district": "District 2", "count": 1},
+                {"district": "OTHER", "count": 1},
+            ],
+            Dimension.SUPERVISION_DISTRICT: [
+                {"supervision_district": "District 1", "count": 1},
+                {"supervision_district": "District 2", "count": 1},
+                {"supervision_district": "OTHER", "count": 1},
+            ],
+            Dimension.RACE: [
+                {"race": "HISPANIC", "count": 1},
+                {"race": "WHITE", "count": 1},
+            ],
+        }
+
+    def test_metrics_filter(self) -> None:
+        # TODO(#13950): Replace with StateCode
+        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
+            self.query_builder,
+            CountByDimensionMetricParams(
+                group=Dimension.RACE,
+                filters={
+                    Dimension.SUPERVISION_DISTRICT: ["OTHER"],
+                },
+            ),
+        )
+
+        self.test.assertEqual(
+            [
+                {"race": "WHITE", "count": 1},
             ],
             results,
         )

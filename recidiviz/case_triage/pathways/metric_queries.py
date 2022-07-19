@@ -16,53 +16,33 @@
 # ============================================================================
 """ Contains functionality to map metrics to our relational models inside the query builders"""
 import abc
-import enum
 from typing import Dict, Generic, List, Tuple, TypeVar, Union
 
 import attr
-from attrs import validators
-from sqlalchemy import Column, String, cast, func, literal_column
+from sqlalchemy import Column, String, cast, distinct, func, literal_column
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Query
+from sqlalchemy.sql.ddl import DDLElement
 
-from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+    DimensionMapping,
+    DimensionMappingCollection,
+    DimensionOperation,
+)
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
     PrisonToSupervisionTransitions,
+    SupervisionPopulationByDimension,
+    SupervisionPopulationOverTime,
     SupervisionToLibertyTransitions,
     SupervisionToPrisonTransitions,
 )
 
 
-class TimePeriod(enum.Enum):
-    MONTHS_0_6 = "months_0_6"
-    MONTHS_7_12 = "months_7_12"
-    MONTHS_13_24 = "months_13_24"
-    MONTHS_25_60 = "months_25_60"
-
-    @classmethod
-    def month_map(cls) -> Dict[str, int]:
-        return {member.value: int(member.value.split("_")[1]) for member in cls}
-
-    @classmethod
-    def period_range(cls, time_period: "TimePeriod") -> List[str]:
-        month_map = cls.month_map()
-
-        return [
-            member.value
-            for member in TimePeriod
-            if month_map[member.value] <= month_map[time_period.value]
-        ]
-
-
 @attr.s(auto_attribs=True)
 class FetchMetricParams:
-    time_period: TimePeriod = attr.field(
-        default=TimePeriod.MONTHS_25_60,
-        converter=TimePeriod,
-        validator=validators.in_(TimePeriod),
-    )
     filters: Dict[Dimension, Union[str, List[str]]] = attr.field(factory=dict)
 
     @property
@@ -74,7 +54,7 @@ class FetchMetricParams:
 
     @property
     def cache_fragment(self) -> str:
-        return f"time_period={repr(self.time_period.value)} filters={repr(self.sorted_filters)}"
+        return f"filters={repr(self.sorted_filters)}"
 
 
 @attr.s(auto_attribs=True)
@@ -84,35 +64,6 @@ class CountByDimensionMetricParams(FetchMetricParams):
     @property
     def cache_fragment(self) -> str:
         return f"{super().cache_fragment} group={repr(self.group.value)}"
-
-
-@attr.s(auto_attribs=True)
-class MetricMappingError(ValueError):
-    message: str
-
-
-@attr.s(auto_attribs=True)
-class MetricQueryError(ValueError):
-    message: str
-
-
-class DimensionOperation(enum.IntFlag):
-    """Flags for if the dimension supports a given operation"""
-
-    FILTER = 1
-    GROUP = 2
-    ALL = FILTER | GROUP
-
-
-@attr.s(auto_attribs=True)
-class DimensionMapping:
-    dimension: Dimension
-    operations: DimensionOperation
-    columns: List[Column] = attr.ib(factory=list)
-
-    @property
-    def is_composite(self) -> bool:
-        return len(self.columns) > 1
 
 
 ParamsType = TypeVar("ParamsType", bound=FetchMetricParams)
@@ -127,25 +78,20 @@ class MetricQueryBuilder(Generic[ParamsType]):
     dimension_mappings: List[DimensionMapping]
 
     def __attrs_post_init__(self) -> None:
-        self.filter_dimensions = {
-            dimension_mapping.dimension: dimension_mapping.columns
-            for dimension_mapping in self.dimension_mappings
-            if DimensionOperation.FILTER in dimension_mapping.operations
-        }
+        self.dimension_mapping_collection = DimensionMappingCollection(
+            self.dimension_mappings
+        )
 
-    def column_for_dimension_filter(self, dimension: Dimension) -> Column:
-        try:
-            column, *rest = self.filter_dimensions[dimension]
+    def build_filter_conditions(self, params: ParamsType) -> List[str]:
+        conditions = [
+            self.dimension_mapping_collection.columns_for_dimension_operation(
+                DimensionOperation.FILTER,
+                dimension,
+            ).in_(value)
+            for dimension, value in params.filters.items()
+        ]
 
-            if rest:
-                raise MetricMappingError(
-                    "Composite dimensions do not directly map to a single column and cannot be filtered"
-                )
-            return column
-        except KeyError as e:
-            raise MetricMappingError(
-                f"Dimension {dimension.value} is not allowed for {self}"
-            ) from e
+        return conditions
 
     @property
     def cache_fragment(self) -> str:
@@ -168,43 +114,19 @@ class CountByDimensionMetricQueryBuilder(
     """Builder for Pathways postgres queries that return the count of entries matching a filter and grouped by a
     dimension."""
 
-    def __attrs_post_init__(self) -> None:
-        super().__attrs_post_init__()
-        self.grouping_dimensions = {
-            dimension_mapping.dimension: dimension_mapping.columns
-            for dimension_mapping in self.dimension_mappings
-            if DimensionOperation.GROUP in dimension_mapping.operations
-        }
-
-    def columns_for_dimension_grouping(
-        self, dimension: Dimension
-    ) -> Union[Column, List[Column]]:
-        try:
-            return self.grouping_dimensions[dimension]
-        except KeyError as e:
-            raise MetricMappingError(
-                f"Dimension {dimension.value} is not allowed for {self}"
-            ) from e
+    counting_function: Union[DDLElement, Column] = attr.field(default=func.count())
 
     def build_query(self, params: CountByDimensionMetricParams) -> Query:
-        grouped_columns = self.columns_for_dimension_grouping(params.group)
-        conditions = [
-            self.column_for_dimension_filter(dimension).in_(value)
-            for dimension, value in params.filters.items()
-        ]
-
-        if params.time_period:
-            if not self.model.time_period:
-                raise MetricQueryError(
-                    f"Querying 'time_period' is not allowed for {self}"
-                )
-
-            time_periods = TimePeriod.period_range(params.time_period)
-            conditions.append(self.model.time_period.in_(time_periods))
+        grouped_columns = list(
+            self.dimension_mapping_collection.columns_for_dimension_operation(
+                DimensionOperation.GROUP,
+                params.group,
+            )
+        )
 
         return (
-            Query([*grouped_columns, func.count(self.model.time_period)])
-            .filter(*conditions)
+            Query([*grouped_columns, self.counting_function])
+            .filter(*self.build_filter_conditions(params))
             .group_by(*grouped_columns)
             .order_by(*grouped_columns)
         )
@@ -222,19 +144,6 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
     aggregate_columns: List[Column]
 
     def build_query(self, params: FetchMetricParams) -> Query:
-        conditions = [
-            self.column_for_dimension_filter(dimension).in_(value)
-            for dimension, value in params.filters.items()
-        ]
-
-        if params.time_period:
-            if not self.model.time_period:
-                raise MetricQueryError(
-                    f"Querying 'time_period' is not allowed for {self}"
-                )
-            time_periods = TimePeriod.period_range(params.time_period)
-            conditions.append(self.model.time_period.in_(time_periods))
-
         grouped_columns = [
             column
             for mapping in self.dimension_mappings
@@ -255,7 +164,7 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
         ]
         return (
             Query([*grouped_columns, *aggregate_columns])
-            .filter(*conditions)
+            .filter(*self.build_filter_conditions(params))
             .group_by(*grouped_columns)
             .order_by(*grouped_columns)
         )
@@ -272,7 +181,15 @@ LibertyToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
         DimensionMapping(
             dimension=Dimension.YEAR_MONTH,
             operations=DimensionOperation.GROUP,
-            columns=[LibertyToPrisonTransitions.year, LibertyToPrisonTransitions.month],
+            columns=[
+                LibertyToPrisonTransitions.year,
+                LibertyToPrisonTransitions.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[LibertyToPrisonTransitions.time_period],
         ),
         DimensionMapping(
             dimension=Dimension.JUDICIAL_DISTRICT,
@@ -315,6 +232,11 @@ PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
             ],
         ),
         DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonToSupervisionTransitions.time_period],
+        ),
+        DimensionMapping(
             dimension=Dimension.AGE_GROUP,
             operations=DimensionOperation.ALL,
             columns=[PrisonToSupervisionTransitions.age_group],
@@ -347,6 +269,11 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
             columns=[PrisonToSupervisionTransitions.age_group],
         ),
         DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonToSupervisionTransitions.time_period],
+        ),
+        DimensionMapping(
             dimension=Dimension.GENDER,
             operations=DimensionOperation.FILTER,
             columns=[PrisonToSupervisionTransitions.gender],
@@ -361,11 +288,6 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
             operations=DimensionOperation.FILTER,
             columns=[PrisonToSupervisionTransitions.facility],
         ),
-        DimensionMapping(
-            dimension=Dimension.TIME_PERIOD,
-            operations=DimensionOperation.FILTER,
-            columns=[PrisonToSupervisionTransitions.time_period],
-        ),
     ],
     non_aggregate_columns=[
         PrisonToSupervisionTransitions.full_name,
@@ -376,6 +298,87 @@ PrisonToSupervisionTransitionsPersonLevel = PersonLevelMetricQueryBuilder(
         PrisonToSupervisionTransitions.facility,
     ],
 )
+
+SupervisionPopulationOverTimeCount = CountByDimensionMetricQueryBuilder(
+    name="SupervisionPopulationOverTimeCount",
+    model=SupervisionPopulationOverTime,
+    counting_function=func.count(distinct(SupervisionPopulationOverTime.person_id)),
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.YEAR_MONTH,
+            operations=DimensionOperation.GROUP,
+            columns=[
+                SupervisionPopulationOverTime.year,
+                SupervisionPopulationOverTime.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationOverTime.time_period],
+        ),
+        # TODO(#13552): Remove this once FE uses supervision_district
+        DimensionMapping(
+            dimension=Dimension.DISTRICT,
+            operations=DimensionOperation.FILTER,
+            columns=[
+                SupervisionPopulationOverTime.supervision_district.label("district")
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_DISTRICT,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationOverTime.supervision_district],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_LEVEL,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationOverTime.supervision_level],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationOverTime.race],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationOverTime.time_period],
+        ),
+    ],
+)
+
+SupervisionPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
+    name="SupervisionPopulationByDimensionCount",
+    model=SupervisionPopulationByDimension,
+    counting_function=func.count(distinct(SupervisionPopulationByDimension.person_id)),
+    dimension_mappings=[
+        # TODO(#13552): Remove this once FE uses supervision_district
+        DimensionMapping(
+            dimension=Dimension.DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[
+                SupervisionPopulationByDimension.supervision_district.label("district")
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_DISTRICT,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionPopulationByDimension.supervision_district],
+        ),
+        DimensionMapping(
+            dimension=Dimension.SUPERVISION_LEVEL,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionPopulationByDimension.supervision_level],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.ALL,
+            columns=[SupervisionPopulationByDimension.race],
+        ),
+    ],
+)
+
 
 SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="SupervisionToLibertyTransitionsCount",
@@ -388,6 +391,11 @@ SupervisionToLibertyTransitionsCount = CountByDimensionMetricQueryBuilder(
                 SupervisionToLibertyTransitions.year,
                 SupervisionToLibertyTransitions.month,
             ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionToLibertyTransitions.time_period],
         ),
         DimensionMapping(
             dimension=Dimension.AGE_GROUP,
@@ -451,6 +459,11 @@ SupervisionToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
                 SupervisionToPrisonTransitions.year,
                 SupervisionToPrisonTransitions.month,
             ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionToPrisonTransitions.time_period],
         ),
         DimensionMapping(
             dimension=Dimension.AGE_GROUP,

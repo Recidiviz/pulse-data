@@ -20,8 +20,10 @@ import datetime
 from marshmallow import Schema, ValidationError, fields, validate
 from marshmallow_enum import EnumField
 
-from recidiviz.case_triage.pathways.dimension import Dimension
-from recidiviz.case_triage.pathways.metric_queries import TimePeriod
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+    DimensionOperation,
+)
 from recidiviz.case_triage.pathways.metrics import (
     ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE,
     ENABLED_PERSON_LEVEL_METRICS_BY_STATE,
@@ -39,24 +41,29 @@ def is_date_string(value: str) -> None:
 
 for enabled_metrics in ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE.values():
     for metric_class in enabled_metrics:
+        dimension_mapping_collection = metric_class.dimension_mapping_collection
+
         FETCH_METRIC_SCHEMAS_BY_NAME[metric_class.name] = Schema.from_dict(
             {
-                "time_period": EnumField(
-                    TimePeriod,
-                    by_value=True,
-                    default=TimePeriod.MONTHS_0_6.value,
-                ),
                 "group": EnumField(
                     Dimension,
                     by_value=True,
                     required=True,
-                    validate=validate.OneOf(metric_class.grouping_dimensions.keys()),
+                    validate=validate.OneOf(
+                        dimension_mapping_collection.operable_map[
+                            DimensionOperation.GROUP
+                        ].keys()
+                    ),
                 ),
                 "filters": fields.Dict(
                     EnumField(
                         Dimension,
                         by_value=True,
-                        validate=validate.OneOf(metric_class.filter_dimensions.keys()),
+                        validate=validate.OneOf(
+                            dimension_mapping_collection.operable_map[
+                                DimensionOperation.FILTER
+                            ].keys()
+                        ),
                     ),
                     fields.List(fields.Str),
                 ),
@@ -65,19 +72,18 @@ for enabled_metrics in ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE.values():
 
 for enabled_person_metrics in ENABLED_PERSON_LEVEL_METRICS_BY_STATE.values():
     for person_metric_class in enabled_person_metrics:
+        dimension_mapping_collection = person_metric_class.dimension_mapping_collection
+
         FETCH_METRIC_SCHEMAS_BY_NAME[person_metric_class.name] = Schema.from_dict(
             {
-                "time_period": EnumField(
-                    TimePeriod,
-                    by_value=True,
-                    default=TimePeriod.MONTHS_0_6.value,
-                ),
                 "filters": fields.Dict(
                     EnumField(
                         Dimension,
                         by_value=True,
                         validate=validate.OneOf(
-                            person_metric_class.filter_dimensions.keys()
+                            dimension_mapping_collection.operable_map[
+                                DimensionOperation.FILTER
+                            ].keys(),
                         ),
                     ),
                     fields.List(fields.Str),

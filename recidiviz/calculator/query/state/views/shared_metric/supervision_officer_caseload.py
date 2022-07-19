@@ -122,7 +122,7 @@ SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         state_code_column="state_code", enabled_states=get_pathways_enabled_states()
     ),
     transition_time_period=get_binned_time_period_months(
-        "end_date", "WHEN s.end_date is NULL THEN 'months_0_6'"
+        "end_date", special_case_expr="WHEN s.end_date is NULL THEN 'months_0_6'"
     ),
     age_group=add_age_groups("cs.age_end"),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
