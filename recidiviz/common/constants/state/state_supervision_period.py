@@ -128,6 +128,9 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     CONDITIONAL_RELEASE = (
         state_enum_strings.state_supervision_period_admission_reason_conditional_release
     )
+    RELEASE_FROM_INCARCERATION = (
+        state_enum_strings.state_supervision_period_admission_reason_release_from_incarceration
+    )
     COURT_SENTENCE = (
         state_enum_strings.state_supervision_period_admission_reason_court_sentence
     )
@@ -180,6 +183,10 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "`StateSupervisionPeriodSupervisionType.PAROLE` "
     "or `StateSupervisionPeriodSupervisionType.DUAL`, it is currently being used for "
     "any transition from incarceration to supervision (see Issue #12648).",
+    StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: "A period of "
+    "supervision begins directly following a period of incarceration. This could be"
+    " a release onto parole but could also be used, for example, when someone is "
+    "released from incarceration to serve a stacked probation sentence.",
     StateSupervisionPeriodAdmissionReason.COURT_SENTENCE: "Used when a period of "
     "supervision has started because the person was sentenced to serve some "
     "form of supervision by the court.",
@@ -511,6 +518,7 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     "ABSCONDED": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     "ABSCONSION": StateSupervisionPeriodAdmissionReason.ABSCONSION,
     "CONDITIONAL RELEASE": StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+    "RELEASE FROM INCARCERATION": StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
     "COURT SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     "SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     "EXTERNAL UNKNOWN": StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,

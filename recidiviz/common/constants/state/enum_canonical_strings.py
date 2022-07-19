@@ -257,6 +257,9 @@ state_supervision_period_supervision_type_bench_warrant = "BENCH_WARRANT"
 
 state_supervision_period_admission_reason_absconsion = "ABSCONSION"
 state_supervision_period_admission_reason_conditional_release = "CONDITIONAL_RELEASE"
+state_supervision_period_admission_reason_release_from_incarceration = (
+    "RELEASE_FROM_INCARCERATION"
+)
 state_supervision_period_admission_reason_court_sentence = "COURT_SENTENCE"
 state_supervision_period_admission_reason_investigation = "INVESTIGATION"
 state_supervision_period_admission_reason_transfer_from_other_jurisdiction = (
