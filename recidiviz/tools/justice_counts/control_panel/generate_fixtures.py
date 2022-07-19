@@ -39,6 +39,14 @@ random.seed(0)
 Faker.seed(0)
 FAKE = Faker(locale=["en-US"])
 
+LAW_ENFORCEMENT_AGENCY_ID = 147
+DEFENSE_AGENCY_ID = 148
+PROSECUTION_AGENCY_ID = 149
+COURTS_AND_PRETRIAL_AGENCY_ID = 150
+JAILS_AGENCY_ID = 151
+PRISONS_AGENCY_ID = 152
+SUPERVISION_AGENCY_ID = 153
+
 
 def _create_aggregate_datapoint(
     report: schema.Report, metric_definition: MetricDefinition
@@ -173,13 +181,13 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
     # Use the id that the Agency has on staging, so that users have access
     # on both staging environment and local development
     agency_tuples = [
-        (147, schema.System.LAW_ENFORCEMENT, "Law Enforcement"),
-        (148, schema.System.DEFENSE, "Defense"),
-        (149, schema.System.PROSECUTION, "Prosecution"),
-        (150, schema.System.COURTS_AND_PRETRIAL, "Courts"),
-        (151, schema.System.JAILS, "Jails"),
-        (152, schema.System.PRISONS, "Prisons"),
-        (153, schema.System.SUPERVISION, "Supervision"),
+        (LAW_ENFORCEMENT_AGENCY_ID, schema.System.LAW_ENFORCEMENT, "Law Enforcement"),
+        (DEFENSE_AGENCY_ID, schema.System.DEFENSE, "Defense"),
+        (PROSECUTION_AGENCY_ID, schema.System.PROSECUTION, "Prosecution"),
+        (COURTS_AND_PRETRIAL_AGENCY_ID, schema.System.COURTS_AND_PRETRIAL, "Courts"),
+        (JAILS_AGENCY_ID, schema.System.JAILS, "Jails"),
+        (PRISONS_AGENCY_ID, schema.System.PRISONS, "Prisons"),
+        (SUPERVISION_AGENCY_ID, schema.System.SUPERVISION, "Supervision"),
     ]
     agencies = []
     for agency_id, agency_system, agency_name in agency_tuples:
