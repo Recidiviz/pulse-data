@@ -20,12 +20,13 @@ from typing import List, Mapping, Union
 import attr
 from redis import Redis
 
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metric_queries import (
     DimensionOperation,
     FetchMetricParams,
     MetricQueryBuilder,
-    TimePeriod,
 )
 from recidiviz.case_triage.util import get_pathways_metric_redis
 from recidiviz.cloud_memorystore import utils as cloud_memorystore_utils
@@ -71,17 +72,28 @@ class PathwaysMetricCache:
         self.initialize_cache(mapper)
 
     def initialize_cache(self, mapper: MetricQueryBuilder) -> None:
-        for time_period in TimePeriod:
-            params = mapper.build_params({"time_period": time_period})
 
-            self.fetch(mapper=mapper, params=params)
+        operable_dimensions = mapper.dimension_mapping_collection.operable_map
+        for dimension in operable_dimensions[DimensionOperation.GROUP]:
+            params = mapper.build_params({"group": dimension})
 
-            for dimension_mapping in mapper.dimension_mappings:
-                if DimensionOperation.GROUP in dimension_mapping.operations:
-                    self.fetch(
-                        mapper=mapper,
-                        params=attr.evolve(params, group=dimension_mapping.dimension),
+            self.fetch(
+                mapper=mapper,
+                params=attr.evolve(params, group=dimension),
+            )
+
+            if Dimension.TIME_PERIOD in operable_dimensions[DimensionOperation.FILTER]:
+                for time_period in TimePeriod:
+                    params = attr.evolve(
+                        params,
+                        filters={
+                            Dimension.TIME_PERIOD: TimePeriod.period_range(
+                                time_period.value
+                            )
+                        },
                     )
+
+                    self.fetch(mapper=mapper, params=params)
 
     @classmethod
     def build(cls, state_code: _FakeStateCode) -> "PathwaysMetricCache":

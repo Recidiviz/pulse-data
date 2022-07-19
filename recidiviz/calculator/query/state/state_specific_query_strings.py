@@ -491,13 +491,16 @@ def pathways_state_specific_facility_filter() -> str:
     """
 
 
-def pathways_state_specific_supervision_district_filter() -> str:
+def pathways_state_specific_supervision_district_filter(
+    *,
+    district_column_name: str = "district",
+) -> str:
     """State-specific logic to filter out supervision locations that should not be included in
     Pathways metrics."""
-    return """
+    return f"""
         CASE
             WHEN state_code = "US_ME" THEN
-                UPPER(district) NOT IN (
+                UPPER({district_column_name}) NOT IN (
                     -- Filter out Central Office Facilities
                     "NON-COMMITTED ADULT",
                     "TEMP SOCIETY OUT ADULT",

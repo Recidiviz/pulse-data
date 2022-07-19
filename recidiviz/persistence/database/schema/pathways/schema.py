@@ -17,7 +17,7 @@
 """Define the ORM schema objects that map directly to the database, for Pathways related entities.
 """
 
-from sqlalchemy import Column, Date, Integer, String
+from sqlalchemy import BigInteger, Column, Date, Index, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 # Defines the base class for all table classes in the pathways schema.
@@ -39,13 +39,13 @@ class LibertyToPrisonTransitions(PathwaysBase):
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
-    year = Column(Integer, nullable=False)
+    year = Column(SmallInteger, nullable=False)
     # Denormalized transition month
-    month = Column(Integer, nullable=False)
+    month = Column(SmallInteger, nullable=False)
     # Bin of when the transition occurred (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
     time_period = Column(String, nullable=True)
     # Person ID for the transition
-    person_id = Column(String, primary_key=True, nullable=False)
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String, nullable=True)
     # Gender of the person
@@ -70,11 +70,11 @@ class PrisonToSupervisionTransitions(PathwaysBase):
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
-    year = Column(Integer, nullable=False)
+    year = Column(SmallInteger, nullable=False)
     # Denormalized transition month
-    month = Column(Integer, nullable=False)
+    month = Column(SmallInteger, nullable=False)
     # Person ID for the transition
-    person_id = Column(String, primary_key=True, nullable=False)
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String, nullable=True)
     # Age of the person
@@ -95,6 +95,112 @@ class PrisonToSupervisionTransitions(PathwaysBase):
     state_code = Column(String, nullable=False)
 
 
+class SupervisionPopulationOverTime(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_over_time`"""
+
+    __tablename__ = "supervision_population_over_time"
+    # Adds covered index for time series view
+    __table_args__ = (
+        Index(
+            "supervision_population_over_time_pk",
+            "year",
+            "month",
+            "supervision_district",
+            "supervision_level",
+            "race",
+            "person_id",
+            unique=True,
+        ),
+        Index(
+            "supervision_population_over_time_time_series",
+            "time_period",
+            "year",
+            "month",
+            postgresql_include=[
+                "supervision_district",
+                "supervision_level",
+                "race",
+                "person_id",
+            ],
+        ),
+    )
+
+    state_code = Column(String, primary_key=True, nullable=False)
+
+    # Denormalized date in population year
+    year = Column(SmallInteger, primary_key=True, nullable=False)
+    # Denormalized date in population month
+    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # Bin of when the person was in population (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
+    time_period = Column(String, primary_key=True, nullable=False)
+    # Person ID for the session. BigInt has faster sorting/grouping than String
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
+    # District that the person is in
+    supervision_district = Column(String, primary_key=True, nullable=True)
+    # Supervision level of the person
+    supervision_level = Column(String, primary_key=True, nullable=True)
+    # Race of the person
+    race = Column(String, primary_key=True, nullable=True)
+
+
+class SupervisionPopulationByDimension(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_by_dimension`"""
+
+    __tablename__ = "supervision_population_by_dimension"
+
+    # Adds covered indexes for groupable columns and includes other columns that may be used in the same query
+    __table_args__ = (
+        Index(
+            "supervision_population_by_dimension_pk",
+            "person_id",
+            "supervision_district",
+            "supervision_level",
+            "race",
+            unique=True,
+        ),
+        Index(
+            "supervision_population_by_dimension_race",
+            "race",
+            postgresql_include=[
+                "supervision_district",
+                "supervision_level",
+                "person_id",
+            ],
+        ),
+        Index(
+            "supervision_population_by_dimension_supervision_level",
+            "supervision_level",
+            postgresql_include=[
+                "supervision_district",
+                "race",
+                "person_id",
+            ],
+        ),
+        Index(
+            "supervision_population_by_dimension_supervision_district",
+            "supervision_district",
+            postgresql_include=[
+                "supervision_level",
+                "race",
+                "person_id",
+            ],
+        ),
+    )
+
+    state_code = Column(String, primary_key=True, nullable=False)
+
+    # Person ID for the session. BigInt has faster sorting/grouping than String
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
+    # District that the person is in
+    supervision_district = Column(String, primary_key=True, nullable=True)
+    # Supervision level of the person
+    supervision_level = Column(String, primary_key=True, nullable=True)
+    # Race of the person
+    race = Column(String, primary_key=True, nullable=True)
+
+
 class SupervisionToLibertyTransitions(PathwaysBase):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_liberty_transitions`
@@ -105,11 +211,11 @@ class SupervisionToLibertyTransitions(PathwaysBase):
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
-    year = Column(Integer, nullable=False)
+    year = Column(SmallInteger, nullable=False)
     # Denormalized transition month
-    month = Column(Integer, nullable=False)
+    month = Column(SmallInteger, nullable=False)
     # Person ID for the transition
-    person_id = Column(String, primary_key=True, nullable=False)
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Age group of the person when the transition occurred (see recidiviz.calculator.query.bq_utils.add_age_groups)
     age_group = Column(String, nullable=True)
     # Age of the person
@@ -146,11 +252,11 @@ class SupervisionToPrisonTransitions(PathwaysBase):
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
-    year = Column(Integer, nullable=False)
+    year = Column(SmallInteger, nullable=False)
     # Denormalized transition month
-    month = Column(Integer, nullable=False)
+    month = Column(SmallInteger, nullable=False)
     # Person ID for the transition
-    person_id = Column(String, primary_key=True, nullable=False)
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Type of supervision the person was under
     supervision_type = Column(String, nullable=True)
     # Level of supervision the person was under

@@ -28,8 +28,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.pathways.dimension import Dimension
-from recidiviz.case_triage.pathways.metric_queries import TimePeriod
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
@@ -387,7 +387,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             headers={"Origin": "http://localhost:3000"},
             query_string={
                 "group": Dimension.YEAR_MONTH.value,
-                "time_period": TimePeriod.MONTHS_25_60.value,
+                "filters[time_period]": TimePeriod.MONTHS_25_60.value,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())

@@ -1,0 +1,4 @@
+state_code,person_id,supervision_district,supervision_level,race
+US_XX,0001,District 1,HIGH,HISPANIC
+US_XX,0001,District 2,HIGH,HISPANIC
+US_XX,0002,OTHER,MINIMUM,WHITE

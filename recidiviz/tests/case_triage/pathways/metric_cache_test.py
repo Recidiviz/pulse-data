@@ -21,7 +21,11 @@ from unittest.mock import MagicMock, patch
 
 from fakeredis import FakeRedis
 
-from recidiviz.case_triage.pathways.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
+from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+    DimensionMappingCollection,
+)
+from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.metric_queries import (
@@ -29,7 +33,6 @@ from recidiviz.case_triage.pathways.metric_queries import (
     DimensionMapping,
     DimensionOperation,
     LibertyToPrisonTransitionsCount,
-    TimePeriod,
 )
 from recidiviz.common.constants.states import _FakeStateCode
 
@@ -50,13 +53,17 @@ class PathwaysMetricCacheTest(TestCase):
 
     def test_cache_key_for(self) -> None:
         self.assertEqual(
-            "US_XX LibertyToPrisonTransitionsCount time_period='months_25_60' filters=[] group='gender'",
+            "US_XX LibertyToPrisonTransitionsCount filters=[('time_period', ['months_0_6', 'months_7_12'])] group='gender'",
             self.metric_cache.cache_key_for(
                 self.query_builder,
                 self.query_builder.build_params(
                     {
-                        "time_period": TimePeriod.MONTHS_25_60,
                         "group": Dimension.GENDER,
+                        "filters": {
+                            Dimension.TIME_PERIOD: TimePeriod.period_range(
+                                TimePeriod.MONTHS_7_12.value
+                            ),
+                        },
                     }
                 ),
             ),
@@ -135,25 +142,29 @@ class PathwaysMetricCacheTest(TestCase):
             mock_mapper = MagicMock(
                 build_params=lambda kwargs: CountByDimensionMetricParams(**kwargs),
                 cache_fragment="MockMapper",
-                dimension_mappings=[
-                    DimensionMapping(
-                        dimension=Dimension.GENDER, operations=DimensionOperation.GROUP
-                    )
-                ],
+                dimension_mapping_collection=DimensionMappingCollection(
+                    [
+                        DimensionMapping(
+                            dimension=Dimension.GENDER,
+                            operations=DimensionOperation.GROUP,
+                        ),
+                        DimensionMapping(
+                            dimension=Dimension.TIME_PERIOD,
+                            operations=DimensionOperation.FILTER,
+                        ),
+                    ]
+                ),
             )
 
             self.metric_cache.initialize_cache(mock_mapper)
 
             self.assertEqual(
                 [
-                    b"US_XX MockMapper time_period='months_0_6' filters=[] group='year_month'",
-                    b"US_XX MockMapper time_period='months_0_6' filters=[] group='gender'",
-                    b"US_XX MockMapper time_period='months_7_12' filters=[] group='year_month'",
-                    b"US_XX MockMapper time_period='months_7_12' filters=[] group='gender'",
-                    b"US_XX MockMapper time_period='months_13_24' filters=[] group='year_month'",
-                    b"US_XX MockMapper time_period='months_13_24' filters=[] group='gender'",
-                    b"US_XX MockMapper time_period='months_25_60' filters=[] group='year_month'",
-                    b"US_XX MockMapper time_period='months_25_60' filters=[] group='gender'",
+                    b"US_XX MockMapper filters=[] group='gender'",
+                    b"US_XX MockMapper filters=[('time_period', ['months_0_6'])] group='gender'",
+                    b"US_XX MockMapper filters=[('time_period', ['months_0_6', 'months_7_12'])] group='gender'",
+                    b"US_XX MockMapper filters=[('time_period', ['months_0_6', 'months_13_24', 'months_7_12'])] group='gender'",
+                    b"US_XX MockMapper filters=[('time_period', ['months_0_6', 'months_13_24', 'months_25_60', 'months_7_12'])] group='gender'",
                 ],
                 self.metric_cache.redis.keys(),
             )

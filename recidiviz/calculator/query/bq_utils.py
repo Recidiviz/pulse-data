@@ -181,7 +181,10 @@ def length_of_stay_month_groups(
 
 
 def get_binned_time_period_months(
-    date_expr: str, special_case_expr: Optional[str] = ""
+    date_expr: str,
+    *,
+    special_case_expr: Optional[str] = "",
+    current_date_expr: Optional[str] = "CURRENT_DATE('US/Eastern')",
 ) -> str:
     """Given a SQL expression that resolves to a date, assigns it to a bin representing
     various non-overlapping periods, looking back as far as the past 5 years.
@@ -189,11 +192,11 @@ def get_binned_time_period_months(
 
     return f"""CASE
         {special_case_expr}
-        WHEN {date_expr} > CURRENT_DATE('US/Eastern') THEN NULL
-        WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH) THEN "months_0_6"
-        WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 12 MONTH) THEN "months_7_12"
-        WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 24 MONTH) THEN "months_13_24"
-        WHEN {date_expr} >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH) THEN "months_25_60"
+        WHEN {date_expr} > {current_date_expr} THEN NULL
+        WHEN {date_expr} >= DATE_SUB({current_date_expr}, INTERVAL 6 MONTH) THEN "months_0_6"
+        WHEN {date_expr} >= DATE_SUB({current_date_expr}, INTERVAL 12 MONTH) THEN "months_7_12"
+        WHEN {date_expr} >= DATE_SUB({current_date_expr}, INTERVAL 24 MONTH) THEN "months_13_24"
+        WHEN {date_expr} >= DATE_SUB({current_date_expr}, INTERVAL 60 MONTH) THEN "months_25_60"
     END"""
 
 

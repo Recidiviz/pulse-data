@@ -25,6 +25,8 @@ from recidiviz.case_triage.pathways.metric_queries import (
     PersonLevelMetricQueryBuilder,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
+    SupervisionPopulationByDimensionCount,
+    SupervisionPopulationOverTimeCount,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
 )
@@ -37,6 +39,8 @@ ALL_METRICS: List[MetricQueryBuilder] = [
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
+    SupervisionPopulationOverTimeCount,
+    SupervisionPopulationByDimensionCount,
 ]
 
 # TODO(#13950): Replace with StateCode
