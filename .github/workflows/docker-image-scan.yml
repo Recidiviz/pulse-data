@@ -1,0 +1,45 @@
+name: Docker CI
+
+on:
+  schedule:
+    - cron: "0 15 3 * *"
+    # every Wednesday at 15:00 UTC (8:00 AM Pacific)
+
+jobs:
+  build:
+    if: github.repository == 'Recidiviz/pulse-data'
+    name: docker-image-scan
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: |
+          docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "us.gcr.io/recidiviz-staging/appengine/default:latest"
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Dockle
+        uses: erzz/dockle-action@v1
+        with:
+          image: "us.gcr.io/recidiviz-staging/appengine/default:latest"
+          report-format: json
+          report-name: dockle-report
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: Dockle Report
+          path: dockle-report.json
