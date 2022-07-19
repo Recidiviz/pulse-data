@@ -367,7 +367,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             supervision_period_id=111,
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -396,7 +396,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             supervision_period_id=111,
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 

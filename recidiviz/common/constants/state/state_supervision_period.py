@@ -633,6 +633,7 @@ def is_official_supervision_admission(
     official_admissions = [
         StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+        StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
     ]
 
     non_official_admissions = [

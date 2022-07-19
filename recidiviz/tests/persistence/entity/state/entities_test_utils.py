@@ -570,7 +570,7 @@ def generate_full_graph_state_person(
         start_date=datetime.date(year=2004, month=8, day=1),
         termination_date=None,
         state_code="US_XX",
-        admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+        admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         admission_reason_raw_text="RELEASE",
         termination_reason=None,
         termination_reason_raw_text=None,

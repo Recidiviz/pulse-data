@@ -143,7 +143,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             supervision_period_id=1111,
             state_code=state_code,
             county_code="124",
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             start_date=datetime.date(2010, 12, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_date=datetime.date(2011, 4, 5),

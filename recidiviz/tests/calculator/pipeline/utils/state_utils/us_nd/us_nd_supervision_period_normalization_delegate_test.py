@@ -57,7 +57,8 @@ class TestUsNdSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         )
 
         self.assertEqual(
-            admission_reason, StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason,
+            StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
     def test_supervision_admission_reason_override_return_from_absconsion(
@@ -207,7 +208,7 @@ class TestUsNdSupervisionPeriodNormalizationDelegate(unittest.TestCase):
 
         self.assertEqual(
             admission_reason,
-            StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
         )
 
     def test_supervision_admission_reason_override_no_previous_period_probation(
