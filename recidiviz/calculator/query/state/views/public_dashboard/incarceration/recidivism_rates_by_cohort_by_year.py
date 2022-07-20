@@ -34,6 +34,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION = """Reincarceration recidiv
 
 RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
+# TODO(#12426): Update ND to new sessions logic
     WITH releases AS (
       SELECT
         person_id,
@@ -51,9 +52,8 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
       WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')) - 11
       -- Only include follow-up periods that have completed --
       AND (release_cohort + follow_up_period < EXTRACT(YEAR FROM CURRENT_DATE('US/Eastern')))
-      -- Exclude 'US_PA' recidivism, we use the numbers provided directly by the state
-      -- as they include rearrests, per their definition of recidivism.
-      AND state_code != 'US_PA'
+      -- Only calculate for ND as ID and PA have unique queries below
+      AND state_code = 'US_ND'
   ), recidivism_numbers AS (
       SELECT
         state_code,
@@ -71,7 +71,10 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
       -- For 10 years of release cohorts that have at least 1 full year of follow-up -- 
       WHERE release_order = 1
       GROUP BY state_code, release_cohort, followup_years, gender, age_bucket, race_or_ethnicity
-    ), unnested_pa_recidivism as (
+    ), 
+    -- For 'US_PA' recidivism, we use the numbers provided directly by the state
+    -- as they include rearrests, per their definition of recidivism.
+    unnested_pa_recidivism as (
       SELECT
         year_of_release as release_cohort,
         followup_years,
@@ -102,11 +105,92 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
         FROM unnested_pa_recidivism
         WHERE recidivism_rate IS NOT NULL
         ORDER BY release_cohort DESC
-        LIMIT 10
-      )
-      -- Only include follow-up periods that have completed
+        LIMIT 10)
+        -- Only include follow-up periods that have completed
       AND recidivism_rate IS NOT NULL
-    )
+    ), cohort_min_time_to_maturation as (
+        SELECT
+        state_code,
+        EXTRACT(YEAR
+        FROM
+          cohort_start_date) AS cohort_start_year,
+        MIN(cohort_months_to_mature) AS min_maturation
+        FROM `{project_id}.{analyst_dataset}.session_cohort_reincarceration` reinc
+        WHERE state_code NOT IN ('US_ND', 'US_PA')
+        GROUP BY
+        1,2
+    ), cohort_info as (
+        SELECT
+        state_code,
+        cohort_months,
+        EXTRACT(YEAR
+        FROM
+          cohort_start_date) AS cohort_start_year,
+        gender,
+        age,
+        race,
+        SUM(
+        IF
+          (reinc.cohort_start_to_event_months <= month_index.cohort_months,
+            1,
+            0)) AS reinc_count,
+        COUNT(1) AS cohort_size,
+        SUM(
+        IF
+          (reinc.cohort_start_to_event_months <= month_index.cohort_months,
+            1,
+            0))/COUNT(1) AS reinc_rate,
+      FROM
+        `{project_id}.{analyst_dataset}.session_cohort_reincarceration` reinc,
+        UNNEST ([gender, 'ALL']) AS gender,
+        UNNEST ([age_bucket_start, 'ALL']) AS age,
+        UNNEST ([prioritized_race_or_ethnicity, 'ALL']) AS race
+      JOIN
+        `{project_id}.{sessions_dataset}.cohort_month_index` month_index
+      ON
+        reinc.cohort_months_to_mature>=month_index.cohort_months
+      WHERE
+        state_code NOT IN ('US_ND', 'US_PA')
+        AND EXTRACT(YEAR
+        FROM
+          cohort_start_date)+11 >= EXTRACT(YEAR
+        FROM
+          last_day_of_data)
+        AND EXTRACT(YEAR
+        FROM
+          cohort_start_date)+2 <= EXTRACT(YEAR
+        FROM
+          last_day_of_data)
+        AND MOD(month_index.cohort_months,12) = 0
+      GROUP BY 1,2,3,4,5,6
+    ), id_recidivism as (
+        SELECT
+          cohort_info.state_code,
+          cohort_info.cohort_start_year AS release_cohort,
+          CAST(cohort_info.cohort_months/12 AS INTEGER) AS followup_years,
+            CASE
+            WHEN cohort_info.gender = 'TRANS_FEMALE' THEN 'FEMALE'
+            WHEN cohort_info.gender = 'TRANS_MALE' THEN 'MALE'
+          ELSE
+          cohort_info.gender
+        END
+          AS gender,
+          IFNULL(cohort_info.age, 'EXTERNAL_UNKNOWN') as age_bucket,
+          cohort_info.race AS race_or_ethnicity,
+          reinc_count AS recidivated_releases,
+          cohort_size AS releases,
+          reinc_rate AS recidivism_rate,
+        FROM
+          cohort_info
+        JOIN
+          cohort_min_time_to_maturation
+        ON
+          cohort_info.cohort_start_year = cohort_min_time_to_maturation.cohort_start_year
+        WHERE
+          min_maturation > cohort_months AND cohort_info.state_code = cohort_min_time_to_maturation.state_code
+        ORDER BY
+          2,
+          3)
     
     SELECT
       *,
@@ -118,6 +202,11 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
       *
     FROM
       pa_recidivism
+    UNION ALL
+    SELECT 
+    *
+    FROM 
+    id_recidivism
     ORDER BY state_code, release_cohort, followup_years, gender, age_bucket, race_or_ethnicity
     """
 
@@ -140,6 +229,8 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER = MetricBigQueryViewBuilder(
     ),
     description=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     race_or_ethnicity_dimension=bq_utils.unnest_column(
         "prioritized_race_or_ethnicity", "race_or_ethnicity"

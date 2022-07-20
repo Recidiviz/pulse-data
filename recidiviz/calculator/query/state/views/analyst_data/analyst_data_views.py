@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.views.analyst_data.population_density_by_s
 from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
     PROJECTED_DISCHARGES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarceration import (
+    SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_aggregated_metrics import (
     SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS,
 )
@@ -123,6 +126,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     PERSON_STATUSES_VIEW_BUILDER,
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
+    SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
     SUPERVISION_OFFICER_OFFICE_METRICS_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
