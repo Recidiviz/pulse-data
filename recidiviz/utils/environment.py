@@ -29,9 +29,6 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Optional
 
-import requests
-from google.cloud import datastore, environment_vars
-
 import recidiviz
 
 
@@ -85,16 +82,6 @@ def in_gcp_production() -> bool:
 
 def in_gcp_staging() -> bool:
     return in_gcp() and get_gcp_environment() == GCPEnvironment.STAGING.value
-
-
-def get_datastore_client() -> datastore.Client:
-    # If we're running with the datastore emulator, we must specify `_https` due
-    # to a bug in the datastore client.
-    # See: https://github.com/googleapis/google-cloud-python/issues/5738
-    if os.environ.get(environment_vars.GCD_HOST):
-        return datastore.Client(_http=requests.Session)
-
-    return datastore.Client()
 
 
 def local_only(func: Callable) -> Callable:

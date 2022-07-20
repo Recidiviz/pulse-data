@@ -127,19 +127,6 @@ def retry_with_create(
     return result
 
 
-def purge(scrape_key: ScrapeKey, pubsub_type: str) -> None:
-    # TODO(#342): Use subscriber().seek(subscription_path, time=timestamp)
-    # once available on the emulator.
-    try:
-        get_subscriber().delete_subscription(
-            subscription=get_subscription_path(scrape_key, pubsub_type=pubsub_type)
-        )
-    except exceptions.NotFound:
-        pass
-
-    create_topic_and_subscription(scrape_key, pubsub_type=pubsub_type)
-
-
 def publish_message_to_topic(message: str, topic: str) -> None:
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
     publisher = get_publisher()

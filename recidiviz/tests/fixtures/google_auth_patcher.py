@@ -26,24 +26,17 @@ from _pytest.fixtures import FixtureRequest
 
 @pytest.fixture(autouse=True)
 def google_auth_patcher(
-    pytestconfig: Config, request: FixtureRequest
+    pytestconfig: Config, request: FixtureRequest  # pylint: disable=unused-argument
 ) -> Generator[None, None, None]:
-    """For tests without the emulator, prevent them from trying to create google cloud clients."""
+    """Prevent tests from trying to create google cloud clients."""
 
-    patcher = None
-
-    if (
-        not pytestconfig.getoption("with_emulator", default=None)
-        and "emulator" not in request.fixturenames
-    ):
-        patcher = patch("google.auth.default")
-        mock_google_auth = patcher.start()
-        mock_google_auth.side_effect = AssertionError(
-            "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
-            " (e.g. `patch('google.cloud.bigquery.Client')`)."
-        )
+    patcher = patch("google.auth.default")
+    mock_google_auth = patcher.start()
+    mock_google_auth.side_effect = AssertionError(
+        "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
+        " (e.g. `patch('google.cloud.bigquery.Client')`)."
+    )
 
     yield
 
-    if patcher is not None:
-        patcher.stop()
+    patcher.stop()

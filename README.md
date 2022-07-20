@@ -333,12 +333,6 @@ Individual tests can be run via `pytest filename.py`. To run all tests, go to th
 The configuration in `setup.cfg` and `.coveragerc` will ensure the right code is tested and the proper code coverage
 metrics are displayed.
 
-A few tests (such as `sessions.py`) depend on running emulators (i.e. [Cloud Datastore Emulator](https://cloud.google.com/datastore/docs/tools/datastore-emulator)). These tests are skipped by default when run locally, but will always be tested in CI. If you are modifying code tested by these tests then you can run the tests locally. You must first install the both emulators via `gcloud components install cloud-datastore-emulator` and `gcloud components install pubsub-emulator`, which depends on the Java JRE (>=8). You will also need to install the beta command to execute these emulators, with `gcloud components install beta`. Then run the tests, telling it to bring up the emulators and include these tests:
-
-```bash
-$ pytest recidiviz --with-emulator
-```
-
 [A bug in the google client](https://github.com/googleapis/google-cloud-python/issues/5738) requires that you have
 default application credentials. This should not be necessary in the future. For now, make sure that you have done
 both `gcloud config set project recidiviz` and `gcloud auth application-default login`.
@@ -376,22 +370,6 @@ Run Mypy across all code to check for static type errors: `mypy recidiviz`.
 
 We use `bandit` to check for static security errors within the `recidiviz` folder. This is run in the CI.
 Adding `# nosec` to the effected line will ignore false positive issues.
-
-### Running the app
-
-There are two ways to run the app - on your local machine, or deployed to the cloud.
-
-#### Local
-
-A scraper can be run locally using the `run_scraper.py` script. See that file for instructions on how to run it.
-
-By default the scraped entities will be logged. To persist data during a local run, set the `PERSIST_LOCALLY`
-environment variable to `true`.
-
-The full application can also be run locally using `flask run` and talk to the local emulators for GCP services (as
-described in [running tests](#running-tests)). In practice, this is not particularly useful as there isn't a Cloud
-Tasks emulator at this time. The [appengine documentation](https://cloud.google.com/appengine/docs/standard/python3/testing-and-deploying-your-app)
-has more information about running locally.
 
 ### Deployment
 

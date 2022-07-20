@@ -44,13 +44,6 @@ def pytest_unconfigure() -> None:
 def pytest_addoption(parser: Parser) -> None:
     parser.addoption("--test-set", type=str, choices=["parallel", "not-parallel"])
 
-    parser.addoption(
-        "-E",
-        "--with-emulator",
-        action="store_true",
-        help="run tests that require the datastore emulator.",
-    )
-
     group = parser.getgroup("split your tests into evenly sized suites")
     group.addoption(
         "--suite-count",
@@ -69,20 +62,13 @@ def pytest_addoption(parser: Parser) -> None:
 def pytest_runtest_setup(item: pytest.Item) -> None:
     test_set = item.config.getoption("test_set", default=None)
 
-    if item.config.getoption("with_emulator", default=None):
-        if "emulator" not in item.fixturenames:
-            pytest.skip("requires datastore emulator")
-    else:
-        if "emulator" in item.fixturenames:
-            pytest.skip("requires datastore emulator")
-
     if item.get_closest_marker("uses_db") is not None:
         if test_set == "parallel":
             pytest.skip("[parallel tests] skipping because test requires database")
     else:
         if test_set == "not-parallel":
             pytest.skip(
-                "[not-parallel tests] skipping because test does not require database or emulator"
+                "[not-parallel tests] skipping because test does not require database"
             )
 
 
