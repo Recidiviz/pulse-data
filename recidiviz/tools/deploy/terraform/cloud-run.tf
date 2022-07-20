@@ -256,6 +256,13 @@ resource "google_cloud_run_service" "application-data-import" {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1024Mi"
+          }
+        }
       }
 
       service_account_name = google_service_account.application_data_import_cloud_run.email
