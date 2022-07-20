@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """
   SELECT 
     'US_CO' as region_code,
     offenderid AS person_external_id, 
-    EXTRACT(DATE FROM UPDATE_DATETIME) AS date_of_stay, 
+    DATE_SUB(EXTRACT(DATE FROM UPDATE_DATETIME), INTERVAL 1 DAY) as date_of_stay, #Date -1 day because time of automated transfers has validation data a day behind
     CASE 
         WHEN FAC_CD ='AC' THEN 'ACC'
         WHEN FAC_CD ='AV' THEN 'AVCF'
