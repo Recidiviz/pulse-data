@@ -23,7 +23,7 @@ import unittest
 # pylint: disable=protected-access
 # pylint: disable=unused-argument
 from concurrent import futures
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 from unittest import mock
 
 import pandas as pd
@@ -901,6 +901,31 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.query.assert_called()
 
+    def test_remove_unused_fields_from_schema_throws_if_deletions_not_allowed(
+        self,
+    ) -> None:
+        """Tests that remove_unused_fields_from_schema() throws loudly if columns
+        shouldn't be dropped."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+            bigquery.SchemaField("field_2", "STRING"),
+        ]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField("field_1", "STRING")]
+
+        with self.assertRaises(ValueError):
+            self.bq_client.remove_unused_fields_from_schema(
+                self.mock_dataset_id,
+                self.mock_table_id,
+                new_schema_fields,
+                allow_field_deletions=False,
+            )
+
+        self.mock_client.query.assert_not_called()
+
     @mock.patch(
         "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
     )
@@ -991,6 +1016,50 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
 
         remove_unused_mock.assert_not_called()
+        add_missing_mock.assert_not_called()
+
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
+    )
+    @mock.patch(
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema"
+    )
+    def test_update_schema_fails_on_no_allowed_deletions(
+        self,
+        add_missing_mock: mock.MagicMock,
+        remove_unused_mock: mock.MagicMock,
+    ) -> None:
+        """Tests that update_schema() throws if remove_unused_fields throws an error."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+            bigquery.SchemaField("field_2", "STRING"),
+        ]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        def cannot_remove_unused_columns(
+            _dataset_id: str,
+            _table_id: str,
+            _desired_schema_fields: List[bigquery.SchemaField],
+            _allow_field_deletions: bool,
+        ) -> Optional[bigquery.QueryJob]:
+            raise ValueError("error")
+
+        remove_unused_mock.side_effect = cannot_remove_unused_columns
+
+        new_schema_fields = [
+            bigquery.SchemaField("field_1", "STRING"),
+        ]
+
+        with self.assertRaises(ValueError):
+            self.bq_client.update_schema(
+                self.mock_dataset_id,
+                self.mock_table_id,
+                new_schema_fields,
+                allow_field_deletions=False,
+            )
+
         add_missing_mock.assert_not_called()
 
     def test__get_excess_schema_fields_simple_excess(self) -> None:

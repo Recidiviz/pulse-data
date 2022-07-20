@@ -668,6 +668,7 @@ class BigQueryClient:
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
+        allow_field_deletions: bool = True,
     ) -> None:
         """Updates the schema of the table to match the desired_schema_fields. This may result in both adding and
         dropping fields from the table's schema. Raises an exception if fields in desired_schema_fields conflict with
@@ -677,6 +678,7 @@ class BigQueryClient:
             dataset_id: The name of the dataset where the table lives.
             table_id: The name of the table to modify.
             desired_schema_fields: A list of fields describing the desired table schema.
+            allow_field_deletions: A boolean of whether we should delete excess fields or not
         """
 
     @abc.abstractmethod
@@ -1632,6 +1634,7 @@ class BigQueryClientImpl(BigQueryClient):
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
+        allow_field_deletions: bool = True,
     ) -> Optional[bigquery.QueryJob]:
         """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
         dataset_ref = self.dataset_ref_for_id(dataset_id)
@@ -1655,6 +1658,12 @@ class BigQueryClientImpl(BigQueryClient):
             )
             return None
 
+        if not allow_field_deletions:
+            raise ValueError(
+                f"Found deprecated fields [{deprecated_fields}] for table:"
+                f" {dataset_id}.{table_id} but field deletions is not allowed."
+            )
+
         columns_to_drop = ", ".join([field.name for field in deprecated_fields])
 
         rebuild_query = f"""
@@ -1675,6 +1684,7 @@ class BigQueryClientImpl(BigQueryClient):
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
+        allow_field_deletions: bool = True,
     ) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
@@ -1705,7 +1715,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         # Remove any deprecated fields first as it involves copying the entire view
         removal_job = self.remove_unused_fields_from_schema(
-            dataset_id, table_id, desired_schema_fields
+            dataset_id, table_id, desired_schema_fields, allow_field_deletions
         )
 
         if removal_job:

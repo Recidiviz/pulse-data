@@ -699,7 +699,7 @@ class DirectIngestRawFileImportManager:
                     self.raw_tables_dataset
                 ),
                 destination_table_id=file_tag,
-                destination_table_schema=self._create_raw_table_schema_from_columns(
+                destination_table_schema=self.create_raw_table_schema_from_columns(
                     columns
                 ),
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
@@ -857,7 +857,7 @@ class DirectIngestRawFileImportManager:
             )
 
     @staticmethod
-    def _create_raw_table_schema_from_columns(
+    def create_raw_table_schema_from_columns(
         columns: List[str],
     ) -> List[bigquery.SchemaField]:
         """Creates schema for use in `to_gbq` based on the provided columns."""

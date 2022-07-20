@@ -314,6 +314,7 @@ class FakeBigQueryClient(BigQueryClient):
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
+        allow_field_deletions: bool = True,
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
