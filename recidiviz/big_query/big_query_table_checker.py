@@ -17,7 +17,7 @@
 """Class that fetches the BQ schema for a given Table/View and exposes functionality
 for checking if a column exists in the table."""
 
-from typing import List, Optional, Callable
+from typing import Callable, List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 

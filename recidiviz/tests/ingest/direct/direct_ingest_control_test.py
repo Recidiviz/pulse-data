@@ -51,15 +51,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
-    DirectIngestRawDataTableLatestViewUpdater,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_update_cloud_task_manager import (
-    DirectIngestRawUpdateCloudTaskManager,
-)
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
-)
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
@@ -791,74 +782,6 @@ class TestDirectIngestControl(unittest.TestCase):
             )
 
             self.assertEqual(200, response.status_code)
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.utils.regions.get_region")
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_control.DirectIngestRawDataTableLatestViewUpdater"
-    )
-    def test_update_raw_data_latest_views_for_state(
-        self,
-        mock_updater_fn: mock.MagicMock,
-        mock_region: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-        with local_project_id_override("recidiviz-staging"):
-            mock_updater = create_autospec(DirectIngestRawDataTableLatestViewUpdater)
-            mock_updater_fn.return_value = mock_updater
-
-            region_code = "us_xx"
-
-            mock_environment.return_value = "staging"
-            mock_region.return_value = fake_region(
-                region_code=region_code, environment="staging"
-            )
-
-            request_args = {
-                "region": region_code,
-            }
-
-            headers = APP_ENGINE_HEADERS
-
-            response = self.client.post(
-                "/update_raw_data_latest_views_for_state",
-                query_string=request_args,
-                headers=headers,
-            )
-            mock_updater.update_views_for_state.assert_called_once()
-            self.assertEqual(200, response.status_code)
-
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch(f"{CONTROL_PACKAGE_NAME}.DirectIngestRawUpdateCloudTaskManager")
-    def test_create_raw_data_latest_view_update_tasks(
-        self,
-        mock_cloud_task_manager_fn: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-    ) -> None:
-        with local_project_id_override("recidiviz-staging"):
-            mock_environment.return_value = "staging"
-
-            mock_cloud_task_manager = create_autospec(
-                DirectIngestRawUpdateCloudTaskManager
-            )
-            mock_cloud_task_manager_fn.return_value = mock_cloud_task_manager
-
-            headers = APP_ENGINE_HEADERS
-            response = self.client.post(
-                "/create_raw_data_latest_view_update_tasks",
-                query_string={},
-                headers=headers,
-            )
-
-            self.assertEqual(200, response.status_code)
-
-            expected_calls = [
-                mock.call(region_code)
-                for region_code in get_existing_region_dir_names()
-            ]
-            mock_cloud_task_manager.create_raw_data_latest_view_update_task.assert_has_calls(
-                expected_calls
-            )
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
