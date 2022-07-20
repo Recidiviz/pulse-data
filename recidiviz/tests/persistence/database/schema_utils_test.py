@@ -168,6 +168,10 @@ def test_get_all_table_classes() -> None:
         "opportunity_deferrals",
         "dashboard_user_restrictions",
         "officer_metadata",
+        "roster",
+        "user_override",
+        "state_role_permissions",
+        "permissions_override",
     ]
     county_table_names = [
         "arrest",

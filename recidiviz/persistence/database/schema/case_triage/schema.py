@@ -545,3 +545,53 @@ class OfficerMetadata(CaseTriageBase):
             officer_external_id=officer.external_id,
             has_seen_onboarding=False,
         )
+
+
+class Roster(CaseTriageBase):
+    """Represents the list of users for each state."""
+
+    __tablename__ = "roster"
+    state_code = Column(String(255), nullable=False)
+    email_address = Column(String(255), nullable=False, primary_key=True)
+    external_id = Column(String(255), nullable=True)
+    role = Column(String(255), nullable=False)
+    district = Column(String(255), nullable=True)
+    first_name = Column(String(255), nullable=True)
+    last_name = Column(String(255), nullable=True)
+
+
+class UserOverride(CaseTriageBase):
+    """Used when a single user needs to be added, removed, or modified without uploading a new roster."""
+
+    __tablename__ = "user_override"
+    state_code = Column(String(255), nullable=False)
+    email_address = Column(String(255), nullable=False, primary_key=True)
+    external_id = Column(String(255), nullable=True)
+    role = Column(String(255), nullable=True)
+    district = Column(String(255), nullable=True)
+    first_name = Column(String(255), nullable=True)
+    last_name = Column(String(255), nullable=True)
+    blocked = Column(Boolean, nullable=True, default=False)
+
+
+class StateRolePermissions(CaseTriageBase):
+    """Represents the default permissions for a given state/role combination."""
+
+    __tablename__ = "state_role_permissions"
+    state_code = Column(String(255), nullable=False, primary_key=True)
+    role = Column(String(255), nullable=False, primary_key=True)
+    can_access_leadership_dashboard = Column(Boolean, nullable=True)
+    can_access_case_triage = Column(Boolean, nullable=True)
+    should_see_beta_charts = Column(Boolean, nullable=True)
+    routes = Column(JSONB, nullable=True)
+
+
+class PermissionsOverride(CaseTriageBase):
+    """Used when a specific user's permissions need to be changed from the default for their state/role."""
+
+    __tablename__ = "permissions_override"
+    user_email = Column(String(255), nullable=False, primary_key=True)
+    can_access_leadership_dashboard = Column(Boolean, nullable=True)
+    can_access_case_triage = Column(Boolean, nullable=True)
+    should_see_beta_charts = Column(Boolean, nullable=True)
+    routes = Column(JSONB, nullable=True)
