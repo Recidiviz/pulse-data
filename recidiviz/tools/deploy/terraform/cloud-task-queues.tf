@@ -62,19 +62,10 @@ module "bq-view-update-queue" {
 module "metric-view-export-queue" {
   source = "./modules/base-task-queue"
 
-  queue_name         = "metric-view-export"
-  region             = var.app_engine_region
-  max_retry_attempts = 1
+  queue_name                = "metric-view-export"
+  region                    = var.app_engine_region
+  max_retry_attempts        = 1
   max_concurrent_dispatches = 50
-}
-
-# Queue used for tasks to update raw data `*_latest` views for all states.
-module "state-raw-data-latest-view-update-queue" {
-  source = "./modules/base-task-queue"
-
-  queue_name         = "state-raw-data-latest-view-update"
-  region             = var.app_engine_region
-  max_retry_attempts = 1
 }
 
 module "case-triage-db-operations-queue" {

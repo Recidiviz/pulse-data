@@ -27,7 +27,6 @@ import pytz
 from flask import Blueprint, request
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
@@ -45,15 +44,6 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_latest_view_updater import (
-    DirectIngestRawDataTableLatestViewUpdater,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_update_cloud_task_manager import (
-    DirectIngestRawUpdateCloudTaskManager,
-)
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
 )
 from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
@@ -393,61 +383,6 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                 raise e
 
             controller.do_raw_data_import(data_import_args)
-    return "", HTTPStatus.OK
-
-
-@direct_ingest_control.route(
-    "/create_raw_data_latest_view_update_tasks", methods=["GET", "POST"]
-)
-@requires_gae_auth
-def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
-    """Creates tasks for every direct ingest region with SQL preprocessing
-    enabled to update the raw data table latest views.
-    """
-    raw_update_ctm = DirectIngestRawUpdateCloudTaskManager()
-
-    for region_code in get_existing_region_dir_names():
-        with monitoring.push_region_tag(region_code, ingest_instance=None):
-            region = _region_for_region_code(region_code)
-            if region.is_ingest_launched_in_env():
-                logging.info(
-                    "Creating raw data latest view update task for region [%s]",
-                    region_code,
-                )
-                raw_update_ctm.create_raw_data_latest_view_update_task(region_code)
-            else:
-                logging.info(
-                    "Skipping raw data latest view update for region [%s] - ingest not enabled.",
-                    region_code,
-                )
-    return "", HTTPStatus.OK
-
-
-@direct_ingest_control.route(
-    "/update_raw_data_latest_views_for_state", methods=["POST"]
-)
-@requires_gae_auth
-def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
-    """Updates raw data tables for a given state"""
-    logging.info(
-        "Received request to do direct ingest raw data update: [%s]", request.values
-    )
-    region_code = get_str_param_value("region", request.values)
-
-    if not region_code:
-        response = f"Bad parameters [{request.values}]"
-        logging.error(response)
-        return response, HTTPStatus.BAD_REQUEST
-
-    with monitoring.push_region_tag(region_code, ingest_instance=None):
-        bq_client = BigQueryClientImpl(project_id=metadata.project_id())
-        controller = DirectIngestRawDataTableLatestViewUpdater(
-            state_code=region_code,
-            bq_client=bq_client,
-            raw_tables_sandbox_dataset_prefix=None,
-            views_sandbox_dataset_prefix=None,
-        )
-        controller.update_views_for_state()
     return "", HTTPStatus.OK
 
 

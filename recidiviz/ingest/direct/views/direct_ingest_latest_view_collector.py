@@ -18,7 +18,6 @@
 from typing import Callable, List, Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -95,19 +94,8 @@ class DirectIngestRawDataTableLatestViewCollector(
     def _builder_for_config(
         self, config: DirectIngestRawFileConfig
     ) -> DirectIngestRawDataTableLatestViewBuilder:
-        table_exists_predicate = BigQueryTableChecker(
-            self.src_raw_tables_dataset,
-            config.file_tag,
-        ).get_table_exists_predicate()
-
         def should_deploy_predicate() -> bool:
-            predicate_result = table_exists_predicate()
-            result = (
-                predicate_result
-                and not config.is_undocumented
-                and bool(config.primary_key_cols)
-            )
-            return result
+            return not config.is_undocumented and bool(config.primary_key_cols)
 
         return DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code,
