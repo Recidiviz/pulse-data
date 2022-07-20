@@ -88,17 +88,6 @@ RUN pip3 install pipenv
 # If DEV_MODE="True", then install dependencies required for running tests
 ARG DEV_MODE="False"
 
-# Install the google cloud sdk to enable the gcp emulator (eg. fake datastore, fake pubsub)
-# As described in: https://stackoverflow.com/questions/48250338/installing-gcloud-on-travis-ci
-RUN if [ "$DEV_MODE" = "True" ]; \
-    then apt-get update && apt install -y lsb-core && \
-    echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
-    apt update -y && apt-get install google-cloud-sdk -y && \
-    apt install google-cloud-sdk-datastore-emulator -y && \
-    apt install google-cloud-sdk-pubsub-emulator -y; \
-    fi
-
 # Install postgres to be used by tests that need to write to a database from multiple threads.
 RUN if [ "$DEV_MODE" = "True" ]; \
     then apt-get install wget && \

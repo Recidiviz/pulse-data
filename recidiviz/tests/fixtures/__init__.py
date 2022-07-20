@@ -15,6 +15,3 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Contains fixtures for use within our pytest suite """
-from recidiviz.tests.fixtures.emulator import emulator
-
-__all__ = ["emulator"]
