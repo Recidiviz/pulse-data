@@ -31,6 +31,7 @@ from recidiviz.tools.ingest.development.create_ingest_config_skeleton import (
 )
 
 INPUT_TABLE = "raw_table_1"
+HIDDEN_INPUT_TABLE = ".raw_table_1"
 
 FAKE_STATE = "us_xx"
 
@@ -110,3 +111,24 @@ class CreateIngestConfigSkeletonTest(unittest.TestCase):
                 PLACEHOLDER_TO_DO_STRING,
             ],
         )
+
+    def test_create_ingest_config_skeleton_hidden_file(self) -> None:
+        """Skips creating ingest config for a hidden file"""
+        hidden_input_path = os.path.join(
+            os.path.dirname(__file__),
+            "create_ingest_config_skeleton_test_fixtures",
+            HIDDEN_INPUT_TABLE + ".txt",
+        )
+        create_ingest_config_skeleton(
+            [hidden_input_path],
+            self.state_code,
+            self.delimiter,
+            self.encoding,
+            RawDataClassification.SOURCE,
+            self.allow_overwrite,
+            self.initialize_state,
+            add_description_placeholders=True,
+        )
+
+        config = DirectIngestRegionRawFileConfig(region_code=self.state_code)
+        self.assertEqual(config.raw_file_configs, {})
