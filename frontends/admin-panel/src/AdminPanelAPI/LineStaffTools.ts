@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { postWithURLAndBody } from "./utils";
+import { postWithURLAndBody, getAuthResource } from "./utils";
 
 // Cloud SQL -> GCS CSV Export
 export const generateNonETLExports = async (): Promise<Response> => {
@@ -107,4 +107,9 @@ export const getListBatchInfo = async (
     stateCode,
     reportType,
   });
+};
+
+// State User Permissions
+export const getStateUserPermissions = async (): Promise<Response> => {
+  return getAuthResource("/dashboard_user_restrictions");
 };

@@ -305,14 +305,19 @@ def dashboard_user_restrictions() -> Response:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     # TODO(#8046): Don't use the deprecated session fetcher
     session = SessionFactory.deprecated__for_database(database_key=database_key)
-    user_restrictions = session.query(
-        DashboardUserRestrictions.restricted_user_email,
-        DashboardUserRestrictions.state_code,
-        DashboardUserRestrictions.allowed_supervision_location_ids,
-        DashboardUserRestrictions.allowed_supervision_location_level,
-        DashboardUserRestrictions.can_access_leadership_dashboard,
-        DashboardUserRestrictions.can_access_case_triage,
-        DashboardUserRestrictions.should_see_beta_charts,
-        DashboardUserRestrictions.routes,
+    user_restrictions = session.query(DashboardUserRestrictions).all()
+    return jsonify(
+        [
+            {
+                "restrictedUserEmail": res.restricted_user_email,
+                "stateCode": res.state_code,
+                "allowedSupervisionLocationIds": res.allowed_supervision_location_ids,
+                "allowedSupervisionLocationLevel": res.allowed_supervision_location_level,
+                "canAccessLeadershipDashboard": res.can_access_leadership_dashboard,
+                "canAccessCaseTriage": res.can_access_case_triage,
+                "shouldSeeBetaCharts": res.should_see_beta_charts,
+                "routes": res.routes,
+            }
+            for res in user_restrictions
+        ]
     )
-    return jsonify([dict(r) for r in user_restrictions])

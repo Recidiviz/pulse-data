@@ -47,3 +47,11 @@ export const putWithURLAndBody = async (
     },
   });
 };
+
+export const getAuthResource = async (url: string): Promise<Response> => {
+  return fetch(`/auth${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
