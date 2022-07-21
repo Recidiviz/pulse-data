@@ -50,3 +50,17 @@ interface POFeedbackResponse {
   comment: string;
   timestamp: string;
 }
+
+// State User Permissions
+interface StateUserPermissionsResponse {
+  restrictedUserEmail: string;
+  stateCode: string;
+  allowedSupervisionLocationIds: string;
+  allowedSupervisionLocationLevel: string;
+  canAccessLeadershipDashboard: boolean;
+  canAccessCaseTriage: boolean;
+  routes: {
+    [route: string]: boolean;
+  };
+  shouldSeeBetaCharts: boolean;
+}

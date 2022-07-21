@@ -443,14 +443,14 @@ class AuthEndpointTests(TestCase):
         with self.app.test_request_context():
             expected_restrictions = [
                 {
-                    "allowed_supervision_location_ids": "1, 2",
-                    "allowed_supervision_location_level": "level_1_supervision_location",
-                    "can_access_case_triage": False,
-                    "can_access_leadership_dashboard": True,
-                    "restricted_user_email": "test@domain.org",
+                    "allowedSupervisionLocationIds": "1, 2",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "restrictedUserEmail": "test@domain.org",
                     "routes": None,
-                    "should_see_beta_charts": False,
-                    "state_code": "US_ND",
+                    "shouldSeeBetaCharts": False,
+                    "stateCode": "US_ND",
                 }
             ]
         response = self.client.get(
@@ -486,34 +486,34 @@ class AuthEndpointTests(TestCase):
         with self.app.test_request_context():
             expected_restrictions = [
                 {
-                    "allowed_supervision_location_ids": "1, 2",
-                    "allowed_supervision_location_level": "level_1_supervision_location",
-                    "can_access_case_triage": False,
-                    "can_access_leadership_dashboard": True,
-                    "restricted_user_email": "test@domain.org",
+                    "allowedSupervisionLocationIds": "1, 2",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "restrictedUserEmail": "test@domain.org",
                     "routes": None,
-                    "should_see_beta_charts": False,
-                    "state_code": "US_ND",
+                    "shouldSeeBetaCharts": False,
+                    "stateCode": "US_ND",
                 },
                 {
-                    "allowed_supervision_location_ids": "1",
-                    "allowed_supervision_location_level": "level_1_supervision_location",
-                    "can_access_case_triage": False,
-                    "can_access_leadership_dashboard": True,
-                    "restricted_user_email": "secondtest@domain.org",
+                    "allowedSupervisionLocationIds": "1",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "restrictedUserEmail": "secondtest@domain.org",
                     "routes": {"A": "B", "B": "C"},
-                    "should_see_beta_charts": True,
-                    "state_code": "US_PA",
+                    "shouldSeeBetaCharts": True,
+                    "stateCode": "US_PA",
                 },
                 {
-                    "allowed_supervision_location_ids": "A, B, C",
-                    "allowed_supervision_location_level": "level_1_supervision_location",
-                    "can_access_case_triage": True,
-                    "can_access_leadership_dashboard": False,
-                    "restricted_user_email": "thirdtest@domain.org",
+                    "allowedSupervisionLocationIds": "A, B, C",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": False,
+                    "restrictedUserEmail": "thirdtest@domain.org",
                     "routes": None,
-                    "should_see_beta_charts": False,
-                    "state_code": "US_ME",
+                    "shouldSeeBetaCharts": False,
+                    "stateCode": "US_ME",
                 },
             ]
         response = self.client.get(
