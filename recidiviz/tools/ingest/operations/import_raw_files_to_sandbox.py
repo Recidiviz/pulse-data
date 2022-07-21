@@ -27,8 +27,8 @@ in the sandbox dataset can be compared against existing raw data tables more eas
 Usage:
 
 python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
-    --state_code US_PA --sandbox_dataset_prefix my_prefix \
-    --source_bucket recidiviz-staging-my-test-bucket \
+    --state-code US_PA --sandbox-dataset-prefix my_prefix \
+    --source-bucket recidiviz-staging-my-test-bucket \
     [--file-tag-filter-regex (tagA|otherTagB)] \
     [--allow-incomplete-configs False]
 """

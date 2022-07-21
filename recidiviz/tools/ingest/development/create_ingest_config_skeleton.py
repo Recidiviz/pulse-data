@@ -95,6 +95,10 @@ def write_skeleton_config(
     table_name = os.path.basename(raw_table_path)
     table_name = os.path.splitext(table_name)[0]
 
+    if table_name.startswith("."):
+        logging.info("Skipping hidden file: %s", table_name)
+        return
+
     df = read_csv(
         raw_table_path,
         delimiter=delimiter,
@@ -165,15 +169,18 @@ def create_ingest_config_skeleton(
         )
 
     for path in raw_table_paths:
-        write_skeleton_config(
-            path,
-            state_code,
-            delimiter,
-            encoding,
-            data_classification,
-            allow_overwrite,
-            add_description_placeholders,
-        )
+        try:
+            write_skeleton_config(
+                path,
+                state_code,
+                delimiter,
+                encoding,
+                data_classification,
+                allow_overwrite,
+                add_description_placeholders,
+            )
+        except Exception as e:
+            raise ValueError(f"Unable to write config for file: {path}") from e
 
 
 def parse_arguments(argv: List[str]) -> argparse.Namespace:
