@@ -1,0 +1,15 @@
+file_tag: cis_codelawenforcementcontacttype
+file_description: |-
+  Code table describing types of law enforcement contacts
+data_classification: source
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: Id of this row
+  - name: codedescription
+    description: Description of contact type
+  - name: active
+    description: Flag to indicate codes still in use
+  - name: cisid
+    description: Shorthand (single letter) code

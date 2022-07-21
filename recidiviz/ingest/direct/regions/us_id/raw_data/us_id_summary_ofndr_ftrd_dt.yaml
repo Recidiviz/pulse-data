@@ -1,0 +1,18 @@
+file_tag: summary_ofndr_ftrd_dt
+file_description: |-
+  This table is the result of a daily query that calculates someones expected release date
+  or supervision termination date.
+data_classification: source
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    is_pii: True
+    description: ID of the incarcerated or supervised person
+  - name: offstat
+    description: Code describing this person's current status. See `offstat.stat_rls_typ` for descriptions.
+  - name: sent_ftrd_dt
+    is_datetime: True
+    description: Calculated full-term release date for this person
+  - name: sent_disp_cd
+  - name: life_death_flag
