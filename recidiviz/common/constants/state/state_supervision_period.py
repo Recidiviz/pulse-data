@@ -124,10 +124,6 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     """Admission reasons for StateSupervisionPeriod"""
 
     ABSCONSION = state_enum_strings.state_supervision_period_admission_reason_absconsion
-    # TODO(#12648): Change this to be RELEASE_FROM_INCARCERATION
-    CONDITIONAL_RELEASE = (
-        state_enum_strings.state_supervision_period_admission_reason_conditional_release
-    )
     RELEASE_FROM_INCARCERATION = (
         state_enum_strings.state_supervision_period_admission_reason_release_from_incarceration
     )
@@ -171,18 +167,6 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     StateSupervisionPeriodAdmissionReason.ABSCONSION: "This is used when a person on "
     "supervision has started absconding (when the person has stopped reporting to "
     "their supervising officer, and the officer cannot contact or locate them).",
-    # TODO(#12648): Update this description once this value is changed to be
-    #  RELEASE_FROM_INCARCERATION
-    StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: "A period of "
-    "supervision begins when a person is released through the the process of being "
-    "granted parole by the parole board. The term “conditional” represents the fact "
-    "that the person’s privilege of serving the rest of their sentence in the "
-    "community is conditional on them following the conditions of their parole, as "
-    "determined by the parole board and their parole officer. Though this should only "
-    "be used on supervision periods with "
-    "`StateSupervisionPeriodSupervisionType.PAROLE` "
-    "or `StateSupervisionPeriodSupervisionType.DUAL`, it is currently being used for "
-    "any transition from incarceration to supervision (see Issue #12648).",
     StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION: "A period of "
     "supervision begins directly following a period of incarceration. This could be"
     " a release onto parole but could also be used, for example, when someone is "
@@ -506,7 +490,6 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
 _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     "ABSCONDED": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     "ABSCONSION": StateSupervisionPeriodAdmissionReason.ABSCONSION,
-    "CONDITIONAL RELEASE": StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     "RELEASE FROM INCARCERATION": StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
     "COURT SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
     "SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -621,7 +604,6 @@ def is_official_supervision_admission(
     # A supervision period that has one of these admission reasons indicates the official start of supervision
     official_admissions = [
         StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-        StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
     ]
 

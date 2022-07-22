@@ -983,15 +983,6 @@ class StateSupervisionPeriod(
                 "StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION is "
                 f"deprecated for state_code: [{self.state_code}]. This value should not be used."
             )
-        if (
-            self.state_code in ("US_ID", "US_PA", "US_MO", "US_ME")
-            and self.admission_reason
-            == StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
-        ):
-            raise ValueError(
-                "StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE is "
-                f"deprecated for state_code: [{self.state_code}]. THis value should not be used."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
