@@ -374,8 +374,6 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     COMMUTED = state_enum_strings.state_supervision_period_termination_reason_commuted
     DEATH = state_enum_strings.state_supervision_period_termination_reason_death
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
-    # TODO(#12648): Change this to VACATED
-    DISMISSED = state_enum_strings.state_supervision_period_termination_reason_dismissed
     EXPIRATION = (
         state_enum_strings.state_supervision_period_termination_reason_expiration
     )
@@ -441,20 +439,11 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "supervision because they have died.",
     StateSupervisionPeriodTerminationReason.DISCHARGE: "Describes a person being "
     "released from their supervision earlier than their sentence’s end date.",
-    # TODO(#12648): Rename 'DISMISSED' to 'VACATED'
-    StateSupervisionPeriodTerminationReason.DISMISSED: "Used when a person is "
-    "discharged because the legal judgment on their conviction has become legally "
-    "void, their conviction has been overturned, or their case has been dismissed. "
-    "When a sentence is vacated, there is immediate release from any active form of "
-    "incarceration or supervision related to the vacated conviction. This is distinct "
-    "from `PARDONED`, because the sentence was cleared as a result of it being deemed "
-    "legally void.",
     StateSupervisionPeriodTerminationReason.EXPIRATION: "Describes a person’s "
     "supervision ending because they have reached the maximum completion date on "
     "their sentence.",
     StateSupervisionPeriodTerminationReason.INVESTIGATION: "Used for all periods with "
     "a `supervision_type` of `StateSupervisionPeriodSupervisionType.INVESTIGATION`.",
-    # TODO(#12648): Change this to replace 'DISMISSED' with 'VACATED'
     StateSupervisionPeriodTerminationReason.PARDONED: "Describes a person being "
     "discharged from supervision because they have been pardoned. When a person is "
     "pardoned, there is immediate release from any active form of incarceration or "
@@ -564,7 +553,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     "DECEASED": StateSupervisionPeriodTerminationReason.DEATH,
     "DISCHARGE": StateSupervisionPeriodTerminationReason.DISCHARGE,
     "DISCHARGED": StateSupervisionPeriodTerminationReason.DISCHARGE,
-    "DISMISSED": StateSupervisionPeriodTerminationReason.DISMISSED,
+    "DISMISSED": StateSupervisionPeriodTerminationReason.VACATED,
     "EXPIRATION": StateSupervisionPeriodTerminationReason.EXPIRATION,
     "EXTERNAL UNKNOWN": StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
     "EXPIRED": StateSupervisionPeriodTerminationReason.EXPIRATION,

@@ -370,7 +370,6 @@ state_supervision_period_termination_reason = Enum(
     state_enum_strings.state_supervision_period_termination_reason_commuted,
     state_enum_strings.state_supervision_period_termination_reason_death,
     state_enum_strings.state_supervision_period_termination_reason_discharge,
-    state_enum_strings.state_supervision_period_termination_reason_dismissed,
     state_enum_strings.state_supervision_period_termination_reason_expiration,
     state_enum_strings.state_supervision_period_termination_reason_investigation,
     state_enum_strings.state_supervision_period_termination_reason_pardoned,
