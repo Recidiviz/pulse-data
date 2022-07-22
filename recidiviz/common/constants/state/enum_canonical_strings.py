@@ -311,9 +311,6 @@ state_supervision_period_termination_reason_transfer_within_state = (
 state_supervision_period_termination_reason_return_from_absconsion = (
     "RETURN_FROM_ABSCONSION"
 )
-state_supervision_period_termination_reason_return_to_incarceration = (
-    "RETURN_TO_INCARCERATION"
-)
 state_supervision_period_termination_reason_revocation = "REVOCATION"
 state_supervision_period_termination_reason_suspension = "SUSPENSION"
 state_supervision_period_termination_reason_vacated = "VACATED"

@@ -377,10 +377,6 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     RETURN_FROM_ABSCONSION = (
         state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion
     )
-    # TODO(#12648): Change this to ADMITTED_TO_INCARCERATION
-    RETURN_TO_INCARCERATION = (
-        state_enum_strings.state_supervision_period_termination_reason_return_to_incarceration
-    )
     REVOCATION = (
         state_enum_strings.state_supervision_period_termination_reason_revocation
     )
@@ -438,12 +434,6 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION: "Used when a "
     "person’s period of absconsion has ended. See "
     "`StateSupervisionPeriodSupervisionType.ABSCONSION`.",
-    StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION: "Used when a "
-    "person’s supervision has ended because the person has been admitted to "
-    "incarceration. If the raw data indicates that this admission is due to a "
-    "revocation of supervision, then `REVOCATION` should be used. All other "
-    "terminations due to admissions to incarceration from supervision should use "
-    "this value.",
     StateSupervisionPeriodTerminationReason.REVOCATION: "Describes a person’s "
     "supervision ending because it has been revoked by either the court or the "
     "parole board.",
@@ -546,7 +536,6 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     "TRANSFER WITHIN STATE": StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
     "TRANSFER TO OTHER JURISDICTION": StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
     "RETURN FROM ABSCONSION": StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
-    "RETURN TO INCARCERATION": StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
     "REVOCATION": StateSupervisionPeriodTerminationReason.REVOCATION,
     "REVOKED": StateSupervisionPeriodTerminationReason.REVOCATION,
     "SUSPENDED": StateSupervisionPeriodTerminationReason.SUSPENSION,
