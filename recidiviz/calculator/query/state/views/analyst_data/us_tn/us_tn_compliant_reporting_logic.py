@@ -46,7 +46,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM (
             SELECT *
             FROM `{project_id}.{sessions_dataset}.system_sessions_materialized`
-            WHERE TRUE 
+            WHERE state_code = 'US_TN' 
             QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1 
         ) ss
         -- Here, we're not restricting supervision super sessions to be within a system session, but since we're
@@ -55,6 +55,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             ON ss.person_id = cs.person_id
             AND cs.start_date >= ss.start_date
             AND cs.compartment_level_0 = 'SUPERVISION'
+            AND cs.state_code = 'US_TN'
     ), 
     calc_dates AS (
         SELECT  person_id,
@@ -87,7 +88,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     -- This CTE uses standards list and creates flags to apply supervision level and time spent criteria, as well as bringing various supervision and system session dates
     standards AS (
-        SELECT standards.* EXCEPT(Offender_ID),
+        SELECT  DISTINCT
+                standards.* EXCEPT(Offender_ID),
                 pei.person_id,
                 latest_system_session_start_date,
                 earliest_supervision_start_date_in_latest_system,
@@ -156,6 +158,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due` standards
             LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
                 ON pei.external_id = LPAD(CAST(Offender_ID AS string), 8, '0')
+                AND pei.state_code = 'US_TN'
             LEFT JOIN calc_dates
                 ON pei.person_id = calc_dates.person_id
             LEFT JOIN sup_levels
@@ -537,6 +540,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                     assessment_date, 
                     MAX(CASE WHEN COALESCE(REPLACE(JSON_EXTRACT(assessment_metadata, "$.ALCOHOL_DRUG_NEED_LEVEL"), '"',''), 'MISSING') IN ('MOD','HIGH') THEN 1 ELSE 0 END) AS high_ad_client
             FROM `{project_id}.{base_dataset}.state_assessment`
+            WHERE state_code = 'US_TN'
             GROUP BY 1,2
         )
         WHERE TRUE
@@ -1016,6 +1020,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             ON add_more_flags_1.person_id = special_conditions.person_id
         LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
             ON sp.person_id = add_more_flags_1.person_id
+            AND sp.state_code = 'US_TN'
         LEFT JOIN person_status_cte
             USING(Offender_ID)
         LEFT JOIN latest_tepe
