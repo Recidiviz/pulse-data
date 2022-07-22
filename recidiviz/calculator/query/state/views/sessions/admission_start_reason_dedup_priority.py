@@ -40,7 +40,6 @@ and supervision is handled based on a join condition to deduplicated population 
 """
 
 SUPERVISION_START_REASON_ORDERED_PRIORITY = [
-    StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
     StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
     StateSupervisionPeriodAdmissionReason.ABSCONSION,
     StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
