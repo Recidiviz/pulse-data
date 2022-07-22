@@ -271,9 +271,18 @@ class DownloadFilesFromSftpController:
                 # None mtimes already.
                 raise ValueError("mtime for SFTP file was unexpectedly None")
 
-            paths_post_timestamp[sftp_attr.filename] = datetime.datetime.fromtimestamp(
-                sftp_attr.st_mtime
-            ).astimezone(pytz.UTC)
+            # If the SFTP file is older than today, we'll use the SFTP timestamp at day-granularity
+            # otherwise, we'll use machine time.
+            today = datetime.datetime.now().astimezone(pytz.UTC)
+            sftp_time = datetime.datetime.fromtimestamp(sftp_attr.st_mtime).astimezone(
+                pytz.UTC
+            )
+            if ((today - sftp_time)) > datetime.timedelta(hours=24):
+                paths_post_timestamp[sftp_attr.filename] = datetime.datetime(
+                    year=sftp_time.year, month=sftp_time.month, day=sftp_time.day
+                ).astimezone(pytz.UTC)
+            else:
+                paths_post_timestamp[sftp_attr.filename] = today
             file_modes_of_paths[sftp_attr.filename] = sftp_attr.st_mode
 
         paths_to_download = self.delegate.filter_paths(
