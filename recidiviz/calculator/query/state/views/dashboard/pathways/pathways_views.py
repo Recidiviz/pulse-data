@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dashboard views related to pathways."""
-from typing import List
+from typing import List, Set
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.priso
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_over_time import (
     PRISON_POPULATION_OVER_TIME_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_person_level import (
+    PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_projection import (
     PRISON_POPULATION_PROJECTION_VIEW_BUILDER,
@@ -119,19 +122,20 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_pr
 )
 
 # If adding a PRISON module specific view builder to this list, also add it to the PATHWAYS_PRISON export in products.yaml
-PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
+PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: Set[SelectedColumnsBigQueryViewBuilder] = {
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_POPULATION_PROJECTION_VIEW_BUILDER,
     PRISON_POPULATION_OVER_TIME_VIEW_BUILDER,
+    PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
     PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER,
     SUPERVISION_POPULATION_VIEW_BUILDER,
     SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_DIMENSION_VIEW_BUILDER,
-]
+}
 
 PATHWAYS_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
     PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,

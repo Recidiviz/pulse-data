@@ -35,6 +35,7 @@ from recidiviz.case_triage.pathways.metric_queries import (
     MetricQueryBuilder,
     PrisonPopulationByDimensionCount,
     PrisonPopulationOverTimeCount,
+    PrisonPopulationPersonLevelMetric,
     PrisonPopulationProjectionMetric,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
@@ -51,6 +52,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PathwaysBase,
     PrisonPopulationByDimension,
     PrisonPopulationOverTime,
+    PrisonPopulationPersonLevel,
     PrisonPopulationProjection,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
@@ -1131,5 +1133,46 @@ class TestSupervisionPopulationProjectionMetric(
                 "total_population_max": 1.5,
                 "total_population_min": 0.5,
                 "year": 2022,
+            },
+        ]
+
+
+class TestPrisonPopulationPersonLevel(PathwaysPersonLevelMetricTestBase, TestCase):
+    """Test for PrisonPopulationPersonLevel metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return PrisonPopulationPersonLevel
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return PrisonPopulationPersonLevelMetric
+
+    @property
+    def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
+        return [
+            {
+                "age": "25",
+                "age_group": "25-29",
+                "facility": "F1",
+                "full_name": "Example,Person",
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "race": "WHITE",
+                "state_id": "1",
+            },
+            {
+                "age": "65",
+                "age_group": "60+",
+                "facility": "F2",
+                "full_name": "Fake,Person",
+                "gender": "FEMALE",
+                "admission_reason": "RETURN_FROM_TEMPORARY_RELEASE",
+                "race": "BLACK",
+                "state_id": "2",
             },
         ]
