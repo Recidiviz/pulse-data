@@ -207,8 +207,10 @@ def test_get_all_table_classes() -> None:
         "prison_population_over_time",
         "prison_population_by_dimension",
         "prison_to_supervision_transitions",
+        "prison_population_projection",
         "supervision_population_over_time",
         "supervision_population_by_dimension",
+        "supervision_population_projection",
         "supervision_to_liberty_transitions",
         "supervision_to_prison_transitions",
     ]

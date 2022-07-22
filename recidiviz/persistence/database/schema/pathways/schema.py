@@ -18,7 +18,16 @@
 """
 from typing import List, Optional
 
-from sqlalchemy import BigInteger, Column, Date, Index, Integer, SmallInteger, String
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Date,
+    Float,
+    Index,
+    Integer,
+    SmallInteger,
+    String,
+)
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 # Defines the base class for all table classes in the pathways schema.
@@ -180,6 +189,32 @@ class PrisonPopulationByDimension(PathwaysBase):
     race = Column(String, primary_key=True, nullable=True)
 
 
+class PrisonPopulationProjection(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_projection`"""
+
+    __tablename__ = "prison_population_projection"
+
+    # State
+    state_code = Column(String, primary_key=True, nullable=False)
+    # Year of the historical / projected count
+    year = Column(SmallInteger, primary_key=True, nullable=False)
+    # Month of the historical / projected count
+    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # HISTORICAL or BASELINE (projection)
+    simulation_tag = Column(String, primary_key=True, nullable=False)
+    # Gender of the population
+    gender = Column(String, primary_key=True, nullable=True)
+    # Legal status of the population
+    admission_reason = Column(String, primary_key=True, nullable=True)
+    # Projected population
+    total_population = Column(Float, nullable=False)
+    # Min error
+    total_population_min = Column(Float, nullable=False)
+    # Max error
+    total_population_max = Column(Float, nullable=False)
+
+
 class PrisonToSupervisionTransitions(PathwaysBase):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions`
@@ -297,6 +332,32 @@ class SupervisionPopulationByDimension(PathwaysBase):
     supervision_level = Column(String, primary_key=True, nullable=True)
     # Race of the person
     race = Column(String, primary_key=True, nullable=True)
+
+
+class SupervisionPopulationProjection(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_projection`"""
+
+    __tablename__ = "supervision_population_projection"
+
+    # State
+    state_code = Column(String, primary_key=True, nullable=False)
+    # Year of the historical / projected count
+    year = Column(SmallInteger, primary_key=True, nullable=False)
+    # Month of the historical / projected count
+    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # HISTORICAL or BASELINE (projection)
+    simulation_tag = Column(String, primary_key=True, nullable=False)
+    # Gender of the population
+    gender = Column(String, primary_key=True, nullable=True)
+    # Legal status of the population
+    admission_reason = Column(String, primary_key=True, nullable=True)
+    # Projected population
+    total_population = Column(Float, nullable=False)
+    # Min error
+    total_population_min = Column(Float, nullable=False)
+    # Max error
+    total_population_max = Column(Float, nullable=False)
 
 
 class SupervisionToLibertyTransitions(PathwaysBase):

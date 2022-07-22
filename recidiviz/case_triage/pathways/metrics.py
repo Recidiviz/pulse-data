@@ -23,12 +23,15 @@ from recidiviz.case_triage.pathways.metric_queries import (
     LibertyToPrisonTransitionsCount,
     MetricQueryBuilder,
     PersonLevelMetricQueryBuilder,
+    PopulationProjectionMetricQueryBuilder,
     PrisonPopulationByDimensionCount,
     PrisonPopulationOverTimeCount,
+    PrisonPopulationProjectionMetric,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionPopulationByDimensionCount,
     SupervisionPopulationOverTimeCount,
+    SupervisionPopulationProjectionMetric,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
 )
@@ -37,14 +40,16 @@ from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 ALL_METRICS: List[MetricQueryBuilder] = [
     LibertyToPrisonTransitionsCount,
-    PrisonPopulationOverTimeCount,
     PrisonPopulationByDimensionCount,
+    PrisonPopulationOverTimeCount,
+    PrisonPopulationProjectionMetric,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
-    SupervisionPopulationOverTimeCount,
     SupervisionPopulationByDimensionCount,
+    SupervisionPopulationOverTimeCount,
+    SupervisionPopulationProjectionMetric,
 ]
 
 # TODO(#13950): Replace with StateCode
@@ -77,6 +82,16 @@ ENABLED_PERSON_LEVEL_METRICS_BY_STATE = {
         metric_mapper
         for metric_mapper in metric_mappers
         if isinstance(metric_mapper, PersonLevelMetricQueryBuilder)
+    ]
+    for state_code, metric_mappers in ENABLED_METRICS_BY_STATE.items()
+}
+
+
+ENABLED_PROJECTION_METRICS_BY_STATE = {
+    state_code: [
+        metric_mapper
+        for metric_mapper in metric_mappers
+        if isinstance(metric_mapper, PopulationProjectionMetricQueryBuilder)
     ]
     for state_code, metric_mappers in ENABLED_METRICS_BY_STATE.items()
 }
