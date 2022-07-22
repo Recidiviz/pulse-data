@@ -16,14 +16,13 @@
 // =============================================================================
 import { Layout, Menu, Typography } from "antd";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
+import Nelly from "../favicon-32x32.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
-import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
-import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
@@ -32,15 +31,17 @@ import DatasetView from "./DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
-import Nelly from "../favicon-32x32.png";
+import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
+import JusticeCountsBulkUploadView from "./JusticeCountsTools/BulkUpload";
+import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
+import StateUserPermissionsView from "./StateUserPermissionsView";
 import TableView from "./TableView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
 import ValidationDetailView from "./Validation/ValidationDetailView";
 import ValidationStatusView from "./Validation/ValidationStatusView";
-import StateUserPermissionsView from "./StateUserPermissionsView";
 
 const App = (): JSX.Element => {
   const location = useLocation();
@@ -155,6 +156,9 @@ const App = (): JSX.Element => {
                 User Provisioning
               </Link>
             </Menu.Item>
+            <Menu.Item key={JusticeCountsTools.BULK_UPLOAD_ROUTE}>
+              <Link to={JusticeCountsTools.BULK_UPLOAD_ROUTE}>Bulk Upload</Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -234,6 +238,10 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
             component={UserProvisioningView}
+          />
+          <Route
+            path={JusticeCountsTools.BULK_UPLOAD_ROUTE}
+            component={JusticeCountsBulkUploadView}
           />
           <Redirect
             from="/"
