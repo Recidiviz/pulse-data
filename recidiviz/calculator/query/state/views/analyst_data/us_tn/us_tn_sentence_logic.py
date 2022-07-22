@@ -329,6 +329,7 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
         USING(Offender_ID)
     LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
         ON all_sentences.Offender_ID = pei.external_id
+        AND pei.state_code = 'US_TN'
     LEFT JOIN (
         SELECT person_id, judicial_district_code
         FROM `{project_id}.{sessions_dataset}.us_tn_judicial_district_sessions_materialized`
