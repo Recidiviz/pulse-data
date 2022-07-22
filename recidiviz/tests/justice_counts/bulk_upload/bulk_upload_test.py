@@ -54,6 +54,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution",
         )
+        self.prosecution_excel = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/prosecution/prosecution_metrics.xlsx",
+        )
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         super().setUp()
 
@@ -116,6 +120,35 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=PROSECUTION_AGENCY_ID,
+                include_datapoints=True,
+            )
+            reports_by_instance = {report.instance: report for report in reports}
+            self._test_prosecution(reports_by_instance=reports_by_instance)
+
+    def test_prosecution_excel(self) -> None:
+        """Bulk upload prosecution metrics from excel spreadsheet."""
+
+        user_account = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_F
+
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(user_account)
+            session.add(agency)
+            session.commit()
+            session.flush()
+
+            errors = BulkUploadInterface.upload_excel(
+                session=session,
+                filename=self.prosecution_excel,
+                agency_id=agency.id,
+                system=schema.System.PROSECUTION,
+                user_account=user_account,
+            )
+            self.assertEqual(len(errors), 0)
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=agency.id,
                 include_datapoints=True,
             )
             reports_by_instance = {report.instance: report for report in reports}
