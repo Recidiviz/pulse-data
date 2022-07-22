@@ -79,7 +79,7 @@ module "pathways_database" {
   base_secret_name  = "pathways"
   region            = var.region
   zone              = var.zone
-  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
   has_readonly_user = true
 
   additional_databases = [
