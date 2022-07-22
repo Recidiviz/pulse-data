@@ -975,15 +975,6 @@ class StateSupervisionPeriod(
 
     def __attrs_post_init__(self) -> None:
         if (
-            self.state_code in ("US_TN", "US_ID")
-            and self.termination_reason
-            == StateSupervisionPeriodTerminationReason.DISMISSED
-        ):
-            raise ValueError(
-                "StateSupervisionPeriodTerminationReason.DISMISSED is deprecated for "
-                f"state_code : [{self.state_code}]. This value should not be used."
-            )
-        if (
             self.state_code in ("US_ID", "US_ME", "US_PA")
             and self.termination_reason
             == StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION

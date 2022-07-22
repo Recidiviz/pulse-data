@@ -1106,7 +1106,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             # Successful terminations
             StateSupervisionPeriodTerminationReason.COMMUTED,
             StateSupervisionPeriodTerminationReason.DISCHARGE,
-            StateSupervisionPeriodTerminationReason.DISMISSED,
             StateSupervisionPeriodTerminationReason.EXPIRATION,
             StateSupervisionPeriodTerminationReason.PARDONED,
             StateSupervisionPeriodTerminationReason.VACATED,

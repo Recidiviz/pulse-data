@@ -300,7 +300,6 @@ state_supervision_period_termination_reason_admitted_to_incarceration = (
 state_supervision_period_termination_reason_commuted = "COMMUTED"
 state_supervision_period_termination_reason_death = "DEATH"
 state_supervision_period_termination_reason_discharge = "DISCHARGE"
-state_supervision_period_termination_reason_dismissed = "DISMISSED"
 state_supervision_period_termination_reason_expiration = "EXPIRATION"
 state_supervision_period_termination_reason_investigation = "INVESTIGATION"
 state_supervision_period_termination_reason_pardoned = "PARDONED"
