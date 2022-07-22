@@ -20,6 +20,7 @@ import enum
 
 
 class Dimension(enum.Enum):
+    ADMISSION_REASON = "admission_reason"
     AGE_GROUP = "age_group"
     FACILITY = "facility"
     GENDER = "gender"

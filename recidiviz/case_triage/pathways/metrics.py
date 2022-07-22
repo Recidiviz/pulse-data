@@ -23,6 +23,8 @@ from recidiviz.case_triage.pathways.metric_queries import (
     LibertyToPrisonTransitionsCount,
     MetricQueryBuilder,
     PersonLevelMetricQueryBuilder,
+    PrisonPopulationByDimensionCount,
+    PrisonPopulationOverTimeCount,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionPopulationByDimensionCount,
@@ -35,6 +37,8 @@ from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 ALL_METRICS: List[MetricQueryBuilder] = [
     LibertyToPrisonTransitionsCount,
+    PrisonPopulationOverTimeCount,
+    PrisonPopulationByDimensionCount,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionToLibertyTransitionsCount,

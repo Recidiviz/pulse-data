@@ -33,6 +33,8 @@ from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
+    PrisonPopulationByDimension,
+    PrisonPopulationOverTime,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
     SupervisionPopulationOverTime,
@@ -218,6 +220,87 @@ LibertyToPrisonTransitionsCount = CountByDimensionMetricQueryBuilder(
         ),
     ],
 )
+
+
+PrisonPopulationOverTimeCount = CountByDimensionMetricQueryBuilder(
+    name="PrisonPopulationOverTimeCount",
+    model=PrisonPopulationOverTime,
+    counting_function=func.count(distinct(PrisonPopulationOverTime.person_id)),
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.YEAR_MONTH,
+            operations=DimensionOperation.GROUP,
+            columns=[
+                PrisonPopulationOverTime.year,
+                PrisonPopulationOverTime.month,
+            ],
+        ),
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.FACILITY,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.facility],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.ADMISSION_REASON,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.admission_reason],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.race],
+        ),
+        DimensionMapping(
+            dimension=Dimension.TIME_PERIOD,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationOverTime.time_period],
+        ),
+    ],
+)
+
+PrisonPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
+    name="PrisonPopulationByDimensionCount",
+    model=SupervisionPopulationByDimension,
+    counting_function=func.count(distinct(PrisonPopulationByDimension.person_id)),
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.FACILITY,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.facility],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.ADMISSION_REASON,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.admission_reason],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.race],
+        ),
+    ],
+)
+
 
 PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="PrisonToSupervisionTransitionsCount",
