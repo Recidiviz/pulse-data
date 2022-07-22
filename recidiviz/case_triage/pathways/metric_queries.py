@@ -35,6 +35,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PathwaysBase,
     PrisonPopulationByDimension,
     PrisonPopulationOverTime,
+    PrisonPopulationPersonLevel,
     PrisonPopulationProjection,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
@@ -341,6 +342,46 @@ PrisonPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
             operations=DimensionOperation.ALL,
             columns=[PrisonPopulationByDimension.race],
         ),
+    ],
+)
+
+PrisonPopulationPersonLevelMetric = PersonLevelMetricQueryBuilder(
+    name="PrisonPopulationPersonLevel",
+    model=PrisonPopulationPersonLevel,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.AGE_GROUP,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationPersonLevel.age_group],
+        ),
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationPersonLevel.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.ADMISSION_REASON,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationPersonLevel.admission_reason],
+        ),
+        DimensionMapping(
+            dimension=Dimension.RACE,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationPersonLevel.race],
+        ),
+        DimensionMapping(
+            dimension=Dimension.FACILITY,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationPersonLevel.facility],
+        ),
+    ],
+    non_aggregate_columns=[
+        PrisonPopulationPersonLevel.full_name,
+        PrisonPopulationPersonLevel.state_id,
+    ],
+    aggregate_columns=[
+        PrisonPopulationPersonLevel.age,
+        PrisonPopulationPersonLevel.facility,
     ],
 )
 

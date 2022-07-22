@@ -1,0 +1,3 @@
+state_code,state_id,full_name,age,gender,facility,admission_reason,age_group,race
+US_XX,1,"Example,Person",25,MALE,F1,NEW_ADMISSION,25-29,WHITE
+US_XX,2,"Fake,Person",65,FEMALE,F2,RETURN_FROM_TEMPORARY_RELEASE,60+,BLACK

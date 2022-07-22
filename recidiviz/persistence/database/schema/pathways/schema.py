@@ -215,6 +215,30 @@ class PrisonPopulationProjection(PathwaysBase):
     total_population_max = Column(Float, nullable=False)
 
 
+class PrisonPopulationPersonLevel(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_person_level"""
+
+    __tablename__ = "prison_population_person_level"
+
+    state_code = Column(String, primary_key=True, nullable=False)
+    # Person's external ID
+    state_id = Column(String, primary_key=True, nullable=False)
+    # Full name of the person
+    full_name = Column(String)
+    # Current age of the person
+    age = Column(String)
+    gender = Column(String)
+    # Facility the person resides in
+    facility = Column(String)
+    # Admission reason
+    admission_reason = Column(String)
+    # Age group of the person(see recidiviz.calculator.query.bq_utils.add_age_groups)
+    age_group = Column(String)
+    # `prioritized_race_or_ethnicity` of the person
+    race = Column(String)
+
+
 class PrisonToSupervisionTransitions(PathwaysBase):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions`
