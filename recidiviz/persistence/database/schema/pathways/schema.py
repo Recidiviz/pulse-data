@@ -16,6 +16,7 @@
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Pathways related entities.
 """
+from typing import List, Optional
 
 from sqlalchemy import BigInteger, Column, Date, Index, Integer, SmallInteger, String
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
@@ -27,6 +28,28 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 PathwaysBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="PathwaysBase"
 )
+
+
+def build_covered_indexes(
+    *,
+    index_base_name: str,
+    dimensions: List[str],
+    includes: Optional[List[str]] = None,
+) -> List[Index]:
+    dimensions = sorted(dimensions)
+    dimension_set = set(dimensions)
+    includes = [] if includes is None else includes
+    return [
+        Index(
+            f"{index_base_name}_{dimension}",
+            dimension,
+            postgresql_include=[
+                *sorted(list(dimension_set - set([dimension]))),
+                *includes,
+            ],
+        )
+        for dimension in dimensions
+    ]
 
 
 class LibertyToPrisonTransitions(PathwaysBase):
@@ -58,6 +81,103 @@ class LibertyToPrisonTransitions(PathwaysBase):
     prior_length_of_incarceration = Column(String, nullable=False)
     # State code for the transition
     state_code = Column(String, nullable=False)
+
+
+class PrisonPopulationOverTime(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_over_time`"""
+
+    __tablename__ = "prison_population_over_time"
+    # Adds covered index for time series view
+    __table_args__ = (
+        Index(
+            "prison_population_over_time_pk",
+            "person_id",
+            "year",
+            "month",
+            "age_group",
+            "facility",
+            "gender",
+            "admission_reason",
+            "race",
+            unique=True,
+        ),
+        Index(
+            "prison_population_over_time_time_series",
+            "time_period",
+            "year",
+            "month",
+            "person_id",
+            postgresql_include=[
+                "age_group",
+                "gender",
+                "facility",
+                "admission_reason",
+                "race",
+            ],
+        ),
+    )
+
+    state_code = Column(String, primary_key=True, nullable=False)
+    # Denormalized date in population year
+    year = Column(SmallInteger, primary_key=True, nullable=False)
+    # Denormalized date in population month
+    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # Bin of when the person was in population (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
+    time_period = Column(String, primary_key=True, nullable=False)
+    # Person ID for the session. BigInt has faster sorting/grouping than String
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
+    # Current age group of the person (see recidiviz.calculator.query.bq_utils.add_age_groups)
+    age_group = Column(String, primary_key=True, nullable=True)
+    # Facility the person resides
+    facility = Column(String, primary_key=True, nullable=True)
+    # Gender of the person
+    gender = Column(String, primary_key=True, nullable=True)
+    # Admission reason
+    admission_reason = Column(String, primary_key=True, nullable=True)
+    # Race of the person
+    race = Column(String, primary_key=True, nullable=True)
+
+
+class PrisonPopulationByDimension(PathwaysBase):
+    """ETL data imported from
+    `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_by_dimension`"""
+
+    __tablename__ = "prison_population_by_dimension"
+
+    # Adds covered indexes for groupable columns and includes other columns that may be used in the same query
+    __table_args__ = (
+        Index(
+            "prison_population_by_dimension_pk",
+            "person_id",
+            "gender",
+            "admission_reason",
+            "facility",
+            "age_group",
+            "race",
+            unique=True,
+        ),
+        *build_covered_indexes(
+            index_base_name="prison_population_by_dimension",
+            dimensions=["age_group", "facility", "gender", "admission_reason", "race"],
+            includes=["person_id"],
+        ),
+    )
+
+    state_code = Column(String, primary_key=True, nullable=False)
+
+    # Person ID for the session. BigInt has faster sorting/grouping than String
+    person_id = Column(BigInteger, primary_key=True, nullable=False)
+    # Current age group of the person (see recidiviz.calculator.query.bq_utils.add_age_groups)
+    age_group = Column(String, primary_key=True, nullable=True)
+    # Facility the person is in
+    facility = Column(String, primary_key=True, nullable=True)
+    # Gender of the person
+    gender = Column(String, primary_key=True, nullable=True)
+    # Admission reason
+    admission_reason = Column(String, primary_key=True, nullable=True)
+    # Race of the person
+    race = Column(String, primary_key=True, nullable=True)
 
 
 class PrisonToSupervisionTransitions(PathwaysBase):
@@ -160,32 +280,10 @@ class SupervisionPopulationByDimension(PathwaysBase):
             "race",
             unique=True,
         ),
-        Index(
-            "supervision_population_by_dimension_race",
-            "race",
-            postgresql_include=[
-                "supervision_district",
-                "supervision_level",
-                "person_id",
-            ],
-        ),
-        Index(
-            "supervision_population_by_dimension_supervision_level",
-            "supervision_level",
-            postgresql_include=[
-                "supervision_district",
-                "race",
-                "person_id",
-            ],
-        ),
-        Index(
-            "supervision_population_by_dimension_supervision_district",
-            "supervision_district",
-            postgresql_include=[
-                "supervision_level",
-                "race",
-                "person_id",
-            ],
+        *build_covered_indexes(
+            index_base_name="supervision_population_by_dimension",
+            dimensions=["supervision_district", "supervision_level", "race"],
+            includes=["person_id"],
         ),
     )
 

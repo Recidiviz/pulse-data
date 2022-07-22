@@ -33,6 +33,8 @@ from recidiviz.case_triage.pathways.metric_queries import (
     FetchMetricParams,
     LibertyToPrisonTransitionsCount,
     MetricQueryBuilder,
+    PrisonPopulationByDimensionCount,
+    PrisonPopulationOverTimeCount,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionPopulationByDimensionCount,
@@ -45,6 +47,8 @@ from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     PathwaysBase,
+    PrisonPopulationByDimension,
+    PrisonPopulationOverTime,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
     SupervisionPopulationOverTime,
@@ -876,3 +880,86 @@ class TestSupervisionPopulationByDimensionCount(
             ],
             results,
         )
+
+
+class TestPrisonPopulationOverTimeCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for PrisonPopulationOverTimeCount metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return PrisonPopulationOverTime
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return PrisonPopulationOverTimeCount
+
+    @property
+    def all_expected_counts(
+        self,
+    ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        return {
+            Dimension.YEAR_MONTH: [
+                {
+                    "year": 2022,
+                    "month": 1,
+                    "count": 2,
+                },
+                {
+                    "year": 2022,
+                    "month": 2,
+                    "count": 2,
+                },
+                {
+                    "year": 2022,
+                    "month": 3,
+                    "count": 2,
+                },
+            ],
+        }
+
+
+class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCase):
+    """Test for PrisonPopulationByDimensionCount metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return PrisonPopulationByDimension
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return PrisonPopulationByDimensionCount
+
+    @property
+    def all_expected_counts(
+        self,
+    ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
+        return {
+            Dimension.AGE_GROUP: [
+                {"age_group": "25-29", "count": 1},
+                {"age_group": "60+", "count": 3},
+            ],
+            Dimension.FACILITY: [
+                {"facility": "F1", "count": 4},
+            ],
+            Dimension.GENDER: [
+                {"gender": "FEMALE", "count": 2},
+                {"gender": "MALE", "count": 2},
+            ],
+            Dimension.ADMISSION_REASON: [
+                {"admission_reason": "NEW_ADMISSION", "count": 1},
+                {"admission_reason": "REVOCATION", "count": 2},
+                {"admission_reason": "UNKNOWN", "count": 1},
+            ],
+            Dimension.RACE: [
+                {"race": "BLACK", "count": 2},
+                {"race": "WHITE", "count": 2},
+            ],
+        }

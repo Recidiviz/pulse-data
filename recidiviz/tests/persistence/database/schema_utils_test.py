@@ -204,6 +204,8 @@ def test_get_all_table_classes() -> None:
     ]
     pathways_table_names = [
         "liberty_to_prison_transitions",
+        "prison_population_over_time",
+        "prison_population_by_dimension",
         "prison_to_supervision_transitions",
         "supervision_population_over_time",
         "supervision_population_by_dimension",
