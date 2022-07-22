@@ -21,12 +21,14 @@ from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple
 
 import attr
+import pandas as pd
 from flask import Blueprint, Response, jsonify, request
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.auth.auth0_client import Auth0Client, Auth0User
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploadInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -182,6 +184,30 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 jsonify({"user": user.to_json()}),
                 HTTPStatus.OK,
             )
+
+    @bp.route("/api/justice_counts_tools/bulk_upload", methods=["POST"])
+    @requires_gae_auth
+    def bulk_upload() -> Tuple[str, HTTPStatus]:
+        """Upload data for an agency."""
+        file = request.files["file"]
+        xls = pd.ExcelFile(file)
+
+        data = assert_type(request.form, dict)
+        agency_id = int(data["agency_id"])
+        user_id = int(data["user_id"])
+        system = data["system"]
+
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            BulkUploadInterface.upload_excel(
+                session=session,
+                xls=xls,
+                agency_id=agency_id,
+                system=schema.System[system],
+                user_account=session.query(schema.UserAccount).get(user_id),
+            )
+        return "", HTTPStatus.OK
 
 
 def _merge_auth0_and_db_users(

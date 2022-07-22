@@ -85,7 +85,7 @@ class BulkUploadInterface:
     @staticmethod
     def upload_excel(
         session: Session,
-        filename: str,
+        xls: pd.ExcelFile,
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
@@ -97,16 +97,17 @@ class BulkUploadInterface:
         success_files = []
         error_files = []
 
-        xls = pd.ExcelFile(filename)
+        # TODO(#13731): Save raw Excel file in GCS
+
         for sheet_name in xls.sheet_names:
             logging.info("Uploading %s", sheet_name)
 
             try:
-                df = pd.read_excel(filename, sheet_name=sheet_name)
+                df = pd.read_excel(xls, sheet_name=sheet_name)
                 rows = df.to_dict("records")
 
-                # Based on the name of the sheet, determine which Justice Counts
-                # metric this file contains data for
+                # Based on the name of the Excel sheet, determine which Justice
+                # Counts metric this file contains data for
                 metricfile = BulkUploadInterface._get_metricfile(
                     filename=sheet_name, system=system
                 )
@@ -120,7 +121,7 @@ class BulkUploadInterface:
                 )
                 success_files.append(sheet_name)
             except Exception as e:
-                error_files.append((filename, e))
+                error_files.append((sheet_name, e))
                 raise e
 
         return error_files
@@ -139,6 +140,8 @@ class BulkUploadInterface:
 
         with open(filename, "r", encoding="utf-8") as csvfile:
             rows = list(csv.DictReader(csvfile))
+
+        # TODO(#13731): Save raw CSV file in GCS
 
         # Based on the name of the CSV file, determine which Justice Counts
         # metric this file contains data for

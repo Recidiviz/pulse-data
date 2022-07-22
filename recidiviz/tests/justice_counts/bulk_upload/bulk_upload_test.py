@@ -19,6 +19,7 @@
 import os
 from typing import Dict
 
+import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploadInterface
@@ -139,7 +140,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             errors = BulkUploadInterface.upload_excel(
                 session=session,
-                filename=self.prosecution_excel,
+                xls=pd.ExcelFile(self.prosecution_excel),
                 agency_id=agency.id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
