@@ -35,9 +35,11 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PathwaysBase,
     PrisonPopulationByDimension,
     PrisonPopulationOverTime,
+    PrisonPopulationProjection,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
     SupervisionPopulationOverTime,
+    SupervisionPopulationProjection,
     SupervisionToLibertyTransitions,
     SupervisionToPrisonTransitions,
 )
@@ -136,6 +138,47 @@ class CountByDimensionMetricQueryBuilder(
     @classmethod
     def build_params(cls, schema: Dict) -> CountByDimensionMetricParams:
         return CountByDimensionMetricParams(**schema)
+
+
+@attr.s(auto_attribs=True)
+class PopulationProjectionMetricQueryBuilder(MetricQueryBuilder[FetchMetricParams]):
+    """Builder for Pathways postgres queries that return population projection data matching a filter"""
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+
+        required_attributes = [
+            "year",
+            "month",
+            "simulation_tag",
+            "gender",
+            "admission_reason",
+            "total_population",
+            "total_population_min",
+            "total_population_max",
+        ]
+
+        self.base_columns = [
+            getattr(self.model, attribute)
+            for attribute in required_attributes
+            if hasattr(self.model, attribute)
+        ]
+
+        if len(self.base_columns) != len(required_attributes):
+            raise ValueError(
+                "ProjectionCountMetricQueryBuilder model must have required attributes"
+            )
+
+    def build_query(self, params: FetchMetricParams) -> Query:
+        return (
+            Query([*self.base_columns])
+            .filter(*self.build_filter_conditions(params))
+            .order_by(*self.base_columns)
+        )
+
+    @classmethod
+    def build_params(cls, schema: Dict) -> FetchMetricParams:
+        return FetchMetricParams(**schema)
 
 
 @attr.s(auto_attribs=True)
@@ -302,6 +345,24 @@ PrisonPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
 )
 
 
+PrisonPopulationProjectionMetric = PopulationProjectionMetricQueryBuilder(
+    name="PrisonPopulationProjection",
+    model=PrisonPopulationProjection,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationProjection.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.ADMISSION_REASON,
+            operations=DimensionOperation.FILTER,
+            columns=[PrisonPopulationProjection.admission_reason],
+        ),
+    ],
+)
+
+
 PrisonToSupervisionTransitionsCount = CountByDimensionMetricQueryBuilder(
     name="PrisonToSupervisionTransitionsCount",
     model=PrisonToSupervisionTransitions,
@@ -458,6 +519,23 @@ SupervisionPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
             dimension=Dimension.RACE,
             operations=DimensionOperation.ALL,
             columns=[SupervisionPopulationByDimension.race],
+        ),
+    ],
+)
+
+SupervisionPopulationProjectionMetric = PopulationProjectionMetricQueryBuilder(
+    name="SupervisionPopulationProjection",
+    model=SupervisionPopulationProjection,
+    dimension_mappings=[
+        DimensionMapping(
+            dimension=Dimension.GENDER,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationProjection.gender],
+        ),
+        DimensionMapping(
+            dimension=Dimension.ADMISSION_REASON,
+            operations=DimensionOperation.FILTER,
+            columns=[SupervisionPopulationProjection.admission_reason],
         ),
     ],
 )

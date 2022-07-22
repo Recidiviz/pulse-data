@@ -35,10 +35,12 @@ from recidiviz.case_triage.pathways.metric_queries import (
     MetricQueryBuilder,
     PrisonPopulationByDimensionCount,
     PrisonPopulationOverTimeCount,
+    PrisonPopulationProjectionMetric,
     PrisonToSupervisionTransitionsCount,
     PrisonToSupervisionTransitionsPersonLevel,
     SupervisionPopulationByDimensionCount,
     SupervisionPopulationOverTimeCount,
+    SupervisionPopulationProjectionMetric,
     SupervisionToLibertyTransitionsCount,
     SupervisionToPrisonTransitionsCount,
 )
@@ -49,9 +51,11 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PathwaysBase,
     PrisonPopulationByDimension,
     PrisonPopulationOverTime,
+    PrisonPopulationProjection,
     PrisonToSupervisionTransitions,
     SupervisionPopulationByDimension,
     SupervisionPopulationOverTime,
+    SupervisionPopulationProjection,
     SupervisionToLibertyTransitions,
     SupervisionToPrisonTransitions,
 )
@@ -147,6 +151,22 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
     @property
     @abc.abstractmethod
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
+        ...
+
+    def test_metrics_base(self) -> None:
+        metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
+        results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
+
+        self.test.assertEqual(
+            self.all_expected_rows,
+            results,
+        )
+
+
+class PathwaysPopulationProjectionMetricTestBase(PathwaysMetricTestBase):
+    @property
+    @abc.abstractmethod
+    def all_expected_rows(self) -> List[Dict[str, Union[str, int, float]]]:
         ...
 
     def test_metrics_base(self) -> None:
@@ -963,3 +983,153 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
                 {"race": "WHITE", "count": 2},
             ],
         }
+
+
+class TestPrisonPopulationProjectionMetric(
+    PathwaysPopulationProjectionMetricTestBase, TestCase
+):
+    """Test for PrisonPopulationProjection metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return PrisonPopulationProjection
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return PrisonPopulationProjectionMetric
+
+    @property
+    def all_expected_rows(
+        self,
+    ) -> List[Dict[str, Union[str, int, float]]]:
+        return [
+            {
+                "gender": "FEMALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 1,
+                "simulation_tag": "HISTORICAL",
+                "total_population": 1,
+                "total_population_max": 1.25,
+                "total_population_min": 0.25,
+                "year": 2022,
+            },
+            {
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 1,
+                "simulation_tag": "HISTORICAL",
+                "total_population": 1,
+                "total_population_max": 1.5,
+                "total_population_min": 0.5,
+                "year": 2022,
+            },
+            {
+                "gender": "FEMALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 2,
+                "simulation_tag": "BASELINE",
+                "total_population": 1,
+                "total_population_max": 1.25,
+                "total_population_min": 0.25,
+                "year": 2022,
+            },
+            {
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 2,
+                "simulation_tag": "BASELINE",
+                "total_population": 2,
+                "total_population_max": 1.5,
+                "total_population_min": 0.5,
+                "year": 2022,
+            },
+            {
+                "gender": "FEMALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 3,
+                "simulation_tag": "BASELINE",
+                "total_population": 1,
+                "total_population_max": 1.25,
+                "total_population_min": 0.25,
+                "year": 2022,
+            },
+            {
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 3,
+                "simulation_tag": "BASELINE",
+                "total_population": 3,
+                "total_population_max": 1.5,
+                "total_population_min": 0.5,
+                "year": 2022,
+            },
+        ]
+
+
+class TestSupervisionPopulationProjectionMetric(
+    PathwaysPopulationProjectionMetricTestBase, TestCase
+):
+    """Test for SupervisionPopulationProjection metric."""
+
+    @property
+    def test(self) -> TestCase:
+        return self
+
+    @property
+    def schema(self) -> PathwaysBase:
+        return SupervisionPopulationProjection
+
+    @property
+    def query_builder(self) -> MetricQueryBuilder:
+        return SupervisionPopulationProjectionMetric
+
+    @property
+    def all_expected_rows(
+        self,
+    ) -> List[Dict[str, Union[str, int, float]]]:
+        return [
+            {
+                "gender": "FEMALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 1,
+                "simulation_tag": "HISTORICAL",
+                "total_population": 1,
+                "total_population_max": 1.25,
+                "total_population_min": 0.25,
+                "year": 2022,
+            },
+            {
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 1,
+                "simulation_tag": "HISTORICAL",
+                "total_population": 1,
+                "total_population_max": 1.5,
+                "total_population_min": 0.5,
+                "year": 2022,
+            },
+            {
+                "gender": "FEMALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 2,
+                "simulation_tag": "BASELINE",
+                "total_population": 1,
+                "total_population_max": 1.25,
+                "total_population_min": 0.25,
+                "year": 2022,
+            },
+            {
+                "gender": "MALE",
+                "admission_reason": "NEW_ADMISSION",
+                "month": 2,
+                "simulation_tag": "BASELINE",
+                "total_population": 2,
+                "total_population_max": 1.5,
+                "total_population_min": 0.5,
+                "year": 2022,
+            },
+        ]

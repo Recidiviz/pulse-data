@@ -27,6 +27,7 @@ from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
 from recidiviz.case_triage.pathways.metrics import (
     ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE,
     ENABLED_PERSON_LEVEL_METRICS_BY_STATE,
+    ENABLED_PROJECTION_METRICS_BY_STATE,
 )
 
 FETCH_METRIC_SCHEMAS_BY_NAME = {}
@@ -75,6 +76,30 @@ for enabled_person_metrics in ENABLED_PERSON_LEVEL_METRICS_BY_STATE.values():
         dimension_mapping_collection = person_metric_class.dimension_mapping_collection
 
         FETCH_METRIC_SCHEMAS_BY_NAME[person_metric_class.name] = Schema.from_dict(
+            {
+                "filters": fields.Dict(
+                    EnumField(
+                        Dimension,
+                        by_value=True,
+                        validate=validate.OneOf(
+                            dimension_mapping_collection.operable_map[
+                                DimensionOperation.FILTER
+                            ].keys(),
+                        ),
+                    ),
+                    fields.List(fields.Str),
+                ),
+            }
+        )
+
+
+for enabled_projection_metrics in ENABLED_PROJECTION_METRICS_BY_STATE.values():
+    for projection_metric_class in enabled_projection_metrics:
+        dimension_mapping_collection = (
+            projection_metric_class.dimension_mapping_collection
+        )
+
+        FETCH_METRIC_SCHEMAS_BY_NAME[projection_metric_class.name] = Schema.from_dict(
             {
                 "filters": fields.Dict(
                     EnumField(

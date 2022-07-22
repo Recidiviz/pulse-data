@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.priso
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_over_time import (
     PRISON_POPULATION_OVER_TIME_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_population_projection import (
+    PRISON_POPULATION_PROJECTION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions import (
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
 )
@@ -41,6 +44,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.super
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_over_time import (
     SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_population_projection import (
+    SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_liberty_transitions import (
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
@@ -118,8 +124,10 @@ PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
+    PRISON_POPULATION_PROJECTION_VIEW_BUILDER,
     PRISON_POPULATION_OVER_TIME_VIEW_BUILDER,
     PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER,
     SUPERVISION_POPULATION_VIEW_BUILDER,
     SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_DIMENSION_VIEW_BUILDER,
