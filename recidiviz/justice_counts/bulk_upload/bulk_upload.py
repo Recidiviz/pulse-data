@@ -25,6 +25,7 @@ from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
@@ -55,8 +56,8 @@ class BulkUploadInterface:
         system: schema.System,
         user_account: schema.UserAccount,
     ) -> List[Tuple[str, Exception]]:
-        """Iterate through all CSV files in the given directory and upload them to the
-        Justice Counts database using the `upload_file` method defined below.
+        """Iterate through all CSV files in the given directory and upload them
+        to the Justice Counts database using the `upload_csv` method defined below.
         If an error is encountered on a particular file, log it and continue.
         """
         success_files = []
@@ -69,7 +70,7 @@ class BulkUploadInterface:
             filename = os.path.join(directory, filename)
             logging.info("Uploading %s", filename)
             try:
-                BulkUploadInterface.upload_file(
+                BulkUploadInterface.upload_csv(
                     session=session,
                     filename=filename,
                     agency_id=agency_id,
@@ -79,21 +80,95 @@ class BulkUploadInterface:
                 success_files.append(filename)
             except Exception as e:
                 error_files.append((filename, e))
-                raise e
         return error_files
 
     @staticmethod
-    def upload_file(
+    def upload_excel(
+        session: Session,
+        filename: str,
+        agency_id: int,
+        system: schema.System,
+        user_account: schema.UserAccount,
+    ) -> List[Tuple[str, Exception]]:
+        """Iterate through all tabs in an Excel spreadsheet and upload them
+        to the Justice Counts database using the `upload_rows` method defined below.
+        If an error is encountered on a particular tab, log it and continue.
+        """
+        success_files = []
+        error_files = []
+
+        xls = pd.ExcelFile(filename)
+        for sheet_name in xls.sheet_names:
+            logging.info("Uploading %s", sheet_name)
+
+            try:
+                df = pd.read_excel(filename, sheet_name=sheet_name)
+                rows = df.to_dict("records")
+
+                # Based on the name of the sheet, determine which Justice Counts
+                # metric this file contains data for
+                metricfile = BulkUploadInterface._get_metricfile(
+                    filename=sheet_name, system=system
+                )
+
+                BulkUploadInterface._upload_rows(
+                    session=session,
+                    rows=rows,
+                    metricfile=metricfile,
+                    agency_id=agency_id,
+                    user_account=user_account,
+                )
+                success_files.append(sheet_name)
+            except Exception as e:
+                error_files.append((filename, e))
+                raise e
+
+        return error_files
+
+    @staticmethod
+    def upload_csv(
         session: Session,
         filename: str,
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
     ) -> None:
-        """Takes as input a CSV file, formatted according to the technical specification,
-        containing data for a particular metric across multiple time periods. Uploads this
-        data into the Justice Counts database by breaking it up into Report objects, and
-        either updating existing reports or creating new ones.
+        """Uploads a CSV file containing data for a particular metric.
+        Core functionality is handled by the `upload_rows` method below.
+        """
+
+        with open(filename, "r", encoding="utf-8") as csvfile:
+            rows = list(csv.DictReader(csvfile))
+
+        # Based on the name of the CSV file, determine which Justice Counts
+        # metric this file contains data for
+        metricfile = BulkUploadInterface._get_metricfile(
+            filename=filename, system=system
+        )
+
+        return BulkUploadInterface._upload_rows(
+            session=session,
+            rows=rows,
+            metricfile=metricfile,
+            agency_id=agency_id,
+            user_account=user_account,
+        )
+
+    @staticmethod
+    def _upload_rows(
+        session: Session,
+        rows: List[Dict[str, Any]],
+        metricfile: MetricFile,
+        agency_id: int,
+        user_account: schema.UserAccount,
+    ) -> None:
+        """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
+        in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
+        The rows should be formatted according to the technical specification, and contain
+        data for a particular metric across multiple time periods.
+
+        Uploads this data into the Justice Counts database by breaking it up into Report objects,
+        and either updating existing reports or creating new ones.
 
         A simplified version of the expected format:
         year | month | value | offense_type
@@ -122,21 +197,14 @@ class BulkUploadInterface:
             )
         }
 
-        # Step 2: Determine which Justice Counts metric this file contains data for.
-        metricfile = BulkUploadInterface._get_metricfile(
-            filename=filename, system=system
-        )
         metric_definition = metricfile.definition
         if len(metric_definition.reporting_frequencies) > 1:
             raise ValueError("Multiple reporting frequencies are not yet supported.")
         reporting_frequency = metric_definition.reporting_frequencies[0]
 
-        # Step 3: Group the rows in this file by time range.
-        with open(filename, "r", encoding="utf-8") as csvfile:
-            rows = list(csv.DictReader(csvfile))
-
         # TODO(#13731): Make sure there are no unexpected columns in the file
 
+        # Step 2: Group the rows in this file by time range.
         (
             rows_by_time_range,
             time_range_to_year_month,
@@ -144,7 +212,7 @@ class BulkUploadInterface:
             rows=rows, reporting_frequency=reporting_frequency
         )
 
-        # Step 4: For each time range represented in the file, convert the
+        # Step 3: For each time range represented in the file, convert the
         # reported data into a ReportMetric object. If a report already
         # exists for this time range, update it with the ReportMetric.
         # Else, create a new report and add the ReportMetric.
