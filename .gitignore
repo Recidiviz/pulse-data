@@ -176,3 +176,6 @@ recidiviz/tools/deploy/log/
 # Binaries
 recidiviz/tools/postgres/log/
 recidiviz/tools/postgres/vendor/
+
+# Tool logs
+logs/

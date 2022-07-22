@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements a controller used to copy or move files used in ingest across buckets."""
-import datetime
 import itertools
 import logging
 import os
@@ -36,6 +35,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_mv,
 )
+from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
@@ -89,12 +89,11 @@ class OperateOnStorageRawFilesController:
         self.end_date_bound = end_date_bound
         self.file_tag_filters = file_tag_filters
 
-        self.log_output_path = os.path.join(
-            os.path.dirname(__file__),
-            f"{self.operation_type.value.lower()}_storage_raw_files_result_"
-            f"{region_code}_start_bound_{self.start_date_bound}_end_bound_"
-            f"{self.end_date_bound}_dry_run_{dry_run}_"
-            f"{datetime.datetime.now().isoformat()}.txt",
+        self.log_output_path = make_log_output_path(
+            operation_name=f"{self.operation_type.value.lower()}_storage_raw_files",
+            region_code=region_code,
+            date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
+            dry_run=dry_run,
         )
         self.mutex = threading.Lock()
         # List of (from_path, to_path) tuples for each copy or move operation

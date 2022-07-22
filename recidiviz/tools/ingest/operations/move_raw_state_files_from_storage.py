@@ -34,7 +34,6 @@ python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
 """
 
 import argparse
-import datetime
 import json
 import logging
 import os
@@ -63,6 +62,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_mv,
 )
+from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -121,10 +121,12 @@ class MoveFilesFromStorageController:
         self.collect_progress: Optional[Bar] = None
         self.move_progress: Optional[Bar] = None
         self.moves_list: List[Tuple[str, str]] = []
-        self.log_output_path = os.path.join(
-            os.path.dirname(__file__),
-            f"move_result_{region}_{self.project_id}_start_bound_{self.start_date_bound}_end_bound_"
-            f"{self.end_date_bound}_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt",
+
+        self.log_output_path = make_log_output_path(
+            operation_name="move",
+            region_code=region,
+            date_string=f"start_bound_{start_date_bound}_end_bound_{end_date_bound}",
+            dry_run=dry_run,
         )
 
     def run_move(self) -> None:

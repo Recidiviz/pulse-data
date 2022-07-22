@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_contr
     UploadStateFilesToIngestBucketDelegate,
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
+from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.params import str_to_bool
 
@@ -111,10 +112,12 @@ class ManualUploadStateFilesToIngestBucketController(
         self.mutex = threading.Lock()
         self.move_progress: Optional[Bar] = None
         self.copies_list: List[Tuple[str, str]] = []
-        self.log_output_path = os.path.join(
-            os.path.dirname(__file__),
-            f"upload_to_ingest_result_{region}_{self.project_id}_date_{date}"
-            f"_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt",
+
+        self.log_output_path = make_log_output_path(
+            operation_name="upload_to_ingest",
+            region_code=region,
+            date_string=f"date_{date}",
+            dry_run=dry_run,
         )
 
     def _copy_to_ingest_bucket(
