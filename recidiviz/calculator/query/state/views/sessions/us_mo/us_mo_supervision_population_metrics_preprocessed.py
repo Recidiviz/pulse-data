@@ -21,7 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,23 +30,11 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_NAME = (
 )
 
 US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """MO State-specific preprocessing for joining with dataflow sessions:
-- Recategorize supervision type/compartment level 2 as 'ABSCONSION' if date of supervision falls within a supervision period where start reason = 'ABSCONSION'
+- Properly hydrates compartment_location by pulling in `level_2_supervision_location info` from the `supervision_location_ids_to_names` view.
 """
 
 US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     /*{description}*/   
-    WITH absconsion_cte AS
-    (
-    SELECT
-        person_id,
-        state_code,
-        start_date,
-        termination_date,
-        'ABSCONSION' AS supervision_type
-    FROM `{project_id}.{state_base_dataset}.state_supervision_period` 
-    WHERE admission_reason ='ABSCONSION'
-        AND state_code = 'US_MO'
-    )
     SELECT DISTINCT
         population.person_id,
         population.date_of_supervision AS date,
@@ -55,7 +42,7 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         population.created_on,       
         population.state_code,
         'SUPERVISION' AS compartment_level_1,
-        COALESCE(abs.supervision_type, population.supervision_type) AS compartment_level_2,
+        population.supervision_type AS compartment_level_2,
         # TODO(#12757): Remove when US_MO level_2 location information is ingested
         CONCAT(COALESCE(population.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(population.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
@@ -78,9 +65,6 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     )  ref
       ON population.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND population.state_code = ref.state_code
-    LEFT JOIN absconsion_cte abs
-        ON abs.person_id = population.person_id
-        AND population.date_of_supervision BETWEEN abs.start_date AND COALESCE(DATE_SUB(abs.termination_date, INTERVAL 1 DAY), '9999-01-01')
     WHERE population.state_code = 'US_MO'
 """
 
@@ -90,7 +74,6 @@ US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
     description=US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
 )
