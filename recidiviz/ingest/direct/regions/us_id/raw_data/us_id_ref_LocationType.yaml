@@ -1,0 +1,24 @@
+file_tag: ref_LocationType
+file_description: |-
+  Currently unused
+data_classification: source
+primary_key_cols:
+  - LocationTypeId
+columns:
+  - name: LocationTypeId
+  - name: LocationTypeName
+  - name: Abbreviation
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: Inactive
+  - name: TB_SM9000_SUB_TYPE_TX
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: DefaultNoteTypeID
+  - name: IsNoteResponsibility
+  - name: IsCustom

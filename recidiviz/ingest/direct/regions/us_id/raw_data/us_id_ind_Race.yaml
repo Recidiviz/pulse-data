@@ -1,0 +1,28 @@
+file_tag: ind_Race
+file_description: |-
+  This table is a reference table for the race type reference codes used in the table ind_Offender
+data_classification: source
+primary_key_cols:
+  - RaceId
+columns:
+  - name: RaceId
+    description: |-
+      The reference code for the race type
+  - name: RaceDesc
+    description: |-
+      The description for the race type
+  - name: Abbreviation
+    description: |-
+      The abbreviation for the race type
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: Inactive
+  - name: TB_IN9000_SUB_TYPE_TX
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: IsCustom

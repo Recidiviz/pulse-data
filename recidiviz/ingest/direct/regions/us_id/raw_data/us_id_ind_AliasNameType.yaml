@@ -1,0 +1,22 @@
+file_tag: ind_AliasNameType
+file_description: |-
+  This table is a reference table for the alias name type reference codes found in the table ind_AliasName
+data_classification: source
+primary_key_cols:
+  - AliasNameTypeId
+columns:
+  - name: AliasNameTypeId
+    description: |-
+      The reference code for the alias name type
+  - name: AliasNameTypeDesc
+    description: |-
+      The description for the alias name type
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: IsCustom

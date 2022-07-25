@@ -1,0 +1,22 @@
+file_tag: ind_EthnicOrigin
+file_description: |-
+  This table is a reference table for the ethnicity type reference codes used in the table ind_Offender
+data_classification: source
+primary_key_cols:
+  - EthnicOriginId
+columns:
+  - name: EthnicOriginId
+    description: |-
+      The reference code for the ethnicity type
+  - name: EthnicOriginDesc
+    description: |-
+      The description for the ethnicity type
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: IsCustom

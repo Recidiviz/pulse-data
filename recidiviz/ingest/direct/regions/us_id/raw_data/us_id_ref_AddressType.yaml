@@ -1,0 +1,29 @@
+file_tag: ref_AddressType
+file_description: |-
+  This table is a reference table for the address type reference codes found in the table ind_Offender_Address
+data_classification: source
+primary_key_cols:
+  - AddressTypeId
+columns:
+  - name: AddressTypeId
+    description: |-
+      The reference code associated with the address type.
+  - name: AddressTypeDesc
+    description: |-
+      Description of the address type
+  - name: Abbreviation
+    description: |-
+      Abbreviation of the address type
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: PersonAddressType
+  - name: Inactive
+  - name: TB_SM9000_SUB_TYPE_TX
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: IsCustom
