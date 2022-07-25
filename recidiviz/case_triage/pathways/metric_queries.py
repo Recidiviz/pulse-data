@@ -314,7 +314,7 @@ PrisonPopulationOverTimeCount = CountByDimensionMetricQueryBuilder(
 
 PrisonPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
     name="PrisonPopulationByDimensionCount",
-    model=SupervisionPopulationByDimension,
+    model=PrisonPopulationByDimension,
     counting_function=func.count(distinct(PrisonPopulationByDimension.person_id)),
     dimension_mappings=[
         DimensionMapping(
