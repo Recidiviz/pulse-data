@@ -415,7 +415,7 @@ class TestModelSQL(TestCase):
         model_sql = ModelSQL(table=test_table)
         with self.assertRaisesRegex(
             NotImplementedError,
-            r"Cannot rename index \(custom_named_index\) that do not contain the table's name \(test_table\)",
+            r"Cannot rename index \(custom_named_index\) that does not contain the table's name \(test_table\)",
         ):
             model_sql.build_rename_ddl_queries("new_name")
 

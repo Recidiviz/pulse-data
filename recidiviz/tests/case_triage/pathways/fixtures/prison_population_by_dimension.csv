@@ -1,5 +1,5 @@
-state_code,person_id,gender,admission_reason,facility,age_group,race
-US_XX,1,MALE,NEW_ADMISSION,F1,25-29,WHITE
-US_XX,2,FEMALE,UNKNOWN,F1,60+,WHITE
-US_XX,3,MALE,REVOCATION,F1,60+,BLACK
-US_XX,4,FEMALE,REVOCATION,F1,60+,BLACK
+state_code,person_id,gender,admission_reason,facility,age_group,race,length_of_stay
+US_XX,1,MALE,NEW_ADMISSION,F1,25-29,WHITE,months_0_3
+US_XX,2,FEMALE,UNKNOWN,F1,60+,WHITE,months_0_3
+US_XX,3,MALE,REVOCATION,F1,60+,BLACK,months_0_3
+US_XX,4,FEMALE,REVOCATION,F1,60+,BLACK,months_0_3
