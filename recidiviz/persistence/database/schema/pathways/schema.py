@@ -178,17 +178,17 @@ class PrisonPopulationByDimension(PathwaysBase):
     # Person ID for the session. BigInt has faster sorting/grouping than String
     person_id = Column(BigInteger, primary_key=True, nullable=False)
     # Current age group of the person (see recidiviz.calculator.query.bq_utils.add_age_groups)
-    age_group = Column(String, primary_key=True, nullable=True)
+    age_group = Column(String, primary_key=True, nullable=False)
     # Facility the person is in
-    facility = Column(String, primary_key=True, nullable=True)
+    facility = Column(String, primary_key=True, nullable=False)
     # Gender of the person
-    gender = Column(String, primary_key=True, nullable=True)
+    gender = Column(String, primary_key=True, nullable=False)
     # Admission reason
-    admission_reason = Column(String, primary_key=True, nullable=True)
+    admission_reason = Column(String, primary_key=True, nullable=False)
     # Race of the person
-    race = Column(String, primary_key=True, nullable=True)
+    race = Column(String, primary_key=True, nullable=False)
     # Binned length of incarceration in months
-    length_of_stay = Column(String, primary_key=True, nullable=True)
+    length_of_stay = Column(String, nullable=True)
 
 
 class PrisonPopulationProjection(PathwaysBase):
