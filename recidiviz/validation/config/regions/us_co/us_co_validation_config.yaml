@@ -4,6 +4,6 @@ region_code: US_CO
 exclusions: []
 max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: 0.25
+    hard_max_allowed_error_override: 0.03
     override_reason: Data from the old system is causing more errors, need to find more conversions.
 num_allowed_rows_overrides: []

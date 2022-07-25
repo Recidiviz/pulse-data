@@ -18,7 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
+    raw_latest_views_dataset_for_region,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -28,7 +28,7 @@ VIEW_QUERY_TEMPLATE = """
   SELECT 
     'US_CO' as region_code,
     offenderid AS person_external_id, 
-    DATE_SUB(EXTRACT(DATE FROM UPDATE_DATETIME), INTERVAL 1 DAY) as date_of_stay, #Date -1 day because time of automated transfers has validation data a day behind
+    PARSE_DATE("%Y-%m-%d", DWNLD_DTD) as date_of_stay,
     CASE 
         WHEN FAC_CD ='AC' THEN 'ACC'
         WHEN FAC_CD ='AV' THEN 'AVCF'
@@ -61,18 +61,19 @@ VIEW_QUERY_TEMPLATE = """
         WHEN FAC_CD ='TF' THEN 'TCF'
     ELSE FAC_CD 
     END AS facility, 
-  FROM `{project_id}.{us_co_raw_data_dataset}.Base_Curr_Off_Pop`
+  FROM `{project_id}.{us_co_raw_data_up_to_date_dataset}.Base_Curr_Off_Pop_latest`
 """
 
-US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_BUILDER = SimpleBigQueryViewBuilder(
+US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_CO),
     view_id="incarceration_population_person_level",
     description="A view detailing the incarceration population at the person level for CODOC.",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    us_co_raw_data_dataset=raw_tables_dataset_for_region(StateCode.US_CO.value),
-    # us_co_raw_data_dataset="us_co_raw_data",
+    us_co_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_CO.value
+    ),
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_BUILDER.build_and_print()
+        US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()

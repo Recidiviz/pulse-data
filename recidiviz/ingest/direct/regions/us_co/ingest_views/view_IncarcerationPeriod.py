@@ -27,6 +27,8 @@ WITH
 movements_with_direction as (
     SELECT
         *,
+        # CO has movements below 40 considered in and above as out, but based on how they count their population (ex: 
+        # someone escaped counts towards population/facility) accuracy is improved by increasing IN movements.
         CASE EXTERNALMOVEMENTCODE
             WHEN '01' THEN 'IN' # New CO Commitment
             WHEN '03' THEN 'IN' # YOS Commitment
@@ -56,25 +58,25 @@ movements_with_direction as (
             WHEN '50' THEN 'OUT' # Commutation 
             WHEN '52' THEN 'OUT' # Released by Court
             WHEN '55' THEN 'OUT' # Released after Erroneous Admission
-            WHEN '56' THEN 'OUT' # Unauthorized Release
+            WHEN '56' THEN 'IN' # Unauthorized Release
             WHEN '60' THEN 'OUT' # Paroled
             WHEN '63' THEN 'IN' # TO Intensive Supervision (ISP)
             WHEN '74' THEN 'OUT' # Transferred Interstate
             WHEN '75' THEN 'OUT' # Death
             WHEN '78' THEN 'OUT' # Returned to Parole 
-            WHEN '79' THEN 'OUT' # Returned to ISP-I
-            WHEN '80' THEN 'OUT' # Escaped
-            WHEN '81' THEN 'OUT' # Out To Court
-            WHEN '82' THEN 'OUT' # Out on Escorted Leave
-            WHEN '83' THEN 'OUT' # Out to Hospital
+            WHEN '79' THEN 'IN' # Returned to ISP-I
+            WHEN '80' THEN 'IN' # Escaped
+            WHEN '81' THEN 'IN' # Out To Court
+            WHEN '82' THEN 'IN' # Out on Escorted Leave
+            WHEN '83' THEN 'IN' # Out to Hospital
             WHEN '84' THEN 'OUT' # Out on Bond
             WHEN '85' THEN 'OUT' # Transferred Out-of-State (ICC)
-            WHEN '86' THEN 'OUT' # Out on Furlough
-            WHEN '88' THEN 'OUT' # Absconded from Parole ** include or not?
-            WHEN '8B' THEN 'OUT' # Out on Work Crew
+            WHEN '86' THEN 'IN' # Out on Furlough
+            WHEN '88' THEN 'OUT' # Absconded from Parole 
+            WHEN '8B' THEN 'IN' # Out on Work Crew
             WHEN '8C' THEN 'IN' # Absent without Leave (AWOL)
             WHEN '8D' THEN 'OUT' # Out to Other Jurisdiction
-            WHEN '8E' THEN 'OUT' # AWOL from ISP-I
+            WHEN '8E' THEN 'IN' # AWOL from ISP-I
             WHEN '90' THEN 'OUT' # Transferred to DOC Facility
             WHEN '91' THEN 'OUT' # Transferred to Community Center
             WHEN '92' THEN 'OUT' # Transferred to County/City Jail
