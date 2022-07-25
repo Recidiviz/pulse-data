@@ -82,7 +82,13 @@ class WorkflowsETLDelegate(abc.ABC):
 
 
 class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
-    """Abstract class containing the ETL logic for exporting a specified workflows view to Firestore."""
+    """Abstract class containing the ETL logic for exporting a specified workflows view to Firestore.
+
+    NOTE: If you are adding an ETL delegate for a *new* collection, you need to create a composite index on the
+    `stateCode` and `__loadedAt` fields. This is required to run the ETL query that deletes old documents.
+
+    See Managing Indexes in Firestore: https://firebase.google.com/docs/firestore/query-data/indexing
+    """
 
     @property
     @abc.abstractmethod
@@ -147,5 +153,5 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
         # step 2: delete any pre-existing documents that we didn't just overwrite
         firestore_client.delete_old_documents(
-            self.collection_name, self.timestamp_key, etl_timestamp
+            self.collection_name, self.STATE_CODE, self.timestamp_key, etl_timestamp
         )

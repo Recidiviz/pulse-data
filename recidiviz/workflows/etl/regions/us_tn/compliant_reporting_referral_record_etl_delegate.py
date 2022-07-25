@@ -39,6 +39,7 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsFirestoreETLDelegate)
 
         # First fill the non-nullable fields
         new_document = {
+            "stateCode": data["state_code"],
             "poFirstName": data["po_first_name"],
             "poLastName": data["po_last_name"],
             "clientFirstName": data["client_first_name"],
