@@ -65,6 +65,9 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -153,8 +156,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             self.state_specific_delegate_patcher.start()
         )
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
-            return_value=UsXxSupervisionMetricsProducerDelegate(),
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
+            return_value={
+                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
+            },
         )
         self.mock_get_required_state_metrics_producer_delegate = (
             self.state_specific_metrics_producer_delegate_patcher.start()
@@ -1287,14 +1292,14 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.mock_job_id = self.job_id_patcher.start()
         self.mock_job_id.return_value = "job_id"
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegate",
+            "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
         )
         self.mock_state_specific_metrics_producer_delegate = (
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
-        self.mock_state_specific_metrics_producer_delegate.return_value = (
-            UsXxSupervisionMetricsProducerDelegate()
-        )
+        self.mock_state_specific_metrics_producer_delegate.return_value = {
+            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate()
+        }
 
         self.metric_producer = pipeline.metric_producer.SupervisionMetricProducer()
 

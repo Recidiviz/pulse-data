@@ -444,19 +444,27 @@ def get_required_state_specific_delegates(
     return required_state_specific_delegates
 
 
-def get_required_state_specific_metrics_producer_delegate(
+def get_required_state_specific_metrics_producer_delegates(
     state_code: str,
-    required_delegate: Optional[Type[StateSpecificMetricsProducerDelegate]],
-) -> Optional[StateSpecificMetricsProducerDelegate]:
+    required_delegates: Set[Type[StateSpecificMetricsProducerDelegate]],
+) -> Dict[str, StateSpecificMetricsProducerDelegate]:
     """Returns the state-specific metrics delegate given the type requested for a given state."""
-    if required_delegate is StateSpecificIncarcerationMetricsProducerDelegate:
-        return _get_state_specific_incarceration_metrics_producer_delegate(state_code)
-    if required_delegate is StateSpecificRecidivismMetricsProducerDelegate:
-        return _get_state_specific_recidivism_metrics_producer_delegate(state_code)
-    if required_delegate is StateSpecificSupervisionMetricsProducerDelegate:
-        return _get_state_specific_supervision_metrics_producer_delegate(state_code)
+    required_metric_delegates: Dict[str, StateSpecificMetricsProducerDelegate] = {}
+    for required_delegate in required_delegates:
+        if required_delegate is StateSpecificIncarcerationMetricsProducerDelegate:
+            required_metric_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_incarceration_metrics_producer_delegate(state_code)
+        if required_delegate is StateSpecificRecidivismMetricsProducerDelegate:
+            required_metric_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_recidivism_metrics_producer_delegate(state_code)
+        if required_delegate is StateSpecificSupervisionMetricsProducerDelegate:
+            required_metric_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_supervision_metrics_producer_delegate(state_code)
 
-    return None
+    return required_metric_delegates
 
 
 def get_state_specific_case_compliance_manager(

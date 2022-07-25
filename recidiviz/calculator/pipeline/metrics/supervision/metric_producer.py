@@ -44,6 +44,7 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionTerminationMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
+    age_at_date,
     build_metric,
     get_calculation_month_lower_bound_date,
     get_calculation_month_upper_bound_date,
@@ -100,22 +101,20 @@ class SupervisionMetricProducer(
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
         }
-        self.metrics_producer_delegate_class = (
-            StateSpecificSupervisionMetricsProducerDelegate
-        )
+        self.metrics_producer_delegate_classes = {
+            SupervisionMetric: StateSpecificSupervisionMetricsProducerDelegate
+        }
 
     def produce_metrics(
         self,
         person: StatePerson,
-        identifier_events: List[SupervisionEvent],
+        identifier_results: List[SupervisionEvent],
         metric_inclusions: Dict[SupervisionMetricType, bool],
         person_metadata: PersonMetadata,
         pipeline_job_id: str,
+        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
-        metrics_producer_delegate: Optional[
-            StateSpecificMetricsProducerDelegate
-        ] = None,
     ) -> List[SupervisionMetric]:
         """Transforms SupervisionEvents and a StatePerson into SuperviisonMetrics.
 
@@ -139,7 +138,7 @@ class SupervisionMetricProducer(
         """
         metrics: List[SupervisionMetric] = []
 
-        identifier_events.sort(key=attrgetter("year", "month"))
+        identifier_results.sort(key=attrgetter("year", "month"))
 
         calculation_month_upper_bound = get_calculation_month_upper_bound_date(
             calculation_end_month
@@ -148,7 +147,16 @@ class SupervisionMetricProducer(
             calculation_month_upper_bound, calculation_month_count
         )
 
-        for event in identifier_events:
+        metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
+            self.metric_class
+        )
+        metrics_producer_delegate = (
+            metrics_producer_delegates.get(metrics_producer_delegate_class.__name__)
+            if metrics_producer_delegate_class
+            else None
+        )
+
+        for event in identifier_results:
             event_date = event.event_date
 
             if (
@@ -192,9 +200,13 @@ class SupervisionMetricProducer(
                         result=event,
                         metric_class=metric_class,
                         person=person,
-                        event_date=event_date,
+                        person_age=age_at_date(person, event_date),
                         person_metadata=person_metadata,
                         pipeline_job_id=pipeline_job_id,
+                        additional_attributes={
+                            "year": event_date.year,
+                            "month": event_date.month,
+                        },
                         metrics_producer_delegate=metrics_producer_delegate,
                     )
 

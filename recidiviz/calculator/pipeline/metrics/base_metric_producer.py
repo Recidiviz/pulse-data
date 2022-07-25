@@ -22,7 +22,7 @@ from typing import Dict, Generic, List, Optional, Type, TypeVar
 import attr
 
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
-    produce_standard_metrics,
+    produce_standard_event_metrics,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
@@ -35,14 +35,14 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_prod
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-IdentifierEventResultT = TypeVar("IdentifierEventResultT")
+IdentifierResultT = TypeVar("IdentifierResultT")
 RecidivizMetricTypeT = TypeVar("RecidivizMetricTypeT", bound=RecidivizMetricType)
 RecidivizMetricT = TypeVar("RecidivizMetricT", bound=RecidivizMetric)
 
 
 @attr.s
 class BaseMetricProducer(
-    abc.ABC, Generic[IdentifierEventResultT, RecidivizMetricTypeT, RecidivizMetricT]
+    abc.ABC, Generic[IdentifierResultT, RecidivizMetricTypeT, RecidivizMetricT]
 ):
     """Base class for a metric producer for a metric calculation pipeline."""
 
@@ -50,27 +50,25 @@ class BaseMetricProducer(
     event_to_metric_classes: Dict[
         Type[IdentifierResult], List[Type[RecidivizMetricT]]
     ] = attr.ib()
-    metrics_producer_delegate_class: Optional[
-        Type[StateSpecificMetricsProducerDelegate]
-    ] = attr.ib(default=None)
+    metrics_producer_delegate_classes: Dict[
+        Type[RecidivizMetricT], Type[StateSpecificMetricsProducerDelegate]
+    ] = attr.ib()
 
     def produce_metrics(
         self,
         person: StatePerson,
-        identifier_events: IdentifierEventResultT,
+        identifier_results: IdentifierResultT,
         metric_inclusions: Dict[RecidivizMetricTypeT, bool],
         person_metadata: PersonMetadata,
         pipeline_job_id: str,
+        metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
-        metrics_producer_delegate: Optional[
-            StateSpecificMetricsProducerDelegate
-        ] = None,
     ) -> List[RecidivizMetricT]:
         """Transforms the events and a StatePerson into RecidivizMetrics.
         Args:
             person: the StatePerson
-            identifier_events: A list of IdentifierEvents for the given StatePerson.
+            identifier_results: A list of IdentifierResults for the given StatePerson.
             metric_inclusions: A dictionary where the keys are each Metric type and the values are boolean
                 flags for whether or not to include that metric type in the calculations.
             calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
@@ -83,9 +81,18 @@ class BaseMetricProducer(
         Returns:
             A list of RecidivizMetrics
         """
-        metrics = produce_standard_metrics(
+        metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
+            self.metric_class
+        )
+        metrics_producer_delegate = (
+            metrics_producer_delegates.get(metrics_producer_delegate_class.__name__)
+            if metrics_producer_delegate_class
+            else None
+        )
+
+        metrics = produce_standard_event_metrics(
             person=person,
-            identifier_events=identifier_events,  # type: ignore
+            identifier_results=identifier_results,  # type: ignore
             metric_inclusions=metric_inclusions,
             calculation_end_month=calculation_end_month,
             calculation_month_count=calculation_month_count,

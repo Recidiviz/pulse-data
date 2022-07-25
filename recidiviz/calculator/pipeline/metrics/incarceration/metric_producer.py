@@ -63,6 +63,6 @@ class IncarcerationMetricProducer(
             IncarcerationStayEvent: [IncarcerationPopulationMetric],
             IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
         }
-        self.metrics_producer_delegate_class = (
-            StateSpecificIncarcerationMetricsProducerDelegate
-        )
+        self.metrics_producer_delegate_classes = {
+            IncarcerationMetric: StateSpecificIncarcerationMetricsProducerDelegate
+        }
