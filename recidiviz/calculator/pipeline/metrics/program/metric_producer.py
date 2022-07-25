@@ -49,4 +49,4 @@ class ProgramMetricProducer(
             ProgramReferralEvent: [ProgramReferralMetric],
             ProgramParticipationEvent: [ProgramParticipationMetric],
         }
-        self.metrics_producer_delegate_class = None
+        self.metrics_producer_delegate_classes = {}

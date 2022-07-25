@@ -21,6 +21,7 @@ from typing import Optional
 
 from recidiviz.calculator.pipeline.metrics.utils import calculator_utils
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
+    age_at_date,
     person_characteristics,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
@@ -29,7 +30,7 @@ from recidiviz.calculator.pipeline.pipeline_type import (
     SUPERVISION_METRICS_PIPELINE_NAME,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_required_state_specific_metrics_producer_delegate,
+    get_required_state_specific_metrics_producer_delegates,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -127,8 +128,10 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             external_id = calculator_utils.person_external_id_to_include(
                 person_external_id.state_code,
                 person,
-                metrics_producer_delegate=get_required_state_specific_metrics_producer_delegate(
-                    "US_MO", metrics_producer_delegate_class
+                metrics_producer_delegate=get_required_state_specific_metrics_producer_delegates(
+                    "US_MO", {metrics_producer_delegate_class}
+                ).get(
+                    metrics_producer_delegate_class.__name__
                 ),
             )
 
@@ -212,8 +215,10 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         external_id = calculator_utils.person_external_id_to_include(
             person_external_id_include.state_code,
             person,
-            metrics_producer_delegate=get_required_state_specific_metrics_producer_delegate(
-                "US_PA", INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME]
+            metrics_producer_delegate=get_required_state_specific_metrics_producer_delegates(
+                "US_PA", {INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME]}
+            ).get(
+                INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME].__name__
             ),
         )
 
@@ -237,7 +242,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         updated_characteristics = person_characteristics(
             person,
-            event_date,
+            age_at_date(person, event_date),
             person_metadata,
         )
 
@@ -263,7 +268,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata()
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata
+            person, age_at_date(person, event_date), person_metadata
         )
 
         expected_output = {
@@ -282,7 +287,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata()
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata
+            person, age_at_date(person, event_date), person_metadata
         )
 
         expected_output = {"person_id": person.person_id}
@@ -325,7 +330,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         updated_characteristics = person_characteristics(
             person,
-            event_date,
+            age_at_date(person, event_date),
             person_metadata,
             metrics_producer_delegate=self.TestUsXxMetricsProducerDelegate(),
         )
@@ -371,7 +376,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         updated_characteristics = person_characteristics(
             person,
-            event_date,
+            age_at_date(person, event_date),
             person_metadata,
             metrics_producer_delegate=UsXxIncarcerationMetricsProducerDelegate(),
         )

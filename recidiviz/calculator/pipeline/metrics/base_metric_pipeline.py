@@ -81,7 +81,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 from recidiviz.calculator.pipeline.utils.identifier_models import IdentifierResult
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,
-    get_required_state_specific_metrics_producer_delegate,
+    get_required_state_specific_metrics_producer_delegates,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -442,7 +442,7 @@ class ProduceMetrics(beam.DoFn):
 
         Yields:
             Each metric."""
-        person, events, person_metadata = element
+        person, results, person_metadata = element
 
         pipeline_job_id = job_id(
             project_id=pipeline_job_args.project_id,
@@ -450,22 +450,22 @@ class ProduceMetrics(beam.DoFn):
             job_name=pipeline_job_args.job_name,
         )
 
-        metrics_producer_delegate = (
-            get_required_state_specific_metrics_producer_delegate(
+        metrics_producer_delegates = (
+            get_required_state_specific_metrics_producer_delegates(
                 pipeline_job_args.state_code,
-                metric_producer.metrics_producer_delegate_class,
+                set(metric_producer.metrics_producer_delegate_classes.values()),
             )
         )
 
         metrics = metric_producer.produce_metrics(
             person=person,
-            identifier_events=events,
+            identifier_results=results,
             metric_inclusions=pipeline_job_args.metric_inclusions,
             person_metadata=person_metadata,
             pipeline_job_id=pipeline_job_id,
             calculation_end_month=pipeline_job_args.calculation_end_month,
             calculation_month_count=pipeline_job_args.calculation_month_count,
-            metrics_producer_delegate=metrics_producer_delegate,
+            metrics_producer_delegates=metrics_producer_delegates,
         )
 
         for metric in metrics:

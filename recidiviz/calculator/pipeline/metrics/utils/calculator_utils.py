@@ -47,7 +47,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 def person_characteristics(
     person: StatePerson,
-    event_date: datetime.date,
+    person_age: Optional[int],
     person_metadata: PersonMetadata,
     metrics_producer_delegate: Optional[StateSpecificMetricsProducerDelegate] = None,
 ) -> Dict[str, Any]:
@@ -57,9 +57,8 @@ def person_characteristics(
     """
     characteristics: Dict[str, Any] = {}
 
-    event_age = age_at_date(person, event_date)
-    if event_age is not None:
-        characteristics["age"] = event_age
+    if person_age is not None:
+        characteristics["age"] = person_age
     if person.gender is not None:
         characteristics["gender"] = person.gender
     if person_metadata and person_metadata.prioritized_race_or_ethnicity:
@@ -233,9 +232,9 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
         return default
 
 
-def produce_standard_metrics(
+def produce_standard_event_metrics(
     person: StatePerson,
-    identifier_events: List[Event],
+    identifier_results: List[Event],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
@@ -260,7 +259,7 @@ def produce_standard_metrics(
         calculation_month_upper_bound, calculation_month_count
     )
 
-    for event in identifier_events:
+    for event in identifier_results:
         event_date = event.event_date
         event_year = event.event_date.year
         event_month = event.event_date.month
@@ -283,10 +282,14 @@ def produce_standard_metrics(
                     result=event,
                     metric_class=metric_class,
                     person=person,
-                    event_date=event_date,
+                    person_age=age_at_date(person, event_date),
                     person_metadata=person_metadata,
                     pipeline_job_id=pipeline_job_id,
-                    additional_attributes=additional_attributes,
+                    additional_attributes={
+                        "year": event_date.year,
+                        "month": event_date.month,
+                        **(additional_attributes or {}),
+                    },
                     metrics_producer_delegate=metrics_producer_delegate,
                 )
 
@@ -299,7 +302,7 @@ def build_metric(
     result: IdentifierResult,
     metric_class: Type[RecidivizMetric],
     person: StatePerson,
-    event_date: datetime.date,
+    person_age: Optional[int],
     person_metadata: PersonMetadata,
     pipeline_job_id: str,
     additional_attributes: Optional[Dict[str, Any]] = None,
@@ -311,7 +314,7 @@ def build_metric(
     metric_attributes = attr.fields_dict(metric_class).keys()
 
     person_attributes = person_characteristics(
-        person, event_date, person_metadata, metrics_producer_delegate
+        person, person_age, person_metadata, metrics_producer_delegate
     )
 
     metric_cls_builder = metric_class.builder()
@@ -319,12 +322,6 @@ def build_metric(
     # Set pipeline attributes
     setattr(metric_cls_builder, "job_id", pipeline_job_id)
     setattr(metric_cls_builder, "created_on", datetime.date.today())
-
-    # Set date attributes if applicable
-    if "year" in metric_attributes:
-        setattr(metric_cls_builder, "year", event_date.year)
-    if "month" in metric_attributes:
-        setattr(metric_cls_builder, "month", event_date.month)
 
     # Add all demographic and person-level dimensions
     for attribute, value in person_attributes.items():

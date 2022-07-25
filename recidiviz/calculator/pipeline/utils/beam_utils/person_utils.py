@@ -110,7 +110,7 @@ class ExtractPersonEventsMetadata(beam.DoFn):
         element: Tuple[int, Dict[str, Iterable[Any]]],
         *_args: Tuple[Any, ...],
         **_kwargs: Dict[str, Any],
-        # All pipeline identifier steps produce lists of IdentifierEvents, except for
+        # All pipeline identifier steps produce lists of IdentifierResults, except for
         # the recidivism pipeline, which produces a dictionary of ReleaseEvents
         # indexed by the year of the release.
     ) -> Iterable[
