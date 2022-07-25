@@ -66,11 +66,29 @@ ADDITIONAL_DDL_QUERIES_BY_MODEL = {
 def build_temporary_sqlalchemy_table(table: Table) -> Table:
     # Create a throwaway Base to map the model to
     base = declarative_base()
-    return table.to_metadata(
+    temporary_table = table.to_metadata(
         base.metadata,
         # Replace our model's table name with the temporary table's name
         name=get_temporary_table_name(table),
     )
+
+    for index in temporary_table.indexes:
+        index.name = get_renamed_index_name(
+            index.name, table_name=table.name, new_base_name=temporary_table.name
+        )
+
+    return temporary_table
+
+
+def get_renamed_index_name(index_name: str, table_name: str, new_base_name: str) -> str:
+    if table_name not in index_name:
+        raise NotImplementedError(
+            f"Cannot rename index ({index_name}) that do not contain the table's name ({table_name})"
+        )
+
+    # SQLAlchemy includes the table name inside the index name by default;
+    # Map the index to the new base name
+    return index_name.replace(table_name, new_base_name)
 
 
 @attr.s
@@ -102,14 +120,11 @@ class ModelSQL:
             if isinstance(ddl_statement, CreateTable):
                 queries.append(f"ALTER TABLE {resource_name} RENAME TO {new_base_name}")
             elif isinstance(ddl_statement, CreateIndex):
-                if self.table.name not in resource_name:
-                    raise NotImplementedError(
-                        f"Cannot rename indexes that do not contain the table's name ({self.table.name})"
-                    )
-
-                # SQLAlchemy includes the table name inside the index name by default;
-                # Map the index to the new base name
-                new_index_name = resource_name.replace(self.table.name, new_base_name)
+                new_index_name = get_renamed_index_name(
+                    resource_name,
+                    table_name=self.table.name,
+                    new_base_name=new_base_name,
+                )
                 queries.append(
                     f"ALTER INDEX {resource_name} RENAME TO {new_index_name}"
                 )

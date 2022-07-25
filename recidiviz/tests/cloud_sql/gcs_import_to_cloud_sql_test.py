@@ -26,6 +26,7 @@ from sqlalchemy.sql.ddl import CreateIndex, CreateTable, DDLElement, SetColumnCo
 
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
     ModelSQL,
+    build_temporary_sqlalchemy_table,
     import_gcs_csv_to_cloud_sql,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -34,7 +35,10 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOpportunity,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_pathways_table_classes,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -77,8 +81,10 @@ FakeBase: DeclarativeMeta = declarative_base()
 
 class FakeModel(FakeBase):
     __tablename__ = "fake_model"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     comment = Column(Text)
+
+    __table_args__ = (Index("fake_model_pk", "id", unique=True),)
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -168,10 +174,10 @@ class TestGCSImportToCloudSQL(TestCase):
             [
                 "DROP TABLE IF EXISTS tmp__fake_model",
                 "CREATE TABLE tmp__fake_model (\n\tid INTEGER NOT NULL, \n\tcomment TEXT, \n\tPRIMARY KEY (id)\n)",
-                "CREATE INDEX ix_tmp__fake_model_id ON tmp__fake_model (id)",
+                "CREATE UNIQUE INDEX tmp__fake_model_pk ON tmp__fake_model (id)",
                 "DROP TABLE IF EXISTS fake_model",
                 "ALTER TABLE tmp__fake_model RENAME TO fake_model",
-                "ALTER INDEX ix_tmp__fake_model_id RENAME TO ix_fake_model_id",
+                "ALTER INDEX tmp__fake_model_pk RENAME TO fake_model_pk",
             ],
             issued_ddl_statements,
         )
@@ -368,6 +374,12 @@ class TestGCSImportToCloudSQL(TestCase):
             self.assertEqual(unique_index_count, 0, "Expected no unique indexes")
 
 
+def build_table(name: str, *args: List[Any]) -> Table:
+    base = declarative_base()
+
+    return Table(name, base.metadata, *args)
+
+
 class TestModelSQL(TestCase):
     """Tests for the ModelSQL class"""
 
@@ -377,14 +389,9 @@ class TestModelSQL(TestCase):
             "name", String(255), unique=True, index=True, comment="The person's name"
         )
 
-    def build_table(self, name: str, *args: List[Any]) -> Table:
-        base = declarative_base()
-
-        return Table(name, base.metadata, *args)
-
     def test_rename(self) -> None:
         """Build a list of queries that can rename a table"""
-        test_table = self.build_table("test_table", self.id_column, self.name_column)
+        test_table = build_table("test_table", self.id_column, self.name_column)
         model_sql = ModelSQL(table=test_table)
         rename_statements = model_sql.build_rename_ddl_queries("new_test_table")
 
@@ -397,8 +404,8 @@ class TestModelSQL(TestCase):
         )
 
     def test_rename_custom_index_index(self) -> None:
-        """Renaming indexes that don't contain the old table name is not implemeneted"""
-        test_table = self.build_table(
+        """Renaming indexes that don't contain the old table name is not implemented"""
+        test_table = build_table(
             "test_table",
             self.id_column,
             self.name_column,
@@ -408,16 +415,23 @@ class TestModelSQL(TestCase):
         model_sql = ModelSQL(table=test_table)
         with self.assertRaisesRegex(
             NotImplementedError,
-            r"Cannot rename indexes that do not contain the table's name \(test_table\)",
+            r"Cannot rename index \(custom_named_index\) that do not contain the table's name \(test_table\)",
         ):
             model_sql.build_rename_ddl_queries("new_name")
 
     def test_ddl_statement_capture(self) -> None:
         """DDL statements required to create the table are captured and put into the `ddl_statements` attribute"""
-        test_table = self.build_table("test_table", self.id_column, self.name_column)
+        test_table = build_table("test_table", self.id_column, self.name_column)
         model_sql = ModelSQL(table=test_table)
 
         self.assertEqual(
             [statement.__class__ for statement in model_sql.ddl_statements],
             [CreateTable, CreateIndex, SetColumnComment],
         )
+
+    def test_temporary_table_integration(self) -> None:
+        """All pathways tables should be able to be successfully built / renamed"""
+        for table in get_pathways_table_classes():
+            model_sql = ModelSQL(table=build_temporary_sqlalchemy_table(table))
+            rename_queries = model_sql.build_rename_ddl_queries("new_base_name")
+            self.assertGreater(len(rename_queries), 0)
