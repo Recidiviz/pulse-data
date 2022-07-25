@@ -1,0 +1,46 @@
+file_tag: ind_Offender_Address
+file_description: |-
+  This table contains information on periods of residence for each individual and address. 
+  Each row of this table links an individual with a specific address record and contains information on the starting and ending date of residence at that address.
+data_classification: source
+primary_key_cols:
+  - Offender_AddressId
+columns:
+  - name: Offender_AddressId
+    description: |-
+      The ID for the record for the period of residence
+  - name: AddressId
+    description: |-
+      The ID for the address associated with the period of residence
+  - name: OffenderId
+    is_pii: True
+    description: |-
+      The IDOC identifier for the individual associated with the period of residence.
+  - name: PrimaryAddress
+    description: |-
+      A boolean for whether this address is considered the individual's primary address
+  - name: ResidingWith
+    is_pii: True
+  - name: RelationshipQualifierTypeId
+  - name: RelationshipTypeId
+  - name: StartDate
+    is_datetime: True
+    description: |-
+      The starting date of the period of residence
+  - name: EndDate
+    is_datetime: True
+    description: |-
+      The ending date of the period of residence
+  - name: ReportedDate
+  - name: ValidatedDate
+  - name: AddressTypeId
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: ReleasePlanTypeId
+  - name: OffenderPhoneId
+  - name: HomelessTypeId

@@ -1,0 +1,91 @@
+file_tag: ind_AliasName
+file_description: |-
+  This table contains information about recorded names/aliases for each person.  A person may have one or multiple alias records in this table.
+data_classification: source
+primary_key_cols:
+  - AliasNameId
+columns:
+  - name: AliasNameId
+    description: |-
+      The ID associated with the alias record
+  - name: AliasNameTypeId
+    description: |-
+      The reference code for the type of alias this record pertains to (reference table: ind_AliasNameType)
+    known_values:
+      - value: "0"
+        description: "Default"
+      - value: "1"
+        description: "Maiden Name"
+      - value: "2"
+        description: "Nickname"
+      - value: "3"
+        description: "Monicker"
+      - value: "4"
+        description: "True Name"
+      - value: "5"
+        description: "Legal Name"
+      - value: "6"
+        description: "Alias"
+      - value: "7"
+        description: "Name of Record"
+      - value: "11"
+        description: "Prior CORIS Name"
+      - value: "13"
+        description: "Married Name"
+      - value: "15"
+        description: "WBOR"
+  - name: OffenderId
+    is_pii: True
+    description: |-
+      The ID of the person that this alias is associated with
+  - name: FirstName
+    is_pii: True
+    description: |-
+      First name
+  - name: MiddleName
+    is_pii: True
+    description: |-
+      Middle name
+  - name: LastName
+    is_pii: True
+    description: |-
+      Last name
+  - name: NameSuffixTypeId
+    is_pii: True
+    description: |-
+      The reference code for the name suffix for this alias record (reference table: ref_NameSuffixType)
+    known_values:
+      - value: "1"
+        description: "Jr."
+      - value: "2"
+        description: "Sr."
+      - value: "3"
+        description: "I"
+      - value: "4"
+        description: "II"
+      - value: "5"
+        description: "III"
+      - value: "6"
+        description: "IV"
+      - value: "7"
+        description: "V"
+      - value: "8"
+        description: "VI"
+      - value: "9"
+        description: "VII"
+  - name: SoundexFirstName
+  - name: SoundexMiddleName
+  - name: SoundexLastName
+  - name: Notes
+    is_pii: True
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: DisplayName
+    is_pii: True
+  - name: OrganizationalUnitId

@@ -1,0 +1,41 @@
+file_tag: ref_Location
+file_description: |-
+  Currently unused
+data_classification: source
+primary_key_cols:
+  - LocationId
+columns:
+  - name: LocationId
+  - name: ParentLocationId
+  - name: LocationName
+  - name: LocationCode
+  - name: Capacity
+  - name: Notes
+  - name: SupervisorId
+  - name: RegionId
+  - name: LocationTypeId
+  - name: LocationSubTypeId
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: VideoConferencingAvailable
+  - name: LocationReEntryCouncilId
+  - name: IRPLocationId
+  - name: CommissarySpendingAccountTypeId
+  - name: CommissarySpendingTransactionTypeId
+  - name: CommissaryRefundTransactionTypeId
+  - name: TrustGeneralLedgerGroupId
+  - name: CommissaryGeneralLedgerGroupId
+  - name: AgentNumber
+  - name: IsCustom
+  - name: DistrictId
+  - name: ParentCountyId
+  - name: ParentCountyCityId
+  - name: RestitutionGeneralLedgerGroupId

@@ -1,0 +1,109 @@
+file_tag: ind_Offender
+file_description: |-
+  This table contains demographic information for each individual.  
+  Each row represents one individual found in the Atlas system.
+data_classification: source
+primary_key_cols:
+  - OffenderId
+columns:
+  - name: OffenderId
+    is_pii: True
+    description: |-
+      The IDOC identifier for a given person.  This is synonymous to the docno and ofndr_num fields in other IDOC data systems.
+  - name: ODS_NUM
+  - name: BirthDate
+    is_pii: True
+    is_datetime: True
+    description: |-
+      Date of birth
+  - name: ReligionId
+  - name: GenderId
+    description: |-
+      The reference code for the gender type (reference table: ind_Gender)
+    known_values:
+      - value: "12"
+        description: "Male"
+      - value: "13"
+        description: "Female"
+      - value: "14"
+        description: "Unknown"
+      - value: "15"
+        description: "Gender Change in Process"
+      - value: "23"
+        description: "Female to Male"
+      - value: "24"
+        description: "Male to Female"
+  - name: RaceId
+    description: |-
+      The reference code for the race type (reference table: ind_Race)
+    known_values:
+      - value: "15"
+        description: "American Indian or Alaskan Native"
+      - value: "16"
+        description: "Asian or Pacific Islander"
+      - value: "17"
+        description: "Black"
+      - value: "18"
+        description: "White"
+      - value: "19"
+        description: "Unknown"
+  - name: EmployeeId
+  - name: MaritalStatusId
+  - name: EthnicOriginId
+    description: |-
+      The reference code for the ethnicity type (reference table: ind_EthnicOrigin)
+    known_values:
+      - value: "0"
+        description: "Other"
+      - value: "1"
+        description: "Hispanic"
+  - name: EnglishNotSpoken
+  - name: LanguageId
+  - name: CitizenshipId
+  - name: RegistrationDate
+  - name: RegisteredSexOffender
+  - name: DnaNotRequired
+  - name: DnaSampleDate
+  - name: ReportToIns
+  - name: PlaceOfBirthCity
+  - name: PlaceOfBirthCountryId
+  - name: PlaceOfBirthStateId
+  - name: Height
+  - name: HeightFeet
+  - name: HeightInches
+  - name: Weight
+  - name: HasGlasses
+  - name: HasContacts
+  - name: EyeColorId
+  - name: HairColorId
+  - name: ComplexionId
+  - name: PhysicalAppearanceNotes
+  - name: EmailAddress
+    is_pii: True
+  - name: LiterateReadSelfReport
+  - name: LiterateWriteSelfReport
+  - name: LiterateReadTest
+  - name: LiterateWriteTest
+  - name: EducationHighestLevel
+  - name: LastSchoolAttended
+  - name: OccupationId
+  - name: NeverEmployed
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: CurrentLocationId
+  - name: AnnualReviewDate
+  - name: LatestDNAConfirmationDate
+  - name: MaximumVisitationHour
+  - name: InterviewDay
+  - name: ApproximateAgeRecordedDate
+  - name: AgeEstimated
+  - name: DNARefusalDate
+  - name: HeightCm
+  - name: WeightGr
+  - name: OccupationInterestedIn
+  - name: OccupationOther

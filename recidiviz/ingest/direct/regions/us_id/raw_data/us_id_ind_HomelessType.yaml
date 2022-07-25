@@ -1,0 +1,18 @@
+file_tag: ind_HomelessType
+file_description: |-
+  Currently unused
+data_classification: source
+primary_key_cols:
+  - HomelessTypeId
+columns:
+  - name: HomelessTypeId
+  - name: HomelessTypeDesc
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+  - name: IsCustom

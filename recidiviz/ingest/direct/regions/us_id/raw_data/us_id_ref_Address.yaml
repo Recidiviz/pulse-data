@@ -1,0 +1,57 @@
+file_tag: ref_Address
+file_description: |-
+  This table contains information about recorded addresses for each person.  A person may have one, none, or multiple address records in this table.
+  Note: some address information in this table appear in the form of reference codes and therefore require additional reference tables to be joined on
+data_classification: source
+primary_key_cols:
+  - AddressId
+columns:
+  - name: AddressId
+    description: |-
+      The ID associated with the address record
+  - name: AppartmentNumber
+    is_pii: True
+    description: |-
+      Apartment number
+  - name: StreetNumber
+    is_pii: True
+    description: |-
+      Street number
+  - name: StreetNumberSuffix
+    is_pii: True
+    description: |-
+      Street name suffix
+  - name: StreetName
+    is_pii: True
+    description: |-
+      Street name
+  - name: ZipCode
+    is_pii: True
+    description: |-
+      Zip code
+  - name: POBox
+    is_pii: True
+    description: |-
+      PO Box number
+  - name: CareOfName_Deprecated
+    is_pii: True
+  - name: Comments
+    is_pii: True
+  - name: OutOfStatePlace
+    is_pii: True
+    description: |-
+      Name of the address city if out of state
+  - name: AreaId
+  - name: JurisdictionId
+  - name: CountyId
+  - name: StateId
+  - name: CountryId
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+    is_datetime: True
