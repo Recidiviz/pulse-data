@@ -46,9 +46,6 @@ from recidiviz.calculator.query.state.views.po_report.po_report_views import (
 from recidiviz.calculator.query.state.views.population_projection.population_projection_views import (
     POPULATION_PROJECTION_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.practices.practices_views import (
-    PRACTICES_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -64,6 +61,9 @@ from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views im
 from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import (
     VITALS_REPORT_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.workflows.workflows_views import (
+    WORKFLOWS_VIEW_BUILDERS,
+)
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
@@ -77,7 +77,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             PATHWAYS_HELPER_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
             POPULATION_PROJECTION_VIEW_BUILDERS,
-            PRACTICES_VIEW_BUILDERS,
+            WORKFLOWS_VIEW_BUILDERS,
             PUBLIC_DASHBOARD_VIEW_BUILDERS,
             REFERENCE_VIEW_BUILDERS,
             SESSIONS_VIEW_BUILDERS,

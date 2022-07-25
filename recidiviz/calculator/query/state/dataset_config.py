@@ -95,8 +95,8 @@ SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
 # Where US_TN raw data lives
 US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
 
-# Views that power the practices v2 part of the state dashboard
-PRACTICES_VIEWS_DATASET: str = "practices_views"
+# Views that power the workflows part of the state dashboard
+WORKFLOWS_VIEWS_DATASET: str = "workflows_views"
 
 EXPORT_ARCHIVES_DATASET = "export_archives"
 

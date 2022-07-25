@@ -57,14 +57,14 @@ from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_disc
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.practices.firestore.firestore_views import (
-    FIRESTORE_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
+    FIRESTORE_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
@@ -421,7 +421,7 @@ PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_repor
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
-PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
+WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
@@ -556,11 +556,11 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             ExportOutputFormatType.HEADERLESS_CSV,
         ],
     ),
-    # Practices V2 Firestore ETL views
+    # Workflows Firestore ETL views
     ExportViewCollectionConfig(
         view_builders_to_export=FIRESTORE_VIEW_BUILDERS,
-        output_directory_uri_template=PRACTICES_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="PRACTICES_FIRESTORE",
+        output_directory_uri_template=WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="WORKFLOWS_FIRESTORE",
     ),
 ]
 

@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    PRACTICES_VIEWS_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -47,7 +47,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
             -- with high frequency (the minimum expected turnaround is 3 months)
             MIN(date_of_supervision) AS eligible_start,
             MAX(date_of_supervision) AS eligible_end,
-        FROM `{project_id}.{practices_dataset}.client_record_archive_materialized`
+        FROM `{project_id}.{workflows_dataset}.client_record_archive_materialized`
         WHERE compliant_reporting_eligible IS NOT NULL
         GROUP BY 1
     )
@@ -55,7 +55,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
         SELECT
             person_id,
             DATE(MIN(timestamp), "US/Eastern") as first_surfaced,
-        FROM `{project_id}.{practices_dataset}.clients_surfaced`
+        FROM `{project_id}.{workflows_dataset}.clients_surfaced`
         WHERE opportunity_type = 'compliantReporting'
         GROUP BY 1
     )
@@ -63,7 +63,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
         SELECT
             person_id,
             DATE(MIN(timestamp), "US/Eastern") as first_viewed,
-        FROM `{project_id}.{practices_dataset}.clients_referral_form_viewed`
+        FROM `{project_id}.{workflows_dataset}.clients_referral_form_viewed`
         WHERE opportunity_type = 'compliantReporting'
         GROUP BY 1
     )
@@ -73,7 +73,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
           person_id,
           event_date AS downgraded,
           opportunity_type,
-        FROM `{project_id}.{practices_dataset}.clients_referral_implemented`
+        FROM `{project_id}.{workflows_dataset}.clients_referral_implemented`
         WHERE opportunity_type = 'compliantReporting'
     )
 
@@ -86,7 +86,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
           ELSE form_status.status
         END AS status,
         IFNULL(downgraded, DATE(form_status.timestamp, "US/Eastern")) AS last_updated,
-      FROM `{project_id}.{practices_dataset}.clients_latest_referral_status` form_status
+      FROM `{project_id}.{workflows_dataset}.clients_latest_referral_status` form_status
       FULL OUTER JOIN level_downgraded USING (person_id, opportunity_type)
       WHERE opportunity_type = 'compliantReporting'
 
@@ -113,7 +113,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER = SimpleBigQueryViewBuild
     description=US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE,
     should_materialize=True,
-    practices_dataset=PRACTICES_VIEWS_DATASET,
+    workflows_dataset=WORKFLOWS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
