@@ -83,7 +83,7 @@ def build_temporary_sqlalchemy_table(table: Table) -> Table:
 def get_renamed_index_name(index_name: str, table_name: str, new_base_name: str) -> str:
     if table_name not in index_name:
         raise NotImplementedError(
-            f"Cannot rename index ({index_name}) that do not contain the table's name ({table_name})"
+            f"Cannot rename index ({index_name}) that does not contain the table's name ({table_name})"
         )
 
     # SQLAlchemy includes the table name inside the index name by default;

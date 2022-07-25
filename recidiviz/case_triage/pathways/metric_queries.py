@@ -342,6 +342,11 @@ PrisonPopulationByDimensionCount = CountByDimensionMetricQueryBuilder(
             operations=DimensionOperation.ALL,
             columns=[PrisonPopulationByDimension.race],
         ),
+        DimensionMapping(
+            dimension=Dimension.LENGTH_OF_STAY,
+            operations=DimensionOperation.ALL,
+            columns=[PrisonPopulationByDimension.length_of_stay],
+        ),
     ],
 )
 

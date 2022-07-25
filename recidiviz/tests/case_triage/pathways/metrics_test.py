@@ -984,6 +984,7 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
                 {"race": "BLACK", "count": 2},
                 {"race": "WHITE", "count": 2},
             ],
+            Dimension.LENGTH_OF_STAY: [{"count": 4, "length_of_stay": "months_0_3"}],
         }
 
 

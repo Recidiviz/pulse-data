@@ -187,6 +187,8 @@ class PrisonPopulationByDimension(PathwaysBase):
     admission_reason = Column(String, primary_key=True, nullable=True)
     # Race of the person
     race = Column(String, primary_key=True, nullable=True)
+    # Binned length of incarceration in months
+    length_of_stay = Column(String, primary_key=True, nullable=True)
 
 
 class PrisonPopulationProjection(PathwaysBase):
