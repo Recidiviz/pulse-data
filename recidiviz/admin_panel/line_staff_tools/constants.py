@@ -25,11 +25,11 @@ from recidiviz.common.constants.states import StateCode
 
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA, StateCode.US_MO]
 CASE_TRIAGE_STATE_CODES = [StateCode(code) for code in CASE_TRIAGE_STATES]
-PRACTICES_STATE_CODES = [StateCode.US_TN]
+WORKFLOWS_STATE_CODES = [StateCode.US_TN]
 ROSTER_STATE_CODES = {
     *CASE_TRIAGE_STATE_CODES,
     *EMAIL_STATE_CODES,
-    *PRACTICES_STATE_CODES,
+    *WORKFLOWS_STATE_CODES,
 }
 
 RAW_FILES_CONFIG = {

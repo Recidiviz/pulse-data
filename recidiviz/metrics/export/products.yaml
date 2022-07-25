@@ -138,10 +138,10 @@ products:
     states:
       - state_code: US_ID
         environment: production
-  - name: Practices V2
-    description: Practices V2 is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
+  - name: Workflows
+    description: Workflows is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
     exports:
-      - PRACTICES_FIRESTORE
+      - WORKFLOWS_FIRESTORE
     states:
       - state_code: US_TN
         environment: production

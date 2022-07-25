@@ -33,8 +33,8 @@ from recidiviz.metrics.export.view_export_manager import export_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     cloud_sql_to_bq_blueprint,
 )
-from recidiviz.practices.etl.routes import get_practices_etl_blueprint
 from recidiviz.validation.validation_manager import validation_manager_blueprint
+from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (admin_panel_blueprint, "/admin"),
@@ -46,7 +46,7 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),
-    (get_practices_etl_blueprint(), "/practices-etl"),
+    (get_workflows_etl_blueprint(), "/practices-etl"),
     (validation_manager_blueprint, "/validation_manager"),
     (view_update_manager_blueprint, "/view_update"),
 ]
