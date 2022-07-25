@@ -249,13 +249,31 @@ WITH date_range AS (
         SUM(max_days_stable_employment_1yr) AS max_days_stable_employment_1yr,
         SUM(num_unique_employers_1yr) AS num_unique_employers_1yr,
     FROM (
-        # keep one observation per officer-date for officer metrics that transcend office
+        # keep one observation per primary_office-officer-date for officer metrics that transcend office
         SELECT
             * EXCEPT(caseload_all_officer, new_clients_assigned_officer),
-            IF(ROW_NUMBER() OVER w = 1, caseload_all_officer, NULL) AS caseload_all_officer,
-            IF(ROW_NUMBER() OVER w = 1, new_clients_assigned_officer, NULL) AS new_clients_assigned_officer,
+            -- only one row per officer-office-day, so restricting to primary_office matches
+            -- ensures we only count each officer once per unit of analysis.
+            IF(office = primary_office, caseload_all_officer, NULL) AS caseload_all_officer,
+            IF(office = primary_office, new_clients_assigned_officer, NULL) AS new_clients_assigned_officer,
         FROM
-            `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized`
+            `{{project_id}}.{{analyst_dataset}}.supervision_officer_office_metrics_materialized` a
+        LEFT JOIN (
+            SELECT
+                state_code AS state,
+                supervising_officer_external_id AS officer_id,
+                start_date,
+                end_date,
+                office AS primary_office,
+            FROM
+                primary_offices
+            WHERE
+                period = "MONTH"
+        ) b
+        ON
+            a.state_code = b.state
+            AND a.supervising_officer_external_id = b.officer_id
+            AND a.date BETWEEN b.start_date AND b.end_date
         WINDOW w AS (
             PARTITION BY {index_cols}{", supervising_officer_external_id" if level != "officer" else ""}, date
         )
