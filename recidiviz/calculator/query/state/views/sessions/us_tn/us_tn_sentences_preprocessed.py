@@ -89,11 +89,11 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         charge.offense_type,
         charge.ncic_code,
         charge.statute,
-    FROM `state.state_incarceration_sentence` AS sis
-    LEFT JOIN `state.state_charge_incarceration_sentence_association` assoc
+    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
+    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
-    LEFT JOIN `state.state_charge` charge
+    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
@@ -169,7 +169,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.sentence_id,
         sen.external_id AS external_id,
         sen.sentence_type,
-        raw.judicial_district,
+        COALESCE(raw.judicial_district, 'EXTERNAL_UNKNOWN') AS judicial_district,
         sen.consecutive_sentence_external_id,
         dedup.effective_date,
         dedup.date_imposed,
@@ -185,8 +185,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.charge_id,
         sen.offense_date,
         sen.is_violent,
-        sen.classification_type,
-        sen.classification_subtype,
+        COALESCE(sen.classification_type, 'EXTERNAL_UNKNOWN') AS classification_type,
+        COALESCE(sen.classification_subtype, 'EXTERNAL_UNKNOWN') AS classification_subtype,
         sen.description,
         sen.offense_type,
         sen.ncic_code,
@@ -204,7 +204,10 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         raw.total_treatment_credits,
         
         consecutive_sentence.sentence_id AS consecutive_sentence_id,
-        ses.session_id AS session_id_imposed
+        -- Set the session_id_imposed if the sentence date imposed matches the session start date
+        IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
+        ses.session_id AS session_id_closest,
+        DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days,
     FROM sentences_cte sen
     JOIN dedup_external_id_fields dedup
         USING(external_id)
@@ -214,7 +217,9 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
         ON ses.person_id = sen.person_id
         AND ses.state_code = sen.state_code
-        AND ses.start_date = sen.date_imposed
+        -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
+        AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
+        AND sen.date_imposed < COALESCE(ses.end_date, CURRENT_DATE('US/Eastern'))
     LEFT JOIN sentences_cte consecutive_sentence
         ON sen.consecutive_sentence_external_id = consecutive_sentence.external_id
     ---TODO(#13829): Investigate options for consecutive sentence relationship where supervision sentences are consecutive to incarceration sentences
@@ -222,8 +227,10 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON sen.state_code = offense_type_ref.state_code
         AND sen.description = offense_type_ref.offense_type
-    --dedup to a single external id value
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY effective_date) = 1
+    --dedup to a single external id value,
+    --prioritize the incarceration sentence over the supervision version when 1 sentence is in both tables
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY effective_date,
+        sentence_type, ABS(sentence_to_session_offset_days) ASC) = 1
 """
 
 US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -236,6 +243,7 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
+    clustering_fields=["state_code", "person_id"],
 )
 
 if __name__ == "__main__":
