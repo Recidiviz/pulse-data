@@ -5,6 +5,7 @@ file_description: |-
 data_classification: validation
 primary_key_cols:
   - OFFENDERID
+  - DWNLD_DTD
 columns:
   - name: DOCNO
     description: |-
@@ -243,3 +244,4 @@ columns:
   - name: LOCATION_NON_RES
   - name: LOCATION_FUGITIVE
   - name: DWNLD_DTD
+    description: Date the validation data was downloaded.

@@ -206,6 +206,7 @@ output:
               $raw_text: start_code
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - "79" # Returned to ISP-I - TODO(#13602) Update after schema change
                   - "80" # Escaped - TODO(#13602) Update after schema change
                   - "81" # Out to Court - TODO(#13602) Update after schema change
                   - "82" # Out on Escorted Leave - TODO(#13602) Update after schema change
@@ -220,7 +221,7 @@ output:
                   - "03" # YOS Commitment
                   - "06" # Recommitment
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
-                  - "56" # Unauthorized Release (Would this go better in internal unknown since not technically return?)
+                  - "56" # Unauthorized Release
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                   - "20" # Return from Escape
                   - "2C" # Returned from AWOL
