@@ -64,9 +64,13 @@ class FirestoreClient(abc.ABC):
 
     @abc.abstractmethod
     def delete_old_documents(
-        self, collection_path: str, timestamp_field: str, cutoff: datetime
+        self,
+        collection_path: str,
+        state_code: str,
+        timestamp_field: str,
+        cutoff: datetime,
     ) -> None:
-        """Deletes documents timestamped before the cutoff from a Firestore collection."""
+        """Deletes documents from a Firestore collection for a specific state that is timestamped before the cutoff."""
 
 
 class FirestoreClientImpl(FirestoreClient):
@@ -117,17 +121,27 @@ class FirestoreClientImpl(FirestoreClient):
         )
 
     def delete_old_documents(
-        self, collection_path: str, timestamp_field: str, cutoff: datetime
+        self,
+        collection_path: str,
+        state_code: str,
+        timestamp_field: str,
+        cutoff: datetime,
     ) -> None:
         logging.info(
-            'Deleting documents older than %s from "%s"', cutoff, collection_path
+            '[%s] Deleting documents older than %s from "%s"',
+            state_code,
+            cutoff,
+            collection_path,
         )
         collection = self.get_collection(collection_path)
         total_docs_deleted = self._delete_documents_batch(
-            collection.where(timestamp_field, "<", cutoff)
+            collection.where("stateCode", "==", state_code).where(
+                timestamp_field, "<", cutoff
+            )
         )
         logging.info(
-            'Deleted %d documents from collection "%s"',
+            '[%s] Deleted %d documents from collection "%s"',
+            state_code,
             total_docs_deleted,
             collection_path,
         )

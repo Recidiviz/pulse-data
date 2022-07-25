@@ -18,7 +18,7 @@
 import os
 from unittest import TestCase
 
-from recidiviz.workflows.etl.compliant_reporting_referral_record_etl_delegate import (
+from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
     CompliantReportingReferralRecordETLDelegate,
 )
 
@@ -46,6 +46,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
+                    "stateCode": "US_XX",
                     "poFirstName": "Joey",
                     "poLastName": "Joe",
                     "clientFirstName": "Matilda",
@@ -94,6 +95,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
+                    "stateCode": "US_XX",
                     "poFirstName": "Sally",
                     "poLastName": "Slithers",
                     "clientFirstName": "Harry",
@@ -136,6 +138,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
+                    "stateCode": "US_XX",
                     "poFirstName": "TEST",
                     "poLastName": "OFFICER1",
                     "clientFirstName": "TONYE",

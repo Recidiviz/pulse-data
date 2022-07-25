@@ -21,11 +21,15 @@ from typing import Iterator, TextIO
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.client_record_etl_delegate import ClientRecordETLDelegate
-from recidiviz.workflows.etl.compliant_reporting_referral_record_etl_delegate import (
+from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
+    ClientRecordETLDelegate,
+)
+from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
     CompliantReportingReferralRecordETLDelegate,
 )
-from recidiviz.workflows.etl.staff_record_etl_delegate import StaffRecordETLDelegate
+from recidiviz.workflows.etl.regions.us_tn.staff_record_etl_delegate import (
+    StaffRecordETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 

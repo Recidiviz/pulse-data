@@ -18,7 +18,9 @@
 import os
 from unittest import TestCase
 
-from recidiviz.workflows.etl.client_record_etl_delegate import ClientRecordETLDelegate
+from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
+    ClientRecordETLDelegate,
+)
 
 
 class ClientRecordEtlDelegateTest(TestCase):

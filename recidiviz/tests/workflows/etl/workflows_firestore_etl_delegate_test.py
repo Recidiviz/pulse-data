@@ -140,5 +140,5 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
                 delegate.run_etl()
 
         mock_delete_old_documents.assert_called_once_with(
-            "test_collection", "__loadedAt", mock_now
+            "test_collection", "US_XX", "__loadedAt", mock_now
         )
