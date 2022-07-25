@@ -1,0 +1,24 @@
+file_tag: ref_NameSuffixType
+file_description: |-
+  Reference table for the NameSuffixType codes
+data_classification: source
+primary_key_cols:
+  - NameSuffixTypeId
+columns:
+  - name: NameSuffixTypeId
+    description: |-
+      Reference code for name suffix type (this field is also found in the table ind_AliasName)
+  - name: NameSuffixTypeDesc
+    description: |-
+      Description for name suffix type
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+    is_pii: True
+  - name: UpdateDate
+    is_datetime: True
+  - name: IsCustom
