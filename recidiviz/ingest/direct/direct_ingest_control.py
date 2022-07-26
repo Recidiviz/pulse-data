@@ -496,6 +496,12 @@ def extract_and_merge() -> Tuple[str, HTTPStatus]:
         ingest_instance=ingest_instance.value,
     ):
         json_data = request.get_data(as_text=True)
+        # TODO(#14210): Delete this log once we better understand date format.
+        logging.info(
+            "ANNA DEBUG: Extract and merge args JSON string: %s",
+            json_data,
+        )
+
         ingest_args = _parse_cloud_task_args(json_data)
 
         if not ingest_args:
