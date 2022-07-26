@@ -1,0 +1,26 @@
+file_tag: PersonParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: Cdcno
+  - name: OffenderId
+  - name: FirstName
+  - name: MiddleName
+  - name: LastName
+  - name: NameSuffix
+  - name: Birthday
+  - name: Sex
+  - name: Race
+  - name: Ethnic
+  - name: ParoleRegion
+  - name: ParoleDistrict
+  - name: ParoleUnit
+  - name: ParoleAgentName
+  - name: LastParoleDate
+  - name: ControllingDischargeDate
+  - name: EarnedDischargeDate
+  - name: SentenceInMonths
+  - name: OffenderGroup
+  - name: AddressType

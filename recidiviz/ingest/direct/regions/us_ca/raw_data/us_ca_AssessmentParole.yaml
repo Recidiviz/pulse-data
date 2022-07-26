@@ -1,0 +1,56 @@
+file_tag: AssessmentParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenderId
+  - name: Cdcno
+  - name: LatestClassifScore
+  - name: latestClassifDate
+  - name: CSRALevel
+  - name: DateCompleted
+  - name: MentalHealthTreatment
+  - name: MENTALHEALTHEFFECTIVEDATE
+  - name: FSORA_Score
+  - name: FSORA_DateComputed
+  - name: Static99_Score
+  - name: Static99_DateComputed
+  - name: DevelopDisableEvaluation
+  - name: DEVELOPDISABLEDEFFECTIVEDATE
+  - name: LearningDisability
+  - name: DPPVSIGNEDDATE
+  - name: MobilityDisability
+  - name: HearingDisability
+  - name: VisionDisability
+  - name: SpeechDisability
+  - name: KidneyDisease
+  - name: PhysicalDPPVSignedDate
+  - name: Assessment
+  - name: SubstanceAbuseScore
+  - name: CriminalThinkingScore
+  - name: Social_Isolation_Score
+  - name: CriminalqPersonalityScore
+  - name: MenWomenAngerHostilityScore
+  - name: EducationProblemsScore
+  - name: EmploymentProblemsScore
+  - name: EmploymentExpectScoreReentry
+  - name: CriminalAssociatesScore
+  - name: CriminalOpportunityScore
+  - name: LeisureAndRecreationScore
+  - name: FinancialScore
+  - name: ResidentialInstabilityScore
+  - name: SocialEnvironmentScore
+  - name: WomenHousingSafety
+  - name: WomenMHCurrPsychosisSymptoms
+  - name: WomenExperienceAbuseAsChild
+  - name: WomenExperienceAbuseAsAdult
+  - name: WomenRelationshipDysfunction
+  - name: WomenSupportFromFamilyOrigin
+  - name: WomenSelfEfficacy
+  - name: NegativeSocialCognitionsScore
+  - name: WomenMentalIllnessHistoryScore
+  - name: WomenMHCurrSympDepressAnxiety
+  - name: WomenParentalStress
+  - name: WomenParentalInvolvementScore
+  - name: CompasCompletedDate
