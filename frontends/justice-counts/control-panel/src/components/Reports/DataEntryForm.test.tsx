@@ -58,7 +58,7 @@ test("display error when report fails to load", async () => {
   });
 
   const errorText = await screen.findByText(
-    /Error: There was an issue getting this report./i
+    /Error: No auth client initialized./i
   );
   expect(errorText).toBeInTheDocument();
   expect.hasAssertions();

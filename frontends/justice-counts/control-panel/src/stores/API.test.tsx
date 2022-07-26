@@ -33,12 +33,12 @@ describe("testing API calls", () => {
   test("error calling protected api", async () => {
     mockFetch.mockRejectedValue(new Error("Failed to fetch"));
 
-    const error = await api.request({
-      path: "/api/hello",
-      method: "GET",
-    });
-
-    expect(error).toEqual("Failed to fetch");
+    await expect(
+      api.request({
+        path: "/api/hello",
+        method: "GET",
+      })
+    ).rejects.toThrow("Failed to fetch");
     expect(fetch).toBeCalledTimes(1);
   });
 
@@ -65,7 +65,9 @@ describe("testing API calls", () => {
   });
 
   test("call to protected api has authorization header", async () => {
-    await api.request({ path: "/api", method: "POST" });
+    await expect(api.request({ path: "/api", method: "POST" })).rejects.toThrow(
+      Error
+    );
     expect(mockFetch.mock.calls[0][1].headers).toHaveProperty("Authorization");
 
     expect.hasAssertions();
