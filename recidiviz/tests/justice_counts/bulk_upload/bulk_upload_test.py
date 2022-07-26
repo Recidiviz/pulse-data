@@ -32,6 +32,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     ProsecutionAndDefenseStaffType,
 )
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import (
@@ -51,6 +52,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel bulk upload functionality."""
 
     def setUp(self) -> None:
+        super().setUp()
+
         self.prosecution_directory = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution",
@@ -59,32 +62,62 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution/prosecution_metrics.xlsx",
         )
+        self.invalid_directory = os.path.join(
+            os.path.dirname(__file__), "bulk_upload_fixtures/invalid"
+        )
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
-        super().setUp()
-
-    def test_prosecution_new(self) -> None:
-        """Bulk upload prosecution metrics into an empty database."""
 
         user_account = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_F
-
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(user_account)
-            session.add(agency)
+            session.add_all([user_account, agency])
             session.commit()
             session.flush()
+            self.prosecution_agency_id = agency.id
+            self.user_account_id = user_account.id
 
-            errors = BulkUploadInterface.upload_directory(
+    def test_validation(self) -> None:
+        """Test that errors are thrown on invalid inputs."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            filename_to_error = BulkUploadInterface.upload_directory(
                 session=session,
-                directory=self.prosecution_directory,
-                agency_id=agency.id,
+                directory=self.invalid_directory,
+                agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(errors), 0)
+            self.assertEqual(len(filename_to_error), 2)
+            self.assertTrue(
+                "No metric corresponds to the filename `gender`"
+                in str(filename_to_error["gender.csv"])
+            )
+            self.assertTrue(
+                "No aggregate metric value found for the metric `caseloads`"
+                in str(filename_to_error["caseloads.csv"])
+            )
+
+    def test_prosecution_new(self) -> None:
+        """Bulk upload prosecution metrics into an empty database."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            BulkUploadInterface.upload_directory(
+                session=session,
+                directory=self.prosecution_directory,
+                agency_id=self.prosecution_agency_id,
+                system=schema.System.PROSECUTION,
+                user_account=user_account,
+                catch_errors=False,
+            )
 
             reports = ReportInterface.get_reports_by_agency_id(
-                session=session, agency_id=agency.id, include_datapoints=True
+                session=session,
+                agency_id=self.prosecution_agency_id,
+                include_datapoints=True,
             )
             reports_by_instance = {report.instance: report for report in reports}
             self.assertEqual(
@@ -109,14 +142,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             user_account = session.query(schema.UserAccount).limit(1).one()
 
-            errors = BulkUploadInterface.upload_directory(
+            BulkUploadInterface.upload_directory(
                 session=session,
                 directory=self.prosecution_directory,
                 agency_id=PROSECUTION_AGENCY_ID,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
+                catch_errors=False,
             )
-            self.assertEqual(len(errors), 0)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -129,27 +162,21 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def test_prosecution_excel(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""
 
-        user_account = self.test_schema_objects.test_user_A
-        agency = self.test_schema_objects.test_agency_F
-
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(user_account)
-            session.add(agency)
-            session.commit()
-            session.flush()
-
-            errors = BulkUploadInterface.upload_excel(
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            BulkUploadInterface.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.prosecution_excel),
-                agency_id=agency.id,
+                agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(errors), 0)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
-                agency_id=agency.id,
+                agency_id=self.prosecution_agency_id,
                 include_datapoints=True,
             )
             reports_by_instance = {report.instance: report for report in reports}

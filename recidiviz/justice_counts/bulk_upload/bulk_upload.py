@@ -55,32 +55,34 @@ class BulkUploadInterface:
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
-    ) -> List[Tuple[str, Exception]]:
+        catch_errors: bool = True,
+    ) -> Dict[str, Exception]:
         """Iterate through all CSV files in the given directory and upload them
         to the Justice Counts database using the `upload_csv` method defined below.
         If an error is encountered on a particular file, log it and continue.
         """
-        success_files = []
-        error_files = []
+        filename_to_error = {}
 
         for filename in os.listdir(directory):
             if not filename.endswith(".csv"):
                 continue
 
-            filename = os.path.join(directory, filename)
+            filepath = os.path.join(directory, filename)
             logging.info("Uploading %s", filename)
             try:
                 BulkUploadInterface.upload_csv(
                     session=session,
-                    filename=filename,
+                    filename=filepath,
                     agency_id=agency_id,
                     system=system,
                     user_account=user_account,
                 )
-                success_files.append(filename)
             except Exception as e:
-                error_files.append((filename, e))
-        return error_files
+                if catch_errors:
+                    filename_to_error[filename] = e
+                else:
+                    raise e
+        return filename_to_error
 
     @staticmethod
     def upload_excel(
@@ -272,7 +274,7 @@ class BulkUploadInterface:
 
         if stripped_filename not in filename_to_metricfile:
             raise ValueError(
-                f"There is no metric corresponding to the filename `{stripped_filename}`. "
+                f"No metric corresponds to the filename `{stripped_filename}`. "
                 "Check bulk_upload_helpers.py."
             )
 
@@ -370,6 +372,13 @@ class BulkUploadInterface:
                     dimension_to_value[
                         metricfile.disaggregation(disaggregation_value)  # type: ignore
                     ] = value
+
+            if aggregate_value is None:
+                raise ValueError(
+                    f"No aggregate metric value found for the metric `{metricfile.filename}` and "
+                    f"time period {time_range}. Make sure to include a row labeled `All` "
+                    "for every time period."
+                )
 
         return ReportMetric(
             key=metricfile.definition.key,
