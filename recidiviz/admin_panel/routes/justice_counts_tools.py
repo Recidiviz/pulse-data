@@ -28,7 +28,7 @@ from sqlalchemy.exc import IntegrityError
 
 from recidiviz.auth.auth0_client import Auth0Client, Auth0User
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploadInterface
+from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -200,7 +200,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
-            BulkUploadInterface.upload_excel(
+            BulkUploader().upload_excel(
                 session=session,
                 xls=xls,
                 agency_id=agency_id,

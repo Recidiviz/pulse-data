@@ -22,7 +22,7 @@ from typing import Dict
 import pandas as pd
 import pytest
 
-from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploadInterface
+from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -54,6 +54,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
+        self.bulk_uploader = BulkUploader()
+
         self.prosecution_directory = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution",
@@ -82,14 +84,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            filename_to_error = BulkUploadInterface.upload_directory(
+            filename_to_error = self.bulk_uploader.upload_directory(
                 session=session,
                 directory=self.invalid_directory,
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 2)
+            self.assertEqual(len(filename_to_error), 3)
             self.assertTrue(
                 "No metric corresponds to the filename `gender`"
                 in str(filename_to_error["gender.csv"])
@@ -98,6 +100,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 "No aggregate metric value found for the metric `caseloads`"
                 in str(filename_to_error["caseloads.csv"])
             )
+            self.assertTrue(
+                "No fuzzy matches found with high enough score. Input=Xxx"
+                in str(filename_to_error["cases_disposed.csv"])
+            )
 
     def test_prosecution_new(self) -> None:
         """Bulk upload prosecution metrics into an empty database."""
@@ -105,7 +111,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            BulkUploadInterface.upload_directory(
+            self.bulk_uploader.upload_directory(
                 session=session,
                 directory=self.prosecution_directory,
                 agency_id=self.prosecution_agency_id,
@@ -142,7 +148,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             user_account = session.query(schema.UserAccount).limit(1).one()
 
-            BulkUploadInterface.upload_directory(
+            self.bulk_uploader.upload_directory(
                 session=session,
                 directory=self.prosecution_directory,
                 agency_id=PROSECUTION_AGENCY_ID,
@@ -166,7 +172,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            BulkUploadInterface.upload_excel(
+            self.bulk_uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.prosecution_excel),
                 agency_id=self.prosecution_agency_id,
