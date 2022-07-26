@@ -33,6 +33,9 @@ from recidiviz.calculator.dataflow_config import (
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
+from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
+    IncarcerationPopulationSpanMetric,
+)
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
@@ -94,10 +97,10 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
 
         def get_table(_dataset_id: str, table_id: str) -> Mock:
             table = Mock()
-            # This table is special, it does not have year and month
-            if (
-                table_id
-                == DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]
+            # These tables are special, it does not have year and month
+            if table_id in (
+                DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric],
+                DATAFLOW_METRICS_TO_TABLES[IncarcerationPopulationSpanMetric],
             ):
                 table.clustering_fields = None
             else:

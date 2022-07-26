@@ -48,6 +48,9 @@ from recidiviz.calculator.dataflow_config import (
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationMetric,
 )
+from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
+    PopulationSpanMetric,
+)
 from recidiviz.calculator.pipeline.metrics.program.metrics import ProgramMetric
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
@@ -405,6 +408,8 @@ class CalculationDocumentationGenerator:
                 metrics_dict["Incarceration"].append(metric)
             elif issubclass(metric, ViolationMetric):
                 metrics_dict["Violation"].append(metric)
+            elif issubclass(metric, PopulationSpanMetric):
+                metrics_dict["PopulationSpan"].append(metric)
             else:
                 raise ValueError(
                     f"{metric.__name__} is not a subclass of an expected"

@@ -42,7 +42,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
     ALL_METRICS = {
         metric: True
         for table, metric in DATAFLOW_TABLES_TO_METRIC_TYPES.items()
-        if "incarceration" in table
+        if "incarceration" in table and "span" not in table
     }
 
     default_beam_args: List[str] = [
@@ -303,7 +303,6 @@ class TestPipelineArgsUtils(unittest.TestCase):
             self.DEFAULT_INCARCERATION_PIPELINE_ARGS,
             person_id_filter_set={685253, 12345, 99999},
         )
-
         self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, expected_incarceration_pipeline_args
         )
