@@ -84,3 +84,13 @@ module "validations-queue" {
   region             = var.app_engine_region
   max_retry_attempts = 1
 }
+
+# Queue used to process tasks that import data into the pathways DB.
+module "pathways-db-import-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name = "pathways-db-import"
+  region     = var.app_engine_region
+  # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
+  # at a time.
+}
