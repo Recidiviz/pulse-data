@@ -369,6 +369,15 @@ class BaseDirectIngestController:
             )
             return
 
+        # TODO(#14210): Delete this variable/log once we better understand date format.
+        next_job_args_time = next_job_args.upper_bound_datetime_inclusive
+        logging.info(
+            "ANNA DEBUG: next_job_args time [%s], tzinfo=[%s], iso_format=[%s]",
+            next_job_args_time,
+            next_job_args_time.tzinfo,
+            next_job_args_time.isoformat(),
+        )
+
         if extract_and_merge_queue_info.is_task_already_queued(
             self.region_code(), next_job_args
         ):
@@ -539,6 +548,15 @@ class BaseDirectIngestController:
              otherwise.
         """
         check_is_region_launched_in_env(self.region)
+
+        # TODO(#14210): Delete this variable/log once we better understand date format.
+        args_time = args.upper_bound_datetime_inclusive
+        logging.info(
+            "ANNA DEBUG: Extract and merge args time [%s], tzinfo=[%s], iso_format=[%s]",
+            args_time,
+            args_time.tzinfo,
+            args_time.isoformat(),
+        )
 
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", args.job_tag())
