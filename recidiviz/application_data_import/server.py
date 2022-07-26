@@ -27,7 +27,6 @@ from google.api_core.exceptions import AlreadyExists
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
-from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.pathways_database_manager import (
@@ -71,6 +70,8 @@ else:
         url="http://localhost:5000",
         service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
     )
+
+PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import"
 
 
 @app.route("/import/pathways/<state_code>/<filename>", methods=["POST"])
@@ -152,7 +153,7 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
         )
 
     cloud_task_manager = CloudTaskQueueManager(
-        queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
+        queue_info_cls=CloudTaskQueueInfo, queue_name=PATHWAYS_DB_IMPORT_QUEUE
     )
 
     pathways_task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"import-pathways-{object_id}")
@@ -163,7 +164,7 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
             service_account_email=cloud_run_metadata.service_account_email,
             task_id=pathways_task_id,  # deduplicate import requests for the same file
         )
-        logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
+        logging.info("Enqueued gcs_import task to %s", PATHWAYS_DB_IMPORT_QUEUE)
     except AlreadyExists:
         logging.info(
             "Skipping enqueueing of %s because it is already being imported",
