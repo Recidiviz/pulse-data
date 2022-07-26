@@ -18,7 +18,8 @@
 import datetime
 import re
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Tuple, TypeVar
+from calendar import isleap
+from typing import Iterator, List, Optional, Tuple, TypeVar
 
 import attr
 
@@ -319,3 +320,39 @@ def safe_strptime(
         return datetime.datetime.strptime(str(date_string), date_format)
     except (ValueError, TypeError):
         return None
+
+
+def safe_year_replace(date: datetime.date, year: int) -> datetime.date:
+    if date.month == 2 and date.day == 29 and not isleap(year):
+        return datetime.date(year, 3, 1)
+    return date.replace(year=year)
+
+
+def split_range_by_birthdate(
+    date_range: Tuple[datetime.date, Optional[datetime.date]], birthdate: datetime.date
+) -> Iterator[Tuple[datetime.date, Optional[datetime.date]]]:
+    """Splits a date range into smaller ranges given a birthdate. Preserves the ending
+    date being None if not given. The birthdate is to set the age of the person at the
+    time of the date range."""
+    start_date, end_date = date_range
+
+    # If the birthdate is earlier in the year than the start of the range, the first
+    # split will be in the following year.
+    same_year_birthdate = safe_year_replace(birthdate, year=start_date.year)
+    if same_year_birthdate > start_date:
+        first_birthdate_after_start = same_year_birthdate
+    else:
+        first_birthdate_after_start = safe_year_replace(
+            birthdate, year=(start_date.year + 1)
+        )
+
+    split_date = min(first_birthdate_after_start, date_or_tomorrow(end_date))
+
+    # Keep splitting until we get to the end of the range
+    while split_date < date_or_tomorrow(end_date):
+        yield (start_date, split_date)
+
+        start_date = split_date
+        split_date = safe_year_replace(birthdate, year=(split_date.year + 1))
+
+    yield (start_date, end_date)

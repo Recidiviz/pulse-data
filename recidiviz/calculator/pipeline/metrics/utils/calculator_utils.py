@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
 from recidiviz.calculator.pipeline.utils.identifier_models import (
     Event,
     IdentifierResult,
+    Span,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
@@ -40,6 +41,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_prod
 from recidiviz.common.date import (
     first_day_of_month,
     last_day_of_month,
+    split_range_by_birthdate,
     year_and_month_for_today,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -294,6 +296,68 @@ def produce_standard_event_metrics(
                 )
 
                 metrics.append(metric)
+
+    return metrics
+
+
+def produce_standard_span_metrics(
+    person: StatePerson,
+    identifier_results: List[Span],
+    metric_inclusions: Dict[RecidivizMetricTypeT, bool],
+    person_metadata: PersonMetadata,
+    event_to_metric_classes: Dict[
+        Type[Span],
+        List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
+    ],
+    pipeline_job_id: str,
+    metric_classes_to_producer_delegates: Dict[
+        Type[RecidivizMetric[RecidivizMetricTypeT]],
+        Optional[StateSpecificMetricsProducerDelegate],
+    ],
+    additional_attributes: Optional[Dict[str, Any]] = None,
+) -> List[RecidivizMetric]:
+    """Produces metrics for pipelines with a standard mapping of span to metric
+    type. This first splits the span if a person has a birthdate by that date so that
+    we can produce age-based spans within a larger span."""
+    metrics: List[RecidivizMetric] = []
+
+    for span in identifier_results:
+        original_date_range = (
+            span.start_date_inclusive,
+            span.end_date_exclusive,
+        )
+        new_ranges = (
+            split_range_by_birthdate(original_date_range, person.birthdate)
+            if person.birthdate is not None
+            else [original_date_range]
+        )
+        for (start_date, end_date) in new_ranges:
+            new_span = attr.evolve(
+                span,
+                start_date_inclusive=start_date,
+                end_date_exclusive=end_date,
+            )
+            age = age_at_date(person, new_span.start_date_inclusive)
+
+            metric_classes = event_to_metric_classes[type(span)]
+            for metric_class in metric_classes:
+                metric_type = metric_type_for_metric_class(metric_class)
+
+                if metric_inclusions.get(metric_type):
+                    metric = build_metric(
+                        result=new_span,
+                        metric_class=metric_class,
+                        person=person,
+                        person_age=age,
+                        person_metadata=person_metadata,
+                        pipeline_job_id=pipeline_job_id,
+                        metrics_producer_delegate=metric_classes_to_producer_delegates.get(
+                            metric_class
+                        ),
+                        additional_attributes=additional_attributes,
+                    )
+
+                    metrics.append(metric)
 
     return metrics
 

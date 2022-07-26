@@ -18,6 +18,9 @@
 import datetime
 import unittest
 
+from freezegun import freeze_time
+from parameterized import parameterized
+
 from recidiviz.common.date import (
     DateRange,
     DateRangeDiff,
@@ -25,36 +28,28 @@ from recidiviz.common.date import (
     is_date_str,
     munge_date_string,
     safe_strptime,
+    split_range_by_birthdate,
     today_in_iso,
 )
 
 
-def test_mungeDateString_munges() -> None:
-    assert munge_date_string("1y 1m 1d") == "1year 1month 1day"
+class TestMungeDateString(unittest.TestCase):
+    """Tests for munge_date_string"""
 
-
-def test_mungeDateString_doesntMunge() -> None:
-    assert munge_date_string("1year 1month 1day") == "1year 1month 1day"
-
-
-def test_mungeDateString_caseInsensitive() -> None:
-    assert munge_date_string("1Y 1M 1D") == "1year 1month 1day"
-
-
-def test_mungeDateString_noYear() -> None:
-    assert munge_date_string("10M 12D") == "10month 12day"
-
-
-def test_mungeDateString_noMonth() -> None:
-    assert munge_date_string("9Y 28D") == "9year 28day"
-
-
-def test_mungeDateString_noDay() -> None:
-    assert munge_date_string("4y 3m") == "4year 3month"
-
-
-def test_mungeDateString_ZeroAm() -> None:
-    assert munge_date_string("Jan 1, 2018 00:00 AM") == "Jan 1, 2018 12:00 AM"
+    @parameterized.expand(
+        [
+            ("normal", "1y 1m 1d", "1year 1month 1day"),
+            ("no_munge", "1year 1month 1day", "1year 1month 1day"),
+            ("no_year", "10M 12D", "10month 12day"),
+            ("no_month", "9Y 28D", "9year 28day"),
+            ("no_day", "4y 3m", "4year 3month"),
+            ("zero_am", "Jan 1, 2018 00:00AM", "Jan 1, 2018 12:00 AM"),
+        ]
+    )
+    def test_munge_date_string(
+        self, _name: str, given_string: str, expected_result: str
+    ) -> None:
+        self.assertEqual(munge_date_string(given_string), expected_result)
 
 
 def test_today_in_iso() -> None:
@@ -286,3 +281,55 @@ class TestDateRangeDiff(unittest.TestCase):
         date_string = "2022-03-14"
         date_format = "%Y-%m-%d %HH:%MM:%SS"
         self.assertEqual(None, safe_strptime(date_string, date_format))
+
+
+class TestSplitRangeByBirthdate(unittest.TestCase):
+    """Tests for split_range_by_birthdate"""
+
+    def test_split_range_by_birthdate(self) -> None:
+        expected_results = [
+            (datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)),
+            (datetime.date(2001, 1, 1), datetime.date(2002, 1, 1)),
+            (datetime.date(2002, 1, 1), datetime.date(2003, 1, 1)),
+            (datetime.date(2003, 1, 1), datetime.date(2004, 1, 1)),
+            (datetime.date(2004, 1, 1), datetime.date(2005, 1, 1)),
+        ]
+        results = list(
+            split_range_by_birthdate(
+                (datetime.date(2000, 1, 1), datetime.date(2005, 1, 1)),
+                datetime.date(2000, 1, 1),
+            )
+        )
+        self.assertListEqual(expected_results, results)
+
+    @freeze_time("2020-05-01")
+    def test_split_range_by_birthdate_open_today(self) -> None:
+        expected_results = [
+            (datetime.date(2019, 1, 1), datetime.date(2019, 5, 1)),
+            (datetime.date(2019, 5, 1), datetime.date(2020, 5, 1)),
+            (datetime.date(2020, 5, 1), None),
+        ]
+        results = list(
+            split_range_by_birthdate(
+                (datetime.date(2019, 1, 1), None),
+                datetime.date(1971, 5, 1),
+            )
+        )
+        self.assertListEqual(expected_results, results)
+
+    def test_split_range_by_birthdate_handles_leap_day(self) -> None:
+        expected_results = [
+            (datetime.date(2000, 1, 1), datetime.date(2000, 2, 29)),
+            (datetime.date(2000, 2, 29), datetime.date(2001, 3, 1)),
+            (datetime.date(2001, 3, 1), datetime.date(2002, 3, 1)),
+            (datetime.date(2002, 3, 1), datetime.date(2003, 3, 1)),
+            (datetime.date(2003, 3, 1), datetime.date(2004, 2, 29)),
+            (datetime.date(2004, 2, 29), datetime.date(2005, 1, 1)),
+        ]
+        results = list(
+            split_range_by_birthdate(
+                (datetime.date(2000, 1, 1), datetime.date(2005, 1, 1)),
+                datetime.date(2000, 2, 29),
+            )
+        )
+        self.assertListEqual(expected_results, results)
