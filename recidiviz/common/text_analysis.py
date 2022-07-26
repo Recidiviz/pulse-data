@@ -27,6 +27,7 @@ from typing import Callable, List, Optional, Set, Tuple
 import attr
 from nltk import data
 from nltk.corpus import stopwords
+from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import ToktokTokenizer
 from thefuzz import fuzz
 
@@ -126,6 +127,7 @@ class TextAnalyzer:
         }
         self.stop_words -= self.stop_words_to_remove
         self.tokenizer = ToktokTokenizer()
+        self.stemmer = SnowballStemmer(language="english")
 
     def _clean_text(self, text: str) -> str:
         """Cleans text by lowercasing, removing any unwanted characters and extra
@@ -140,10 +142,17 @@ class TextAnalyzer:
         tokenized_text = self.tokenizer.tokenize(text)
         return set(tokenized_text) - self.stop_words
 
-    def normalize_text(self, text: str) -> str:
+    def _stem(self, token: str) -> str:
+        """Stems the token (reduces the word to its root form)."""
+        return self.stemmer.stem(token)
+
+    def normalize_text(self, text: str, stem_tokens: bool = False) -> str:
         """Normalizes a text string, by lowercasing, removing punctuation,
-        irregular white space, and stop words."""
-        return " ".join(sorted(self._tokenize(self._clean_text(text))))
+        irregular white space, and stop words. Optionally stems the tokens."""
+        tokens = sorted(self._tokenize(self._clean_text(text)))
+        if stem_tokens:
+            tokens = [self._stem(token) for token in tokens]
+        return " ".join(tokens)
 
     def extract_entities(self, text: str) -> Set[TextEntity]:
         """Returns the set of TextEntity that apply to the input text."""
