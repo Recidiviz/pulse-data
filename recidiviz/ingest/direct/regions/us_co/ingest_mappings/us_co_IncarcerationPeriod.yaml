@@ -107,6 +107,7 @@ output:
                   - "73" # Medical Needs
                   - "74" # Mental Health Needs
                   - "75" # Bed Assignment (between Facilities in same Complex)
+                  - "79" # Escape without Violence
                   - "81" # Escaped from CDOC
                   - "82" # PC Movement
                   - "85" # Temp. Move - Out-to-Court
