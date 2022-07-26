@@ -1,4 +1,4 @@
-file_tag: summary_ofndr_ftrd_dt
+file_tag: summary_ofndr_ftrd_dt_recidiviz
 file_description: |-
   This table is the result of a daily query that calculates someones expected release date
   or supervision termination date.
