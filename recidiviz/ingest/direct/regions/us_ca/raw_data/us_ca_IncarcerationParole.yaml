@@ -1,0 +1,17 @@
+file_tag: IncarcerationParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenderId
+  - name: ORTGID
+  - name: IN_DATE
+  - name: In_Move
+  - name: In_Reason
+  - name: OUT_DATE
+  - name: Out_Move
+  - name: Out_Reason
+  - name: ParoleEndDate
+  - name: ParoleEndMove
+  - name: ParoleEndReason

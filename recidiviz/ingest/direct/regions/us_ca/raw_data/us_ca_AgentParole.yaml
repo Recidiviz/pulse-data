@@ -1,0 +1,11 @@
+file_tag: AgentParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: ParoleAgentName
+  - name: AgentClassification
+  - name: ParoleRegion
+  - name: ParoleDistrict
+  - name: ParoleUnit

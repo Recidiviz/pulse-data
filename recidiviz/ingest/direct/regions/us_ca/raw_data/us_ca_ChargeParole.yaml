@@ -1,0 +1,19 @@
+file_tag: ChargeParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenderId
+  - name: Cdcno
+  - name: ORTGID
+  - name: COMMITMENTPREFIX
+  - name: SENTENCECOMPONENT
+  - name: SentencingCounty
+  - name: CaseNumber
+  - name: CaseStatus
+  - name: OffenseStatus
+  - name: OffenseDescription
+  - name: PRINCIPALOFFENSE
+  - name: SentencingFactor
+  - name: SentencingChainType

@@ -1,0 +1,13 @@
+file_tag: SupervisionContact
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenderId
+  - name: Cdcno
+  - name: ORTGID
+  - name: CONTACTDATE
+  - name: ContactType
+  - name: ContactSource
+  - name: EmploymentStatus

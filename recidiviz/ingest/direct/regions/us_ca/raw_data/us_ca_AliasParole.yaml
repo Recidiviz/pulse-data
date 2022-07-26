@@ -1,0 +1,12 @@
+file_tag: AliasParole
+file_description: |-
+  TODO(#14099): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenderId
+  - name: NameType
+  - name: AliasFirstName
+  - name: AliasMiddleName
+  - name: AliasLastName
+  - name: AliasNameSuffix

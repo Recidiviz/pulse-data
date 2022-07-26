@@ -114,6 +114,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "reference_views",
     "sessions",
     "shared_metric_views",
+    "us_ca_raw_data_up_to_date_views",
     "us_co_raw_data_up_to_date_views",
     "us_id_raw_data_up_to_date_views",
     "us_mo_raw_data_up_to_date_views",
