@@ -37,6 +37,7 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     ADMITTED_FROM_SUPERVISION = (
         state_enum_strings.state_incarceration_period_admission_reason_admitted_from_supervision
     )
+    ESCAPE = state_enum_strings.state_incarceration_period_admission_reason_escape
     NEW_ADMISSION = (
         state_enum_strings.state_incarceration_period_admission_reason_new_admission
     )
@@ -61,6 +62,9 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     )
     TEMPORARY_CUSTODY = (
         state_enum_strings.state_incarceration_period_admission_reason_temporary_custody
+    )
+    TEMPORARY_RELEASE = (
+        state_enum_strings.state_incarceration_period_admission_reason_temporary_release
     )
     TRANSFER = state_enum_strings.state_incarceration_period_admission_reason_transfer
     TRANSFER_FROM_OTHER_JURISDICTION = (
@@ -93,6 +97,8 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS: Dict[
     "accurate admission reason.",
     StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: "Used when a person "
     "has been admitted into a facility erroneously.",
+    StateIncarcerationPeriodAdmissionReason.ESCAPE: "Used when a person has escaped from"
+    " a facility but should still be counted as incarcerated.",
     StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: "Describes admissions into "
     "prison to serve a new sentence because of a new commitment from the court.",
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: "Used when "
@@ -133,6 +139,10 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS: Dict[
     "their sentence). Used also when a person is brought into a county jail "
     "temporarily after a probation revocation while the state determines the prison "
     "into which they will be admitted.",
+    StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE: "Describes temporary release"
+    " from the facility to a medical institution, county jail awaiting court hearing or "
+    "another circumstance, but the person should still be considered as incarcerated during "
+    " this release.",
     StateIncarcerationPeriodAdmissionReason.TRANSFER: "Used when a person is "
     "transferred between two facilities within the state.",
     StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: "Used "
@@ -176,6 +186,12 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     # type of release to supervision a release is)
     RELEASED_TO_SUPERVISION = (
         state_enum_strings.state_incarceration_period_release_reason_released_to_supervision
+    )
+    RETURN_FROM_ESCAPE = (
+        state_enum_strings.state_incarceration_period_release_reason_return_from_escape
+    )
+    RETURN_FROM_TEMPORARY_RELEASE = (
+        state_enum_strings.state_incarceration_period_release_reason_return_from_temporary_release
     )
     SENTENCE_SERVED = (
         state_enum_strings.state_incarceration_period_release_reason_sentence_served
@@ -257,6 +273,12 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS: Dict[
     "where a person is released onto probation, for example (i.e. they are serving a "
     "stacked probation sentence after an incarceration sentence). This is also used if "
     "we cannot determine what type of release to supervision a release is.",
+    StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE: "Describes a person having "
+    "been returned to the facility from having previously escaped, thus ending a period "
+    "of incarceration in which they were deemed escaped from the facility.",
+    StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE: "Describes a person "
+    "having returned to the facility from having been previously temporarily released, "
+    "for example to a hospital, to county jail awaiting court hearing, etc.",
     StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: "Describes a person being "
     "released because they have served the entirety of their sentence. This should "
     "not be used if the person is being released onto any form of supervision "
@@ -386,6 +408,8 @@ def is_commitment_from_supervision(
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+        StateIncarcerationPeriodAdmissionReason.ESCAPE,
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
         StateIncarcerationPeriodAdmissionReason.TRANSFER,
         StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
@@ -448,6 +472,8 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TRANSFER,
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+        StateIncarcerationPeriodAdmissionReason.ESCAPE,
+        StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
     ]
 
     if admission_reason in official_admission_types:
@@ -509,6 +535,8 @@ def is_official_release(
         StateIncarcerationPeriodReleaseReason.TRANSFER,
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
         StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+        StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
+        StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
     ]
 
     if release_reason in official_release_types:
@@ -561,6 +589,8 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
         StateIncarcerationPeriodReleaseReason.TRANSFER,
         StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+        StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
+        StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
     ]
 
     if release_reason in prioritized_release_types:
@@ -584,6 +614,7 @@ SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES = [
 _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "ADMITTED IN ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     "ADMITTED FROM SUPERVISION": StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+    "ESCAPE": StateIncarcerationPeriodAdmissionReason.ESCAPE,
     "ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     "EXTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -597,6 +628,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "RETURN FROM MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "TEMPORARY CUSTODY": StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+    "TEMPORARY RELEASE": StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
     "TRANSFER": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "TRANSFER FROM OTHER JURISDICTION": StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     "SANCTION ADMISSION": StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
@@ -631,6 +663,8 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     "RELEASED TO SUPERVISION": StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
     "RELEASED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    "RETURN FROM ESCAPE": StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
+    "RETURN FROM TEMPORARY RELEASE": StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
     "TEMPORARY RELEASE": StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
     "TIME EARNED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "TIME SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,

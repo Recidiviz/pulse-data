@@ -65,6 +65,8 @@ INCARCERATION_START_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
     StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    StateIncarcerationPeriodAdmissionReason.ESCAPE,
+    StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
     StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
 ]
