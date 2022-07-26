@@ -26,6 +26,8 @@ from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
 
 
+# TODO(#14198): move operations/dao.py functionality into DirectIngestRawFileMetadataManager and migrate tests
+# to postgres_direct_ingest_file_metadata_manager_test.
 def get_raw_file_metadata_row_for_path(
     session: Session,
     region_code: str,
@@ -50,6 +52,45 @@ def get_raw_file_metadata_row_for_path(
         )
 
     return one(results)
+
+
+def get_raw_file_metadata_for_file_id(
+    session: Session,
+    region_code: str,
+    file_id: int,
+    raw_data_instance: DirectIngestInstance,
+) -> schema.DirectIngestRawFileMetadata:
+    """Returns metadata information for the provided file id. Throws if it doesn't exist."""
+    results = (
+        session.query(schema.DirectIngestRawFileMetadata)
+        .filter_by(
+            region_code=region_code.upper(),
+            file_id=file_id,
+            raw_data_instance=raw_data_instance.value,
+        )
+        .all()
+    )
+
+    if len(results) != 1:
+        raise ValueError(
+            f"Unexpected number of metadata results for file_id={file_id}, region_code={region_code.upper()}: "
+            f"[{len(results)}]"
+        )
+
+    return one(results)
+
+
+def mark_raw_file_as_invalidated(
+    session: Session,
+    region_code: str,
+    file_id: int,
+    raw_data_instance: DirectIngestInstance,
+) -> None:
+    """Marks the specified row associated with the file_id as invalidated."""
+    metadata = get_raw_file_metadata_for_file_id(
+        session, region_code, file_id, raw_data_instance
+    )
+    metadata.is_invalidated = True
 
 
 def get_sftp_file_metadata_row_for_path(
