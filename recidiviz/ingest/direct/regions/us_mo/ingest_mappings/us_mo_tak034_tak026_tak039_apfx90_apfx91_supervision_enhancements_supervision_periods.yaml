@@ -1,25 +1,137 @@
-key_mappings:
-  SUPV_PERIOD_BEG_DT: state_supervision_period.start_date
-  SUPV_PERIOD_END_DT: state_supervision_period.termination_date
-  LOCATION_ACRONYM: state_supervision_period.supervision_site
-  START_STATUS_CODE_LIST: state_supervision_period.admission_reason
-  END_STATUS_CODE_LIST: state_supervision_period.termination_reason
-  SUP_TYPE: state_supervision_period.supervision_level
-# Primary key overridden in controller, with the format: DOC-CYC-FIELD_ASSIGNMENT_SEQ_NUM-START_STATUS_SEQ_NUM
-
-ancestor_keys:
-  DOC: state_person.state_person_id
-
-keys_to_ignore:
-  - DOC # Offender DOC Number - Handled manually in the controller
-  - CYC # Offender Cycle Number - Handled manually in the controller
-  - FIELD_ASSIGNMENT_SEQ_NUM # Field assignment sequence number - Handled manually in the controller
-  - START_STATUS_SEQ_NUM # Sub-sequence number - Handled manually in the controller
-  - CASE_TYPE_LIST # Case Type List - Handled manually in the controller
-  # TODO(#9382): This should be used in the v2 YAML mappings file when we migrate.
-  - BDGNO # Employee Id - Handled manually in the controller
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DOC
+  - CYC
+  - FIELD_ASSIGNMENT_SEQ_NUM
+  - START_STATUS_SEQ_NUM
+  - SUPV_PERIOD_BEG_DT
+  - START_STATUS_CODE_LIST
+  - SUPV_PERIOD_END_DT
+  - END_STATUS_CODE_LIST
+  - LOCATION_ACRONYM
+  - CASE_TYPE_LIST
+  - BDGNO
+  - CLSTTL
+  - DEPCLS
+  - LNAME
+  - FNAME
+  - MINTL
+  - SUP_TYPE
+unused_columns:
   - DEPCLS # Unused - Employee Job Code
-  - LNAME # Employee Last Name - Handled manually in the controller
-  - FNAME # Employee First Name - Handled manually in the controller
-  - MINTL # Employee Middle Initial - Handled manually in the controller
-  - CLSTTL # Job role - Handled manually in controller
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - DOC
+                - CYC
+                - FIELD_ASSIGNMENT_SEQ_NUM
+                - START_STATUS_SEQ_NUM
+          start_date: SUPV_PERIOD_BEG_DT
+          termination_date:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: SUPV_PERIOD_END_DT
+                    $options:
+                      - $literal("0")
+                      - $literal("99999999")
+                $then: SUPV_PERIOD_END_DT
+          supervision_site: LOCATION_ACRONYM
+          admission_reason:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: SUPV_PERIOD_BEG_DT
+                    - $is_null: START_STATUS_CODE_LIST
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: START_STATUS_CODE_LIST
+                    $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_admission_reason
+          termination_reason:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_in:
+                        $value: SUPV_PERIOD_END_DT
+                        $options:
+                          - $literal("0")
+                          - $literal("99999999")
+                    - $not_null: SUPV_PERIOD_END_DT
+                    - $is_null: END_STATUS_CODE_LIST
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: END_STATUS_CODE_LIST
+                    $custom_parser: us_mo_custom_enum_parsers.parse_supervision_period_termination_reason
+          supervision_level:
+            $enum_mapping:
+              $raw_text: SUP_TYPE
+              $mappings:
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - "ESC" # Absconder
+                StateSupervisionLevel.UNASSIGNED:
+                  - "IAP" # Initial Assessment Phase
+                  - "NSV" # Not Under Supervision (case closed by court/board but still open at district level)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "PSI" # Pre Sentence Investigation
+                StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY:
+                  - "EMP" # Electronic Monitoring
+                StateSupervisionLevel.MINIMUM:
+                  - "OOI" # Low Risk (low risk on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "NOI" # No Contract Monitoring Level I
+                  - "MIN" # Minimum
+                  - "MSC" # Automated Minimum
+                StateSupervisionLevel.MEDIUM:
+                  - "OII" # Moderate Risk (moderate/low or moderate on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "NII" # No Contract Monitoring Level II
+                  - "REG" # Regular Supervision
+                StateSupervisionLevel.HIGH:
+                  - "III" # High Risk (high risk on ORAS)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "ENH" # Enhanced
+                StateSupervisionLevel.MAXIMUM:
+                  - "ISP" # Intensive Supervision (specialized programming + very high risk on ORAS)
+                  - "CPP" # Residential Community Placement (treatment)
+                  # The following codes are no longer used according to MO, but may appear in historical records
+                  - "RTF" # Residential Treatment facility
+                  - "VCT" # Residential Violator Center
+                StateSupervisionLevel.INCARCERATED:
+                  - "ITC" # Institutional Treatment Center
+                  - "JAL" # Incarceration/Jail
+                  - "PRS" # Incarceration/Prison
+                  - "SHK" # 120 Day Incarceration
+          supervising_officer:
+            StateAgent:
+              external_id: BDGNO
+              agent_type:
+                $enum_mapping:
+                  $raw_text: CLSTTL
+                  $custom_parser: us_mo_custom_enum_parsers.parse_supervising_officer_type
+              full_name:
+                $person_name:
+                  $given_names: FNAME
+                  $middle_names: MINTL
+                  $surname: LNAME
+          case_type_entries:
+            - $foreach:
+                $iterable: CASE_TYPE_LIST
+                $result:
+                  StateSupervisionCaseTypeEntry:
+                    case_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $custom_parser: us_mo_custom_enum_parsers.parse_case_types

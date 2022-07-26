@@ -42,9 +42,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DurationMixinT
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
-    supervision_period_admission_reason_mapper,
-    supervision_period_termination_reason_mapper,
+from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
+    parse_supervision_period_admission_reason,
+    parse_supervision_period_termination_reason,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
@@ -128,8 +128,8 @@ class UsMoSupervisionNormalizationDelegate(
             admission_reason_raw_text = self._get_statuses_raw_text_for_date(
                 all_statuses_by_date, start_date
             )
-            admission_reason = supervision_period_admission_reason_mapper(
-                normalize(admission_reason_raw_text, remove_punctuation=True)
+            admission_reason = parse_supervision_period_admission_reason(
+                normalize(admission_reason_raw_text)
             )
             termination_reason_raw_text = (
                 self._get_statuses_raw_text_for_date(all_statuses_by_date, end_date)
@@ -137,8 +137,8 @@ class UsMoSupervisionNormalizationDelegate(
                 else None
             )
             termination_reason = (
-                supervision_period_termination_reason_mapper(
-                    normalize(termination_reason_raw_text, remove_punctuation=True)
+                parse_supervision_period_termination_reason(
+                    normalize(termination_reason_raw_text)
                 )
                 if termination_reason_raw_text
                 else None

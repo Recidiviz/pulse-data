@@ -31,17 +31,11 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
     legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
-)
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -96,8 +90,6 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
     incarceration_period_admission_reason_mapper,
     supervising_officer_mapper,
-    supervision_period_admission_reason_mapper,
-    supervision_period_termination_reason_mapper,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
@@ -105,8 +97,6 @@ from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
     StateIncarcerationPeriod,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionPeriod,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponseDecisionEntry,
@@ -137,58 +127,12 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
     ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
         StateAgentType: supervising_officer_mapper,
-        StateSupervisionPeriodAdmissionReason: supervision_period_admission_reason_mapper,
-        StateSupervisionPeriodTerminationReason: supervision_period_termination_reason_mapper,
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
     }
 
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        StateSupervisionLevel.INTERNAL_UNKNOWN: [
-            "ESC",  # Absconder
-            # The following codes are no longer used according to MO, but may appear in historical records
-        ],
-        StateSupervisionLevel.UNASSIGNED: [
-            "IAP",  # Initial Assessment Phase
-            "NSV",  # Not Under Supervision (case closed by court/board but still open at district level)
-            # The following codes are no longer used according to MO, but may appear in historical records
-            "PSI",  # Pre Sentence Investigation
-        ],
-        StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: [
-            "EMP",  # Electronic Monitoring
-        ],
-        StateSupervisionLevel.MINIMUM: [
-            "OOI",  # Low Risk (low risk on ORAS)
-            # The following codes are no longer used according to MO, but may appear in historical records
-            "NOI",  # No Contract Monitoring Level I
-            "MIN",  # Minimum
-            "MSC",  # Automated Minimum
-        ],
-        StateSupervisionLevel.MEDIUM: [
-            "OII",  # Moderate Risk (moderate/low or moderate on ORAS)
-            # The following codes are no longer used according to MO, but may appear in historical records
-            "NII",  # No Contract Monitoring Level II
-            "REG",  # Regular Supervision
-        ],
-        StateSupervisionLevel.HIGH: [
-            "III",  # High Risk (high risk on ORAS)
-            # The following codes are no longer used according to MO, but may appear in historical records
-            "ENH",  # Enhanced
-        ],
-        StateSupervisionLevel.MAXIMUM: [
-            "ISP",  # Intensive Supervision (specialized programming + very high risk on ORAS)
-            "CPP",  # Residential Community Placement (treatment)
-            # The following codes are no longer used according to MO, but may appear in historical records
-            "RTF",  # Residential Treatment facility
-            "VCT",  # Residential Violator Center
-        ],
-        StateSupervisionLevel.INCARCERATED: [
-            "ITC",  # Institutional Treatment Center
-            "JAL",  # Incarceration/Jail
-            "PRS",  # Incarceration/Prison
-            "SHK",  # 120 Day Incarceration
-        ],
         StateChargeClassificationType.INFRACTION: ["L"],  # Local/ordinance
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
@@ -295,17 +239,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "I",  # Inst Treatment Center
             "L",  # Long Term Drug Treatment
         ],
-        StateSupervisionCaseType.DOMESTIC_VIOLENCE: [
-            "DVS",  # Domestic Violence Supervision
-            "DOM",  # Domestic Violence
-        ],
-        StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: [
-            "SMI",  # Seriously Mentally Ill Caseload
-        ],
-        StateSupervisionCaseType.SEX_OFFENSE: [
-            "DSO",  # Designated Sex Offenders
-            "ISO",  # Interstate Sex Offenders
-        ],
         StateSupervisionViolationResponseDecidingBodyType.COURT: [
             "CT",  # New Court Commitment
             "IS",  # Interstate Case
@@ -393,22 +326,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._set_finally_formed_date_on_response,
             self._set_decision_agent,
         ]
-        tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors: List[
-            IngestRowPosthookCallable
-        ] = [
-            self._gen_clear_magical_date_value(
-                "termination_date", self.PERIOD_MAGICAL_DATES, StateSupervisionPeriod
-            ),
-            self._set_supervising_officer_on_period,
-            self._parse_case_types,
-            self._set_empty_admisssion_releases_as_transfers,
-        ]
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": incarceration_period_row_posthooks,
-            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors,
             "tak028_tak042_tak076_tak024_violation_reports": tak028_tak042_tak076_tak024_violation_reports_row_processors,
             "tak291_tak292_tak024_citations": tak291_tak292_tak024_citations_row_processors,
         }
@@ -419,7 +341,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._generate_incarceration_period_id_coords,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._generate_incarceration_period_id_coords,
-            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": self._generate_supervision_period_id_coords,
             "tak028_tak042_tak076_tak024_violation_reports": self._generate_supervision_violation_id_coords_for_reports,
             "tak291_tak292_tak024_citations": self._generate_supervision_violation_id_coords_for_citations,
         }
@@ -689,64 +610,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(obj, StateSupervisionViolation):
                 for response in obj.state_supervision_violation_responses:
                     create_if_not_exists(agent_to_create, response, "decision_agents")
-
-    @classmethod
-    def _set_supervising_officer_on_period(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-
-        agent_to_create = cls._get_agent_from_row(row)
-        if not agent_to_create:
-            return
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                create_if_not_exists(agent_to_create, obj, "supervising_officer")
-
-    @classmethod
-    def _parse_case_types(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-
-        case_types = cls._sorted_list_from_col(row, "CASE_TYPE_LIST")
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                for case_type in case_types:
-                    case_type_to_create = StateSupervisionCaseTypeEntry(
-                        case_type=case_type
-                    )
-                    create_if_not_exists(
-                        case_type_to_create, obj, "state_supervision_case_type_entries"
-                    )
-
-    @classmethod
-    def _set_empty_admisssion_releases_as_transfers(
-        cls,
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                if not obj.admission_reason and obj.start_date:
-                    obj.admission_reason = (
-                        StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value
-                    )
-                if not obj.termination_reason and obj.termination_date:
-                    obj.termination_reason = (
-                        StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE.value
-                    )
 
     @classmethod
     def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:
