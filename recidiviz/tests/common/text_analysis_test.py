@@ -92,3 +92,15 @@ class TestTextAnalyzer(unittest.TestCase):
         search words may not appear exactly the same way as the search text."""
         self.assertTrue(REGEX_MATCHER.matches("they said helloooo"))
         self.assertTrue(REGEX_MATCHER.matches("hellogoodbyehello"))
+
+    def test_normalization_with_stemming(self) -> None:
+        """Tests the optional `stem_tokens` argument to `normalize_text`,
+        which is used to reduce words to their root form."""
+        self.assertNotEqual(
+            self.text_analyzer.normalize_text("felonies"),
+            self.text_analyzer.normalize_text("felony"),
+        )
+        self.assertEqual(
+            self.text_analyzer.normalize_text("felonies", stem_tokens=True),
+            self.text_analyzer.normalize_text("felony", stem_tokens=True),
+        )
