@@ -86,4 +86,3 @@ output:
                 StateAssessmentLevel.VERY_HIGH:
                   - "Very High"
           assessment_score: SCORE
-#  - FOCLIST # Assessment Seq No - Handled manually in the controller
