@@ -276,6 +276,8 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.TEMPORARY_CUSTODY,
                 AdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
                 AdmissionReason.STATUS_CHANGE,
+                AdmissionReason.ESCAPE,
+                AdmissionReason.TEMPORARY_RELEASE,
             ):
                 continue
             if ip.admission_reason in (
@@ -445,6 +447,13 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         if release_reason == ReleaseReason.STATUS_CHANGE:
             # If the person was released from this incarceration period because their
             # incarceration status changed, do not include them in the release cohort.
+            return False
+        if release_reason in (
+            ReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+            ReleaseReason.RETURN_FROM_ESCAPE,
+        ):
+            # If the person was released from this incarceration period due to a period
+            # of escape or temporary release, do not include them in the release cohort.
             return False
         if release_reason in (
             ReleaseReason.EXTERNAL_UNKNOWN,

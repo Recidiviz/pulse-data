@@ -58,6 +58,8 @@ INCARCERATION_RELEASE_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodReleaseReason.TRANSFER,
     StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+    StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
+    StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
 ]
