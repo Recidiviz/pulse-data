@@ -176,7 +176,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND sen.sentence_type = consecutive_sentence.sentence_type
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON sen.state_code = offense_type_ref.state_code
-        AND sen.description = offense_type_ref.offense_type
+        AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
     -- Pull the judicial district from state_court_case
     LEFT JOIN `{project_id}.{state_base_dataset}.state_court_case` court
         ON court.state_code = sen.state_code
