@@ -16,10 +16,12 @@
 # =============================================================================
 """Helpers for bulk upload functionality."""
 
-from typing import Optional, Type
+from typing import List, Optional, Type
 
 import attr
+from thefuzz import fuzz
 
+from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -33,6 +35,8 @@ from recidiviz.justice_counts.dimensions.prosecution import (
 from recidiviz.justice_counts.metrics import prosecution
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.persistence.database.schema.justice_counts import schema
+
+FUZZY_MATCHING_SCORE_CUTOFF = 90
 
 
 @attr.define()
@@ -117,3 +121,29 @@ SYSTEM_TO_FILENAME_TO_METRICFILE = {
         metricfile.filename: metricfile for metricfile in PROSECUTION_METRIC_FILES
     },
 }
+
+
+def fuzzy_match_against_options(
+    analyzer: TextAnalyzer, text: str, options: List[str]
+) -> str:
+    """Given a piece of input text and a list of options, uses
+    fuzzy matching to calculate a match score between the input
+    text and each option. Returns the option with the highest
+    score, as long as the score is above a cutoff.
+    """
+    option_to_score = {
+        option: fuzz.token_set_ratio(
+            analyzer.normalize_text(text, stem_tokens=True),
+            analyzer.normalize_text(option, stem_tokens=True),
+        )
+        for option in options
+    }
+
+    best_option = max(option_to_score, key=option_to_score.get)  # type: ignore[arg-type]
+    if option_to_score[best_option] < FUZZY_MATCHING_SCORE_CUTOFF:
+        raise ValueError(
+            "No fuzzy matches found with high enough score. "
+            f"Input={text} and options={options}."
+        )
+
+    return best_option

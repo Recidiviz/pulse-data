@@ -1,7 +1,7 @@
 year,month,value,case_severity
-2021,1,100,All
-2021,1,50,Felony
-2021,1,25,Misdemeanor
-2021,2,200,All
-2022,3,100,All
-2022,3,50,Misdemeanor
+2021,January,100,ALL
+2021,1,50,Felonies
+2021,JANUARY,25,Misdemenor
+2021,Febuary,200,All
+2022,3,"1,000",All
+2022,March,50,misdemeanors

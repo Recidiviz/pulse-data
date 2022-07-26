@@ -17,6 +17,7 @@
 """Functionality for bulk upload of data into the Justice Counts database."""
 
 
+import calendar
 import csv
 import datetime
 import logging
@@ -28,9 +29,11 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
     MetricFile,
+    fuzzy_match_against_options,
 )
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.metrics.report_metric import (
@@ -44,12 +47,17 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportStatus,
 )
 
+MONTH_NAMES = list(calendar.month_name)
 
-class BulkUploadInterface:
+
+class BulkUploader:
     """Functionality for bulk upload of data into the Justice Counts database."""
 
-    @staticmethod
+    def __init__(self) -> None:
+        self.text_analyzer = TextAnalyzer(configuration=TextMatchingConfiguration())
+
     def upload_directory(
+        self,
         session: Session,
         directory: str,
         agency_id: int,
@@ -70,7 +78,7 @@ class BulkUploadInterface:
             filepath = os.path.join(directory, filename)
             logging.info("Uploading %s", filename)
             try:
-                BulkUploadInterface.upload_csv(
+                self.upload_csv(
                     session=session,
                     filename=filepath,
                     agency_id=agency_id,
@@ -84,8 +92,8 @@ class BulkUploadInterface:
                     raise e
         return filename_to_error
 
-    @staticmethod
     def upload_excel(
+        self,
         session: Session,
         xls: pd.ExcelFile,
         agency_id: int,
@@ -110,11 +118,9 @@ class BulkUploadInterface:
 
                 # Based on the name of the Excel sheet, determine which Justice
                 # Counts metric this file contains data for
-                metricfile = BulkUploadInterface._get_metricfile(
-                    filename=sheet_name, system=system
-                )
+                metricfile = self._get_metricfile(filename=sheet_name, system=system)
 
-                BulkUploadInterface._upload_rows(
+                self._upload_rows(
                     session=session,
                     rows=rows,
                     metricfile=metricfile,
@@ -128,8 +134,8 @@ class BulkUploadInterface:
 
         return error_files
 
-    @staticmethod
     def upload_csv(
+        self,
         session: Session,
         filename: str,
         agency_id: int,
@@ -147,11 +153,9 @@ class BulkUploadInterface:
 
         # Based on the name of the CSV file, determine which Justice Counts
         # metric this file contains data for
-        metricfile = BulkUploadInterface._get_metricfile(
-            filename=filename, system=system
-        )
+        metricfile = self._get_metricfile(filename=filename, system=system)
 
-        return BulkUploadInterface._upload_rows(
+        return self._upload_rows(
             session=session,
             rows=rows,
             metricfile=metricfile,
@@ -159,8 +163,8 @@ class BulkUploadInterface:
             user_account=user_account,
         )
 
-    @staticmethod
     def _upload_rows(
+        self,
         session: Session,
         rows: List[Dict[str, Any]],
         metricfile: MetricFile,
@@ -210,10 +214,7 @@ class BulkUploadInterface:
         # TODO(#13731): Make sure there are no unexpected columns in the file
 
         # Step 2: Group the rows in this file by time range.
-        (
-            rows_by_time_range,
-            time_range_to_year_month,
-        ) = BulkUploadInterface._get_rows_by_time_range(
+        (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
             rows=rows, reporting_frequency=reporting_frequency
         )
 
@@ -241,7 +242,7 @@ class BulkUploadInterface:
                 )
                 reports_by_time_range[time_range] = [report]
 
-            report_metric = BulkUploadInterface._get_report_metric(
+            report_metric = self._get_report_metric(
                 metricfile=metricfile,
                 time_range=time_range,
                 rows_for_this_time_range=rows_for_this_time_range,
@@ -261,8 +262,7 @@ class BulkUploadInterface:
                 status=ReportStatus.DRAFT.value,
             )
 
-    @staticmethod
-    def _get_metricfile(filename: str, system: schema.System) -> MetricFile:
+    def _get_metricfile(self, filename: str, system: schema.System) -> MetricFile:
         try:
             stripped_filename = filename.split("/")[-1].split(".")[0]
         except Exception as e:
@@ -280,9 +280,8 @@ class BulkUploadInterface:
 
         return filename_to_metricfile[stripped_filename]
 
-    @staticmethod
     def _get_rows_by_time_range(
-        rows: List[Dict[str, Any]], reporting_frequency: ReportingFrequency
+        self, rows: List[Dict[str, Any]], reporting_frequency: ReportingFrequency
     ) -> Tuple[
         Dict[Tuple[datetime.date, datetime.date], List[Dict[str, Any]]],
         Dict[Tuple[datetime.date, datetime.date], Tuple[int, int]],
@@ -290,11 +289,9 @@ class BulkUploadInterface:
         rows_by_time_range = defaultdict(list)
         time_range_to_year_month = {}
         for row in rows:
-            year = BulkUploadInterface._get_column_value(
-                row=row, column_name="year", column_type=int
-            )
+            year = self._get_column_value(row=row, column_name="year", column_type=int)
             if reporting_frequency == ReportingFrequency.MONTHLY:
-                month = BulkUploadInterface._get_column_value(
+                month = self._get_column_value(
                     row=row, column_name="month", column_type=int
                 )
             else:
@@ -308,8 +305,8 @@ class BulkUploadInterface:
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
 
-    @staticmethod
     def _get_report_metric(
+        self,
         metricfile: MetricFile,
         time_range: Tuple[datetime.date, datetime.date],
         rows_for_this_time_range: List[Dict[str, Any]],
@@ -339,7 +336,7 @@ class BulkUploadInterface:
                 )
 
             row = rows_for_this_time_range[0]
-            aggregate_value = BulkUploadInterface._get_column_value(
+            aggregate_value = self._get_column_value(
                 row=row, column_name="value", column_type=int
             )
 
@@ -354,24 +351,38 @@ class BulkUploadInterface:
                 # there will be one row for each dimension value. Each will have
                 # a value (i.e. the number or count) and a disaggregation value
                 # (i.e. the category the count refers to, e.g. Male or Female).
-                value = BulkUploadInterface._get_column_value(
+                value = self._get_column_value(
                     row=row, column_name="value", column_type=int
                 )
 
                 # disaggregation_value is either "All" or an enum member,
                 # e.g. "Male" for Gender, "Asian" for Race, "Felony" for OffenseType, etc
-                disaggregation_value = BulkUploadInterface._get_column_value(
+                disaggregation_value = self._get_column_value(
                     row=row,
                     column_name=metricfile.disaggregation_column_name,
                     column_type=str,
                 )
-                # TODO(#13731): This should be more robust
-                if disaggregation_value == "All":
+                if disaggregation_value.lower() == "all":
                     aggregate_value = value
                 else:
-                    dimension_to_value[
-                        metricfile.disaggregation(disaggregation_value)  # type: ignore
-                    ] = value
+                    try:
+                        matching_disaggregation_member = metricfile.disaggregation(disaggregation_value)  # type: ignore
+                    except ValueError:
+                        # A ValueError will be thrown by the line above if the user-entered disaggregation
+                        # value is not actually a member of the disaggreation enum. In that case, we fuzzy
+                        # match against the enum members and try again.
+                        disaggregation_options = [
+                            member.value for member in metricfile.disaggregation  # type: ignore[attr-defined]
+                        ]
+                        disaggregation_value = fuzzy_match_against_options(
+                            analyzer=self.text_analyzer,
+                            text=disaggregation_value,
+                            options=disaggregation_options,
+                        )
+                        matching_disaggregation_member = metricfile.disaggregation(
+                            disaggregation_value
+                        )  # type: ignore[call-arg]
+                    dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
             if aggregate_value is None:
                 raise ValueError(
@@ -391,20 +402,39 @@ class BulkUploadInterface:
             else [],
         )
 
-    @staticmethod
     def _get_column_value(
-        row: Dict[str, Any], column_name: str, column_type: Type
+        self, row: Dict[str, Any], column_name: str, column_type: Type
     ) -> Any:
         if column_name not in row:
             raise ValueError(f"Expected the column {column_name} to be present.")
 
         column_value = row[column_name]
 
+        # Allow numeric values with columns in them (e.g. 1,000)
+        if isinstance(column_value, str):
+            column_value = column_value.replace(",", "")
+
         try:
             value = column_type(column_value)
         except Exception as e:
-            raise ValueError(
-                f"Expected the column {column_name} to be of type {column_type}."
-            ) from e
+            if column_name != "month":
+                raise ValueError(
+                    f"Expected the column {column_name} to be of type {column_type}."
+                ) from e
+
+            # Allow "month" column to be either numbers or month names
+            column_value = self._get_month_column_value(column_value=column_value)
+            value = column_type(column_value)
 
         return value
+
+    def _get_month_column_value(self, column_value: str) -> int:
+        """Takes as input a string and attempts to find the corresponding month
+        index using the calendar module's month_names enum. For instance,
+        March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
+        column_value = column_value.title()
+        if column_value not in MONTH_NAMES:
+            column_value = fuzzy_match_against_options(
+                analyzer=self.text_analyzer, text=column_value, options=MONTH_NAMES
+            )
+        return MONTH_NAMES.index(column_value)
