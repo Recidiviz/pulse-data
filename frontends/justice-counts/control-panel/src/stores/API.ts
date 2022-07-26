@@ -19,6 +19,7 @@ import { makeAutoObservable, runInAction, when } from "mobx";
 
 import { trackLoadTime, trackNetworkError } from "../analytics";
 import { AuthStore } from "../components/Auth";
+import { showToast } from "../components/Toast";
 
 export interface RequestProps {
   path: string;
@@ -118,10 +119,21 @@ class API {
     } catch (error) {
       if (error instanceof Error) {
         trackNetworkError(path, method, 0, error.message);
-        return error.message;
+        if (error.message.includes("Login required")) {
+          showToast(
+            "Your session has expired. Redirecting you to the login page...",
+            false,
+            "red"
+          );
+          // Wait before reloading so user has a chance to see the toast
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+        throw error;
       }
       trackNetworkError(path, method, 0, String(error));
-      return String(error);
+      throw error;
     }
   }
 }
