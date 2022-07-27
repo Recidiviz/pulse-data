@@ -20,7 +20,7 @@ import logging
 import re
 from typing import Optional, Tuple
 
-from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
+from recidiviz.common.str_field_utils import parse_int, person_name_case, snake_to_camel
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
@@ -135,6 +135,7 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
                 ],
                 "sanctionsPastYear": data.get("sanctions_past_year"),
                 "finesFeesEligible": data["fines_fees_eligible"],
+                "remainingCriteriaNeeded": parse_int(data["remaining_criteria_needed"]),
             }
 
             if "eligible_level_start" in data:

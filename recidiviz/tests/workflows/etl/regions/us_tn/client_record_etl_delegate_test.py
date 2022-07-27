@@ -50,6 +50,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "address": "123 Etna st., Faketown, TN 12345",
                     "compliantReportingEligible": {
                         "eligibilityCategory": "c3",
+                        "remainingCriteriaNeeded": 0,
                         "currentOffenses": None,
                         "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
                         "drugScreensPastYear": [
