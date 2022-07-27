@@ -180,7 +180,7 @@ output:
                 charges:
                   - StateCharge:
                       external_id: $variable(sentence_external_id)
-                      status: $literal_enum(StateChargeStatus.SENTENCED)
+                      status: $literal_enum(StateChargeStatus.CONVICTED)
                       offense_date: OffenseDate
                       date_charged: PleaDate
                       county_code: ConvictionCounty
@@ -241,7 +241,7 @@ output:
                 charges:
                   - StateCharge:
                       external_id: $variable(sentence_external_id)
-                      status: $literal_enum(StateChargeStatus.SENTENCED)
+                      status: $literal_enum(StateChargeStatus.CONVICTED)
                       offense_date: OffenseDate
                       date_charged: PleaDate
                       county_code: ConvictionCounty
