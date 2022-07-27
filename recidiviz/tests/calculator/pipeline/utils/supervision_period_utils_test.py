@@ -328,7 +328,7 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
             state_code="US_ND",
-            supervision_site="SITE_1",
+            supervision_site="1",
         )
 
         (
@@ -342,8 +342,8 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
-        self.assertEqual("SITE_1", level_1_supervision_location)
-        self.assertEqual(None, level_2_supervision_location)
+        self.assertEqual("1", level_1_supervision_location)
+        self.assertEqual("Region 3", level_2_supervision_location)
 
     def test_get_supervising_officer_and_location_info_from_supervision_period_us_pa(
         self,

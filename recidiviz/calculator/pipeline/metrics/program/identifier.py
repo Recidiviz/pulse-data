@@ -360,9 +360,9 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     supervision_delegate,
                 )
 
-                deprecated_supervising_district_external_id = (
-                    level_2_supervision_location_external_id
-                    or level_1_supervision_location_external_id
+                deprecated_supervising_district_external_id = supervision_delegate.get_deprecated_supervising_district_external_id(
+                    level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id,
                 )
 
                 program_referrals.append(

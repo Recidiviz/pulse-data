@@ -45,7 +45,7 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     ) -> Tuple[Optional[str], Optional[str]]:
         """In US_PA, supervision_site follows format
         {supervision district}|{supervision suboffice}|{supervision unit org code}"""
-        # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
+        # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
         #  location distinction directly into our schema.
         level_1_supervision_location = None
         level_2_supervision_location = None

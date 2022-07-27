@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND implementation of the supervision delegate"""
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -38,6 +38,28 @@ RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
     "PARL": StateSupervisionPeriodSupervisionType.PAROLE,
     "PV": StateSupervisionPeriodSupervisionType.PAROLE,
     "RPAR": StateSupervisionPeriodSupervisionType.PAROLE,
+}
+
+# Mapping of ND supervision district (level 1) to supervision region (level 2).
+LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING = {
+    "1": "Region 3",
+    "2": "Region 2",
+    "3": "Region 5",
+    "4": "Region 1",
+    "5": "Region 6",
+    "6": "Region 2",
+    "7": "Region 1",
+    "8": "Region 2",
+    "9": "Region 3",
+    "10": "Region 5",
+    "11": "Region 4",
+    "12": "Region 6",
+    "13": "Region 4",
+    "14": "Region 2",
+    "15": "Region 2",
+    "16": "Region 4",
+    "17": None,
+    "18": "Region 5",
 }
 
 
@@ -95,3 +117,32 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
             )
 
         return supervision_type
+
+    # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
+    #  location distinction directly into our schema and are hydrating both for ND.
+    def supervision_location_from_supervision_site(
+        self, supervision_site: Optional[str]
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Retrieves level 1 and level 2 location information from a supervision site."""
+
+        if not supervision_site:
+            return None, None
+
+        if supervision_site not in LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING:
+            raise ValueError(
+                f"Found unexpected supervision_site value: {supervision_site}"
+            )
+
+        level_1_supervision_location = supervision_site
+        level_2_supervision_location = LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING[
+            level_1_supervision_location
+        ]
+
+        return level_1_supervision_location, level_2_supervision_location
+
+    def get_deprecated_supervising_district_external_id(
+        self,
+        level_1_supervision_location: Optional[str],
+        level_2_supervision_location: Optional[str],
+    ) -> Optional[str]:
+        return level_1_supervision_location
