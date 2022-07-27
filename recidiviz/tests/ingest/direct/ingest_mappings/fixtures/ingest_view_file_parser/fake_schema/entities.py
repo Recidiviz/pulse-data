@@ -85,6 +85,9 @@ class FakePerson(Entity):
     sentences: List["FakeSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    task_deadlines: List["FakeTaskDeadline"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
 
 @attr.s(eq=False)
@@ -170,3 +173,15 @@ class FakeCharge(ExternalIdEntity):
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
 
     statute: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+
+
+@attr.s(eq=False, kw_only=True)
+class FakeTaskDeadline(Entity):
+    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    due_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    update_datetime: Optional[datetime.datetime] = attr.ib(
+        default=None, validator=attr_validators.is_datetime
+    )

@@ -19,10 +19,11 @@ logic from the ingest view parser.
 """
 
 import abc
+import datetime
 import os
 from enum import Enum
 from types import ModuleType
-from typing import Callable, Dict, List, Optional, Type
+from typing import Callable, Dict, List, Optional, Type, Union
 
 from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
@@ -85,9 +86,10 @@ class IngestViewResultsParserDelegate:
         """
 
     @abc.abstractmethod
-    def get_env_property(self, property_name: str) -> bool:
-        """Returns a boolean value associated with an environment property with the
-        given name. Throws ValueError for all unexpected properties.
+    def get_env_property(self, property_name: str) -> Union[bool, str]:
+        """Returns a value associated with an environment or other metadata property
+        associated with this parsing job. Throws ValueError for all unexpected
+        property names.
         """
 
     @abc.abstractmethod
@@ -105,6 +107,7 @@ _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
 IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
 IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
+INGEST_VIEW_RESULTS_UPDATE_DATETIME = "results_update_datetime"
 
 
 def ingest_view_manifest_dir(region: Region) -> str:
@@ -137,10 +140,12 @@ class IngestViewResultsParserDelegateImpl(
         region: Region,
         schema_type: SchemaType,
         ingest_instance: DirectIngestInstance,
+        results_update_datetime: datetime.datetime,
     ) -> None:
         self.region = region
         self.schema_type = schema_type
         self.ingest_instance = ingest_instance
+        self.results_update_datetime = results_update_datetime
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
         self.enum_cls_cache: Dict[str, Type[Enum]] = {}
 
@@ -227,13 +232,16 @@ class IngestViewResultsParserDelegateImpl(
             )
         )
 
-    def get_env_property(self, property_name: str) -> bool:
+    def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == IS_PRODUCTION_PROPERTY_NAME:
             return environment.in_gcp_production()
         if property_name == IS_PRIMARY_INSTANCE_PROPERTY_NAME:
             return self.ingest_instance == DirectIngestInstance.PRIMARY
         if property_name == IS_SECONDARY_INSTANCE_PROPERTY_NAME:
             return self.ingest_instance == DirectIngestInstance.SECONDARY
+        if property_name == INGEST_VIEW_RESULTS_UPDATE_DATETIME:
+            results_update_datetime_str = self.results_update_datetime.isoformat()
+            return results_update_datetime_str
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 

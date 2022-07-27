@@ -20,7 +20,7 @@ import datetime
 import os
 import unittest
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Type
+from typing import Callable, Dict, List, Optional, Type, Union
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
@@ -60,6 +60,7 @@ from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_par
     FakePersonRace,
     FakeRace,
     FakeSentence,
+    FakeTaskDeadline,
 )
 
 #### Start Fake Schema Factories ####
@@ -121,15 +122,29 @@ class FakeChargeFactory(EntityFactory):
         )
 
 
+class FakeTaskDeadlineFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> FakeTaskDeadline:
+        return entity_deserialize(
+            cls=FakeTaskDeadline, converter_overrides={}, defaults={}, **kwargs
+        )
+
+
 #### End Fake Schema Factories ####
 
 
 class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate):
     """Fake implementation of IngestViewFileParserDelegate for parser unittests."""
 
-    def __init__(self, ingest_instance: DirectIngestInstance, is_production: bool):
+    def __init__(
+        self,
+        ingest_instance: DirectIngestInstance,
+        is_production: bool,
+        results_update_datetime: datetime.datetime,
+    ):
         self.ingest_instance = ingest_instance
         self.is_production = is_production
+        self.results_update_datetime = results_update_datetime
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         return os.path.join(
@@ -154,6 +169,8 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
             return FakeSentenceFactory
         if entity_cls_name == FakeCharge.__name__:
             return FakeChargeFactory
+        if entity_cls_name == FakeTaskDeadline.__name__:
+            return FakeTaskDeadlineFactory
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
 
     def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
@@ -171,6 +188,8 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
             return FakeSentence
         if entity_cls_name == FakeCharge.__name__:
             return FakeCharge
+        if entity_cls_name == FakeTaskDeadline.__name__:
+            return FakeTaskDeadline
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
 
     def get_enum_cls(self, enum_cls_name: str) -> Type[Enum]:
@@ -183,11 +202,15 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
-    def get_env_property(self, property_name: str) -> bool:
+    def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == "test_is_production":
             return self.is_production
         if property_name == "test_is_primary_instance":
             return self.ingest_instance == DirectIngestInstance.PRIMARY
+
+        if property_name == "test_results_update_datetime":
+            return self.results_update_datetime.isoformat()
+
         raise ValueError(f"Unexpected test env property: {property_name}")
 
     def get_filter_predicate(
@@ -210,12 +233,15 @@ class IngestViewFileParserTest(unittest.TestCase):
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
+        results_update_datetime: datetime.datetime = datetime.datetime.now(),
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
         """
         parser = IngestViewResultsParser(
-            FakeSchemaIngestViewResultsParserDelegate(ingest_instance, is_production)
+            FakeSchemaIngestViewResultsParserDelegate(
+                ingest_instance, is_production, results_update_datetime
+            )
         )
         contents_handle = LocalFileContentsHandle(
             os.path.join(
@@ -237,9 +263,10 @@ class IngestViewFileParserTest(unittest.TestCase):
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
+        results_update_datetime: datetime.datetime = datetime.datetime.now(),
     ) -> EntityTreeManifest:
         delegate = FakeSchemaIngestViewResultsParserDelegate(
-            ingest_instance, is_production
+            ingest_instance, is_production, results_update_datetime
         )
         parser = IngestViewResultsParser(delegate)
         manifest_ast, _ = parser.parse_manifest(
@@ -1438,6 +1465,42 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_ingest_view("physical_address")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_string_datetime_env_property(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                task_deadlines=[
+                    FakeTaskDeadline(
+                        fake_state_code="US_XX",
+                        due_date=datetime.date(2022, 1, 1),
+                        update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                task_deadlines=[
+                    FakeTaskDeadline(
+                        fake_state_code="US_XX",
+                        due_date=datetime.date(2022, 2, 2),
+                        update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_ingest_view(
+            "string_datetime_env_property",
+            results_update_datetime=datetime.datetime(2022, 4, 14, 1, 2, 3),
+        )
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
