@@ -30,7 +30,7 @@ export const PageWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-top: 96px;
+  padding-top: 64px;
   position: absolute;
   top: 0;
   z-index: 0;
@@ -41,14 +41,14 @@ export const Form = styled.form`
   flex: 0 1 ${DATA_ENTRY_WIDTH}px;
   display: flex;
   flex-direction: column;
-  margin: 0 360px 50px 360px;
+  margin: 32px 360px 50px 360px;
 
   @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
-    margin: 0 24px 50px 360px;
+    margin: 32px 24px 50px 360px;
   }
 
   @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
-    margin: 0 24px 50px 24px;
+    margin: 32px 24px 50px 24px;
   }
 `;
 

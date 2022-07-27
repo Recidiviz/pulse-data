@@ -18,6 +18,7 @@
 export enum Permission {
   RECIDIVIZ_ADMIN = "recidiviz_admin",
   SWITCH_AGENCIES = "switch_agencies",
+  CONFIGURE_METRICS = "configure_metrics",
 }
 
 export interface UserAgency {
