@@ -32,9 +32,9 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.report_metric import (
-    ReportedAggregatedDimension,
-    ReportedContext,
+from recidiviz.justice_counts.metrics.metric_interface import (
+    MetricAggregatedDimensionData,
+    MetricContextData,
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -52,6 +52,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.maxDiff = None
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
 
     def test_get_reports(self) -> None:
@@ -794,6 +795,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             metrics = sorted(
                 ReportInterface.get_metrics_by_report(
                     report=self.test_schema_objects.test_report_monthly,
+                    session=session,
                 ),
                 key=lambda x: x.key,
             )
@@ -810,7 +812,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 total_arrests.contexts,
                 [
-                    ReportedContext(key=context.key, value=None)
+                    MetricContextData(key=context.key, value=None)
                     for context in law_enforcement.total_arrests.contexts
                 ],
             )
@@ -821,6 +823,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 [
                     self.test_schema_objects.test_report_monthly,
                     self.test_schema_objects.test_user_A,
+                    self.test_schema_objects.test_agency_A,
                 ]
             )
             session.flush()
@@ -835,7 +838,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
-            metrics = ReportInterface.get_metrics_by_report(report=report)
+            metrics = ReportInterface.get_metrics_by_report(
+                report=report, session=session
+            )
             self.assertEqual(len(metrics), 3)
             calls_for_service = [
                 metric
@@ -857,25 +862,29 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 arrests.contexts,
                 [
-                    ReportedContext(key=c.key, value=None)
+                    MetricContextData(key=c.key, value=None)
                     for c in law_enforcement.total_arrests.contexts
                 ],
             )
-            self.assertEqual(
-                arrests.aggregated_dimensions,
-                [
-                    ReportedAggregatedDimension(
-                        dimension_to_value={
-                            d: None
-                            for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                                a.dimension.dimension_identifier()
-                            ]
-                        }
-                    )
-                    for a in law_enforcement.total_arrests.aggregated_dimensions or []
-                ],
-            )
+            expected_arrest_dimensions = [
+                MetricAggregatedDimensionData(
+                    dimension_to_value={
+                        d: None
+                        for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
+                            a.dimension.dimension_identifier()
+                        ]
+                    },
+                    dimension_to_enabled_status={
+                        d: True
+                        for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
+                            a.dimension.dimension_identifier()
+                        ]
+                    },
+                )
+                for a in law_enforcement.total_arrests.aggregated_dimensions or []
+            ]
 
+            self.assertEqual(arrests.aggregated_dimensions, expected_arrest_dimensions)
             # Calls for service metric should be populated
             self.assertEqual(
                 calls_for_service.value,
@@ -1062,18 +1071,20 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             supervision_metrics = sorted(
                 ReportInterface.get_metrics_by_report(
                     report=self.test_schema_objects.test_report_supervision,
+                    session=session,
                 ),
                 key=lambda x: x.key,
             )
             parole_metrics = sorted(
                 ReportInterface.get_metrics_by_report(
-                    report=self.test_schema_objects.test_report_parole,
+                    report=self.test_schema_objects.test_report_parole, session=session
                 ),
                 key=lambda x: x.key,
             )
             parole_probation_metrics = sorted(
                 ReportInterface.get_metrics_by_report(
                     report=self.test_schema_objects.test_report_parole_probation,
+                    session=session,
                 ),
                 key=lambda x: x.key,
             )

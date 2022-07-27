@@ -190,52 +190,62 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
-        annual_report = reports_by_instance["2021 Annual Metrics"]
-        metrics = sorted(
-            ReportInterface.get_metrics_by_report(report=annual_report),
-            key=lambda x: x.key,
-        )
-        self.assertEqual(len(metrics), 3)
-        self.assertEqual(metrics[0].value, 500)
-        self.assertEqual(metrics[1].value, 100)
-        self.assertEqual(
-            metrics[1]
-            .aggregated_dimensions[0]
-            .dimension_to_value[ProsecutionAndDefenseStaffType.ATTORNEY],
-            50,
-        )
-        self.assertEqual(metrics[2].value, 4)
+        with SessionFactory.using_database(self.database_key) as session:
+            annual_report = reports_by_instance["2021 Annual Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    report=annual_report, session=session
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(len(metrics), 3)
+            self.assertEqual(metrics[0].value, 500)
+            self.assertEqual(metrics[1].value, 100)
+            self.assertIsNotNone(metrics[1].aggregated_dimensions[0].dimension_to_value)
+            self.assertEqual(
+                metrics[1]  # type: ignore[index]
+                .aggregated_dimensions[0]
+                .dimension_to_value[ProsecutionAndDefenseStaffType.ATTORNEY],
+                50,
+            )
+            self.assertEqual(metrics[2].value, 4)
 
-        monthly_report = reports_by_instance["01 2021 Metrics"]
-        metrics = sorted(
-            ReportInterface.get_metrics_by_report(report=monthly_report),
-            key=lambda x: x.key,
-        )
-        self.assertEqual(len(metrics), 4)
-        self.assertEqual(metrics[0].value, 100)
-        self.assertEqual(
-            metrics[0]
-            .aggregated_dimensions[0]
-            .dimension_to_value[CaseSeverityType.FELONY],
-            50,
-        )
-        self.assertEqual(metrics[2].value, 100)
-        self.assertEqual(len(metrics[2].aggregated_dimensions), 3)
-        self.assertEqual(
-            metrics[2]
-            .aggregated_dimensions[0]
-            .dimension_to_value[CaseSeverityType.FELONY],
-            50,
-        )
-        self.assertEqual(
-            metrics[2]
-            .aggregated_dimensions[1]
-            .dimension_to_value[GenderRestricted.FEMALE],
-            25,
-        )
-        self.assertEqual(
-            metrics[2]
-            .aggregated_dimensions[2]
-            .dimension_to_value[RaceAndEthnicity.BLACK],
-            50,
-        )
+            monthly_report = reports_by_instance["01 2021 Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    report=monthly_report, session=session
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(len(metrics), 4)
+            self.assertEqual(metrics[0].value, 100)
+            self.assertIsNotNone(metrics[0].aggregated_dimensions[0].dimension_to_value)
+            self.assertEqual(
+                metrics[0]  # type: ignore[index]
+                .aggregated_dimensions[0]
+                .dimension_to_value[CaseSeverityType.FELONY],
+                50,
+            )
+            self.assertEqual(metrics[2].value, 100)
+            self.assertEqual(len(metrics[2].aggregated_dimensions), 3)
+            self.assertIsNotNone(metrics[2].aggregated_dimensions[0].dimension_to_value)
+            self.assertEqual(
+                metrics[2]  # type: ignore[index]
+                .aggregated_dimensions[0]
+                .dimension_to_value[CaseSeverityType.FELONY],
+                50,
+            )
+            self.assertIsNotNone(metrics[2].aggregated_dimensions[1].dimension_to_value)
+            self.assertEqual(
+                metrics[2]  # type: ignore[index]
+                .aggregated_dimensions[1]
+                .dimension_to_value[GenderRestricted.FEMALE],
+                25,
+            )
+            self.assertIsNotNone(metrics[2].aggregated_dimensions[2].dimension_to_value)
+            self.assertEqual(
+                metrics[2]  # type: ignore[index]
+                .aggregated_dimensions[2]
+                .dimension_to_value[RaceAndEthnicity.BLACK],
+                50,
+            )

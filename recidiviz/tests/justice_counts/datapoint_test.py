@@ -21,7 +21,7 @@ import datetime
 
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
+from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.exceptions import JusticeCountsDataError
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.report import ReportInterface
@@ -50,18 +50,16 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
             session.add(agency)
-            metric_json = self.test_schema_objects.get_agency_datapoints(
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
-            DatapointInterface.update_agency_metric(
-                metric_json=metric_json, agency=agency, session=session
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
             self.assertEqual(datapoints[0].enabled, False)
-            self.assertEqual(
-                datapoints[0].metric_definition_key, metric_json.get("key")
-            )
+            self.assertEqual(datapoints[0].metric_definition_key, agency_metric.key)
             self.assertEqual(datapoints[0].dimension_identifier_to_member, None)
             self.assertEqual(datapoints[0].context_key, None)
 
@@ -69,95 +67,64 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_agency_A)
             agency = session.query(Agency).one()
-            metric_json = self.test_schema_objects.get_agency_datapoints(
-                use_disabled_disaggregation=True
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                include_disaggregation=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), len(ForceType))
+            self.assertEqual(len(datapoints), len(SheriffBudgetType))
             datapoints.sort(
                 key=lambda d: list(d.dimension_identifier_to_member.values())[0]
             )
             self.assertEqual(datapoints[0].enabled, False)
             self.assertEqual(
                 datapoints[0].dimension_identifier_to_member,
-                {ForceType.dimension_identifier(): "PHYSICAL"},
+                {SheriffBudgetType.dimension_identifier(): "DETENTION"},
             )
             self.assertEqual(datapoints[1].enabled, False)
             self.assertEqual(
                 datapoints[1].dimension_identifier_to_member,
-                {ForceType.dimension_identifier(): "RESTRAINT"},
-            )
-            self.assertEqual(datapoints[2].enabled, False)
-            self.assertEqual(
-                datapoints[2].dimension_identifier_to_member,
-                {ForceType.dimension_identifier(): "UNKNOWN"},
-            )
-            self.assertEqual(datapoints[3].enabled, False)
-            self.assertEqual(
-                datapoints[3].dimension_identifier_to_member,
-                {ForceType.dimension_identifier(): "VERBAL"},
-            )
-            self.assertEqual(datapoints[4].enabled, False)
-            self.assertEqual(
-                datapoints[4].dimension_identifier_to_member,
-                {ForceType.dimension_identifier(): "WEAPON"},
+                {SheriffBudgetType.dimension_identifier(): "PATROL"},
             )
 
     def test_save_agency_datapoints_disable_single_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_agency_A)
             agency = session.query(Agency).one()
-            metric_json = self.test_schema_objects.get_agency_datapoints(
-                use_partially_disabled_disaggregation=True
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                use_partially_disabled_disaggregation=True, include_disaggregation=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 2)
-            datapoints.sort(
-                key=lambda d: list(d.dimension_identifier_to_member.values())[0]
-            )
+            self.assertEqual(len(datapoints), 1)
             self.assertEqual(datapoints[0].enabled, False)
             self.assertEqual(
                 datapoints[0].dimension_identifier_to_member,
-                {CallType.dimension_identifier(): "EMERGENCY"},
-            )
-            self.assertEqual(datapoints[1].enabled, False)
-            self.assertEqual(
-                datapoints[1].dimension_identifier_to_member,
-                {CallType.dimension_identifier(): "UNKNOWN"},
+                {SheriffBudgetType.dimension_identifier(): "PATROL"},
             )
 
     def test_save_agency_datapoints_reenable_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_agency_A)
             agency = session.query(Agency).one()
-            metric_json = self.test_schema_objects.get_agency_datapoints(
-                use_partially_disabled_disaggregation=True
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                include_disaggregation=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 2)
-            # Reenable Metric, this will delete the datapoint
-            metric_json = self.test_schema_objects.get_agency_datapoints(
-                use_reenabled_breakdown=True
+            # Reenable DETENTION disaggregation, this will delete the datapoint
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                use_partially_disabled_disaggregation=True, include_disaggregation=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
@@ -166,23 +133,19 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_agency_A)
             agency = session.query(Agency).one()
-            metric_json = self.test_schema_objects.get_agency_datapoints(
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
-            metric_json = self.test_schema_objects.get_agency_datapoints(
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 0)
@@ -191,16 +154,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_agency_A)
             agency = session.query(Agency).one()
-            metric_json = self.test_schema_objects.get_agency_datapoints(
-                include_contexts=True, use_disabled_disaggregation=True
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                include_contexts=True, include_disaggregation=True
             )
-            DatapointInterface.update_agency_metric(
-                session=session,
-                metric_json=metric_json,
-                agency=agency,
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 6)
+            self.assertEqual(len(datapoints), 3)
             for datapoint in datapoints:
                 if datapoint.context_key is None:
                     self.assertEqual(datapoint.enabled, False)

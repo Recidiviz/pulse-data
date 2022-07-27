@@ -36,9 +36,9 @@ from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
 from recidiviz.justice_counts.dimensions.base import DimensionBase
-from recidiviz.justice_counts.metrics.report_metric import (
-    ReportedAggregatedDimension,
-    ReportMetric,
+from recidiviz.justice_counts.metrics.metric_interface import (
+    MetricAggregatedDimensionData,
+    MetricInterface,
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -310,9 +310,9 @@ class BulkUploader:
         metricfile: MetricFile,
         time_range: Tuple[datetime.date, datetime.date],
         rows_for_this_time_range: List[Dict[str, Any]],
-    ) -> ReportMetric:
+    ) -> MetricInterface:
         """Given a a set of rows from the CSV that all correspond to a single
-        time period, convert the data in these rows to a ReportMetric object.
+        time period, convert the data in these rows to a MetricInterface object.
         If the metric associated with this CSV has no disaggregations, there
         should only be a single row for a single time period, and it contains
         the aggregate metric value. If the metric does have a disaggregation,
@@ -391,12 +391,12 @@ class BulkUploader:
                     "for every time period."
                 )
 
-        return ReportMetric(
+        return MetricInterface(
             key=metricfile.definition.key,
             value=aggregate_value,
             contexts=[],
             aggregated_dimensions=[
-                ReportedAggregatedDimension(dimension_to_value=dimension_to_value)
+                MetricAggregatedDimensionData(dimension_to_value=dimension_to_value)
             ]
             if dimension_to_value is not None
             else [],
