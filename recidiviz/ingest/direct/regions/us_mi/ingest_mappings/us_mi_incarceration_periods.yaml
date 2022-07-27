@@ -166,6 +166,7 @@ output:
                               - "136" # Jurisdiction Activated in Error
                             StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                               - "89" # Reinstated on Parole While at Large
+                              - "151" # Reinstated on Parole from Absconder Status
                               - "87" # Reinstated on Parole from the Institution
                               - "90" # Reparoled While on Same Term
                               - "88" # Paroled in Custody
