@@ -25,7 +25,6 @@ import unittest
 from typing import List, Optional, Type, cast
 
 import pytest
-import pytz
 from freezegun import freeze_time
 from mock import patch
 
@@ -75,6 +74,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     run_task_queues_to_empty,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    FakeIngestViewMaterializer,
     build_fake_direct_ingest_controller,
 )
 from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
@@ -341,7 +341,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                 f"type [{type(self.controller.fs.gcs_file_system)}]"
             )
 
-        now = datetime.datetime.now(tz=pytz.UTC)
+        now = datetime.datetime.now()
         yesterday = now - datetime.timedelta(days=1)
         file_tag, _ext = os.path.splitext(filename)
 
@@ -390,6 +390,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             self.controller.ingest_view_contents, FakeInstanceIngestViewContents
         )
         ingest_view_contents.test_clear_data()
+        ingest_view_materializer = assert_type(
+            self.controller.ingest_view_materializer, FakeIngestViewMaterializer
+        )
+        ingest_view_materializer.processed_args.clear()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f"{file_tag}.csv", is_rerun=True)
         self.did_rerun_for_idempotence = True
