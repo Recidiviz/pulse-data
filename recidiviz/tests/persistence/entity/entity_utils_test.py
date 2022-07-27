@@ -20,6 +20,7 @@ from typing import Dict, List, Type
 from unittest import TestCase
 
 import attr
+import pytz
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -56,6 +57,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -296,6 +298,9 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
     schema.StateSupervisionViolationTypeEntry: [
         schema.StateSupervisionViolationTypeEntry(state_code=StateCode.US_XX.value)
     ],
+    schema.StateTaskDeadline: [
+        schema.StateTaskDeadline(state_code=StateCode.US_XX.value)
+    ],
 }
 
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
@@ -441,6 +446,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     ],
     schema.StateSupervisionViolationResponseDecisionEntry: [],
     schema.StateSupervisionViolationTypeEntry: [],
+    schema.StateTaskDeadline: [],
 }
 
 HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
@@ -745,6 +751,23 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             state_code=StateCode.US_XX.value,
             violation_type=StateSupervisionViolationType.FELONY,
         )
+    ],
+    schema.StateTaskDeadline: [
+        schema.StateTaskDeadline(
+            state_code=StateCode.US_XX.value,
+            task_type=StateTaskType.DRUG_SCREEN,
+            eligible_date=None,
+            due_date=datetime.date(2021, 1, 1),
+            update_datetime=datetime.datetime.now(tz=pytz.UTC),
+        ),
+        schema.StateTaskDeadline(
+            state_code=StateCode.US_XX.value,
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION,
+            task_subtype="SOME_SUBTYPE",
+            eligible_date=datetime.date(2021, 1, 1),
+            due_date=None,
+            update_datetime=datetime.datetime.now(tz=pytz.UTC),
+        ),
     ],
 }
 

@@ -83,8 +83,25 @@ def is_enum(attribute: attr.Attribute) -> bool:
     return _is_enum_cls(attr_type)
 
 
+def is_datetime(attribute: attr.Attribute) -> bool:
+    """Returns true if the attribute is a datetime type."""
+
+    if not isinstance(attribute, attr.Attribute):
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
+
+    attr_type = attribute.type
+    if not attr_type:
+        return False
+
+    if _is_union(attr_type):
+        return _is_type_is_union(attr_type, _is_datetime_cls)
+
+    return _is_datetime_cls(attr_type)
+
+
 def is_date(attribute: attr.Attribute) -> bool:
-    """Returns true if the attribute is a date type."""
+    """Returns true if the attribute is a date type. NOTE: this will return True for
+    datetime types as well."""
 
     if not isinstance(attribute, attr.Attribute):
         raise TypeError(f"Unexpected type [{type(attribute)}]")
@@ -210,6 +227,10 @@ def _is_union(attr_type: Type) -> bool:
 
 def _is_enum_cls(attr_type: Type) -> bool:
     return inspect.isclass(attr_type) and issubclass(attr_type, Enum)
+
+
+def _is_datetime_cls(attr_type: Type) -> bool:
+    return inspect.isclass(attr_type) and issubclass(attr_type, datetime.datetime)
 
 
 def _is_date_cls(attr_type: Type) -> bool:

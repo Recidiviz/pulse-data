@@ -26,6 +26,7 @@ from recidiviz.common.attr_utils import (
     is_attr_decorated,
     is_bool,
     is_date,
+    is_datetime,
     is_enum,
     is_forward_ref,
     is_int,
@@ -37,6 +38,7 @@ from recidiviz.common.str_field_utils import (
     normalize,
     parse_bool,
     parse_date,
+    parse_datetime,
     parse_int,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -46,7 +48,7 @@ EntityT = TypeVar("EntityT", bound=Entity)
 DeserializableEntityFieldValue = Optional[
     # TODO(#8905): Remove EnumParser from this type when ingest mappings v2 migration
     #  is complete.
-    Union[str, Enum, bool, int, datetime.date, EnumParser]
+    Union[str, Enum, bool, int, datetime.date, datetime.datetime, EnumParser]
 ]
 
 
@@ -122,6 +124,8 @@ def entity_deserialize(
         if isinstance(field_value, str):
             if is_str(field):
                 return normalize(field_value)
+            if is_datetime(field):
+                return parse_datetime(field_value)
             if is_date(field):
                 return parse_date(field_value)
             if is_int(field):
@@ -131,6 +135,10 @@ def entity_deserialize(
 
         if isinstance(field_value, Enum):
             if is_enum(field):
+                return field_value
+
+        if isinstance(field_value, datetime.datetime):
+            if is_datetime(field):
                 return field_value
 
         if isinstance(field_value, datetime.date):

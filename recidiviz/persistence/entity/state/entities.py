@@ -104,6 +104,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import (
     Entity,
@@ -324,6 +325,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
     supervision_contacts: List["StateSupervisionContact"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    task_deadlines: List["StateTaskDeadline"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
@@ -1634,6 +1638,49 @@ class StateDrugScreen(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     drug_screen_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    person: Optional["StatePerson"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
+    """The StateTaskDeadline object represents a single task that should be performed as
+    part of someone’s supervision or incarceration term, along with an associated date
+    that task can be started and/or a deadline when that task must be completed.
+    """
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    eligible_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    due_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+    update_datetime: Optional[datetime.datetime] = attr.ib(
+        default=None, validator=attr_validators.is_datetime
+    )
+
+    #   - What
+    task_type: StateTaskType = attr.ib(
+        validator=attr.validators.instance_of(StateTaskType),
+    )
+    task_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    task_subtype: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    task_deadline_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 

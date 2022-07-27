@@ -392,3 +392,16 @@ class StateDrugScreenFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateTaskDeadlineFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateTaskDeadline:
+        return entity_deserialize(
+            cls=entities.StateTaskDeadline,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

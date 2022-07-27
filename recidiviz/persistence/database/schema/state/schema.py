@@ -25,8 +25,10 @@ from typing import Any, TypeVar
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     Date,
+    DateTime,
     Enum,
     ForeignKey,
     Integer,
@@ -656,6 +658,29 @@ state_drug_screen_sample_type = Enum(
     name="state_drug_screen_sample_type",
 )
 
+state_task_type = Enum(
+    state_enum_strings.state_task_type_appeal_for_transfer_to_supervision_from_incarceration,
+    state_enum_strings.state_task_type_arrest_check,
+    state_enum_strings.state_task_type_supervision_case_plan_update,
+    state_enum_strings.state_task_type_discharge_early_from_supervision,
+    state_enum_strings.state_task_type_discharge_from_incarceration,
+    state_enum_strings.state_task_type_discharge_from_supervision,
+    state_enum_strings.state_task_type_drug_screen,
+    state_enum_strings.state_task_type_employment_verification,
+    state_enum_strings.state_task_type_face_to_face_contact,
+    state_enum_strings.state_task_type_home_visit,
+    state_enum_strings.state_task_type_new_assessment,
+    state_enum_strings.state_task_type_payment_verification,
+    state_enum_strings.state_task_type_special_condition_verification,
+    state_enum_strings.state_task_type_transfer_to_administrative_supervision,
+    state_enum_strings.state_task_type_transfer_to_supervision_from_incarceration,
+    state_enum_strings.state_task_type_treatment_referral,
+    state_enum_strings.state_task_type_treatment_verification,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_task_type",
+)
+
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -1026,6 +1051,9 @@ class StatePerson(StateBase):
         "StateEmploymentPeriod", backref="person", lazy="selectin"
     )
     drug_screens = relationship("StateDrugScreen", backref="person", lazy="selectin")
+    task_deadlines = relationship(
+        "StateTaskDeadline", backref="person", lazy="selectin"
+    )
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
@@ -2884,4 +2912,98 @@ class StateDrugScreen(StateBase, _ReferencesStatePersonSharedColumns):
     )
     sample_type_raw_text = Column(
         String(255), comment="Raw text for the sample_type field."
+    )
+
+
+class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
+    """Represents a StateTaskDeadline in the SQL schema."""
+
+    __tablename__ = "state_task_deadline"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "person_id",
+            "task_type",
+            "task_subtype",
+            "update_datetime",
+            name="state_task_deadline_unique_per_person_update_date_type",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        CheckConstraint(
+            "eligible_date IS NULL OR due_date IS NULL OR eligible_date <= due_date",
+            name="eligible_date_before_due_date",
+        ),
+        {
+            "comment": (
+                "The StateTaskDeadline object represents a single task that should be "
+                "performed as part of someone’s supervision or incarceration term, "
+                "along with an associated date that task can be started and/or a"
+                "deadline when that task must be completed."
+            )
+        },
+    )
+
+    task_deadline_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="task deadline"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    task_type = Column(
+        state_task_type,
+        nullable=False,
+        comment="The type of task that should be performed.",
+    )
+    task_type_raw_text = Column(
+        String(255), comment="Raw text for the task_type field."
+    )
+
+    task_subtype = Column(
+        String(255),
+        comment=(
+            "A string that gives further information about the task type. For example, "
+            "for a face-to-face contact deadline, might indicate whether the deadline "
+            "is for a virtual contact or for an in-office visit."
+        ),
+    )
+
+    eligible_date = Column(
+        Date,
+        comment=(
+            "The date on or after which someone could complete this task. This should "
+            "be set for tasks that can only be completed once some date date has passed,"
+            "whether or not there is a strict deadline by which it must be completed."
+            "For example, a `APPEAL_FOR_TRANSFER_TO_SUPERVISION_FROM_INCARCERATION` task"
+            "may fill this field with someone's parole eligibility date. A null value in"
+            "this field along with a null value in the due_date field could be used to"
+            "indicate that this person used to be eligible but is no longer eligible, "
+            "or to explicitly track that they are not yet eligible."
+        ),
+    )
+    due_date = Column(
+        Date,
+        comment=(
+            "The date the task must be completed by. This should be set if there is an "
+            "upper bound date by which this task must be completed in order to be in"
+            "compliance with some law or policy."
+        ),
+    )
+
+    update_datetime = Column(
+        DateTime,
+        nullable=False,
+        comment=(
+            "The the time at which this deadline was updated for this person. Will "
+            "generally correspond to the time we received the raw data file with this "
+            "deadline from the state."
+        ),
     )

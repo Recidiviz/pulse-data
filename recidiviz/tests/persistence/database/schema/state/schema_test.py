@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state-specific SQLAlchemy enums."""
+import datetime
 import unittest
 from typing import Optional
 
@@ -41,6 +42,7 @@ from recidiviz.common.constants.state import (
     state_supervision_sentence,
     state_supervision_violation,
     state_supervision_violation_response,
+    state_task_deadline,
 )
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
@@ -54,6 +56,7 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
@@ -143,6 +146,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
+            "state_task_type": state_task_deadline.StateTaskType,
         }
 
         self.check_persistence_and_schema_enums_match(state_enums_mapping, schema)
@@ -795,3 +799,166 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
         with SessionFactory.using_database(self.database_key) as session:
             session.add(db_court_case_dupe)
             session.flush()
+
+
+@pytest.mark.uses_db
+class TestStateTaskDeadline(unittest.TestCase):
+    """Tests for StateTaskDeadline schema entity."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_valid_task_deadlines(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_task_deadline_1 = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=datetime.date(2022, 5, 1),
+            due_date=datetime.date(2022, 5, 8),
+            update_datetime=datetime.datetime(2022, 7, 1, 1, 2, 3),
+            task_type=StateTaskType.DRUG_SCREEN.value,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+        db_task_deadline_2 = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=None,
+            due_date=datetime.date(2022, 5, 8),
+            update_datetime=datetime.datetime(2022, 7, 1, 1, 2, 3),
+            task_type=StateTaskType.HOME_VISIT.value,
+            task_type_raw_text=None,
+            task_subtype=None,
+        )
+
+        db_task_deadline_3 = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=datetime.date(2022, 5, 1),
+            due_date=None,
+            update_datetime=datetime.datetime(2022, 7, 2, 3, 4, 5),
+            task_type=StateTaskType.DISCHARGE_FROM_SUPERVISION.value,
+            task_type_raw_text=None,
+            task_subtype=None,
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_task_deadline_1)
+            session.add(db_task_deadline_2)
+            session.add(db_task_deadline_3)
+            session.commit()
+
+    def test_add_task_deadline_both_dates_null(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_task_deadline = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=None,
+            due_date=None,
+            update_datetime=datetime.datetime(2022, 7, 1, 1, 2, 3),
+            task_type=StateTaskType.DRUG_SCREEN.value,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_task_deadline)
+            session.commit()
+
+    def test_add_task_deadline_eligible_after_due_date_violates_constraint(
+        self,
+    ) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_task_deadline = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=datetime.date(2022, 5, 8),
+            due_date=datetime.date(2022, 5, 1),
+            update_datetime=datetime.datetime(2022, 7, 1, 1, 2, 3),
+            task_type=StateTaskType.DRUG_SCREEN.value,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+
+        # Act
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_task_deadline)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_task_deadline" violates check constraint '
+                '"eligible_date_before_due_date"',
+            ):
+                session.flush()
+
+    def test_multiple_deadlines_same_update_datetime_violates_constraint(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+
+        update_datetime = datetime.datetime(2022, 7, 1, 1, 2, 3)
+        db_task_deadline_1 = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=None,
+            due_date=datetime.date(2022, 5, 8),
+            update_datetime=update_datetime,
+            task_type=StateTaskType.DRUG_SCREEN.value,
+            task_type_raw_text=None,
+            task_subtype="MY_SUBTYPE",
+        )
+        db_task_deadline_2 = schema.StateTaskDeadline(
+            person=db_person,
+            state_code=self.state_code,
+            eligible_date=None,
+            due_date=datetime.date(2022, 5, 1),
+            update_datetime=update_datetime,
+            task_type=StateTaskType.DRUG_SCREEN.value,
+            task_type_raw_text=None,
+            task_subtype="MY_SUBTYPE",
+        )
+
+        # Act
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_task_deadline_1)
+            session.add(db_task_deadline_2)
+
+            session.flush()
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                "duplicate key value violates unique constraint "
+                '"state_task_deadline_unique_per_person_update_date_type"',
+            ):
+                session.commit()
