@@ -15,9 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-import { ReportFrequency } from "../../shared/types";
+import { FormError, ReportFrequency } from "../../shared/types";
+import { removeCommaSpaceAndTrim } from "../../utils";
 import notReportedIcon from "../assets/not-reported-icon.png";
 import {
   BinaryRadioButton,
@@ -62,32 +63,35 @@ import {
   ToggleSwitchLabel,
   ToggleSwitchWrapper,
 } from ".";
-import { metricsViewMockResponse } from "./MetricsViewMocks";
+import {
+  MetricsViewMockMetric,
+  metricsViewMockResponse,
+} from "./MetricsViewMocks";
 
 type MetricBoxProps = {
-  metricIndex: number;
+  metricKey: string;
   displayName: string;
   frequency: ReportFrequency;
   description: string;
   enabled?: boolean;
-  activeMetricIndex: number;
-  setActiveMetricIndex: React.Dispatch<React.SetStateAction<number>>;
+  activeMetricKey: string;
+  setActiveMetricKey: React.Dispatch<React.SetStateAction<string>>;
 };
 
 const MetricBox: React.FC<MetricBoxProps> = ({
-  metricIndex,
+  metricKey,
   displayName,
   frequency,
   description,
   enabled,
-  activeMetricIndex,
-  setActiveMetricIndex,
+  activeMetricKey,
+  setActiveMetricKey,
 }): JSX.Element => {
   return (
     <MetricBoxContainer
-      onClick={() => setActiveMetricIndex(metricIndex)}
+      onClick={() => setActiveMetricKey(metricKey)}
       enabled={enabled}
-      selected={metricIndex === activeMetricIndex}
+      selected={metricKey === activeMetricKey}
     >
       <MetricNameBadgeToggleWrapper>
         <MetricNameBadgeWrapper>
@@ -106,37 +110,23 @@ const MetricBox: React.FC<MetricBoxProps> = ({
 };
 
 type MetricConfigurationProps = {
-  metricKey: string;
-  metricDisplayName: string;
-  metricEnabled: boolean;
-  disaggregations: {
-    key: string;
-    display_name: string;
-    enabled: boolean;
-    dimensions: {
-      key: string;
-      label: string;
-      reporting_note: string;
-      enabled: boolean;
-    }[];
-  }[];
-  placeholderMetricSettingsToUpdate:
-    | { [key: string]: string | boolean }
-    | undefined;
-  updatePlaceholderMetricSettings: (updatedSetting: {
-    [key: string]: string | boolean;
-  }) => void;
+  activeMetricKey: string;
+  metricSettings: { [key: string]: MetricsViewMockMetric };
+  updateMetricSettings: (
+    typeOfUpdate: "METRIC" | "DISAGGREGATION" | "DIMENSION" | "CONTEXT",
+    updatedSetting: MetricSettings
+  ) => void;
 };
 
 const MetricConfiguration: React.FC<MetricConfigurationProps> = ({
-  metricKey,
-  metricDisplayName,
-  metricEnabled,
-  disaggregations,
-  placeholderMetricSettingsToUpdate,
-  updatePlaceholderMetricSettings,
+  activeMetricKey,
+  metricSettings,
+  updateMetricSettings,
 }): JSX.Element => {
-  const isUpdatedMetricEnabled = placeholderMetricSettingsToUpdate?.[metricKey];
+  const metricDisplayName = metricSettings[activeMetricKey]?.display_name;
+  const metricEnabled =
+    metricSettings[activeMetricKey]?.enabled !== undefined &&
+    metricSettings[activeMetricKey].enabled;
 
   return (
     <MetricConfigurationContainer>
@@ -156,13 +146,11 @@ const MetricConfiguration: React.FC<MetricConfigurationProps> = ({
             name="metric-config"
             label="Yes"
             value="yes"
-            checked={
-              isUpdatedMetricEnabled === true ||
-              (isUpdatedMetricEnabled === undefined && metricEnabled)
-            }
+            checked={metricEnabled}
             onChange={() =>
-              updatePlaceholderMetricSettings({
-                [metricKey]: true,
+              updateMetricSettings("METRIC", {
+                key: activeMetricKey,
+                enabled: true,
               })
             }
           />
@@ -172,25 +160,18 @@ const MetricConfiguration: React.FC<MetricConfigurationProps> = ({
             name="metric-config"
             label="No"
             value="no"
-            checked={
-              isUpdatedMetricEnabled === false ||
-              (isUpdatedMetricEnabled === undefined && !metricEnabled)
+            checked={!metricEnabled}
+            onChange={() =>
+              updateMetricSettings("METRIC", {
+                key: activeMetricKey,
+                enabled: false,
+              })
             }
-            onChange={() => {
-              updatePlaceholderMetricSettings({
-                [metricKey]: false,
-              });
-            }}
           />
         </RadioButtonGroupWrapper>
       </MetricOnOffWrapper>
 
-      <MetricDisaggregations
-        enabled={
-          isUpdatedMetricEnabled === true ||
-          (isUpdatedMetricEnabled === undefined && metricEnabled)
-        }
-      >
+      <MetricDisaggregations enabled={metricEnabled}>
         <Header>Breakdowns</Header>
         <Subheader>
           Turning any of these breakdowns “Off” means that they will not appear
@@ -198,156 +179,137 @@ const MetricConfiguration: React.FC<MetricConfigurationProps> = ({
           this later.
         </Subheader>
 
-        {disaggregations.map((disaggregation) => {
-          const isUpdatedDisaggregationEnabled =
-            placeholderMetricSettingsToUpdate?.[disaggregation.key] as boolean;
+        {metricSettings[activeMetricKey]?.disaggregations?.map(
+          (disaggregation) => {
+            return (
+              <Disaggregation key={disaggregation.key}>
+                <DisaggregationHeader>
+                  <DisaggregationName>
+                    {disaggregation.display_name}
+                  </DisaggregationName>
 
-          return (
-            <Disaggregation key={disaggregation.key}>
-              <DisaggregationHeader>
-                <DisaggregationName>
-                  {disaggregation.display_name}
-                </DisaggregationName>
-
-                <ToggleSwitchWrapper>
-                  <ToggleSwitchLabel
-                    switchedOn={
-                      isUpdatedDisaggregationEnabled === true ||
-                      (isUpdatedDisaggregationEnabled === undefined &&
-                        disaggregation.enabled)
-                    }
-                  />
-                  <ToggleSwitch>
-                    <ToggleSwitchInput
-                      type="checkbox"
-                      checked={
-                        (placeholderMetricSettingsToUpdate?.[
-                          disaggregation.key
-                        ] === undefined &&
-                          disaggregation.enabled) ||
-                        isUpdatedDisaggregationEnabled === true
-                      }
-                      onChange={() => {
-                        const updatedValue =
-                          isUpdatedDisaggregationEnabled === undefined
-                            ? !disaggregation.enabled
-                            : !isUpdatedDisaggregationEnabled;
-
-                        updatePlaceholderMetricSettings({
-                          [disaggregation.key]: updatedValue,
-                        });
-                      }}
-                    />
-                    <Slider />
-                  </ToggleSwitch>
-                </ToggleSwitchWrapper>
-              </DisaggregationHeader>
-
-              {disaggregation.dimensions.map((dimension) => {
-                const disaggregationEnabled =
-                  isUpdatedDisaggregationEnabled === undefined
-                    ? disaggregation.enabled
-                    : isUpdatedDisaggregationEnabled;
-
-                return (
-                  <Dimension
-                    key={dimension.key}
-                    enabled={
-                      isUpdatedMetricEnabled === false || disaggregationEnabled
-                    }
-                  >
-                    <DimensionTitleWrapper>
-                      <DimensionTitle
-                        enabled={
-                          disaggregationEnabled &&
-                          placeholderMetricSettingsToUpdate?.[dimension.key] ===
-                            true
-                        }
-                      >
-                        {dimension.label}
-                      </DimensionTitle>
-                    </DimensionTitleWrapper>
-
-                    <ToggleSwitchWrapper>
-                      <ToggleSwitchLabel
-                        switchedOn={
-                          (placeholderMetricSettingsToUpdate?.[
-                            dimension.key
-                          ] === true ||
-                            (placeholderMetricSettingsToUpdate?.[
-                              dimension.key
-                            ] === undefined &&
-                              !dimension.enabled)) &&
-                          disaggregationEnabled
+                  <ToggleSwitchWrapper>
+                    <ToggleSwitchLabel switchedOn={disaggregation.enabled} />
+                    <ToggleSwitch>
+                      <ToggleSwitchInput
+                        type="checkbox"
+                        checked={disaggregation.enabled}
+                        onChange={() =>
+                          updateMetricSettings("DISAGGREGATION", {
+                            key: activeMetricKey,
+                            disaggregations: [
+                              {
+                                key: disaggregation.key,
+                                enabled: !disaggregation.enabled,
+                              },
+                            ],
+                          })
                         }
                       />
-                      <ToggleSwitch>
-                        <ToggleSwitchInput
-                          type="checkbox"
-                          checked={
-                            ((placeholderMetricSettingsToUpdate?.[
-                              dimension.key
-                            ] === undefined &&
-                              !dimension.enabled) ||
-                              placeholderMetricSettingsToUpdate?.[
-                                dimension.key
-                              ] === true) &&
-                            disaggregationEnabled
+                      <Slider />
+                    </ToggleSwitch>
+                  </ToggleSwitchWrapper>
+                </DisaggregationHeader>
+
+                {disaggregation?.dimensions.map((dimension) => {
+                  return (
+                    <Dimension
+                      key={dimension.key}
+                      enabled={!metricEnabled || disaggregation.enabled}
+                    >
+                      <DimensionTitleWrapper>
+                        <DimensionTitle
+                          enabled={disaggregation.enabled && dimension.enabled}
+                        >
+                          {dimension.label}
+                        </DimensionTitle>
+                      </DimensionTitleWrapper>
+
+                      <ToggleSwitchWrapper>
+                        <ToggleSwitchLabel
+                          switchedOn={
+                            disaggregation.enabled && dimension.enabled
                           }
-                          onChange={() => {
-                            if (disaggregationEnabled) {
-                              updatePlaceholderMetricSettings({
-                                [dimension.key]:
-                                  (placeholderMetricSettingsToUpdate?.[
-                                    dimension.key
-                                  ] === undefined &&
-                                    !dimension.enabled) ||
-                                  !placeholderMetricSettingsToUpdate?.[
-                                    dimension.key
-                                  ],
-                              });
-                            }
-                          }}
                         />
-                        <Slider />
-                      </ToggleSwitch>
-                    </ToggleSwitchWrapper>
-                  </Dimension>
-                );
-              })}
-            </Disaggregation>
-          );
-        })}
+                        <ToggleSwitch>
+                          <ToggleSwitchInput
+                            type="checkbox"
+                            checked={
+                              disaggregation.enabled && dimension.enabled
+                            }
+                            onChange={() => {
+                              if (disaggregation.enabled) {
+                                updateMetricSettings("DIMENSION", {
+                                  key: activeMetricKey,
+                                  disaggregations: [
+                                    {
+                                      key: disaggregation.key,
+                                      dimensions: [
+                                        {
+                                          key: dimension.key,
+                                          enabled: !dimension.enabled,
+                                        },
+                                      ],
+                                    },
+                                  ],
+                                });
+                              }
+                            }}
+                          />
+                          <Slider />
+                        </ToggleSwitch>
+                      </ToggleSwitchWrapper>
+                    </Dimension>
+                  );
+                })}
+              </Disaggregation>
+            );
+          }
+        )}
       </MetricDisaggregations>
     </MetricConfigurationContainer>
   );
 };
 
 type MetricContextConfigurationProps = {
-  contexts:
-    | {
-        key: string;
-        display_name: string;
-        reporting_note: string;
-        required: boolean;
-        type: string;
-        value: string;
-        multiple_choice_options?: string[];
-      }[]
-    | {
-        key: string;
-        display_name: string;
-        reporting_note: string;
-        required: boolean;
-        type: string;
-        value: null;
-        multiple_choice_options?: string[];
-      }[];
+  metricKey: string;
+  contexts: {
+    key: string;
+    display_name: string;
+    reporting_note: string;
+    required: boolean;
+    type: string;
+    value: string | null;
+    multiple_choice_options?: string[];
+  }[];
+  updateMetricSettings: (
+    typeOfUpdate: "METRIC" | "DISAGGREGATION" | "DIMENSION" | "CONTEXT",
+    updatedSetting: MetricSettings
+  ) => void;
 };
 
 const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
+  metricKey,
   contexts,
+  updateMetricSettings,
 }) => {
+  const [contextError, setContextError] =
+    useState<{ [key: string]: FormError }>();
+
+  const contextNumberValidation = (key: string, value: string) => {
+    const cleanValue = removeCommaSpaceAndTrim(value);
+    const isPositiveNumber =
+      (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
+
+    if (!isPositiveNumber) {
+      setContextError({
+        [key]: { message: "Please enter a valid number." },
+      });
+    } else {
+      setContextError(undefined);
+    }
+  };
+
   return (
     <MetricContextContainer>
       <Subheader>
@@ -368,7 +330,13 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
                   name={context.key}
                   label="Yes"
                   value="yes"
-                  defaultChecked
+                  checked={context.value === "yes"}
+                  onChange={() =>
+                    updateMetricSettings("CONTEXT", {
+                      key: metricKey,
+                      contexts: [{ key: context.key, value: "yes" }],
+                    })
+                  }
                 />
                 <BinaryRadioButton
                   type="radio"
@@ -376,18 +344,51 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
                   name={context.key}
                   label="No"
                   value="no"
+                  checked={context.value === "no"}
+                  onChange={() =>
+                    updateMetricSettings("CONTEXT", {
+                      key: metricKey,
+                      contexts: [{ key: context.key, value: "no" }],
+                    })
+                  }
                 />
               </RadioButtonGroupWrapper>
-              <BinaryRadioGroupClearButton>
+              <BinaryRadioGroupClearButton
+                onClick={() =>
+                  updateMetricSettings("CONTEXT", {
+                    key: metricKey,
+                    contexts: [{ key: context.key, value: "" }],
+                  })
+                }
+              >
                 Clear Input
               </BinaryRadioGroupClearButton>
             </>
           )}
 
-          {context.type === "TEXT" && (
+          {(context.type === "TEXT" || context.type === "NUMBER") && (
             <>
               <Label>{context.display_name}</Label>
-              <TextInput type="text" label="" />
+              <TextInput
+                type="text"
+                name={context.key}
+                id={context.key}
+                label=""
+                value={context.value || ""}
+                multiline={context.type === "TEXT"}
+                error={contextError?.[context.key]}
+                onChange={(e) => {
+                  if (context.type === "NUMBER") {
+                    contextNumberValidation(context.key, e.currentTarget.value);
+                  }
+                  updateMetricSettings("CONTEXT", {
+                    key: metricKey,
+                    contexts: [
+                      { key: context.key, value: e.currentTarget.value },
+                    ],
+                  });
+                }}
+              />
             </>
           )}
 
@@ -406,10 +407,24 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
                     name={`${context.key}`}
                     label={option}
                     value={option}
+                    checked={context.value === option}
+                    onChange={() =>
+                      updateMetricSettings("CONTEXT", {
+                        key: metricKey,
+                        contexts: [{ key: context.key, value: option }],
+                      })
+                    }
                   />
                 ))}
               </MultipleChoiceWrapper>
-              <BinaryRadioGroupClearButton>
+              <BinaryRadioGroupClearButton
+                onClick={() =>
+                  updateMetricSettings("CONTEXT", {
+                    key: metricKey,
+                    contexts: [{ key: context.key, value: "" }],
+                  })
+                }
+              >
                 Clear Input
               </BinaryRadioGroupClearButton>
             </BinaryRadioGroupContainer>
@@ -418,6 +433,23 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
       ))}
     </MetricContextContainer>
   );
+};
+
+type MetricSettings = {
+  key: string;
+  enabled?: boolean;
+  contexts?: {
+    key: string;
+    value: string;
+  }[];
+  disaggregations?: {
+    key: string;
+    enabled?: boolean;
+    dimensions?: {
+      key: string;
+      enabled: boolean;
+    }[];
+  }[];
 };
 
 export const MetricsView: React.FC = () => {
@@ -433,20 +465,132 @@ export const MetricsView: React.FC = () => {
   const [activeConfigSection, setActiveConfigSection] =
     useState<ConfigSections>("Configuration");
 
-  const [activeMetricIndex, setActiveMetricIndex] = useState<number>(0);
+  const [activeMetricKey, setActiveMetricKey] = useState<string>("");
 
-  const [
-    placeholderMetricSettingsToUpdate,
-    setPlaceholderMetricSettingsToUpdate,
-  ] = useState<{ [key: string]: string | boolean }>();
+  const [metricSettings, setMetricSettings] = useState<{
+    [key: string]: MetricsViewMockMetric;
+  }>({});
 
-  const updatePlaceholderMetricSettings = (updatedSetting: {
-    [key: string]: string | boolean;
-  }) =>
-    setPlaceholderMetricSettingsToUpdate((prev) => ({
-      ...prev,
-      ...updatedSetting,
-    }));
+  const updateMetricSettings = (
+    typeOfUpdate: "METRIC" | "DISAGGREGATION" | "DIMENSION" | "CONTEXT",
+    updatedSetting: MetricSettings
+  ) => {
+    setMetricSettings((prev) => {
+      const metricKey = updatedSetting.key;
+
+      if (typeOfUpdate === "METRIC") {
+        const enabled =
+          updatedSetting.enabled !== undefined && updatedSetting.enabled;
+
+        return {
+          ...prev,
+          [updatedSetting.key]: {
+            ...prev[metricKey],
+            enabled,
+          },
+        };
+      }
+
+      if (typeOfUpdate === "DISAGGREGATION") {
+        const enabled =
+          updatedSetting.disaggregations?.[0].enabled !== undefined &&
+          updatedSetting.disaggregations?.[0].enabled;
+        const updatedDisaggregations = prev[metricKey].disaggregations.map(
+          (disaggregation) => {
+            if (
+              disaggregation.key === updatedSetting.disaggregations?.[0].key
+            ) {
+              return {
+                ...disaggregation,
+                enabled,
+              };
+            }
+            return disaggregation;
+          }
+        );
+
+        return {
+          ...prev,
+          [updatedSetting.key]: {
+            ...prev[metricKey],
+            disaggregations: updatedDisaggregations,
+          },
+        };
+      }
+
+      if (typeOfUpdate === "DIMENSION") {
+        const enabled =
+          updatedSetting.disaggregations?.[0].dimensions?.[0] !== undefined &&
+          updatedSetting.disaggregations?.[0].dimensions?.[0].enabled;
+        const updatedDisaggregations = prev[metricKey].disaggregations.map(
+          (disaggregation) => {
+            if (
+              disaggregation.key === updatedSetting.disaggregations?.[0].key
+            ) {
+              return {
+                ...disaggregation,
+                dimensions: disaggregation.dimensions.map((dimension) => {
+                  if (
+                    dimension.key ===
+                    updatedSetting.disaggregations?.[0].dimensions?.[0].key
+                  ) {
+                    return {
+                      ...dimension,
+                      enabled,
+                    };
+                  }
+                  return dimension;
+                }),
+              };
+            }
+            return disaggregation;
+          }
+        );
+
+        return {
+          ...prev,
+          [updatedSetting.key]: {
+            ...prev[metricKey],
+            disaggregations: updatedDisaggregations,
+          },
+        };
+      }
+
+      if (typeOfUpdate === "CONTEXT") {
+        const updatedContext = prev[metricKey].contexts.map((context) => {
+          if (context.key === updatedSetting.contexts?.[0].key) {
+            return {
+              ...context,
+              value: updatedSetting.contexts?.[0].value,
+            };
+          }
+          return context;
+        });
+
+        return {
+          ...prev,
+          [updatedSetting.key]: {
+            ...prev[metricKey],
+            contexts: updatedContext,
+          },
+        };
+      }
+
+      return prev;
+    });
+  };
+
+  useEffect(() => {
+    const metricKeyToMetricMap: { [key: string]: MetricsViewMockMetric } = {};
+
+    // Note: Once GET endpoint is implemented, we will replace the metricsViewMockResponse with a call to the GET endpoint.
+    metricsViewMockResponse.forEach((metric) => {
+      metricKeyToMetricMap[metric.key] = metric;
+    });
+
+    setMetricSettings(metricKeyToMetricMap);
+    setActiveMetricKey(Object.keys(metricKeyToMetricMap)[0]);
+  }, []);
 
   return (
     <>
@@ -470,41 +614,33 @@ export const MetricsView: React.FC = () => {
         <MetricsViewControlPanel>
           {/* List Of Metrics */}
           <PanelContainerLeft>
-            {metricsViewMockResponse.map((metric, index) => (
-              <MetricBox
-                key={metric.key}
-                metricIndex={index}
-                displayName={metric.display_name}
-                frequency={metric.frequency as ReportFrequency}
-                description={metric.description}
-                enabled={
-                  placeholderMetricSettingsToUpdate?.[
-                    metricsViewMockResponse[index].key
-                  ] === true ||
-                  (placeholderMetricSettingsToUpdate?.[
-                    metricsViewMockResponse[index].key
-                  ] === undefined &&
-                    metricsViewMockResponse[index].enabled)
-                }
-                activeMetricIndex={activeMetricIndex}
-                setActiveMetricIndex={setActiveMetricIndex}
-              />
-            ))}
+            {metricSettings &&
+              Object.values(metricSettings).map((metric) => (
+                <MetricBox
+                  key={metric.key}
+                  metricKey={metric.key}
+                  displayName={metric.display_name}
+                  frequency={metric.frequency as ReportFrequency}
+                  description={metric.description}
+                  enabled={metric.enabled}
+                  activeMetricKey={activeMetricKey}
+                  setActiveMetricKey={setActiveMetricKey}
+                />
+              ))}
           </PanelContainerLeft>
 
           {/* Configuration | Context | Data */}
           <PanelContainerRight>
             <MetricNameBadgeWrapper>
               <MetricName isTitle>
-                {metricsViewMockResponse[activeMetricIndex].display_name}
+                {metricSettings[activeMetricKey]?.display_name}
               </MetricName>
               <MetricsViewBadge
                 frequency={
-                  metricsViewMockResponse[activeMetricIndex]
-                    .frequency as ReportFrequency
+                  metricSettings[activeMetricKey]?.frequency as ReportFrequency
                 }
               >
-                {metricsViewMockResponse[activeMetricIndex].frequency}
+                {metricSettings[activeMetricKey]?.frequency}
               </MetricsViewBadge>
             </MetricNameBadgeWrapper>
 
@@ -526,29 +662,18 @@ export const MetricsView: React.FC = () => {
               {/* Configuration */}
               {activeConfigSection === "Configuration" && (
                 <MetricConfiguration
-                  metricKey={metricsViewMockResponse[activeMetricIndex].key}
-                  metricDisplayName={
-                    metricsViewMockResponse[activeMetricIndex].display_name
-                  }
-                  metricEnabled={
-                    metricsViewMockResponse[activeMetricIndex].enabled
-                  }
-                  disaggregations={
-                    metricsViewMockResponse[activeMetricIndex].disaggregations
-                  }
-                  placeholderMetricSettingsToUpdate={
-                    placeholderMetricSettingsToUpdate
-                  }
-                  updatePlaceholderMetricSettings={
-                    updatePlaceholderMetricSettings
-                  }
+                  activeMetricKey={activeMetricKey}
+                  metricSettings={metricSettings}
+                  updateMetricSettings={updateMetricSettings}
                 />
               )}
 
               {/* Context */}
               {activeConfigSection === "Context" && (
                 <MetricContextConfiguration
-                  contexts={metricsViewMockResponse[activeMetricIndex].contexts}
+                  metricKey={activeMetricKey}
+                  contexts={metricSettings[activeMetricKey]?.contexts}
+                  updateMetricSettings={updateMetricSettings}
                 />
               )}
 
