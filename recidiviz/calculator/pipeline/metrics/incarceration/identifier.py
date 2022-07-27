@@ -603,8 +603,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         )
 
         deprecated_supervising_district_external_id = (
-            commitment_details.level_2_supervision_location_external_id
-            or commitment_details.level_1_supervision_location_external_id
+            supervision_delegate.get_deprecated_supervising_district_external_id(
+                commitment_details.level_1_supervision_location_external_id,
+                commitment_details.level_2_supervision_location_external_id,
+            )
         )
 
         return IncarcerationCommitmentFromSupervisionAdmissionEvent(

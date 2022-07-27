@@ -6844,8 +6844,10 @@ def create_start_event_from_period(
     ) = supervising_officer_and_location_info(period, {}, supervision_delegate)
 
     deprecated_supervising_district_external_id = (
-        level_2_supervision_location_external_id
-        or level_1_supervision_location_external_id
+        supervision_delegate.get_deprecated_supervising_district_external_id(
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+        )
     )
 
     assert period.start_date is not None
@@ -6884,8 +6886,10 @@ def create_termination_event_from_period(
     ) = supervising_officer_and_location_info(period, {}, supervision_delegate)
 
     deprecated_supervising_district_external_id = (
-        level_2_supervision_location_external_id
-        or level_1_supervision_location_external_id
+        supervision_delegate.get_deprecated_supervising_district_external_id(
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+        )
     )
 
     termination_reason = period.termination_reason

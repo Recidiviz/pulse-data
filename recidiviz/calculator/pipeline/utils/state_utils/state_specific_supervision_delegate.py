@@ -65,7 +65,7 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         """Retrieves level 1 and level 2 location information from a supervision site.
         By default, returns the |supervision_site| as the level 1 location, and None as the level 2 location.
         """
-        # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
+        # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
         #  location distinction directly into our schema.
         level_1_supervision_location = supervision_site
         level_2_supervision_location = None
@@ -74,6 +74,19 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
             level_1_supervision_location or None,
             level_2_supervision_location or None,
         )
+
+    # TODO(#4709): Delete this delegate function once the field
+    #  supervising_district_external_id is no longer referenced by our views and we can
+    #  remove it from our metric output.
+    def get_deprecated_supervising_district_external_id(
+        self,
+        level_1_supervision_location: Optional[str],
+        level_2_supervision_location: Optional[str],
+    ) -> Optional[str]:
+        """Returns the supervision location value that should be used to populate the
+        deprecated supervising_district_external_id field in our metrics.
+        """
+        return level_2_supervision_location or level_1_supervision_location
 
     def is_supervision_location_out_of_state(
         self, supervision_population_event: SupervisionPopulationEvent

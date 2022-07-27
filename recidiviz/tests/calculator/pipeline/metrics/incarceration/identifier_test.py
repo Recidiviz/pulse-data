@@ -1721,7 +1721,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_site="X",
+            supervision_site="4",
         )
 
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
@@ -1780,8 +1780,9 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_history_description="1felony",
             violation_type_frequency_counter=[["FELONY"]],
             supervising_officer_external_id="XXX",
-            supervising_district_external_id="X",
-            level_1_supervision_location_external_id="X",
+            supervising_district_external_id="4",
+            level_1_supervision_location_external_id="4",
+            level_2_supervision_location_external_id="Region 1",
             county_of_residence=_COUNTY_OF_RESIDENCE,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )

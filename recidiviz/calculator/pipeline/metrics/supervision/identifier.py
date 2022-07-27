@@ -458,9 +458,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         event_date
                     )
 
-                deprecated_supervising_district_external_id = (
-                    level_2_supervision_location_external_id
-                    or level_1_supervision_location_external_id
+                deprecated_supervising_district_external_id = supervision_delegate.get_deprecated_supervising_district_external_id(
+                    level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id,
                 )
 
                 supervision_level_downgrade_occurred = False
@@ -631,8 +631,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         deprecated_supervising_district_external_id = (
-            level_2_supervision_location_external_id
-            or level_1_supervision_location_external_id
+            supervision_delegate.get_deprecated_supervising_district_external_id(
+                level_1_supervision_location_external_id,
+                level_2_supervision_location_external_id,
+            )
         )
 
         in_incarceration_population_on_date = (
@@ -776,8 +778,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             )
 
             deprecated_supervising_district_external_id = (
-                level_2_supervision_location_external_id
-                or level_1_supervision_location_external_id
+                supervision_delegate.get_deprecated_supervising_district_external_id(
+                    level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id,
+                )
             )
 
             in_incarceration_population_on_date = (
@@ -1036,8 +1040,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         last_day_of_projected_month = last_day_of_month(projected_completion_date)
 
         deprecated_supervising_district_external_id = (
-            level_2_supervision_location_external_id
-            or level_1_supervision_location_external_id
+            supervision_delegate.get_deprecated_supervising_district_external_id(
+                level_1_supervision_location_external_id,
+                level_2_supervision_location_external_id,
+            )
         )
 
         # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
