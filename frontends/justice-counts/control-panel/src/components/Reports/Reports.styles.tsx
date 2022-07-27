@@ -27,30 +27,30 @@ export const ReportsHeader = styled.div`
   z-index: 1;
 `;
 
-export const ReportsPageTitle = styled.div`
+export const PageTitle = styled.div`
   ${typography.sizeCSS.headline}
   margin-top: 40px;
   padding: 0px 22px;
 `;
 
-export const FilterBar = styled.div`
+export const TabbedBar = styled.div<{ noPadding?: boolean }>`
   ${typography.sizeCSS.normal}
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
-  padding: 0px 22px;
+  padding: ${({ noPadding }) => (noPadding ? `none` : `0px 22px`)};
   margin-bottom: 10px;
   border-bottom: 1px solid ${palette.highlight.grey9};
 `;
 
-export const FilterOptions = styled.div`
+export const TabbedOptions = styled.div`
   display: flex;
   align-items: center;
 `;
 
-export const FilterBy = styled.div<{ selected?: boolean }>`
+export const TabbedItem = styled.div<{ selected?: boolean }>`
   padding: 24px 0 16px 0;
   margin-right: 20px;
   color: ${({ selected }) =>
@@ -127,7 +127,7 @@ export const ReportActionsNewIcon = styled(ReportActionsSelectIcon)`
 
 export const Table = styled.div`
   width: 100%;
-  padding: 190px 0 50px 0;
+  padding: 222px 0 50px 0;
 `;
 
 export const Row = styled.div<{

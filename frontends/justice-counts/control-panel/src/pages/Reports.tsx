@@ -28,20 +28,20 @@ import {
   Badge,
   Cell,
   EmptySelectionCircle,
-  FilterBar,
-  FilterBy,
-  FilterOptions,
   Label,
   LabelRow,
   NoReportsDisplay,
+  PageTitle,
   ReportActions,
   ReportActionsItem,
   ReportActionsNewIcon,
   ReportActionsSelectIcon,
   ReportsHeader,
-  ReportsPageTitle,
   Row,
   SelectedCheckmark,
+  TabbedBar,
+  TabbedItem,
+  TabbedOptions,
   Table,
 } from "../components/Reports";
 import { Permission, ReportOverview } from "../shared/types";
@@ -274,22 +274,22 @@ const Reports: React.FC = () => {
   return (
     <>
       <ReportsHeader>
-        <ReportsPageTitle>Reports</ReportsPageTitle>
+        <PageTitle>Reports</PageTitle>
 
         {/* Filter Reports By */}
-        <FilterBar>
-          <FilterOptions>
+        <TabbedBar>
+          <TabbedOptions>
             {Object.values(ReportStatusFilterOption).map((option) => (
-              <FilterBy
+              <TabbedItem
                 key={option}
                 id={option}
                 selected={normalizeString(option) === reportsFilter}
                 onClick={(e) => filterReportsBy(e)}
               >
                 {removeSnakeCase(option)}
-              </FilterBy>
+              </TabbedItem>
             ))}
-          </FilterOptions>
+          </TabbedOptions>
 
           {/* Admin Only: Manage Reports */}
           {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
@@ -338,7 +338,7 @@ const Reports: React.FC = () => {
               </ReportActions>
             </>
           )}
-        </FilterBar>
+        </TabbedBar>
 
         {/* Labels */}
         <LabelRow>

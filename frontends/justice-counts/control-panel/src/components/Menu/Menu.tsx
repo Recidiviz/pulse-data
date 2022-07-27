@@ -35,6 +35,7 @@ enum MenuItems {
   LearnMore = "LEARN MORE",
   Settings = "SETTINGS",
   Agencies = "AGENCIES",
+  Metrics = "METRICS",
 }
 
 const Menu = () => {
@@ -74,6 +75,8 @@ const Menu = () => {
       setActiveMenuItem(MenuItems.CreateReport);
     } else if (location.pathname === "/settings") {
       setActiveMenuItem(MenuItems.Settings);
+    } else if (location.pathname === "/metrics") {
+      setActiveMenuItem(MenuItems.Metrics);
     } else {
       setActiveMenuItem(undefined);
     }
@@ -86,6 +89,17 @@ const Menu = () => {
           userStore.currentAgency?.name &&
           `Welcome, ${userStore.nameOrEmail} at ${userStore.currentAgency.name}`}
       </WelcomeUser>
+
+      {/* Metrics View */}
+      {(userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) ||
+        userStore.permissions.includes(Permission.CONFIGURE_METRICS)) && (
+        <MenuItem
+          onClick={() => navigate("/metrics")}
+          active={activeMenuItem === MenuItems.Metrics}
+        >
+          Metrics
+        </MenuItem>
+      )}
 
       {/* Reports */}
       <MenuItem

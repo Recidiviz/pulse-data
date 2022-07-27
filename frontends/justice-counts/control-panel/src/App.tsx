@@ -22,6 +22,7 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import { trackNavigation } from "./analytics";
 import { PageWrapper } from "./components/Forms";
 import Header from "./components/Header";
+import { MetricsView } from "./components/MetricsView";
 import CreateReports from "./components/Reports/CreateReport";
 import ReportDataEntry from "./components/Reports/ReportDataEntry";
 import AccountSettings from "./pages/AccountSettings";
@@ -43,6 +44,7 @@ const App: React.FC = (): ReactElement => {
           <Route path="/reports/create" element={<CreateReports />} />
           <Route path="/reports/:id" element={<ReportDataEntry />} />
           <Route path="/settings" element={<AccountSettings />} />
+          <Route path="/metrics" element={<MetricsView />} />
         </Routes>
       </PageWrapper>
     </>
