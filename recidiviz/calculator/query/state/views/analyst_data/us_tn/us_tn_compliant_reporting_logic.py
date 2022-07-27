@@ -89,7 +89,43 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- This CTE uses standards list and creates flags to apply supervision level and time spent criteria, as well as bringing various supervision and system session dates
     standards AS (
         SELECT  DISTINCT
-                standards.* EXCEPT(Offender_ID),
+                standards.first_name,
+                standards.last_name,
+                standards.Phone_Number AS phone_number,
+                -- TODO(#11790): Pull from Address table instead of Standards Sheet if both are same
+                INITCAP(CONCAT(
+                    Address_Line1, 
+                    IF(Address_Line2 IS NULL, '', CONCAT(' ', Address_Line2)), 
+                    ', ', 
+                    Address_City, 
+                    ', ', 
+                    Address_State, 
+                    ' ', 
+                    Address_Zip
+                    )) AS address,
+                standards.Last_ARR_Note,
+                standards.Last_FEE_Note,
+                standards.FEE_Note_Due,
+                CASE WHEN standards.SPE_Note_Due IS NULL AND standards.Last_SPE_Note IS NULL AND standards.Last_SPET_Date IS NULL THEN 'none'
+                     WHEN standards.SPE_Note_Due IS NULL AND standards.Last_SPE_Note IS NOT NULL AND standards.Last_SPET_Date IS NOT NULL THEN 'terminated'
+                     WHEN standards.SPE_Note_Due > CURRENT_DATE('US/Eastern') THEN 'current'
+                     END AS spe_flag,
+                standards.SPE_Note_Due AS  SPE_note_due,
+                standards.Last_SPE_Note AS last_SPE_note, 
+                standards.Last_SPET_Date AS last_SPET_date,
+                standards.EXP_Date AS sentence_expiration_date,
+                standards.Staff_ID AS officer_id,
+                standards.Staff_First_Name AS staff_first_name,
+                standards.Staff_Last_Name AS staff_last_name,
+                standards.Case_Type AS supervision_type,
+                standards.Supervision_Level AS supervision_level,
+                standards.Plan_Start_Date AS supervision_level_start,
+                standards.Last_Sanctions_Type AS last_sanction,
+                standards.Last_DRU_Note AS last_drug_screen_date,
+                standards.Last_DRU_Type AS last_drug_screen_result,
+                standards.Region as district,
+                -- Criteria: Special Conditions are up to date
+                CASE WHEN SPE_Note_Due <= current_date('US/Eastern') THEN 0 ELSE 1 END AS spe_conditions_not_overdue_flag,
                 pei.person_id,
                 latest_system_session_start_date,
                 earliest_supervision_start_date_in_latest_system,
@@ -110,51 +146,62 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                             )  
                     THEN 1 
                     ELSE 0 END AS eligible_supervision_level,
-                -- Criteria: Medium or Less for 18+ months
-                CASE WHEN (
-                            standards.Supervision_Level LIKE ('%MINIMUM%') 
+                /* 
+                    This flag determines "how" someone becomes eligible for the time on supervision level criteria. The options are
+                    1. 'minimum' if being on minimum for 12 months is the earliest someone becomes eligible
+                    2. 'medium' if being on medium for 18 months is the earliest someone becomes eligible
+                    3. 'medium or less' if moving from medium -> min or min -> medium and collectively spending 18 months is how someone becomes eligible
+                    This field is then used to calculate eligible_level_start (the time from which we should count how long someone has been on the 
+                    qualifying level) and date_supervision_level_eligible which determines the date when someone becomes eligible for this criteria
+                    
+                    Logic:
+                    if currently on minimum:
+                        - if previously medium:
+                            - if previous + 18 < current + 12 then 'medium or less'
+                    else: 'minimum'
+                    
+                    if currently on medium:
+                        - if previously minimum: "medium or less"
+                    else: "medium"
+                */ 
+                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
+                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
+                CASE WHEN ( standards.Supervision_Level LIKE ('%MINIMUM%') 
                             AND sup_levels.supervision_level = 'MINIMUM'
-                            AND DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=12
+                            ) 
+                    THEN (
+                            CASE 
+                                WHEN DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=12 THEN 'minimum'
+                                WHEN ( previous_supervision_level IN ('MEDIUM') 
+                                        AND previous_supervision_level_raw_text != '6P3'
+                                    )
+                                AND DATE_ADD(sup_levels.previous_start_date, INTERVAL 18 MONTH) < DATE_ADD(sup_levels.start_date, INTERVAL 12 MONTH) THEN 'medium_or_less'
+                            ELSE 'minimum'
+                            END
                             )
-                        OR (
-                            standards.Supervision_Level LIKE ('%MEDIUM%') 
+                    WHEN ( standards.Supervision_Level LIKE ('%MEDIUM%') 
                             AND sup_levels.supervision_level = 'MEDIUM'
                             AND supervision_level_raw_text != '6P3' 
-                            AND DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=18
-                             )
-                        THEN 1
-                    WHEN standards.Supervision_Level LIKE ('%MINIMUM%')
-                        AND sup_levels.supervision_level = 'MINIMUM'
-                        AND previous_supervision_level IN ('MEDIUM') 
-                        AND previous_supervision_level_raw_text != '6P3' 
-                        AND DATE_DIFF(current_date('US/Eastern'),sup_levels.previous_start_date,MONTH)>=18 
-                        THEN 2
-                     WHEN standards.Supervision_Level LIKE ('%MEDIUM%')
-                        AND sup_levels.supervision_level = 'MEDIUM' 
-                        AND supervision_level_raw_text != '6P3'
-                        AND previous_supervision_level IN ('MINIMUM') 
-                        AND DATE_DIFF(current_date('US/Eastern'),sup_levels.previous_start_date,MONTH)>=18 
-                        THEN 2
-                    ELSE 0 END AS time_on_level_flag,
-                CASE WHEN standards.Supervision_Level LIKE "%MINIMUM%" THEN DATE_ADD(sup_levels.start_date, INTERVAL 12 MONTH)
-                     WHEN standards.Supervision_Level LIKE "%MEDIUM%" THEN DATE_ADD(sup_levels.start_date, INTERVAL 18 MONTH)
-                    ELSE '9999-01-01' END AS date_sup_level_eligible,
-                -- Criteria: No Arrests in past year
-                -- Implemented as "no ARRP in past year" which could be true even if Last_ARR_note is over 12 months old and the last check *was* positive. 
-                -- However, VERY few people have arrest checks that are more than 12 months old, so effectively this means we're just checking that the last ARR check is negative
-                -- If someone had a positive arrest check in the past year, but their last one is negative, we're still considering them eligible
-                -- We don't have full arrest history so we can't check this another way
+                            ) 
+                    THEN (
+                            CASE 
+                                WHEN DATE_DIFF(current_date('US/Eastern'), sup_levels.start_date,MONTH)>=18 THEN 'medium'
+                                WHEN previous_supervision_level IN ('MINIMUM') THEN 'medium_or_less'
+                            ELSE 'medium'
+                            END
+                    )
+                    END AS sup_level_eligibility_type,
+                /*
+                 Criteria: No Arrests in past year
+                     Implemented as "no ARRP in past year" which could be true even if Last_ARR_note is over 12 months old and the last check *was* positive. 
+                     However, VERY few people have arrest checks that are more than 12 months old, so effectively this means we're just checking that the last ARR check is negative
+                     If someone had a positive arrest check in the past year, but their last one is negative, we're still considering them eligible
+                     We don't have full arrest history so we can't check this another way
+                */
                 CASE WHEN Last_ARR_Type = 'ARRP' AND DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN 0
-                     ELSE 1 END AS no_arrests_flag,
+                     ELSE 1 END AS eligible_arrests_flag,
                 CASE WHEN DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN Last_ARR_Type
                     ELSE NULL END AS arrests_past_year,
-                -- Date when someone became eligible for this criteria
-                -- If last ARR type is ARRP (positive), add 1 year to Last_ARR_Note, i.e. they became eligible 1 year since that check
-                -- Else, pick some *very early date* since someone could have met the criteria of "no arrests in past year" at any time in the past, and it's likely
-                -- that another eligibility date will be the "limiting" date
-                CASE WHEN Last_ARR_Type = 'ARRP' THEN DATE_ADD(Last_ARR_Note, INTERVAL 12 MONTH)
-                     ELSE '1900-01-01'
-                     END AS date_arrest_check_eligible
             FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due` standards
             LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
                 ON pei.external_id = LPAD(CAST(Offender_ID AS string), 8, '0')
@@ -168,37 +215,60 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
             )
     ), 
-    -- Joins together sentences and standards sheet
-    sentences_join AS (
-        SELECT  standards.*, 
-                sentence_put_together.* EXCEPT(Offender_ID),
+    -- This CTE uses flags from the previous CTE to determine when people become eligible for being on the right supervision level, and also determine C4 eligibility (ISC + minimum people)
+    determine_sup_level_eligibility AS (
+         SELECT standards.*,
+            CASE 
+                WHEN sup_level_eligibility_type = 'medium_or_less' THEN previous_supervision_level_start
+                ELSE current_supervision_level_start
+                END AS eligible_level_start,
+            CASE 
+                WHEN sup_level_eligibility_type = 'minimum' THEN DATE_ADD(current_supervision_level_start, INTERVAL 12 MONTH)
+                WHEN sup_level_eligibility_type = 'medium' THEN DATE_ADD(current_supervision_level_start, INTERVAL 18 MONTH)
+                WHEN sup_level_eligibility_type = 'medium_or_less' THEN DATE_ADD(previous_supervision_level_start, INTERVAL 18 MONTH)
+            END as date_supervision_level_eligible,
+            /*
+             Criteria: For people on ISC (interstate compact) who are currently on minimum, were assigned to minimum right after supervision intake
+             (unassigned supervision level) and haven't had a higher supervision level during this system session, we mark them as automatically
+             eligible for compliant reporting
+            */
+            # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
+            -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
+            CASE WHEN sl.previous_supervision_level = 'UNASSIGNED'
+                    AND standards.Supervision_Level LIKE ('%MINIMUM%')
+                    AND sl.supervision_level = 'MINIMUM'
+                    AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
+                    THEN 'Eligible'
+                -- For people where the previous supervision level is not Intake (Unassigned) but could be Limited (Compliant Reporting), Unknown, Null, etc
+                -- but who are on minimum without a higher level this system session, we flag them as eligible pending review
+                 WHEN COALESCE(sl.previous_supervision_level,'MISSING') != 'UNASSIGNED'
+                    AND standards.Supervision_Level LIKE ('%MINIMUM%') 
+                    AND sl.supervision_level = 'MINIMUM'
+                    AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
+                    THEN 'Needs Review'
+                END AS no_sup_level_higher_than_mininmum,
                 sl.previous_supervision_level,
                 sl.supervision_level AS supervision_level_internal,
-                latest_start_higher_sup_level,
-                CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
-                -- Criteria: For people on ISC (interstate compact) who are currently on minimum, were assigned to minimum right after supervision intake
-                -- (unassigned supervision level) and haven't had a higher supervision level during this system session, we mark them as automatically
-                -- eligible for compliant reporting
-                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
-                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
-                CASE WHEN sl.previous_supervision_level = 'UNASSIGNED'
-                        AND standards.Supervision_Level LIKE ('%MINIMUM%')
-                        AND sl.supervision_level = 'MINIMUM'
-                        AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
-                        THEN 'Eligible'
-                    -- For people where the previous supervision level is not Intake (Unassigned) but could be Limited (Compliant Reporting), Unknown, Null, etc
-                    -- but who are on minimum without a higher level this system session, we flag them as eligible pending review
-                     WHEN COALESCE(sl.previous_supervision_level,'MISSING') != 'UNASSIGNED'
-                        AND standards.Supervision_Level LIKE ('%MINIMUM%') 
-                        AND sl.supervision_level = 'MINIMUM'
-                        AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
-                        THEN 'Needs Review'
-                    END AS no_sup_level_higher_than_mininmum
+                latest_start_higher_sup_level
         FROM standards
-        LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
-            USING(Offender_ID)
         LEFT JOIN sup_levels sl
             ON sl.person_id = standards.person_id
+    ),
+    -- Joins together sentences and standards sheet
+    sentences_join AS (
+        SELECT  determine_sup_level_eligibility.*, 
+                sentence_put_together.* EXCEPT(Offender_ID),
+                CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
+        FROM determine_sup_level_eligibility
+        LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
+            USING(Offender_ID)
+    ),
+    -- This CTE looks at anyone who has ever received a ZTPD contact (zero tolerance contact for failing a meth test) so they can be excluded from almost-eligible
+    -- TODO(#13587) - reference state-agnostic view when #13587 is closed
+    meth_contacts AS (
+        SELECT DISTINCT OffenderID AS Offender_ID
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
+        WHERE ContactNoteType LIKE '%ZTPD%'
     ),
     -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
     contacts_cte AS (
@@ -208,10 +278,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 ELSE 0 END AS negative_drug_test,
                 1 AS drug_screen,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
-        -- Limit to DRU% (DRUN,DRUM, etc) type contacts in the last 12 months 
-        -- While the policy technically states the test must have been passed within the last 12 months, increasing the lookback
-        -- window allows us to include people on the margin of eligibility who may have received a negative drug screen
-        -- just before the 12 month cutoff
+        /*
+         Limit to DRU% (DRUN,DRUM, etc) type contacts in the last 12 months 
+        */
         WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),DAY) <= 365
         AND ContactNoteType LIKE '%DRU%'
     ),
@@ -223,7 +292,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 max(is_most_recent_test_negative) as is_most_recent_test_negative,
                 max(most_recent_test_date) as most_recent_test_date,
                 max(most_recent_positive_test_date) as most_recent_positive_test_date,
-                
         FROM (
             SELECT *,
                 -- Since we've already limited to just drug screen contacts, this looks at whether the latest screen was a negative one 
@@ -281,16 +349,18 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('DEIJ','DECR')
     ),
-    -- This CTE excludes people who have been rejected from CR for other reasons, that are not static
-    -- For example, people can be denied for failure to pay fines/fees, for having compliance problems, etc
-    -- But those things could change over time, so perhaps we will exclude people if they have any of these rejection
-    -- Codes in the last X months, but not older than that
-    -- Rejection codes not included:
-        -- DECT: DENIED COMPLIANT REPORTING, INSUFFICENT TIME IN SUPERVISON LEVEL - since we're checking for that
+    /* 
+        This CTE excludes people who have been rejected from CR for other reasons, that are not static
+        For example, people can be denied for failure to pay fines/fees, for having compliance problems, etc
+        But those things could change over time, so perhaps we will exclude people if they have any of these rejection
+        Codes in the last X months, but not older than that
+        Rejection codes not included:
+            - DECT: DENIED COMPLIANT REPORTING, INSUFFICENT TIME IN SUPERVISON LEVEL - since we're checking for that
+    */
     CR_rejection_codes_dynamic AS (
-        SELECT DISTINCT OffenderID as Offender_ID
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
-        WHERE ContactNoteType IN 
+        SELECT OffenderID as Offender_ID,
+                ARRAY_AGG(CASE WHEN contact_date >= DATE_SUB(current_date('US/Eastern'), INTERVAL 3 MONTH)
+                      AND ContactNoteType IN 
                                 -- DENIED, NO EFFORT TO PAY FINE AND COSTS
                                 ('DECF',
                                 -- DENIED, NO EFFORT TO PAY FEES
@@ -302,39 +372,36 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                                 -- DENIED FOR FAILURE TO REPORT AS INSTRUCTD
                                 'DEIR'
                                 )
-        AND CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= DATE_SUB(current_date('US/Eastern'), INTERVAL 3 MONTH)
-    ),
-    rejection_codes_max_date AS (
-        SELECT OffenderID as Offender_ID, MAX(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS latest_cr_rejection_code_date
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
-        WHERE ContactNoteType IN ('DECF', 'DEDF','DEDU','DEIO','DEIR')
+                      THEN ContactNoteType
+                      END
+                      IGNORE NULLS
+                  ) AS cr_rejections_past_3_months
+        FROM (
+          SELECT *, 
+            CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) as contact_date
+          FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
+        )
         GROUP BY 1
     ),
     -- serious sanctions criteria
     sanctions AS (
-        SELECT DISTINCT OffenderID as Offender_ID,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
-        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
-            USING(TriggerNumber)
-        WHERE CAST(SanctionLevel AS INT) > 1
-            AND CAST(CAST(ProposedDate AS datetime) AS DATE) >= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH)
-    ),
-    sanctions_array AS (
-        SELECT OffenderID as Offender_ID, ARRAY_AGG(ProposedSanction IGNORE NULLS) AS sanctions_in_last_year
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
-        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
-            USING(TriggerNumber)
-        WHERE CAST(CAST(ProposedDate AS datetime) AS DATE) >= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH)
-        GROUP BY 1
-    ),
-    sanction_eligible_date AS (
-        SELECT OffenderID as Offender_ID, 
-              MAX(CASE WHEN CAST(SanctionLevel AS INT) > 1 THEN DATE_ADD(CAST(CAST(ProposedDate AS datetime) AS DATE), INTERVAL 12 MONTH)
-                  ELSE '1900-01-01' END) AS date_sanction_eligible
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
-        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
-            USING(TriggerNumber)
-        GROUP BY 1
+        SELECT *
+        FROM (
+          SELECT OffenderID as Offender_ID,
+                        MAX(CASE WHEN sanction_level > 1 THEN proposed_date END) AS latest_serious_sanction_date,
+                        ARRAY_AGG(CASE WHEN proposed_date >= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH) THEN 
+                                  STRUCT(proposed_date, ProposedSanction) END IGNORE NULLS) AS sanctions_in_last_year,
+                FROM 
+                (
+                  SELECT *,
+                      CAST(CAST(ProposedDate AS datetime) AS DATE) AS proposed_date,
+                      CAST(SanctionLevel AS INT) AS sanction_level
+                    FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Violations_latest`
+                    JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sanctions_latest` 
+                    USING(TriggerNumber)
+                )
+                GROUP BY 1
+        )
     ),
     -- we conservatively use these codes 
     zero_tolerance_codes AS (
@@ -385,12 +452,14 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
               WHERE EndDate IS NULL
         GROUP BY 1
         ),
-    -- These CTEs calculate unpaid total.The first CTE calculates it for the most recent system session, the second calculates
-    -- for all. First, we join on any exemption when invoice is greater than exemption amount
-    -- (since sometimes a person can be billed $0 for an item that they have an exemption for), and join on the same FeeItemID and for
-    -- any invoices during an exemption. Next, there are various edge cases where paid amount (invoice minus unpaid) is greater
-    -- than actual amount owed (invoice minus exempt). When that happens, actual unpaid balance is set to the difference between unpaid and exempt
-    -- Otherwise, we take the UnpaidAmount and sum it 
+    /*
+     These CTEs calculate unpaid total.The first CTE calculates it for the most recent system session, the second calculates
+     for all. First, we join on any exemption when invoice is greater than exemption amount
+     (since sometimes a person can be billed $0 for an item that they have an exemption for), and join on the same FeeItemID and for
+     any invoices during an exemption. Next, there are various edge cases where paid amount (invoice minus unpaid) is greater
+     than actual amount owed (invoice minus exempt). When that happens, actual unpaid balance is set to the difference between unpaid and exempt
+     Otherwise, we take the UnpaidAmount and sum it
+    */ 
     arrearages_latest AS (
             SELECT standards.Offender_ID, 
                     accounts.AccountSAK, 
@@ -487,10 +556,12 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         WHERE MovementType LIKE '%DI%'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY MovementDateTime DESC) = 1
     ),
-    -- Parole board action conditions live in a different data source than special conditions associated with sentences
-    -- The BoardAction data is unique on person, hearing date, hearing type, and staff ID. For our purposes, we keep 
-    -- conditions where "final decision" is yes, and keep all distinct parole conditions on a given person/day
-    -- Then we keep all relevant hearings that happen in someone's latest system session, and keep all codes since then
+    /*
+     Parole board action conditions live in a different data source than special conditions associated with sentences
+     The BoardAction data is unique on person, hearing date, hearing type, and staff ID. For our purposes, we keep 
+     conditions where "final decision" is yes, and keep all distinct parole conditions on a given person/day
+     Then we keep all relevant hearings that happen in someone's latest system session, and keep all codes since then
+    */
     board_conditions AS (
         SELECT Offender_ID, hearing_date, condition, Decode AS condition_description
         FROM (
@@ -547,114 +618,171 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY assessment_date DESC) = 1
     ),
     add_more_flags_1 AS (
-        SELECT sentences_join.* ,
-                dru_contacts.* EXCEPT(total_screens_in_past_year,Offender_ID),
-                account_flags.*,
+        SELECT 
+                -- First, create all the flags needed to group people into eligibility (eligible, almost, not) and discretion (c2 - offense discretion, c3 - zero tolerance discretion)
+                -- If offense is eligible then look at whether or not discretion is required
+                CASE 
+                    -- If sentence info is missing, that is captured elsewhere
+                    WHEN COALESCE(eligible_offense, 1) = 1 
+                    THEN (
+                        CASE WHEN COALESCE(eligible_offense_discretion, 1) = 0 THEN 1
+                        ELSE 2
+                        END
+                    ) 
+                    ELSE 0 END offense_type_eligibility,
+                -- time on supervision level
+                CASE
+                    WHEN DATE_DIFF(CURRENT_DATE, date_supervision_level_eligible, DAY) > 0 THEN 'eligible'
+                    ELSE (
+                        CASE
+                            WHEN DATE_DIFF(date_supervision_level_eligible, CURRENT_DATE, DAY) <= 90 THEN 'almost_eligible'
+                            ELSE 'ineligible'
+                            END
+                    )
+                    END as eligible_time_on_supervision_level,
+                -- no sanctions higher than level 1 in the past year
+                CASE
+                    WHEN COALESCE(latest_serious_sanction_date, '1900-01-01') <= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 12 MONTH) THEN 'eligible'
+                    WHEN COALESCE(latest_serious_sanction_date, '1900-01-01') <= DATE_SUB(CURRENT_DATE('US/Eastern'),INTERVAL 9 MONTH) THEN 'almost_eligible'
+                    ELSE 'ineligible' END as eligible_serious_sanctions,
+                /* Drug screening logic:
+                - If someone is not categorized as a drug offender:
+                    1. They must be 6 months or more past their latest positive test. This will be null for people with no positive test - for those, we assume they meet this condition
+                    2. They must have at least 1 negative test in the past year
+                    If they meet the first condition but not the second, and have never tested positive for meth, we surface them as almost eligible
+                - If someone is categorized as a drug offender:
+                    - If there are 2 negative tests in the past year, the most recent test is negative, and the most recent positive test (if it exists) is over 12 months old, they're eligible
+                */
+                CASE 
+                    WHEN COALESCE(high_ad_client,0) = 0  AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 180
+                    THEN ( 
+                            CASE 
+                                WHEN sum_negative_tests_in_past_year >= 1
+                                -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
+                                AND is_most_recent_test_negative = 1
+                            THEN 'eligible'
+                            WHEN COALESCE(total_screens_in_past_year,0) = 0 AND meth_contacts.Offender_ID IS NULL THEN 'almost_eligible'
+                            END
+                        ) 
+                    WHEN COALESCE(high_ad_client,0) = 1 
+                        AND sum_negative_tests_in_past_year >= 2 
+                        AND is_most_recent_test_negative = 1 
+                        AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 365
+                    THEN 'eligible'
+                    ELSE 'ineligible'
+                    END AS drug_screen_eligibility,   
+                -- Flag for whether discretion is required because of zero tolerance codes or missing sentencing info
+                CASE 
+                    /*
+                    The logic here is: violations on diversion/probation can change someone expiration date, and we have reason to 
+                    think that there are often a lot of judgement orders/revocation orders that affect these supervision types that don't 
+                    appear in the sentencing data (or appear with a major lag). Zero tolerance codes are used as a proxy to conservatively
+                    exclude people from compliant reporting and overdue for discharge, with the assumption that there might be more to their 
+                    sentence that we don't know about. Since parole information is generally more reliable and updated, we don't apply that same
+                    filter to people on parole
+                */
+                    WHEN zero_tolerance_codes.Offender_ID IS NOT NULL AND supervision_type NOT LIKE '%PAROLE%' THEN 3
+                    WHEN missing_sent_info = 1 THEN 3
+                    ELSE 1 END AS zt_discretion_eligibility,
+                -- Counties in JD 17 don't allow CR for probation cases
+                CASE WHEN judicial_district = '17' AND supervision_type LIKE '%PROBATION%' THEN 0 ELSE 1 END AS eligible_counties,
+                -- Exclude anyone on lifetime supervision or with a life sentence
+                CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL THEN 1 
+                    ELSE 0 END AS eligible_lifetime_flag,
+                -- fines and fees
+                CASE WHEN COALESCE(unpaid_total_latest,0) <= 500 THEN 'low_balance'
+                     WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'exempt'
+                     WHEN COALESCE(unpaid_total_latest,0) <= 2000 AND have_past_1_month_payment = 1 AND have_past_2_month_payment = 1 AND have_past_3_month_payment = 1 THEN 'regular_payments'
+                    ELSE 'ineligible' END AS fines_fees_eligible,
+                -- Exclude anyone from CR who was previous rejected
+                CASE WHEN 
+                    CR_rejection_codes.Offender_ID IS NULL THEN 1 ELSE 0 END AS eligible_cr_previous_rejection,
+                -- consider those rejected for non-final reasons as almost eligible. Otherwise, they're eligible 
+                CASE WHEN cr_rejections_past_3_months IS NOT NULL THEN 1 
+                    ELSE 0
+                    END AS cr_recent_rejection_eligible_bool,
+                
+                -- Other fields, used for analysis or surfacing on the front end
+                cr_rejections_past_3_months,                
+                sentences_join.* EXCEPT(Offender_ID,has_TN_sentence),
+                sentences_join.Offender_ID AS person_external_id,
                 sum_payments.last_paid_amount,
-                arrearages.* EXCEPT(Offender_ID),
                 zt_codes,
                 high_ad_client,
-                assessment_date AS latest_assessment_date,
-                CASE WHEN time_on_level_flag = 2 THEN previous_supervision_level_start
-                     WHEN time_on_level_flag = 1 THEN current_supervision_level_start
-                    END AS eligible_level_start,
-                CASE WHEN time_on_level_flag > 0 THEN 1 ELSE 0 END AS time_on_level_flag_adj,
-            -- General pattern:
-            -- a) if dont have the flag now, didnt have it in past sentences or prior record, eligible
-            -- b) if don't have the flag now, didnt have it in prior record, DID have it in past sentences but those sentences expired over 10 years ago, eligible
-            -- c) if dont have flag now, had it for inactive sentences, and all past sentences not expired over 10 years ago, discretion
-            -- d) if dont have flag now, had it for prior record, discretion
-            CASE WHEN COALESCE(domestic_flag,0) = 0 AND COALESCE(domestic_flag_ever,0) = 0 AND COALESCE(domestic_flag_prior,0) = 0 THEN 'Eligible'
-                 WHEN COALESCE(domestic_flag,0) = 0 AND COALESCE(domestic_flag_prior,0) = 0 AND COALESCE(domestic_flag_ever,0) = 1 AND COALESCE(all_domestic_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(domestic_flag,0) = 0 AND COALESCE(domestic_flag_ever,0) = 1 AND COALESCE(all_domestic_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(domestic_flag,0) = 0 AND COALESCE(domestic_flag_prior,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS domestic_flag_eligibility,
-            CASE WHEN COALESCE(sex_offense_flag,0) = 0 AND COALESCE(sex_offense_flag_ever,0) = 0 AND COALESCE(sex_offense_flag_prior,0) = 0  THEN 'Eligible'
-                 WHEN COALESCE(sex_offense_flag,0) = 0 AND COALESCE(sex_offense_flag_prior,0) = 0 AND COALESCE(sex_offense_flag_ever,0) = 1 AND COALESCE(all_sex_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(sex_offense_flag,0) = 0 AND COALESCE(sex_offense_flag_ever,0) = 1 AND COALESCE(all_sex_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(sex_offense_flag,0) = 0 AND COALESCE(sex_offense_flag_prior,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS sex_offense_flag_eligibility,
-            CASE WHEN COALESCE(assaultive_offense_flag,0) = 0 AND COALESCE(assaultive_offense_flag_ever,0) = 0 AND COALESCE(assaultive_offense_flag_prior,0) = 0 THEN 'Eligible'
-                 WHEN COALESCE(assaultive_offense_flag,0) = 0 AND COALESCE(assaultive_offense_flag_prior,0) = 0 AND COALESCE(assaultive_offense_flag_ever,0) = 1 AND COALESCE(all_assaultive_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(assaultive_offense_flag,0) = 0 AND COALESCE(assaultive_offense_flag_ever,0) = 1 AND COALESCE(all_assaultive_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(assaultive_offense_flag,0) = 0 AND COALESCE(assaultive_offense_flag_prior,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS assaultive_offense_flag_eligibility,
-            CASE WHEN COALESCE(maybe_assaultive_flag,0) = 0 AND COALESCE(maybe_assaultive_flag_ever,0) = 0 AND COALESCE(maybe_assaultive_flag_prior,0) = 0 THEN 'Eligible'
-                 WHEN COALESCE(maybe_assaultive_flag,0) = 0 AND COALESCE(maybe_assaultive_flag_prior,0) = 0 AND COALESCE(maybe_assaultive_flag_ever,0) = 1 AND COALESCE(all_maybe_assaultive_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(maybe_assaultive_flag,0) = 0 AND COALESCE(maybe_assaultive_flag_ever,0) = 1 AND COALESCE(all_maybe_assaultive_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(maybe_assaultive_flag,0) = 0 AND COALESCE(maybe_assaultive_flag_prior,0) = 1 THEN 'Discretion'
-                 WHEN COALESCE(maybe_assaultive_flag,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS maybe_assaultive_flag_eligibility,
-            CASE WHEN COALESCE(unknown_offense_flag,0) = 0 AND COALESCE(unknown_offense_flag_ever,0) = 0 AND COALESCE(unknown_offense_flag_prior,0) = 0 THEN 'Eligible'
-                 WHEN COALESCE(unknown_offense_flag,0) = 0 AND COALESCE(unknown_offense_flag_prior,0) = 0 AND COALESCE(unknown_offense_flag_ever,0) = 1 AND COALESCE(all_unknown_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(unknown_offense_flag,0) = 0 AND COALESCE(unknown_offense_flag_ever,0) = 1 AND COALESCE(all_unknown_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(unknown_offense_flag,0) = 0 AND COALESCE(unknown_offense_flag_prior,0) = 1 THEN 'Discretion'
-                 WHEN COALESCE(unknown_offense_flag,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS unknown_offense_flag_eligibility,
-            CASE WHEN COALESCE(missing_offense,0) = 0 AND COALESCE(missing_offense_ever,0) = 0 AND COALESCE(missing_offense_prior,0) = 0 THEN 'Eligible'
-                 -- If only missing offense is in prior record, I don't think that will / should exclude
-                 WHEN COALESCE(missing_offense,0) = 0 AND COALESCE(missing_offense_ever,0) = 0 AND COALESCE(missing_offense_prior,0) = 1 THEN 'Eligible'
-                 WHEN COALESCE(missing_offense,0) = 0 AND COALESCE(missing_offense_prior,0) = 0 AND COALESCE(missing_offense_ever,0) = 1 AND COALESCE(all_missing_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(missing_offense,0) = 0 AND COALESCE(missing_offense_ever,0) = 1 AND COALESCE(all_missing_offenses_expired,0) = 0 THEN 'Discretion'
-                 ELSE 'Discretion' END AS missing_offense_flag_eligibility,
-            CASE WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_ever,0) = 0 AND COALESCE(young_victim_flag_prior,0) = 0 THEN 'Eligible'
-                 WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_prior,0) = 0 AND COALESCE(young_victim_flag_ever,0) = 1 AND COALESCE(all_young_victim_offenses_expired,0) = 1 THEN 'Eligible - Expired'
-                 WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_ever,0) = 1 AND COALESCE(all_young_victim_offenses_expired,0) = 0 THEN 'Discretion'
-                 WHEN COALESCE(young_victim_flag,0) = 0 AND COALESCE(young_victim_flag_prior,0) = 1 THEN 'Discretion'
-                 ELSE 'Ineligible' END AS young_victim_flag_eligibility,
-            CASE WHEN COALESCE(dui_flag,0) = 0 THEN 'Eligible' ELSE 'Ineligible' END as dui_flag_eligibility,
-            CASE WHEN COALESCE(dui_last_5_years_flag,0) = 0 THEN 'Eligible' ELSE 'Ineligible' END AS dui_last_5_years_flag_eligibility,
-            CASE WHEN GREATEST(COALESCE(homicide_flag,0),COALESCE(homicide_flag_ever,0),COALESCE(homicide_flag_prior,0)) = 1 THEN 'Ineligible' ELSE 'Eligible' END AS homicide_eligibility,                  
-            CASE WHEN total_screens_in_past_year IS NULL THEN 0 
-                ELSE total_screens_in_past_year END AS total_screens_in_past_year,
-        -- Logic here: for non-drug-offense:
-            -- They must be 6 months or more past their latest positive test. This will be null for people with no positive test - for those, we assume they meet this condition
-            -- They must have at least 1 negative test in the past year 
-        CASE WHEN COALESCE(high_ad_client,0) = 0 
-            AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 180 
-            AND sum_negative_tests_in_past_year >= 1
-            -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
-            AND is_most_recent_test_negative = 1        
-             THEN 1
-            -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info or where drug offense = 1 since there are separate flags for that
-             WHEN high_ad_client IS NULL THEN NULL
-             WHEN COALESCE(high_ad_client,0) = 1 THEN NULL
-             ELSE 0 
-             END AS drug_screen_pass_flag_non_drug_offense,
-        -- Logic here: for drug offenses
-            -- If there are 2 negative tests in the past year, the most recent test is negative, and the most recent positive test (if it exists) is over 12 months old, they're eligible
-        CASE WHEN COALESCE(high_ad_client,0) = 1 
-            AND sum_negative_tests_in_past_year >= 2 
-            AND is_most_recent_test_negative = 1 
-            AND DATE_DIFF(CURRENT_DATE('US/Eastern'), COALESCE(most_recent_positive_test_date, '1900-01-01'), DAY) >= 365
-            THEN 1
-             -- These two conditions ensure that selecting this flag doesnt automatically eliminate people missing sentencing info
-             -- or where drug offense = 0 since there are separate flags for that
-             WHEN high_ad_client IS NULL THEN NULL
-             WHEN COALESCE(high_ad_client,0) = 0 THEN NULL
-             ELSE 0 
-             END AS drug_screen_pass_flag_drug_offense,
-        -- Criteria: Special Conditions are up to date
-        CASE WHEN SPE_Note_Due <= current_date('US/Eastern') THEN 0 ELSE 1 END AS spe_conditions_not_overdue_flag,
-        -- Counties in JD 17 don't allow CR for probation cases
-        CASE WHEN judicial_district = '17' AND Case_Type LIKE '%PROBATION%' THEN 0 ELSE 1 END AS eligible_counties,
-        -- Exclude anyone on lifetime supervision or with a life sentence
-        CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL THEN 1 
-            ELSE 0 END AS no_lifetime_flag,
-        -- Exclude anyone from CR who was previous rejected
-        CASE WHEN 
-            CR_rejection_codes.Offender_ID IS NULL THEN 1 ELSE 0 END AS cr_not_previous_rejected_flag,
-        CASE WHEN 
-            CR_rejection_codes_dynamic.Offender_ID IS NULL THEN 1 ELSE 0 END AS cr_not_rejected_x_months_flag,
-        CASE WHEN zero_tolerance_codes.Offender_ID IS NULL THEN 1 ELSE 0 END AS no_zero_tolerance_codes,
-        CASE WHEN COALESCE(unpaid_total_latest,0) <= 500 THEN 'low_balance'
-             WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'exempt'
-             WHEN unpaid_total_latest <= 2000 AND have_past_1_month_payment = 1 AND have_past_2_month_payment = 1 AND have_past_3_month_payment = 1 THEN 'regular_payments'
-            ELSE 'Ineligible' END AS fines_fees_eligible,        
-        CASE WHEN sanctions.Offender_ID IS NULL THEN 1 ELSE 0 END as no_serious_sanctions_flag,
-        CASE WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'Fees Waived' 
-             END AS exemption_notes,
-        current_exemption_type,
+                assessment_date AS latest_assessment_date,                  
+                COALESCE(total_screens_in_past_year,0) AS total_screens_in_past_year,
+                CASE WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'Fees Waived' 
+                     END AS exemption_notes,
+                current_exemption_type,
+                COALESCE(full_name,TO_JSON_STRING(STRUCT(first_name as given_names,"" as middle_names,"" as name_suffix,last_name as surname)))  AS person_name,
+                COALESCE(has_TN_sentence,0) AS has_TN_sentence,
+                COALESCE(sentence_expiration_date_internal,sentence_expiration_date) AS expiration_date,
+                DATE_DIFF(COALESCE(sentence_expiration_date_internal,sentence_expiration_date), current_date('US/Eastern'), DAY) AS time_to_expiration_days,
+                CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) < current_date('US/Eastern') 
+                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
+                    AND person_status in ("ACTV","PEND")
+                    AND missing_at_least_1_exp_date = 0
+                    AND latest_tepe_date IS NOT NULL
+                    THEN 1 ELSE 0 END AS overdue_for_discharge_tepe,
+                CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) < current_date('US/Eastern') 
+                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
+                    AND person_status in ("ACTV","PEND")
+                    AND missing_at_least_1_exp_date = 0
+                    AND latest_tepe_date IS NULL
+                    THEN 1 ELSE 0 END AS overdue_for_discharge_no_case_closure,
+                CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 90 DAY) 
+                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
+                    AND missing_at_least_1_exp_date = 0
+                    AND person_status in ("ACTV","PEND")
+                    THEN 1 ELSE 0 END AS overdue_for_discharge_within_90,
+                CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 180 DAY) 
+                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
+                    AND missing_at_least_1_exp_date = 0
+                    AND person_status in ("ACTV","PEND")
+                    THEN 1 ELSE 0 END AS overdue_for_discharge_within_180,
+                DATE_DIFF(COALESCE(sentence_expiration_date,sentence_expiration_date_internal),sentence_start_date,DAY) AS sentence_length_days,
+                DATE_DIFF(COALESCE(sentence_expiration_date,sentence_expiration_date_internal),sentence_start_date,YEAR) AS sentence_length_years,
+                person_status,
+                special_conditions_on_current_sentences,
+                COALESCE(unpaid_total_latest,0) AS current_balance,
+                COALESCE(unpaid_total_all,0) AS current_balance_all,
+                most_recent_payment AS last_payment_date,
+                last_paid_amount AS last_payment_amount,
+                latest_tepe_date,
+                latest_zzz_date,
+                latest_zzz_code,
+                latest_mvmt_code,
+                latest_mvmt_date,
+                current_supervision_level_start AS supervision_level_start_internal,
+                -- Current offenses is just active offenses. If someone is missing an active sentence, this is null
+                active_offenses AS current_offenses,
+                -- These are prior offenses that make someone ineligible, but that expired 10+ years ago
+                CASE WHEN domestic_flag_eligibility in ('Eligible - Expired')
+                    OR sex_offense_flag_eligibility in ('Eligible - Expired')
+                    OR assaultive_offense_flag_eligibility in ('Eligible - Expired')
+                    OR maybe_assaultive_flag_eligibility in ('Eligible - Expired')
+                    OR unknown_offense_flag_eligibility in ('Eligible - Expired')
+                    OR missing_offense_flag_eligibility in ('Eligible - Expired')
+                    OR young_victim_flag_eligibility in ('Eligible - Expired')
+                    THEN lifetime_offenses
+                    END AS lifetime_offenses_expired,
+                ARRAY_CONCAT(lifetime_offenses, prior_offenses) AS past_offenses,
+                lifetime_offenses AS lifetime_offenses_all,
+                DRUN_array AS last_DRUN,
+                most_recent_positive_test_date,
+                sanctions_in_last_year,
+                latest_serious_sanction_date,
+                DATE_ADD(COALESCE(latest_serious_sanction_date,'1900-01-01'), INTERVAL 12 MONTH) AS date_serious_sanction_eligible,
+                board_conditions,
+                arrests_past_year AS last_arr_check_past_year,
+                COALESCE(drug_offense,drug_offense_ever) AS drug_offense_overall,
+                sum_negative_tests_in_past_year,
+                is_most_recent_test_negative,
+                earliest_DRUN_date,  
         FROM sentences_join
         LEFT JOIN dru_contacts 
             USING(Offender_ID)
@@ -680,424 +808,105 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         LEFT JOIN sanctions
             USING(Offender_ID)
         LEFT JOIN assessment
-            USING(person_id)    
-        LEFT JOIN zero_tolerance_codes 
-            ON sentences_join.Offender_ID = zero_tolerance_codes.Offender_ID
-            AND zero_tolerance_codes.latest_zero_tolerance_sanction_date  > COALESCE(sentence_start_date,'0001-01-01')
-    ),
-    add_more_flags_2 AS (
-        SELECT
-            COALESCE(full_name,TO_JSON_STRING(STRUCT(first_name as given_names,"" as middle_names,"" as name_suffix,last_name as surname)))  AS person_name,
-            add_more_flags_1.person_id,
-            first_name,
-            last_name,
-            Phone_Number AS phone_number,
-            -- TODO(#11790): Pull from Address table instead of Standards Sheet if both are same
-            INITCAP(CONCAT(
-                Address_Line1, 
-                IF(Address_Line2 IS NULL, '', CONCAT(' ', Address_Line2)), 
-                ', ', 
-                Address_City, 
-                ', ', 
-                Address_State, 
-                ' ', 
-                Address_Zip
-                )) AS address,
-            conviction_county,
-            fines_fees_eligible,
-            Last_ARR_Note,
-            Last_FEE_Note,
-            FEE_Note_Due,
-            CASE WHEN SPE_Note_Due IS NULL AND Last_SPE_Note IS NULL AND Last_SPET_Date IS NULL THEN 'none'
-                 WHEN SPE_Note_Due IS NULL AND Last_SPE_Note IS NOT NULL AND Last_SPET_Date IS NOT NULL THEN 'terminated'
-                 WHEN SPE_Note_Due > CURRENT_DATE('US/Eastern') THEN 'current'
-                 END AS spe_flag,
-            SPE_Note_Due AS  SPE_note_due,
-            Last_SPE_Note AS last_SPE_note, 
-            Last_SPET_Date AS last_SPET_date,
-            EXP_Date AS sentence_expiration_date,
-            missing_at_least_1_exp_date,
-            COALESCE(has_TN_sentence,0) AS has_TN_sentence,
-            sentence_expiration_date_internal,
-            COALESCE(sentence_expiration_date_internal,EXP_Date) AS expiration_date,
-            DATE_DIFF(COALESCE(sentence_expiration_date_internal,EXP_Date), current_date('US/Eastern'), DAY) AS time_to_expiration_days,
-            CASE WHEN COALESCE(sentence_expiration_date_internal,EXP_Date) < current_date('US/Eastern') 
-                AND no_lifetime_flag = 1
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND person_status in ("ACTV","PEND")
-                AND missing_at_least_1_exp_date = 0
-                AND latest_tepe_date IS NOT NULL
-                THEN 1 ELSE 0 END AS overdue_for_discharge_tepe,
-            CASE WHEN COALESCE(sentence_expiration_date_internal,EXP_Date) < current_date('US/Eastern') 
-                AND no_lifetime_flag = 1
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND person_status in ("ACTV","PEND")
-                AND missing_at_least_1_exp_date = 0
-                AND latest_tepe_date IS NULL
-                THEN 1 ELSE 0 END AS overdue_for_discharge_no_case_closure,
-            CASE WHEN COALESCE(sentence_expiration_date_internal,EXP_Date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 90 DAY) 
-                AND no_lifetime_flag = 1
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND missing_at_least_1_exp_date = 0
-                AND person_status in ("ACTV","PEND")
-                THEN 1 ELSE 0 END AS overdue_for_discharge_within_90,
-            CASE WHEN COALESCE(sentence_expiration_date_internal,EXP_Date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 180 DAY) 
-                AND no_lifetime_flag = 1
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND missing_at_least_1_exp_date = 0
-                AND person_status in ("ACTV","PEND")
-                THEN 1 ELSE 0 END AS overdue_for_discharge_within_180,
-            sentence_start_date,
-            latest_supervision_start_date,
-            latest_system_session_start_date,
-            earliest_supervision_start_date_in_latest_system,
-            DATE_DIFF(COALESCE(sentence_expiration_date_internal,EXP_Date),sentence_start_date,DAY) AS sentence_length_days,
-            DATE_DIFF(COALESCE(sentence_expiration_date_internal,EXP_Date),sentence_start_date,YEAR) AS sentence_length_years,
-            add_more_flags_1.Offender_ID AS person_external_id,
-            person_status,
-            special_conditions_on_current_sentences,
-            COALESCE(unpaid_total_latest,0) AS current_balance,
-            COALESCE(unpaid_total_all,0) AS current_balance_all,
-            current_exemption_type,
-            most_recent_payment AS last_payment_date,
-            last_paid_amount AS last_payment_amount,
-            exemption_notes,
-            latest_tepe_date,
-            latest_zzz_date,
-            latest_zzz_code,
-            latest_mvmt_code,
-            latest_mvmt_date,
-            Staff_ID AS officer_id,
-            Staff_First_Name AS staff_first_name,
-            Staff_Last_Name AS staff_last_name,
-            Case_Type AS supervision_type,
-            judicial_district,
-            supervision_level_internal,
-            Supervision_Level AS supervision_level,
-            eligible_level_start,
-            Plan_Start_Date AS supervision_level_start,
-            current_supervision_level_start AS supervision_level_start_internal,
-            no_sup_level_higher_than_mininmum,
-            previous_supervision_level,
-            latest_start_higher_sup_level,
-            -- Current offenses is just active offenses. If someone is missing an active sentence, this is null
-            active_offenses AS current_offenses,
-            -- These are prior offenses that make someone ineligible, but that expired 10+ years ago
-            CASE WHEN domestic_flag_eligibility in ('Eligible - Expired')
-                OR sex_offense_flag_eligibility in ('Eligible - Expired')
-                OR assaultive_offense_flag_eligibility in ('Eligible - Expired')
-                OR maybe_assaultive_flag_eligibility in ('Eligible - Expired')
-                OR unknown_offense_flag_eligibility in ('Eligible - Expired')
-                OR missing_offense_flag_eligibility in ('Eligible - Expired')
-                OR young_victim_flag_eligibility in ('Eligible - Expired')
-                THEN lifetime_offenses
-                END AS lifetime_offenses_expired,
-            ARRAY_CONCAT(lifetime_offenses, prior_offenses) AS past_offenses,
-            prior_offenses,
-            lifetime_offenses AS lifetime_offenses_all,
-            docket_numbers,
-            has_active_sentence,
-            DRUN_array AS last_DRUN,
-            most_recent_positive_test_date,
-            sanctions_in_last_year,
-            board_conditions,
-            arrests_past_year AS last_arr_check_past_year,
-            zt_codes,
-            Last_Sanctions_Type AS last_sanction,
-            Last_DRU_Note AS last_drug_screen_date,
-            Last_DRU_Type AS last_drug_screen_result,
-            Region as district,
-            time_on_level_flag_adj,
-            no_serious_sanctions_flag,
-            no_arrests_flag,
-            spe_conditions_not_overdue_flag,
-            domestic_flag_eligibility,
-            sex_offense_flag_eligibility,
-            assaultive_offense_flag_eligibility,
-            maybe_assaultive_flag_eligibility,
-            unknown_offense_flag_eligibility,
-            missing_offense_flag_eligibility,
-            young_victim_flag_eligibility,
-            homicide_eligibility,
-            dui_flag_eligibility,
-            dui_last_5_years_flag_eligibility,
-            drug_screen_pass_flag_drug_offense,
-            drug_screen_pass_flag_non_drug_offense,
-            COALESCE(drug_offense,drug_offense_ever) AS drug_offense,
-            high_ad_client,
-            latest_assessment_date,
-            sum_negative_tests_in_past_year,
-            is_most_recent_test_negative,
-            total_screens_in_past_year,
-            missing_sent_info,
-            eligible_counties,
-            eligible_supervision_level,
-            cr_not_previous_rejected_flag,
-            cr_not_rejected_x_months_flag,
-            no_lifetime_flag,
-            no_zero_tolerance_codes,   
-            earliest_DRUN_date,     
-            CASE WHEN domestic_flag_eligibility = 'Eligible'
-                        AND sex_offense_flag_eligibility = 'Eligible'
-                        AND assaultive_offense_flag_eligibility = 'Eligible'
-                        AND maybe_assaultive_flag_eligibility = 'Eligible'
-                        AND unknown_offense_flag_eligibility = 'Eligible'
-                        AND missing_offense_flag_eligibility = 'Eligible'
-                        AND young_victim_flag_eligibility = 'Eligible'
-                        AND dui_flag_eligibility = 'Eligible'
-                        AND homicide_eligibility = 'Eligible'
-                        AND dui_last_5_years_flag_eligibility = 'Eligible'
-                        AND latest_expiration_date_for_excluded_offenses IS NOT NULL THEN DATE_ADD(latest_expiration_date_for_excluded_offenses, INTERVAL 10 YEAR)
-                WHEN domestic_flag_eligibility in ('Eligible','Discretion')
-                        AND sex_offense_flag_eligibility in ('Eligible','Discretion')
-                        AND assaultive_offense_flag_eligibility in ('Eligible','Discretion')
-                        AND maybe_assaultive_flag_eligibility in ('Eligible','Discretion')
-                        AND unknown_offense_flag_eligibility in ('Eligible','Discretion')
-                        AND missing_offense_flag_eligibility in ('Eligible','Discretion')
-                        AND young_victim_flag_eligibility in ('Eligible','Discretion')
-                        AND homicide_eligibility = 'Eligible'
-                        AND dui_flag_eligibility = 'Eligible'
-                        AND dui_last_5_years_flag_eligibility = 'Eligible' THEN '1900-01-01'
-                END AS date_offenses_eligible,
-            date_sup_level_eligible,
-            date_arrest_check_eligible,
-            COALESCE(date_sanction_eligible,'1900-01-01') AS date_sanction_eligible,
-            COALESCE(Last_SPE_Note,'1900-01-01') AS date_spe_eligible,
-            CASE WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date >= latest_supervision_start_date THEN earliest_DRUN_date
-                 WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date < COALESCE(latest_supervision_start_date, Plan_Start_Date) THEN COALESCE(Last_DRU_Note,'1900-01-01')
-                  WHEN COALESCE(drug_offense,drug_offense_ever) = 0 AND earliest_DRUN_date IS NULL THEN '1900-01-01'
-                  WHEN COALESCE(drug_offense,drug_offense_ever) = 1 and sum_negative_tests_in_past_year >= 2 and is_most_recent_test_negative = 1 THEN Last_DRU_Note
-                  ELSE '9999-01-01'
-                  END as date_drug_screen_eligible,
-            CASE WHEN latest_cr_rejection_code_date IS NOT NULL THEN DATE_ADD(latest_cr_rejection_code_date, INTERVAL 3 MONTH)
-                 ELSE '1900-01-01' END AS date_cr_rejection_eligible,        
-            CASE WHEN domestic_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND maybe_assaultive_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND dui_flag_eligibility in ('Eligible')
-                AND dui_last_5_years_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND homicide_eligibility = 'Eligible'
-                THEN 1 ELSE 0 END AS eligible_offenses,
-            CASE WHEN 
-                COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
-                THEN 1 ELSE 0 END AS eligible_drug_screen_non_drug_offense,
-            CASE WHEN 
-                COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
-                THEN 1 ELSE 0 END AS eligible_drug_screen_drug_offense,
-            CASE WHEN eligible_supervision_level = 1
-                AND time_on_level_flag_adj = 1 
-                AND no_serious_sanctions_flag = 1 
-                AND no_arrests_flag = 1
-                AND spe_conditions_not_overdue_flag = 1
-                AND domestic_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND maybe_assaultive_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired')
-                AND dui_flag_eligibility = 'Eligible'
-                AND dui_last_5_years_flag_eligibility = 'Eligible'
-                AND homicide_eligibility = 'Eligible'
-                -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
-                AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
-                AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
-                AND missing_sent_info = 0
-                AND cr_not_previous_rejected_flag = 1
-                AND cr_not_rejected_x_months_flag = 1
-                AND no_lifetime_flag = 1
-                -- The logic here is the following: violations on diversion/probation can change someone expiration date, and we have reason to 
-                -- think that there are often a lot of judgement orders/revocation orders that affect these supervision types that don't 
-                -- appear in the sentencing data (or appear with a major lag). Zero tolerance codes are used as a proxy to conservatively
-                -- exclude people from compliant reporting and overdue for discharge, with the assumption that there might be more to their 
-                -- sentence that we don't know about. Since parole information is generally more reliable and updated, we don't apply that same
-                -- filter to people on parole
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Ineligible')
-            THEN 1 ELSE 0 END AS all_eligible,
-            CASE WHEN eligible_supervision_level = 1
-                AND time_on_level_flag_adj = 1 
-                AND no_serious_sanctions_flag = 1 
-                AND no_arrests_flag = 1
-                AND spe_conditions_not_overdue_flag = 1
-                AND domestic_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND maybe_assaultive_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND dui_flag_eligibility = 'Eligible'
-                AND dui_last_5_years_flag_eligibility = 'Eligible'
-                AND homicide_eligibility = 'Eligible'
-                -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
-                AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
-                AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
-                AND missing_sent_info = 0
-                AND cr_not_previous_rejected_flag = 1
-                AND cr_not_rejected_x_months_flag = 1
-                AND no_lifetime_flag = 1
-                -- The logic here is the following: violations on diversion/probation can change someone expiration date, and we have reason to 
-                -- think that there are often a lot of judgement orders/revocation orders that affect these supervision types that don't 
-                -- appear in the sentencing data (or appear with a major lag). Zero tolerance codes are used as a proxy to conservatively
-                -- exclude people from compliant reporting and overdue for discharge, with the assumption that there might be more to their 
-                -- sentence that we don't know about. Since parole information is generally more reliable and updated, we don't apply that same
-                -- filter to people on parole
-                AND (no_zero_tolerance_codes = 1 OR Case_Type LIKE '%PAROLE%')
-                AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Ineligible')
-            THEN 1 ELSE 0 END AS all_eligible_and_offense_discretion,
-            CASE WHEN eligible_supervision_level = 1
-                AND time_on_level_flag_adj = 1 
-                AND no_serious_sanctions_flag = 1 
-                AND no_arrests_flag = 1
-                AND spe_conditions_not_overdue_flag = 1
-                AND domestic_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND maybe_assaultive_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND dui_flag_eligibility = 'Eligible'
-                AND dui_last_5_years_flag_eligibility = 'Eligible'
-                AND homicide_eligibility = 'Eligible'
-                -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
-                AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
-                AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
-                -- Since this flag is for offense type discretion anyway, ok to surface people missing sentence info
-                # AND missing_sent_info = 0
-                AND cr_not_previous_rejected_flag = 1
-                AND cr_not_rejected_x_months_flag = 1
-                AND no_lifetime_flag = 1
-                AND eligible_counties = 1
-                AND fines_fees_eligible not in ('Ineligible') 
-            THEN 1 ELSE 0 END AS all_eligible_and_offense_and_zt_discretion,
-            CASE WHEN eligible_supervision_level = 1
-                AND time_on_level_flag_adj = 1 
-                AND no_serious_sanctions_flag = 1 
-                AND no_arrests_flag = 1
-                AND spe_conditions_not_overdue_flag = 1
-                AND domestic_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND sex_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND assaultive_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND maybe_assaultive_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND unknown_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND missing_offense_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND young_victim_flag_eligibility in ('Eligible','Eligible - Expired','Discretion')
-                AND dui_flag_eligibility = 'Eligible'
-                AND dui_last_5_years_flag_eligibility = 'Eligible'
-                -- These flags can be null if sentencing info is missing or if drug_offense = 1 or drug_offense = 0, respectively
-                AND COALESCE(drug_screen_pass_flag_non_drug_offense,1) = 1
-                AND COALESCE(drug_screen_pass_flag_drug_offense,1) = 1
-                AND missing_sent_info = 0
-                AND cr_not_previous_rejected_flag = 1
-                AND cr_not_rejected_x_months_flag = 1
-                AND no_lifetime_flag = 1
-                AND eligible_counties = 1
-                AND fines_fees_eligible != 'Ineligible'
-                AND homicide_eligibility = 'Eligible'
-            THEN 1 ELSE 0 END AS all_eligible_and_offense_and_zt_and_fines_discretion,
-        FROM add_more_flags_1    
+            USING(person_id)
         LEFT JOIN contacts_cte_arrays 
             USING(Offender_ID)
         LEFT JOIN relevant_conditions
             USING(Offender_ID)
-        LEFT JOIN sanctions_array 
-            USING(Offender_ID)
-        LEFT JOIN sanction_eligible_date
-            USING(Offender_ID)
         LEFT JOIN drun_contacts
             USING(Offender_ID)
-        LEFT JOIN rejection_codes_max_date
+        LEFT JOIN meth_contacts
             USING(Offender_ID)
         LEFT JOIN special_conditions
-            ON add_more_flags_1.person_id = special_conditions.person_id
+            USING(person_id)
         LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
-            ON sp.person_id = add_more_flags_1.person_id
+            ON sp.person_id = sentences_join.person_id
             AND sp.state_code = 'US_TN'
         LEFT JOIN person_status_cte
             USING(Offender_ID)
         LEFT JOIN latest_tepe
-            on add_more_flags_1.Offender_ID = latest_tepe.Offender_ID
-            AND latest_tepe.latest_tepe_date >= DATE_SUB(COALESCE(sentence_expiration_date_internal,EXP_Date), INTERVAL 30 DAY)
+            ON sentences_join.Offender_ID = latest_tepe.Offender_ID
+            AND latest_tepe.latest_tepe_date >= DATE_SUB(COALESCE(sentence_expiration_date_internal,sentence_expiration_date), INTERVAL 30 DAY)
         LEFT JOIN latest_zzz
-            on add_more_flags_1.Offender_ID = latest_zzz.Offender_ID
+            on sentences_join.Offender_ID = latest_zzz.Offender_ID
             AND latest_zzz.latest_zzz_date >= latest_tepe.latest_tepe_date
         LEFT JOIN latest_off_mvmt 
-            on add_more_flags_1.Offender_ID = latest_off_mvmt.Offender_ID
-            AND latest_off_mvmt.latest_mvmt_date >= latest_tepe.latest_tepe_date
+            on sentences_join.Offender_ID = latest_off_mvmt.Offender_ID
+            AND latest_off_mvmt.latest_mvmt_date >= latest_tepe.latest_tepe_date    
+        LEFT JOIN zero_tolerance_codes 
+            ON sentences_join.Offender_ID = zero_tolerance_codes.Offender_ID
+            AND zero_tolerance_codes.latest_zero_tolerance_sanction_date  > COALESCE(sentence_start_date,'0001-01-01')
+    ),
+    determine_criteria AS (
+        SELECT *, 
+            CASE
+                -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting 
+                WHEN supervision_type LIKE '%ISC%' 
+                    AND supervision_level LIKE '%MINIMUM%' 
+                    AND has_TN_sentence = 0 
+                    AND eligible_lifetime_flag = 1 
+                    AND no_sup_level_higher_than_mininmum in ('Eligible')
+                THEN 'c4'
+                WHEN LEAST(
+                        eligible_supervision_level,
+                        eligible_arrests_flag,
+                        spe_conditions_not_overdue_flag,
+                        offense_type_eligibility,
+                        zt_discretion_eligibility,
+                        eligible_counties,
+                        eligible_lifetime_flag,
+                        eligible_cr_previous_rejection,
+                        1 - overdue_for_discharge_no_case_closure, 
+                        1 - overdue_for_discharge_within_90
+                    ) > 0
+                    THEN CONCAT(
+                        'c',
+                        CAST(
+                            GREATEST(
+                                eligible_supervision_level,
+                                eligible_arrests_flag,
+                                spe_conditions_not_overdue_flag,
+                                offense_type_eligibility,
+                                zt_discretion_eligibility,
+                                eligible_counties,
+                                eligible_lifetime_flag,
+                                eligible_cr_previous_rejection,
+                                1 - overdue_for_discharge_no_case_closure, 
+                                1 - overdue_for_discharge_within_90
+                            )
+                        AS STRING)
+                    ) END AS cr_eligible_discretion_level,
+            eligible_time_on_supervision_level_bool + eligible_serious_sanctions_bool + drug_screen_eligibility_bool + fines_fees_eligible_bool + cr_recent_rejection_eligible_bool AS remaining_addl_criteria_needed,
+            CASE WHEN eligible_time_on_supervision_level_bool + eligible_serious_sanctions_bool + drug_screen_eligibility_bool + fines_fees_eligible_bool + cr_recent_rejection_eligible_bool = 0 THEN 'eligible'
+                 WHEN eligible_time_on_supervision_level_bool + eligible_serious_sanctions_bool + drug_screen_eligibility_bool + fines_fees_eligible_bool + cr_recent_rejection_eligible_bool > 0 THEN 'almost_eligible'
+                 END AS cr_eligible_complete
+        FROM 
+            (
+            SELECT *,
+                CASE WHEN eligible_time_on_supervision_level = 'almost_eligible' THEN 1
+                     WHEN eligible_time_on_supervision_level = 'eligible' THEN 0
+                     END as eligible_time_on_supervision_level_bool,
+                CASE WHEN eligible_serious_sanctions = 'almost_eligible' THEN 1
+                     WHEN eligible_serious_sanctions = 'eligible' THEN 0
+                     END as eligible_serious_sanctions_bool,
+                CASE WHEN drug_screen_eligibility = 'almost_eligible' THEN 1
+                     WHEN drug_screen_eligibility = 'eligible' THEN 0
+                     END as drug_screen_eligibility_bool,
+                CASE WHEN fines_fees_eligible = 'ineligible' AND current_balance BETWEEN 500 AND 2000 THEN 1
+                     WHEN fines_fees_eligible != 'ineligible' THEN 0
+                     END as fines_fees_eligible_bool,
+            FROM add_more_flags_1            
+            )
     )
     SELECT *,
-        -- These fields are not currently being used in analysis or determining who is eligible - they were created to
-        -- determine when someone did or will be eligible, but the plan is to answer those questions going forward using
-         -- a sessionized view like compliant_reporting_sessions
-        GREATEST(date_offenses_eligible,
-                date_sup_level_eligible,
-                date_arrest_check_eligible,
-                date_sanction_eligible,
-                date_spe_eligible,
-                date_drug_screen_eligible,
-                date_cr_rejection_eligible) AS greatest_date_eligible,
+        CASE WHEN cr_eligible_discretion_level IN ('c1','c2','c3') THEN remaining_addl_criteria_needed 
+            WHEN cr_eligible_discretion_level = 'c4' THEN 0
+            END AS remaining_criteria_needed,
         CASE 
-             -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting
-             WHEN supervision_type LIKE '%ISC%' 
-                AND supervision_level LIKE '%MINIMUM%' 
-                AND has_TN_sentence = 0 
-                AND no_lifetime_flag = 1 
-                AND no_sup_level_higher_than_mininmum in ('Eligible')
-                THEN 'c4'
-             WHEN all_eligible = 1 
-                AND overdue_for_discharge_no_case_closure = 0 
-                AND overdue_for_discharge_within_90 = 0 
-                THEN 'c1'
-             WHEN all_eligible_and_offense_discretion = 1 
-                AND overdue_for_discharge_no_case_closure = 0 
-                AND overdue_for_discharge_within_90 = 0 
-                THEN 'c2'
-             WHEN all_eligible_and_offense_and_zt_discretion = 1 
-                AND overdue_for_discharge_no_case_closure = 0 
-                AND overdue_for_discharge_within_90 = 0 
-                THEN 'c3' 
-             END AS compliant_reporting_eligible,
-        
-        CASE WHEN supervision_type LIKE '%ISC%' 
-            AND supervision_level LIKE '%MINIMUM%' 
-            AND has_TN_sentence = 0 
-            AND no_lifetime_flag = 1
-            AND no_sup_level_higher_than_mininmum in ('Eligible') 
-            THEN 1 
-        ELSE 0 END AS eligible_c4,
-        
-        CASE WHEN supervision_type LIKE '%ISC%' 
-            AND supervision_level LIKE '%MINIMUM%' 
-            AND has_TN_sentence = 0 
-            AND no_lifetime_flag = 1
-            AND no_sup_level_higher_than_mininmum in ('Needs Review') 
-            THEN 1 
-        ELSE 0 END AS eligible_c4_review,
-        
-        CASE WHEN all_eligible = 1 
-            AND overdue_for_discharge_no_case_closure = 0 
-            AND overdue_for_discharge_within_90 = 0 
-            THEN 1 
-        ELSE 0 END AS eligible_c1,
-        CASE WHEN all_eligible_and_offense_discretion = 1 
-            AND overdue_for_discharge_no_case_closure = 0 
-            AND overdue_for_discharge_within_90 = 0 
-            THEN 1 
-        ELSE 0 END AS eligible_c2,
-        CASE WHEN all_eligible_and_offense_and_zt_discretion = 1 
-            AND overdue_for_discharge_no_case_closure = 0 
-            AND overdue_for_discharge_within_90 = 0 
-            THEN 1 
-        ELSE 0 END AS eligible_c3
-    FROM add_more_flags_2
+            WHEN cr_eligible_discretion_level = 'c4' THEN cr_eligible_discretion_level
+            WHEN cr_eligible_complete IN ('eligible','almost_eligible') THEN cr_eligible_discretion_level 
+            END AS compliant_reporting_eligible
+    FROM determine_criteria
 """
 
 US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(

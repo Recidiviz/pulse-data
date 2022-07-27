@@ -51,6 +51,7 @@ CLIENT_RECORD_QUERY_TEMPLATE = """
             last_SPET_date AS special_conditions_terminated_date,
             board_conditions,
             compliant_reporting_eligible,
+            remaining_criteria_needed,
             eligible_level_start,
             current_offenses,
             past_offenses,

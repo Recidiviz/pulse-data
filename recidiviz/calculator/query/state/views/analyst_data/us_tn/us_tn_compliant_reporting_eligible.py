@@ -63,8 +63,8 @@ US_TN_COMPLIANT_REPORTING_ELIGIBLE_QUERY_TEMPLATE = """
         exemption_notes,
         special_conditions_on_current_sentences,
         board_conditions,
-        greatest_date_eligible,
         compliant_reporting_eligible,
+        remaining_criteria_needed,
         district,
     FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_logic_materialized`
 """
