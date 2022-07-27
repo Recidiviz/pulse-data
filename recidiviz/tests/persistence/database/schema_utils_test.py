@@ -104,6 +104,7 @@ def test_get_all_database_entity_classes() -> None:
         "StateSupervisionViolationTypeEntry",
         "StateSupervisionViolationResponse",
         "StateSupervisionViolationResponseDecisionEntry",
+        "StateTaskDeadline",
     ]
     operations_database_entity_names = [
         "DirectIngestViewMaterializationMetadata",
@@ -242,6 +243,7 @@ def test_get_all_table_classes() -> None:
         "state_supervision_violation_type_entry",
         "state_supervision_violation_response",
         "state_supervision_violation_response_decision_entry",
+        "state_task_deadline",
         "state_charge_incarceration_sentence_association",
         "state_charge_supervision_sentence_association",
         "state_supervision_violation_response_decision_agent_association",
@@ -315,6 +317,7 @@ def test_get_state_database_entities() -> None:
         "StateSupervisionViolationTypeEntry",
         "StateSupervisionViolationResponse",
         "StateSupervisionViolationResponseDecisionEntry",
+        "StateTaskDeadline",
     ]
 
     expected_database_entity_names = _prefix_module_name(

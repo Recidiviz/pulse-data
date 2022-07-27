@@ -486,3 +486,28 @@ state_drug_screen_sample_type_blood = "BLOOD"
 state_drug_screen_sample_type_hair = "HAIR"
 state_drug_screen_sample_type_breath = "BREATH"
 state_drug_screen_sample_type_no_sample = "NO_SAMPLE"
+
+# state_task_deadline.py
+state_task_type_appeal_for_transfer_to_supervision_from_incarceration = (
+    "APPEAL_FOR_TRANSFER_TO_SUPERVISION_FROM_INCARCERATION"
+)
+state_task_type_arrest_check = "ARREST_CHECK"
+state_task_type_supervision_case_plan_update = "SUPERVISION_CASE_PLAN_UPDATE"
+state_task_type_discharge_early_from_supervision = "DISCHARGE_EARLY_FROM_SUPERVISION"
+state_task_type_discharge_from_incarceration = "DISCHARGE_FROM_INCARCERATION"
+state_task_type_discharge_from_supervision = "DISCHARGE_FROM_SUPERVISION"
+state_task_type_drug_screen = "DRUG_SCREEN"
+state_task_type_employment_verification = "EMPLOYMENT_VERIFICATION"
+state_task_type_face_to_face_contact = "FACE_TO_FACE_CONTACT"
+state_task_type_home_visit = "HOME_VISIT"
+state_task_type_new_assessment = "NEW_ASSESSMENT"
+state_task_type_payment_verification = "PAYMENT_VERIFICATION"
+state_task_type_special_condition_verification = "SPECIAL_CONDITION_VERIFICATION"
+state_task_type_transfer_to_administrative_supervision = (
+    "TRANSFER_TO_ADMINISTRATIVE_SUPERVISION"
+)
+state_task_type_transfer_to_supervision_from_incarceration = (
+    "TRANSFER_TO_SUPERVISION_FROM_INCARCERATION"
+)
+state_task_type_treatment_referral = "TREATMENT_REFERRAL"
+state_task_type_treatment_verification = "TREATMENT_VERIFICATION"

@@ -97,6 +97,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateEarlyDischarge.__name__,
     state_entities.StateEmploymentPeriod.__name__,
     state_entities.StateDrugScreen.__name__,
+    state_entities.StateTaskDeadline.__name__,
 ]
 
 _COUNTY_CLASS_HIERARCHY = [

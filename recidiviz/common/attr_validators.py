@@ -24,7 +24,7 @@ class MyClass:
 """
 
 import datetime
-from typing import Any, Type, Callable
+from typing import Any, Callable, Type
 
 import attr
 
@@ -52,6 +52,10 @@ is_opt_int = is_opt(int)
 # Date field validators
 is_date = attr.validators.instance_of(datetime.date)
 is_opt_date = is_opt(datetime.date)
+
+# Datetime field validators
+is_datetime = attr.validators.instance_of(datetime.datetime)
+is_opt_datetime = is_opt(datetime.datetime)
 
 # Boolean field validators
 is_bool = attr.validators.instance_of(bool)

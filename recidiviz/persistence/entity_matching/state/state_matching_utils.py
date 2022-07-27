@@ -127,6 +127,7 @@ def _is_match(
             schema.StateSupervisionViolatedConditionEntry,
             schema.StateSupervisionViolationTypeEntry,
             schema.StateSupervisionCaseTypeEntry,
+            schema.StateTaskDeadline,
         ),
     ):
         return _base_entity_match(

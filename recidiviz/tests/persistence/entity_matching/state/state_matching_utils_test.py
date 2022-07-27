@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
@@ -255,6 +256,50 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             _is_match(
                 ingested_entity=charge,
                 db_entity=charge_another,
+                field_index=self.field_index,
+            )
+        )
+
+    def test_isMatch_stateTaskDeadline(self) -> None:
+        update_datetime = datetime.datetime(2022, 1, 1, 0, 0, 0)
+        deadline = schema.StateTaskDeadline(
+            state_code=_STATE_CODE,
+            task_type=StateTaskType.DRUG_SCREEN,
+            due_date=datetime.date(2022, 1, 1),
+            update_datetime=update_datetime,
+        )
+        deadline_another = schema.StateTaskDeadline(
+            state_code=_STATE_CODE,
+            task_type=StateTaskType.HOME_VISIT,
+            due_date=datetime.date(2022, 1, 1),
+            update_datetime=update_datetime,
+        )
+
+        # These don't match because they have different task_type values
+        self.assertFalse(
+            _is_match(
+                ingested_entity=deadline,
+                db_entity=deadline_another,
+                field_index=self.field_index,
+            )
+        )
+
+        # Make them exactly the same, so they do match
+        deadline_another.task_type = deadline.task_type
+        self.assertTrue(
+            _is_match(
+                ingested_entity=deadline,
+                db_entity=deadline_another,
+                field_index=self.field_index,
+            )
+        )
+
+        # Make them have different due_dates, so they don't match.
+        deadline_another.due_date = datetime.date(2022, 1, 30)
+        self.assertFalse(
+            _is_match(
+                ingested_entity=deadline,
+                db_entity=deadline_another,
                 field_index=self.field_index,
             )
         )

@@ -101,6 +101,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -905,6 +906,56 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             drug_screen_result_raw_text="DRUN",
             sample_type=StateDrugScreenSampleType.BREATH,
             sample_type_raw_text="BREATH",
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateTaskDeadline(self) -> None:
+        update_datetime = datetime.datetime.now()
+        result = deserialize_entity_factories.StateTaskDeadlineFactory.deserialize(
+            state_code="us_xx",
+            eligible_date="2022-05-01",
+            due_date="2022-05-08",
+            update_datetime=update_datetime,
+            task_type=StateTaskType.DRUG_SCREEN,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+
+        # Assert
+        expected_result = entities.StateTaskDeadline(
+            state_code="US_XX",
+            eligible_date=datetime.date(2022, 5, 1),
+            due_date=datetime.date(2022, 5, 8),
+            update_datetime=update_datetime,
+            task_type=StateTaskType.DRUG_SCREEN,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateTaskDeadline_datetime_parsing(self) -> None:
+        update_datetime = datetime.datetime.now()
+        result = deserialize_entity_factories.StateTaskDeadlineFactory.deserialize(
+            state_code="us_xx",
+            eligible_date="2022-05-01",
+            due_date="2022-05-08",
+            update_datetime=update_datetime.isoformat(),
+            task_type=StateTaskType.DRUG_SCREEN,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
+        )
+
+        # Assert
+        expected_result = entities.StateTaskDeadline(
+            state_code="US_XX",
+            eligible_date=datetime.date(2022, 5, 1),
+            due_date=datetime.date(2022, 5, 8),
+            update_datetime=update_datetime,
+            task_type=StateTaskType.DRUG_SCREEN,
+            task_type_raw_text="DRU",
+            task_subtype="MY_SUBTYPE",
         )
 
         self.assertEqual(expected_result, result)
