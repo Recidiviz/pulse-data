@@ -17,6 +17,7 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
+import { MetricSettings } from "../components/MetricsView";
 import {
   Metric,
   Report,
@@ -201,6 +202,59 @@ class ReportStore {
         this.resetState();
         this.getReportOverviews();
       });
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async getReportSettings(): Promise<Response | Error | undefined> {
+    try {
+      const { currentAgency } = this.userStore;
+
+      if (currentAgency === undefined) {
+        throw new Error(
+          "Either invalid user/agency information or no user or agency information initialized."
+        );
+      }
+
+      const response = (await this.api.request({
+        path: `/api/metrics/${currentAgency.id}`,
+        method: "GET",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue retrieving the report settings.");
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async updateReportSettings(
+    updatedMetricSettings: MetricSettings[]
+  ): Promise<Response | Error | undefined> {
+    try {
+      const { currentAgency } = this.userStore;
+
+      if (currentAgency === undefined) {
+        throw new Error(
+          "Either invalid user/agency information or no user or agency information initialized."
+        );
+      }
+
+      const response = (await this.api.request({
+        path: `/api/metrics/update`,
+        body: { agency_id: currentAgency.id, metrics: updatedMetricSettings },
+        method: "POST",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue updating the report settings.");
+      }
 
       return response;
     } catch (error) {
