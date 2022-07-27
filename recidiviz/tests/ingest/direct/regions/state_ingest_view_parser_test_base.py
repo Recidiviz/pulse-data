@@ -16,6 +16,7 @@
 # =============================================================================
 """Base test class for ingest view parser tests."""
 import csv
+import datetime
 import os
 import re
 import unittest
@@ -83,10 +84,14 @@ class StateIngestViewParserTestBase:
         return DirectIngestInstance.SECONDARY
 
     def _build_parser(self) -> IngestViewResultsParser:
+        results_update_datetime = datetime.datetime.now()
         region = self._region()
         return IngestViewResultsParser(
             delegate=IngestViewResultsParserDelegateImpl(
-                region, self.schema_type(), self._main_ingest_instance()
+                region=region,
+                schema_type=self.schema_type(),
+                ingest_instance=self._main_ingest_instance(),
+                results_update_datetime=results_update_datetime,
             )
         )
 

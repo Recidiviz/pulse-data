@@ -623,7 +623,10 @@ class BaseDirectIngestController:
         return IngestViewProcessorImpl(
             ingest_view_file_parser=IngestViewResultsParser(
                 delegate=IngestViewResultsParserDelegateImpl(
-                    self.region, self.system_level.schema_type(), self.ingest_instance
+                    region=self.region,
+                    schema_type=self.system_level.schema_type(),
+                    ingest_instance=self.ingest_instance,
+                    results_update_datetime=args.upper_bound_datetime_inclusive,
                 )
             )
         )

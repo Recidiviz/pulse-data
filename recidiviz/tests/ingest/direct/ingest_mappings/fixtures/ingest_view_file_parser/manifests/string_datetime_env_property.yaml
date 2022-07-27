@@ -1,0 +1,13 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - TASK_DATE
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    task_deadlines:
+      - FakeTaskDeadline:
+          update_datetime:
+            $env: test_results_update_datetime
+          due_date: TASK_DATE

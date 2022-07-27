@@ -62,6 +62,8 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
 
+ENV_PROPERTY_KEY = "$env"
+
 
 @attr.s(kw_only=True)
 class ManifestNode(Generic[ManifestNodeT]):
@@ -1683,8 +1685,6 @@ class BooleanLiteralManifest(ManifestNode[bool]):
     checking environmental data in mappings logic.
     """
 
-    ENV_PROPERTY_KEY = "$env"
-
     value: bool = attr.ib()
 
     @property
@@ -1702,14 +1702,6 @@ class BooleanLiteralManifest(ManifestNode[bool]):
 
     def columns_referenced(self) -> Set[str]:
         return set()
-
-    @classmethod
-    def for_env_property(
-        cls, raw_property_manifest: str, delegate: IngestViewResultsParserDelegate
-    ) -> "BooleanLiteralManifest":
-        return BooleanLiteralManifest(
-            value=delegate.get_env_property(property_name=raw_property_manifest)
-        )
 
 
 @attr.s(kw_only=True)
@@ -2127,13 +2119,18 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
             )
-        if manifest_node_name == BooleanLiteralManifest.ENV_PROPERTY_KEY:
-            return BooleanLiteralManifest.for_env_property(
-                raw_property_manifest=raw_field_manifest.pop(
-                    BooleanLiteralManifest.ENV_PROPERTY_KEY, str
-                ),
-                delegate=delegate,
+        if manifest_node_name == ENV_PROPERTY_KEY:
+            property_name = raw_field_manifest.pop(ENV_PROPERTY_KEY, str)
+            env_property = delegate.get_env_property(property_name=property_name)
+            if isinstance(env_property, bool):
+                return BooleanLiteralManifest(value=env_property)
+            if isinstance(env_property, str):
+                return StringLiteralFieldManifest(literal_value=env_property)
+            raise ValueError(
+                f"Unexpected env property value type [{type(env_property)}] for "
+                f"property [{property_name}]"
             )
+
         if manifest_node_name == ExpandableListItemManifest.FOREACH_KEY:
             return ExpandableListItemManifest.from_raw_manifest(
                 raw_function_manifest=raw_field_manifest.pop_dict(manifest_node_name),
