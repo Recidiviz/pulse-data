@@ -64,7 +64,7 @@ export const metricsViewMockResponse = [
             key: "SUPPORT",
             label: "Support",
             reporting_note: "Staff: Support",
-            enabled: true,
+            enabled: false,
           },
           {
             key: "SECURITY",
@@ -89,7 +89,7 @@ export const metricsViewMockResponse = [
         display_name: "Definition of Readmission",
         reporting_note: "Agency's definition of readmission.",
         required: false,
-        type: "TEXT",
+        type: "NUMBER",
         value: null,
       },
       {
@@ -161,3 +161,31 @@ export const metricsViewMockResponse = [
     ],
   },
 ];
+
+export type MetricsViewMockMetric = {
+  key: string;
+  display_name: string;
+  description: string;
+  frequency: string;
+  enabled: boolean;
+  contexts: {
+    key: string;
+    display_name: string;
+    reporting_note: string;
+    required: boolean;
+    type: string;
+    value: string | null;
+    multiple_choice_options?: string[];
+  }[];
+  disaggregations: {
+    key: string;
+    display_name: string;
+    enabled: boolean;
+    dimensions: {
+      key: string;
+      label: string;
+      reporting_note: string;
+      enabled: boolean;
+    }[];
+  }[];
+};
