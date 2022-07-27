@@ -298,8 +298,23 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
     def materialize_view_for_args(
         self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> bool:
-        if ingest_view_materialization_args in self.processed_args:
+        job_completion_time = self.metadata_manager.get_job_completion_time_for_args(
+            ingest_view_materialization_args
+        )
+        if job_completion_time:
+            if ingest_view_materialization_args not in self.processed_args:
+                raise ValueError(
+                    f"Did not find {ingest_view_materialization_args} in "
+                    f"self.processed_args even though the args are marked as processed "
+                    f"in the DB."
+                )
             return False
+
+        if ingest_view_materialization_args in self.processed_args:
+            raise ValueError(
+                f"Found {ingest_view_materialization_args} in self.processed_args "
+                f"even though the args are not marked as processed in the DB."
+            )
 
         data_local_path = direct_ingest_fixture_path(
             region_code=self.region.region_code,
