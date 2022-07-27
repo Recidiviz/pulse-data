@@ -31,13 +31,15 @@ DEFAULT_JOIN_INDICES: str = "job_id, state_code, year, month, metric_type"
 
 METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
     "recidivism_rate_metrics": "job_id, state_code, metric_type",
+    "incarceration_population_span_metrics": "job_id, state_code, metric_type",
 }
 
 DEFAULT_JOB_RECENCY_PRIMARY_KEYS: str = "job_id, year, month, state_code, metric_type"
 
 
 JOB_RECENCY_PRIMARY_KEY_OVERRIDES: Dict[str, str] = {
-    "recidivism_rate_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type"
+    "recidivism_rate_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
+    "incarceration_population_span_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
 }
 
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
@@ -45,7 +47,7 @@ METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values
 VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION: List[str] = [
     view
     for view in DATAFLOW_METRICS_TO_TABLES.values()
-    if view.startswith("incarceration")
+    if view.startswith("incarceration") and not "population_span" in view
 ]
 
 MOST_RECENT_JOBS_TEMPLATE: str = """
