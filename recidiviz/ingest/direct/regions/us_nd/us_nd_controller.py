@@ -210,6 +210,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "docstars_ftr_episode",
             "docstars_lsi_chronology",
             "docstars_contacts_v2",
+            "docstars_offenders_early_term",
             # TODO(#1918): Integrate bed assignment / location history
         ]
 

@@ -13,34 +13,44 @@ columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
+    is_pii: True
   - name: ITAGROOT_ID
     description: |-
       External id for a unique person from the Elite system (synced with Docstars).
+    is_pii: True
   - name: LAST_NAME
     description: |-
       Surname of the person.
+    is_pii: True
   - name: FIRST
     description: |-
       First/given name of the person.
+    is_pii: True
   - name: MIDDLE
     description: |-
       Middle name of the person.
+    is_pii: True
   - name: ADDRESS
     description: |-
       Street address of the person.
+    is_pii: True
   - name: CITY
     description: |-
       City portion of the address of the person.
+    is_pii: True
   - name: STATE
     description: |-
       State portion of the address of the person.
+    is_pii: True
   - name: ZIP
     description: |-
       Zip code portion of the address of the person.
+    is_pii: True
   - name: DOB
     is_datetime: True
     description: |-
       Date of birth of the person.
+    is_pii: True
   - name: AGENT
     description: |-
       Current supervising officer for the person.
@@ -86,15 +96,19 @@ columns:
   - name: ADDRESS2
     description: |-
       Second street address of the person.
+    is_pii: True
   - name: CITY2
     description: |-
       City portion of the second address of the person.
+    is_pii: True
   - name: STATE2
     description: |-
       State portion of the second address of the person.
+    is_pii: True
   - name: ZIP2
     description: |-
       Zip code portion of the second address of the person.
+    is_pii: True
   - name: SITEID
     description: |-
       ID of the site where this person is being supervised.
@@ -200,9 +214,11 @@ columns:
   - name: MAILING_ADDRESS2
     description: |-
       The second mailing address for this person.
+    is_pii: True
   - name: PHYSICAL_ADDRESS2
     description: |-
       The second physical address for this person.
+    is_pii: True
   - name: COUNTY_RESIDENCE
     description: |-
       County of residence for this person, auto-generated from other address fields within Docstars.
@@ -216,6 +232,8 @@ columns:
   - name: PHONE
     description: |-
       Primary phone number for this person.
+    is_pii: True
   - name: PHONE2
     description: |-
       Alternate phone number for this person.
+    is_pii: True
