@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implements tests for Justice Counts ReportMetric class."""
+"""This class implements tests for Justice Counts MetricInterface class."""
 
 from typing import Any, Dict
 from unittest import TestCase
@@ -22,6 +22,7 @@ from unittest import TestCase
 import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
     LawEnforcementStaffType,
     OffenseType,
     SheriffBudgetType,
@@ -29,17 +30,17 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
-from recidiviz.justice_counts.metrics.report_metric import (
-    ReportedAggregatedDimension,
-    ReportedContext,
-    ReportMetric,
+from recidiviz.justice_counts.metrics.metric_interface import (
+    DatapointGetRequestEntryPoint,
+    MetricAggregatedDimensionData,
+    MetricContextData,
+    MetricInterface,
 )
-from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 
 
-class TestJusticeCountsReportMetric(TestCase):
-    """Implements tests for the Justice Counts ReportMetric class."""
+class TestJusticeCountsMetricInterface(TestCase):
+    """Implements tests for the Justice Counts MetricInterface class."""
 
     def setUp(self) -> None:
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
@@ -57,11 +58,11 @@ class TestJusticeCountsReportMetric(TestCase):
         with self.assertRaisesRegex(
             ValueError, "Not all dimension instances belong to the same class"
         ):
-            ReportMetric(
+            MetricInterface(
                 key=law_enforcement.annual_budget.key,
                 value=100000,
                 aggregated_dimensions=[
-                    ReportedAggregatedDimension(
+                    MetricAggregatedDimensionData(
                         dimension_to_value={
                             SheriffBudgetType.DETENTION: 50000,
                             GenderRestricted.FEMALE: 100,
@@ -75,7 +76,7 @@ class TestJusticeCountsReportMetric(TestCase):
             ValueError,
             "The required context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is missing",
         ):
-            ReportMetric(
+            MetricInterface(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[],
@@ -87,11 +88,11 @@ class TestJusticeCountsReportMetric(TestCase):
             ValueError,
             r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <enum 'CallsRespondedOptions'> but typed as a \(<class 'str'>,\).",
         ):
-            ReportMetric(
+            MetricInterface(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[
-                    ReportedContext(
+                    MetricContextData(
                         key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
                         value=CallsRespondedOptions.ALL_CALLS,
                     )
@@ -105,11 +106,11 @@ class TestJusticeCountsReportMetric(TestCase):
             ValueError,
             "The following required dimensions are missing: {'metric/law_enforcement/calls_for_service/type'}",
         ):
-            ReportMetric(
+            MetricInterface(
                 key=law_enforcement.calls_for_service.key,
                 value=100000,
                 contexts=[
-                    ReportedContext(
+                    MetricContextData(
                         key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
                         value=CallsRespondedOptions.ALL_CALLS.value,
                     )
@@ -134,6 +135,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "value": 100000,
                 "unit": "USD",
                 "label": "Annual Budget",
+                "enabled": True,
                 "contexts": [
                     {
                         "key": "PRIMARY_FUNDING_SOURCE",
@@ -161,16 +163,19 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": False,
                         "should_sum_to_total": False,
                         "helper_text": None,
+                        "enabled": True,
                         "dimensions": [
-                            {
-                                "key": "Detention",
-                                "label": "Detention",
-                                "value": 66666,
-                            },
                             {
                                 "key": "Patrol",
                                 "label": "Patrol",
                                 "value": 33334,
+                                "enabled": True,
+                            },
+                            {
+                                "key": "Detention",
+                                "label": "Detention",
+                                "value": 66666,
+                                "enabled": True,
                             },
                         ],
                     }
@@ -198,6 +203,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
                 "label": "Calls for Service",
+                "enabled": True,
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
@@ -237,21 +243,25 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": True,
                         "should_sum_to_total": False,
                         "helper_text": None,
+                        "enabled": True,
                         "dimensions": [
                             {
                                 "key": "Emergency",
                                 "label": "Emergency",
                                 "value": 20,
+                                "enabled": True,
                             },
                             {
                                 "key": "Non-emergency",
                                 "label": "Non-emergency",
                                 "value": 60,
+                                "enabled": True,
                             },
                             {
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 20,
+                                "enabled": True,
                             },
                         ],
                     }
@@ -274,6 +284,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
+                "enabled": False,
                 "definitions": [
                     {
                         "term": "Complaint",
@@ -319,6 +330,7 @@ class TestJusticeCountsReportMetric(TestCase):
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
                 "label": "Total Arrests",
+                "enabled": True,
                 "contexts": [
                     {
                         "key": "JURISDICTION_DEFINITION_OF_ARREST",
@@ -346,26 +358,31 @@ class TestJusticeCountsReportMetric(TestCase):
                         "required": True,
                         "should_sum_to_total": False,
                         "helper_text": None,
+                        "enabled": True,
                         "dimensions": [
                             {
                                 "key": "Drug",
                                 "label": "Drug",
                                 "value": 60,
+                                "enabled": True,
                             },
                             {
                                 "key": "Person",
                                 "label": "Person",
                                 "value": 10,
+                                "enabled": True,
                             },
                             {
                                 "key": "Property",
                                 "label": "Property",
                                 "value": 40,
+                                "enabled": True,
                             },
                             {
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 10,
+                                "enabled": True,
                             },
                         ],
                     }
@@ -399,17 +416,17 @@ class TestJusticeCountsReportMetric(TestCase):
         }
 
         self.assertEqual(
-            ReportMetric(
+            MetricInterface(
                 key=metric_definition.key,
                 value=100,
                 contexts=[
-                    ReportedContext(
+                    MetricContextData(
                         key=metric_definition.contexts[0].key,
                         value="definition of arrest",
                     )
                 ],
                 aggregated_dimensions=[
-                    ReportedAggregatedDimension(
+                    MetricAggregatedDimensionData(
                         dimension_to_value={
                             OffenseType.DRUG: 50,
                             OffenseType.PERSON: 50,
@@ -419,8 +436,9 @@ class TestJusticeCountsReportMetric(TestCase):
                     )
                 ],
             ),
-            ReportMetric.from_json(
-                json=response_json, report_status=ReportStatus.DRAFT
+            MetricInterface.from_json(
+                json=response_json,
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
             ),
         )
 
@@ -455,17 +473,17 @@ class TestJusticeCountsReportMetric(TestCase):
         }
 
         self.assertEqual(
-            ReportMetric(
+            MetricInterface(
                 key=metric_definition.key,
                 value=100,
                 contexts=[
-                    ReportedContext(
+                    MetricContextData(
                         key=metric_definition.contexts[0].key,
                         value="additional context",
                     )
                 ],
                 aggregated_dimensions=[
-                    ReportedAggregatedDimension(
+                    MetricAggregatedDimensionData(
                         dimension_to_value={
                             LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: 100,
                             LawEnforcementStaffType.CIVILIAN_STAFF: 50,
@@ -477,8 +495,9 @@ class TestJusticeCountsReportMetric(TestCase):
                 # enforce_validation=True
                 enforce_validation=False,
             ),
-            ReportMetric.from_json(
-                json=response_json, report_status=ReportStatus.PUBLISHED
+            MetricInterface.from_json(
+                json=response_json,
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
             ),
         )
 
@@ -492,7 +511,7 @@ class TestJusticeCountsReportMetric(TestCase):
         }
 
         self.assertEqual(
-            ReportMetric(
+            MetricInterface(
                 key=metric_definition.key,
                 value=100,
                 contexts=[],
@@ -501,8 +520,122 @@ class TestJusticeCountsReportMetric(TestCase):
                 # enforce_validation=True
                 enforce_validation=False,
             ),
-            ReportMetric.from_json(
-                json=response_json, report_status=ReportStatus.PUBLISHED
+            MetricInterface.from_json(
+                json=response_json,
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+            ),
+        )
+
+    def test_annual_budget_json_to_agency_metric(self) -> None:
+        metric_definition = law_enforcement.annual_budget
+        metric_json = {
+            "key": metric_definition.key,
+            "enabled": False,
+        }
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            MetricInterface(
+                key=metric_definition.key,
+                contexts=[],
+                value=None,
+                aggregated_dimensions=[],
+                is_metric_enabled=False,
+                enforce_validation=False,
+            ),
+        )
+
+    def test_civilian_complaints_json_to_agency_metric(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_json = {
+            "key": metric_definition.key,
+            "enabled": True,
+            "disaggregations": [
+                {
+                    "enabled": True,
+                    "key": CallType.dimension_identifier(),
+                    "dimensions": [
+                        {"key": CallType.UNKNOWN.value, "enabled": False},
+                        {"key": CallType.EMERGENCY.value, "enabled": False},
+                    ],
+                }
+            ],
+        }
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            MetricInterface(
+                key=metric_definition.key,
+                contexts=[],
+                value=None,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={
+                            CallType.UNKNOWN: False,
+                            CallType.EMERGENCY: False,
+                            CallType.NON_EMERGENCY: True,
+                        },
+                        dimension_to_value=None,
+                    )
+                ],
+                is_metric_enabled=True,
+                enforce_validation=False,
+            ),
+        )
+
+    def test_reported_crime_json_to_agency_metric(self) -> None:
+        metric_definition = law_enforcement.reported_crime
+        metric_json = {
+            "key": metric_definition.key,
+            "enabled": True,
+            "contexts": [
+                {"key": ContextKey.ADDITIONAL_CONTEXT.value, "value": "blah blah"}
+            ],
+        }
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            MetricInterface(
+                key=metric_definition.key,
+                contexts=[
+                    MetricContextData(
+                        key=ContextKey.ADDITIONAL_CONTEXT, value="blah blah"
+                    )
+                ],
+                value=None,
+                aggregated_dimensions=[],
+                is_metric_enabled=True,
+                enforce_validation=False,
+            ),
+        )
+
+    def test_total_arrests_json_to_agency_metric(self) -> None:
+        metric_definition = law_enforcement.total_arrests
+        metric_json = {
+            "key": metric_definition.key,
+            "enabled": True,
+            "disaggregations": [
+                {"key": OffenseType.dimension_identifier(), "enabled": False},
+            ],
+        }
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            MetricInterface(
+                key=metric_definition.key,
+                value=None,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_enabled_status={d: False for d in OffenseType},
+                        dimension_to_value=None,
+                    )
+                ],
+                is_metric_enabled=True,
+                enforce_validation=False,
             ),
         )
 
@@ -520,8 +653,8 @@ class TestJusticeCountsReportMetric(TestCase):
         }
 
         self.assertEqual(
-            ReportedContext.from_json(json=response_json),
-            ReportedContext(
+            MetricContextData.from_json(json=response_json),
+            MetricContextData(
                 key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
                 value=CallsRespondedOptions.ALL_CALLS.value,
             ),
@@ -534,6 +667,6 @@ class TestJusticeCountsReportMetric(TestCase):
         }
 
         self.assertEqual(
-            ReportedContext.from_json(json=cleared_input),
-            ReportedContext(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
+            MetricContextData.from_json(json=cleared_input),
+            MetricContextData(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
         )

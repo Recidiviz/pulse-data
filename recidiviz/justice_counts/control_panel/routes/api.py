@@ -39,7 +39,10 @@ from recidiviz.justice_counts.exceptions import (
     JusticeCountsPermissionError,
     JusticeCountsServerError,
 )
-from recidiviz.justice_counts.metrics.report_metric import ReportMetric
+from recidiviz.justice_counts.metrics.metric_interface import (
+    DatapointGetRequestEntryPoint,
+    MetricInterface,
+)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.utils.flask_exception import FlaskException
@@ -147,7 +150,7 @@ def get_api_blueprint(
                 session=current_session, report_id=report_id_int
             )
             report_metrics = ReportInterface.get_metrics_by_report(
-                report=report,
+                report=report, session=current_session
             )
 
             report_definition_json = ReportInterface.to_json_response(
@@ -184,8 +187,9 @@ def get_api_blueprint(
             )
 
             for metric_json in request_dict.get("metrics", []):
-                report_metric = ReportMetric.from_json(
-                    json=metric_json, report_status=report.status
+                report_metric = MetricInterface.from_json(
+                    json=metric_json,
+                    entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
                 )
                 ReportInterface.add_or_update_metric(
                     session=current_session,
@@ -324,8 +328,12 @@ def get_api_blueprint(
                 session=current_session, agency_id=agency_id
             )
             for metric_json in request_json.get("metrics", []):
-                DatapointInterface.update_agency_metric(
-                    session=current_session, metric_json=metric_json, agency=agency
+                agency_metric = MetricInterface.from_json(
+                    json=metric_json,
+                    entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+                )
+                DatapointInterface.add_or_update_agency_datapoints(
+                    session=current_session, agency_metric=agency_metric, agency=agency
                 )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

@@ -19,7 +19,6 @@ import datetime
 import itertools
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import attr
 from sqlalchemy.orm import Query, Session, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface
@@ -32,14 +31,10 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     MetricDefinition,
     ReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import (
     METRIC_KEY_TO_METRIC,
     METRICS_BY_SYSTEM,
-)
-from recidiviz.justice_counts.metrics.report_metric import (
-    ReportedAggregatedDimension,
-    ReportedContext,
-    ReportMetric,
 )
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -47,108 +42,6 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 
 class ReportInterface:
     """Contains methods for setting and getting Report info."""
-
-    @attr.define
-    class DatapointsForMetricDefinition:
-        """Class that maps datapoints to their correspoinding category (aggregate value, dimension, context)"""
-
-        context_datapoints: List[schema.Datapoint] = attr.field(factory=list)
-        dimension_datapoints: List[schema.Datapoint] = attr.field(factory=list)
-        aggregated_value: Optional[int] = None
-
-        def get_reported_contexts(
-            self, metric_definition: MetricDefinition
-        ) -> List[ReportedContext]:
-            """
-            - This method first determines which contexts we expect for this dimension definition
-            - Then it looks at the contexts already reported in the database, and fills in any of
-            the expected contexts that have already been reported with their reported value
-            """
-            context_key_to_context_value = {
-                datapoint.context_key: datapoint.get_value()
-                for datapoint in self.context_datapoints
-            }
-            return [
-                ReportedContext(
-                    key=context.key,
-                    value=context_key_to_context_value.get(context.key.value),
-                )
-                for context in metric_definition.contexts
-            ]
-
-        def get_reported_aggregated_dimensions(
-            self, metric_definition: MetricDefinition
-        ) -> List[ReportedAggregatedDimension]:
-            """
-            - This method first looks at all dimensions that have already been reported in
-            the database, and extracts them into a dictionary dimension_id_to_dimension_values_dicts.
-            - As we fill out this dictionary, we make sure that each dimension_values dict is "complete",
-            i.e. contains all member values for that dimension. If one of the members hasn't been reported yet, it's value will be None.
-            - It's possible that not all dimensions we expect for this metric are in this dictionary,
-            i.e. if the user hasn't filled out any values for a particular dimension yet.
-            - Thus, at the end of the function, we look at all the dimensions that are expected for this metric,
-            and if one doesn't exist in the dictionary, we add it with all values set to None.
-            """
-
-            # dimension_id_to_dimension_values_dicts maps dimension identifier to their correspoinding dimension_to_values dictionary
-            # e.g global/gender/restricted -> {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20...}
-            dimension_id_to_dimension_values_dicts: Dict[
-                str, Dict[DimensionBase, Optional[float]]
-            ] = {}
-            for dimension_datapoint in self.dimension_datapoints:
-
-                if len(dimension_datapoint.dimension_identifier_to_member) > 1:
-                    raise JusticeCountsDataError(
-                        code="invalid_datapoint",
-                        description=(
-                            "Datapoint represents multiple dimensions. "
-                            f"Datapoint ID: {dimension_datapoint.id}."
-                        ),
-                    )
-                # example: dimension_identifier = "global/gender/restricted"
-                dimension_identifier = list(
-                    dimension_datapoint.dimension_identifier_to_member.keys()
-                ).pop()
-                # example: dimension_name = "MALE"
-                dimension_name = list(
-                    dimension_datapoint.dimension_identifier_to_member.values()
-                ).pop()
-
-                dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
-                    dimension_identifier
-                ]  # example: dimension_class = GenderRestricted
-
-                curr_dimension_to_values = dimension_id_to_dimension_values_dicts.get(
-                    dimension_identifier,
-                    {d: None for d in dimension_class},
-                )  # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
-
-                curr_dimension_to_values[
-                    dimension_class[dimension_name]
-                ] = dimension_datapoint.get_value()
-                # update curr_dimension_to_values to add new dimension datapoint.
-                # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
-                dimension_id_to_dimension_values_dicts[
-                    dimension_identifier
-                ] = curr_dimension_to_values
-                # update dimension_id_to_dimension_values_dicts dictionary -> {"global/gender/restricted": {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
-
-            return [
-                ReportedAggregatedDimension(
-                    dimension_to_value=dimension_id_to_dimension_values_dicts.get(
-                        aggregated_dimension.dimension_identifier(),
-                        {
-                            d: None
-                            for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                                aggregated_dimension.dimension.dimension_identifier()
-                            ]
-                        },
-                    )
-                )
-                for aggregated_dimension in metric_definition.aggregated_dimensions
-                or []
-                if not aggregated_dimension.disabled
-            ]
 
     @staticmethod
     def _get_report_query(session: Session, include_datapoints: bool = True) -> Query:
@@ -352,10 +245,10 @@ class ReportInterface:
     def add_or_update_metric(
         session: Session,
         report: schema.Report,
-        report_metric: ReportMetric,
+        report_metric: MetricInterface,
         user_account: schema.UserAccount,
     ) -> None:
-        """Given a Report and a ReportMetric, either add this metric
+        """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
         update the existing metric in-place.
 
@@ -378,11 +271,12 @@ class ReportInterface:
         )
 
         # Next, add a datapoint for each dimension
-        all_dimensions_to_values: Dict[DimensionBase, Optional[float]] = {}
+        all_dimensions_to_values: Dict[DimensionBase, Any] = {}
         for reported_aggregated_dimension in report_metric.aggregated_dimensions:
-            all_dimensions_to_values.update(
-                reported_aggregated_dimension.dimension_to_value
-            )
+            if reported_aggregated_dimension.dimension_to_value:
+                all_dimensions_to_values.update(
+                    reported_aggregated_dimension.dimension_to_value
+                )
 
         for aggregated_dimension in metric_definition.aggregated_dimensions or []:
             for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
@@ -426,10 +320,12 @@ class ReportInterface:
         session.commit()
 
     @staticmethod
-    def get_metrics_by_report(report: schema.Report) -> List[ReportMetric]:
+    def get_metrics_by_report(
+        session: Session, report: schema.Report
+    ) -> List[MetricInterface]:
         """Given a report, determine all MetricDefinitions that must be populated
-        on this report, and convert them to ReportMetrics. If the agency has already
-        started filling out the report, populate the ReportMetrics with those values.
+        on this report, and convert them to MetricInterfaces. If the agency has already
+        started filling out the report, populate the MetricInterfaces with those values.
         This method will be used to send a list of Metrics to the frontend to render
         the report form in the Control Panel.
 
@@ -440,7 +336,7 @@ class ReportInterface:
            the given report.
         2. Look up data that already exists on the report that is stored in Datapoint model.
         3. Perform matching between the MetricDefinitions and the existing data.
-        4. Return a list of ReportMetrics. If the agency has not filled out data for a
+        4. Return a list of MetricInterfaces. If the agency has not filled out data for a
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
@@ -460,73 +356,44 @@ class ReportInterface:
                 code="invalid_data", description="No metrics found for this report."
             )
 
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=session, agency_id=report.source.id
+        )
+
         # If data has already been reported for some metrics on this report,
-        # then `report.datapoints` will be non-empty.
-        metric_key_to_data_points = ReportInterface._build_metric_key_to_data_points(
-            datapoints=report.datapoints
+        # then `report.datapoints` will be non-empty. We also send build the
+        # DatapointsForMetricDefinition class with agency datapoints to see
+        # what metrics are enabled and disabled.
+        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
+            datapoints=report.datapoints + agency_datapoints
         )
 
         report_metrics = []
         # For each metric that should be filled out on this report,
-        # construct a ReportMetric object
+        # construct a MetricInterface object
+
         for metric_definition in metric_definitions:
             reported_datapoints = metric_key_to_data_points.get(
-                metric_definition.key, ReportInterface.DatapointsForMetricDefinition()
+                metric_definition.key,
+                DatapointInterface.DatapointsForMetricDefinition(),
             )
             report_metrics.append(
-                ReportMetric(
+                MetricInterface(
                     key=metric_definition.key,
                     value=reported_datapoints.aggregated_value,
+                    is_metric_enabled=reported_datapoints.is_metric_enabled,
                     contexts=reported_datapoints.get_reported_contexts(
-                        # convert context datapoints to ReportedContexts
+                        # convert context datapoints to MetricContextData
                         metric_definition=metric_definition
                     ),
-                    aggregated_dimensions=reported_datapoints.get_reported_aggregated_dimensions(
-                        # convert dimension datapoints to ReportedAggregatedDimensions
+                    aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
+                        # convert dimension datapoints to MetricAggregatedDimensionData
                         metric_definition=metric_definition
                     ),
                 )
             )
 
         return report_metrics
-
-    @staticmethod
-    def _build_metric_key_to_data_points(
-        datapoints: List[schema.Datapoint],
-    ) -> Dict[str, DatapointsForMetricDefinition]:
-        """Associate the datapoints with their metric and sort each datapoint by what
-        they represent (context, dimension, or aggregated_value). metric_key_to_data_points
-        is a dictionary of DatapointsForMetricDefinition. Each metric definition key points to a
-        DatapointsForMetricDefinition instance that stores datapoints by context, disaggregations,
-        or aggregated_value.
-        """
-        metric_key_to_data_points = {}
-        for datapoint in datapoints:
-            if datapoint.metric_definition_key not in metric_key_to_data_points:
-                metric_key_to_data_points[
-                    datapoint.metric_definition_key
-                ] = ReportInterface.DatapointsForMetricDefinition()
-            metric_datapoints = metric_key_to_data_points[
-                datapoint.metric_definition_key
-            ]
-            if datapoint.context_key is not None:
-                metric_datapoints.context_datapoints.append(datapoint)
-            elif datapoint.dimension_identifier_to_member is not None:
-                metric_datapoints.dimension_datapoints.append(datapoint)
-            elif (
-                datapoint.dimension_identifier_to_member is None
-                and datapoint.context_key is None
-            ):
-                metric_datapoints.aggregated_value = datapoint.get_value()
-            else:
-                raise JusticeCountsDataError(
-                    code="invalid_datapoint",
-                    description=(
-                        "Datapoint does not represent a dimension, "
-                        "aggregate value, or context.",
-                    ),
-                )
-        return metric_key_to_data_points
 
     @staticmethod
     def get_metric_definitions_by_report_type(

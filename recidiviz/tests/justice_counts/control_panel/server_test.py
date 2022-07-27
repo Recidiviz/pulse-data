@@ -490,8 +490,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
         self.assertEqual(response.status_code, 200)
         agency_datapoints = self.session.query(Datapoint).all()
-        # 5 breakdown datapoints and one context datapoint
-        self.assertEqual(len(agency_datapoints), 6)
+        # 1 metric datapoint, 2 breakdown datapoints, and 1 and one context datapoint
+        self.assertEqual(len(agency_datapoints), 4)
 
     def test_session(self) -> None:
         # Add data
