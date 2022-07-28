@@ -182,7 +182,6 @@ state_supervision_case_type = Enum(
 state_charge_classification_type = Enum(
     state_enum_strings.state_charge_classification_type_civil,
     state_enum_strings.state_charge_classification_type_felony,
-    state_enum_strings.state_charge_classification_type_infraction,
     state_enum_strings.state_charge_classification_type_misdemeanor,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,

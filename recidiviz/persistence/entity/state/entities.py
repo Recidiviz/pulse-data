@@ -489,13 +489,6 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
 
-    def __attrs_post_init__(self) -> None:
-        if self.classification_type == StateChargeClassificationType.INFRACTION:
-            raise ValueError(
-                f"StateChargeClassificationType.INFRACTION is deprecated for {self.state_code}."
-                "This value should not be used."
-            )
-
 
 @attr.s(eq=False, kw_only=True)
 class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):

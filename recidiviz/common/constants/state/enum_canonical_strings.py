@@ -106,7 +106,6 @@ state_assessment_level_maximum = "MAXIMUM"
 # state_charge.py
 state_charge_classification_type_civil = "CIVIL"
 state_charge_classification_type_felony = "FELONY"
-state_charge_classification_type_infraction = "INFRACTION"
 state_charge_classification_type_misdemeanor = "MISDEMEANOR"
 
 state_charge_status_acquitted = "ACQUITTED"
