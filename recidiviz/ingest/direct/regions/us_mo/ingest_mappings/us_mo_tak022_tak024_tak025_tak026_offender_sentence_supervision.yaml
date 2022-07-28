@@ -283,14 +283,13 @@ output:
                     $mappings:
                       StateChargeClassificationType.INTERNAL_UNKNOWN:
                         - U
-                      StateChargeClassificationType.INFRACTION:
-                        - L
                       StateChargeClassificationType.FELONY:
                         - F
                       StateChargeClassificationType.MISDEMEANOR:
                         - M
                       StateChargeClassificationType.CIVIL:
                         - I
+                        - L
                 classification_subtype: BS_CLA
                 # Sentence Missouri Charge Code (https://www.mshp.dps.missouri.gov/CJ08Client/Home/ChargeCode)
                 # TODO(#2648): Many/all of these codes all changed in 2016? How do we convert between the two schemes?

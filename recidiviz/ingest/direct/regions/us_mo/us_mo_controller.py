@@ -133,7 +133,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        StateChargeClassificationType.INFRACTION: ["L"],  # Local/ordinance
+        StateChargeClassificationType.CIVIL: ["L"],  # Local/ordinance
         StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
             "BP-FF",  # Board Parole

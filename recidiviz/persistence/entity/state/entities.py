@@ -490,10 +490,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     def __attrs_post_init__(self) -> None:
-        if (
-            self.state_code not in ("US_MO")
-            and self.classification_type == StateChargeClassificationType.INFRACTION
-        ):
+        if self.classification_type == StateChargeClassificationType.INFRACTION:
             raise ValueError(
                 f"StateChargeClassificationType.INFRACTION is deprecated for {self.state_code}."
                 "This value should not be used."
