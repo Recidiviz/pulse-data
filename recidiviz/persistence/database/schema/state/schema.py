@@ -195,7 +195,6 @@ state_charge_status = Enum(
     state_enum_strings.state_charge_status_convicted,
     state_enum_strings.state_charge_status_dropped,
     state_enum_strings.state_charge_status_pending,
-    state_enum_strings.state_charge_status_sentenced,
     state_enum_strings.state_charge_status_transferred_away,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,

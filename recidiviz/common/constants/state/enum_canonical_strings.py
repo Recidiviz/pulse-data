@@ -114,7 +114,6 @@ state_charge_status_adjudicated = "ADJUDICATED"
 state_charge_status_convicted = "CONVICTED"
 state_charge_status_dropped = "DROPPED"
 state_charge_status_pending = "PENDING"
-state_charge_status_sentenced = "SENTENCED"
 state_charge_status_transferred_away = "TRANSFERRED_AWAY"
 
 # state_court_case.py
