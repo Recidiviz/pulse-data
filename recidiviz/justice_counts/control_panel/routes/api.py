@@ -45,6 +45,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -171,6 +172,7 @@ def get_api_blueprint(
         try:
             report_id_int = int(assert_type(report_id, str))
             request_dict = assert_type(request.json, dict)
+            time_loaded_by_client = request_dict["time_loaded"]
             user_account_id = get_user_account_id(request_dict=request_dict)
             user_account = UserAccountInterface.get_user_by_id(
                 session=current_session, user_account_id=user_account_id
@@ -179,6 +181,12 @@ def get_api_blueprint(
                 session=current_session,
                 report_id=report_id_int,
             )
+
+            _check_for_conflicts(
+                report=report,
+                time_loaded_by_client=time_loaded_by_client,
+            )
+
             ReportInterface.update_report_metadata(
                 session=current_session,
                 report=report,
@@ -197,7 +205,16 @@ def get_api_blueprint(
                     report_metric=report_metric,
                     user_account=user_account,
                 )
-            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=[report]
+            )
+            report_json = ReportInterface.to_json_response(
+                session=current_session,
+                report=report,
+                editor_ids_to_names=editor_ids_to_names,
+            )
+            return jsonify(report_json)
         except Exception as e:
             raise _get_error(error=e) from e
 
@@ -341,6 +358,24 @@ def get_api_blueprint(
             raise _get_error(error=e) from e
 
     return api_blueprint
+
+
+def _check_for_conflicts(report: schema.Report, time_loaded_by_client: float) -> None:
+    last_modified_at = (
+        report.last_modified_at.timestamp()
+        if report.last_modified_at is not None
+        else None
+    )
+    if last_modified_at is not None and last_modified_at > time_loaded_by_client:
+        logging.warning(
+            "Version conflict: last_modified_at: %s and time_loaded_by_client: %s",
+            last_modified_at,
+            time_loaded_by_client,
+        )
+        raise JusticeCountsBadRequestError(
+            code="version_conflict",
+            description="Report has been updated since client loaded the page.",
+        )
 
 
 def _get_error(error: Exception) -> FlaskException:

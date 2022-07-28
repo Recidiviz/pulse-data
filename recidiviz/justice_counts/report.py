@@ -236,6 +236,9 @@ class ReportInterface:
             "month": report.date_range_start.month,
             "frequency": reporting_frequency.value,
             "last_modified_at": report.last_modified_at,
+            "last_modified_at_timestamp": report.last_modified_at.timestamp()
+            if report.last_modified_at is not None
+            else None,
             "editors": editor_names,
             "status": report.status.value,
             "is_recurring": report.is_recurring,

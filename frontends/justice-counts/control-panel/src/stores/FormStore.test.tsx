@@ -31,6 +31,7 @@ beforeEach(() => {
         month: 4,
         frequency: "MONTHLY",
         last_modified_at: "April 12 2022",
+        last_modified_at_timestamp: null,
         editors: ["Editor #1", "Editor #2"],
         status: "DRAFT",
       },

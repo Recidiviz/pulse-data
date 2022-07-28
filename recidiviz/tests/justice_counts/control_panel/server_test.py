@@ -338,6 +338,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     endpoint,
                     json={
                         "status": "DRAFT",
+                        "time_loaded": datetime.datetime.now().timestamp(),
                         "metrics": [
                             {
                                 "key": law_enforcement.calls_for_service.key,
@@ -359,6 +360,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     endpoint,
                     json={
                         "status": "PUBLISHED",
+                        "time_loaded": datetime.datetime.now().timestamp(),
                         "metrics": [
                             {
                                 "key": law_enforcement.calls_for_service.key,
@@ -416,6 +418,41 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
                 )
                 self.assertEqual(datapoints[5].get_value(), 2000000)
+
+    def test_update_report_version_conflict(self) -> None:
+        report = self.test_schema_objects.test_report_monthly
+        user = self.test_schema_objects.test_user_A
+        # report was modified on Feb 2 by someone else
+        report.last_modified_at = datetime.datetime(2022, 2, 2, 0, 0, 0)
+        report.modified_by = [10]
+        self.session.add_all([user, report])
+        self.session.commit()
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=user.auth0_user_id
+            )
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                user_account=user_account,
+                agency_ids=[report.source_id],
+            )
+            endpoint = f"/api/reports/{report.id}"
+            response = self.client.post(
+                endpoint,
+                json={
+                    "status": "DRAFT",
+                    # client loaded the report on Feb 1
+                    # so we should reject the update!
+                    "time_loaded": datetime.datetime(2022, 2, 1, 0, 0, 0).timestamp(),
+                    "metrics": [
+                        {
+                            "key": law_enforcement.calls_for_service.key,
+                            "value": 100,
+                        }
+                    ],
+                },
+            )
+            self.assertEqual(response.status_code, 400)
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A

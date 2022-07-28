@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { runInAction } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -108,6 +109,7 @@ const DataEntryForm: React.FC<{
   toggleConfirmationDialogue,
 }) => {
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [hasVersionConflict, setHasVersionConflict] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const metricsRef = useRef<HTMLDivElement[]>([]);
   const { formStore, reportStore, userStore } = useStore();
@@ -198,7 +200,20 @@ const DataEntryForm: React.FC<{
         trackReportNotStartedToDraft(reportID, agency);
       }
     } else {
-      showToast("Failed to save", false, "red");
+      const body = await response.json();
+      if (body.code === "version_conflict") {
+        showToast(
+          "Someone else has edited the report since you last opened it. Please refresh the page to view the latest changes and continue editing.",
+          false,
+          "red",
+          -1
+        );
+        runInAction(() => {
+          setHasVersionConflict(true);
+        });
+      } else {
+        showToast("Failed to save", false, "red");
+      }
       trackAutosaveFailed(reportID);
     }
   };
@@ -275,7 +290,7 @@ const DataEntryForm: React.FC<{
                 reportID={reportID}
                 metric={metric}
                 autoFocus={index === 0}
-                disabled={isPublished}
+                disabled={isPublished || hasVersionConflict}
               />
 
               {/* Disaggregations */}
@@ -286,7 +301,7 @@ const DataEntryForm: React.FC<{
                   reportMetrics={reportMetrics}
                   metric={metric}
                   updateFieldDescription={updateFieldDescription}
-                  disabled={isPublished}
+                  disabled={isPublished || hasVersionConflict}
                 />
               )}
 
@@ -313,13 +328,14 @@ const DataEntryForm: React.FC<{
                             context={context}
                             contextIndex={contextIndex}
                             options={context.multiple_choice_options}
-                            disabled={isPublished}
+                            disabled={isPublished || hasVersionConflict}
                           />
                         </BinaryRadioGroupWrapper>
                         <BinaryRadioGroupClearButton
                           onClick={() => {
                             if (
                               !isPublished &&
+                              !hasVersionConflict &&
                               (formStore.contexts?.[reportID]?.[metric.key]?.[
                                 context.key
                               ]?.value ||
@@ -341,7 +357,7 @@ const DataEntryForm: React.FC<{
                               debouncedSave(metric.key);
                             }
                           }}
-                          disabled={isPublished}
+                          disabled={isPublished || hasVersionConflict}
                         >
                           Clear Input
                         </BinaryRadioGroupClearButton>
@@ -374,7 +390,7 @@ const DataEntryForm: React.FC<{
                         clearFieldDescription={() =>
                           updateFieldDescription(undefined)
                         }
-                        disabled={isPublished}
+                        disabled={isPublished || hasVersionConflict}
                       />
                     </Fragment>
                   );
@@ -389,7 +405,7 @@ const DataEntryForm: React.FC<{
               e.preventDefault();
               toggleConfirmationDialogue();
             }}
-            isPublished={isPublished}
+            isPublished={isPublished || hasVersionConflict}
           />
         </DataEntryFormPublishButtonContainer>
         <OpacityGradient />
