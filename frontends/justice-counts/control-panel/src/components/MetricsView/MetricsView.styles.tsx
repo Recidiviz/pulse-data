@@ -41,6 +41,10 @@ export const PanelContainerLeft = styled.div`
   height: 100%;
   padding-right: 126px;
   overflow: scroll;
+
+  @media only screen and (max-width: 1000px) {
+    padding-right: 50px;
+  }
 `;
 
 export const PanelContainerRight = styled.div`
@@ -116,6 +120,10 @@ export const MetricsViewBadge = styled.div<MetricsViewBadgeProps>`
       return palette.solid.orange;
     }
   }};
+
+  @media only screen and (max-width: 1000px) {
+    font-size: 0.6rem;
+  }
 `;
 
 type MetricNameProps = { isTitle?: boolean };
@@ -123,11 +131,19 @@ type MetricNameProps = { isTitle?: boolean };
 export const MetricName = styled.div<MetricNameProps>`
   ${({ isTitle }) =>
     isTitle ? typography.sizeCSS.title : typography.sizeCSS.large}
+
+  @media only screen and (max-width: 1000px) {
+    ${typography.sizeCSS.medium}
+  }
 `;
 
 export const MetricDescription = styled.div`
   ${typography.sizeCSS.normal}
   color: ${palette.highlight.grey9};
+
+  @media only screen and (max-width: 1000px) {
+    ${typography.sizeCSS.small}
+  }
 `;
 
 export const MetricDetailsDisplay = styled.div`
@@ -189,8 +205,11 @@ export const DisaggregationHeader = styled.div`
   border-bottom: 1px solid ${palette.highlight.grey9};
 `;
 
-export const DisaggregationName = styled.div`
+export const DisaggregationName = styled.div<{ enabled?: boolean }>`
   ${typography.sizeCSS.large};
+
+  color: ${({ enabled }) =>
+    enabled ? palette.solid.darkgrey : palette.highlight.grey8};
 `;
 
 export const Dimension = styled.div<{ enabled?: boolean }>`
