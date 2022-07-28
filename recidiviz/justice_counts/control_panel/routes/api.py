@@ -158,7 +158,12 @@ def get_api_blueprint(
                 session=current_session,
                 report=report,
             )
-            metrics_json = [report_metric.to_json() for report_metric in report_metrics]
+            metrics_json = [
+                report_metric.to_json(
+                    entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+                )
+                for report_metric in report_metrics
+            ]
             report_definition_json["metrics"] = metrics_json
 
             return jsonify(report_definition_json)
@@ -354,6 +359,25 @@ def get_api_blueprint(
                 )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/metrics/update/<agency_id>", methods=["GET"])
+    @auth_decorator
+    def get_agency_metric_settings(agency_id: str) -> Response:
+        try:
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session, agency=agency
+            )
+            metrics_json = [
+                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                for metric in metrics
+            ]
+            return jsonify(metrics_json)
+
         except Exception as e:
             raise _get_error(error=e) from e
 

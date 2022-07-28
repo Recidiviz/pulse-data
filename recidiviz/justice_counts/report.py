@@ -17,7 +17,7 @@
 """Interface for working with the Reports model."""
 import datetime
 import itertools
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Query, Session, lazyload
 
@@ -26,16 +26,9 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.exceptions import JusticeCountsDataError
-from recidiviz.justice_counts.metrics.metric_definition import (
-    MetricDefinition,
-    ReportingFrequency,
-)
+from recidiviz.justice_counts.metrics.metric_definition import ReportingFrequency
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import (
-    METRIC_KEY_TO_METRIC,
-    METRICS_BY_SYSTEM,
-)
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -346,18 +339,13 @@ class ReportInterface:
         # We determine which metrics to include on this report based on:
         #   - Agency system (e.g. only law enforcement)
         #   - Report frequency (e.g. only annual metrics)
-        metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
+        metric_definitions = MetricInterface.get_metric_definitions(
             report_type=report.type,
             systems={schema.System[system] for system in report.source.systems}
             if report.source.systems is not None
             # TODO(#13216): Get rid of this `source.system` after migrating over to `systems`
             else {report.source.system},
         )
-
-        if len(metric_definitions) == 0:
-            raise JusticeCountsDataError(
-                code="invalid_data", description="No metrics found for this report."
-            )
 
         agency_datapoints = DatapointInterface.get_agency_datapoints(
             session=session, agency_id=report.source.id
@@ -397,18 +385,3 @@ class ReportInterface:
             )
 
         return report_metrics
-
-    @staticmethod
-    def get_metric_definitions_by_report_type(
-        report_type: schema.ReportingFrequency,
-        systems: Set[schema.System],
-    ) -> List[MetricDefinition]:
-        metrics = list(
-            itertools.chain(*[METRICS_BY_SYSTEM[system.value] for system in systems])
-        )
-        return [
-            metric
-            for metric in metrics
-            if report_type in {freq.value for freq in metric.reporting_frequencies}
-            and not metric.disabled
-        ]

@@ -155,6 +155,101 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
         self.assertEqual(metrics[2]["key"], law_enforcement.total_arrests.key)
 
+    def test_get_agency_metrics(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one()
+        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
+            agency_id=agency.id
+        )
+        self.session.add_all(agency_datapoints)
+        self.session.commit()
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            response = self.client.get(f"/api/metrics/update/{agency.id}")
+
+        self.assertEqual(response.status_code, 200)
+        metrics = assert_type(response.json, list)
+        self.assertEqual(len(metrics), 7)
+        # Annual Budget metric is turned off
+        self.assertEqual(metrics[0]["key"], law_enforcement.annual_budget.key)
+        self.assertEqual(metrics[0]["enabled"], False)
+        # Police Officer metric has a prefilled context (ADDITIONAL_CONTEXT)
+        self.assertEqual(metrics[1]["key"], law_enforcement.police_officers.key)
+        self.assertEqual(
+            metrics[1]["contexts"],
+            [
+                {
+                    "display_name": "Please provide the land size (area) of the jurisdiction in "
+                    "square miles.",
+                    "key": "JURISDICTION_AREA",
+                    "multiple_choice_options": [],
+                    "reporting_note": None,
+                    "required": False,
+                    "type": "NUMBER",
+                    "value": None,
+                },
+                {
+                    "display_name": "Please provide additional context.",
+                    "key": "ADDITIONAL_CONTEXT",
+                    "multiple_choice_options": [],
+                    "reporting_note": None,
+                    "required": False,
+                    "type": "TEXT",
+                    "value": "this additional context provides contexts",
+                },
+            ],
+        )
+        # Calls for service metric is enabled but CallType disaggregation is disabled
+        self.assertEqual(metrics[2]["key"], law_enforcement.calls_for_service.key)
+        self.assertEqual(metrics[2]["enabled"], True)
+        self.assertEqual(
+            metrics[2]["disaggregations"],
+            [
+                {
+                    "key": CallType.dimension_identifier(),
+                    "enabled": False,
+                    "required": True,
+                    "helper_text": None,
+                    "should_sum_to_total": False,
+                    "display_name": CallType.display_name(),
+                    "dimensions": [
+                        {
+                            "enabled": False,
+                            "label": CallType.EMERGENCY.value,
+                            "key": CallType.EMERGENCY.value,
+                        },
+                        {
+                            "enabled": False,
+                            "label": CallType.NON_EMERGENCY.value,
+                            "key": CallType.NON_EMERGENCY.value,
+                        },
+                        {
+                            "enabled": False,
+                            "label": CallType.UNKNOWN.value,
+                            "key": CallType.UNKNOWN.value,
+                        },
+                    ],
+                }
+            ],
+        )
+        self.assertEqual(metrics[3]["key"], law_enforcement.reported_crime.key)
+        self.assertEqual(metrics[4]["key"], law_enforcement.total_arrests.key)
+        self.assertEqual(
+            metrics[5]["key"], law_enforcement.officer_use_of_force_incidents.key
+        )
+        self.assertEqual(
+            metrics[6]["key"], law_enforcement.civilian_complaints_sustained.key
+        )
+
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A

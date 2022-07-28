@@ -17,7 +17,8 @@
 """Base class for the reported value(s) for a Justice Counts metric."""
 
 import enum
-from typing import Any, Dict, List, Optional, Type, TypeVar
+import itertools
+from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
 
@@ -26,13 +27,20 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.exceptions import JusticeCountsBadRequestError
+from recidiviz.justice_counts.exceptions import (
+    JusticeCountsBadRequestError,
+    JusticeCountsDataError,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     MetricDefinition,
 )
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.metrics.metric_registry import (
+    METRIC_KEY_TO_METRIC,
+    METRICS_BY_SYSTEM,
+)
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 MetricContextDataT = TypeVar("MetricContextDataT", bound="MetricContextData")
 MetricAggregatedDimensionDataT = TypeVar(
@@ -131,31 +139,48 @@ class MetricAggregatedDimensionData:
             description="Metric has no dimension_to_enabled_status or dimension_to_value dictionary.",
         )
 
-    def dimension_to_json(self) -> List[Dict[str, Any]]:
-        # This method would be called in two scenarios: 1) We are getting the json of
-        # a report metric with will have both dimension_to_enabled_status and dimension_to_value
-        # populated or 2) We are getting the json of an agency metric with will only have
-        # dimension_to_enabled_status populated.
+    def dimension_to_json(
+        self, entry_point: DatapointGetRequestEntryPoint
+    ) -> List[Dict[str, Any]]:
+        """This method would be called in two scenarios: 1) We are getting the json of
+        a report metric with will have both dimension_to_enabled_status and dimension_to_value
+        populated or 2) We are getting the json of an agency metric with will only have
+        dimension_to_enabled_status populated."""
         dimensions = []
         if self.dimension_to_enabled_status is not None:
-            for dimension, val in self.dimension_to_enabled_status.items():
+            for dimension, status in self.dimension_to_enabled_status.items():
                 json = {
                     "key": dimension.to_enum().value,
-                    "value": val,
                     "label": dimension.dimension_value,
-                    "enabled": self.dimension_to_enabled_status.get(dimension),
+                    "enabled": status,
                 }
-                if self.dimension_to_value is not None:
+                if (
+                    self.dimension_to_value is not None
+                    and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
+                ):
                     # if there is a non-null dimension_to_value dictionary, add dimension
                     # values into the json
                     json["value"] = self.dimension_to_value.get(dimension)
+
+                elif (
+                    self.dimension_to_value is None
+                    and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
+                ):
+                    raise JusticeCountsDataError(
+                        code="no_dimension_values",
+                        description=f"Metric {dimension.to_enum().value} has no dimension values",
+                    )
                 dimensions.append(json)
         return dimensions
 
-    def to_json(self, dimension_definition: AggregatedDimension) -> Dict[str, Any]:
+    def to_json(
+        self,
+        dimension_definition: AggregatedDimension,
+        entry_point: DatapointGetRequestEntryPoint,
+    ) -> Dict[str, Any]:
         is_disaggregation_enabled = (
             self.dimension_to_enabled_status is not None
-            and any(list(self.dimension_to_enabled_status.keys()))
+            and any(list(self.dimension_to_enabled_status.values()))
         )  # A disaggregation is enabled if at least one of it's dimensions is enabled.
 
         return {
@@ -165,7 +190,7 @@ class MetricAggregatedDimensionData:
             "should_sum_to_total": dimension_definition.should_sum_to_total,
             "display_name": dimension_definition.display_name
             or dimension_definition.dimension.display_name(),
-            "dimensions": self.dimension_to_json(),
+            "dimensions": self.dimension_to_json(entry_point=entry_point),
             "enabled": is_disaggregation_enabled,
         }
 
@@ -183,7 +208,7 @@ class MetricAggregatedDimensionData:
         - The dimensions that were reported in json will be copied over
           to dimension_to_value.
         """
-        is_aggregated_dimension_enabled = json.get("enabled") is True
+        is_aggregated_dimension_enabled = json.get("enabled") is not False
 
         value_key = (
             "value"
@@ -211,7 +236,6 @@ class MetricAggregatedDimensionData:
         }  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20}
         if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
             return cls(dimension_to_value=dimension_to_value)
-
         return cls(dimension_to_enabled_status=dimension_to_value)
 
 
@@ -324,7 +348,7 @@ class MetricInterface:
         # MetricDefinition that this MetricInterface corresponds to
         return METRIC_KEY_TO_METRIC[self.key]
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self, entry_point: DatapointGetRequestEntryPoint) -> Dict[str, Any]:
         dimension_id_to_dimension_definition = {
             d.dimension_identifier(): d
             for d in self.metric_definition.aggregated_dimensions or []
@@ -332,6 +356,13 @@ class MetricInterface:
         context_key_to_context_definition = {
             context.key: context for context in self.metric_definition.contexts or []
         }
+        if len(self.metric_definition.reporting_frequencies) > 1:
+            raise JusticeCountsDataError(
+                code="more_than_one_frequency",
+                description="Metric has more than one frequency associated with it",
+            )
+
+        frequency = self.metric_definition.reporting_frequencies[0].value
         return {
             "key": self.key,
             "system": self.metric_definition.system.value.replace("_", " ")
@@ -345,6 +376,7 @@ class MetricInterface:
             "category": self.metric_definition.category.value,
             "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled,
+            "frequency": frequency,
             "definitions": [
                 d.to_json() for d in self.metric_definition.definitions or []
             ],
@@ -356,7 +388,8 @@ class MetricInterface:
                 d.to_json(
                     dimension_definition=dimension_id_to_dimension_definition[
                         d.dimension_identifier()
-                    ]
+                    ],
+                    entry_point=entry_point,
                 )
                 for d in self.aggregated_dimensions
             ],
@@ -404,3 +437,28 @@ class MetricInterface:
             # enforce_validation=report_status=ReportStatus.PUBLISHED
             enforce_validation=False,
         )
+
+    @staticmethod
+    def get_metric_definitions(
+        systems: Set[schema.System],
+        report_type: Optional[schema.ReportingFrequency] = None,
+    ) -> List[MetricDefinition]:
+        metrics = list(
+            itertools.chain(*[METRICS_BY_SYSTEM[system.value] for system in systems])
+        )
+        metric_definitions = []
+        for metric in metrics:
+            if report_type is not None and report_type not in {
+                freq.value for freq in metric.reporting_frequencies
+            }:
+                continue
+            if metric.disabled:
+                continue
+            metric_definitions.append(metric)
+
+        if len(metric_definitions) == 0:
+            raise JusticeCountsDataError(
+                code="invalid_data",
+                description="No metrics found for this report or agency.",
+            )
+        return metric_definitions

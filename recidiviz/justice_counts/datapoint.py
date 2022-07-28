@@ -61,6 +61,51 @@ class DatapointInterface:
         )
 
     @staticmethod
+    def get_metric_settings_by_agency(
+        session: Session,
+        agency: schema.Agency,
+    ) -> List[MetricInterface]:
+        """Returns a list of MetricInterfaces representing agency datapoints
+        that represent metric settings - not metric data - for the agency provided."""
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=session, agency_id=agency.id
+        )
+
+        metric_definitions = MetricInterface.get_metric_definitions(
+            systems={schema.System[system] for system in agency.systems}
+            if agency.systems is not None
+            else {agency.system}
+        )
+
+        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
+            datapoints=agency_datapoints
+        )
+
+        agency_metrics = []
+        # For each metric associated with this agency, construct a MetricInterface object
+
+        for metric_definition in metric_definitions:
+            datapoints = metric_key_to_data_points.get(
+                metric_definition.key,
+                DatapointInterface.DatapointsForMetricDefinition(),
+            )
+            agency_metrics.append(
+                MetricInterface(
+                    key=metric_definition.key,
+                    is_metric_enabled=datapoints.is_metric_enabled,
+                    contexts=datapoints.get_reported_contexts(
+                        # convert context datapoints to MetricContextData
+                        metric_definition=metric_definition
+                    ),
+                    aggregated_dimensions=datapoints.get_aggregated_dimension_data(
+                        # convert dimension datapoints to MetricAggregatedDimensionData
+                        metric_definition=metric_definition
+                    ),
+                )
+            )
+        return agency_metrics
+
+    @staticmethod
     def add_or_update_agency_datapoints(
         session: Session,
         agency: schema.Agency,
