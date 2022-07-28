@@ -16,3 +16,9 @@ columns:
     description: Calculated full-term release date for this person
   - name: sent_disp_cd
   - name: life_death_flag
+    description: Flag denoting sentences of life or death
+    known_values:
+      - value: L
+        description: Life sentence
+      - value: D
+        description: Death sentence
