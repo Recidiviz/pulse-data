@@ -17,15 +17,12 @@
 """Functionality for validating that certain database invariants are true before we commit a transaction."""
 
 import logging
-from typing import List, Callable
+from typing import Callable, List
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database_invariant_validator.county.county_invariant_validators import (
-    get_county_database_invariant_validators,
-)
 from recidiviz.persistence.database_invariant_validator.state.state_invariant_validators import (
     get_state_database_invariant_validators,
 )
@@ -35,6 +32,7 @@ ValidatorType = Callable[[Session, str, List[SchemaPersonType]], bool]
 
 def validate_invariants(
     session: Session,
+    # TODO(#13703): Delete this param entirely.
     system_level: SystemLevel,
     region_code: str,
     output_people: List[SchemaPersonType],
@@ -43,15 +41,13 @@ def validate_invariants(
 
     Args:
         session: The database session
-        system_level: Denotes relevant schema we're ingesting for (e.g. STATE or COUNTY)
+        system_level: Denotes relevant schema we're ingesting for (always STATE)
         region_code: The string region code associated with this ingest job
         output_people: A list of all schema person objects touched by this session.
     """
 
     if system_level == SystemLevel.STATE:
         validators: List[ValidatorType] = get_state_database_invariant_validators()
-    elif system_level == SystemLevel.COUNTY:
-        validators = get_county_database_invariant_validators()
     else:
         raise ValueError(f"Unexpected system level [{system_level}]")
 

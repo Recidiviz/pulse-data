@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains types used throughout state and county entity matching."""
-from typing import Generic, List
+"""Contains types used throughout entity matching."""
+from typing import List
 
 import attr
 
@@ -25,7 +25,7 @@ from recidiviz.persistence.database.schema.schema_person_type import SchemaPerso
 
 
 @attr.s(frozen=True, kw_only=True)
-class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
+class MatchedEntities(BuildableAttr):
     """
     Object that contains output for entity matching
     - people: List of all successfully matched and unmatched people.
@@ -40,7 +40,6 @@ class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     """
 
     people: List[SchemaPersonType] = attr.ib(factory=list)
-    orphaned_entities: List[DatabaseEntity] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
     database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)
@@ -48,7 +47,6 @@ class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     def __add__(self, other: "MatchedEntities") -> "MatchedEntities":
         return MatchedEntities(
             people=self.people + other.people,
-            orphaned_entities=self.orphaned_entities + other.orphaned_entities,
             error_count=self.error_count + other.error_count,
             database_cleanup_error_count=self.database_cleanup_error_count
             + other.database_cleanup_error_count,

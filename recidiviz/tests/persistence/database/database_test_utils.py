@@ -58,25 +58,6 @@ class FakeLegacyStateAndJailsIngestMetadata(IngestMetadata):
             database_key=SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE),
         )
 
-    @classmethod
-    def for_county(
-        cls,
-        region: str,
-        jurisdiction_id: Optional[str] = None,
-        ingest_time: Optional[datetime.datetime] = None,
-        enum_overrides: Optional[EnumOverrides] = None,
-        facility_id: Optional[str] = None,
-    ) -> LegacyStateAndJailsIngestMetadata:
-        return LegacyStateAndJailsIngestMetadata(
-            region=region,
-            jurisdiction_id=jurisdiction_id or "jurisdiction_id",
-            ingest_time=ingest_time or datetime.datetime(2020, 4, 14, 12, 31, 00),
-            enum_overrides=enum_overrides or EnumOverrides.empty(),
-            facility_id=facility_id,
-            system_level=SystemLevel.COUNTY,
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
-        )
-
 
 def generate_test_supervision_violation_response_decision_entry(
     person_id,

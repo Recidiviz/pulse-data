@@ -23,7 +23,6 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.entity.county.entities import Booking, Charge, Hold, Person
 from recidiviz.persistence.entity.state import entities
 
 _STATE_CODE = "US_ND"
@@ -58,11 +57,6 @@ class TestCoreEntity(unittest.TestCase):
             ).get_entity_name(),
         )
 
-    def test_get_entity_name_county_entity_sample(self) -> None:
-        self.assertEqual("person", Person.new_with_defaults().get_entity_name())
-        self.assertEqual("booking", Booking.new_with_defaults().get_entity_name())
-        self.assertEqual("hold", Hold.new_with_defaults().get_entity_name())
-
     def test_get_id_state_entity_sample(self) -> None:
         self.assertEqual(
             123,
@@ -92,12 +86,6 @@ class TestCoreEntity(unittest.TestCase):
             entities.StatePerson.new_with_defaults(state_code="US_XX").get_id()
         )
 
-    def test_get_id_county_entity_sample(self) -> None:
-        self.assertEqual(123, Person.new_with_defaults(person_id=123).get_id())
-        self.assertEqual(456, Booking.new_with_defaults(booking_id=456).get_id())
-        self.assertEqual(789, Hold.new_with_defaults(hold_id=789).get_id())
-        self.assertIsNone(Charge.new_with_defaults().get_id())
-
     def test_get_class_id_name_state_entity_sample(self) -> None:
         self.assertEqual("person_id", entities.StatePerson.get_class_id_name())
         self.assertEqual(
@@ -109,11 +97,6 @@ class TestCoreEntity(unittest.TestCase):
             "supervision_violation_response_id",
             entities.StateSupervisionViolationResponse.get_class_id_name(),
         )
-
-    def test_class_id_name_county_entity_sample(self) -> None:
-        self.assertEqual("person_id", Person.get_class_id_name())
-        self.assertEqual("booking_id", Booking.get_class_id_name())
-        self.assertEqual("hold_id", Hold.get_class_id_name())
 
     def test_getField(self) -> None:
         entity = entities.StatePerson.new_with_defaults(

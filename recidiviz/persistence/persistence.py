@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the persistence layer."""
-import datetime
 import logging
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
 import psycopg2
 import sqlalchemy
@@ -25,31 +24,17 @@ from opencensus.stats import aggregation, measure, view
 from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
-from recidiviz.common.constants.county.bond import BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.common.constants.county.charge import ChargeStatus
-from recidiviz.common.constants.county.hold import HoldStatus
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     LegacyStateAndJailsIngestMetadata,
     SystemLevel,
 )
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence import persistence_utils
-from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema.county import dao as county_dao
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
-from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database_invariant_validator import (
     database_invariant_validator,
 )
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
@@ -116,12 +101,6 @@ ENTITY_MATCHING_THRESHOLD = "entity_matching_threshold"
 DATABASE_INVARIANT_THRESHOLD = "database_invariant_threshold"
 
 SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
-    SystemLevel.COUNTY: {
-        OVERALL_THRESHOLD: 0.5,
-        ENUM_THRESHOLD: 0.5,
-        ENTITY_MATCHING_THRESHOLD: 0.0,
-        DATABASE_INVARIANT_THRESHOLD: 0.0,
-    },
     SystemLevel.STATE: {
         OVERALL_THRESHOLD: 0.5,
         ENUM_THRESHOLD: 0.0,
@@ -142,92 +121,6 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
         "US_ND": 0.20,
     },
 }
-
-
-def infer_release_on_open_bookings(
-    region_code: str, last_ingest_time: datetime.datetime, custody_status: CustodyStatus
-) -> None:
-    """
-    Look up all open bookings whose last_seen_time is earlier than the
-    provided last_ingest_time in the provided region, update those
-    bookings to have an inferred release date equal to the provided
-    last_ingest_time.
-
-    Args:
-        region_code: the region_code
-        last_ingest_time: The last time complete data was ingested for this
-            region. In the normal ingest pipeline, this is the last start time
-            of a background scrape for the region.
-        custody_status: The custody status to be marked on the found open
-            bookings. Defaults to INFERRED_RELEASE
-    """
-
-    with SessionFactory.using_database(
-        SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
-    ) as session:
-        logging.info("Reading all bookings that happened before [%s]", last_ingest_time)
-        people = county_dao.read_people_with_open_bookings_scraped_before_time(
-            session, region_code, last_ingest_time
-        )
-
-        logging.info(
-            "Found [%s] people with bookings that will be inferred released",
-            len(people),
-        )
-        for person in people:
-            persistence_utils.remove_pii_for_person(person)
-            _infer_release_date_for_bookings(
-                person.bookings, last_ingest_time, custody_status
-            )
-        db_people = converter.convert_entity_people_to_schema_people(people)
-        database.write_people(
-            session,
-            db_people,
-            LegacyStateAndJailsIngestMetadata(
-                region=region_code,
-                jurisdiction_id="",
-                ingest_time=last_ingest_time,
-                system_level=SystemLevel.COUNTY,
-                database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
-            ),
-        )
-
-
-def _infer_release_date_for_bookings(
-    bookings: List[county_entities.Booking],
-    last_ingest_time: datetime.datetime,
-    custody_status: CustodyStatus,
-) -> None:
-    """Marks the provided bookings with an inferred release date equal to the
-    provided date. Updates the custody_status to the provided custody
-    status. Also updates all children of the updated booking to have status
-    'REMOVED_WITHOUT_INFO"""
-
-    for booking in bookings:
-        if persistence_utils.is_booking_active(booking):
-            logging.info("Marking booking [%s] as inferred release", booking.booking_id)
-            booking.release_date = last_ingest_time.date()
-            booking.release_date_inferred = True
-            booking.custody_status = custody_status
-            booking.custody_status_raw_text = None
-            _mark_children_removed_from_source(booking)
-
-
-def _mark_children_removed_from_source(booking: county_entities.Booking) -> None:
-    """Marks all children of a booking with the status 'REMOVED_FROM_SOURCE'"""
-    for hold in booking.holds:
-        hold.status = HoldStatus.REMOVED_WITHOUT_INFO
-        hold.status_raw_text = None
-
-    for charge in booking.charges:
-        charge.status = ChargeStatus.REMOVED_WITHOUT_INFO
-        charge.status_raw_text = None
-        if charge.sentence:
-            charge.sentence.status = SentenceStatus.REMOVED_WITHOUT_INFO
-            charge.sentence.status_raw_text = None
-        if charge.bond:
-            charge.bond.status = BondStatus.REMOVED_WITHOUT_INFO
-            charge.bond.status_raw_text = None
 
 
 def _should_abort(
@@ -448,7 +341,7 @@ def write_ingest_info(
             ingest_info, ingest_metadata
         )
     )
-    total_people = _get_total_people(ingest_info, ingest_metadata)
+    total_people = len(ingest_info.state_people)
 
     return write_entities(
         conversion_result,
@@ -523,11 +416,7 @@ def write_entities(
                 session, ingest_metadata.region, people, ingest_metadata
             )
             output_people = entity_matching_output.people
-            total_root_entities = (
-                total_people
-                if ingest_metadata.system_level == SystemLevel.COUNTY
-                else entity_matching_output.total_root_entities
-            )
+            total_root_entities = entity_matching_output.total_root_entities
             logging.info(
                 "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count,
@@ -584,14 +473,6 @@ def write_entities(
                     database_invariant_errors,
                     database_invariant_errors / total_root_entities,
                 )
-
-            database.write_people(
-                session,
-                output_people,
-                ingest_metadata,
-                orphaned_entities=entity_matching_output.orphaned_entities,
-            )
-            logging.info("Successfully wrote to the database")
             return True
 
         try:
@@ -609,12 +490,6 @@ def write_entities(
             mtags[monitoring.TagKey.ERROR] = type(e).__name__
             measurements.measure_int_put(m_errors, 1)
             raise
+
+        logging.info("Successfully wrote to the database")
         return True
-
-
-def _get_total_people(
-    ingest_info: IngestInfo, ingest_metadata: LegacyStateAndJailsIngestMetadata
-) -> int:
-    if ingest_metadata.system_level == SystemLevel.COUNTY:
-        return len(ingest_info.people)
-    return len(ingest_info.state_people)

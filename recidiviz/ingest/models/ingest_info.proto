@@ -32,17 +32,7 @@ package recidiviz.ingest.models;
 // ```
 
 message IngestInfo {
-    repeated Person people = 1;
-    repeated Booking bookings = 2;
-    repeated Arrest arrests = 3;
-    repeated Charge charges = 4;
-    repeated Hold holds = 5;
-    repeated Bond bonds = 6;
-    repeated Sentence sentences = 7;
-    repeated SentenceRelationship sentence_relationships = 8;
-
-    // TODO(#8905): Delete all references to state schema objects from this file once
-    //  ingest mappings overhaul is complete for all states.
+    // TODO(#8905): Delete this whole file once ingest mappings overhaul is complete for all states.
 
     repeated StatePerson state_people = 9;
     repeated StatePersonRace state_person_races = 10;
@@ -68,112 +58,6 @@ message IngestInfo {
     repeated StateProgramAssignment state_program_assignments = 34;
     repeated StateEarlyDischarge state_early_discharges = 35;
     repeated StateSupervisionContact state_supervision_contacts = 36;
-}
-
-message Person {
-    optional string person_id = 1;
-    optional string surname = 2;
-    optional string given_names = 3;
-    optional string birthdate = 4;
-    optional string gender = 5;
-    optional string age = 6;
-    optional string race = 7;
-    optional string ethnicity = 8;
-    optional string place_of_residence = 9;
-    optional string full_name = 10;
-    optional string middle_names = 11;
-    optional string name_suffix = 13;
-    optional string jurisdiction_id = 14;
-
-    repeated string booking_ids = 12;
-}
-
-message Booking {
-    optional string booking_id = 1;
-    optional string admission_date = 2;
-    optional string admission_reason = 13;
-    optional string projected_release_date = 3;
-    optional string release_date = 4;
-    optional string release_reason = 5;
-    optional string custody_status = 6;
-    optional string facility = 7;
-    optional string facility_id = 14;
-    optional string classification = 8;
-    optional string total_bond_amount = 9;
-
-    optional string arrest_id = 10;
-    repeated string charge_ids = 11;
-    repeated string hold_ids = 12;
-}
-
-message Arrest {
-    optional string arrest_id = 1;
-    optional string arrest_date = 2;
-    optional string location = 3;
-    optional string officer_name = 4;
-    optional string officer_id = 5;
-    optional string agency = 6;
-}
-
-message Charge {
-    optional string charge_id = 1;
-    optional string offense_date = 2;
-    optional string statute = 3;
-    optional string name = 4;
-    optional string attempted = 5;
-    optional string degree = 6;
-    optional string charge_class = 7;
-    optional string level = 8;
-    optional string fee_dollars = 9;
-    optional string charging_entity = 10;
-    optional string status = 11;
-    optional string number_of_counts = 12;
-    optional string court_type = 13;
-    optional string case_number = 14;
-    optional string next_court_date = 15;
-    optional string judge_name = 16;
-    optional string charge_notes = 17;
-
-    optional string bond_id = 18;
-    optional string sentence_id = 19;
-}
-
-message Hold {
-    optional string hold_id = 1;
-    optional string jurisdiction_name = 2;
-    optional string status = 3;
-}
-
-message Bond {
-    optional string bond_id = 1;
-    optional string amount = 2;
-    optional string bond_type = 3;
-    optional string status = 4;
-    optional string bond_agent = 5;
-}
-
-message Sentence {
-    optional string sentence_id = 1;
-    optional string min_length = 2;
-    optional string max_length = 3;
-    optional string is_life = 4;
-    optional string is_probation = 5;
-    optional string is_suspended = 6;
-    optional string fine_dollars = 7;
-    optional string parole_possible = 8;
-    optional string post_release_supervision_length = 9;
-    optional string sentencing_region = 10;
-    optional string status = 11;
-    optional string date_imposed = 12;
-    optional string completion_date = 13;
-    optional string projected_completion_date = 14;
-}
-
-message SentenceRelationship {
-    optional string sentence_relationship_id = 1;
-    optional string sentence_a_id = 2;
-    optional string sentence_b_id = 3;
-    optional string relationship_type = 4;
 }
 
 message StatePerson {

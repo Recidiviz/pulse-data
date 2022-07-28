@@ -18,9 +18,9 @@
 """Contains logic to match database entities with ingested entities."""
 
 from abc import abstractmethod
-from typing import List, Generic
+from typing import List
 
-from opencensus.stats import measure, view, aggregation
+from opencensus.stats import aggregation, measure, view
 
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entities import EntityPersonType
@@ -44,7 +44,7 @@ matching_errors_by_entity_view = view.View(
 monitoring.register_views([matching_errors_by_entity_view])
 
 
-class BaseEntityMatcher(Generic[EntityPersonType]):
+class BaseEntityMatcher:
     """Base class for all entity matchers."""
 
     @abstractmethod

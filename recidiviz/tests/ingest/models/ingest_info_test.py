@@ -25,13 +25,6 @@ from google.protobuf.message import Message
 from recidiviz.ingest.models import ingest_info
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_info_pb2 import (
-    Arrest,
-    Bond,
-    Booking,
-    Charge,
-    Hold,
-    Person,
-    Sentence,
     StateAssessment,
     StateCharge,
     StateCourtCase,
@@ -83,18 +76,6 @@ class TestIngestInfo(unittest.TestCase):
         # These should only contain fields that are listed in ingest_info.proto
         # as ids but listed in ingest_info.py as full objects. Think carefully
         # before adding anything else.
-        person_fields_ignore = ["booking_ids", "bookings"]
-        booking_fields_ignore = [
-            "arrest_id",
-            "charge_ids",
-            "hold_ids",
-            "arrest",
-            "charges",
-            "holds",
-        ]
-        charge_fields_ignore = ["bond_id", "sentence_id", "bond", "sentence"]
-        sentence_fields_ignore = ["sentence_relationships"]
-
         state_person_fields_ignore = [
             "state_person_race_ids",
             "state_person_races",
@@ -172,14 +153,6 @@ class TestIngestInfo(unittest.TestCase):
         ]
         program_assignment_fields_ignore = ["referring_agent", "referring_agent_id"]
 
-        _verify_fields(Person, ingest_info.Person(), person_fields_ignore)
-        _verify_fields(Booking, ingest_info.Booking(), booking_fields_ignore)
-        _verify_fields(Charge, ingest_info.Charge(), charge_fields_ignore)
-        _verify_fields(Hold, ingest_info.Hold())
-        _verify_fields(Arrest, ingest_info.Arrest())
-        _verify_fields(Sentence, ingest_info.Sentence(), sentence_fields_ignore)
-        _verify_fields(Bond, ingest_info.Bond())
-
         _verify_fields(
             StatePerson, ingest_info.StatePerson(), state_person_fields_ignore
         )
@@ -245,74 +218,30 @@ class TestIngestInfo(unittest.TestCase):
 
     def test_bool_falsy(self) -> None:
         ii = IngestInfo()
-        person = ii.create_person()
-        person.create_booking().create_arrest()
-        person.create_booking()
+        person = ii.create_state_person()
+        person.create_state_incarceration_sentence().create_state_charge()
+        person.create_state_incarceration_sentence()
         self.assertFalse(ii)
 
     def test_bool_truthy(self) -> None:
         ii = IngestInfo()
-        person = ii.create_person()
-        person.create_booking().create_arrest(arrest_date="1/2/3")
-        person.create_booking()
+        person = ii.create_state_person()
+        person.create_state_incarceration_sentence().create_state_charge(
+            offense_date="1/2/3"
+        )
+        person.create_state_incarceration_sentence()
         self.assertTrue(ii)
 
-    def test_prune(self) -> None:
-        ii = IngestInfo(
-            people=[
-                ingest_info.Person(),
-                ingest_info.Person(
-                    bookings=[
-                        ingest_info.Booking(),
-                        ingest_info.Booking(
-                            arrest=ingest_info.Arrest(),
-                            charges=[
-                                ingest_info.Charge(),
-                                ingest_info.Charge(
-                                    bond=ingest_info.Bond(),
-                                    sentence=ingest_info.Sentence(),
-                                ),
-                                ingest_info.Charge(
-                                    bond=ingest_info.Bond(),
-                                    sentence=ingest_info.Sentence(is_life="False"),
-                                ),
-                            ],
-                            holds=[ingest_info.Hold(), ingest_info.Hold(hold_id=1)],
-                        ),
-                    ]
-                ),
-            ]
-        )
-
-        expected = IngestInfo(
-            people=[
-                ingest_info.Person(
-                    bookings=[
-                        ingest_info.Booking(
-                            charges=[
-                                ingest_info.Charge(
-                                    sentence=ingest_info.Sentence(is_life="False")
-                                )
-                            ],
-                            holds=[
-                                ingest_info.Hold(jurisdiction_name="UNSPECIFIED"),
-                                ingest_info.Hold(
-                                    hold_id=1, jurisdiction_name="UNSPECIFIED"
-                                ),
-                            ],
-                        )
-                    ]
-                )
-            ]
-        )
-        self.assertEqual(ii.prune(), expected)
-
     def test_sort(self) -> None:
-        b1 = ingest_info.Booking(admission_date="1")
-        b2 = ingest_info.Booking(admission_date="2")
+        b1 = ingest_info.StateSupervisionSentence(date_imposed="1")
+        b2 = ingest_info.StateSupervisionSentence(date_imposed="2")
 
-        ii = IngestInfo(people=[ingest_info.Person(bookings=[b1, b2])])
-        ii_reversed = IngestInfo(people=[ingest_info.Person(bookings=[b2, b1])])
+        ii = IngestInfo(
+            state_people=[ingest_info.StatePerson(state_supervision_sentences=[b1, b2])]
+        )
+        ii_reversed = IngestInfo(
+            state_people=[ingest_info.StatePerson(state_supervision_sentences=[b2, b1])]
+        )
 
         self.assertNotEqual(ii, ii_reversed)
         ii.sort()

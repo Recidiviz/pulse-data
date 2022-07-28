@@ -18,12 +18,9 @@
 from datetime import datetime
 from unittest import TestCase
 
-import attr
-
-from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity_matching.county import county_matching_utils
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.entity_matching_utils import get_only_match
 
 _DATE = datetime(2018, 12, 13)
@@ -33,34 +30,24 @@ _DATE_OTHER = datetime(2017, 12, 13)
 class TestEntityMatchingUtils(TestCase):
     """Tests for entity matching logic"""
 
-    def test_person_similarity(self):
-        person = county_entities.Person.new_with_defaults(
-            person_id=1,
-            birthdate=_DATE,
-            bookings=[
-                county_entities.Booking.new_with_defaults(
-                    booking_id=2, custody_status=CustodyStatus.RELEASED
-                )
-            ],
-        )
-
-        person_another = attr.evolve(person, birthdate=_DATE_OTHER)
-        self.assertEqual(county_matching_utils.diff_count(person, person_another), 1)
-
-    def test_get_only_match_duplicates(self):
+    def test_get_only_match_duplicates(self) -> None:
         def match(
             db_entity,
             ingested_entity,
             field_index,  # pylint: disable=unused-argument
-        ):
+        ) -> bool:
             return db_entity.birthdate == ingested_entity.birthdate
 
-        person = county_entities.Person.new_with_defaults(person_id=1, birthdate=_DATE)
-        person_2 = county_entities.Person.new_with_defaults(
-            person_id=2, birthdate=_DATE_OTHER
+        person = state_entities.StatePerson.new_with_defaults(
+            state_code=StateCode.US_XX.value, person_id=1, birthdate=_DATE
+        )
+        person_2 = state_entities.StatePerson.new_with_defaults(
+            state_code=StateCode.US_XX.value, person_id=2, birthdate=_DATE_OTHER
         )
 
-        ing_person = county_entities.Person.new_with_defaults(birthdate=_DATE)
+        ing_person = state_entities.StatePerson.new_with_defaults(
+            state_code=StateCode.US_XX.value, birthdate=_DATE
+        )
 
         self.assertEqual(
             get_only_match(

@@ -82,7 +82,7 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
-class StateConverter(BaseConverter[entities.StatePerson]):
+class StateConverter(BaseConverter):
     """Converts between ingest_info objects and persistence layer entities
     for state-level entities."""
 

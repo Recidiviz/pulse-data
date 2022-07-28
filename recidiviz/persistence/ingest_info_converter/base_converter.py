@@ -20,15 +20,10 @@
 import copy
 import logging
 from abc import abstractmethod
-from typing import Generic, List
+from typing import List
 
 import attr
 
-from recidiviz.common.constants.county.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
@@ -41,18 +36,18 @@ from recidiviz.persistence.entity.entities import EntityPersonType
 
 # TODO(#8905): Remove the State enums once all states have been migrated to v2 ingest
 #  mappings.
-PROTECTED_CLASSES = (Race, Ethnicity, Gender, StateRace, StateEthnicity, StateGender)
+PROTECTED_CLASSES = (StateRace, StateEthnicity, StateGender)
 
 
 @attr.s(frozen=True)
-class EntityDeserializationResult(Generic[EntityPersonType]):
+class EntityDeserializationResult:
     enum_parsing_errors: int = attr.ib()
     general_parsing_errors: int = attr.ib()
     protected_class_errors: int = attr.ib()
     people: List[EntityPersonType] = attr.ib(factory=list)
 
 
-class BaseConverter(Generic[EntityPersonType]):
+class BaseConverter:
     """Base class for all data converters of IngestInfo proto objects."""
 
     def __init__(
@@ -105,8 +100,7 @@ class BaseConverter(Generic[EntityPersonType]):
 
     @abstractmethod
     def _compliant_log_person(self, ingest_person):
-        """Logs the ingested person in a security-compliant manner, i.e. only
-        for the county converter."""
+        """Logs the ingested person in a security-compliant manner."""
 
 
 def _is_protected_error(error):

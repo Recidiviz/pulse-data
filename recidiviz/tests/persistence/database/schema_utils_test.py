@@ -174,25 +174,6 @@ def test_get_all_table_classes() -> None:
         "state_role_permissions",
         "permissions_override",
     ]
-    county_table_names = [
-        "arrest",
-        "arrest_history",
-        "bond",
-        "bond_history",
-        "booking",
-        "booking_history",
-        "charge",
-        "charge_history",
-        "hold",
-        "hold_history",
-        "person",
-        "person_history",
-        "scraper_success",
-        "sentence",
-        "sentence_history",
-        "sentence_relationship",
-        "sentence_relationship_history",
-    ]
     justice_counts_table_names = [
         "source",
         "report",
@@ -259,7 +240,6 @@ def test_get_all_table_classes() -> None:
     expected_table_class_names = (
         aggregate_table_names
         + case_triage_table_names
-        + county_table_names
         + justice_counts_table_names
         + operations_table_names
         + pathways_table_names

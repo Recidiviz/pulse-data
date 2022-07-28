@@ -102,7 +102,7 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
             AncestorChainOverridesCallable
         ] = None,
         primary_key_override_callback: Optional[PrimaryKeyOverrideCallable] = None,
-        system_level: SystemLevel = SystemLevel.COUNTY,
+        system_level: SystemLevel = SystemLevel.STATE,
         set_with_empty_value: bool = False,
     ) -> None:
         """
@@ -346,10 +346,9 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         return []
 
     def _instantiate_person(self, ingest_info: IngestInfo) -> None:
-        if self.system_level == SystemLevel.COUNTY:
-            ingest_info.create_person()
-        else:
+        if self.system_level == SystemLevel.STATE:
             ingest_info.create_state_person()
+        raise ValueError(f"Unexpected SystemLevel: {self.system_level}")
 
     def _pre_process_row(self, row: Dict[str, str]) -> None:
         """Applies pre-processing on the data in the given row, before we

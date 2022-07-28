@@ -40,10 +40,6 @@ from recidiviz.persistence.database.schema.aggregate import schema as aggregate_
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.county.history_table_shared_columns_mixin import (
-    HistoryTableSharedColumns,
-)
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
@@ -54,7 +50,6 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 _SCHEMA_MODULES: List[ModuleType] = [
     aggregate_schema,
     case_triage_schema,
-    county_schema,
     justice_counts_schema,
     pathways_schema,
     state_schema,
@@ -116,10 +111,6 @@ def is_association_table(table_name: str) -> bool:
     return table_name.endswith("_association")
 
 
-def is_history_table(table_name: str) -> bool:
-    return table_name.endswith("_history")
-
-
 def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]:
     all_members_in_current_module = inspect.getmembers(sys.modules[module.__name__])
     for _, member in all_members_in_current_module:
@@ -136,10 +127,6 @@ def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]
 
 def get_aggregate_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(aggregate_schema)
-
-
-def get_county_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(county_schema)
 
 
 def get_justice_counts_table_classes() -> Iterator[Table]:
@@ -170,8 +157,6 @@ def get_pathways_table_classes() -> Iterator[Table]:
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):
-        if issubclass(cls, HistoryTableSharedColumns):
-            raise ValueError("Should not have any history tables in the state schema")
         to_return.append(cls)
     return to_return
 
@@ -267,8 +252,6 @@ DirectIngestSchemaType = Union[Literal[SchemaType.JAILS], Literal[SchemaType.STA
 
 
 def schema_type_for_schema_module(module: ModuleType) -> SchemaType:
-    if module in (aggregate_schema, county_schema):
-        return SchemaType.JAILS
     if module == state_schema:
         return SchemaType.STATE
     if module == operations_schema:
