@@ -41,6 +41,8 @@ export interface ReportOverview {
   year: number;
   frequency: ReportFrequency;
   last_modified_at: string | null;
+  // TODO(#14138): Backend should only send timestamps
+  last_modified_at_timestamp: number | null;
   editors: string[];
   status: ReportStatus;
 }

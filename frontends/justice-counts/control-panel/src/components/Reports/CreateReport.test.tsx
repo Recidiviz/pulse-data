@@ -52,6 +52,7 @@ test("displayed created reports", async () => {
         year: 2022,
         frequency: "MONTHLY",
         last_modified_at: null,
+        last_modified_at_timestamp: null,
         editors: ["Editor #1"],
         status: "NOT_STARTED",
       },
@@ -72,6 +73,7 @@ test("displayed created reports", async () => {
       year: 2020,
       frequency: "ANNUAL",
       last_modified_at: null,
+      last_modified_at_timestamp: null,
       editors: ["Editor #2"],
       status: "NOT_STARTED",
     };

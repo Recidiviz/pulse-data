@@ -167,16 +167,20 @@ class ReportStore {
     try {
       const response = (await this.api.request({
         path: `/api/reports/${reportID}`,
-        body: { status, metrics: updatedMetrics },
+        body: {
+          status,
+          time_loaded:
+            this.reportOverviews[reportID].last_modified_at_timestamp,
+          metrics: updatedMetrics,
+        },
         method: "POST",
       })) as Response;
 
-      if (response.status !== 200) {
-        throw new Error("There was an issue updating this report.");
+      if (response.status === 200) {
+        /** Update the editor details (editors & last modified details) in real time within the report after autosave. */
+        const report = (await response.json()) as Report;
+        this.reportOverviews[report.id] = report;
       }
-
-      /** Update the editor details (editors & last modified details) in real time within the report after autosave. */
-      runInAction(() => this.getReportOverviews());
 
       return response;
     } catch (error) {
