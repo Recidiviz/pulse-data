@@ -110,8 +110,8 @@ ENV PATH="$PATH_PREFIX$PATH"
 ENV PIPENV_VENV_IN_PROJECT="1"
 
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
-ADD Pipfile /app/
-ADD Pipfile.lock /app/
+COPY Pipfile /app/
+COPY Pipfile.lock /app/
 
 WORKDIR /app
 
@@ -121,7 +121,7 @@ RUN if [ "$DEV_MODE" = "True" ]; \
     fi
 
 # Add the rest of the application code once all dependencies are installed
-ADD . /app
+COPY . /app
 
 # Add the built Admin Panel, Case Triage, and Justice Counts frontends to the image
 COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
