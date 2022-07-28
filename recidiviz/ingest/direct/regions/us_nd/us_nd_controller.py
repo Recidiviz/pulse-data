@@ -587,7 +587,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateCharge):
                 # Note: If we hear about a charge in Elite, the person has already been sentenced.
-                extracted_object.status = StateChargeStatus.SENTENCED.value
+                extracted_object.status = StateChargeStatus.CONVICTED.value
 
     @staticmethod
     def _rationalize_controlling_charge(
