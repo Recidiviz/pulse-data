@@ -384,6 +384,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
 )
+from recidiviz.utils.regions import is_valid_region_directory
 from recidiviz.utils.types import assert_type
 
 
@@ -845,7 +846,7 @@ def get_supported_states() -> Set[StateCode]:
     directories = [
         dir_item
         for dir_item in os.listdir(state_utils_path)
-        if os.path.isdir(os.path.join(state_utils_path, dir_item))
+        if is_valid_region_directory(os.path.join(state_utils_path, dir_item))
     ]
     supported_states: Set[StateCode] = set()
 

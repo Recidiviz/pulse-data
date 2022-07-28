@@ -337,3 +337,14 @@ def validate_region_code(region_code):
 def get_scraper_name(region_code: str) -> str:
     """Returns the class name for a given region_code and ingest_module"""
     return "".join(s.title() for s in chain(region_code.split("_"), ["Scraper"]))
+
+
+def is_valid_region_directory(dir_path: str) -> bool:
+    """Returns whether a directory path is valid: it points to an actual directory, the directory is
+    non-empty, and it does not only contain a __pycache__ directory. It is possible to get into that
+    situation when switching from a git branch that contains a region directory from one that
+    doesn't, since __pycache__ directories are ignored by git."""
+    return os.path.isdir(dir_path) and any(
+        path != "__pycache__" and not path.startswith(".")
+        for path in os.listdir(dir_path)
+    )
