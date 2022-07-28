@@ -38,7 +38,8 @@ def get_existing_region_dir_names() -> List[str]:
     return [
         d
         for d in os.listdir(_REGIONS_DIR)
-        if os.path.isdir(os.path.join(_REGIONS_DIR, d)) and not d.startswith("__")
+        if regions_utils.is_valid_region_directory(os.path.join(_REGIONS_DIR, d))
+        and not d.startswith("__")
     ]
 
 
