@@ -106,8 +106,6 @@ class AggregatedDimension:
     # Text displayed above aggregated dimension breakdowns.
     helper_text: Optional[str] = None
     # If disabled, don't send to the frontend to render
-    # TODO(#13225) Remove SheriffBudgetType and get rid of this property
-    disabled: bool = False
 
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()

@@ -20,9 +20,7 @@ from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
-    LawEnforcementStaffType,
     OffenseType,
-    SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -82,10 +80,7 @@ annual_budget = MetricDefinition(
             required=False,
         )
     ],
-    # Unclear if we need this, based on the current spec
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=SheriffBudgetType, required=False, disabled=True)
-    ],
+    aggregated_dimensions=[],
 )
 
 calls_for_service = MetricDefinition(
@@ -125,13 +120,19 @@ police_officers = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Police Officers",
-    description="Measures the number of full or part-time sworn officers employed by your agency.",
+    specified_contexts=[
+        Context(
+            key=ContextKey.JURISDICTION_AREA,
+            value_type=ValueType.NUMBER,
+            label="Please provide the land size (area) of the jurisdiction in square miles.",
+            required=False,
+        )
+    ],
+    display_name="Police Officers per Capita",
+    description="Measures the number of sworn officers employed by your agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=LawEnforcementStaffType, required=True)
-    ],
+    aggregated_dimensions=[],
 )
 
 reported_crime = MetricDefinition(

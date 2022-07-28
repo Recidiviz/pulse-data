@@ -25,11 +25,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    OffenseType,
-    SheriffBudgetType,
-)
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_interface import (
@@ -113,7 +109,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(datapoints), 5)
+            self.assertEqual(len(datapoints), 3)
 
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.delete_reports_by_id(
@@ -383,38 +379,24 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 5)
+            self.assertEqual(len(total_datapoints), 3)
 
-            # We should have four datapoints that have a value associated with them, one
-            # for the aggregated Law Enforcement budget two for each breakdown (DETENTION and PATROL)
-            # and one for the context.
+            # We should have two datapoints that have a value associated with them, one
+            # for the aggregated Law Enforcement budget and one for the context.
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 4)
+            self.assertEqual(len(datapoints_with_value), 2)
             report_metric = self.test_schema_objects.reported_budget_metric
             self.assertEqual(
                 datapoints_with_value[0].get_value(),
                 report_metric.value,
             )
-            aggregated_dimensions = assert_type(
-                report_metric.aggregated_dimensions, list
-            )
             self.assertEqual(
                 datapoints_with_value[1].get_value(),
-                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
-            )
-            self.assertEqual(
-                datapoints_with_value[2].get_value(),
-                aggregated_dimensions[0].dimension_to_value[
-                    SheriffBudgetType.DETENTION
-                ],
-            )
-            self.assertEqual(
-                datapoints_with_value[3].get_value(),
                 assert_type(report_metric.contexts, list)[0].value,
             )
 
@@ -425,14 +407,12 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.get_reported_budget_metric(
                     value=None,
-                    detention_value=None,
-                    patrol_value=None,
                     include_contexts=False,
                 ),
                 user_account=self.test_schema_objects.test_user_A,
             )
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 3)
+            self.assertEqual(len(total_datapoints), 1)
             # There should be no datapoints with values associated with the metric
             queried_datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -441,14 +421,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(len(queried_datapoints_with_value), 0)
             queried_datapoints_without_value = session.query(schema.Datapoint).all()
-            self.assertEqual(len(queried_datapoints_without_value), 3)
+            self.assertEqual(len(queried_datapoints_without_value), 1)
 
     def test_add_incomplete_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            incomplete_report = self.test_schema_objects.get_reported_budget_metric(
-                value=None,
-                detention_value=50,
-                patrol_value=None,
+            incomplete_report = (
+                self.test_schema_objects.get_reported_calls_for_service_metric(
+                    emergency_value=None, unknown_value=None
+                )
             )
 
             ReportInterface.add_or_update_metric(
@@ -459,28 +439,29 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 5)
+            self.assertEqual(len(total_datapoints), 7)
 
-            # There should be two datapoints with non-null values: one containing the detention value,
-            # the other with the context
+            # There should be three datapoints with non-null values: one containing aggregate value,
+            # and other with the context value
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 2)
+            self.assertEqual(len(datapoints_with_value), 3)
             reported_aggregated_dimensions = assert_type(
                 incomplete_report.aggregated_dimensions, list
             )
+            self.assertEqual(datapoints_with_value[0].get_value(), 100)
             self.assertEqual(
-                datapoints_with_value[0].get_value(),
+                datapoints_with_value[1].get_value(),
                 reported_aggregated_dimensions[0].dimension_to_value[
-                    SheriffBudgetType.DETENTION
+                    CallType.NON_EMERGENCY
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                datapoints_with_value[2].get_value(),
                 assert_type(incomplete_report.contexts, list)[0].value,
             )
 
@@ -616,7 +597,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 5)
+            self.assertEqual(len(total_datapoints), 3)
 
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -624,8 +605,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 4)
-            # This shoulxd be a no-op, because the metric definition is the same
+            self.assertEqual(len(datapoints_with_value), 2)
+            # This should be a no-op, because the metric definition is the same
             # according to our unique constraints, so we update the existing records
             # (which does nothing, since nothing has changed)
             ReportInterface.add_or_update_metric(
@@ -640,13 +621,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(queried_datapoints_no_op), 4)
+            self.assertEqual(len(queried_datapoints_no_op), 2)
             self.assertAlmostEqual(datapoints_with_value, queried_datapoints_no_op)
 
     def test_update_metric_with_new_values(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             session.add(self.test_schema_objects.test_user_A)
-            report_metric = self.test_schema_objects.reported_budget_metric
+            report_metric = self.test_schema_objects.reported_calls_for_service_metric
 
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -656,14 +637,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 5)
+            self.assertEqual(len(total_datapoints), 7)
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 4)
+            self.assertEqual(len(datapoints_with_value), 5)
             aggregated_dimensions = assert_type(
                 report_metric.aggregated_dimensions, list
             )
@@ -673,25 +654,25 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 datapoints_with_value[1].get_value(),
-                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
+                aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
             self.assertEqual(
                 datapoints_with_value[2].get_value(),
-                aggregated_dimensions[0].dimension_to_value[
-                    SheriffBudgetType.DETENTION
-                ],
+                aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
             )
             self.assertEqual(
                 datapoints_with_value[3].get_value(),
+                aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
+            )
+            self.assertEqual(
+                datapoints_with_value[4].get_value(),
                 assert_type(report_metric.contexts, list)[0].value,
             )
 
             # This should result in an update to the existing database objects
             new_report_metric = (
-                JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+                JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
                     value=1000,
-                    detention_value=600,
-                    patrol_value=400,
                 )
             )
             ReportInterface.add_or_update_metric(
@@ -708,7 +689,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 4)
+            self.assertEqual(len(datapoints_with_value), 5)
 
             self.assertEqual(
                 datapoints_with_value[0].get_value(), new_report_metric.value
@@ -718,16 +699,18 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 datapoints_with_value[1].get_value(),
-                aggregated_dimensions[0].dimension_to_value[SheriffBudgetType.PATROL],
+                aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
             self.assertEqual(
                 datapoints_with_value[2].get_value(),
-                aggregated_dimensions[0].dimension_to_value[
-                    SheriffBudgetType.DETENTION
-                ],
+                aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
             )
             self.assertEqual(
                 datapoints_with_value[3].get_value(),
+                aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
+            )
+            self.assertEqual(
+                datapoints_with_value[4].get_value(),
                 assert_type(new_report_metric.contexts, list)[0].value,
             )
 
@@ -908,8 +891,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             # First update
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 value=1000,
-                detention_value=600,
-                patrol_value=400,
             )
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -921,8 +902,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             # Second update
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
                 value=100,
-                detention_value=None,
-                patrol_value=40,
             )
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -933,9 +912,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             # Third update
             report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                value=100,
-                detention_value=60,
-                patrol_value=40,
+                value=10,
             )
             ReportInterface.add_or_update_metric(
                 session=session,
@@ -952,27 +929,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 .all()
             )
-            self.assertEqual(len(datapoint_history), 7)
+            self.assertEqual(len(datapoint_history), 3)
 
-            # Aggregated value goes from 100000 -> 1000 -> 100
+            # Aggregated value goes from 1000 -> 1000 -> 100 -> 10
             self.assertEqual(datapoint_history[0].old_value, str(100000))
             self.assertEqual(datapoint_history[0].new_value, str(1000))
             self.assertEqual(datapoint_history[1].old_value, str(1000))
             self.assertEqual(datapoint_history[1].new_value, str(100))
-
-            # First disaggregated value goes from  33334 -> 400 -> 40
-            self.assertEqual(datapoint_history[2].old_value, str(33334))
-            self.assertEqual(datapoint_history[2].new_value, str(400))
-            self.assertEqual(datapoint_history[3].old_value, str(400))
-            self.assertEqual(datapoint_history[3].new_value, str(40))
-
-            # Second disaggregated value goes from 66666 -> 600 -> None -> 60
-            self.assertEqual(datapoint_history[4].old_value, str(66666))
-            self.assertEqual(datapoint_history[4].new_value, str(600))
-            self.assertEqual(datapoint_history[5].old_value, str(600))
-            self.assertEqual(datapoint_history[5].new_value, None)
-            self.assertEqual(datapoint_history[6].old_value, None)
-            self.assertEqual(datapoint_history[6].new_value, str(60))
+            self.assertEqual(datapoint_history[2].old_value, str(100))
+            self.assertEqual(datapoint_history[2].new_value, str(10))
 
     def test_delete_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -980,7 +945,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.reported_calls_for_service_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
@@ -989,17 +954,20 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 4)
-            self.assertEqual(datapoints_with_value[0].get_value(), 100000)
-            self.assertEqual(datapoints_with_value[1].get_value(), 33334)
-            self.assertEqual(datapoints_with_value[2].get_value(), 66666)
-            self.assertEqual(datapoints_with_value[3].get_value(), "government")
+            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(datapoints_with_value[0].get_value(), 100.0)
+            self.assertEqual(datapoints_with_value[1].get_value(), 20.0)
+            self.assertEqual(datapoints_with_value[2].get_value(), 60.0)
+            self.assertEqual(datapoints_with_value[3].get_value(), 20.0)
+            self.assertEqual(datapoints_with_value[4].get_value(), "All calls")
 
             # If user doesn't include contexts at all, this doesn't delete anything.
             # To delete them, you'd have to specifically include them with values
             # of None or empty string.
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                include_contexts=False
+            report_metric = (
+                JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
+                    include_contexts=False
+                )
             )
 
             ReportInterface.add_or_update_metric(
@@ -1015,13 +983,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .order_by(schema.Datapoint.id)
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 4)
+            self.assertEqual(len(datapoints_with_value), 5)
 
             # If user explicitly sets metric value as None, but doesn't include disaggregations or contexts,
             # the metric value will be changed, but disaggregations and contexts will be left alone. You have
             # to explicitly set values to None to delete them.
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                value=None, include_disaggregations=False, include_contexts=False
+            report_metric = (
+                JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
+                    value=None,
+                    include_disaggregations=False,
+                    include_contexts=False,
+                )
             )
 
             ReportInterface.add_or_update_metric(
@@ -1035,12 +1007,14 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
-            # 3 and not 4 because the aggregate metric value did change to None
-            self.assertEqual(len(datapoints_with_value), 3)
+            # 4 and not 5 because the aggregate metric value did change to None
+            self.assertEqual(len(datapoints_with_value), 4)
 
             # Here's how we actually delete everything
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
-                value=None, nullify_contexts_and_disaggregations=True
+            report_metric = (
+                JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
+                    value=None, nullify_contexts_and_disaggregations=True
+                )
             )
 
             ReportInterface.add_or_update_metric(

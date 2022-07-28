@@ -30,10 +30,7 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    SheriffBudgetType,
-)
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -395,21 +392,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             {
                                 "key": law_enforcement.annual_budget.key,
                                 "value": 2000000,
-                                "disaggregations": [
-                                    {
-                                        "key": SheriffBudgetType.dimension_identifier(),
-                                        "dimensions": [
-                                            {
-                                                "key": SheriffBudgetType.DETENTION.value,
-                                                "value": 500000,
-                                            },
-                                            {
-                                                "key": SheriffBudgetType.PATROL.value,
-                                                "value": 1500000,
-                                            },
-                                        ],
-                                    }
-                                ],
                                 "contexts": [
                                     {
                                         "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
@@ -424,7 +406,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 report = self.session.query(Report).one_or_none()
                 self.assertEqual(report.status, ReportStatus.PUBLISHED)
                 datapoints = report.datapoints
-                self.assertEqual(len(datapoints), 9)
+                self.assertEqual(len(datapoints), 7)
                 self.assertEqual(report.datapoints[0].get_value(), 110)
                 # Empty CallType dimension values
                 self.assertEqual(datapoints[1].get_value(), value)
@@ -434,9 +416,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
                 )
                 self.assertEqual(datapoints[5].get_value(), 2000000)
-                self.assertEqual(report.datapoints[6].get_value(), 1500000)
-                self.assertEqual(report.datapoints[7].get_value(), 500000)
-                self.assertEqual(report.datapoints[8].get_value(), "test context")
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A
