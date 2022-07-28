@@ -150,7 +150,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     mo_restricted_access AS (
         SELECT
             'US_MO' AS state_code,
-            EMAIL AS restricted_user_email,
+            LOWER(EMAIL) AS restricted_user_email,
             CASE
                 WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
                 THEN STRING_AGG(DISTINCT DISTRICT, ',')
@@ -167,7 +167,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
         WHERE EMAIL IS NOT NULL
-        GROUP BY EMAIL
+        GROUP BY LOWER(EMAIL)
     ),
     nd_restricted_access AS (
         SELECT
