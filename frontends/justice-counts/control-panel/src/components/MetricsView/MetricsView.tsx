@@ -524,7 +524,7 @@ export const MetricsView: React.FC = observer(() => {
   const { reportStore } = useStore();
   const configPanelRef = useRef<HTMLDivElement>(null);
 
-  const metricFilterOptions = ["All Metrics"] as const;
+  const metricFilterOptions = ["All Metrics", "Active"] as const;
   type MetricFilterOptions = typeof metricFilterOptions[number];
 
   const configSections = ["Configuration", "Context", "Data"] as const;
@@ -539,6 +539,10 @@ export const MetricsView: React.FC = observer(() => {
   const [activeMetricKey, setActiveMetricKey] = useState<string>("");
 
   const [metricSettings, setMetricSettings] = useState<{
+    [key: string]: MetricsViewMetric;
+  }>({});
+
+  const [filteredMetricSettings, setFilteredMetricSettings] = useState<{
     [key: string]: MetricsViewMetric;
   }>({});
 
@@ -688,6 +692,25 @@ export const MetricsView: React.FC = observer(() => {
     fetchReportSettings();
   }, [reportStore]);
 
+  useEffect(() => {
+    if (activeMetricFilter === "All Metrics") {
+      return setFilteredMetricSettings(metricSettings);
+    }
+
+    if (activeMetricFilter === "Active") {
+      const filteredMetricKeyToMetricMap: { [key: string]: MetricsViewMetric } =
+        {};
+
+      Object.values(metricSettings)
+        .filter((metric) => metric.enabled)
+        ?.forEach((metric) => {
+          filteredMetricKeyToMetricMap[metric.key] = metric;
+        });
+
+      return setFilteredMetricSettings(filteredMetricKeyToMetricMap);
+    }
+  }, [metricSettings, activeMetricFilter]);
+
   return (
     <>
       <MetricsViewContainer>
@@ -721,8 +744,8 @@ export const MetricsView: React.FC = observer(() => {
                 setActiveConfigSection(configSections[0]);
               }}
             >
-              {metricSettings &&
-                Object.values(metricSettings).map((metric) => (
+              {filteredMetricSettings &&
+                Object.values(filteredMetricSettings).map((metric) => (
                   <MetricBox
                     key={metric.key}
                     metricKey={metric.key}
