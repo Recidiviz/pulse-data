@@ -489,13 +489,6 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
 
-    def __attrs_post_init__(self) -> None:
-        if self.status == StateChargeStatus.SENTENCED:
-            raise ValueError(
-                f"StateChargeStatus.SENTENCED is deprecated for state_code: {self.state_code}."
-                "This value should not be used"
-            )
-
 
 @attr.s(eq=False, kw_only=True)
 class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
