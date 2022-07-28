@@ -142,6 +142,7 @@ output:
                     $mappings:
                       StateChargeClassificationType.CIVIL:
                         - V # Civil Violation
+                        - T # Class T
                       StateChargeClassificationType.FELONY:
                         - A # Class A (Felony)
                         - B # Class B (Felony)
@@ -152,8 +153,6 @@ output:
                         - D # Class D (Misdemeanor)
                         - E # Class E (Misdemeanor)
                         - U # Unclassified Misdemeanors
-                      StateChargeClassificationType.INFRACTION:
-                        - T # Class T
                       StateChargeClassificationType.EXTERNAL_UNKNOWN:
                         - X # Migration - class unknown in source
                         - Z # Migration - class invalid in source

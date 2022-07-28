@@ -203,14 +203,13 @@ output:
                     $mappings:
                       StateChargeClassificationType.CIVIL:
                         - V # Civil Violation
+                        - T # Class T
                       StateChargeClassificationType.FELONY:
                         - A # Class A (Felony)
                         - B # Class B (Felony)
                         - C # Class C (Felony)
                         - F # Unclassified Felonies
                         - M # Murder
-                      StateChargeClassificationType.INFRACTION:
-                        - T # Class T
                       StateChargeClassificationType.MISDEMEANOR:
                         - D # Class D (Misdemeanor)
                         - E # Class E (Misdemeanor)
