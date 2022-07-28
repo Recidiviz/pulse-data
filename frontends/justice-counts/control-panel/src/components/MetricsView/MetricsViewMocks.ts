@@ -161,31 +161,3 @@ export const metricsViewMockResponse = [
     ],
   },
 ];
-
-export type MetricsViewMockMetric = {
-  key: string;
-  display_name: string;
-  description: string;
-  frequency: string;
-  enabled: boolean;
-  contexts: {
-    key: string;
-    display_name: string;
-    reporting_note: string;
-    required: boolean;
-    type: string;
-    value: string | null;
-    multiple_choice_options?: string[];
-  }[];
-  disaggregations: {
-    key: string;
-    display_name: string;
-    enabled: boolean;
-    dimensions: {
-      key: string;
-      label: string;
-      reporting_note: string;
-      enabled: boolean;
-    }[];
-  }[];
-};

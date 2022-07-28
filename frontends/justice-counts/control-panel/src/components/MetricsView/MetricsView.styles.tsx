@@ -354,3 +354,11 @@ export const MultipleChoiceWrapper = styled.div`
     flex: 40%;
   }
 `;
+
+export const MetricSettingsDisplayError = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
+`;
