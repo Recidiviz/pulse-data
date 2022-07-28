@@ -43,6 +43,7 @@ import sys
 from typing import Dict, List, Tuple
 
 import sqlalchemy
+from google.cloud import exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
@@ -64,11 +65,13 @@ from recidiviz.utils.string import StrictStringFormatter
 DATASET_ID_TEMPLATE = "{project_id}.{state_code}_raw_data.{table_name}"
 
 RAW_FILE_QUERY_TEMPLATE = (
-    """DELETE FROM `{table}` WHERE file_id in {file_ids_to_delete}"""
+    """DELETE FROM `{table}` WHERE file_id not in ({min_file_id}, {max_file_id})"""
 )
 
+POSTGRES_FILE_ID_IN_BQ = """SELECT DISTINCT file_id FROM `{table}` WHERE file_id in ({min_file_id}, {max_file_id})"""
 
-def get_min_and_max_datetimes_contained_by_file_tag(
+
+def get_postgres_min_and_max_datetimes_contained_by_file_tag(
     session: Session,
     state_code: StateCode,
 ) -> Dict[str, Tuple[str, str]]:
@@ -86,7 +89,71 @@ def get_min_and_max_datetimes_contained_by_file_tag(
         f"GROUP BY file_tag;"
     )
     results = session.execute(sqlalchemy.text(command))
-    return {result[0]: (result[1], result[2]) for result in results}
+    results_dict = {result[0]: (result[1], result[2]) for result in results}
+    return dict(sorted(results_dict.items()))
+
+
+def postgres_file_ids_present_in_bq(
+    session: Session,
+    state_code: StateCode,
+    file_tag: str,
+    bq_client: BigQueryClient,
+    table_bq_path: str,
+    min_datetimes_contained: str,
+    max_datetimes_contained: str,
+) -> List[str]:
+    """Validate whether the file_ids associated with min and max `datetimes_contained_upper_bound_inclusive` on Postgres
+    are also present on BQ."""
+    logging.info(
+        "[%s] Generating Postgres query to identify file_ids from min and max dates...",
+        file_tag,
+    )
+    command = (
+        "SELECT DISTINCT file_id "
+        "FROM direct_ingest_raw_file_metadata "
+        f"WHERE region_code = '{state_code.value}' "
+        f"AND file_tag = '{file_tag}' "
+        f"AND datetimes_contained_upper_bound_inclusive in ('{min_datetimes_contained}', '{max_datetimes_contained}');"
+    )
+    postgres_results = session.execute(sqlalchemy.text(command))
+    logging.info("[%s] %s", file_tag, command)
+    postgres_file_ids = [result[0] for result in postgres_results]
+
+    logging.info(
+        "[%s] Postgres min and max file_ids: min=(%s, %s), max=(%s, %s)",
+        file_tag,
+        postgres_file_ids[0],
+        min_datetimes_contained,
+        postgres_file_ids[1],
+        max_datetimes_contained,
+    )
+
+    postgres_confirmation_query = StrictStringFormatter().format(
+        POSTGRES_FILE_ID_IN_BQ,
+        table=table_bq_path,
+        min_file_id=postgres_file_ids[0],
+        max_file_id=postgres_file_ids[1],
+    )
+    logging.info(
+        "[%s] Running query to see if Postgres file_ids are present on BQ.", file_tag
+    )
+    try:
+        logging.info("[%s] %s", file_tag, postgres_confirmation_query)
+        query_job = bq_client.run_query_async(postgres_confirmation_query)
+        query_job.result()
+        bq_file_ids = [row["file_id"] for row in query_job]
+        logging.info(
+            "[%s] Postgres file_ids: %s. BQ file_ids: %s.",
+            file_tag,
+            postgres_file_ids,
+            bq_file_ids,
+        )
+        if set(postgres_file_ids) == set(bq_file_ids):
+            return bq_file_ids
+        return []
+    except exceptions.NotFound as e:
+        logging.info("[%s] Table not found: %s", file_tag, str(e))
+        return []
 
 
 def get_redundant_raw_file_ids(
@@ -149,13 +216,15 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
         SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS),
         os.path.abspath(ssl_cert_path),
     ) as session:
-        file_tag_to_min_and_max_discovery_time: Dict[
+        file_tag_to_min_and_max_contained_datetimes: Dict[
             str, Tuple[str, str]
-        ] = get_min_and_max_datetimes_contained_by_file_tag(session, state_code)
+        ] = get_postgres_min_and_max_datetimes_contained_by_file_tag(
+            session, state_code
+        )
         for file_tag, (
             min_datetimes_contained,
             max_datetimes_contained,
-        ) in file_tag_to_min_and_max_discovery_time.items():
+        ) in file_tag_to_min_and_max_contained_datetimes.items():
             if (
                 file_tag in raw_file_configs.keys()
                 and raw_file_configs[file_tag].always_historical_export is False
@@ -174,15 +243,6 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                 max_datetimes_contained,
             )
 
-            logging.info(
-                "%s: min_datetimes_contained=%s, max_datetimes_contained=%s. %d file_ids have associated "
-                "`datetimes_contained_upper_bound_inclusive` between these bounds.",
-                file_tag,
-                min_datetimes_contained,
-                max_datetimes_contained,
-                len(file_ids_to_delete),
-            )
-
             table_bq_path = StrictStringFormatter().format(
                 DATASET_ID_TEMPLATE,
                 project_id=project_id,
@@ -190,24 +250,50 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                 table_name=file_tag,
             )
 
+            min_and_max_file_ids_in_bq = postgres_file_ids_present_in_bq(
+                session=session,
+                state_code=state_code,
+                file_tag=file_tag,
+                bq_client=bq_client,
+                table_bq_path=table_bq_path,
+                min_datetimes_contained=min_datetimes_contained,
+                max_datetimes_contained=max_datetimes_contained,
+            )
+
+            if not min_and_max_file_ids_in_bq:
+                logging.error(
+                    "[%s] Skipping deletion because the file_ids identified as min and max on Postgres "
+                    "were not found on BQ.",
+                    file_tag,
+                )
+                continue
+
             deletion_query = StrictStringFormatter().format(
                 RAW_FILE_QUERY_TEMPLATE,
                 table=table_bq_path,
-                file_ids_to_delete=file_ids_to_delete,
+                min_file_id=min_and_max_file_ids_in_bq[0],
+                max_file_id=min_and_max_file_ids_in_bq[1],
             )
 
+            logging.info(
+                "[%s] Postgres file ids found on BQ! Proceeding with deletion.",
+                file_tag,
+            )
             if dry_run:
-                logging.info("[DRY RUN] Would run %s", deletion_query)
+                logging.info("[%s][DRY RUN] Would run %s", file_tag, deletion_query)
                 logging.info(
-                    "[DRY RUN] Would set direct_ingest_raw_file_metadata.is_invalidated to True for %d rows for %s.",
-                    len(file_ids_to_delete),
+                    "[%s][DRY RUN] Would set direct_ingest_raw_file_metadata.is_invalidated to True for"
+                    " %d rows.",
                     file_tag,
+                    len(file_ids_to_delete),
                 )
             else:
-                logging.info("Running deletion query in BQ for %s...", file_tag)
-                bq_client.run_query_async(deletion_query)
+                logging.info("[%s] Running deletion query in BQ...", file_tag)
+                query_job = bq_client.run_query_async(deletion_query)
+                query_job.result()
                 logging.info(
-                    "Marking %d metadata rows as invalidated...",
+                    "[%s] Marking %d metadata rows as invalidated...",
+                    file_tag,
                     len(file_ids_to_delete),
                 )
                 for file_id in file_ids_to_delete:
