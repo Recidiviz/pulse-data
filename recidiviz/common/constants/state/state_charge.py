@@ -29,8 +29,6 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 class StateChargeClassificationType(StateEntityEnum):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
     FELONY = state_enum_strings.state_charge_classification_type_felony
-    # TODO(#12648): Delete this in favor of CIVIL
-    INFRACTION = state_enum_strings.state_charge_classification_type_infraction
     MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
@@ -58,13 +56,6 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     StateChargeClassificationType.FELONY: "Used when a person has been charged with "
     "having committed a felony offense, which is defined as a crime of high "
     "seriousness.",
-    StateChargeClassificationType.INFRACTION: "Used when a person has been charged "
-    "with having committed a civil offense (also known as a municipal infraction), "
-    "which is defined as a violation of a local law enacted by a city or town. Also "
-    "describes a charge resulting from a case involving a private dispute between "
-    "persons or organizations (as opposed to a criminal case due to the violation of "
-    "a law). TODO(#12648): THIS WILL SOON BE MERGED WITH `CIVIL`. IF YOU ARE ADDING "
-    "NEW ENUM MAPPINGS, USE `CIVIL` INSTEAD.",
     StateChargeClassificationType.MISDEMEANOR: "Used when a person has been charged "
     "with having committed a misdemeanor offense, which is defined as a crime of "
     "moderate seriousness.",
@@ -125,27 +116,27 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
     "0": None,
     "ADMINISTRATIVE": StateChargeClassificationType.CIVIL,
     "C": StateChargeClassificationType.CIVIL,
-    "CITED CITATION": StateChargeClassificationType.INFRACTION,
+    "CITED CITATION": StateChargeClassificationType.CIVIL,
     "CIVIL": StateChargeClassificationType.CIVIL,
     "COMM": StateChargeClassificationType.CIVIL,
-    "CRIMINAL TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
+    "CRIMINAL TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
     "ENHANCEMENT": None,
     "EXTERNAL UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
     "F": StateChargeClassificationType.FELONY,
     "FEL": StateChargeClassificationType.FELONY,
     "FELONY": StateChargeClassificationType.FELONY,
-    "I": StateChargeClassificationType.INFRACTION,
-    "INFRACTION": StateChargeClassificationType.INFRACTION,
+    "I": StateChargeClassificationType.CIVIL,
+    "INFRACTION": StateChargeClassificationType.CIVIL,
     "M": StateChargeClassificationType.MISDEMEANOR,
     "MIS": StateChargeClassificationType.MISDEMEANOR,
     "MISD": StateChargeClassificationType.MISDEMEANOR,
     "MISDEMEANOR": StateChargeClassificationType.MISDEMEANOR,
-    "MUNICIPAL ORDINANCE VIOLATION": StateChargeClassificationType.INFRACTION,
+    "MUNICIPAL ORDINANCE VIOLATION": StateChargeClassificationType.CIVIL,
     "N A": None,
     "NA": None,
-    "NON ARREST TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
-    "NON MOVING TRAFFIC VIOLATION": StateChargeClassificationType.INFRACTION,
-    "SUMMONS": StateChargeClassificationType.INFRACTION,
+    "NON ARREST TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
+    "NON MOVING TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
+    "SUMMONS": StateChargeClassificationType.CIVIL,
     "U": StateChargeClassificationType.EXTERNAL_UNKNOWN,
     "UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateChargeClassificationType.INTERNAL_UNKNOWN,
