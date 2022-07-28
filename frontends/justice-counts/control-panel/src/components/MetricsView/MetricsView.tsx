@@ -710,7 +710,17 @@ export const MetricsView: React.FC = observer(() => {
         {metricSettings[activeMetricKey] ? (
           <MetricsViewControlPanel>
             {/* List Of Metrics */}
-            <PanelContainerLeft>
+            <PanelContainerLeft
+              onClick={() => {
+                if (configPanelRef.current) {
+                  configPanelRef.current.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                  });
+                }
+                setActiveConfigSection(configSections[0]);
+              }}
+            >
               {metricSettings &&
                 Object.values(metricSettings).map((metric) => (
                   <MetricBox
@@ -727,8 +737,7 @@ export const MetricsView: React.FC = observer(() => {
             </PanelContainerLeft>
 
             {/* Configuration | Context | Data */}
-
-            <PanelContainerRight>
+            <PanelContainerRight ref={configPanelRef}>
               <MetricNameBadgeWrapper>
                 <MetricName isTitle>
                   {metricSettings[activeMetricKey]?.display_name}
