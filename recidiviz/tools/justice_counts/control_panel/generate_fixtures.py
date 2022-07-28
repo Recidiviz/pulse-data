@@ -32,6 +32,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     Context,
     MetricDefinition,
 )
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -112,7 +113,7 @@ def _create_context_datapoint(
 def _get_datapoints_for_report(
     report: schema.Report, system: schema.System
 ) -> List[schema.Datapoint]:
-    metric_definitions = ReportInterface.get_metric_definitions_by_report_type(
+    metric_definitions = MetricInterface.get_metric_definitions(
         report_type=report.type,
         systems={system},
     )

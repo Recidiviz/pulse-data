@@ -28,7 +28,10 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
+from recidiviz.justice_counts.metrics.metric_definition import (
+    AggregatedDimension,
+    CallsRespondedOptions,
+)
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
     MetricAggregatedDimensionData,
@@ -47,6 +50,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         self.reported_calls_for_service = (
             self.test_schema_objects.reported_calls_for_service_metric
         )
+        self.maxDiff = None
 
     def test_init(self) -> None:
         self.assertEqual(
@@ -118,11 +122,43 @@ class TestJusticeCountsMetricInterface(TestCase):
                 enforce_validation=True,
             )
 
+    def test_is_disaggregation_enabled(self) -> None:
+        is_disabled = MetricAggregatedDimensionData(
+            dimension_to_enabled_status={d: False for d in GenderRestricted},
+            dimension_to_value={d: None for d in GenderRestricted},
+        )
+
+        json = is_disabled.to_json(
+            dimension_definition=AggregatedDimension(
+                dimension=GenderRestricted, required=True
+            ),
+            entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+        )
+
+        self.assertEqual(json["enabled"], False)
+
+        is_enabled = MetricAggregatedDimensionData(
+            dimension_to_value={d: None for d in GenderRestricted},
+            dimension_to_enabled_status={
+                d: d is not GenderRestricted.FEMALE for d in GenderRestricted
+            },
+        )
+
+        json = is_enabled.to_json(
+            dimension_definition=AggregatedDimension(
+                dimension=GenderRestricted, required=True
+            ),
+            entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+        )
+
+        self.assertEqual(json["enabled"], True)
+
     def test_budget_report_metric_json(self) -> None:
-        self.maxDiff = None
         reported_metric = self.test_schema_objects.get_reported_budget_metric()
         self.assertEqual(
-            reported_metric.to_json(),
+            reported_metric.to_json(
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
+            ),
             {
                 "key": reported_metric.key,
                 "system": "Law Enforcement",
@@ -135,6 +171,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "unit": "USD",
                 "label": "Annual Budget",
                 "enabled": True,
+                "frequency": "ANNUAL",
                 "contexts": [
                     {
                         "key": "PRIMARY_FUNDING_SOURCE",
@@ -165,7 +202,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         )
         metric_definition = law_enforcement_metric_definitions.calls_for_service
         self.assertEqual(
-            reported_metric.to_json(),
+            reported_metric.to_json(
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
+            ),
             {
                 "key": reported_metric.key,
                 "system": "Law Enforcement",
@@ -180,6 +219,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "unit": metric_definition.metric_type.unit,
                 "label": "Calls for Service",
                 "enabled": True,
+                "frequency": "MONTHLY",
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
@@ -253,7 +293,9 @@ class TestJusticeCountsMetricInterface(TestCase):
             law_enforcement_metric_definitions.civilian_complaints_sustained
         )
         self.assertEqual(
-            reported_metric.to_json(),
+            reported_metric.to_json(
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
+            ),
             {
                 "key": reported_metric.key,
                 "system": "Law Enforcement",
@@ -261,6 +303,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
                 "enabled": False,
+                "frequency": "ANNUAL",
                 "definitions": [
                     {
                         "term": "Complaint",
@@ -294,7 +337,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         reported_metric = self.test_schema_objects.get_total_arrests_metric()
         metric_definition = law_enforcement_metric_definitions.total_arrests
         self.assertEqual(
-            reported_metric.to_json(),
+            reported_metric.to_json(
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
+            ),
             {
                 "key": reported_metric.key,
                 "system": "Law Enforcement",
@@ -307,6 +352,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "unit": metric_definition.metric_type.unit,
                 "label": "Total Arrests",
                 "enabled": True,
+                "frequency": "MONTHLY",
                 "contexts": [
                     {
                         "key": "JURISDICTION_DEFINITION_OF_ARREST",
@@ -500,6 +546,294 @@ class TestJusticeCountsMetricInterface(TestCase):
                 json=response_json,
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
             ),
+        )
+
+    def test_to_json_disabled_disaggregation(self) -> None:
+        metric_definition = law_enforcement.annual_budget
+        metric_json = {
+            "key": metric_definition.key,
+            "enabled": False,
+        }
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            MetricInterface(
+                key=metric_definition.key,
+                contexts=[],
+                value=None,
+                aggregated_dimensions=[],
+                is_metric_enabled=False,
+                enforce_validation=False,
+            ),
+        )
+
+    def test_to_json_disabled_metric(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=False
+        )
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            {
+                "key": metric_definition.key,
+                "enabled": False,
+                "category": metric_definition.category.value,
+                "frequency": "MONTHLY",
+                "contexts": [],
+                "definitions": [
+                    {
+                        "definition": "One case that represents a request for police "
+                        "service generated by the community and "
+                        "received through an emergency or "
+                        "non-emergency method (911, 311, 988, online "
+                        "report). Count all calls for service, "
+                        "regardless of whether an underlying incident "
+                        "report was filed.",
+                        "term": "Calls for service",
+                    }
+                ],
+                "display_name": metric_definition.display_name,
+                "description": metric_definition.description,
+                "label": "Calls for Service",
+                "reporting_note": metric_definition.reporting_note,
+                "system": "Law Enforcement",
+                "unit": "CALLS",
+                "value": None,
+                "disaggregations": [
+                    {
+                        "key": CallType.dimension_identifier(),
+                        "enabled": False,
+                        "required": True,
+                        "helper_text": None,
+                        "should_sum_to_total": False,
+                        "display_name": "Call Types",
+                        "dimensions": [
+                            {
+                                "enabled": False,
+                                "label": CallType.EMERGENCY.value,
+                                "key": CallType.EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.NON_EMERGENCY.value,
+                                "key": CallType.NON_EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.UNKNOWN.value,
+                                "key": CallType.UNKNOWN.value,
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_to_json_disabled_dimensions(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True, include_disaggregation=True
+        )
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            {
+                "key": metric_definition.key,
+                "enabled": True,
+                "category": metric_definition.category.value,
+                "frequency": "MONTHLY",
+                "contexts": [],
+                "definitions": [
+                    {
+                        "definition": "One case that represents a request for police "
+                        "service generated by the community and "
+                        "received through an emergency or "
+                        "non-emergency method (911, 311, 988, online "
+                        "report). Count all calls for service, "
+                        "regardless of whether an underlying incident "
+                        "report was filed.",
+                        "term": "Calls for service",
+                    }
+                ],
+                "display_name": metric_definition.display_name,
+                "description": metric_definition.description,
+                "label": "Calls for Service",
+                "reporting_note": metric_definition.reporting_note,
+                "system": "Law Enforcement",
+                "unit": "CALLS",
+                "value": None,
+                "disaggregations": [
+                    {
+                        "key": CallType.dimension_identifier(),
+                        "enabled": False,
+                        "required": True,
+                        "helper_text": None,
+                        "should_sum_to_total": False,
+                        "display_name": "Call Types",
+                        "dimensions": [
+                            {
+                                "enabled": False,
+                                "label": CallType.EMERGENCY.value,
+                                "key": CallType.EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.NON_EMERGENCY.value,
+                                "key": CallType.NON_EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.UNKNOWN.value,
+                                "key": CallType.UNKNOWN.value,
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_to_json_prefilled_contexts(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True, include_disaggregation=True, include_contexts=True
+        )
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            {
+                "key": metric_definition.key,
+                "enabled": True,
+                "category": metric_definition.category.value,
+                "frequency": "MONTHLY",
+                "contexts": [
+                    {
+                        "display_name": "Please provide additional context.",
+                        "key": "ADDITIONAL_CONTEXT",
+                        "multiple_choice_options": [],
+                        "reporting_note": None,
+                        "required": False,
+                        "type": "TEXT",
+                        "value": "this additional context provides contexts",
+                    }
+                ],
+                "definitions": [
+                    {
+                        "definition": "One case that represents a request for police "
+                        "service generated by the community and "
+                        "received through an emergency or "
+                        "non-emergency method (911, 311, 988, online "
+                        "report). Count all calls for service, "
+                        "regardless of whether an underlying incident "
+                        "report was filed.",
+                        "term": "Calls for service",
+                    }
+                ],
+                "display_name": metric_definition.display_name,
+                "description": metric_definition.description,
+                "label": "Calls for Service",
+                "reporting_note": metric_definition.reporting_note,
+                "system": "Law Enforcement",
+                "unit": "CALLS",
+                "value": None,
+                "disaggregations": [
+                    {
+                        "key": CallType.dimension_identifier(),
+                        "enabled": False,
+                        "required": True,
+                        "helper_text": None,
+                        "should_sum_to_total": False,
+                        "display_name": "Call Types",
+                        "dimensions": [
+                            {
+                                "enabled": False,
+                                "label": CallType.EMERGENCY.value,
+                                "key": CallType.EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.NON_EMERGENCY.value,
+                                "key": CallType.NON_EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.UNKNOWN.value,
+                                "key": CallType.UNKNOWN.value,
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_to_json_partially_enabled_disaggregation(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=True,
+            include_disaggregation=True,
+            use_partially_disabled_disaggregation=True,
+        )
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
+            ),
+            {
+                "key": metric_definition.key,
+                "enabled": True,
+                "category": metric_definition.category.value,
+                "frequency": "MONTHLY",
+                "contexts": [],
+                "definitions": [
+                    {
+                        "definition": "One case that represents a request for police "
+                        "service generated by the community and "
+                        "received through an emergency or "
+                        "non-emergency method (911, 311, 988, online "
+                        "report). Count all calls for service, "
+                        "regardless of whether an underlying incident "
+                        "report was filed.",
+                        "term": "Calls for service",
+                    }
+                ],
+                "display_name": metric_definition.display_name,
+                "description": metric_definition.description,
+                "label": "Calls for Service",
+                "reporting_note": metric_definition.reporting_note,
+                "system": "Law Enforcement",
+                "unit": "CALLS",
+                "value": None,
+                "disaggregations": [
+                    {
+                        "key": CallType.dimension_identifier(),
+                        "enabled": True,
+                        "required": True,
+                        "helper_text": None,
+                        "should_sum_to_total": False,
+                        "display_name": "Call Types",
+                        "dimensions": [
+                            {
+                                "enabled": True,
+                                "label": CallType.EMERGENCY.value,
+                                "key": CallType.EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.NON_EMERGENCY.value,
+                                "key": CallType.NON_EMERGENCY.value,
+                            },
+                            {
+                                "enabled": False,
+                                "label": CallType.UNKNOWN.value,
+                                "key": CallType.UNKNOWN.value,
+                            },
+                        ],
+                    }
+                ],
+            },
         )
 
     def test_annual_budget_json_to_agency_metric(self) -> None:

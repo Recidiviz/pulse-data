@@ -17,7 +17,7 @@
 """Implements tests for the Justice Counts Control Panel backend API."""
 
 import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from unittest import TestCase
 
 import pytest
@@ -290,7 +290,7 @@ class JusticeCountsSchemaTestObjects:
                     }
                 )
             ]
-            if include_disaggregation
+            if include_disaggregation is True or is_metric_enabled is False
             else [],
         )
 
@@ -395,6 +395,54 @@ class JusticeCountsSchemaTestObjects:
                 },
             ],
         }
+
+    @staticmethod
+    def get_test_agency_datapoints(
+        agency_id: int,
+    ) -> List[schema.Datapoint]:
+        """Returns agency datapoints that can be used during testing."""
+        disabled_metric = schema.Datapoint(
+            metric_definition_key=law_enforcement.annual_budget.key,
+            enabled=False,
+            source_id=agency_id,
+        )
+        prefilled_context_datapoint = schema.Datapoint(
+            metric_definition_key=law_enforcement.police_officers.key,
+            context_key=ContextKey.ADDITIONAL_CONTEXT.name,
+            value="this additional context provides contexts",
+            source_id=agency_id,
+        )
+
+        disabled_disaggregations = [
+            schema.Datapoint(
+                metric_definition_key=law_enforcement.calls_for_service.key,
+                dimension_identifier_to_member={
+                    CallType.dimension_identifier(): CallType.EMERGENCY.name
+                },
+                enabled=False,
+                source_id=agency_id,
+            ),
+            schema.Datapoint(
+                metric_definition_key=law_enforcement.calls_for_service.key,
+                dimension_identifier_to_member={
+                    CallType.dimension_identifier(): CallType.NON_EMERGENCY.name
+                },
+                enabled=False,
+                source_id=agency_id,
+            ),
+            schema.Datapoint(
+                metric_definition_key=law_enforcement.calls_for_service.key,
+                dimension_identifier_to_member={
+                    CallType.dimension_identifier(): CallType.UNKNOWN.name
+                },
+                enabled=False,
+                source_id=agency_id,
+            ),
+        ]
+        return [
+            disabled_metric,
+            prefilled_context_datapoint,
+        ] + disabled_disaggregations
 
     @staticmethod
     def get_reported_calls_for_service_metric(

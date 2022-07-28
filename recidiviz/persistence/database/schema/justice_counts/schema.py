@@ -534,7 +534,7 @@ class Datapoint(JusticeCountsBase):
 
     def get_value(self) -> Any:
         value = self.value
-        status = self.report.status
+        status = self.report.status if self.report else None
         if value is None:
             return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
