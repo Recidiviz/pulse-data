@@ -220,7 +220,7 @@ class ReportStore {
       }
 
       const response = (await this.api.request({
-        path: `/api/metrics/${currentAgency.id}`,
+        path: `/api/metrics/update/${currentAgency.id}`,
         method: "GET",
       })) as Response;
 
