@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tools for identifying scrapers."""
+"""Tools for identifying scrapers.
+
+TODO(#13703): Delete once pubsub_helpers are cleaned up.
+"""
 
 
 class ScrapeKey:

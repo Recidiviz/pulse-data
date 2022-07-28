@@ -18,7 +18,6 @@
 """Tests for ingest_object_hierarchy"""
 
 import unittest
-from typing import Sequence
 
 from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 
@@ -31,19 +30,11 @@ class TestIngestObjectHierarchy(unittest.TestCase):
     """Tests for ingest_object_hierarchy."""
 
     def test_get_sequence_for_class_persons(self) -> None:
-        actual = get_ancestor_class_sequence("person")
-        expected = ()
-        self.assertEqual(expected, actual)
-
         actual = get_ancestor_class_sequence("state_person")
         expected = ()
         self.assertEqual(expected, actual)
 
     def test_get_sequence_for_class_single_parent(self) -> None:
-        actual = get_ancestor_class_sequence("bond")
-        expected: Sequence[str] = ("person", "booking", "charge")
-        self.assertEqual(expected, actual)
-
         actual = get_ancestor_class_sequence("state_supervision_sentence")
         expected = ("state_person",)
         self.assertEqual(expected, actual)

@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Converts scraped IngestInfo data to the persistence layer entity."""
+"""Converts scraped IngestInfo data to the persistence layer entity.
+
+TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+ mappings.
+"""
 
 from recidiviz.common.ingest_metadata import (
     LegacyStateAndJailsIngestMetadata,
@@ -24,9 +28,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     BaseConverter,
     EntityDeserializationResult,
-)
-from recidiviz.persistence.ingest_info_converter.county.county_converter import (
-    CountyConverter,
 )
 from recidiviz.persistence.ingest_info_converter.state.state_converter import (
     StateConverter,
@@ -47,11 +48,6 @@ def _get_converter(
 ) -> BaseConverter:
     system_level = metadata.system_level
 
-    if system_level == SystemLevel.COUNTY:
-        return CountyConverter(ingest_info, metadata)
-
-    # TODO(#8905): Delete this block once all states have been migrated to v2 ingest
-    #  mappings.
     if system_level == SystemLevel.STATE:
         return StateConverter(ingest_info, metadata)
 

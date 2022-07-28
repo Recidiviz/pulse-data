@@ -15,16 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a generic type to describe a person object that may belong to either the
-state or county schema.
+Defines a generic type to describe a person object that belongs to the state schema.
 """
 
-from typing import TypeVar
-
-from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
-
-SchemaPersonType = TypeVar(
-    "SchemaPersonType", county_schema.Person, state_schema.StatePerson
-)
+# TODO(#13703): Delete this unnecessary type entirely
+SchemaPersonType = state_schema.StatePerson

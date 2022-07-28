@@ -63,7 +63,6 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state import entities as state_entities
@@ -100,18 +99,7 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateTaskDeadline.__name__,
 ]
 
-_COUNTY_CLASS_HIERARCHY = [
-    county_entities.Person.__name__,
-    county_entities.Booking.__name__,
-    county_entities.Arrest.__name__,
-    county_entities.Hold.__name__,
-    county_entities.Charge.__name__,
-    county_entities.Bond.__name__,
-    county_entities.Sentence.__name__,
-]
-
 _state_direction_checker = None
-_county_direction_checker = None
 
 
 class SchemaEdgeDirectionChecker:
@@ -129,13 +117,6 @@ class SchemaEdgeDirectionChecker:
         if not _state_direction_checker:
             _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
         return _state_direction_checker
-
-    @classmethod
-    def county_direction_checker(cls):
-        global _county_direction_checker
-        if not _county_direction_checker:
-            _county_direction_checker = cls(_COUNTY_CLASS_HIERARCHY, county_entities)
-        return _county_direction_checker
 
     def is_back_edge(self, from_obj, to_field_name) -> bool:
         """Given an object and a field name on that object, returns whether
@@ -338,9 +319,6 @@ class CoreEntityFieldIndex:
         self.state_direction_checker = (
             SchemaEdgeDirectionChecker.state_direction_checker()
         )
-        self.county_direction_checker = (
-            SchemaEdgeDirectionChecker.county_direction_checker()
-        )
 
         # Cache of fields by field type for DatabaseEntity classes
         self.database_entity_fields_by_field_type: Dict[
@@ -355,7 +333,9 @@ class CoreEntityFieldIndex:
     def _direction_checker(self, entity_name: str) -> SchemaEdgeDirectionChecker:
         if entity_name.startswith("state_"):
             return self.state_direction_checker
-        return self.county_direction_checker
+        raise ValueError(
+            f"Direction checking only supported for entities in the state schema. Found: {entity_name}"
+        )
 
     def get_fields_with_non_empty_values(
         self, entity: CoreEntity, entity_field_type: EntityFieldType

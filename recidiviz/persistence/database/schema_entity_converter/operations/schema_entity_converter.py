@@ -26,12 +26,11 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
-    FieldNameType,
     DstBaseType,
+    FieldNameType,
     SrcBaseType,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.operations import entities
 
@@ -39,10 +38,11 @@ from recidiviz.persistence.entity.operations import entities
 class _OperationsSchemaEntityConverter(
     BaseSchemaEntityConverter[SrcBaseType, DstBaseType]
 ):
-    """County-specific implementation of BaseSchemaEntityConverter"""
+    """Operations-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self) -> None:
-        super().__init__(SchemaEdgeDirectionChecker.county_direction_checker())
+        # TODO(#13703): Make a direction checker specifically for the operations DB?
+        super().__init__(SchemaEdgeDirectionChecker.state_direction_checker())
 
     def _get_schema_module(self) -> ModuleType:
         return schema

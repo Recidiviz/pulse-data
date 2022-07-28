@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers to use pubsub"""
+"""Helpers to use pubsub
+
+TODO(#13703): Delete unused functions out of this file.
+"""
 
 # We only lease tasks for 5min, so that they pop back into the queue
 # if we pause or stop the scrape for very long.

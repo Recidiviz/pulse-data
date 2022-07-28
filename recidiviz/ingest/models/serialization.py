@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Serialization code for ingest models"""
+"""Serialization code for ingest models
+
+TODO(#8905): Delete this whole file once ingest mappings overhaul is complete for all states.
+"""
 from typing import Any, Dict, cast
 
 import cattr
@@ -47,16 +50,6 @@ def convert_ingest_info_to_proto(
     _process_external_ids(ingest_info_py)
     proto = ingest_info_pb2.IngestInfo()
 
-    person_map: Dict[str, ingest_info.Person] = {}
-    booking_map: Dict[str, ingest_info.Booking] = {}
-    charge_map: Dict[str, ingest_info.Charge] = {}
-    hold_map: Dict[str, ingest_info.Hold] = {}
-    arrest_map: Dict[str, ingest_info.Arrest] = {}
-    bond_map: Dict[str, ingest_info.Bond] = {}
-    sentence_map: Dict[str, ingest_info.Sentence] = {}
-
-    # TODO(#8905): Delete all references to state schema objects from this file once
-    #  ingest mappings overhaul is complete for all states.
     state_person_map: Dict[str, ingest_info.StatePerson] = {}
     state_person_race_map: Dict[str, ingest_info.StatePersonRace] = {}
     state_person_ethnicity_map: Dict[str, ingest_info.StatePersonEthnicity] = {}
@@ -174,43 +167,6 @@ def convert_ingest_info_to_proto(
                         state_agent_map,
                     )
                     proto_court_case.judge_id = proto_judge.state_agent_id
-
-    for person in ingest_info_py.people:
-        proto_person = _populate_proto("people", person, "person_id", person_map)
-        for booking in person.bookings:
-            proto_booking = _populate_proto(
-                "bookings", booking, "booking_id", booking_map
-            )
-            # Can safely append the ids now since they should be unique.
-            proto_person.booking_ids.append(proto_booking.booking_id)
-
-            if booking.arrest:
-                proto_arrest = _populate_proto(
-                    "arrests", booking.arrest, "arrest_id", arrest_map
-                )
-                proto_booking.arrest_id = proto_arrest.arrest_id
-
-            for hold in booking.holds:
-                proto_hold = _populate_proto("holds", hold, "hold_id", hold_map)
-                proto_booking.hold_ids.append(proto_hold.hold_id)
-
-            for charge in booking.charges:
-                proto_charge = _populate_proto(
-                    "charges", charge, "charge_id", charge_map
-                )
-                proto_booking.charge_ids.append(proto_charge.charge_id)
-
-                if charge.bond:
-                    proto_bond = _populate_proto(
-                        "bonds", charge.bond, "bond_id", bond_map
-                    )
-                    proto_charge.bond_id = proto_bond.bond_id
-
-                if charge.sentence:
-                    proto_sentence = _populate_proto(
-                        "sentences", charge.sentence, "sentence_id", sentence_map
-                    )
-                    proto_charge.sentence_id = proto_sentence.sentence_id
 
     for state_person in ingest_info_py.state_people:
         proto_state_person = _populate_proto(
@@ -530,33 +486,6 @@ def convert_proto_to_ingest_info(
     proto: ingest_info_pb2.IngestInfo,
 ) -> ingest_info.IngestInfo:
     """Populates an `IngestInfo` python object from the given proto"""
-
-    person_map: Dict[str, ingest_info.Person] = dict(
-        _proto_to_py(person, ingest_info.Person, "person_id") for person in proto.people
-    )
-    booking_map: Dict[str, ingest_info.Booking] = dict(
-        _proto_to_py(booking, ingest_info.Booking, "booking_id")
-        for booking in proto.bookings
-    )
-    charge_map: Dict[str, ingest_info.Charge] = dict(
-        _proto_to_py(charge, ingest_info.Charge, "charge_id")
-        for charge in proto.charges
-    )
-    hold_map: Dict[str, ingest_info.Hold] = dict(
-        _proto_to_py(hold, ingest_info.Hold, "hold_id") for hold in proto.holds
-    )
-    arrest_map: Dict[str, ingest_info.Arrest] = dict(
-        _proto_to_py(arrest, ingest_info.Arrest, "arrest_id")
-        for arrest in proto.arrests
-    )
-    bond_map: Dict[str, ingest_info.Bond] = dict(
-        _proto_to_py(bond, ingest_info.Bond, "bond_id") for bond in proto.bonds
-    )
-    sentence_map: Dict[str, ingest_info.Sentence] = dict(
-        _proto_to_py(sentence, ingest_info.Sentence, "sentence_id")
-        for sentence in proto.sentences
-    )
-
     state_person_map: Dict[str, ingest_info.StatePerson] = dict(
         _proto_to_py(state_person, ingest_info.StatePerson, "state_person_id")
         for state_person in proto.state_people
@@ -745,31 +674,6 @@ def convert_proto_to_ingest_info(
         )
         for contact in proto.state_supervision_contacts
     )
-
-    # Wire bonds and sentences to respective charges
-    for proto_charge in proto.charges:
-        charge = charge_map[proto_charge.charge_id]
-        if proto_charge.bond_id:
-            charge.bond = bond_map[proto_charge.bond_id]
-        if proto_charge.sentence_id:
-            charge.sentence = sentence_map[proto_charge.sentence_id]
-
-    # Wire arrests, charges, and holds to respective bookings
-    for proto_booking in proto.bookings:
-        booking = booking_map[proto_booking.booking_id]
-        if proto_booking.arrest_id:
-            booking.arrest = arrest_map[proto_booking.arrest_id]
-        booking.charges = [
-            charge_map[proto_id] for proto_id in proto_booking.charge_ids
-        ]
-        booking.holds = [hold_map[proto_id] for proto_id in proto_booking.hold_ids]
-
-    # Wire bookings to respective people
-    for proto_person in proto.people:
-        person = person_map[proto_person.person_id]
-        person.bookings = [
-            booking_map[proto_id] for proto_id in proto_person.booking_ids
-        ]
 
     def _wire_sentence_proto(proto_sentence, proto_sentence_id, proto_sentence_map):
         """Wires up child entities to their respective sentence types."""
@@ -997,7 +901,6 @@ def convert_proto_to_ingest_info(
 
     # Wire people to ingest info
     ingest_info_py = ingest_info.IngestInfo()
-    ingest_info_py.people.extend(person_map.values())
     ingest_info_py.state_people.extend(state_person_map.values())
     _process_external_ids(ingest_info_py)
     return ingest_info_py

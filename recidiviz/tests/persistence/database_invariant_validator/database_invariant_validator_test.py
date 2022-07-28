@@ -19,7 +19,7 @@
 import unittest
 from typing import List
 
-from mock import create_autospec, patch, MagicMock
+from mock import MagicMock, create_autospec, patch
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
@@ -90,24 +90,6 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
         # Act
         errors = database_invariant_validator.validate_invariants(
             self.mock_session, SystemLevel.STATE, "US_XX", []
-        )
-
-        # Assert
-        self.assertEqual(0, errors)
-        mock_get_validators.assert_called_once()
-
-    @patch(
-        f"{DATABASE_INVARIANT_VALIDATOR_MODULE}.get_county_database_invariant_validators"
-    )
-    def test_invariant_validator_success_county(
-        self, mock_get_validators: MagicMock
-    ) -> None:
-        # Arrange
-        mock_get_validators.return_value = [validator_that_succeeds]
-
-        # Act
-        errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.COUNTY, "US_XX_YY", []
         )
 
         # Assert

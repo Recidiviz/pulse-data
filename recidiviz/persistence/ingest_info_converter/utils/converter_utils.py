@@ -23,14 +23,8 @@ import locale
 from typing import Optional, Tuple
 
 from recidiviz.common import common_utils
-from recidiviz.common.constants.county.bond import (
-    BOND_STATUS_MAP,
-    BOND_TYPE_MAP,
-    BondStatus,
-    BondType,
-)
 from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_dollars
+from recidiviz.common.str_field_utils import normalize, parse_date
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
@@ -113,51 +107,6 @@ def parse_completion_date(
         completion_date = None
 
     return completion_date, projected_completion_date
-
-
-def parse_bond_amount_type_and_status(
-    provided_amount: str,
-    provided_bond_type: Optional[BondType] = None,
-    provided_status: Optional[BondStatus] = None,
-) -> Tuple[Optional[int], Optional[BondType], BondStatus]:
-    """Returns bond amount, bond type, and bond status, setting any missing
-    values that can be inferred from the other fields.
-    """
-    # Amount field can sometimes contain type and status info instead of being
-    # a numeric value
-    type_from_amount = None
-    status_from_amount = None
-    if provided_amount:
-        type_from_amount = BOND_TYPE_MAP.get(provided_amount.upper(), None)
-        status_from_amount = BOND_STATUS_MAP.get(provided_amount.upper(), None)
-
-    # If provided_amount was a non-numeric value but was not included in
-    # BOND_TYPE_MAP or BOND_STATUS_MAP, the below call will throw (ValueError).
-    # This is intentional, to ensure all values that should be converted are
-    # properly captured.
-    amount = None
-    if (
-        provided_amount is not None
-        and type_from_amount is None
-        and status_from_amount is None
-    ):
-        amount = parse_dollars(provided_amount)
-
-    bond_type = provided_bond_type or type_from_amount
-    status = provided_status or status_from_amount
-
-    # Infer missing fields from known fields
-    if bond_type is None and amount is not None:
-        bond_type = BondType.CASH
-
-    if status is None and bond_type in (BondType.DENIED, BondType.NOT_REQUIRED):
-        status = BondStatus.SET
-
-    # Fall back on default status if no other status was set
-    if status is None:
-        status = BondStatus.PRESENT_WITHOUT_INFO
-
-    return amount, bond_type, status  # type: ignore
 
 
 def parse_region_code_with_override(

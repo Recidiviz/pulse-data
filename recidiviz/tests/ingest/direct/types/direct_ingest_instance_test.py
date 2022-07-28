@@ -17,7 +17,6 @@
 """Tests for the DirectIngestInstance."""
 import unittest
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
@@ -25,7 +24,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
     DirectIngestInstanceFactory,
 )
-from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 
 
 class TestDirectIngestInstance(unittest.TestCase):
@@ -53,17 +51,3 @@ class TestDirectIngestInstance(unittest.TestCase):
             DirectIngestInstance.SECONDARY,
             DirectIngestInstanceFactory.for_ingest_bucket(ingest_bucket_path),
         )
-
-    def test_check_is_valid_system_level(self) -> None:
-        for ingest_instance in DirectIngestInstance:
-            # Shouldn't crash for any instance for STATE
-            ingest_instance.check_is_valid_system_level(SystemLevel.STATE)
-
-        for ingest_instance in DirectIngestInstance:
-            with self.assertRaisesRegex(
-                DirectIngestInstanceError,
-                r"^Direct ingest for \[SystemLevel.COUNTY\] not supported.$",
-            ):
-                ingest_instance.check_is_valid_system_level(
-                    system_level=SystemLevel.COUNTY
-                )

@@ -106,7 +106,7 @@ class _EntityWithParentInfo:
 
 # TODO(#2504): Rename `ingested` and `db` entities to something more generic that
 # still accurately describes that one is being merged onto the other.
-class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
+class StateEntityMatcher(BaseEntityMatcher):
     """Class that handles entity matching for all state data."""
 
     def __init__(self, state_matching_delegate: BaseStateMatchingDelegate):

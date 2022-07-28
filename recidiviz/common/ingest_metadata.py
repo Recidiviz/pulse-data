@@ -23,7 +23,6 @@ from typing import Optional
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
     DirectIngestSchemaType,
     SchemaType,
@@ -32,13 +31,13 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.utils.regions import Region
 
 
+# TODO(#13703) Eliminate this enum entirely
 @enum.unique
 class SystemLevel(enum.Enum):
     """Distinguishes between the STATE (state schema) and COUNTY (jails schema) parts
     of our system.
     """
 
-    COUNTY = "COUNTY"
     STATE = "STATE"
 
     def schema_type(
@@ -46,8 +45,6 @@ class SystemLevel(enum.Enum):
     ) -> DirectIngestSchemaType:
         if self == SystemLevel.STATE:
             return SchemaType.STATE
-        if self == SystemLevel.COUNTY:
-            return SchemaType.JAILS
 
         raise ValueError(f"Unsupported SystemLevel type: {self}")
 
@@ -56,20 +53,19 @@ class SystemLevel(enum.Enum):
         return cls.for_region_code(region.region_code, region.is_direct_ingest)
 
     @classmethod
-    def for_region_code(cls, region_code: str, is_direct_ingest: bool) -> "SystemLevel":
+    def for_region_code(
+        cls,
+        region_code: str,  # pylint: disable=unused-argument
+        is_direct_ingest: bool,
+    ) -> "SystemLevel":
         if is_direct_ingest is None:
             raise ValueError(
                 "Region flag is_direct_ingest is None, expected boolean value."
             )
         if not is_direct_ingest:
-            # There are some scrapers that scrape state jails websites (e.g.
-            # recidiviz/ingest/scrape/regions/us_pa/us_pa_scraper.py) which we always
-            # write to the Vera county jails database.
-            return SystemLevel.COUNTY
+            raise ValueError("Only direct ingest supported.")
 
-        if StateCode.is_state_code(region_code.upper()):
-            return SystemLevel.STATE
-        return SystemLevel.COUNTY
+        return SystemLevel.STATE
 
 
 @attr.s(frozen=True, kw_only=True)

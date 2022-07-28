@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Provides tools for traversing the hierarchy of ingest objects."""
+"""Provides tools for traversing the hierarchy of ingest objects.
+
+TODO(#8905): Delete this whole file once ingest mappings overhaul is complete for all states.
+"""
 
 from typing import Dict, Sequence, Set, Union
 
@@ -38,15 +41,6 @@ VALID_ANCESTOR_CHOICE_KEYS: Set["AncestorChoiceKey"] = {"state_sentence"}
 _HIERARCHY_MAP: Dict[
     "AncestorClassName", Sequence[Union["AncestorClassName", "AncestorTypeChoices"]]
 ] = {
-    "person": (),
-    "booking": ("person",),
-    "arrest": ("person", "booking"),
-    "charge": ("person", "booking"),
-    "hold": ("person", "booking"),
-    "bond": ("person", "booking", "charge"),
-    "sentence": ("person", "booking", "charge"),
-    # TODO(#8905): Delete all state schema objects from this map once ingest mappings
-    #  overhaul is complete for all states.
     "state_person": (),
     "state_person_race": ("state_person",),
     "state_person_ethnicity": ("state_person",),

@@ -16,40 +16,10 @@
 # =============================================================================
 
 """Utils for the persistence layer."""
-import datetime
 import os
 
-from recidiviz.common.constants.county.booking import CustodyStatus
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.utils import environment
 from recidiviz.utils.params import str_to_bool
-
-
-def remove_pii_for_person(person: county_entities.Person) -> None:
-    """Removes all of the PII for a person
-
-    Args:
-        person: (entities.Person) The entity object to scrub.
-    """
-    person.full_name = None
-    if person.birthdate:
-        person.birthdate = datetime.date(
-            year=person.birthdate.year,
-            month=1,
-            day=1,
-        )
-
-
-def is_booking_active(booking: county_entities.Booking) -> bool:
-    """Determines whether or not a booking is active"""
-    if booking.custody_status in CustodyStatus.get_released_statuses():
-        return False
-    return True
-
-
-def has_active_booking(person: county_entities.Person) -> bool:
-    """Determines if a person has an active booking"""
-    return any(is_booking_active(booking) for booking in person.bookings)
 
 
 def should_persist() -> bool:

@@ -15,14 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Defines a generic type to describe a person entity that may belong to either the state or county schema."""
+"""Defines a generic type to describe a person entity in the state schema."""
 
-
-from typing import TypeVar
-
-from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 
-EntityPersonType = TypeVar(
-    "EntityPersonType", county_entities.Person, state_entities.StatePerson
-)
+# TODO(#13703): Delete this unnecessary type entirely
+EntityPersonType = state_entities.StatePerson
