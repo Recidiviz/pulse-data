@@ -490,10 +490,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     def __attrs_post_init__(self) -> None:
-        if (
-            self.state_code not in ("US_ND")
-            and self.status == StateChargeStatus.SENTENCED
-        ):
+        if self.status == StateChargeStatus.SENTENCED:
             raise ValueError(
                 f"StateChargeStatus.SENTENCED is deprecated for state_code: {self.state_code}."
                 "This value should not be used"
