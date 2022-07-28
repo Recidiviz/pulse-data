@@ -367,8 +367,6 @@ class DatapointInterface:
                 )
 
             for aggregated_dimension in metric_definition.aggregated_dimensions or []:
-                if aggregated_dimension.disabled:
-                    continue
                 aggregated_dimensions.append(
                     MetricAggregatedDimensionData(
                         dimension_to_value=dimension_id_to_value_dicts.get(

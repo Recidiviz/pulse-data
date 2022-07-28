@@ -19,7 +19,6 @@
 from unittest import TestCase
 
 from recidiviz.common.constants.justice_counts import ContextKey
-from recidiviz.justice_counts.dimensions.law_enforcement import SheriffBudgetType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -39,7 +38,7 @@ class TestJusticeCountsMetricDefinition(TestCase):
     def test_law_enforcement_metrics(self) -> None:
         self.assertEqual(
             law_enforcement.annual_budget.key,
-            "LAW_ENFORCEMENT_BUDGET_metric/law_enforcement/budget/type",
+            "LAW_ENFORCEMENT_BUDGET_",
         )
         self.assertEqual(
             law_enforcement.residents.key,
@@ -76,10 +75,6 @@ class TestJusticeCountsMetricDefinition(TestCase):
         )
 
     def test_display_name(self) -> None:
-        self.assertEqual(
-            SheriffBudgetType.display_name(),
-            "Sheriff Budget Types",
-        )
 
         self.assertEqual(
             GenderRestricted.display_name(),

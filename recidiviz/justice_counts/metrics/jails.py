@@ -180,7 +180,9 @@ average_daily_population = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailPopulationType, required=False)
+        AggregatedDimension(dimension=JailPopulationType, required=False),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
 )
 
@@ -193,9 +195,7 @@ releases = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailReleaseType, required=False),
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
+        AggregatedDimension(dimension=JailReleaseType, required=False)
     ],
 )
 

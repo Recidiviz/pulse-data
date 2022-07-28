@@ -25,7 +25,6 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     LawEnforcementStaffType,
     OffenseType,
-    SheriffBudgetType,
 )
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
 from recidiviz.justice_counts.metrics import law_enforcement
@@ -59,12 +58,12 @@ class TestJusticeCountsMetricInterface(TestCase):
             ValueError, "Not all dimension instances belong to the same class"
         ):
             MetricInterface(
-                key=law_enforcement.annual_budget.key,
+                key=law_enforcement.calls_for_service.key,
                 value=100000,
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_value={
-                            SheriffBudgetType.DETENTION: 50000,
+                            CallType.EMERGENCY: 50000,
                             GenderRestricted.FEMALE: 100,
                         },
                     )
@@ -156,30 +155,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "multiple_choice_options": [],
                     },
                 ],
-                "disaggregations": [
-                    {
-                        "key": "metric/law_enforcement/budget/type",
-                        "display_name": "Sheriff Budget Types",
-                        "required": False,
-                        "should_sum_to_total": False,
-                        "helper_text": None,
-                        "enabled": True,
-                        "dimensions": [
-                            {
-                                "key": "Patrol",
-                                "label": "Patrol",
-                                "value": 33334,
-                                "enabled": True,
-                            },
-                            {
-                                "key": "Detention",
-                                "label": "Detention",
-                                "value": 66666,
-                                "enabled": True,
-                            },
-                        ],
-                    }
-                ],
+                "disaggregations": [],
             },
         )
 

@@ -42,7 +42,6 @@ DIMENSIONS = [
     location.County,
     location.State,
     location.Country,
-    law_enforcement.SheriffBudgetType,
     law_enforcement.CallType,
     law_enforcement.OffenseType,
     law_enforcement.ForceType,

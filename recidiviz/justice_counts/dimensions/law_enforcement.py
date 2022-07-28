@@ -21,15 +21,6 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class SheriffBudgetType(DimensionBase, enum.Enum):
-    PATROL = "Patrol"
-    DETENTION = "Detention"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/budget/type"
-
-
 class CallType(DimensionBase, enum.Enum):
     EMERGENCY = "Emergency"
     NON_EMERGENCY = "Non-emergency"
