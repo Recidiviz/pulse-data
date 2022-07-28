@@ -19,6 +19,7 @@ columns:
       Code for the type of contact between the supervised person and law enforcement,
       joins to cis_codelawenforcementcontacttype.id
   - name: codelawenforcementagencyid
+  - name: explanation
   - name: version
   - name: verifydate
   - name: verifyuser
@@ -36,3 +37,7 @@ columns:
   - name: upddate
     is_datetime: True
     description: Timestamp when this record was last modified
+  - name: offendernumber
+    is_pii: True
+  - name: paroleofficerid
+    is_pii: True

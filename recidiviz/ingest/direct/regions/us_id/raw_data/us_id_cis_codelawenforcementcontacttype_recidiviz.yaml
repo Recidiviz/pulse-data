@@ -7,6 +7,18 @@ primary_key_cols:
 columns:
   - name: id
     description: Id of this row
+  - name: insuser
+    is_pii: True
+    description: User who entered this record
+  - name: insdate
+    is_datetime: True
+    description: Timestamp when this record was entered
+  - name: upduser
+    is_pii: True
+    description: User who most recently updated this record
+  - name: upddate
+    is_datetime: True
+    description: Timestamp when this record was last modified
   - name: codedescription
     description: Description of contact type
   - name: active
