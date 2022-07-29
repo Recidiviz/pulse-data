@@ -113,6 +113,8 @@ def state_specific_race_or_ethnicity_groupings(
     return f"""CASE {override_when_block}
               WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
+              WHEN state_code = 'US_ID' AND {race_or_ethnicity_column} = 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER'
+                THEN 'ASIAN'
               WHEN {race_or_ethnicity_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
 
