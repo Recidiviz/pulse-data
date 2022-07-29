@@ -121,19 +121,29 @@ WITH date_array AS (
     WHERE
         a.supervision_downgrade > 0 OR a.supervision_upgrade > 0
 )
+# Helper cte that unnests violations and dedupes to response date and violation type
+, violation_responses_unnested AS (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        SPLIT(violation_type, "-")[OFFSET(0)] AS violation_type,
+        response_date,
+    FROM
+        `{project_id}.{sessions_dataset}.violation_responses_materialized`,
+        UNNEST(violations_array) AS violation_type
+)
 # Violation responses, with violation type and response decision
-, violations AS (
+, violation_responses AS (
     SELECT 
         a.state_code,
         a.person_id,
         supervising_officer_external_id,
         district,
         office,
-        most_serious_violation_type,
-        most_severe_response_decision AS response_decision,
+        violation_type,
         date,
     FROM
-        `{project_id}.{sessions_dataset}.violation_responses_materialized` a
+        violation_responses_unnested a
     INNER JOIN 
         officer_office_sessions_unnested b
     ON 
@@ -371,7 +381,8 @@ WITH date_array AS (
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            d.employment_status_start_date, e.employer_name, e.employment_start_date
+            d.employment_status_start_date, e.employer_name, e.employment_start_date,
+            h.response_date
         ) AS days_incarcerated_1yr,
         
         # Number of days from officer assignment to first incarceration, within a year of first assignment
@@ -380,11 +391,45 @@ WITH date_array AS (
             OVER (
                 PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
                 supervising_officer_external_id, district, office, date, 
-                d.employment_status_start_date, e.employer_name, e.employment_start_date
+                d.employment_status_start_date, e.employer_name, e.employment_start_date,
+                h.response_date
             )
         , a.start_date, DAY) 
          AS days_to_first_incarceration_1yr,
-
+         
+         # Number of days from officer assignment to first absconsion violation response, within a year of first assignment
+         DATE_DIFF(
+            MIN(IF(h.violation_type = "ABSCONDED", h.response_date, DATE_ADD(a.start_date, INTERVAL 365 DAY)))
+            OVER (
+                PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+                supervising_officer_external_id, district, office, date, c.start_date,
+                d.employment_status_start_date, e.employer_name, e.employment_start_date
+            )
+        , a.start_date, DAY) 
+         AS days_to_first_absconsion_violation_response_1yr,
+         
+         # Number of days from officer assignment to first technical violation response, within a year of first assignment
+         DATE_DIFF(
+            MIN(IF(h.violation_type = "TECHNICAL", h.response_date, DATE_ADD(a.start_date, INTERVAL 365 DAY)))
+            OVER (
+                PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+                supervising_officer_external_id, district, office, date, c.start_date,
+                d.employment_status_start_date, e.employer_name, e.employment_start_date
+            )
+        , a.start_date, DAY) 
+         AS days_to_first_technical_violation_response_1yr,
+         
+         # Number of days from officer assignment to first new crime violation response, within a year of first assignment
+         DATE_DIFF(
+            MIN(IF(h.violation_type IN ("FELONY", "MISDEMEANOR", "LAW"), h.response_date, DATE_ADD(a.start_date, INTERVAL 365 DAY)))
+            OVER (
+                PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
+                supervising_officer_external_id, district, office, date, c.start_date,
+                d.employment_status_start_date, e.employer_name, e.employment_start_date
+            )
+        , a.start_date, DAY) 
+         AS days_to_first_new_crime_violation_response_1yr,
+         
         # Number of days employed within a year of first assignment to officer
         SUM(
             CASE WHEN is_employed
@@ -402,7 +447,8 @@ WITH date_array AS (
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            c.start_date, e.employer_name, e.employment_start_date
+            c.start_date, e.employer_name, e.employment_start_date,
+            h.response_date
         ) AS days_employed_1yr,
 
         # Number of days at the longest stint with a consistent employer within a year 
@@ -421,14 +467,16 @@ WITH date_array AS (
         ) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            c.start_date, d.employment_status_start_date
+            c.start_date, d.employment_status_start_date,
+            h.response_date
         ) AS max_days_stable_employment_1yr,
 
         # Number of unique employers within a year of first assignment to officer
         COUNT(DISTINCT employer_name) OVER (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
-            c.start_date, d.employment_status_start_date
+            c.start_date, d.employment_status_start_date,
+            h.response_date
         ) AS num_unique_employers_1yr,
         
         # Change in risk score within first year of client-assignment, for clients who were reassessed
@@ -512,7 +560,14 @@ WITH date_array AS (
            IFNULL(g.score_end_date, "9999-01-01")
         AND DATE_ADD(a.start_date, INTERVAL 365 DAY) <= IFNULL(a.end_date, "9999-01-01")
         AND f.assessment_date < g.assessment_date
-        
+    # Join violation responses for calculating days to first violation response
+    LEFT JOIN
+        violation_responses_unnested h
+    ON 
+        a.state_code = h.state_code
+        AND a.person_id = h.person_id
+        AND h.response_date BETWEEN a.start_date AND
+            DATE_ADD(a.start_date, INTERVAL 365 DAY)
     # Keep first assignment of officer-office to client within SSS only
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY sss.supervision_super_session_id, a.state_code, 
@@ -685,15 +740,15 @@ WITH date_array AS (
             supervision_level_changes.supervision_level = "LIMITED",
             supervision_level_changes.person_id, NULL)) AS supervision_downgrades_to_limited,
 
-        # violations (max one per person per day per type)
+        # violation responses (max one per person per day per type)
         # TODO(#13180): Rename violation metrics to violation _response_ metrics 
-        COUNT(DISTINCT violations.person_id) AS violations,
-        COUNT(DISTINCT IF(violations.most_serious_violation_type IN ("ESCAPED", 
-            "ABSCONDED"), violations.person_id, NULL)) AS violations_absconded,
-        COUNT(DISTINCT IF(violations.most_serious_violation_type IN ("FELONY", "LAW", 
-            "MISDEMEANOR", "MUNICIPAL"), violations.person_id, NULL)) AS violations_legal,
-        COUNT(DISTINCT IF(violations.most_serious_violation_type = "TECHNICAL",
-            violations.person_id, NULL)) AS violations_technical,
+        COUNT(DISTINCT violation_responses.person_id) AS violations,
+        COUNT(DISTINCT IF(violation_responses.violation_type IN (
+            "ABSCONDED"), violation_responses.person_id, NULL)) AS violations_absconded,
+        COUNT(DISTINCT IF(violation_responses.violation_type IN ("FELONY", "LAW", 
+            "MISDEMEANOR"), violation_responses.person_id, NULL)) AS violations_new_crime,
+        COUNT(DISTINCT IF(violation_responses.violation_type = "TECHNICAL",
+            violation_responses.person_id, NULL)) AS violations_technical,
         
         # absconsions/bench warrants
         COUNT(DISTINCT absconsions_bench_warrants.person_id) AS absconsions_bench_warrants,
@@ -735,7 +790,7 @@ WITH date_array AS (
     LEFT JOIN successful_completions USING({join_columns})
     LEFT JOIN earned_discharge_requests USING({join_columns})
     LEFT JOIN supervision_level_changes USING({join_columns})
-    LEFT JOIN violations USING({join_columns})
+    LEFT JOIN violation_responses USING({join_columns})
     LEFT JOIN absconsions_bench_warrants USING({join_columns})
     LEFT JOIN incarcerations USING({join_columns})
     LEFT JOIN employment_changes USING({join_columns})
@@ -766,6 +821,9 @@ WITH date_array AS (
 
         IFNULL(SUM(window_metrics.days_incarcerated_1yr), 0) AS days_incarcerated_1yr,
         IFNULL(SUM(window_metrics.days_to_first_incarceration_1yr), 0) AS days_to_first_incarceration_1yr,
+        IFNULL(SUM(window_metrics.days_to_first_absconsion_violation_response_1yr), 0) AS days_to_first_absconsion_violation_response_1yr,
+        IFNULL(SUM(window_metrics.days_to_first_technical_violation_response_1yr), 0) AS days_to_first_technical_violation_response_1yr,
+        IFNULL(SUM(window_metrics.days_to_first_new_crime_violation_response_1yr), 0) AS days_to_first_new_crime_violation_response_1yr,
         COUNT(window_metrics.person_id) * DATE_DIFF(
             LEAST(
                 CURRENT_DATE("US/Eastern"),
