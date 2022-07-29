@@ -9,7 +9,9 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: HArrestHeaderID
+    is_pii: True
   - name: ArrestReportNO
   - name: ArrestType
   - name: DateOfReport
@@ -17,6 +19,7 @@ columns:
   - name: PlaceOfConfinement
   - name: ArrestAuthority
   - name: SearchConducted
+    is_pii: True
   - name: SearchSupvrApproval
   - name: SearchSupvrApprovalDesc
   - name: EvidenceConfiscated
@@ -41,10 +44,12 @@ columns:
   - name: ParoleSupvrRcmndDetain
   - name: ParoleSupvrRcmndContinue
   - name: ParoleSupvrRcmndName
+    is_pii: True
   - name: ParoleSupvrRcmndDate
   - name: DirDecisionDetain
   - name: DirDecisionContinue
   - name: DirDecisionName
+    is_pii: True
   - name: DirDecisionDate
   - name: Date48HrDetainerFiled
   - name: WarrantNum
@@ -53,8 +58,10 @@ columns:
   - name: OpenCrimCharges
   - name: OCC_ReferTo257C
   - name: FR_AgentNameSgntr
+    is_pii: True
   - name: FR_AgentNameSgntrDate
   - name: FR_SupvrNameSgntr
+    is_pii: True
   - name: FR_SupvrNameSgntrDate
   - name: FR_OfficeName
   - name: DateRtndToInst
@@ -66,22 +73,30 @@ columns:
   - name: HearDate
   - name: HearTime
   - name: PublicDefenderName
+    is_pii: True
   - name: PublicDefenderAddress1
+    is_pii: True
   - name: PublicDefenderAddress2
+    is_pii: True
   - name: PublicDefenderCity
   - name: PublicDefenderState
   - name: PublicDefenderZip
+    is_pii: True
   - name: Location
   - name: LocationAddress1
+    is_pii: True
   - name: LocationAddress2
+    is_pii: True
   - name: LocationCity
   - name: LocationState
   - name: LocationZip
+    is_pii: True
   - name: PanelHear
   - name: Gagnon1Hear
   - name: Gagnon2Hear
   - name: ParoleCountID
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime
   - name: PlaceofConf_ID
   - name: PlaceofConfCtyInst

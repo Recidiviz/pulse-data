@@ -12,6 +12,7 @@ primary_key_cols:
   - ParoleCountID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -61,6 +62,7 @@ columns:
     description: |-
       When the record was last modified.
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who the record was last modified by.
 separator: ‡

@@ -12,6 +12,7 @@ primary_key_cols: []
 columns:
   - name: Hist_ID
   - name: ParoleNumber
+    is_pii: True
   - name: ParoleCountID
   - name: GuidelineID
   - name: DocketID

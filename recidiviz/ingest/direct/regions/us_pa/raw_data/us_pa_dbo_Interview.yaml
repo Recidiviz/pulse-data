@@ -12,6 +12,7 @@ primary_key_cols: []
 columns:
   - name: InstitutionNumber
   - name: ParoleNumber
+    is_pii: True
   - name: DocketID
   - name: InterviewID
   - name: InterviewDateYear
@@ -19,7 +20,9 @@ columns:
   - name: InterviewDateDay
   - name: InterviewType
   - name: InterviewerName
+    is_pii: True
   - name: temp_InterviewerName
+    is_pii: True
   - name: dckDateInterviewedMonth
   - name: dckDateInterviewedDay
   - name: dckDateInterviewedYear

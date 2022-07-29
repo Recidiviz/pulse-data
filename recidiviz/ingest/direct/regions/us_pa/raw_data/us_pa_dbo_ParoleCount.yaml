@@ -8,9 +8,11 @@ primary_key_cols:
   - ParoleInstNumber
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PBPP.
   - name: ParoleInstNumber
+    is_pii: True
     description: |-
       Inmate number that was most recently associated with this person when they were
       first assigned a parole number. A person may have multiple inmate numbers (often

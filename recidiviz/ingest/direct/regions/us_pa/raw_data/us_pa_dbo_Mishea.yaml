@@ -10,6 +10,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Inmate_Cnt_Num
+    is_pii: True
   - name: Continuance_Rqustd
   - name: Miscndct_Number
   - name: Hearing_Date
@@ -17,6 +18,7 @@ columns:
   - name: Sig_Date
   - name: Sig_Time
   - name: User_ID
+    is_pii: True
   - name: Hearing_Hour
   - name: Hearing_Min
   - name: Examiner_Number
@@ -24,3 +26,4 @@ columns:
   - name: Inmate_Waivers
   - name: Inmt_Wvrs_Hvl_Dsc
   - name: Witnesses
+    is_pii: True

@@ -21,22 +21,28 @@ primary_key_cols:
   - DURATION_MINS
 columns:
   - name: FACT_PAROLEE_CNTC_SUMRY_ID
+    is_pii: True
     description: |-
       Incremental identifier used for the report that generates the contacts.
   - name: REPORT_DATE
   - name: PERSON_ID
+    is_pii: True
     description: |-
       Unknown identifier for a person within the PADOC system. We currently do not ingest any external ids of this kind within PA, therefore this is not used for any mappings.
   - name: PAROLE_NUMBER
+    is_pii: True
     description: |-
       Unique identifier for the person on supervision
   - name: SUFFIX
+    is_pii: True
     description: |-
       Optional suffix post last name for the person on supervision
   - name: FIRST_NAME
+    is_pii: True
     description: |-
       First name for the person on supervision
   - name: LAST_NAME
+    is_pii: True
     description: |-
       Last name for the person on supervision
   - name: CREATED_DATE
@@ -136,21 +142,26 @@ columns:
     description: |-
       Unclear, all entries are ROI
   - name: PRL_AGNT_EMPL_NO
+    is_pii: True
     description: |-
       Employee number for the parole officer
   - name: PRL_AGNT_FIRST_NAME
+    is_pii: True
     description: |-
       First name for the parole officer
   - name: PRL_AGNT_MIDDLE_NAME
+    is_pii: True
     description: |-
       Middle name for the parole officer
   - name: PRL_AGNT_LAST_NAME
+    is_pii: True
     description: |-
       Last name for the parole officer
   - name: PRL_AGNT_JOB_CLASSIFCTN
     description: |-
       Role and title for the parole officer
   - name: PRL_AGNT_ORG_NAME
+    is_pii: True
     description: |-
       The district or unit for the parole officer
   - name: IND_LOGCL_DEL
@@ -165,6 +176,7 @@ columns:
     description: |-
       Unclear, always null
   - name: DW_UPDATED_BY
+    is_pii: True
     description: |-
       Unclear, always null
 separator: ‡

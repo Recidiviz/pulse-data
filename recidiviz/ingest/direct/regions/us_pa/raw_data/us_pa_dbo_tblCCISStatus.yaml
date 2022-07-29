@@ -13,6 +13,7 @@ columns:
     is_datetime: False
     description: Three to four letter code of the status. Reliably globally unique within this table.
   - name: Status_Desc
+    is_pii: True
     is_datetime: False
     description: Text description of the status code.
   - name: Status_ActvFlg
@@ -22,6 +23,7 @@ columns:
     is_datetime: True
     description: The date on which the row was last modified.
   - name: LstMod_EmpNum
+    is_pii: True
     is_datetime: False
     description: The ID of the employee that last modified the row in the table.
 separator: ‡

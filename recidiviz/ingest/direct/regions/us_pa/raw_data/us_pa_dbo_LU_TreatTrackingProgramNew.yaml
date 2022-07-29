@@ -15,6 +15,7 @@ columns:
   - name: TreatTrackNo
   - name: Active
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime
   - name: EnableResourceTab
   - name: SortViolSevID

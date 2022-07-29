@@ -12,27 +12,34 @@ columns:
     description: |-
       ID for the record tracking this organizational unit.
   - name: Org_Name
+    is_pii: True
     description: |-
       Human-readable name of the unit.
   - name: AddressL1
+    is_pii: True
     description: |-
       Address line 1.
   - name: City
+    is_pii: True
     description: |-
       Address city.
   - name: State
+    is_pii: True
     description: |-
       Address state.
   - name: ZipCode
+    is_pii: True
     description: |-
       Address zip code.
   - name: Phone_No
+    is_pii: True
     description: |-
       Phone number for contact purposes.
   - name: Ext
     description: |-
       Extension to phone number for contact purposes.
   - name: Region
+    is_pii: True
     description: |-
       Region within the Commonwealth where the unit is located.
   - name: Region_Code
@@ -58,6 +65,7 @@ columns:
     description: |-
       Sub-office human-readable name.
   - name: Fax_No
+    is_pii: True
     description: |-
       Fax number for contact purposes.
   - name: Office

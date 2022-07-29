@@ -10,6 +10,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: inmate_cnt_num2
+    is_pii: True
   - name: miscndct_date2
   - name: miscndct_number
   - name: category_charge

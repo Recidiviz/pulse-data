@@ -12,7 +12,9 @@ columns:
   - name: InvHistDO
   - name: InvHistUnit
   - name: InvHistAgent
+    is_pii: True
   - name: InvHistOffName
+    is_pii: True
   - name: InvHistDateAssignedYear
   - name: InvHistDateAssignedMonth
   - name: InvHistDateAssignedDay
@@ -37,6 +39,7 @@ columns:
   - name: temp_InvHistAgent
   - name: temp_InvHistUnit
   - name: ParoleNumber
+    is_pii: True
   - name: InvHistInvestigationSubType
   - name: InvHistMiscDescription
   - name: InvHistExtension1DueMonth

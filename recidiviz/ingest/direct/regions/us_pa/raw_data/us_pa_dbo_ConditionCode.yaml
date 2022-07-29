@@ -12,6 +12,7 @@ primary_key_cols:
   - ConditionCodeID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID

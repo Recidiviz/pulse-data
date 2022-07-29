@@ -13,6 +13,7 @@ columns:
       In practice, there are mistakes and this is retroactively edited with some low
       frequency.
   - name: pseudo_linking_id
+    is_pii: True
     description: |-
       Global, Recidiviz-generated ID that allows us to link control numbers to the same
       person.

@@ -13,6 +13,7 @@ primary_key_cols:
   - Program_Id
 columns:
   - name: CCISMvmt_Id
+    is_pii: True
     is_datetime: False
     description: Unique identifier for a given movement entry. Foreign key to dbo_vwCCISAllMvmt.
   - name: Program_Id
@@ -22,6 +23,7 @@ columns:
     is_datetime: True
     description: The date on which the row was last modified.
   - name: LstMod_EmpNum
+    is_pii: True
     is_datetime: False
     description: The ID of the employee that last modified the row in the table.
 separator: ‡

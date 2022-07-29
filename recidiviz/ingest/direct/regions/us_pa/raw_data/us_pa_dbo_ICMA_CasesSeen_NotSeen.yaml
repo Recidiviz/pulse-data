@@ -9,12 +9,17 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: InstitutionNumber
   - name: Docket_Hist_ID
   - name: WangClientLastName
+    is_pii: True
   - name: WangClientFirstName
+    is_pii: True
   - name: WangClientMiddleName
+    is_pii: True
   - name: WangClientSuffix
+    is_pii: True
   - name: StateCase
   - name: ViolentIndicator
   - name: InterviewType

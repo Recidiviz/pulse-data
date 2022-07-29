@@ -9,8 +9,10 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: ParoleCountID
   - name: BdActionID
   - name: TypeTransaction
   - name: DateProcessed
   - name: NTUserID
+    is_pii: True

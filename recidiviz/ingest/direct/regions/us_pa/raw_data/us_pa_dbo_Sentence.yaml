@@ -13,6 +13,7 @@ primary_key_cols:
   - SentenceID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -34,15 +35,18 @@ columns:
     description: |-
       Year the sentence began.
   - name: SentTerm
+    is_pii: True
     description: |-
       Length of the sentence to be served.
   - name: SentType
     description: |-
       Type of sentence to be served.
   - name: SentOffense
+    is_pii: True
     description: |-
       Code of the offense with the longest sentence.
   - name: SentOTN
+    is_pii: True
     description: |-
       Offense Tracking Number of the offense with the longest sentence.
   - name: SentMinSentenceYear

@@ -8,9 +8,11 @@ primary_key_cols:
   - DOBID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: DOBID
+    is_pii: True
     description: |-
       ID for the date of birth record.
   - name: BirthStateID

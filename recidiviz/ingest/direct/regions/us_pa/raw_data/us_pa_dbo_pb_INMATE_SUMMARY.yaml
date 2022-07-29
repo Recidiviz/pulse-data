@@ -11,12 +11,19 @@ primary_key_cols: []
 columns:
   - name: sid
   - name: inmate_number
+    is_pii: True
   - name: control_number
+    is_pii: True
   - name: last_name
+    is_pii: True
   - name: first_name
+    is_pii: True
   - name: middle_name
+    is_pii: True
   - name: name_suff
+    is_pii: True
   - name: birth_date
+    is_pii: True
   - name: gender
   - name: race
   - name: marital_status
@@ -35,10 +42,13 @@ columns:
   - name: contact_phone
   - name: reception_date
   - name: more_ssn_indicator
+    is_pii: True
   - name: fbi_number
+    is_pii: True
   - name: philadelphia_photo_number
   - name: pittsburgh_photo_number
   - name: parole_board_number
+    is_pii: True
   - name: citizenship
   - name: city_of_birth
   - name: state_of_birth

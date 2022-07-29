@@ -12,6 +12,7 @@ primary_key_cols:
   - Sent16DGroupNumber
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -61,6 +62,7 @@ columns:
       Maximum sentence length years for the smallest sentence in the group.
   - name: SenLetter
   - name: SenAmisc
+    is_pii: True
   - name: SenAddDate
     is_datetime: True
     description: |-
@@ -75,21 +77,26 @@ columns:
       Date the first sentence in the group became effective.
   - name: WANGDataFlag
   - name: SenOffLastName
+    is_pii: True
     description: |-
       Last name of the sentenced person.
   - name: SenOffFirstName
+    is_pii: True
     description: |-
       First name of the sentenced person.
   - name: SenOffMidName
+    is_pii: True
     description: |-
       Middle name of the sentenced person.
   - name: SenOffSuffix
+    is_pii: True
     description: |-
       Name suffix of the sentenced person.
   - name: SenInstitution
     description: |-
       Institution (e.g. prison or field office) under which the sentence is to be served.
   - name: SenInstNumber
+    is_pii: True
     description: |-
       ID of a sub-unit within this institution under which the sentence is to be served.
   - name: SenAdjMaxMonth

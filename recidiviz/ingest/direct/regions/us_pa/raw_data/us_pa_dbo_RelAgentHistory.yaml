@@ -14,18 +14,22 @@ primary_key_cols:
   - LastModifiedDateTime
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
     description: |-
       External ID for a particular stint of a particular person under supervision by PADOC.
   - name: AgentName
+    is_pii: True
     description: |-
       Name of a supervising agent. It's unclear what the number following the name in this field represents.
   - name: SupervisorName
+    is_pii: True
     description: |-
       Name and ID of the supervisor of the supervising agent.
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who this record was last modified by.
   - name: LastModifiedDateTime
@@ -33,9 +37,11 @@ columns:
     description: |-
       When this agent began supervising this particular period of supervision.
   - name: Agent_EmpNum
+    is_pii: True
     description: |-
       PADOC employee number of the agent.
   - name: Supervisor_EmpNum
+    is_pii: True
     description: |-
       PADOC employee number of the agent's supervisor.
 separator: ‡

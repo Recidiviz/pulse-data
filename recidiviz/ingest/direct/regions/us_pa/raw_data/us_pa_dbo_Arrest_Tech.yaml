@@ -8,6 +8,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: ArrestReportNO
   - name: ArrestLocation
   - name: ProblemsEncountered
@@ -25,4 +26,5 @@ columns:
   - name: Charge
   - name: NoticeDate
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDate

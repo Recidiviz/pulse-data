@@ -9,6 +9,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Doc_Id
+    is_pii: True
   - name: CrmlHistType_Cd
   - name: CrmlHistSeq_Id
   - name: Arrest_Mo
@@ -23,9 +24,14 @@ columns:
   - name: Agency_Cd
   - name: ChangeReqr_Flg
   - name: EmpFirst_Nm
+    is_pii: True
   - name: EmpMid_Nm
+    is_pii: True
   - name: EmpLast_Nm
+    is_pii: True
   - name: EmpSuffix_Nm
+    is_pii: True
   - name: LastMod_Date
   - name: LastModEmp_Num
+    is_pii: True
   - name: CrmlHistSource_Cd

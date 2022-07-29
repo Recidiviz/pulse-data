@@ -6,6 +6,7 @@ primary_key_cols:
   - ParoleNumber
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: PrlStatusCodeID
@@ -64,6 +65,7 @@ columns:
     description: |-
       Skin tone of the person, unused.
   - name: OffMiscellaneous
+    is_pii: True
     description: |-
       Other miscellaneous information about the person.
   - name: OffPreSentence
@@ -102,6 +104,7 @@ columns:
     description: |-
       Date when this record was last modified.
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who this record was last modified by.
 separator: ‡

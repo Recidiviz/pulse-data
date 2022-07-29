@@ -18,6 +18,7 @@ columns:
       The unique code identifying a single offense in PADOC. This code can also be thought of as
       a "statute" number for purposes of identifying an offense among systems.
   - name: Offense
+    is_pii: True
     description: |-
       A string describing the offense. This is sometimes a short and simple string, like "Theft."
       It is sometimes a longer string with more detail. But it is not "free text" in the typical

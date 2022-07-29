@@ -11,4 +11,5 @@ columns:
   - name: TreatTrackCloseCasesDesc
   - name: Active
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime

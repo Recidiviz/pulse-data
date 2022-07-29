@@ -12,6 +12,7 @@ columns:
   - name: InstitutionNumber
   - name: HistDocketId
   - name: ParoleNumber
+    is_pii: True
   - name: ParoleCountId
   - name: ReleaseTo
   - name: ReleaseTypeCode
@@ -19,7 +20,10 @@ columns:
   - name: ReleaseDateMonth
   - name: ReleaseDateDay
   - name: AgentNTUserId
+    is_pii: True
   - name: AgentEmployeeNumber
+    is_pii: True
   - name: IntakeDate
   - name: LastModifiedDateTime
   - name: LastModifiedBy
+    is_pii: True

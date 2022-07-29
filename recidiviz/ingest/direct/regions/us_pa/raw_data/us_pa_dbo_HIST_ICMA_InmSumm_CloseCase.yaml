@@ -12,6 +12,7 @@ columns:
   - name: InstitutionNumber
   - name: ParoleCountId
   - name: ParoleNumber
+    is_pii: True
   - name: SequenceNumber
   - name: InstitutionCode
   - name: SubmitReportDate
@@ -56,9 +57,12 @@ columns:
   - name: MentalHealthEvaluation
   - name: ParolePlanning
   - name: AgentName
+    is_pii: True
   - name: SupervisorName
+    is_pii: True
   - name: ReportUsed
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDatetime
   - name: JuvenileAge
   - name: FinesCostDetail
@@ -68,4 +72,5 @@ columns:
   - name: OffenderVersionViolation
   - name: GuidelineId
   - name: LastModifiedByName
+    is_pii: True
   - name: LastModifiedByClassTitle
