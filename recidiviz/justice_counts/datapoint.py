@@ -175,6 +175,9 @@ class DatapointInterface:
                         dimension,
                         is_dimension_enabled,
                     ) in aggregated_dimension.dimension_to_enabled_status.items():
+                        # If is_dimension_enabled is None, then there are no deltas associated
+                        # with a dimension datapoint and there is no need to update/create/delete
+                        # the datapoint.
                         if is_dimension_enabled is False:
                             update_existing_or_create(
                                 ingested_entity=schema.Datapoint(
