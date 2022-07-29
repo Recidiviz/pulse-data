@@ -9,6 +9,7 @@ primary_key_cols: []
 columns:
   - name: PrimaryKey
   - name: ParoleNumber
+    is_pii: True
   - name: CountyStateOfConviction
   - name: PresentOffense
   - name: Sentence
@@ -18,6 +19,7 @@ columns:
   - name: LifeSentence
   - name: BillAndTerm
   - name: Judge
+    is_pii: True
   - name: Institution
   - name: InstitutionNum
   - name: EffDateOfDelinq
@@ -29,5 +31,6 @@ columns:
   - name: Indefinite
   - name: LastModifiedDate
   - name: LastModifiedBy
+    is_pii: True
   - name: CaseType
   - name: SentenceID

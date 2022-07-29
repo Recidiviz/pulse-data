@@ -10,6 +10,7 @@ primary_key_cols:
   - SequenceID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -36,12 +37,14 @@ columns:
     description: |-
       The date of the violation, if this is a violation event.
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who this record was last modified by.
   - name: LastModifiedDateTime
     description: |-
       When this record was last modified.
   - name: OrgCode
+    is_pii: True
     description: |-
       Code of the field office where the supervision was served at the time of this set of events.
 separator: ‡

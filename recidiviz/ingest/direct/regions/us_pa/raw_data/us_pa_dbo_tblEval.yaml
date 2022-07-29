@@ -8,6 +8,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Control_Number
+    is_pii: True
   - name: Grp_Cd
   - name: Prgm_Cd
   - name: Fac_Cd
@@ -21,7 +22,9 @@ columns:
   - name: Inm_EndDt
   - name: Eval_Des
   - name: Evltr_EmpNum
+    is_pii: True
   - name: Mdfyr_EmpNum
+    is_pii: True
   - name: AfterCare_RcmdFlag
   - name: AfterCare_Id
   - name: Partcptn_Id

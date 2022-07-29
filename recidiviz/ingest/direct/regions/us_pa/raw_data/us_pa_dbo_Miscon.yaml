@@ -21,6 +21,7 @@ columns:
     description: |-
       Whether a hearing was held, redundant of hearings_held.
   - name: control_number
+    is_pii: True
     description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
@@ -34,6 +35,7 @@ columns:
     description: |-
       Time record was last updated.
   - name: user_id
+    is_pii: True
     description: |-
       Id of agent who last updated the record.
   - name: inst_hvl_desc
@@ -50,13 +52,15 @@ columns:
     description: |-
       Place within facility where the conduct event took place.
   - name: place_extended
+    is_pii: True
     description: |-
-      Additional information on the plae within the facility where the event took place.
+      Additional information on the place within the facility where the event took place.
   - name: misconduct_time
     is_datetime: True
     description: |-
       Time when the conduct event took place.
   - name: others_involved
+    is_pii: True
     description: |-
       Others classes of people involved, e.g. other incarcerated people, staff, visitors, etc.
   - name: ctgory_of_chrgs_1
@@ -98,16 +102,21 @@ columns:
     description: |-
       Whether or not there were witnesses to the event.
   - name: inmate_version
+    is_pii: True
   - name: recording_staff
+    is_pii: True
     description: |-
       Id of agent who recorded the event.
   - name: rcrdng_staff_last
+    is_pii: True
     description: |-
       Name of agent who recorded the event.
   - name: reviewing_staff
+    is_pii: True
     description: |-
       Id of agent who reviewed the outcome report.
   - name: revwng_staff_last
+    is_pii: True
     description: |-
       Name of agent who reviewed the outcome report.
   - name: date_reviewed

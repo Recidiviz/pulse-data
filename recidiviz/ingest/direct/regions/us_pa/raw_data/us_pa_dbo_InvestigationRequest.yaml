@@ -9,6 +9,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: PBPP30ID
   - name: chkPreParole
   - name: chkPreTransfer
@@ -20,6 +21,7 @@ columns:
   - name: DateSubmittedDay
   - name: DateSubmittedYear
   - name: Remarks
+    is_pii: True
   - name: ChkClassificationSummary
   - name: ChkNoComment
   - name: ChkSummarizationReport
@@ -81,11 +83,14 @@ columns:
   - name: HP_Phone1
   - name: HP_Phone2
   - name: Employer
+    is_pii: True
   - name: EmployerAddress
+    is_pii: True
   - name: EmployerCity
   - name: EmployerState
   - name: EmployerZip
   - name: EmployerPhone
+    is_pii: True
   - name: SPPS_chkYes
   - name: SPPS_chkCC
   - name: SPPS_chkCS

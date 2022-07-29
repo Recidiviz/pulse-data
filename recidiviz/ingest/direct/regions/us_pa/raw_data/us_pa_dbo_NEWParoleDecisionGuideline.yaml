@@ -11,6 +11,7 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: ParoleCountID
   - name: GuidelineID
   - name: DocketID
@@ -178,6 +179,7 @@ columns:
   - name: NewRecord
   - name: UsedFlag
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime
   - name: UnacceptableProgramComplianceReasons
   - name: Act97_Flg1

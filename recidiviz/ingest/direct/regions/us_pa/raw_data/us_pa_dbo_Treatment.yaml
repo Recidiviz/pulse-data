@@ -7,6 +7,7 @@ primary_key_cols:
   - TreatmentID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -52,10 +53,12 @@ columns:
     description: |-
       The code associated with the given treatment program.
   - name: TrtProgramDescription
+    is_pii: True
   - name: TrtIndexAct97
   - name: OtherState
   - name: OtherStateFac
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who the record was last modified by.
   - name: LastModifiedDateTime

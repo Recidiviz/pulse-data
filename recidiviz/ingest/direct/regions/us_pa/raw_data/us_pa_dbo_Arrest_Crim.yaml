@@ -8,7 +8,9 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: ArrestReportNO
+    is_pii: True
   - name: NotificationDate
   - name: OTN
   - name: BoardWarrantNum
@@ -29,6 +31,7 @@ columns:
   - name: VerdictDate
   - name: VerificationDate
   - name: Judge
+    is_pii: True
   - name: SentenceDate
   - name: EffectiveSentenceDate
   - name: InstitutionOfSentence
@@ -43,12 +46,15 @@ columns:
   - name: DistrictJusticeCourt
   - name: Disposition
   - name: CPH_AgentNameSgntr
+    is_pii: True
   - name: CPH_AgentNameSgntrDate
   - name: CPH_SupvrNameSgntr
+    is_pii: True
   - name: CPH_SupvrNameSgntrDate
   - name: Charge
   - name: NoticeDate
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime
   - name: AR_DecDelinqCtrlPurp
   - name: AR_DecDelinqCtrlPurpDate

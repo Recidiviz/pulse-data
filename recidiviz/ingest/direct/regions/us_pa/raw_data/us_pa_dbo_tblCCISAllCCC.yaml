@@ -10,6 +10,7 @@ columns:
     is_datetime: False
     description: Identifying code of the facility. Reliably globally unique within this table.
   - name: desc_line
+    is_pii: True
     is_datetime: False
     description: Name of the facility, formatted as computer_code/name.
   - name: discontinue_use

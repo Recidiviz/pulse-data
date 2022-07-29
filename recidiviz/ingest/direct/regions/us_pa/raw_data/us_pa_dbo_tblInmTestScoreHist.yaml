@@ -13,6 +13,7 @@ columns:
     description: |-
       ID of the specific assessment administered.
   - name: Control_Number
+    is_pii: True
     description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
@@ -27,6 +28,7 @@ columns:
     description: |-
       Type of assessment administered.
   - name: Inmate_number
+    is_pii: True
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
@@ -41,6 +43,7 @@ columns:
     description: |-
       Assessment score.
   - name: ModBy_EmpNum
+    is_pii: True
     description: |-
       PADOC employee number of the staff member who last modified this record.
   - name: LstMod_Dt

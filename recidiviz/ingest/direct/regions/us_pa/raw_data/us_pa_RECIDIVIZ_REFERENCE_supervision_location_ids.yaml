@@ -87,6 +87,7 @@ columns:
       The organization code associated with a supervision unit (the smallest level of supervision location
       grouping we currently know about in PA).
   - name: Org_Name
+    is_pii: True
     description: The human-readable name of the supervision unit.
   - name: level_1_supervision_location_external_id
     description: The ID of the supervision suboffice (sometimes comprised of multiple units).

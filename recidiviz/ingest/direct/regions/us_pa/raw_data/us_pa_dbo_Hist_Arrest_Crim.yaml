@@ -8,7 +8,9 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: HArrestCrimID
+    is_pii: True
   - name: ArrestReportNO
   - name: NotificationDate
   - name: OTN
@@ -30,10 +32,12 @@ columns:
   - name: VerdictDate
   - name: VerificationDate
   - name: Judge
+    is_pii: True
   - name: SentenceDate
   - name: EffectiveSentenceDate
   - name: InstitutionOfSentence
   - name: ConvictionDetails
+    is_pii: True
   - name: TechViolChrgd
   - name: TVC_ReferTo257T
   - name: FR_RevokeRecommit
@@ -43,14 +47,18 @@ columns:
   - name: HearingDate
   - name: DistrictJusticeCourt
   - name: Disposition
+    is_pii: True
   - name: CPH_AgentNameSgntr
+    is_pii: True
   - name: CPH_AgentNameSgntrDate
   - name: CPH_SupvrNameSgntr
+    is_pii: True
   - name: CPH_SupvrNameSgntrDate
   - name: Charge
   - name: NoticeDate
   - name: ParoleCountID
   - name: LastModifiedBy
+    is_pii: True
   - name: LastModifiedDateTime
   - name: AR_DecDelinqCtrlPurp
   - name: AR_DecDelinqCtrlPurpDate

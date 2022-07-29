@@ -12,12 +12,14 @@ columns:
   - name: status_ind
   - name: served_date
   - name: control_number
+    is_pii: True
   - name: sanction_code
   - name: misconduct_number
   - name: other_misconduct
   - name: sig_date
   - name: sig_time
   - name: user_id
+    is_pii: True
   - name: consec_concur
   - name: effective_date
   - name: number_of_days

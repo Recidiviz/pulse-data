@@ -5,8 +5,10 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: prev_inmate_number
+    is_pii: True
   - name: prev_control_number
   - name: new_inmate_number
+    is_pii: True
   - name: new_control_number
   - name: xref_inst
   - name: previnm_deletdt

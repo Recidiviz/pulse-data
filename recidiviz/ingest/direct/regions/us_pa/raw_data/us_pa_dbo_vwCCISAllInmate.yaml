@@ -10,7 +10,9 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Control_Number
+    is_pii: True
   - name: Inmate_Number
+    is_pii: True
   - name: Region_CD
   - name: Center_CD
   - name: Bed_Dt
@@ -22,12 +24,15 @@ columns:
     is_datetime: True
   - name: Cur_Status_Tm
   - name: Comments
+    is_pii: True
   - name: LstMod_Dt
     is_datetime: True
   - name: LstMod_EmpNum
+    is_pii: True
   - name: SODate
   - name: SexOffFlg
   - name: ApprHomePlanFlg
   - name: GrnStpMo
   - name: Cnslr_EmpNum
+    is_pii: True
 encoding: ISO-8859-1

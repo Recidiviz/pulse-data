@@ -9,14 +9,18 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: HParoleeAddressID
   - name: EffDate
   - name: Address1
+    is_pii: True
   - name: Address2
+    is_pii: True
   - name: City
   - name: State
   - name: Zip
   - name: Phone
+    is_pii: True
   - name: PhoneExt
   - name: LastContactDate
   - name: CensusTract
@@ -24,15 +28,22 @@ columns:
   - name: WorkLoadWeight
   - name: Program
   - name: MAddress1
+    is_pii: True
   - name: MAddress2
+    is_pii: True
   - name: MCity
   - name: MZip
+    is_pii: True
   - name: chk_Mailing
   - name: CellPhone
+    is_pii: True
   - name: MState
   - name: Program_ID
   - name: FirstName
+    is_pii: True
   - name: LastName
+    is_pii: True
   - name: Relation_ID
   - name: LastModifiedDate
   - name: LastModifiedBy
+    is_pii: True

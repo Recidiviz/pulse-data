@@ -7,9 +7,11 @@ primary_key_cols:
   - ParoleNumber
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PBPP.
   - name: InActiveParoleNumber
+    is_pii: True
     description: |-
       Old, deprecated ParoleNumber for this person.
 separator: ‡

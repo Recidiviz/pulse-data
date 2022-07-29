@@ -9,14 +9,17 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Control_Number
+    is_pii: True
   - name: Prgm_Cd
   - name: Prgm_CatgryCd
   - name: Fac_cd
   - name: Recmdr_EmpNum
+    is_pii: True
   - name: Inm_RecmdDt
   - name: InmateRefuses_Flag
   - name: Priority_Id
   - name: Inm_UnSuitable_Flag
   - name: Inm_PrgmSusp_Flag
   - name: PrgmSusp_EmpNum
+    is_pii: True
   - name: PrgmSusp_Dt

@@ -9,6 +9,7 @@ primary_key_cols:
   - BdActionID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -18,12 +19,15 @@ columns:
     description: |-
       ID of the specific action taken by the board.
   - name: BdActInstitution
+    is_pii: True
     description: |-
       The specific institution under whose authority this action took place, often a state prison or field office.
   - name: BdActInstNumber
+    is_pii: True
     description: |-
       ID of an actor within that institution under whose authority this action took place.
   - name: BdActSubInstitution
+    is_pii: True
     description: |-
       An optional sub-unit within the institution under whose authority this action took place.
   - name: BdActDateMonth
@@ -63,15 +67,19 @@ columns:
     description: |-
       Whether this record was archived at some past point in time.
   - name: BdActOffLastName
+    is_pii: True
     description: |-
       Last name of the officer chiefly responsible for this action.
   - name: BdActOffFirstName
+    is_pii: True
     description: |-
       First name of the officer chiefly responsible for this action.
   - name: BdActOffMidName
+    is_pii: True
     description: |-
       Middle name of the officer chiefly responsible for this action.
   - name: BdActOffSuffix
+    is_pii: True
     description: |-
       Name suffix of the officer chiefly responsible for this action.
   - name: BdActDOPrint

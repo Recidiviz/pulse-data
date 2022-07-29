@@ -13,6 +13,7 @@ primary_key_cols:
   - control_number
 columns:
   - name: control_number
+    is_pii: True
     description: |-
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
@@ -23,15 +24,18 @@ columns:
     description: |-
       Sex of the person.
   - name: ssn_1
+    is_pii: True
     description: |-
       Social Security Number.
   - name: date_of_birth
+    is_pii: True
     description: |-
       Date of birth of the person.
   - name: pitts_photo_num
     description: |-
       Pittsburgh photo number.
   - name: ssn_2
+    is_pii: True
     description: |-
       Additional Social Security Number.
   - name: commit_instit
@@ -56,45 +60,58 @@ columns:
     description: |-
       Religion of the person.
   - name: fbi_num
+    is_pii: True
     description: |-
       FBI number of the person.
   - name: notify_name
+    is_pii: True
     description: |-
       Name of the person to notify of important events or changes.
   - name: notify_relatnship
     description: |-
       Relationship of the notification person to the incarcerated person.
   - name: notify_phone_num
+    is_pii: True
     description: |-
       Notification person phone number.
   - name: notify_address_1
+    is_pii: True
     description: |-
       Notification person address line 1.
   - name: notify_address_2
+    is_pii: True
     description: |-
       Notification person address line 2.
   - name: notify_city
+    is_pii: True
     description: |-
       Notification person address city.
   - name: notify_state
+    is_pii: True
     description: |-
       Notification person address state.
   - name: notify_zip_code
+    is_pii: True
     description: |-
       Notification person address zip code.
   - name: legal_address_1
+    is_pii: True
     description: |-
       Incarcerated person legal address line 1.
   - name: legal_address_2
+    is_pii: True
     description: |-
       Incarcerated person legal address line 2.
   - name: legal_city
+    is_pii: True
     description: |-
       Incarcerated person legal address city.
   - name: legal_state
+    is_pii: True
     description: |-
       Incarcerated person legal address state.
   - name: legal_zip_code
+    is_pii: True
     description: |-
       Incarcerated person legal address zip code.
   - name: city_of_birth
@@ -107,6 +124,7 @@ columns:
     description: |-
       Country of birth of the person.
   - name: ssn_other
+    is_pii: True
     description: |-
       Additional Social Security Number information.
   - name: us_military_vet
@@ -162,6 +180,7 @@ columns:
     description: |-
       Physical build.
   - name: accomplices
+    is_pii: True
     description: |-
       Known accomplices.
   - name: affilatns_ind
@@ -700,6 +719,7 @@ columns:
     description: |-
       Time when this record was first entered.
   - name: user_id
+    is_pii: True
     description: |-
       ID of the person who first entered this record.
   - name: ovride_pending
@@ -708,6 +728,7 @@ columns:
   - name: confidential_date
   - name: problematic_offenses
   - name: parole_board_num
+    is_pii: True
     description: |-
       Any assigned parole board number.
   - name: test_type

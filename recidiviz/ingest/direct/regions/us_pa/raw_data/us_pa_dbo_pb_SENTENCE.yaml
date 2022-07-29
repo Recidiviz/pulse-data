@@ -10,6 +10,7 @@ primary_key_cols: []
 columns:
   - name: sid
   - name: inmate_number
+    is_pii: True
   - name: sentence_status
   - name: sentence_status_code
   - name: sent_type_code
@@ -39,6 +40,7 @@ columns:
   - name: sentencing_county
   - name: term_of_court
   - name: sentencing_judge
+    is_pii: True
   - name: mandatory_sentence_indicator
   - name: custody_for_return
   - name: recomputed_max

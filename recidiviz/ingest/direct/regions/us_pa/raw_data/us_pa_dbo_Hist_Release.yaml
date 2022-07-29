@@ -14,6 +14,7 @@ primary_key_cols:
   - ParoleCountID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: HReleaseID
@@ -23,6 +24,7 @@ columns:
     description: |-
       External ID for a particular stint of a particular person under supervision by PADOC.
   - name: HReOffenderHisName
+    is_pii: True
     description: |-
       Name of the person who was under supervision.
   - name: HReRace
@@ -59,12 +61,15 @@ columns:
     description: |-
       Date when the period of supervision expires.
   - name: HReSidNo
+    is_pii: True
     description: |-
       State identification number of the person who was under supervision.
   - name: HReAgentName
+    is_pii: True
     description: |-
       Name and ID of the last supervising officer for this period of supervision.
   - name: HReSSNo
+    is_pii: True
     description: |-
       SSN of the person who was under supervision.
   - name: HReTransDate
@@ -79,6 +84,7 @@ columns:
     description: |-
       Unclear, almost always null.
   - name: HReDOB
+    is_pii: True
     is_datetime: True
     description: |-
       Date of birth of the person who was under supervision.
@@ -118,6 +124,7 @@ columns:
     description: |-
       Offense Tracking Number of the offense with the longest sentence.
   - name: HReMina
+    is_pii: True
     description: |-
       The shortest amount of time that can be served to complete the sentence with the longest sentence term.
   - name: HReMaxa
@@ -162,9 +169,11 @@ columns:
     description: |-
       Date when the original release record was closed by field staff.
   - name: HReRisk
+    is_pii: True
     description: |-
       Last risk score during this period of supervision.
   - name: HReNeeds
+    is_pii: True
     description: |-
       Last needs score during this period of supervision.
   - name: HReAssessDt
@@ -189,6 +198,7 @@ columns:
     description: |-
       Code for the termination reason of the period of supervision.
   - name: LastModifiedBy
+    is_pii: True
     description: |-
       Who the record was last modified by.
   - name: LastModifiedDatetime

@@ -6,6 +6,7 @@ primary_key_cols:
   - ParoleNumber
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: PA_Drugs
   - name: PA_Alcoholic
   - name: PA_Psychiatric
@@ -13,13 +14,18 @@ columns:
   - name: PA_Other
   - name: PA_Commutation
   - name: PA_OtherDesc
+    is_pii: True
   - name: FBINo
+    is_pii: True
   - name: PictureID
   - name: Notes
+    is_pii: True
   - name: Alias
+    is_pii: True
   - name: PA_Assaultive
   - name: PA_Sexual
   - name: SSAN
+    is_pii: True
   - name: PA_PastAssaultive
   - name: PType_BoardParole
   - name: PType_SpecProbParole
@@ -27,9 +33,11 @@ columns:
   - name: PType_OtherStateProb
   - name: PType_BoardReParole
   - name: Miscellaneous
+    is_pii: True
   - name: DateRtndToInst
   - name: RtndToInstitution
   - name: DriversLicenseNo
+    is_pii: True
   - name: LastModifiedDate
   - name: LastModifiedBy
   - name: OffVetFlgY

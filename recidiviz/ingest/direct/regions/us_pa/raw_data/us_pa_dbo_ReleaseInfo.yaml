@@ -13,6 +13,7 @@ primary_key_cols:
   - ParoleCountID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -35,6 +36,7 @@ columns:
     description: |-
       PBPP code of the offense with the longest sentence.
   - name: WangAgentName
+    is_pii: True
     description: |-
       Name and ID of the supervising agent.
   - name: RelPurgeCode
@@ -60,6 +62,7 @@ columns:
     description: |-
       Date when the period of supervision expires.
   - name: WangClientName
+    is_pii: True
     description: |-
       Name of the person being supervised.
   - name: RelPBPPOffenseCode2
@@ -75,12 +78,15 @@ columns:
     description: |-
       Latest district office where the person is being supervised.
   - name: RelOTN1
+    is_pii: True
     description: |-
       Offense Tracking Number of the offense with the longest sentence.
   - name: RelOTN2
+    is_pii: True
     description: |-
       Offense Tracking Number of the offense with the second longest sentence.
   - name: RelOTN3
+    is_pii: True
     description: |-
       Offense Tracking Number of the offense with the third longest sentence.
   - name: RelMaxDate1
@@ -121,6 +127,7 @@ columns:
     description: |-
       Temporary district office where the person is being supervised, if a temporary change has been made.
   - name: temp_WangAgentName
+    is_pii: True
     description: |-
       Name and ID of the temporary supervising agent, if a temporary change has been made.
   - name: temp_County
@@ -136,10 +143,12 @@ columns:
     description: |-
       Effective current supervision level, taking any and all overrides into account.
   - name: Supervisor
+    is_pii: True
     description: |-
       Name and ID of the supervisor of the current supervising agent.
   - name: relWeight
   - name: OrgCode
+    is_pii: True
     description: |-
       Code of the field office where the supervision is being served.
   - name: RelLUOffenseID
@@ -152,6 +161,7 @@ columns:
     description: |-
       PADOC lookup ID of the offense with the third longest sentence.
   - name: tempWangAgentName
+    is_pii: True
     description: |-
       Name and ID of the temporary supervising agent, if a temporary change has been made.
   - name: RskAct97Positive

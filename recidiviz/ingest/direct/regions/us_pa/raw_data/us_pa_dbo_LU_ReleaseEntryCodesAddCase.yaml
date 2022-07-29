@@ -19,6 +19,7 @@ columns:
     description: |-
       Whether this entry code is still in active use.
   - name: LastModifiedby
+    is_pii: True
     description: |-
       Who this record was last modified by.
   - name: LastModifiedDatetime

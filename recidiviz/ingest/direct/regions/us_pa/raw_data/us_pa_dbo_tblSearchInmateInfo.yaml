@@ -13,17 +13,21 @@ primary_key_cols:
   - control_number
 columns:
   - name: inmate_number
+    is_pii: True
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
   - name: control_number
+    is_pii: True
     description: |
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
   - name: state_id_num
+    is_pii: True
     description: |-
       Pennsylvania state identifier - always null.
   - name: state_id_num_hashed
+    is_pii: True
     description: |-
       Hashed Pennsylvania state identifier - always null.
   - name: location_in_transi
@@ -54,12 +58,15 @@ columns:
     description: |-
       Date the person was first booked into PADOC custody.
   - name: photo_reason
+    is_pii: True
     description: |-
       Reason a photo was taken of the person under custody.
   - name: date_of_birth
+    is_pii: True
     description: |-
       Date of birth.
   - name: ssn_1
+    is_pii: True
     description: |-
       Social Security Number.
   - name: re_user_id
@@ -114,6 +121,7 @@ columns:
     description: |-
       Pittsburgh photo number.
   - name: fbi_num
+    is_pii: True
     description: |-
       FBI number.
   - name: problematic_offenses
@@ -239,6 +247,7 @@ columns:
     description: |-
       Class of maximum sentence, including whether this is a life sentence or capital punishment.
   - name: SSN_2
+    is_pii: True
     description: |-
       Social Security Number.
   - name: rcptpn_regular_date
@@ -247,18 +256,23 @@ columns:
       Date the record is to be marked inactive ("deleted").
   - name: Dtn_SW
   - name: Lst_Nm
+    is_pii: True
     description: |-
       Last name of the person.
   - name: Frst_Nm
+    is_pii: True
     description: |-
       First name of the person.
   - name: Mid_Nm
+    is_pii: True
     description: |-
       Middle name of the person.
   - name: Nm_Suff
+    is_pii: True
     description: |-
       Name suffix name of the person.
   - name: CurrLoc_Cd
+    is_pii: True
     description: |-
       Code of the current location of the person.
   - name: RecmpMax_Dt
@@ -270,6 +284,7 @@ columns:
     description: |-
       Reclassification date.
   - name: IC_Userid
+    is_pii: True
     description: |-
       ID of the PADOC staff member who administered the initial classification.
   - name: IC_Dt

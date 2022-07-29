@@ -8,32 +8,51 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: EffDate
   - name: Address1
+    is_pii: True
   - name: Address2
+    is_pii: True
   - name: City
+    is_pii: True
   - name: State
+    is_pii: True
   - name: Zip
+    is_pii: True
   - name: Phone
+    is_pii: True
   - name: PhoneExt
+    is_pii: True
   - name: LastContactDate
   - name: CensusTract
+    is_pii: True
   - name: WorkLoadWeight
   - name: TimeStamp
   - name: Program
+    is_pii: True
   - name: MAddress1
+    is_pii: True
   - name: MAddress2
+    is_pii: True
   - name: MCity
+    is_pii: True
   - name: MZip
+    is_pii: True
   - name: chk_Mailing
   - name: CellPhone
+    is_pii: True
   - name: MState
+    is_pii: True
   - name: Program_ID
   - name: FirstName
+    is_pii: True
   - name: LastName
+    is_pii: True
   - name: Relation_ID
   - name: LastModifiedDate
   - name: LastModifiedBy
+    is_pii: True
 separator: ‡
 custom_line_terminator: †
 ignore_quotes: True

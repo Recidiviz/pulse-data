@@ -11,6 +11,7 @@ primary_key_cols:
   - CndDescriptionID
 columns:
   - name: ParoleNumber
+    is_pii: True
     description: |-
       External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
@@ -26,6 +27,7 @@ columns:
     description: |-
       ID of this specific description, which uniquely identifies multiple descriptions provided for a given condition.
   - name: ConditionDescription
+    is_pii: True
     description: |-
       Free text description of the condition.
   - name: TimeStamp

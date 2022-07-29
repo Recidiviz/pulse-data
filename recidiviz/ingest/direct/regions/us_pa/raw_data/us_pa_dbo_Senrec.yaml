@@ -9,6 +9,7 @@ primary_key_cols:
   - type_number
 columns:
   - name: curr_inmate_num
+    is_pii: True
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served. This type of this id is `US_PA_INMATE`.
@@ -102,9 +103,11 @@ columns:
     description: |-
       "Guilty but mentally ill."
   - name: indictment_num
+    is_pii: True
     description: |-
       Court case ID.
   - name: judge
+    is_pii: True
     description: |-
       Judge presiding over the court case.
   - name: offense_code
@@ -254,9 +257,11 @@ columns:
     description: |-
       Time this record was first entered.
   - name: user_id
+    is_pii: True
     description: |-
       ID of the staff member who first entered this record.
   - name: cntinued_frm_doc_n
+    is_pii: True
     description: |-
       Prior Inmate Number when an inmate rolls over into a new sentence without
       being released.

@@ -9,6 +9,7 @@ primary_key_cols:
   - BdActionTypeID
 columns:
   - name: ParoleNumber
+    is_pii: True
   - name: ParoleCountID
   - name: BdActionID
   - name: BdActionTypeID
