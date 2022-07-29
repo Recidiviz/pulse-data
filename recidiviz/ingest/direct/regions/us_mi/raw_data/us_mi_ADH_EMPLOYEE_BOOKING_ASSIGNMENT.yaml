@@ -5,15 +5,34 @@ data_classification: source
 primary_key_cols:
   - offender_booking_id
   - employee_id
+  - sequence_number
 columns:
   - name: offender_booking_id
+    description: The OMNI-database generated ID for an individual's booking.
   - name: employee_id
+    description: The OMNI-database generated ID for an employee.
     is_pii: True
   - name: sequence_number
+    description: The order of assignments for a specific boooking
   - name: assignment_date
+    description: The date an employee is assigned to a specific individual under a specific booking.
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closure_date
+    description: The date an employee's assignment to a specific individual under a specific booking ends
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: assignment_type_id
+    description: Reference code for the type of assignment
+    known_values:
+      - value: "1305"
+        description: Intake
+      - value: "912"
+        description: Report Investigation
   - name: active_flag
+    description: Flag for whether the assignment is still active or not
   - name: assignment_employee_id
     is_pii: True
   - name: source_employee_id
@@ -29,5 +48,6 @@ columns:
   - name: workload_number
   - name: temporary_assignment
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
   - name: last_update_node

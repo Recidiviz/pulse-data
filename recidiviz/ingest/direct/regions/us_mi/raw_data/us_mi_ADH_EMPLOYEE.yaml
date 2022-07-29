@@ -6,6 +6,7 @@ primary_key_cols:
   - employee_id
 columns:
   - name: employee_id
+    description: The OMNI-database generated ID for an employee.
     is_pii: True
   - name: social_security_number
     is_pii: True
@@ -51,14 +52,617 @@ columns:
   - name: home_phone_extension
     is_pii: True
   - name: position
+    description: Title of the employee's position
   - name: hire_date
+    description: Date employee was hired
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: termination_date
+    description: Date employment was terminated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: service_hours
   - name: active_flag
   - name: default_location_id
   - name: hearing_officer_cmis_code
   - name: security_agreement_flag
   - name: employee_type_id
+    description: Reference code for the employee's position type
+    known_values:
+      - value: "0"
+        description: TEMP LOCATION TYPE
+      - value: "2097"
+        description: Corrections Officer
+      - value: "2098"
+        description: Lieutenant
+      - value: "2099"
+        description: Sergeant
+      - value: "2100"
+        description: Corrections Service Representative (CSR)
+      - value: "2101"
+        description: Corrections Resident Representative (CRR)
+      - value: "2102"
+        description: Area Manager
+      - value: "2103"
+        description: Program Manager
+      - value: "2104"
+        description: Supervisor
+      - value: "2105"
+        description: Agent
+      - value: "2106"
+        description: Field Services Assistant
+      - value: "2107"
+        description: Clerical Supervisor
+      - value: "2108"
+        description: Clerical
+      - value: "2109"
+        description: Parole Manager
+      - value: "2110"
+        description: Probation Manager
+      - value: "2111"
+        description: Center Manager
+      - value: "7081"
+        description: Other
+      - value: "7508"
+        description: Deputy Administrator
+      - value: "7509"
+        description: Contractor
+      - value: "7510"
+        description: Administrator
+      - value: "7511"
+        description: Manager
+      - value: "7512"
+        description: Deputy Warden
+      - value: "7735"
+        description: Records Maintenance
+      - value: "9682"
+        description: Inquiry Only
+      - value: "9820"
+        description: Volunteer
+      - value: "11582"
+        description: Vendor
+      - value: "12212"
+        description: Human Resource Developer
+      - value: "12213"
+        description: Internal Affairs
+      - value: "12280"
+        description: Accountant
+      - value: "12281"
+        description: ACA Coordinator
+      - value: "12282"
+        description: Accounting Assistant
+      - value: "12283"
+        description: Accounting Technician
+      - value: "12285"
+        description: Administrative Assistant
+      - value: "12286"
+        description: Administrative Officer
+      - value: "12290"
+        description: Assistant Business Manager
+      - value: "12291"
+        description: Assistant Food Service Director
+      - value: "12295"
+        description: Assistant Librarian
+      - value: "12296"
+        description: Assistant Resident Unit Supervisor
+      - value: "12297"
+        description: Athletic Director
+      - value: "12298"
+        description: Auditor
+      - value: "12301"
+        description: Business Manager
+      - value: "12302"
+        description: Career and Technical Education Coordinator
+      - value: "12303"
+        description: Case Worker
+      - value: "12305"
+        description: Chaplain
+      - value: "12308"
+        description: Chief of Clinical Affairs
+      - value: "12309"
+        description: Assistant Maintenance Superintendent
+      - value: "12310"
+        description: Classification Director
+      - value: "12311"
+        description: Classification Officer
+      - value: "12313"
+        description: Clerical Support
+      - value: "12314"
+        description: Community Resources Manager
+      - value: "12317"
+        description: Construction Coordinator
+      - value: "12318"
+        description: Consultant
+      - value: "12320"
+        description: Contract Monitor
+      - value: "12322"
+        description: Coordinator
+      - value: "12323"
+        description: Corrections Investigator
+      - value: "12324"
+        description: Correction Program Coordinator
+      - value: "12325"
+        description: Corrections Shift Supervisor
+      - value: "12327"
+        description: Crew Leader
+      - value: "12330"
+        description: Data Analyst
+      - value: "12331"
+        description: Data Processing Coordinator
+      - value: "12332"
+        description: Assistant Physical Plant Manager
+      - value: "12334"
+        description: Dentist
+      - value: "12335"
+        description: Department Analyst
+      - value: "12336"
+        description: Department Manager
+      - value: "12337"
+        description: Department Specialist
+      - value: "12338"
+        description: Departmental Specialist
+      - value: "12339"
+        description: Departmental Technician
+      - value: "12340"
+        description: Assistant Physical Plant Superintendant
+      - value: "12342"
+        description: Dietitian
+      - value: "12343"
+        description: Building Trades Supervisor
+      - value: "12345"
+        description: Drug and Alcohol Testing Coordinator
+      - value: "12348"
+        description: Electrician
+      - value: "12349"
+        description: Electronics Tech
+      - value: "12351"
+        description: Environmental Sanitarian
+      - value: "12352"
+        description: Executive Aide
+      - value: "12353"
+        description: Executive Assistant
+      - value: "12354"
+        description: Executive Secretary
+      - value: "12355"
+        description: Facility Manager
+      - value: "12356"
+        description: Financial Analyst
+      - value: "12357"
+        description: Financial Manager
+      - value: "12358"
+        description: Fire Safety Inspector
+      - value: "12360"
+        description: Food Service Administrator
+      - value: "12362"
+        description: Food Service Supervisor
+      - value: "12363"
+        description: General Office Assistant
+      - value: "12369"
+        description: Health Unit Manager
+      - value: "12373"
+        description: Industries Supervisor
+      - value: "12374"
+        description: Captain
+      - value: "12375"
+        description: Inspector
+      - value: "12376"
+        description: Carpenter
+      - value: "12377"
+        description: Investigator
+      - value: "12379"
+        description: Labor Relations Manager
+      - value: "12380"
+        description: Labor Relations Representative
+      - value: "12381"
+        description: Case Manager
+      - value: "12382"
+        description: Librarian
+      - value: "12384"
+        description: Locksmith
+      - value: "12385"
+        description: Maintenance Mechanic
+      - value: "12386"
+        description: Maintenance Staff
+      - value: "12387"
+        description: Mental Health and Substance Abuse Specialist
+      - value: "12389"
+        description: Chief Psychologist
+      - value: "12390"
+        description: Nurse
+      - value: "12393"
+        description: Office Supervisor
+      - value: "12394"
+        description: OMNI Support
+      - value: "12395"
+        description: OMNI Support Agent
+      - value: "12396"
+        description: Operator
+      - value: "12398"
+        description: Accountant Manager
+      - value: "12399"
+        description: Parole Board Member
+      - value: "12400"
+        description: Corrections Medical Officer
+      - value: "12401"
+        description: Dental Aide
+      - value: "12402"
+        description: Dental Hygienist
+      - value: "12403"
+        description: Dental Lab Technician
+      - value: "12404"
+        description: Dentist Manager
+      - value: "12405"
+        description: Departmental Analyst
+      - value: "12406"
+        description: DIT Tech
+      - value: "12407"
+        description: Equipment Operator
+      - value: "12408"
+        description: Physical Plant Manager
+      - value: "12409"
+        description: Physician
+      - value: "12410"
+        description: Physician Assistant
+      - value: "12411"
+        description: Plumber
+      - value: "12412"
+        description: Pre-Screener
+      - value: "12413"
+        description: Principal
+      - value: "12416"
+        description: ADW Custody
+      - value: "12417"
+        description: Dental Assistant
+      - value: "12418"
+        description: Procurement Manager
+      - value: "12419"
+        description: Procurement Technician
+      - value: "12421"
+        description: Program Specialist
+      - value: "12426"
+        description: Records Administrator
+      - value: "12427"
+        description: Records Supervisor
+      - value: "12429"
+        description: Regional Administrator
+      - value: "12430"
+        description: Regional Business Manager
+      - value: "12431"
+        description: Regional Environmental Sanitarian
+      - value: "12433"
+        description: Regional Health Care Administrator
+      - value: "12434"
+        description: Regional Medical Director
+      - value: "12435"
+        description: Regional Nursing Director
+      - value: "12436"
+        description: Equipment Technician
+      - value: "12437"
+        description: Regional Prison Administrator
+      - value: "12439"
+        description: Grievance Coordinator
+      - value: "12440"
+        description: Groundskeeper
+      - value: "12441"
+        description: Resident Unit Manager
+      - value: "12442"
+        description: Secretary
+      - value: "12443"
+        description: Resident Unit Officer
+      - value: "12444"
+        description: Resident Unit Supervisor
+      - value: "12446"
+        description: Hearings Investigator
+      - value: "12450"
+        description: Social Worker
+      - value: "12451"
+        description: Special Activities Coordinator
+      - value: "12453"
+        description: Special Assistant
+      - value: "12459"
+        description: Storekeeper
+      - value: "12460"
+        description: Student Assistant
+      - value: "12461"
+        description: Teacher
+      - value: "12463"
+        description: Technician
+      - value: "12465"
+        description: Transfer Coordinator
+      - value: "12466"
+        description: Victim Rights Coordinator
+      - value: "12467"
+        description: Warden
+      - value: "12468"
+        description: Waste Program Manager
+      - value: "12469"
+        description: Human Resources Officer
+      - value: "12470"
+        description: Word Processing Assistant
+      - value: "12472"
+        description: ADW Housing/Programs
+      - value: "12473"
+        description: Assistant Administrative Officer
+      - value: "12474"
+        description: Industries Production Leader
+      - value: "12475"
+        description: Industries Superintendent
+      - value: "12476"
+        description: Institutional Training Officer
+      - value: "12477"
+        description: Library Assistant
+      - value: "12478"
+        description: Library Technician
+      - value: "12479"
+        description: Litigation Coordinator
+      - value: "12480"
+        description: LPN
+      - value: "12481"
+        description: Mailroom
+      - value: "12483"
+        description: Maintenance Superintendent
+      - value: "12484"
+        description: Medical Records Examiner
+      - value: "12485"
+        description: Medical Records Technician
+      - value: "12486"
+        description: Nurse Manager
+      - value: "12487"
+        description: Nurse Practitioner
+      - value: "12488"
+        description: Nursing Supervisor
+      - value: "12489"
+        description: Painter
+      - value: "12490"
+        description: Pharmacy Assistant
+      - value: "12491"
+        description: Physical Plant Supervisor
+      - value: "12492"
+        description: Physician Manager
+      - value: "12493"
+        description: Power Plant Operator
+      - value: "12494"
+        description: Power Plant Supervisor
+      - value: "12495"
+        description: Prisoner Store
+      - value: "12496"
+        description: Psych Manager
+      - value: "12497"
+        description: Psychiatrist
+      - value: "12498"
+        description: Psychologist
+      - value: "12499"
+        description: Public Works Supervisor
+      - value: "12501"
+        description: Record Office Supervisor
+      - value: "12502"
+        description: Records Clerk
+      - value: "12503"
+        description: Records Office Technician
+      - value: "12505"
+        description: Refrigeration Mechanic
+      - value: "12506"
+        description: Regional Fire Safety Inspector
+      - value: "12508"
+        description: Registered Nurse
+      - value: "12509"
+        description: School Principal
+      - value: "12510"
+        description: School Teacher
+      - value: "12511"
+        description: Special Activities Director
+      - value: "12513"
+        description: Storekeeper Supervisor
+      - value: "12514"
+        description: Trades Instructor
+      - value: "12516"
+        description: Transportation Officer
+      - value: "12517"
+        description: Vocational Building Trades Instructor
+      - value: "12518"
+        description: Warehouse
+      - value: "12519"
+        description: Warehouse Supervisor
+      - value: "12521"
+        description: X-Ray Technician
+      - value: "12522"
+        description: Human Resources Management Technician
+      - value: "12523"
+        description: Clinical Social Worker
+      - value: "12525"
+        description: Assistant Physical Plant Supervisor
+      - value: "12526"
+        description: Building Trades Crew Leader
+      - value: "12527"
+        description: Corrections Program Manager
+      - value: "12528"
+        description: Assistant Human Resources Officer
+      - value: "12529"
+        description: Personnel Management Assistant
+      - value: "12530"
+        description: Food Services Leader Prisoner
+      - value: "12688"
+        description: Food Services Leader
+      - value: "12691"
+        description: S.A.I. Officer
+      - value: "12699"
+        description: Unit Chief
+      - value: "12700"
+        description: Community Health Services Manager
+      - value: "12701"
+        description: Psychologist Manager
+      - value: "12702"
+        description: Occupational Therapist
+      - value: "12703"
+        description: Music Therapist
+      - value: "12704"
+        description: Lab Technician
+      - value: "12705"
+        description: Recreational Therapist
+      - value: "12706"
+        description: Pharmacist
+      - value: "12707"
+        description: Maintenance Supervisor
+      - value: "12708"
+        description: Plumber - Licensed
+      - value: "12709"
+        description: Electrician - Master Licensed
+      - value: "12710"
+        description: ADW Operations
+      - value: "12712"
+        description: Automotive Mechanic
+      - value: "12731"
+        description: Contractual - Physician Assistant
+      - value: "12732"
+        description: Contractual - Secretary
+      - value: "12733"
+        description: Contractual - Registered Nurse
+      - value: "12734"
+        description: Contractual - Psychologist
+      - value: "12735"
+        description: Contractual - Psychiatrist
+      - value: "12736"
+        description: Contractual - Physician
+      - value: "12737"
+        description: Contractual - Nurse Practitioner
+      - value: "12738"
+        description: Contractual - Medical Records Examiner
+      - value: "12739"
+        description: Contractual - Clinical Social Worker
+      - value: "12740"
+        description: ADW Programs
+      - value: "12741"
+        description: ADW Custody/Housing
+      - value: "12766"
+        description: State Administrative Manager
+      - value: "12767"
+        description: Contractual - Dentist
+      - value: "12768"
+        description: Barber/Cosmetologist
+      - value: "12821"
+        description: Personnel Management Technician
+      - value: "12846"
+        description: Personnel Management Analyst
+      - value: "12847"
+        description: Human Resource Manager
+      - value: "12905"
+        description: Senior Executive Management Assistant
+      - value: "12907"
+        description: Contractual Pharmacist
+      - value: "12908"
+        description: Contractual CENA
+      - value: "12909"
+        description: Contractual Attorney
+      - value: "12910"
+        description: Contractual Ward Clerk
+      - value: "12913"
+        description: Communications Assistant
+      - value: "12914"
+        description: Medical Records Exam Supervisor
+      - value: "12915"
+        description: Administrative Manager
+      - value: "12916"
+        description: Pharmacist Services
+      - value: "12917"
+        description: Registered Nurse Manager
+      - value: "12918"
+        description: Pharmacist Manager
+      - value: "12919"
+        description: Fingerprint Technician
+      - value: "12920"
+        description: Laboratory Assistant
+      - value: "12921"
+        description: Respiratory Therapy Tech
+      - value: "12922"
+        description: Janitor
+      - value: "12923"
+        description: Laboratory Glassware Worker
+      - value: "12924"
+        description: Prison Counselor
+      - value: "12925"
+        description: Practical Nurse Licensed
+      - value: "12927"
+        description: Cook
+      - value: "12928"
+        description: Secretary Supervisor
+      - value: "12937"
+        description: Registered Nurse Director
+      - value: "12939"
+        description: Contractual Optometrist
+      - value: "12951"
+        description: Corrections Security Representative
+      - value: "12998"
+        description: Contractual X-Ray Technician
+      - value: "13012"
+        description: Contractual Phlebotomist
+      - value: "13014"
+        description: Intern
+      - value: "13066"
+        description: Education Network Maintenance - Contractor
+      - value: "13129"
+        description: Medical Technician Supervisor
+      - value: "13223"
+        description: State Assistant Administrator
+      - value: "13241"
+        description: Building Construction Project Superintendent
+      - value: "13303"
+        description: Certified Addiction Counselor
+      - value: "13322"
+        description: Kiosk
+      - value: "13323"
+        description: Administrative Law Examiner
+      - value: "13364"
+        description: Statewide Service Technician
+      - value: "13570"
+        description: Special Appointee
+      - value: "13679"
+        description: Fire Safety Supervisor
+      - value: "13743"
+        description: External Database User
+      - value: "13744"
+        description: Parole Probation Specialist
+      - value: "13759"
+        description: MPRI Community Coordinator
+      - value: "13811"
+        description: Resident Care Aide
+      - value: "14004"
+        description: Contractual LPN
+      - value: "14521"
+        description: Domestic Services Aide E
+      - value: "14527"
+        description: Community Provider
+      - value: "15433"
+        description: Prosecutor
+      - value: "15594"
+        description: Contractual - Counselor
+      - value: "15878"
+        description: Law Enforcement
+      - value: "16125"
+        description: Employment Skills Developer
+      - value: "16184"
+        description: State Office Administrator
+      - value: "16185"
+        description: State Division Administrator
+      - value: "16729"
+        description: Sergeant
+      - value: "16730"
+        description: Lieutenant
+      - value: "16731"
+        description: Captain
+      - value: "19531"
+        description: Corrections Qualified Mental Health Professional
+      - value: "19638"
+        description: Retiree
+      - value: "19639"
+        description: ADW Housing
+      - value: "19933"
+        description: Paramedic
+      - value: "20039"
+        description: Phlebotomist
+      - value: "12391"
+        description: Office Assistant
   - name: funding_source_id
   - name: gender_id
   - name: racial_appearance_id
@@ -78,5 +682,6 @@ columns:
   - name: gun_permit_exp_date
   - name: gun_permit_number
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
   - name: last_update_node

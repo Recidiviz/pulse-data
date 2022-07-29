@@ -6,19 +6,71 @@ primary_key_cols:
   - legal_order_id
 columns:
   - name: legal_order_id
+    description: The OMNI-database generated ID for a legal order row
   - name: offender_booking_id
+    description: The OMNI-database generated ID for an individual's booking.
     is_pii: True
   - name: order_type_id
+    description: Reference code for the type of legal order each record represents
+    known_values:
+      - value: "3162"
+        description: Other State's Prison
+      - value: "20147"
+        description: MDHHS - Juvenile
+      - value: "1724"
+        description: Fine/Cost/Restitution Only
+      - value: "1719"
+        description: Interstate Compact Parole
+      - value: "1727"
+        description: Probation
+      - value: "1726"
+        description: Parole
+      - value: "1721"
+        description: Family Independence Agency (DSS)
+      - value: "1725"
+        description: Prison
+      - value: "1720"
+        description: Interstate Compact Probation
+      - value: "1722"
+        description: Community Service Only
+      - value: "1728"
+        description: Presentence Investigation
+      - value: "1723"
+        description: Jail Only
   - name: order_status_id
+    description: Reference code for the status of the legal order
+    known_values:
+      - value: "2044"
+        description: Closed
+      - value: "3157"
+        description: Inactive Awaiting Pre-Parole
+      - value: "2045"
+        description: Active
   - name: create_date
+    description: Date legal order was created
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_date
+    description: Date legal order was issued
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_location_id
   - name: issue_reason_code
   - name: county_code_id
   - name: released_from_location_id
   - name: notes
   - name: effective_date
+    description: effective start date of the legal order
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
+    description: expiration date of the legal order
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: attending_court_id
   - name: court_date
   - name: next_court_date
@@ -53,5 +105,6 @@ columns:
   - name: sentencing_location_id
   - name: docket_number_description
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
   - name: last_update_node
