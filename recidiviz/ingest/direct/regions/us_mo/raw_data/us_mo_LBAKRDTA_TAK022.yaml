@@ -8,6 +8,7 @@ primary_key_cols:
   - BS_SEO
 columns:
   - name: BS_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BS_CYC
@@ -77,12 +78,14 @@ columns:
     description: |-
       Sentence Plea
   - name: BS_COD
+    is_pii: True
     description: |-
       Sentence Offense Description
   - name: BS_AR
     description: |-
       Arrest Date
   - name: BS_UID
+    is_pii: True
     description: |-
       User Identification
   - name: BS_DCR
@@ -92,6 +95,7 @@ columns:
     description: |-
       Row Creation Time
   - name: BS_UIU
+    is_pii: True
     description: |-
       Unknown - not included in data dictionary binder
   - name: BS_DLU

@@ -9,6 +9,7 @@ columns:
     description: |-
       Status Code
   - name: FH_SDE
+    is_pii: True
     description: |-
       Status Code Description
   - name: FH_FOI
@@ -72,5 +73,6 @@ columns:
     description: |-
       Row Modify Time
   - name: FH_UID
+    is_pii: True
     description: |-
       User Identification

@@ -8,6 +8,7 @@ primary_key_cols:
   - BY_VSN
 columns:
   - name: BY_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BY_CYC
@@ -41,6 +42,7 @@ columns:
     description: |-
       Violation custody flag
   - name: BY_DAX
+    is_pii: True
     description: |-
       Detainer name/address XRef rec number
   - name: BY_VC
@@ -56,9 +58,11 @@ columns:
     description: |-
       Violation interview minute
   - name: BY_VIL
+    is_pii: True
     description: |-
       Violation interview location
   - name: BY_VOR
+    is_pii: True
     description: |-
       Violation officer's recommendation
   - name: BY_PIN
@@ -68,6 +72,7 @@ columns:
     description: |-
       DOC Location Acronym
   - name: BY_PON
+    is_pii: True
     description: |-
       Employee ID Card Number
   - name: BY_RCA
@@ -86,6 +91,7 @@ columns:
     description: |-
       Row Creation Time
   - name: BY_UID
+    is_pii: True
     description: |-
       User Identification
   - name: BY_DLU
@@ -95,5 +101,6 @@ columns:
     description: |-
       Row Modify Time
   - name: BY_UIU
+    is_pii: True
     description: |-
       Unknown - not included in data dictionary binder

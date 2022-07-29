@@ -8,6 +8,7 @@ primary_key_cols:
   - DN_NSN
 columns:
   - name: DN_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: DN_CYC
@@ -23,6 +24,7 @@ columns:
     description: |-
       DOC Location Acronym
   - name: DN_PON
+    is_pii: True
     description: |-
       Employee ID Card Number
   - name: DN_NED

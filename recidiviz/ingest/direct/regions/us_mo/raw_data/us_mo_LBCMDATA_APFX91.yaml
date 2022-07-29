@@ -9,18 +9,23 @@ primary_key_cols:
   - DEPCLS
 columns:
   - name: BDGNO
+    is_pii: True
     description: |-
       Employee ID number
   - name: EMPSSN
+    is_pii: True
     description: |-
       Employee SSN
   - name: LNAME
+    is_pii: True
     description: |-
       Employee Last Name
   - name: FNAME
+    is_pii: True
     description: |-
       Employee First Name
   - name: MINTL
+    is_pii: True
     description: |-
       Employee Middle Initial
   - name: WRKLOC

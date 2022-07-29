@@ -6,18 +6,22 @@ primary_key_cols:
   - EK_DOC
 columns:
   - name: EK_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: EK_CYC
     description: |-
       Cycle Number
   - name: EK_ALN
+    is_pii: True
     description: |-
       Person Last Name
   - name: EK_AFN
+    is_pii: True
     description: |-
       Person First Name
   - name: EK_AMI
+    is_pii: True
     description: |-
       Person Middle Name
   - name: EK_AGS
@@ -30,9 +34,11 @@ columns:
     description: |-
       Person SID Number
   - name: EK_FBI
+    is_pii: True
     description: |-
       Person FBI Number
   - name: EK_OLN
+    is_pii: True
     description: |-
       Operator License Number
   - name: EK_OLC
@@ -120,9 +126,11 @@ columns:
     description: |-
       Person Marital Status
   - name: EK_DEP
+    is_pii: True
     description: |-
       Person Dependents
   - name: EK_SIB
+    is_pii: True
     description: |-
       Person Siblings
   - name: EK_REL
@@ -186,8 +194,10 @@ columns:
     description: |-
       Row Modify Time
   - name: EK_REA
+    is_pii: True
     description: |-
       Transfer Comments
   - name: EK_UID
+    is_pii: True
     description: |-
       User Identification

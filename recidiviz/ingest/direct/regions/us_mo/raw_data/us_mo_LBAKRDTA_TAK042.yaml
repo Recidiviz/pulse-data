@@ -9,6 +9,7 @@ primary_key_cols:
   - CF_VCV
 columns:
   - name: CF_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: CF_CYC

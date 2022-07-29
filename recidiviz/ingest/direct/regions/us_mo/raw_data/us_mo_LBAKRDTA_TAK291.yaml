@@ -9,6 +9,7 @@ primary_key_cols:
   - JS_SEO
 columns:
   - name: JS_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: JS_CYC
@@ -30,6 +31,7 @@ columns:
     description: |-
       Row Creation Time
   - name: JS_UID
+    is_pii: True
     description: |-
       User Identification
   - name: JS_DLU
@@ -39,5 +41,6 @@ columns:
     description: |-
       Row Modify Time
   - name: JS_UIU
+    is_pii: True
     description: |-
       Unknown - not included in data dictionary binder

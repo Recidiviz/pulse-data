@@ -14,12 +14,15 @@ columns:
     description: |-
       Region (e.g. Southwest, Eastern, North Central, etc...)
   - name: LAST_NAME
+    is_pii: True
     description: |-
       Employee Last Name
   - name: FIRST_NAME
+    is_pii: True
     description: |-
       Employee First Name
   - name: EMAIL
+    is_pii: True
     description: |-
       Email
   - name: STATUS

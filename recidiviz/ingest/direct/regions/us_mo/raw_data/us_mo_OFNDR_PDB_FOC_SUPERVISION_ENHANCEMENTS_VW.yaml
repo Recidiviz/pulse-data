@@ -6,12 +6,14 @@ primary_key_cols:
   - SUPERVSN_ENH_REF_ID
 columns:
   - name: DOC_ID
+    is_pii: True
     description: |-
       DOC ID Number
   - name: CYCLE_NO
     description: |-
       Cycle Number
   - name: OFNDR_CYCLE_REF_ID
+    is_pii: True
     description: |-
       Person Cycle Reference ID
   - name: ACTUAL_START_DT
@@ -30,6 +32,7 @@ columns:
     description: |-
       Supervision Enhancement Type Description
   - name: SUPERVSN_COUNTY_CD
+    is_pii: True
     description: |-
       Supervision County Code
   - name: COUNTY_NM
@@ -51,8 +54,10 @@ columns:
     description: |-
       Supervision Enhancement Reason Code
   - name: SUPERVSN_ENH_RSN_DESC
+    is_pii: True
     description: |-
       Supervision Enhancement Reason Description
   - name: SUPERVSN_ENH_REF_ID
+    is_pii: True
     description: |-
       Supervision Enhancement Reference ID

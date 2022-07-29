@@ -8,6 +8,7 @@ primary_key_cols:
   - CS_OLC
 columns:
   - name: CS_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: CS_CYC
@@ -32,9 +33,11 @@ columns:
     description: |-
       Person Future Location Name
   - name: CS_LTR
+    is_pii: True
     description: |-
       Last Transfer Remarks
   - name: CS_REA
+    is_pii: True
     description: |-
       Transfer Comments
   - name: CS_AV
@@ -65,5 +68,6 @@ columns:
     description: |-
       Row Modify Time
   - name: CS_UID
+    is_pii: True
     description: |-
       User Identification

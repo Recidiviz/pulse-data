@@ -8,6 +8,7 @@ primary_key_cols:
   - BW_SSO
 columns:
   - name: BW_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BW_CYC
