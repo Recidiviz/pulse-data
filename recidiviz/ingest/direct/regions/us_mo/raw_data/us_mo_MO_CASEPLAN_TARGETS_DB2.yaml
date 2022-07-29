@@ -6,7 +6,6 @@ data_classification: source
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID
-  - CASE_PLAN_NEED_ID
   - TARGET_ID
 columns:
   - name: OFFENDER_ID

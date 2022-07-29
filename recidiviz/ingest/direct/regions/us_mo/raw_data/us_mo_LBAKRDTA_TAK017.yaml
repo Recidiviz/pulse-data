@@ -5,6 +5,9 @@ data_classification: source
 primary_key_cols:
   - BN_DOC
   - BN_CYC
+  - BN_HS
+  - BN_DCR
+  - BN_TCR
 columns:
   - name: BN_DOC
     is_pii: True
