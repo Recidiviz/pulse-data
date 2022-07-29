@@ -265,7 +265,6 @@ export const TextInput: React.FC<TextInputProps> = ({
   ...props
 }): JSX.Element => {
   const [showTooltip, setShowTooltip] = useState<boolean>();
-  const [showErrorInfo, setShowErrorInfo] = useState<boolean>();
   const { name, value, disabled } = props;
 
   const showTooltipIfTruncated = (
