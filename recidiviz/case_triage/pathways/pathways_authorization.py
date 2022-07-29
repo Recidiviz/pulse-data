@@ -26,6 +26,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
     get_pathways_enabled_states,
 )
 from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.str_field_utils import capitalize_first
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
@@ -69,12 +70,30 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
         )
 
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    user_state_code = app_metadata["state_code"]
+    user_state_code = app_metadata["state_code"].upper()
 
-    if user_state_code == "recidiviz":
+    if user_state_code == "RECIDIVIZ":
         return
 
-    if user_state_code == requested_state and user_state_code in enabled_states:
+    requested_endpoint = request.view_args["metric_name"]
+    enabled_endpoints = [
+        # transform routes of the format system_prisonToSupervision --> PrisonToSupervision
+        capitalize_first(route.removeprefix("system_"))
+        for (route, enabled) in app_metadata.get("routes", {}).items()
+        if enabled and route.startswith("system_")
+    ]
+    allowed = any(
+        requested_endpoint.startswith(endpoint)
+        # Make sure we don't consider system_prison as eligible for PrisonToSupervisionTransitions
+        and not requested_endpoint.startswith(endpoint + "To")
+        for endpoint in enabled_endpoints
+    )
+
+    if (
+        user_state_code == requested_state
+        and user_state_code in enabled_states
+        and allowed
+    ):
         return
 
     raise AuthorizationError(code="not_authorized", description="Access denied")
