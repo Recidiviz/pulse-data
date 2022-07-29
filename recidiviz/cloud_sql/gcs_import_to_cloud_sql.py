@@ -16,9 +16,10 @@
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import attr
+from google.api_core import exceptions, retry
 from sqlalchemy import Table, create_mock_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.ddl import (
@@ -61,6 +62,13 @@ ADDITIONAL_DDL_QUERIES_BY_MODEL = {
         f"ALTER TABLE {temporary_etl_opps_name} DROP CONSTRAINT {temporary_etl_opps_name}_pkey;"
     ],
 }
+
+
+def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
+    """ "A function that will determine whether we should retry a given Google exception."""
+    return retry.if_transient_error(exception) or retry.if_exception_type(
+        exceptions.Conflict
+    )(exception)
 
 
 def build_temporary_sqlalchemy_table(table: Table) -> Table:
@@ -153,6 +161,7 @@ def _recreate_table(database_key: SQLAlchemyDatabaseKey, model_sql: ModelSQL) ->
             session.execute(ddl_statement)
 
 
+@retry.Retry(predicate=retry_predicate)
 def _import_csv_to_temp_table(
     database_key: SQLAlchemyDatabaseKey,
     tmp_table_name: str,
