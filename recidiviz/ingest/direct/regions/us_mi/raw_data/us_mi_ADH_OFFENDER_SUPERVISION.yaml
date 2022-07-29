@@ -2,20 +2,529 @@ file_tag: ADH_OFFENDER_SUPERVISION
 file_description: |-
   This table contains information about a person on supervision within MIDOC.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - offender_supervision_id
 columns:
   - name: offender_supervision_id
+    description: The OMNI-database generated ID for a supervision record row
   - name: offender_booking_id
     is_pii: True
+    description: The OMNI-database generated ID for an individual's booking.
   - name: supervision_level_id
+    description: Reference code for the supervision level
+    known_values:
+      - value: "4058"
+        description: Parole SAI EMS Unemployed
+      - value: "2284"
+        description: Appeal Bond Posted
+      - value: "13605"
+        description: SA Parole SAI (Team) EMS Unemployed
+      - value: "7505"
+        description: Probation SAI (Team) Reduced Intensity Unemployed
+      - value: "14191"
+        description: VO Parole Intensive Unemployed
+      - value: "13588"
+        description: VO Probation Parole Maximum SSU Employed
+      - value: "13611"
+        description: VO/SA Parole SAI (Team) Unemployed
+      - value: "14199"
+        description: Probation Minimum In-Person Employed
+      - value: "13821"
+        description: Parole GPS Unemployed
+      - value: "14194"
+        description: Probation Intensive Employed
+      - value: "7478"
+        description: CRP - Custody Pending Felony
+      - value: "14239"
+        description: SA Probation Parole Intensive SSU Non-EMS Unemployed
+      - value: "13823"
+        description: Probation GPS Employed
+      - value: "13603"
+        description: SA Parole SAI (Team) Unemployed
+      - value: "13589"
+        description: VO/SA Probation Parole Maximum SSU Unemployed
+      - value: "14208"
+        description: VO Parole Intensive GPS Employed
+      - value: "2285"
+        description: Unsupervised Probation
+      - value: "13606"
+        description: SA Parole SAI (Team) EMS Employed
+      - value: "4054"
+        description: Probation SAI EMS Employed Sub Abuse
+      - value: "3627"
+        description: Probation Medium Unemployed
+      - value: "13562"
+        description: Probation Minimum Employed
+      - value: "20007"
+        description: Parole MPVU/PRF Placement
+      - value: "13619"
+        description: VO/SA Parole SAI (Team) Reduced Intensity Unemployed
+      - value: "13576"
+        description: VO Parole Medium Employed
+      - value: "14050"
+        description: VO Parole Minimum In-Person Unemployed
+      - value: "13574"
+        description: VO/SA Parole Medium Employed
+      - value: "13597"
+        description: SA Parole SAI EMS Unemployed
+      - value: "7506"
+        description: Probation SAI (Team) EMS Employed
+      - value: "3809"
+        description: Parole SAI (Team) Employed
+      - value: "13819"
+        description: Probation Minimum Low Risk Employed
+      - value: "2288"
+        description: CRP EMS
+      - value: "14168"
+        description: VO/SA Parole Intensive EMS Employed
+      - value: "14244"
+        description: Probation Intensive SSU EMS Employed
+      - value: "14243"
+        description: VO/SA Probation Parole Intensive SSU Non-EMS Unemployed
+      - value: "7173"
+        description: CRP EMS Combination Office
+      - value: "3807"
+        description: Parole SAI/TRV (Team) Reduced Intensity
+      - value: "14220"
+        description: VO/SA Parole SAI Intensive EMS Employed
+      - value: "14189"
+        description: SA Parole Intensive Unemployed
+      - value: "14221"
+        description: VO/SA Parole SAI Intensive EMS Unemployed
+      - value: "14219"
+        description: SA Parole SAI Intensive EMS Employed
+      - value: "13824"
+        description: Probation GPS Unemployed
+      - value: "7318"
+        description: CRP - EMS Combination Office Employed
+      - value: "14215"
+        description: Parole SAI Intensive EMS Unemployed
+      - value: "19613"
+        description: Parole Minimum Low Employed
+      - value: "3797"
+        description: Probation SAI (Team) Reduced Intensity
+      - value: "13587"
+        description: VO Probation Parole Maximum SSU Unemployed
+      - value: "13599"
+        description: VO Parole SAI EMS Unemployed
+      - value: "2282"
+        description: Parole Medium Unemployed
+      - value: "2292"
+        description: Parole Minimum Administrative
+      - value: "3804"
+        description: Parole SAI Unemployed Sub. Abuse
+      - value: "13568"
+        description: VO Parole EMS Employed
+      - value: "13581"
+        description: VO Parole Maximum Unemployed
+      - value: "2395"
+        description: Probation SAI EMS Employed
+      - value: "13825"
+        description: SA Parole GPS Unemployed
+      - value: "3636"
+        description: Parole EMS Employed
+      - value: "7504"
+        description: Probation SAI (Team) Reduced Intensity Employed
+      - value: "7477"
+        description: CRP - Escapee
+      - value: "2394"
+        description: Absconder Warrant Status
+      - value: "14187"
+        description: Parole Intensive Unemployed
+      - value: "14202"
+        description: Parole Intensive EMS Employed
+      - value: "14186"
+        description: Parole Intensive Employed
+      - value: "13616"
+        description: SA Parole SAI (Team) Reduced Intensity Employed
+      - value: "4053"
+        description: Probation SAI EMS Unemployed Sub Abuse
+      - value: "13620"
+        description: VO/SA Parole SAI (Team) Reduced Intensity Employed
+      - value: "13828"
+        description: VO Parole GPS Employed
+      - value: "13830"
+        description: VO/SA Parole GPS Employed
+      - value: "13560"
+        description: Parole Minimum Employed
+      - value: "13624"
+        description: Parole Minimum Mail-in Employed
+      - value: "13820"
+        description: Probation Minimum Low Risk Unemployed
+      - value: "14210"
+        description: VO Parole Intensive EMS Unemployed
+      - value: "7498"
+        description: Parole SAI (Team) Reduced Intensity Employed
+      - value: "14177"
+        description: Parole SAI Intensive Non-EMS Unemployed
+      - value: "14241"
+        description: VO Probation Parole Intensive SSU Non-EMS Unemployed
+      - value: "14170"
+        description: Probation Intensive GPS Employed
+      - value: "3626"
+        description: Probation Minimum
+      - value: "13579"
+        description: VO/SA Parole Maximum Unemployed
+      - value: "7171"
+        description: CRP - EMS Waiver
+      - value: "13567"
+        description: VO/SA Parole EMS Employed
+      - value: "13580"
+        description: VO/SA Parole Maximum Employed
+      - value: "13564"
+        description: VO/SA Parole EMS Unemployed
+      - value: "7503"
+        description: Probation Maximum SSU Unemployed
+      - value: "7405"
+        description: Paroled in Custody
+      - value: "14197"
+        description: Parole Minimum In-Person Unemployed
+      - value: "14164"
+        description: Probation Minimum Telephone Unemployed
+      - value: "8172"
+        description: Parole TRV Center Placement
+      - value: "14173"
+        description: Probation Intensive EMS Unemployed
+      - value: "14188"
+        description: SA Parole Intensive Employed
+      - value: "7172"
+        description: CRP - Residential Drug Treatment
+      - value: "14214"
+        description: Parole SAI Intensive EMS Employed
+      - value: "14200"
+        description: Parole Intensive GPS Employed
+      - value: "13590"
+        description: VO/SA Probation Parole Maximum SSU Employed
+      - value: "14176"
+        description: Parole SAI Intensive Non-EMS Employed
+      - value: "4057"
+        description: Parole SAI EMS Unemployed Sub Abuse
+      - value: "13610"
+        description: VO Parole SAI (Team) EMS Employed
+      - value: "7174"
+        description: Out State Transfer
+      - value: "2286"
+        description: Warrant Status
+      - value: "3630"
+        description: Probation Maximum Employed
+      - value: "7483"
+        description: Probation Absconder Warrant Status
+      - value: "13577"
+        description: SA Parole Medium Unemployed
+      - value: "14198"
+        description: Probation Minimum In-Person Unemployed
+      - value: "14249"
+        description: VO Probation Parole Intensive SSU EMS Unemployed
+      - value: "3810"
+        description: Parole EMS Unemployed
+      - value: "13575"
+        description: VO Parole Medium Unemployed
+      - value: "14196"
+        description: Parole Minimum In-Person Employed
+      - value: "7480"
+        description: CRP - Custody Rule Violation(s)
+      - value: "13582"
+        description: VO Parole Maximum Employed
+      - value: "14209"
+        description: VO Parole Intensive GPS Unemployed
+      - value: "14222"
+        description: Probation SAI Intensive EMS Employed
+      - value: "14182"
+        description: VO/SA Parole SAI Intensive Non-EMS Unemployed
+      - value: "14180"
+        description: SA Parole SAI Intensive Non-EMS Employed
+      - value: "7499"
+        description: Parole SAI (Team) Reduced Intensity Unemployed
+      - value: "13604"
+        description: SA Parole SAI (Team) Employed
+      - value: "13614"
+        description: VO/SA Parole SAI (Team) EMS Employed
+      - value: "2283"
+        description: Parole Medium Employed
+      - value: "7482"
+        description: Parole Absconder Warrant Status
+      - value: "13578"
+        description: SA Parole Medium Employed
+      - value: "13617"
+        description: VO Parole SAI (Team) Reduced Intensity Unemployed
+      - value: "13457"
+        description: Unavailable For Supervision
+      - value: "19614"
+        description: Probation Minimum Low Unemployed
+      - value: "3802"
+        description: Probation SAI Employed
+      - value: "14218"
+        description: SA Parole SAI Intensive EMS Unemployed
+      - value: "4055"
+        description: Probation SAI EMS Unemployed
+      - value: "14193"
+        description: VO/SA Parole Intensive Unemployed
+      - value: "2293"
+        description: Parole Minimum Mail-In
+      - value: "13565"
+        description: VO Parole EMS Unemployed
+      - value: "7317"
+        description: CRP - EMS Combination Office Unemployed
+      - value: "3634"
+        description: Parole SAI Residential
+      - value: "13586"
+        description: SA Probation Parole Maximum SSU Unemployed
+      - value: "14205"
+        description: SA Parole Intensive GPS Employed
+      - value: "7183"
+        description: Parole Pre-Transfer Tracking
+      - value: "13598"
+        description: SA Parole SAI EMS Employed
+      - value: "14190"
+        description: VO Parole Intensive Employed
+      - value: "8171"
+        description: CRP - TRV Center Placement
+      - value: "19616"
+        description: VO Parole Minimum Low Unemployed
+      - value: "13612"
+        description: VO/SA Parole SAI (Team) Employed
+      - value: "2281"
+        description: Parole Maximum Unemployed
+      - value: "5769"
+        description: Probation EMS Unemployed
+      - value: "13618"
+        description: VO Parole SAI (Team) Reduced Intensity Employed
+      - value: "13608"
+        description: VO Parole SAI (Team) Employed
+      - value: "14195"
+        description: Probation Intensive Unemployed
+      - value: "13561"
+        description: Parole Minimum Unemployed
+      - value: "7507"
+        description: Probation SAI (Team) EMS Unemployed
+      - value: "14175"
+        description: Parole LCRRP Placement
+      - value: "14049"
+        description: VO Parole Minimum In-Person Employed
+      - value: "7479"
+        description: CRP - Custody Escape
+      - value: "14223"
+        description: Probation SAI Intensive EMS Unemployed
+      - value: "14236"
+        description: Probation Intensive SSU Non-EMS Employed
+      - value: "14169"
+        description: VO/SA Parole Intensive EMS Unemployed
+      - value: "13572"
+        description: VO Parole Minimum Employed
+      - value: "19612"
+        description: Parole Minimum Low Unemployed
+      - value: "13613"
+        description: VO/SA Parole SAI (Team) EMS Unemployed
+      - value: "14216"
+        description: VO Parole SAI Intensive EMS Employed
+      - value: "14179"
+        description: VO Parole SAI Intensive Non-EMS Unemployed
+      - value: "14183"
+        description: VO/SA Parole SAI Intensive Non-EMS Employed
+      - value: "13563"
+        description: Probation Minimum Unemployed
+      - value: "13573"
+        description: VO/SA Parole Medium Unemployed
+      - value: "13826"
+        description: SA Parole GPS Employed
+      - value: "13571"
+        description: VO Parole Minimum Unemployed
+      - value: "2287"
+        description: CRP - Corrections Center
+      - value: "14171"
+        description: Probation Intensive GPS Unemployed
+      - value: "14178"
+        description: VO Parole SAI Intensive Non-EMS Employed
+      - value: "14238"
+        description: SA Probation Parole Intensive SSU Non-EMS Employed
+      - value: "2289"
+        description: Probation EMS Employed
+      - value: "3624"
+        description: Probation Minimum Administrative
+      - value: "13827"
+        description: VO Parole GPS Unemployed
+      - value: "13622"
+        description: Probation Minimum Mail-in Employed
+      - value: "7502"
+        description: Probation Maximum SSU Employed
+      - value: "14237"
+        description: Probation Intensive SSU Non-EMS Unemployed
+      - value: "7225"
+        description: CRP - Jail Custody
+      - value: "7501"
+        description: Parole SAI (Team) EMS Unemployed
+      - value: "13591"
+        description: SA Parole SAI Unemployed
+      - value: "13592"
+        description: SA Parole SAI Employed
+      - value: "13602"
+        description: VO/SA Parole SAI EMS Employed
+      - value: "3796"
+        description: Probation Maximum SSU
+      - value: "3801"
+        description: Probation SAI Employed Sub. Abuse
+      - value: "14174"
+        description: Parole TRRP Placement
+      - value: "14181"
+        description: SA Parole SAI Intensive Non-EMS Unemployed
+      - value: "3808"
+        description: Parole SAI (Team) Unemployed
+      - value: "3631"
+        description: Probation SAI Residential
+      - value: "3798"
+        description: Probation SAI (Team) Employed
+      - value: "7314"
+        description: CRP - Corrections Center Unemployed
+      - value: "3803"
+        description: Parole SAI Employed
+      - value: "13593"
+        description: VO Parole SAI Unemployed
+      - value: "13615"
+        description: SA Parole SAI (Team) Reduced Intensity Unemployed
+      - value: "13600"
+        description: VO Parole SAI EMS Employed
+      - value: "13596"
+        description: VO/SA Parole SAI Employed
+      - value: "14242"
+        description: VO/SA Probation Parole Intensive SSU Non-EMS Employed
+      - value: "2280"
+        description: Parole Maximum Employed
+      - value: "2294"
+        description: Parole Minimum
+      - value: "3628"
+        description: Probation Medium Employed
+      - value: "3629"
+        description: Probation Maximum Unemployed
+      - value: "13566"
+        description: SA Parole EMS Unemployed
+      - value: "19615"
+        description: Probation Minimum Low Employed
+      - value: "13621"
+        description: Probation Minimum Mail-in Unemployed
+      - value: "13601"
+        description: VO/SA Parole SAI EMS Unemployed
+      - value: "3805"
+        description: Parole SAI Unemployed
+      - value: "13569"
+        description: SA Parole EMS Employed
+      - value: "13832"
+        description: Parole Minimum Low Risk Unemployed
+      - value: "2396"
+        description: Probation Detention
+      - value: "3795"
+        description: Probation Minimum SSU Inpatient
+      - value: "7184"
+        description: Probation Pre-Transfer Tracking
+      - value: "14184"
+        description: Probation SAI Intensive Non-EMS Employed
+      - value: "13623"
+        description: Parole Minimum Mail-in Unemployed
+      - value: "3806"
+        description: Parole SAI Employed Sub. Abuse
+      - value: "13609"
+        description: VO Parole SAI (Team) EMS Unemployed
+      - value: "15901"
+        description: Parole DRC/PRF Placement
+      - value: "14250"
+        description: VO/SA Probation Parole Intensive SSU EMS Employed
+      - value: "3635"
+        description: Parole SAI EMS Employed
+      - value: "14212"
+        description: VO/SA Parole Intensive GPS Employed
+      - value: "14204"
+        description: SA Parole Intensive GPS Unemployed
+      - value: "7315"
+        description: CRP - EMS Employed
+      - value: "14206"
+        description: SA Parole Intensive EMS Employed
+      - value: "3633"
+        description: Parole SAI Residential (Wayne Co.)
+      - value: "13822"
+        description: Parole GPS Employed
+      - value: "19617"
+        description: VO Parole Minimum Low Employed
+      - value: "13595"
+        description: VO/SA Parole SAI Unemployed
+      - value: "14251"
+        description: VO/SA Probation Parole Intensive SSU EMS Unemployed
+      - value: "14247"
+        description: SA Probation Parole Intensive SSU EMS Unemployed
+      - value: "13583"
+        description: SA Parole Maximum Employed
+      - value: "4056"
+        description: Parole SAI EMS Employed Sub Abuse
+      - value: "14172"
+        description: Probation Intensive EMS Employed
+      - value: "14165"
+        description: Probation Minimum Telephone Employed
+      - value: "7316"
+        description: CRP - EMS Unemployed
+      - value: "3799"
+        description: Probation SAI (Team) Unemployed
+      - value: "3632"
+        description: Probation SAI Unemployed
+      - value: "14185"
+        description: Probation SAI Intensive Non-EMS Unemployed
+      - value: "13833"
+        description: Parole Minimum Low Risk Employed
+      - value: "7481"
+        description: CRP - Custody Administrative
+      - value: "14217"
+        description: VO Parole SAI Intensive EMS Unemployed
+      - value: "14192"
+        description: VO/SA Parole Intensive Employed
+      - value: "11890"
+        description: Probation SAI Residential (Wayne County)
+      - value: "14245"
+        description: Probation Intensive SSU EMS Unemployed
+      - value: "14201"
+        description: Parole Intensive GPS Unemployed
+      - value: "13594"
+        description: VO Parole SAI Employed
+      - value: "14211"
+        description: VO Parole Intensive EMS Employed
+      - value: "3625"
+        description: Probation Minimum Mail-in
+      - value: "13829"
+        description: VO/SA Parole GPS Unemployed
+      - value: "14213"
+        description: VO/SA Parole Intensive GPS Unemployed
+      - value: "14051"
+        description: Parole Minimum Telephone Employed
+      - value: "14207"
+        description: SA Parole Intensive EMS Unemployed
+      - value: "14203"
+        description: Parole Intensive EMS Unemployed
+      - value: "7313"
+        description: CRP - Corrections Center Employed
+      - value: "13585"
+        description: SA Probation Parole Maximum SSU Employed
+      - value: "14052"
+        description: Parole Minimum Telephone Unemployed
+      - value: "3800"
+        description: Probation SAI Unemployed Sub. Abuse
+      - value: "7500"
+        description: Parole SAI (Team) EMS Employed
+      - value: "13584"
+        description: SA Parole Maximum Unemployed
   - name: description
   - name: effective_date
+    description: supervision level effective date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
+    description: supervision level expiration date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: active_flag
+    description: flag for whether this supervision level is still active
   - name: next_review_date
   - name: begin_date
   - name: jail_treatment_release_date
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
   - name: last_update_node
   - name: mdoc_paid_phone_rpt

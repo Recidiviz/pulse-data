@@ -6,22 +6,49 @@ primary_key_cols:
   - supervision_condition_id
 columns:
   - name: supervision_condition_id
+    description: The OMNI-database generated ID for the assignment of a supervision condition to a legal order for a specific person's booking
   - name: special_condition_id
+    description: The OMNI-database generated ID for a specific special condition (links with rows in the ADH_SPECIAL_CONDITION table)
   - name: corporation_id
   - name: person_id
     is_pii: True
   - name: legal_order_id
+    description: The OMNI-database generated ID for a specific legal order for a specific person's booking
   - name: offender_booking_id
     is_pii: True
+    description: The OMNI-database generated ID for a person's specific booking
   - name: payment_amount
   - name: frequency
   - name: due_date
   - name: total_amount
   - name: status_id
+    description: The reference code for the status of this supervision condition
+    known_values:
+      - value: "1880"
+        description: Pending Court Approval to Drop
+      - value: "965"
+        description: Inactive
+      - value: "964"
+        description: Active
+      - value: "1882"
+        description: Pending Court Approval to Add
+      - value: "1881"
+        description: Pending Parole Approval to Add
+      - value: "1879"
+        description: Pending Parole Approval to Drop
   - name: active_flag
+    description: Flag for whether this supervision condition is currently active
   - name: recorded_date
+    # TODO(#14292) Fill in description based on clarification from Ken/Jeff
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: compliance_flag
   - name: set_date
+    # TODO(#14292) Fill in description based on clarification from Ken/Jeff
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: bail_flag
   - name: original_condition_flag
   - name: notes
@@ -32,12 +59,18 @@ columns:
   - name: add_disposition_notes
   - name: close_request_date
   - name: close_request_employee_id
+    is_pii: True
   - name: close_request_notes
   - name: closing_reason_code
   - name: closing_authority_id
   - name: closing_date
+    description: Date this supervision condition ended
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: create_reason_code_id
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
   - name: last_update_node
