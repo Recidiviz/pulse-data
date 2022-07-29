@@ -30,6 +30,7 @@ window.analytics = window.analytics || [];
 const { analytics } = window;
 if (!analytics.initialize) {
   if (analytics.invoked) {
+    // eslint-disable-next-line no-console
     console.error("Segment snippet included twice.");
   } else {
     analytics.invoked = true;
@@ -55,7 +56,7 @@ if (!analytics.initialize) {
       "setAnonymousId",
       "addDestinationMiddleware",
     ];
-    analytics.factory = function (e: any) {
+    analytics.factory = function (e: unknown) {
       return function () {
         const t = Array.prototype.slice.call(arguments); // eslint-disable-line prefer-rest-params
         t.unshift(e);
@@ -67,7 +68,7 @@ if (!analytics.initialize) {
       const key = analytics.methods[e];
       analytics[key] = analytics.factory(key);
     }
-    analytics.load = function (key: any, e: any) {
+    analytics.load = function (key: unknown, e: unknown) {
       const t = document.createElement("script");
       t.type = "text/javascript";
       t.async = !0;
