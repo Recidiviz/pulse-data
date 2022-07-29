@@ -20,6 +20,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from google.api_core import exceptions
 from sqlalchemy import Column, Index, Integer, String, Table, Text
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.ddl import CreateIndex, CreateTable, DDLElement, SetColumnComment
@@ -372,6 +373,42 @@ class TestGCSImportToCloudSQL(TestCase):
 
             self.assertEqual(constraint_count, 0, "Expected no constraints")
             self.assertEqual(unique_index_count, 0, "Expected no unique indexes")
+
+    def test_retry(self) -> None:
+        # Client first raises a Conflict error, then returns a successful operation ID.
+        self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
+            exceptions.Conflict("This will retry"),
+            "op_id",
+        ]
+
+        import_gcs_csv_to_cloud_sql(
+            database_key=self.database_key,
+            model=FakeModel,
+            gcs_uri=GcsfsFilePath.from_absolute_path(
+                "gs://recidiviz-test-dashboard-event-level-data/US_TN/fake_model.csv"
+            ),
+            columns=["id", "comment"],
+        )
+
+        # should not crash!
+        self.mock_cloud_sql_client.wait_until_operation_completed.assert_called()
+
+    def test_retry_with_fatal_error(self) -> None:
+        # Client first raises a Conflict error, then on retry will raise a ValueError
+        self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
+            exceptions.Conflict("This will retry"),
+            ValueError("This will crash"),
+        ]
+
+        with self.assertRaises(ValueError):
+            import_gcs_csv_to_cloud_sql(
+                database_key=self.database_key,
+                model=FakeModel,
+                gcs_uri=GcsfsFilePath.from_absolute_path(
+                    "gs://recidiviz-test-dashboard-event-level-data/US_TN/fake_model.csv"
+                ),
+                columns=["id", "comment"],
+            )
 
 
 def build_table(name: str, *args: List[Any]) -> Table:
