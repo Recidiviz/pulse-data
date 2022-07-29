@@ -61,8 +61,8 @@ SELECT
     COALESCE(violation_date, response_date) AS event_date,
     CASE
         WHEN violation_type IN ("ABSCONDED", "ESCAPED") THEN "ABSCONDED"
-        WHEN violation_type IN ("FELONY", "LAW", "MISDEMEANOR", "MUNICIPAL") THEN 
-            "LEGAL"
+        WHEN violation_type IN ("FELONY", "LAW", "MISDEMEANOR") THEN 
+            "NEW_CRIME"
         WHEN violation_type IN ("TECHNICAL") THEN "TECHNICAL"
         ELSE "UNKNOWN" END AS attribute_1,
     CAST(NULL AS STRING) AS attribute_2,
