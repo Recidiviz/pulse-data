@@ -254,6 +254,15 @@ def state_specific_supervision_type_inclusion_filter() -> str:
         (state_code != 'US_PA' OR supervision_type = 'PAROLE')"""
 
 
+def state_specific_supervision_type_groupings() -> str:
+    """State-specific logic for grouping multiple supervision types together."""
+    return """-- US_ID counts DUAL under PAROLE
+        CASE
+            WHEN state_code = 'US_ID' AND supervision_type = 'DUAL' THEN 'PAROLE'
+            ELSE supervision_type
+        END AS supervision_type"""
+
+
 def state_specific_admission_type_inclusion_filter() -> str:
     """State-specific admission_type inclusions"""
     return """

@@ -16,7 +16,10 @@
 # =============================================================================
 """Event based supervision population for the most recent date of supervision."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.views.public_dashboard.utils import (
     spotlight_age_buckets,
 )
@@ -39,7 +42,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       person_id,
       person_external_id,
       case_type,
-      supervision_type,
+      {state_specific_supervision_type_groupings},
       supervising_officer_external_id,
       prioritized_race_or_ethnicity,
       projected_end_date,
@@ -61,6 +64,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryVie
     description=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     age_bucket=spotlight_age_buckets(),
+    state_specific_supervision_type_groupings=state_specific_query_strings.state_specific_supervision_type_groupings(),
 )
 
 if __name__ == "__main__":
