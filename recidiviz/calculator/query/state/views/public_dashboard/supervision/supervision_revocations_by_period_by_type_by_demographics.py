@@ -63,11 +63,13 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       COUNT(DISTINCT IF(most_severe_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS new_crime_count,
       COUNT(DISTINCT IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
       COUNT(DISTINCT IF(most_severe_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
-      COUNT(DISTINCT IF(most_severe_violation_type = 'EXTERNAL_UNKNOWN', person_id, NULL)) as unknown_count,
+      -- TODO(#14294): replace with a more robust/generalizable filter
+      IF(state_code = 'US_ID', 0, COUNT(DISTINCT IF(most_severe_violation_type = 'EXTERNAL_UNKNOWN', person_id, NULL))) as unknown_count,
       race_or_ethnicity,
       gender,
       age_bucket,
-      COUNT(DISTINCT person_id) AS revocation_count
+      -- TODO(#14294): replace with a more robust/generalizable filter
+      COUNT(DISTINCT IF(state_code = 'US_ID' AND most_severe_violation_type = 'EXTERNAL_UNKNOWN', NULL, person_id)) AS revocation_count
     FROM revocations_by_period_by_person,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
