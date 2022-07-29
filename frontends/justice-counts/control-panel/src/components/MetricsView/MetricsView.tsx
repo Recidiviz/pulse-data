@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -198,12 +199,16 @@ const MetricConfiguration: React.FC<MetricConfigurationProps> = ({
       </MetricOnOffWrapper>
 
       <MetricDisaggregations enabled={metricEnabled}>
-        <Header>Breakdowns</Header>
-        <Subheader>
-          Turning any of these breakdowns “Off” means that they will not appear
-          on automatically generated reports from here on out. You can change
-          this later.
-        </Subheader>
+        {metricSettings[activeMetricKey]?.disaggregations.length > 0 && (
+          <>
+            <Header>Breakdowns</Header>
+            <Subheader>
+              Turning any of these breakdowns “Off” means that they will not
+              appear on automatically generated reports from here on out. You
+              can change this later.
+            </Subheader>
+          </>
+        )}
 
         {metricSettings[activeMetricKey]?.disaggregations?.map(
           (disaggregation) => {
@@ -521,7 +526,7 @@ export type MetricSettings = {
 };
 
 export const MetricsView: React.FC = observer(() => {
-  const { reportStore } = useStore();
+  const { reportStore, userStore } = useStore();
   const configPanelRef = useRef<HTMLDivElement>(null);
 
   const metricFilterOptions = ["All Metrics", "Active"] as const;
@@ -574,9 +579,31 @@ export const MetricsView: React.FC = observer(() => {
             if (
               disaggregation.key === updatedSetting.disaggregations?.[0].key
             ) {
+              /**
+               * When disaggregation is switched off, all dimensions are disabled.
+               * When disaggregation is switched on, all dimensions are enabled.
+               */
+              if (!updatedSetting.disaggregations?.[0].enabled) {
+                return {
+                  ...disaggregation,
+                  enabled: false,
+                  dimensions: disaggregation.dimensions.map((dimension) => {
+                    return {
+                      ...dimension,
+                      enabled: false,
+                    };
+                  }),
+                };
+              }
               return {
                 ...disaggregation,
                 enabled: Boolean(updatedSetting.disaggregations?.[0].enabled),
+                dimensions: disaggregation.dimensions.map((dimension) => {
+                  return {
+                    ...dimension,
+                    enabled: true,
+                  };
+                }),
               };
             }
             return disaggregation;
@@ -598,6 +625,37 @@ export const MetricsView: React.FC = observer(() => {
             if (
               disaggregation.key === updatedSetting.disaggregations?.[0].key
             ) {
+              const lastDimensionDisabled =
+                disaggregation.dimensions.filter(
+                  (dimension) => dimension.enabled
+                )?.length === 1;
+
+              /** Disable disaggregation when last dimension toggle is switched off */
+              if (
+                !updatedSetting.disaggregations?.[0].dimensions?.[0].enabled &&
+                lastDimensionDisabled
+              ) {
+                return {
+                  ...disaggregation,
+                  enabled: false,
+                  dimensions: disaggregation.dimensions.map((dimension) => {
+                    if (
+                      dimension.key ===
+                      updatedSetting.disaggregations?.[0].dimensions?.[0].key
+                    ) {
+                      return {
+                        ...dimension,
+                        enabled: Boolean(
+                          updatedSetting.disaggregations?.[0].dimensions?.[0]
+                            .enabled
+                        ),
+                      };
+                    }
+                    return dimension;
+                  }),
+                };
+              }
+
               return {
                 ...disaggregation,
                 dimensions: disaggregation.dimensions.map((dimension) => {
@@ -675,22 +733,26 @@ export const MetricsView: React.FC = observer(() => {
     }
   };
 
-  useEffect(() => {
-    const fetchReportSettings = async () => {
-      const response = (await reportStore.getReportSettings()) as Response;
-      const reportSettings = (await response.json()) as MetricsViewMetric[];
-      const metricKeyToMetricMap: { [key: string]: MetricsViewMetric } = {};
+  useEffect(
+    () =>
+      // return when's disposer so it is cleaned up if it never runs
+      when(
+        () => userStore.userInfoLoaded,
+        async () => {
+          const response = (await reportStore.getReportSettings()) as Response;
+          const reportSettings = (await response.json()) as MetricsViewMetric[];
+          const metricKeyToMetricMap: { [key: string]: MetricsViewMetric } = {};
 
-      reportSettings?.forEach((metric) => {
-        metricKeyToMetricMap[metric.key] = metric;
-      });
+          reportSettings?.forEach((metric) => {
+            metricKeyToMetricMap[metric.key] = metric;
+          });
 
-      setMetricSettings(metricKeyToMetricMap);
-      setActiveMetricKey(Object.keys(metricKeyToMetricMap)[0]);
-    };
-
-    fetchReportSettings();
-  }, [reportStore]);
+          setMetricSettings(metricKeyToMetricMap);
+          setActiveMetricKey(Object.keys(metricKeyToMetricMap)[0]);
+        }
+      ),
+    [reportStore, userStore]
+  );
 
   useEffect(() => {
     if (activeMetricFilter === "All Metrics") {
