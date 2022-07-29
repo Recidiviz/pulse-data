@@ -8,6 +8,7 @@ primary_key_cols:
   - F1_SQN
 columns:
   - name: F1_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: F1_CYC
@@ -23,6 +24,7 @@ columns:
     description: |-
       Subcycle Start Date
   - name: F1_ORC
+    is_pii: True
     description: |-
       Reason For Opening
   - name: F1_CTO
@@ -38,9 +40,11 @@ columns:
     description: |-
       Status Code Change Date
   - name: F1_CTP
+    is_pii: True
     description: |-
       Reason For Closing
   - name: F1_ARC
+    is_pii: True
     description: |-
       Action Reason Code
   - name: F1_PFI

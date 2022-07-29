@@ -9,6 +9,7 @@ primary_key_cols:
   - BU_FSO
 columns:
   - name: BU_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BU_CYC
@@ -57,6 +58,7 @@ columns:
     description: |-
       Sentence Weapon Flag
   - name: BU_DEF
+    is_pii: True
     description: |-
       Sentence Co-Defendants
   - name: BU_DCR

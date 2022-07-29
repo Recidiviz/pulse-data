@@ -8,6 +8,7 @@ primary_key_cols:
   - CE_HF
 columns:
   - name: CE_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: CE_CYC
@@ -29,6 +30,7 @@ columns:
     description: |-
       DOC Location Acronym
   - name: CE_PON
+    is_pii: True
     description: |-
       Employee ID Card Number
   - name: CE_DCR

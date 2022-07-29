@@ -12,15 +12,19 @@ columns:
     description: |-
       Employee ID number
   - name: EMPSSN
+    is_pii: True
     description: |-
       Employee SSN
   - name: LNAME
+    is_pii: True
     description: |-
       Employee Last Name
   - name: FNAME
+    is_pii: True
     description: |-
       Employee First Name
   - name: MINTL
+    is_pii: True
     description: |-
       Employee Middle Initial
   - name: WRKLOC
@@ -36,6 +40,7 @@ columns:
     description: |-
       Unknown - not included in data dictionary binder
   - name: DEPCLS
+    is_pii: True
     description: |-
       Job Code
   - name: CLSTTL

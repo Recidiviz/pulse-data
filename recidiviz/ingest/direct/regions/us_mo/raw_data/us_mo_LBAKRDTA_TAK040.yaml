@@ -11,6 +11,7 @@ primary_key_cols:
   - DQ_CYC
 columns:
   - name: DQ_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: DQ_CYC
@@ -80,18 +81,23 @@ columns:
     description: |-
       Cycle Prior Probations Other
   - name: DQ_OCA
+    is_pii: True
     description: |-
       Occupation Class At First Contact
   - name: DQ_OCL
+    is_pii: True
     description: |-
       Occupation Class Longest
   - name: DQ_OC1
+    is_pii: True
     description: |-
       Occupation Class Past 1
   - name: DQ_OC2
+    is_pii: True
     description: |-
       Occupation Class Past 2
   - name: DQ_OC3
+    is_pii: True
     description: |-
       Occupation Class Past 3
   - name: DQ_SOP

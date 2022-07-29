@@ -7,6 +7,7 @@ primary_key_cols:
   - FOCLIST
 columns:
   - name: E04
+    is_pii: True
     description: |-
       DOC ID Number
   - name: E05
@@ -25,18 +26,23 @@ columns:
     description: |-
       Unknown - not included in data dictionary binder
   - name: E08
+    is_pii: True
     description: |-
       Person First Name
   - name: E09
+    is_pii: True
     description: |-
       Person Last Name
   - name: E10
+    is_pii: True
     description: |-
       Person Full Name
   - name: E11
+    is_pii: True
     description: |-
       Agency Name
   - name: E12
+    is_pii: True
     description: |-
       Person Birthdate
   - name: E13
@@ -49,6 +55,7 @@ columns:
     description: |-
       Override Risk Level (not uniform in data)
   - name: E16
+    is_pii: True
     description: |-
       Override Risk Reason
   - name: E17
@@ -61,12 +68,15 @@ columns:
     description: |-
       Assessment Score
   - name: E20
+    is_pii: True
     description: |-
       Full name of the person who administered the assessment
   - name: E21
+    is_pii: True
     description: |-
       Surname of the person who administered the assessment
   - name: E22
+    is_pii: True
     description: |-
       Given name of the person who administered the assessment
   - name: E23

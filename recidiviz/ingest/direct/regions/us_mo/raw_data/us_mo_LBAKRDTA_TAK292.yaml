@@ -9,6 +9,7 @@ primary_key_cols:
   - JT_TSS
 columns:
   - name: JT_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: JT_CYC
@@ -21,12 +22,14 @@ columns:
     description: |-
       P&P Sort Sequence
   - name: JT_VCV
+    is_pii: True
     description: |-
       Violation Conditions Violated
   - name: JT_VG
     description: |-
       Citation Date
   - name: JT_CCO
+    is_pii: True
     description: |-
       Unknown - not included in data dictionary binder
   - name: JT_DCR
@@ -36,6 +39,7 @@ columns:
     description: |-
       Row Creation Time
   - name: JT_UID
+    is_pii: True
     description: |-
       User Identification
   - name: JT_DLU
@@ -45,5 +49,6 @@ columns:
     description: |-
       Row Modify Time
   - name: JT_UIU
+    is_pii: True
     description: |-
       Unknown - not included in data dictionary binder

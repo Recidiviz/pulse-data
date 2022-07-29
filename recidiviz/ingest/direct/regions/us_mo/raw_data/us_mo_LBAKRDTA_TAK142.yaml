@@ -8,12 +8,14 @@ primary_key_cols:
   - E6_DSN
 columns:
   - name: E6_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: E6_CYC
     description: |-
       Cycle Number
   - name: E6_DON
+    is_pii: True
     description: |-
       Document Name
   - name: E6_DOS
@@ -23,12 +25,14 @@ columns:
     description: |-
       Document Final Form Sequence Number
   - name: E6_DSN
+    is_pii: True
     description: |-
       Internal Document Sequence Number
   - name: E6_DIN
     description: |-
       Document In Use Flag
   - name: E6_UID
+    is_pii: True
     description: |-
       User Identification
   - name: E6_DCR

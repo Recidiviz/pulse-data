@@ -8,6 +8,7 @@ primary_key_cols:
   - BT_SEO
 columns:
   - name: BT_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BT_CYC

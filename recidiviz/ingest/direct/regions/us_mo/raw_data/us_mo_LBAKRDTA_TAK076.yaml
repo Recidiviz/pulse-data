@@ -9,6 +9,7 @@ primary_key_cols:
   - CZ_SEO
 columns:
   - name: CZ_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: CZ_CYC

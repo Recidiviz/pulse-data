@@ -6,9 +6,11 @@ primary_key_cols:
   - DOC_ID_DOB
 columns:
   - name: DOC_ID_DOB
+    is_pii: True
     description: |-
       DOC ID Number
   - name: DOB
+    is_pii: True
     description: |-
       Birthdate
   - name: DOB_VERIFIED_IND

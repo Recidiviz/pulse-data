@@ -9,6 +9,7 @@ primary_key_cols:
   - BV_SEO
 columns:
   - name: BV_DOC
+    is_pii: True
     description: |-
       DOC ID Number
   - name: BV_CYC
