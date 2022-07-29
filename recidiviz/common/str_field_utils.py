@@ -392,9 +392,13 @@ def snake_to_camel(s: str, capitalize_first_letter: bool = False) -> str:
     camel = next(parts) + "".join(i.title() for i in parts)
 
     if capitalize_first_letter:
-        camel = camel[0].upper() + camel[1:]
+        camel = capitalize_first(camel)
 
     return camel
+
+
+def capitalize_first(s: str) -> str:
+    return s[0].upper() + s[1:]
 
 
 # https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch06s09.html
