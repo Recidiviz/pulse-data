@@ -5,6 +5,8 @@ data_classification: source
 primary_key_cols:
   - OFFENDER_ID
   - CASE_PLAN_ID
+  - DOC_ID
+  - FOCLIST
 columns:
   - name: OFFENDER_ID
     description: |-
