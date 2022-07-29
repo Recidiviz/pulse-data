@@ -201,15 +201,19 @@ class MetricAggregatedDimensionData:
         entry_point: DatapointGetRequestEntryPoint,
     ) -> MetricAggregatedDimensionDataT:
         """
-        - The input json is expected to be of the format {dimension name -> value/enabled}, e.g. {"BLACK": 50}
-        - The input json does not need to include all dimension names, i.e. it can be partial/incomplete
+        - The input json is expected to be of the format {dimension name -> value/enabled}, e.g. {"BLACK": 50} for report
+          datapoints or {"BLACK": True} for agency datapoints.
+        - The input json does not need to include all dimension names, i.e. it can be partial/incomplete. Values/enabled status'
+          that are not reported will have values of None (e.g {"BLACK": None} for report datapoints or {"BLACK": None}). None values
+          for report datapoints represent values that have not been reported. None values for agency datapoints represent metric configuration
+          values that have not been changed.
         - This function will create a dimension_to_value or a dimension_to_enabled_status dictionary that
           does include all dimension names.
-        - The dimensions that were reported in json will be copied over
-          to dimension_to_value.
+        - The dimensions that were reported in json will be copied over to dimension_to_value/dimension_to_enabled_status dict.
         """
-        is_aggregated_dimension_enabled = json.get("enabled") is not False
-
+        # default_dimension_enabled_status will be True or False if a disaggregation is being turned off/on,
+        # and None otherwise.
+        default_dimension_enabled_status = json.get("enabled")
         value_key = (
             "value"
             if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -230,7 +234,7 @@ class MetricAggregatedDimensionData:
                 dimension.to_enum().value,
                 None
                 if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
-                else is_aggregated_dimension_enabled,
+                else default_dimension_enabled_status,
             )
             for dimension in dimension_class
         }  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20}

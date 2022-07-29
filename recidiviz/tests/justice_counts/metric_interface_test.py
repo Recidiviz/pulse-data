@@ -412,6 +412,87 @@ class TestJusticeCountsMetricInterface(TestCase):
             },
         )
 
+    def test_aggregated_dimension_from_json(self) -> None:
+        # When two dimension enabled status changes, the other dimension status' are None
+        request_json: Dict[str, Any] = {
+            "key": "metric/law_enforcement/reported_crime/type",
+            "dimensions": [
+                {
+                    "key": "Drug",
+                    "enabled": True,
+                },
+                {
+                    "key": "Person",
+                    "enabled": True,
+                },
+            ],
+        }
+
+        dimension_data = MetricAggregatedDimensionData.from_json(
+            json=request_json,
+            entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+        )
+
+        self.assertEqual(
+            dimension_data.dimension_to_enabled_status,
+            {
+                d: True if d is OffenseType.DRUG or d is OffenseType.PERSON else None
+                for d in OffenseType
+            },
+        )
+
+        # When one dimension is disabled, the other dimension status' are not effected.
+        request_json = {
+            "key": "metric/law_enforcement/reported_crime/type",
+            "dimensions": [
+                {
+                    "key": "Person",
+                    "enabled": False,
+                },
+            ],
+        }
+
+        dimension_data = MetricAggregatedDimensionData.from_json(
+            json=request_json,
+            entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+        )
+
+        self.assertEqual(
+            dimension_data.dimension_to_enabled_status,
+            {d: False if d is OffenseType.PERSON else None for d in OffenseType},
+        )
+
+        # When disaggregation is disabled all dimensions are turned off
+        request_json = {
+            "key": "metric/law_enforcement/reported_crime/type",
+            "enabled": False,
+        }
+
+        dimension_data = MetricAggregatedDimensionData.from_json(
+            json=request_json,
+            entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+        )
+        self.assertEqual(
+            dimension_data.dimension_to_enabled_status,
+            {d: False for d in OffenseType},
+        )
+
+        # When disaggregation is enabled all dimensions are turned on
+        request_json = {
+            "key": "metric/law_enforcement/reported_crime/type",
+            "enabled": True,
+        }
+
+        dimension_data = MetricAggregatedDimensionData.from_json(
+            json=request_json,
+            entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+        )
+
+        self.assertEqual(
+            dimension_data.dimension_to_enabled_status,
+            {d: True for d in OffenseType},
+        )
+
     def test_arrest_metric_json_to_report_metric(self) -> None:
         metric_definition = law_enforcement_metric_definitions.total_arrests
         response_json = {
@@ -860,10 +941,8 @@ class TestJusticeCountsMetricInterface(TestCase):
         metric_definition = law_enforcement.calls_for_service
         metric_json = {
             "key": metric_definition.key,
-            "enabled": True,
             "disaggregations": [
                 {
-                    "enabled": True,
                     "key": CallType.dimension_identifier(),
                     "dimensions": [
                         {"key": CallType.UNKNOWN.value, "enabled": False},
@@ -885,7 +964,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                         dimension_to_enabled_status={
                             CallType.UNKNOWN: False,
                             CallType.EMERGENCY: False,
-                            CallType.NON_EMERGENCY: True,
+                            CallType.NON_EMERGENCY: None,
                         },
                         dimension_to_value=None,
                     )
@@ -899,7 +978,6 @@ class TestJusticeCountsMetricInterface(TestCase):
         metric_definition = law_enforcement.reported_crime
         metric_json = {
             "key": metric_definition.key,
-            "enabled": True,
             "contexts": [
                 {"key": ContextKey.ADDITIONAL_CONTEXT.value, "value": "blah blah"}
             ],
@@ -926,7 +1004,6 @@ class TestJusticeCountsMetricInterface(TestCase):
         metric_definition = law_enforcement.total_arrests
         metric_json = {
             "key": metric_definition.key,
-            "enabled": True,
             "disaggregations": [
                 {"key": OffenseType.dimension_identifier(), "enabled": False},
             ],
