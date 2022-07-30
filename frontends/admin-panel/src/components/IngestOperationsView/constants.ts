@@ -87,6 +87,16 @@ export type IngestViewContentsSummary = {
   processedRowsMaxDatetime: string | null;
 };
 
+export type IngestRawFileProcessingStatus = {
+  fileTag: string;
+  hasConfig: boolean;
+  numberFilesInBucket: number;
+  numberUnprocessedFiles: number;
+  numberProcessedFiles: number;
+  latestDiscoveryTime: string;
+  latestProcessedTime: string | null;
+};
+
 export type StateCodeInfo = {
   code: string;
   name: string;

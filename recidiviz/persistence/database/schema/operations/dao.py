@@ -19,8 +19,12 @@ import datetime
 from typing import List, Optional
 
 from more_itertools import one
+from sqlalchemy import func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
@@ -160,3 +164,45 @@ def get_raw_file_rows_count_for_region(
         )
 
     return query.count()
+
+
+def get_all_raw_file_metadata_rows_for_region(
+    session: Session,
+    region_code: str,
+    raw_data_instance: DirectIngestInstance,
+) -> List[DirectIngestRawFileMetadataSummary]:
+    """Returns all operations DB raw file metadata rows for the given region."""
+    results = (
+        session.query(
+            schema.DirectIngestRawFileMetadata.file_tag.label("file_tag"),
+            func.count(1)
+            .filter(schema.DirectIngestRawFileMetadata.processed_time.isnot(None))
+            .label("num_processed_files"),
+            func.count(1)
+            .filter(schema.DirectIngestRawFileMetadata.processed_time.is_(None))
+            .label("num_unprocessed_files"),
+            func.max(schema.DirectIngestRawFileMetadata.processed_time).label(
+                "latest_processed_time"
+            ),
+            func.max(schema.DirectIngestRawFileMetadata.discovery_time).label(
+                "latest_discovery_time"
+            ),
+        )
+        .filter_by(
+            region_code=region_code.upper(),
+            is_invalidated=False,
+            raw_data_instance=raw_data_instance.value,
+        )
+        .group_by(schema.DirectIngestRawFileMetadata.file_tag)
+        .all()
+    )
+    return [
+        DirectIngestRawFileMetadataSummary(
+            file_tag=result.file_tag,
+            num_processed_files=result.num_processed_files,
+            num_unprocessed_files=result.num_unprocessed_files,
+            latest_processed_time=result.latest_processed_time,
+            latest_discovery_time=result.latest_discovery_time,
+        )
+        for result in results
+    ]
