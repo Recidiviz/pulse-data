@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
+    DirectIngestRawFileMetadataSummary,
     DirectIngestSftpFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -205,6 +206,18 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 self._raw_file_schema_metadata_as_entity(metadata)
                 for metadata in results
             ]
+
+    def get_metadata_for_all_raw_files_in_region(
+        self,
+    ) -> List[DirectIngestRawFileMetadataSummary]:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            return dao.get_all_raw_file_metadata_rows_for_region(
+                session=session,
+                region_code=self.region_code,
+                raw_data_instance=self.raw_data_instance,
+            )
 
     @staticmethod
     def _raw_file_schema_metadata_as_entity(

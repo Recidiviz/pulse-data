@@ -19,11 +19,22 @@ import abc
 import datetime
 from typing import List, Optional
 
+import attr
+
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
     DirectIngestSftpFileMetadata,
 )
+
+
+@attr.define()
+class DirectIngestRawFileMetadataSummary:
+    file_tag: str
+    num_unprocessed_files: int
+    num_processed_files: int
+    latest_discovery_time: datetime.datetime
+    latest_processed_time: Optional[datetime.datetime]
 
 
 class DirectIngestSftpFileMetadataManager:
@@ -99,6 +110,12 @@ class DirectIngestRawFileMetadataManager:
         discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
     ) -> List[DirectIngestRawFileMetadata]:
         """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
+
+    @abc.abstractmethod
+    def get_metadata_for_all_raw_files_in_region(
+        self,
+    ) -> List[DirectIngestRawFileMetadataSummary]:
+        """Returns metadata for all raw files in the operations table for this region."""
 
     @abc.abstractmethod
     def get_num_unprocessed_raw_files(self) -> int:

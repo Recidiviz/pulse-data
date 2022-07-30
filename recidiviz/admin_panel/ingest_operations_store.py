@@ -16,6 +16,7 @@
 # =============================================================================
 """Store used to keep information related to direct ingest operations"""
 import logging
+from collections import Counter
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
@@ -24,7 +25,7 @@ from google.cloud import tasks_v2
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
@@ -40,8 +41,12 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
@@ -55,10 +60,14 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRegionRawFileConfig,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import get_region
 
@@ -244,6 +253,125 @@ class IngestOperationsStore(AdminPanelStore):
             "operations": operations_db_metadata,
         }
 
+    def get_ingest_raw_file_processing_status(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> List[Dict[str, Any]]:
+        """Returns a list of dictionaries containing the following info for filetags in the provided instance:
+        i.e. [{
+            fileTag: the file tag name,
+            hasConfig: whether a raw file config exists for this file tag,
+            numberFilesInBucket: number of files in the ingest bucket for this file tag,
+            numberUnprocessedFiles: number of files that have not been processed for this file tag,
+            numberProcessedFiles: number of files that have been processed,
+            latestDiscoveryTime: most recent discovery time for this file tag,
+            latestProcessedTime: most recent processed time for this file tag,
+            containsDelayedFiles: if there are files that are more than 24 hours delayed from the latestProcessedTime,
+        }]
+        """
+        formatted_state_code = state_code.value.lower()
+        region = get_region(formatted_state_code, is_direct_ingest=True)
+
+        ingest_bucket_file_tag_counts = self._get_ingest_bucket_file_tag_counts(
+            state_code, ingest_instance
+        )
+        operations_db_file_tag_summaries = self._get_raw_file_metadata_summaries(
+            state_code, ingest_instance
+        )
+        tags_with_configs = DirectIngestRegionRawFileConfig(
+            region_code=region.region_code,
+            region_module=region.region_module,
+        ).raw_file_tags
+
+        all_file_tags = {
+            *ingest_bucket_file_tag_counts.keys(),
+            *operations_db_file_tag_summaries.keys(),
+            *tags_with_configs,
+        }
+
+        all_file_tag_metadata = []
+        for file_tag in all_file_tags:
+            file_tag_metadata = {
+                "fileTag": file_tag,
+                "hasConfig": False,
+                "numberFilesInBucket": 0,
+                "numberUnprocessedFiles": 0,
+                "numberProcessedFiles": 0,
+                "latestDiscoveryTime": None,
+                "latestProcessedTime": None,
+            }
+
+            if file_tag in tags_with_configs:
+                file_tag_metadata["hasConfig"] = True
+
+            if file_tag in ingest_bucket_file_tag_counts:
+                file_tag_metadata[
+                    "numberFilesInBucket"
+                ] = ingest_bucket_file_tag_counts[file_tag]
+
+            if file_tag in operations_db_file_tag_summaries:
+                summary = operations_db_file_tag_summaries[file_tag]
+                file_tag_metadata = {
+                    **file_tag_metadata,
+                    "numberUnprocessedFiles": summary.num_unprocessed_files,
+                    "numberProcessedFiles": summary.num_processed_files,
+                    "latestDiscoveryTime": summary.latest_discovery_time,
+                    "latestProcessedTime": summary.latest_processed_time,
+                }
+            all_file_tag_metadata.append(file_tag_metadata)
+
+        return all_file_tag_metadata
+
+    def _get_ingest_bucket_file_tag_counts(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> Counter[str]:
+        """
+        Returns a counter of file tag names to the number of files in the ingest bucket for that file tag.
+        """
+        ingest_bucket_path = gcsfs_direct_ingest_bucket_for_state(
+            region_code=state_code.value.lower(),
+            ingest_instance=ingest_instance,
+            project_id=metadata.project_id(),
+        )
+
+        files_in_bucket = [
+            p
+            for p in self.fs.ls_with_blob_prefix(
+                bucket_name=ingest_bucket_path.bucket_name, blob_prefix=""
+            )
+            if isinstance(p, GcsfsFilePath)
+        ]
+
+        file_tag_counts: Counter[str] = Counter()
+        for file_path in files_in_bucket:
+            if GcsfsDirectoryPath.from_file_path(file_path).relative_path != "":
+                file_tag_counts["IGNORED_IN_SUBDIRECTORY"] += 1
+                continue
+            try:
+                file_tag_counts[filename_parts_from_path(file_path).file_tag] += 1
+            except DirectIngestError as e:
+                logging.warning(
+                    "Error getting file tag for file [%s]: %s", file_path, e
+                )
+                file_tag_counts["UNNORMALIZED"] += 1
+
+        return file_tag_counts
+
+    @staticmethod
+    def _get_raw_file_metadata_summaries(
+        state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> Dict[str, DirectIngestRawFileMetadataSummary]:
+        """Returns the raw file metadata summary for all file tags
+        in a given state_code in the operations DB
+        """
+        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code=state_code.value,
+            raw_data_instance=ingest_instance,
+        )
+        return {
+            raw_file_metadata.file_tag: raw_file_metadata
+            for raw_file_metadata in raw_file_metadata_manager.get_metadata_for_all_raw_files_in_region()
+        }
+
     @staticmethod
     def _get_operations_db_metadata(
         state_code: StateCode, ingest_instance: DirectIngestInstance
@@ -255,6 +383,7 @@ class IngestOperationsStore(AdminPanelStore):
             List[Dict[str, Union[Optional[str], int]]],
         ],
     ]:
+        # TODO(#14041) Remove unprocessedFiles and processedFiles from this function when frontend migration complete
         """Returns the following dictionary with information about the operations
         database for the state:
         {

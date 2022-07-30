@@ -157,6 +157,26 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         return jsonify(ingest_instance_summary), HTTPStatus.OK
 
+    # Get processing status of filetags for an ingest instance for a state
+    @bp.route(
+        "/api/ingest_operations/<state_code_str>/get_ingest_raw_file_processing_status/<ingest_instance_str>"
+    )
+    @requires_gae_auth
+    def _get_ingest_raw_file_processing_status(
+        state_code_str: str, ingest_instance_str: str
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
+        state_code = _get_state_code_from_str(state_code_str)
+        try:
+            ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+        ingest_file_processing_status = (
+            get_ingest_operations_store().get_ingest_raw_file_processing_status(
+                state_code, ingest_instance
+            )
+        )
+        return jsonify(ingest_file_processing_status), HTTPStatus.OK
+
     @bp.route("/api/ingest_operations/export_database_to_gcs", methods=["POST"])
     @requires_gae_auth
     def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:

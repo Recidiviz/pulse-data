@@ -76,6 +76,21 @@ export const getIngestInstanceSummary = async (
   );
 };
 
+// Get ingest file processing status
+export const getIngestFileProcessingStatus = async (
+  regionCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return fetch(
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_raw_file_processing_status/${ingestInstance}`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
 // Start CloudSQL export to GCS
 export const exportDatabaseToGCS = async (
   stateCode: string,

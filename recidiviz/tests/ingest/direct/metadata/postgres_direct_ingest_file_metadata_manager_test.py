@@ -28,6 +28,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
+    DirectIngestRawFileMetadataSummary,
+)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
     PostgresDirectIngestSftpFileMetadataManager,
@@ -357,6 +360,63 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                     2015, 1, 2, 3, 7, 0
                 ),
             ),
+        )
+
+    def test_get_metadata_for_all_raw_files_in_region_empty(self) -> None:
+        self.assertEqual(
+            [],
+            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
+        )
+
+    def test_get_metadata_for_all_raw_files_in_region(self) -> None:
+        with freeze_time("2015-01-02T03:05:05"):
+            raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+                "bucket/file_tag.csv",
+                dt=datetime.datetime.now(tz=pytz.UTC),
+            )
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_1
+            )
+            self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
+
+        with freeze_time("2015-01-02T03:06:06"):
+            raw_unprocessed_path_2 = _make_unprocessed_raw_data_path(
+                "bucket/other_tag.csv",
+                dt=datetime.datetime.now(tz=pytz.UTC),
+            )
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_2
+            )
+
+        with freeze_time("2015-01-02T03:07:07"):
+            raw_unprocessed_path_3 = _make_unprocessed_raw_data_path(
+                "bucket/file_tag.csv",
+                dt=datetime.datetime.now(tz=pytz.UTC),
+            )
+            self.raw_metadata_manager.mark_raw_file_as_discovered(
+                raw_unprocessed_path_3
+            )
+
+        expected_list = [
+            DirectIngestRawFileMetadataSummary(
+                file_tag="file_tag",
+                num_unprocessed_files=1,
+                num_processed_files=1,
+                latest_processed_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+                latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
+            ),
+            DirectIngestRawFileMetadataSummary(
+                file_tag="other_tag",
+                num_unprocessed_files=1,
+                num_processed_files=0,
+                latest_processed_time=None,
+                latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 6, 6),
+            ),
+        ]
+
+        self.assertEqual(
+            expected_list,
+            self.raw_metadata_manager.get_metadata_for_all_raw_files_in_region(),
         )
 
     @freeze_time("2015-01-02T03:04:06")
