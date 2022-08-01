@@ -35,6 +35,7 @@ import {
   BinaryRadioGroupWrapper,
   ErrorWithTooltip,
   Form,
+  FormWrapper,
   GoBackToReportsOverviewLink,
   Metric,
   MetricSectionSubTitle,
@@ -246,7 +247,7 @@ const DataEntryForm: React.FC<{
   }
 
   return (
-    <>
+    <FormWrapper>
       <Form
         onChange={(e) => {
           // When the form has changed, check the changed element for a `data-metric-key`
@@ -422,7 +423,7 @@ const DataEntryForm: React.FC<{
         )}
 
       <OnboardingDataEntrySummary />
-    </>
+    </FormWrapper>
   );
 };
 

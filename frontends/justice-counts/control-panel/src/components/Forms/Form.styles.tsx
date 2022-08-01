@@ -37,7 +37,7 @@ export const PageWrapper = styled.div`
   background: ${palette.solid.white};
 `;
 
-export const Form = styled.form`
+export const FormWrapper = styled.form`
   flex: 0 1 ${DATA_ENTRY_WIDTH}px;
   display: flex;
   flex-direction: column;
@@ -50,6 +50,10 @@ export const Form = styled.form`
   @media only screen and (max-width: ${ONE_PANEL_MAX_WIDTH}px) {
     margin: 32px 24px 50px 24px;
   }
+`;
+
+export const Form = styled.form`
+  display: block;
 `;
 
 type TitleWrapperProps = {
