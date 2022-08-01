@@ -23,6 +23,7 @@ import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonPopulationType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -56,6 +57,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
         self.bulk_uploader = BulkUploader()
 
+        self.prisons_directory = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/prison",
+        )
         self.prosecution_directory = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution",
@@ -91,7 +96,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 3)
+            self.assertEqual(len(filename_to_error), 4)
             self.assertTrue(
                 "No metric corresponds to the filename `gender`"
                 in str(filename_to_error["gender.csv"])
@@ -104,6 +109,58 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 "No fuzzy matches found with high enough score. Input=Xxx"
                 in str(filename_to_error["cases_disposed.csv"])
             )
+            self.assertTrue(
+                "aggregate value either read or inferred from incoming data does not match the existing aggregate value."
+                in str(filename_to_error["cases_rejected_by_gender.csv"])
+            )
+
+    def test_prison_new(self) -> None:
+        """Bulk upload prison metrics into an empty database."""
+
+        user_account = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_G
+
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(user_account)
+            session.add(agency)
+            session.commit()
+            session.flush()
+
+            self.bulk_uploader.upload_directory(
+                session=session,
+                directory=self.prisons_directory,
+                agency_id=agency.id,
+                system=schema.System.PRISONS,
+                user_account=user_account,
+                catch_errors=False,
+            )
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=agency.id,
+                include_datapoints=True,
+            )
+            reports_by_instance = {report.instance: report for report in reports}
+
+            # Spot check a report
+            monthly_report = reports_by_instance["01 2022 Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    session=session, report=monthly_report
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(len(metrics), 4)
+            self.assertEqual(metrics[0].value, 294)
+            self.assertEqual(
+                metrics[0]  # type: ignore[index]
+                .aggregated_dimensions[0]
+                .dimension_to_value[
+                    PrisonPopulationType.SUPERVISION_VIOLATION_OR_REVOCATION
+                ],
+                2,
+            )
+            self.assertEqual(metrics[1].value, 2151.29)
 
     def test_prosecution_new(self) -> None:
         """Bulk upload prosecution metrics into an empty database."""

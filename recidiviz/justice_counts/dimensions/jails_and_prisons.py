@@ -83,9 +83,10 @@ class PrisonReleaseTypes(DimensionBase, enum.Enum):
 
 
 class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "Physical Force"
-    RESTRAINT = "Restraint Force"
-    WEAPON_INVOLVED = "Weapon Involved"
+    PHYSICAL = "Physical"
+    RESTRAINT = "Restraint"
+    VERBAL = "Verbal"
+    WEAPON_INVOLVED = "Weapon"
     UNKNOWN = "Unknown"
 
     @classmethod

@@ -243,6 +243,7 @@ class ReportInterface:
         report: schema.Report,
         report_metric: MetricInterface,
         user_account: schema.UserAccount,
+        use_existing_aggregate_value: bool = False,
     ) -> None:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
@@ -253,18 +254,30 @@ class ReportInterface:
         breakdown values) as well as context. If no value is reported for a
         particular field, a new datapoint will be added to the datapoint table
         with a value of None.
+
+        The only exception to the above is if `use_existing_aggregate_value`
+        is True. in this case, if `datapoint.value` is None, we ignore it,
+        and fallback to whatever value is already in the db. If `datapoint.value`
+        is specified, we validate that it matches what is already in the db.
         """
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.utcnow()
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
-        DatapointInterface.add_datapoint(
-            session=session,
-            user_account=user_account,
-            current_time=current_time,
-            metric_definition_key=metric_definition.key,
-            report=report,
-            value=report_metric.value,
-        )
+
+        # If we're not supposed to use the existing aggregate value, then we should
+        # definitely perform the add/update. If we're supposed to use the existing
+        # value but the incoming datapoint has its own value, we should still go
+        # into this method to validate that the two values are the same.
+        if not use_existing_aggregate_value or report_metric.value is not None:
+            DatapointInterface.add_datapoint(
+                session=session,
+                user_account=user_account,
+                current_time=current_time,
+                metric_definition_key=metric_definition.key,
+                report=report,
+                value=report_metric.value,
+                use_existing_aggregate_value=use_existing_aggregate_value,
+            )
 
         # Next, add a datapoint for each dimension
         all_dimensions_to_values: Dict[DimensionBase, Any] = {}
