@@ -47,7 +47,7 @@ output:
             $enum_mapping:
               $raw_text: cntc_loc_desc
               $mappings:
-                StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE:
+                StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT:
                   - "ALTERNATE WORK SITE"
                 StateSupervisionContactLocation.SUPERVISION_OFFICE:
                   - "OFFICE"
