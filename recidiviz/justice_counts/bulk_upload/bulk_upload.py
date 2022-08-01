@@ -130,14 +130,11 @@ class BulkUploader:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
                 rows = df.to_dict("records")
 
-                # Based on the name of the Excel sheet, determine which Justice
-                # Counts metric this file contains data for
-                metricfile = self._get_metricfile(filename=sheet_name, system=system)
-
                 self._upload_rows(
                     session=session,
+                    system=system,
                     rows=rows,
-                    metricfile=metricfile,
+                    filename=sheet_name,
                     agency_id=agency_id,
                     user_account=user_account,
                 )
@@ -159,17 +156,52 @@ class BulkUploader:
         """Uploads a CSV file containing data for a particular metric.
         Core functionality is handled by the `upload_rows` method below.
         """
-
         with open(filename, "r", encoding="utf-8") as csvfile:
             rows = list(csv.DictReader(csvfile))
 
         # TODO(#13731): Save raw CSV file in GCS
 
-        # Generally, the file will only contain metrics for one system.
-        # In the case of supervision, the file could contain metrics for
-        # supervision, parole, or probation. This is indicated by the
-        # `system` column. In this case, we break up the rows by system,
-        # and then ingest one system at a time.
+        self._upload_rows(
+            session=session,
+            system=system,
+            rows=rows,
+            filename=filename,
+            agency_id=agency_id,
+            user_account=user_account,
+        )
+
+    def _upload_rows(
+        self,
+        session: Session,
+        system: schema.System,
+        rows: List[Dict[str, Any]],
+        filename: str,
+        agency_id: int,
+        user_account: schema.UserAccount,
+    ) -> None:
+        """Generally, a file will only contain metrics for one system. In the case
+        of supervision, the file could contain metrics for supervision, parole, or
+        probation. This is indicated by the `system` column. In this case, we break
+        up the rows by system, and then ingest one system at a time."""
+        system_to_rows = self._get_system_to_rows(system=system, rows=rows)
+        for current_system, current_rows in system_to_rows.items():
+            # Based on the system and the name of the CSV file, determine which
+            # Justice Counts metric this file contains data for
+            metricfile = self._get_metricfile(filename=filename, system=current_system)
+
+            self._upload_rows_for_metricfile(
+                session=session,
+                rows=current_rows,
+                metricfile=metricfile,
+                agency_id=agency_id,
+                user_account=user_account,
+            )
+
+    def _get_system_to_rows(
+        self, system: schema.System, rows: List[Dict[str, Any]]
+    ) -> Dict[schema.System, List[Dict[str, Any]]]:
+        """Groups the rows in the file by the value of the `system` column.
+        Returns a dictionary mapping each system to its list of rows."""
         system_to_rows = {}
         if system == schema.System.SUPERVISION:
             system_value_to_rows = {
@@ -183,27 +215,17 @@ class BulkUploader:
                 "parole": schema.System.PAROLE,
                 "probation": schema.System.PROBATION,
             }
-            for system_value, rows in system_value_to_rows.items():
+            for system_value, system_rows in system_value_to_rows.items():
                 normalized_system_value = system_value.lower().strip()
-                system = normalized_system_value_to_system[normalized_system_value]
-                system_to_rows[system] = rows
+                mapped_system = normalized_system_value_to_system[
+                    normalized_system_value
+                ]
+                system_to_rows[mapped_system] = system_rows
         else:
             system_to_rows[system] = rows
+        return system_to_rows
 
-        for current_system, rows in system_to_rows.items():
-            # Based on the system and the name of the CSV file, determine which
-            # Justice Counts metric this file contains data for
-            metricfile = self._get_metricfile(filename=filename, system=current_system)
-
-            self._upload_rows(
-                session=session,
-                rows=rows,
-                metricfile=metricfile,
-                agency_id=agency_id,
-                user_account=user_account,
-            )
-
-    def _upload_rows(
+    def _upload_rows_for_metricfile(
         self,
         session: Session,
         rows: List[Dict[str, Any]],
@@ -317,7 +339,7 @@ class BulkUploader:
         if stripped_filename not in filename_to_metricfile:
             raise ValueError(
                 f"No metric corresponds to the filename `{stripped_filename}`. "
-                "Check bulk_upload_helpers.py."
+                f"Options are {filename_to_metricfile.keys()}."
             )
 
         return filename_to_metricfile[stripped_filename]
@@ -472,7 +494,7 @@ class BulkUploader:
         except Exception as e:
             if column_name != "month":
                 raise ValueError(
-                    f"Expected the column {column_name} to be of type {column_type}."
+                    f"Expected the column {column_name} to be of type {column_type}. Got {row.items()}."
                 ) from e
 
             # Allow "month" column to be either numbers or month names

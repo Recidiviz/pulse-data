@@ -69,6 +69,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/supervision",
         )
+        self.supervision_excel = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/supervision/supervision_metrics.xlsx",
+        )
         self.prosecution_excel = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution/prosecution_metrics.xlsx",
@@ -271,33 +275,30 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 include_datapoints=True,
             )
             reports_by_instance = {report.instance: report for report in reports}
-            annual_report_1 = reports_by_instance["2021 Annual Metrics"]
-            metrics = sorted(
-                ReportInterface.get_metrics_by_report(
-                    session=session, report=annual_report_1
-                ),
-                key=lambda x: x.key,
-            )
-            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
-            self.assertEqual(metrics[0].value, None)
-            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
-            self.assertEqual(metrics[3].value, None)
-            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
-            self.assertEqual(metrics[6].value, 400)
+            self._test_supervision(reports_by_instance=reports_by_instance)
 
-            annual_report_2 = reports_by_instance["2022 Annual Metrics"]
-            metrics = sorted(
-                ReportInterface.get_metrics_by_report(
-                    session=session, report=annual_report_2
-                ),
-                key=lambda x: x.key,
+    def test_supervision_excel(self) -> None:
+        """Bulk upload supervision metrics from excel spreadsheet."""
+
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
             )
-            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
-            self.assertEqual(metrics[0].value, 2000)
-            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
-            self.assertEqual(metrics[3].value, 300)
-            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
-            self.assertEqual(metrics[6].value, 1000)
+            self.bulk_uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(self.supervision_excel),
+                agency_id=self.supervision_agency_id,
+                system=schema.System.SUPERVISION,
+                user_account=user_account,
+            )
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.supervision_agency_id,
+                include_datapoints=True,
+            )
+            reports_by_instance = {report.instance: report for report in reports}
+            self._test_supervision(reports_by_instance=reports_by_instance)
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
@@ -360,3 +361,33 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 .dimension_to_value[RaceAndEthnicity.BLACK],
                 50,
             )
+
+    def _test_supervision(self, reports_by_instance: Dict[str, schema.Report]) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            annual_report_1 = reports_by_instance["2021 Annual Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    session=session, report=annual_report_1
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].value, None)
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].value, None)
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].value, 400)
+
+            annual_report_2 = reports_by_instance["2022 Annual Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    session=session, report=annual_report_2
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].value, 2000)
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].value, 300)
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].value, 1000)
