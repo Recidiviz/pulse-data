@@ -120,14 +120,7 @@ readmissions = MetricDefinition(
     reporting_note="You may only be able to identify if an individual was admitted to your same facility within the last year.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
-            value_type=ValueType.TEXT,
-            label="Please provide your agency's definition of admission.",
-            required=True,
-        ),
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(dimension=ReadmissionType, required=False)
     ],
@@ -170,15 +163,7 @@ average_daily_population = MetricDefinition(
     description="Measures the average daily population of individuals held in jail custody.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[
-        Context(
-            key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Are the individuals admitted for violation of conditions counted within the total population?",
-            required=False,
-            multiple_choice_options=YesNoContext,
-        ),
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(dimension=JailPopulationType, required=False),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),

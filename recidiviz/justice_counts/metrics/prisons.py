@@ -123,14 +123,7 @@ readmissions = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="Exclude re-entry after a temporary exit (escape, work release, appointment, etc.).",
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
-            value_type=ValueType.TEXT,
-            label="Please provide your agency's definition of admission.",
-            required=True,
-        )
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(dimension=ReadmissionType, required=False)
     ],
