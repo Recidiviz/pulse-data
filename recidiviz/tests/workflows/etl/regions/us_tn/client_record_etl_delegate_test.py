@@ -32,6 +32,7 @@ class ClientRecordEtlDelegateTest(TestCase):
         """
         Test that the transform_row method correctly parses the json
         """
+        self.maxDiff = None
         delegate = ClientRecordETLDelegate()
 
         path_to_fixture = os.path.join(
@@ -134,5 +135,68 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "district": "DISTRICT X",
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
+                },
+            )
+
+            # third row has almost-eligible data
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "202")
+            self.assertEqual(
+                row,
+                {
+                    "personExternalId": "202",
+                    "pseudonymizedId": "p202",
+                    "personName": {
+                        "givenNames": "Third",
+                        "middleNames": "Persons",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "address": "456 Etna st., Faketown, TN 12345",
+                    "currentBalance": 45.1,
+                    "expirationDate": "2022-02-28",
+                    "feeExemptions": "Exemption 1, Exemption2",
+                    "lastPaymentAmount": 10.25,
+                    "lastPaymentDate": "2021-12-20",
+                    "nextSpecialConditionsCheck": "2021-12-02",
+                    "lastSpecialConditionsNote": "2021-07-07",
+                    "specialConditionsTerminatedDate": "2021-08-08",
+                    "officerId": "100",
+                    "phoneNumber": "8889997777",
+                    "specialConditions": "SPECIAL",
+                    "stateCode": "US_XX",
+                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevelStart": "2020-03-10",
+                    "supervisionType": "Probation",
+                    "boardConditions": [
+                        {
+                            "condition": "CT",
+                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
+                        },
+                        {
+                            "condition": "CW",
+                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
+                        },
+                    ],
+                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
+                    "district": "DISTRICT 0",
+                    "specialConditionsFlag": "current",
+                    "compliantReportingEligible": {
+                        "eligibilityCategory": "c1",
+                        "remainingCriteriaNeeded": 1,
+                        "almostEligibleCriteria": {
+                            "passedDrugScreenNeeded": True,
+                        },
+                        "currentOffenses": None,
+                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
+                        "drugScreensPastYear": [],
+                        "eligibleLevelStart": "2021-03-17",
+                        "judicialDistrict": "7",
+                        "lifetimeOffensesExpired": None,
+                        "mostRecentArrestCheck": "2021-11-15",
+                        "sanctionsPastYear": [],
+                        "finesFeesEligible": "regular_payments",
+                    },
                 },
             )

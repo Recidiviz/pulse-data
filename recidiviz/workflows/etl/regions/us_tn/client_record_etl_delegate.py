@@ -135,7 +135,6 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
                 ],
                 "sanctionsPastYear": data.get("sanctions_past_year"),
                 "finesFeesEligible": data["fines_fees_eligible"],
-                "remainingCriteriaNeeded": parse_int(data["remaining_criteria_needed"]),
             }
 
             if "eligible_level_start" in data:
@@ -156,6 +155,49 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
                     }
                     for code in data["zero_tolerance_codes"]
                 ]
+
+            remaining_criteria_needed = parse_int(data["remaining_criteria_needed"])
+            new_document["compliantReportingEligible"][
+                "remainingCriteriaNeeded"
+            ] = remaining_criteria_needed
+
+            almost_eligible_criteria = {}
+
+            if data.get("almost_eligible_time_on_supervision_level") and (
+                current_level_eligibility_date := data.get(
+                    "date_supervision_level_eligible"
+                )
+            ):
+                almost_eligible_criteria[
+                    "currentLevelEligibilityDate"
+                ] = current_level_eligibility_date
+
+            if data.get("almost_eligible_drug_screen"):
+                almost_eligible_criteria["passedDrugScreenNeeded"] = True
+
+            if data.get("almost_eligible_fines_fees"):
+                almost_eligible_criteria["paymentNeeded"] = True
+
+            if data.get("almost_eligible_recent_rejection") and (
+                recent_rejection_codes := data.get("cr_rejections_past_3_months")
+            ):
+                almost_eligible_criteria["recentRejectionCodes"] = list(
+                    set(recent_rejection_codes)
+                )
+
+            if data.get("almost_eligible_serious_sanctions") and (
+                serious_sanctions_eligibility_date := data.get(
+                    "date_serious_sanctions_eligible"
+                )
+            ):
+                almost_eligible_criteria[
+                    "seriousSanctionsEligibilityDate"
+                ] = serious_sanctions_eligibility_date
+
+            if almost_eligible_criteria:
+                new_document["compliantReportingEligible"][
+                    "almostEligibleCriteria"
+                ] = almost_eligible_criteria
 
         if data["board_conditions"]:
             new_document["boardConditions"] = [
