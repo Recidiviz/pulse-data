@@ -107,34 +107,40 @@ class JusticeCountsSchemaTestObjects:
             system=schema.System.LAW_ENFORCEMENT,
         )
         self.test_agency_B = schema.Agency(
-            name="Agency Beta",
+            name="Agency Law Enforcement",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             system=schema.System.LAW_ENFORCEMENT,
         )
         self.test_agency_C = schema.Agency(
-            name="Agency Gamma",
+            name="Agency Supervision",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             system=schema.System.SUPERVISION,
         )
         self.test_agency_D = schema.Agency(
-            name="Agency Delta",
+            name="Agency Parole",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             system=schema.System.PAROLE,
         )
         self.test_agency_E = schema.Agency(
-            name="Agency Epsilon",
+            name="Agency Parole and Probation",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PAROLE.value, schema.System.PROBATION.value],
         )
         self.test_agency_F = schema.Agency(
-            name="Agency Gamma",
+            name="Agency Prosecution",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PROSECUTION.value],
+        )
+        self.test_agency_G = schema.Agency(
+            name="Agency Prison",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PRISONS.value],
         )
 
         # Auth0 Users

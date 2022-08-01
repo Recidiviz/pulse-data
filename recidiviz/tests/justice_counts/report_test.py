@@ -72,7 +72,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(reports_agency_A[0].source_id, agency_A.id)
             agency_B = AgencyInterface.get_agency_by_name(
-                session=session, name="Agency Beta"
+                session=session, name="Agency Law Enforcement"
             )
             reports_agency_B = ReportInterface.get_reports_by_agency_id(
                 session=session,

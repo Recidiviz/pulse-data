@@ -54,7 +54,13 @@ class BulkUploader:
     """Functionality for bulk upload of data into the Justice Counts database."""
 
     def __init__(self) -> None:
-        self.text_analyzer = TextAnalyzer(configuration=TextMatchingConfiguration())
+        self.text_analyzer = TextAnalyzer(
+            configuration=TextMatchingConfiguration(
+                # We don't want to treat "other" as a stop word,
+                # because it's a valid breakdown category
+                stop_words_to_remove={"other"}
+            )
+        )
 
     def upload_directory(
         self,
@@ -71,7 +77,11 @@ class BulkUploader:
         """
         filename_to_error = {}
 
-        for filename in os.listdir(directory):
+        # Sort so that we process e.g. caseloads before caseloads_by_gender.
+        # This is important because it allows us to remove the requirement
+        # that caseloads_by_gender includes the aggregate metric value too,
+        # which would be redundant.
+        for filename in sorted(os.listdir(directory)):
             if not filename.endswith(".csv"):
                 continue
 
@@ -109,7 +119,11 @@ class BulkUploader:
 
         # TODO(#13731): Save raw Excel file in GCS
 
-        for sheet_name in xls.sheet_names:
+        # Sort so that we process e.g. caseloads before caseloads_by_gender.
+        # This is important because it allows us to remove the requirement
+        # that caseloads_by_gender includes the aggregate metric value too,
+        # which would be redundant.
+        for sheet_name in sorted(xls.sheet_names):
             logging.info("Uploading %s", sheet_name)
 
             try:
@@ -253,6 +267,7 @@ class BulkUploader:
                 report=report,
                 report_metric=report_metric,
                 user_account=user_account,
+                use_existing_aggregate_value=metricfile.supplementary_disaggregation,
             )
 
             ReportInterface.update_report_metadata(
@@ -264,7 +279,8 @@ class BulkUploader:
 
     def _get_metricfile(self, filename: str, system: schema.System) -> MetricFile:
         try:
-            stripped_filename = filename.split("/")[-1].split(".")[0]
+            # remove leading path and .csv extension and strip whitespace
+            stripped_filename = filename.split("/")[-1].split(".")[0].strip()
         except Exception as e:
             raise ValueError(
                 "Expected a filename of the format `metric_name.csv`."
@@ -289,6 +305,8 @@ class BulkUploader:
         rows_by_time_range = defaultdict(list)
         time_range_to_year_month = {}
         for row in rows:
+            # remove whitespace from column headers
+            row = {k.strip(): v for k, v in row.items() if k is not None}
             year = self._get_column_value(row=row, column_name="year", column_type=int)
             if reporting_frequency == ReportingFrequency.MONTHLY:
                 month = self._get_column_value(
@@ -316,7 +334,7 @@ class BulkUploader:
         If the metric associated with this CSV has no disaggregations, there
         should only be a single row for a single time period, and it contains
         the aggregate metric value. If the metric does have a disaggregation,
-        there weill be several rows, one with the value for each category.
+        there will be several rows, one with the value for each category.
         """
         aggregate_value = None
         dimension_to_value: Optional[Dict[DimensionBase, Optional[float]]] = (
@@ -331,13 +349,13 @@ class BulkUploader:
             if len(rows_for_this_time_range) != 1:
                 raise ValueError(
                     f"Only expected one row for time range {time_range} "
-                    f"because {metricfile.filename} doesn't have any disaggregations, "
+                    f"because {metricfile.filenames[0]} doesn't have any disaggregations, "
                     f"but found {len(rows_for_this_time_range)} rows."
                 )
 
             row = rows_for_this_time_range[0]
             aggregate_value = self._get_column_value(
-                row=row, column_name="value", column_type=int
+                row=row, column_name="value", column_type=float
             )
 
         else:  # metricfile.disaggregation is not None
@@ -352,7 +370,7 @@ class BulkUploader:
                 # a value (i.e. the number or count) and a disaggregation value
                 # (i.e. the category the count refers to, e.g. Male or Female).
                 value = self._get_column_value(
-                    row=row, column_name="value", column_type=int
+                    row=row, column_name="value", column_type=float
                 )
 
                 # disaggregation_value is either "All" or an enum member,
@@ -384,10 +402,15 @@ class BulkUploader:
                         )  # type: ignore[call-arg]
                     dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
-            if aggregate_value is None:
+            if aggregate_value is None and not metricfile.supplementary_disaggregation:
+                # If this file contains a non-primary aggregation, like gender or race,
+                # the aggregate values don't need to be reported, because they've already been
+                # reported on the primary aggregation. If the aggregate value IS reported,
+                # it will later be validated to match that of the primary aggregation (see
+                # `use_existing_aggregate_value` flag).
                 raise ValueError(
-                    f"No aggregate metric value found for the metric `{metricfile.filename}` and "
-                    f"time period {time_range}. Make sure to include a row labeled `All` "
+                    f"No aggregate metric value found for the metric `{metricfile.filenames[0]}` "
+                    f"and time period {time_range}. Make sure to include a row labeled `All` "
                     "for every time period."
                 )
 
@@ -405,8 +428,12 @@ class BulkUploader:
     def _get_column_value(
         self, row: Dict[str, Any], column_name: str, column_type: Type
     ) -> Any:
+        """Given a row, a column name, and a column type, attempts to
+        extract a value of the given type from the row."""
         if column_name not in row:
-            raise ValueError(f"Expected the column {column_name} to be present.")
+            raise ValueError(
+                f"Expected the column {column_name} to be present. Got {list(row.keys())}"
+            )
 
         column_value = row[column_name]
 
@@ -425,6 +452,10 @@ class BulkUploader:
             # Allow "month" column to be either numbers or month names
             column_value = self._get_month_column_value(column_value=column_value)
             value = column_type(column_value)
+
+        # Round numbers to two decimal places
+        if isinstance(value, float):
+            value = round(value, 2)
 
         return value
 

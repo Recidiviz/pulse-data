@@ -35,6 +35,8 @@ from recidiviz.justice_counts.metrics.metric_interface import (
 )
 from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
+    expunge_existing,
+    get_existing_entity,
     update_existing_or_create,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -215,10 +217,15 @@ class DatapointInterface:
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
+        use_existing_aggregate_value: bool = False,
     ) -> Optional[schema.Datapoint]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
-        All datapoints associated with a metric are saved, even if no value was reported.
-        An empty form field is represented by a None value.
+        All datapoints associated with a metric are saved, even if the value is None.
+
+        The only exception to the above is if `use_existing_aggregate_value`
+        is True. in this case, if `datapoint.value` is None, we ignore it,
+        and fallback to whatever value is already in the db. If `datapoint.value`
+        is specified, we validate that it matches what is already in the db.
         """
 
         # Don't save invalid datapoint values when publishing
@@ -238,22 +245,43 @@ class DatapointInterface:
                     ),
                 ) from e
 
+        ingested_entity = schema.Datapoint(
+            value=str(value) if value is not None else value,
+            report_id=report.id,
+            metric_definition_key=metric_definition_key,
+            context_key=context_key.value if context_key else None,
+            value_type=value_type,
+            start_date=report.date_range_start,
+            end_date=report.date_range_end,
+            report=report,
+            dimension_identifier_to_member={
+                dimension.dimension_identifier(): dimension.dimension_name
+            }
+            if dimension
+            else None,
+        )
+
+        if use_existing_aggregate_value:
+            # Validate that the incoming aggregate value matches what's already
+            # in the db. If not, raise an error. If so, continue without
+            # making any changes.m
+            expunge_existing(session=session, ingested_entity=ingested_entity)
+            existing_entity = get_existing_entity(ingested_entity, session)
+            if existing_entity is None:
+                raise ValueError(
+                    "`use_existing_aggregate_value was specified, "
+                    "but no existing aggregate value for the metric was found."
+                )
+            if abs(float(existing_entity.value) - value) > 1:
+                raise ValueError(
+                    "`use_existing_aggregate_value was specified, "
+                    "but the aggregate value either read or inferred from "
+                    "incoming data does not match the existing aggregate value."
+                )
+            return None
+
         datapoint, existing_datapoint = update_existing_or_create(
-            schema.Datapoint(
-                value=str(value) if value is not None else value,
-                report_id=report.id,
-                metric_definition_key=metric_definition_key,
-                context_key=context_key.value if context_key else None,
-                value_type=value_type,
-                start_date=report.date_range_start,
-                end_date=report.date_range_end,
-                report=report,
-                dimension_identifier_to_member={
-                    dimension.dimension_identifier(): dimension.dimension_name
-                }
-                if dimension
-                else None,
-            ),
+            ingested_entity,
             session,
         )
 
