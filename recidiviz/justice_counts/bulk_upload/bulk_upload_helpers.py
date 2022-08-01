@@ -39,7 +39,20 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
     ProsecutionAndDefenseStaffType,
 )
-from recidiviz.justice_counts.metrics import prisons, prosecution
+from recidiviz.justice_counts.dimensions.supervision import (
+    NewOffenseType,
+    SupervisionCaseType,
+    SupervisionStaffType,
+    SupervisionTerminationType,
+    SupervisionViolationType,
+)
+from recidiviz.justice_counts.metrics import (
+    parole,
+    prisons,
+    probation,
+    prosecution,
+    supervision,
+)
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -199,19 +212,212 @@ PRISON_METRIC_FILES = [
     ),
 ]
 
-# The `test_metricfile_list` unit test ensures that this dictionary includes
-# all metrics registered for each system.
+SUPERVISION_METRIC_FILES = [
+    MetricFile(
+        filenames=["annual_budget"],
+        definition=supervision.annual_budget,
+    ),
+    MetricFile(
+        filenames=["total_staff"],
+        definition=supervision.total_staff,
+        disaggregation=SupervisionStaffType,
+        disaggregation_column_name="staff_type",
+    ),
+    MetricFile(
+        filenames=["supervision_violations"],
+        definition=supervision.supervision_violations,
+        disaggregation=SupervisionViolationType,
+        disaggregation_column_name="violation_type",
+    ),
+    MetricFile(
+        filenames=["new_supervision_cases"],
+        definition=supervision.new_supervision_cases,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=["individuals_under_supervision"],
+        definition=supervision.individuals_under_supervision,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_gender",
+            "individuals_under_supervision_gender",
+        ],
+        definition=supervision.individuals_under_supervision,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_race/ethnicity",
+            "individuals_under_supervision_race",
+        ],
+        definition=supervision.individuals_under_supervision,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        filenames=[
+            "supervision_terminations",
+        ],
+        definition=supervision.supervision_terminations,
+        disaggregation=SupervisionTerminationType,
+        disaggregation_column_name="termination_type",
+    ),
+    MetricFile(
+        filenames=["reconviction_while_on_supervision"],
+        definition=supervision.reconviction_while_on_supervision,
+        disaggregation=NewOffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+]
+
+PAROLE_METRIC_FILES = [
+    MetricFile(
+        filenames=["annual_budget"],
+        definition=parole.annual_budget,
+    ),
+    MetricFile(
+        filenames=["total_staff"],
+        definition=parole.total_staff,
+        disaggregation=SupervisionStaffType,
+        disaggregation_column_name="staff_type",
+    ),
+    MetricFile(
+        filenames=["supervision_violations"],
+        definition=parole.supervision_violations,
+        disaggregation=SupervisionViolationType,
+        disaggregation_column_name="violation_type",
+    ),
+    MetricFile(
+        filenames=["new_supervision_cases"],
+        definition=parole.new_supervision_cases,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=["individuals_under_supervision"],
+        definition=parole.individuals_under_supervision,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_gender",
+            "individuals_under_supervision_gender",
+        ],
+        definition=parole.individuals_under_supervision,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_race/ethnicity",
+            "individuals_under_supervision_race",
+        ],
+        definition=parole.individuals_under_supervision,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        filenames=[
+            "supervision_terminations",
+        ],
+        definition=parole.supervision_terminations,
+        disaggregation=SupervisionTerminationType,
+        disaggregation_column_name="termination_type",
+    ),
+    MetricFile(
+        filenames=["reconviction_while_on_supervision"],
+        definition=parole.reconviction_while_on_supervision,
+        disaggregation=NewOffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+]
+
+PROBATION_METRIC_FILES = [
+    MetricFile(
+        filenames=["annual_budget"],
+        definition=probation.annual_budget,
+    ),
+    MetricFile(
+        filenames=["total_staff"],
+        definition=probation.total_staff,
+        disaggregation=SupervisionStaffType,
+        disaggregation_column_name="staff_type",
+    ),
+    MetricFile(
+        filenames=["supervision_violations"],
+        definition=probation.supervision_violations,
+        disaggregation=SupervisionViolationType,
+        disaggregation_column_name="violation_type",
+    ),
+    MetricFile(
+        filenames=["new_supervision_cases"],
+        definition=probation.new_supervision_cases,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=["individuals_under_supervision"],
+        definition=probation.individuals_under_supervision,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_gender",
+            "individuals_under_supervision_gender",
+        ],
+        definition=probation.individuals_under_supervision,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        filenames=[
+            "individuals_under_supervision_by_race/ethnicity",
+            "individuals_under_supervision_race",
+        ],
+        definition=probation.individuals_under_supervision,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        filenames=[
+            "supervision_terminations",
+        ],
+        definition=probation.supervision_terminations,
+        disaggregation=SupervisionTerminationType,
+        disaggregation_column_name="termination_type",
+    ),
+    MetricFile(
+        filenames=["reconviction_while_on_supervision"],
+        definition=probation.reconviction_while_on_supervision,
+        disaggregation=NewOffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+]
+
+system_to_metric_files = {
+    schema.System.PROSECUTION: PROSECUTION_METRIC_FILES,
+    schema.System.PRISONS: PRISON_METRIC_FILES,
+    schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
+    schema.System.PAROLE: PAROLE_METRIC_FILES,
+    schema.System.PROBATION: PROBATION_METRIC_FILES,
+}
+
+# The `test_metricfile_list` unit test ensures that this dictionary
+# includes all metrics registered for each system.
 SYSTEM_TO_FILENAME_TO_METRICFILE = {
-    schema.System.PRISONS.value: {
+    system.value: {
         filename: metricfile
-        for metricfile in PRISON_METRIC_FILES
+        for metricfile in metric_files
         for filename in metricfile.filenames
-    },
-    schema.System.PROSECUTION.value: {
-        filename: metricfile
-        for metricfile in PROSECUTION_METRIC_FILES
-        for filename in metricfile.filenames
-    },
+    }
+    for system, metric_files in system_to_metric_files.items()
 }
 
 

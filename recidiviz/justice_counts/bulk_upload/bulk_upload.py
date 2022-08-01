@@ -165,17 +165,43 @@ class BulkUploader:
 
         # TODO(#13731): Save raw CSV file in GCS
 
-        # Based on the name of the CSV file, determine which Justice Counts
-        # metric this file contains data for
-        metricfile = self._get_metricfile(filename=filename, system=system)
+        # Generally, the file will only contain metrics for one system.
+        # In the case of supervision, the file could contain metrics for
+        # supervision, parole, or probation. This is indicated by the
+        # `system` column. In this case, we break up the rows by system,
+        # and then ingest one system at a time.
+        system_to_rows = {}
+        if system == schema.System.SUPERVISION:
+            system_value_to_rows = {
+                k: list(v)
+                for k, v in groupby(
+                    sorted(rows, key=lambda x: x["system"]), lambda x: x["system"]
+                )
+            }
+            normalized_system_value_to_system = {
+                "both": schema.System.SUPERVISION,
+                "parole": schema.System.PAROLE,
+                "probation": schema.System.PROBATION,
+            }
+            for system_value, rows in system_value_to_rows.items():
+                normalized_system_value = system_value.lower().strip()
+                system = normalized_system_value_to_system[normalized_system_value]
+                system_to_rows[system] = rows
+        else:
+            system_to_rows[system] = rows
 
-        return self._upload_rows(
-            session=session,
-            rows=rows,
-            metricfile=metricfile,
-            agency_id=agency_id,
-            user_account=user_account,
-        )
+        for current_system, rows in system_to_rows.items():
+            # Based on the system and the name of the CSV file, determine which
+            # Justice Counts metric this file contains data for
+            metricfile = self._get_metricfile(filename=filename, system=current_system)
+
+            self._upload_rows(
+                session=session,
+                rows=rows,
+                metricfile=metricfile,
+                agency_id=agency_id,
+                user_account=user_account,
+            )
 
     def _upload_rows(
         self,

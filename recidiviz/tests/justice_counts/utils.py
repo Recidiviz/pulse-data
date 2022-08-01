@@ -128,7 +128,11 @@ class JusticeCountsSchemaTestObjects:
             name="Agency Parole and Probation",
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
-            systems=[schema.System.PAROLE.value, schema.System.PROBATION.value],
+            systems=[
+                schema.System.SUPERVISION.value,
+                schema.System.PAROLE.value,
+                schema.System.PROBATION.value,
+            ],
         )
         self.test_agency_F = schema.Agency(
             name="Agency Prosecution",
