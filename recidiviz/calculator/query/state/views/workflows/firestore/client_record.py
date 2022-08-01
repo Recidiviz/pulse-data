@@ -64,7 +64,50 @@ CLIENT_RECORD_QUERY_TEMPLATE = """
             fines_fees_eligible,
             earliest_supervision_start_date_in_latest_system,
             district,
-            spe_flag AS special_conditions_flag
+            spe_flag AS special_conditions_flag,
+            -- these fields should all be disregarded if remaining_criteria_needed is zero, 
+            -- as there is additional override logic baked into that field 
+            -- (i.e. the fields do not always agree and remaining_criteria_needed wins)
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                eligible_time_on_supervision_level_bool = 1
+            ) AS almost_eligible_time_on_supervision_level,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                date_supervision_level_eligible
+            ) AS date_supervision_level_eligible,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                drug_screen_eligibility_bool = 1
+            ) AS almost_eligible_drug_screen,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                fines_fees_eligible_bool = 1
+            ) AS almost_eligible_fines_fees,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+               cr_recent_rejection_eligible_bool = 1
+            ) AS almost_eligible_recent_rejection,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                cr_rejections_past_3_months
+            ) AS cr_rejections_past_3_months,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                eligible_serious_sanctions_bool = 1
+            ) AS almost_eligible_serious_sanctions,
+            IF (
+                remaining_criteria_needed = 0,
+                NULL, 
+                date_serious_sanction_eligible
+            ) AS date_serious_sanction_eligible,
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
     )
 
