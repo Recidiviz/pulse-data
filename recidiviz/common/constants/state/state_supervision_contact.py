@@ -201,10 +201,6 @@ class StateSupervisionContactLocation(StateEntityEnum):
     PAROLE_COMMISSION = (
         state_enum_strings.state_supervision_contact_location_parole_commission
     )
-    # TODO(#12648): Rename to ALTERNATIVE_PLACE_OF_EMPLOYMENT
-    ALTERNATIVE_WORK_SITE = (
-        state_enum_strings.state_supervision_contact_location_alternative_work_site
-    )
     ALTERNATIVE_PLACE_OF_EMPLOYMENT = (
         state_enum_strings.state_supervision_contact_location_alternative_place_of_employment
     )
@@ -228,8 +224,6 @@ class StateSupervisionContactLocation(StateEntityEnum):
 
 
 _STATE_SUPERVISION_CONTACT_LOCATION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE: "A location of employment "
-    "for the person on supervision that is not the person’s primary employment.",
     StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT: "A location of employment "
     "for the person on supervision that is not the person’s primary employment.",
     StateSupervisionContactLocation.COURT: "A courtroom.",
@@ -264,7 +258,7 @@ _STATE_SUPERVISION_CONTACT_LOCATION_MAP = {
     "TREATMENT PROVIDER": StateSupervisionContactLocation.TREATMENT_PROVIDER,
     "LAW ENFORCEMENT AGENCY": StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY,
     "PAROLE COMMISSION": StateSupervisionContactLocation.PAROLE_COMMISSION,
-    "ALTERNATIVE WORK SITE": StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE,
+    "ALTERNATIVE WORK SITE": StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT,
     "ALTERNATIVE PLACE OF EMPLOYMENT": StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT,
 }
 
