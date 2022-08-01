@@ -1533,6 +1533,13 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     person: Optional["StatePerson"] = attr.ib(default=None)
     contacted_agent: Optional["StateAgent"] = attr.ib(default=None)
 
+    def __attrs_post_init__(self) -> None:
+        if self.location == StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE:
+            raise ValueError(
+                "StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE is deprecated"
+                f" for {self.state_code}. This value should not be used."
+            )
+
 
 @attr.s(eq=False, kw_only=True)
 class StateEmploymentPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
