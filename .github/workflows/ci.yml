@@ -5,7 +5,7 @@ on: push
 jobs:
   cancel-previous-runs:
     name: Cancel previous runs
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Cancel previous runs
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -15,7 +15,7 @@ jobs:
 
   black:
     name: Black
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -25,7 +25,7 @@ jobs:
 
   check-if-pipenv-locked:
     name: Check if Pipenv is locked and synced
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -37,7 +37,7 @@ jobs:
 
   mypy:
     name: Mypy
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -48,7 +48,7 @@ jobs:
   # Verify that all YAML files are properly formatted, according to prettier
   prettier:
     name: Prettier [yaml]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
@@ -57,7 +57,7 @@ jobs:
 
   pylint:
     name: Pylint
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -73,7 +73,7 @@ jobs:
 
   terraform-validation:
     name: Terraform Validation
-    runs-on: ubuntu-latest
+    runs-on: self-hosted # change to ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
@@ -84,7 +84,7 @@ jobs:
 
   validate-source-modifications:
     name: Validate source modifications
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
@@ -116,7 +116,7 @@ jobs:
 
   validate-source-visibility:
     name: Validate source visibility
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Python Setup
@@ -175,7 +175,7 @@ jobs:
 
   unit-tests:
     name: Base unit tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted # change to ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -198,7 +198,7 @@ jobs:
   # environment defined in the Pipfile in the recidiviz/airflow package.
   airflow-tests:
     name: Airflow unit tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
       - name: Airflow Python Setup
