@@ -769,6 +769,7 @@ export const MetricsView: React.FC = observer(() => {
           filteredMetricKeyToMetricMap[metric.key] = metric;
         });
 
+      setActiveMetricKey(Object.keys(filteredMetricKeyToMetricMap)[0]);
       return setFilteredMetricSettings(filteredMetricKeyToMetricMap);
     }
   }, [metricSettings, activeMetricFilter]);
