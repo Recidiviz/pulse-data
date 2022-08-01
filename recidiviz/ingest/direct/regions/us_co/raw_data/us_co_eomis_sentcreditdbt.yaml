@@ -1,6 +1,6 @@
 file_tag: eomis_sentcreditdbt
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains information about the type of credit or debit a person may have received towards their sentence.
 data_classification: source
 primary_key_cols:
   - OFFENDERID
@@ -8,52 +8,151 @@ primary_key_cols:
 columns:
   - name: OFFENDERID
     description: |-
-      TODO(#12372)
+      This is a unique identifier assigned to each incarcerated person (PID).
   - name: SENTENCECREDITENTRYDATE
     description: |-
-      TODO(#12372)
+      Date of the sentence credit or debit entry.
   - name: SENTENCECREDITENTRYTIME
     description: |-
-      TODO(#12372)
+      Time of the sentence credit or debit entry.
   - name: SENTCREDITDEBITTYPE
     description: |-
-      TODO(#12372)
+      CICRDBTYPE code for the type of sentence credit or debt.
+    known_values:
+      - value: "05"
+        description: Statutory Time
+      - value: "06"
+        description: Trusty Time
+      - value: "07"
+        description: Meritorious Time
+      - value: "11"
+        description: Emergency Relief
+      - value: "12"
+        description: Good Time
+      - value: "13"
+        description: Disaster Relief
+      - value: "14"
+        description: Achievement/Milestone
+      - value: "15"
+        description: Exceptional Conduct
+      - value: "16"
+        description: Commute Award - Minimum
+      - value: "17"
+        description: Earned Release Time (ERT)
+      - value: "18"
+        description: Earned Time
+      - value: "19"
+        description: Provisional Earned Time
+      - value: "1B"
+        description: Earned Time - Community Corrections
+      - value: "1D"
+        description: Earned Time - Jail Backlog
+      - value: "1F"
+        description: Earned Time - Projected
+      - value: "1H"
+        description: Earned Time - HB 1150
+      - value: "1K"
+        description: Earned Time - Oklahoma Exec Dir
+      - value: "1L"
+        description: Meritorious Time - Jail Backlog
+      - value: "1N"
+        description: Meritorious Time - Projected
+      - value: "1Q"
+        description: Provisional Earned Time - Projected
+      - value: "1R"
+        description: Earned Time - Correctional Education
+      - value: "50"
+        description: Override PED
+      - value: "51"
+        description: Override MRD
+      - value: "52"
+        description: Override SDD
+      - value: "53"
+        description: Override PTD
+      - value: "55"
+        description: OCS Manual Alteration
+      - value: "70"
+        description: Parole Timeline Information
+      - value: "72"
+        description: PET Eligibility
+      - value: "73"
+        description: ERT Eligibility
   - name: GOODTIMEEARNINGCLASS
     description: |-
-      TODO(#12372)
+      CDPARCL code for a good time earning class - all values are null.
+    known_values: []
   - name: GOODTIMECLASSDURATION
     description: |-
-      TODO(#12372)
+      Duration of the good time class in days.
   - name: CREDITDEBITDAYS
     description: |-
-      TODO(#12372)
+      Credit or debit days awarded or forfeited.
   - name: GOODTIMECHANGEREASON
     description: |-
-      TODO(#12372)
+      CIGTRSN code for the reason for a change in good time.
+    known_values:
+      - value: "A00"
+        description: Awarded
+      - value: "C23"
+        description: Eligibility Undetermined
+      - value: "C24"
+        description: Eligibility Not Met
+      - value: "C25"
+        description: Eligibility Met
+      - value: "C30"
+        description: Governing Timeline Only
+      - value: "C31"
+        description: All Concurrent Timelines
+      - value: "C70"
+        description: Legacy Actual Date
+      - value: "C71"
+        description: Legacy Estimated Date
+      - value: "C96"
+        description: Other
+      - value: "C99"
+        description: Conversion
+      - value: "L00"
+        description: Lost
+      - value: "R00"
+        description: Restored / Revived
+      - value: "W00"
+        description: Withheld
   - name: EARNEDTIMESTATUS
     description: |-
-      TODO(#12372)
+      CIGLSTAT code for status of time credited or debited.
+    known_values:
+      - value: "1"
+        description: Pending
+      - value: "2"
+        description: Applied
+      - value: "6"
+        description: Partially Applied
+      - value: "8"
+        description: Ineligible
+      - value: "9"
+        description: Void
   - name: SENTENCECREDITVESTEDDATE
     description: |-
-      TODO(#12372)
+      Date the sentence credit or debit was vested.
   - name: COMMITMENTPREFIX
     description: |-
-      TODO(#12372)
+      Intended to be a unique prefix for committment but all values are null.
   - name: INMSENTCOMPONENT
     description: |-
-      TODO(#12372)
+      Inmate sentence component but all values are null.
   - name: SENTENCECREDITEFFECTIVEDT
     description: |-
-      TODO(#12372)
+      Date the sentence credit or debit is effective.
   - name: SENTCRDDEBITCOMMENTS
     description: |-
-      TODO(#12372)
+      Sentence credit or debit comments.
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of the last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of the last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User making the last update.
+    is_pii: True

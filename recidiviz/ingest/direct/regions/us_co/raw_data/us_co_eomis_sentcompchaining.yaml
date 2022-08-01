@@ -1,6 +1,6 @@
 file_tag: eomis_sentcompchaining
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This table contains information necessary to compute the chaining of multiple sentences.
 data_classification: source
 primary_key_cols:
   - OFFENDERID
@@ -10,31 +10,39 @@ primary_key_cols:
 columns:
   - name: OFFENDERID
     description: |-
-      TODO(#12372)
+      This is a unique identifier assigned to each incarcerated person (PID).
   - name: INCARCERATIONBEGINDT
     description: |-
-      TODO(#12372)
+      Date incarceration began.
   - name: CHAINSEQUENCE
     description: |-
-      TODO(#12372)
+      Sentence chain sequence number.
   - name: SENTENCESEQUENCE
     description: |-
-      TODO(#12372)
+      Sentence sequence within the commit.
   - name: COMMITMENTPREFIX
     description: |-
-      TODO(#12372)
+      Prefix for the commit.
   - name: SENTENCECOMPONENT
     description: |-
-      TODO(#12372)
+      Sentence component number.
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of the last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of the last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User making the last update.
+    is_pii: True
   - name: GOVERNS
     description: |-
-      TODO(#12372)
+      CIGOVERNS code for the computation governing sentence flag.
+    known_values:
+      - value: "B"
+        description: Both
+      - value: "M"
+        description: Max
+      - value: "N"
+        description: Min
