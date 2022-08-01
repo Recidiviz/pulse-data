@@ -1,0 +1,12 @@
+---
+runtime: custom
+env: flex
+service: pulse-data-gh-build-agent
+resources:
+  cpu: 4
+  memory_gb: 8
+automatic_scaling:
+  min_num_instances: 1
+  max_num_instances: 16
+  cpu_utilization:
+    target_utilization: 0.5

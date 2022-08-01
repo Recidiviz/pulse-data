@@ -9,7 +9,7 @@ runs:
       run: pip install pipenv
       shell: bash
     - name: Pipenv caching
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: pipenv-caching
       with:
         path: ~/.local/share/virtualenvs/
