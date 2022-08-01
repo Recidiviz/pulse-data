@@ -15,13 +15,13 @@ columns:
       Commitment prefix is used as one of multiple primary keys in a table to contribute to a unique identifier.
   - name: SENTENCECOMPONENT
     description: |-
-      Number sequence used in combintation with the two other primary keys to make a unique combination.
+      Number sequence used with the two other primary keys to make a unique combination.
   - name: CJISCHARGECOUNT
     description: |-
-      TODO(#12372)
+      CJIS Charge Count Number
   - name: SENTENCEFINDINGFLAG
     description: |-
-      CMFINDING code for sentence finding.
+      CMFINDING code for sentence finding flag.
     known_values:
       - value: "ACQT"
         description: Acquitted
@@ -47,7 +47,7 @@ columns:
         description: Unknown (Conversion)
   - name: SENTENCEFINDINGDATE
     description: |-
-      The date of the sentence finding.
+      Date of the sentence finding.
   - name: GUILTYPLEAFLAG
     description: |-
       CMGUILTY code for guilty plea.
@@ -77,10 +77,10 @@ columns:
       Date of sentence plea, same as SENTENCEFINDINGDATE.
   - name: JAILTIME
     description: |-
-      TODO(#12372)
+      Total jail time.
   - name: JAILCREDITS
     description: |-
-      TODO(#12372)
+      Jail time credits awarded.
   - name: SENTENCETYPE
     description: |-
       Type of sentence from CMSNTYPE code.
@@ -95,13 +95,13 @@ columns:
         description: Youth Offender Services
   - name: SENTENCETYPE2
     description: |-
-      All values in this field are null.
+      All values in this field are null - code CMSNTYP2.
   - name: SENTENCETYPE3
     description: |-
-      All values in this field are null.
+      All values in this field are null - code CMSNTYP3.
   - name: SENTENCETYPE4
     description: |-
-      All values in this field are null.
+      All values in this field are null - code CMSNTYP4.
   - name: OFFENSEDATE
     description: |-
       Date the offense occured.
@@ -113,25 +113,41 @@ columns:
       Criminal Justice Inforation System (CJIS) Statute code relating to offense.
   - name: CJISSTATUTEDESC
     description: |-
-      Descriptions of the CJIS Statute Codes (ie. Possessoan I-II, Forgercy, etc.)
+      Descriptions of the CJIS Statute Codes (ex: Possession I-II, Forgercy, etc.)
   - name: STATUTE1
     description: |-
-      More populated field than CJISSTATUSCODE with the primary statute pertaining to the offense and sentence.
+      CMARSCD code for the state statute code (1145 known values).
+    known_values: []
   - name: STATUTE2
     description: |-
-      A secondary Statute involved in offense and/or sentence - most values are null.
+      CMARSCD code for a secondary state statute code - most values are null.
+    known_values:
+      - value: "18-8-130000"
+        description: OBSTRUCTING LAW ENFORCEMENT
+      - value: "18-4-502-231995"
+        description: 1ST DEGREE CRIMINAL TRESPASSING
+      - value: "18-8-139998"
+        description: "FALSE REPORTING"
+      - value: "18-8.208.2-149916"
+        description: UNAUTHORIZED ABSENCE
+      - value: "18-6.5-103(5)-217946"
+        description: THEFT FROM AT-RISK <$500
+      - value: "18-6.5-103(4)-089923"
+        description: ROBBERY FROM AT-RISK
   - name: STATUTE3
     description: |-
-      All values in this field are null.
+      CMARSCD code for a third state statute code - all values in this field are null.
   - name: STATUTE4
     description: |-
-      All values in this field are null.
+      CMARSCD code for a fourth state statute code - all values in this field are null.
   - name: CRIMECATEGORY
     description: |-
-      TODO(#12372)
+      CMCRMCAT code for the crime category.
+    known_values: [] #TODO(#12372) Get better dataname for column.
   - name: CRIMECODE
     description: |-
-      TODO(#12372)
+      CMCRMCOD code for the type of crime.
+    known_values: [] #TODO(#12372) Get better dataname for column.
   - name: FELONYCLASS
     description: |-
       CMFELCLS code for felony classification.
@@ -260,28 +276,28 @@ columns:
         description: Homicide
   - name: MINPRISONTERMY
     description: |-
-      The minimum prison term years - counted as 360 day years.
+      The minimum prison term in years - counted as 360 day years.
   - name: MINPRISONTERMM
     description: |-
-      The minimum prison term months - counted as 30 day months.
+      The minimum prison term in months - counted as 30 day months.
   - name: MINPRISONTERMD
     description: |-
-      The minimum prison days.
+      The minimum prison term in days.
   - name: MAXPRISONTERMY
     description: |-
-      The maximum prison term years.
+      The maximum prison term in years - counted as 360 day years.
   - name: MAXPRISONTERMM
     description: |-
-      The maximum prison term months.
+      The maximum prison term in months - counted as 30 day months.
   - name: MAXPRISONTERMD
     description: |-
-      The maximum prison term days.
+      The maximum prison term in days.
   - name: ILLOGICALFLAG
     description: |-
-      TODO(#12372)
+      CDYESNO flag for an illogical Mitt. #TODO(#12372) Update with explanation of what makes mitt illogical.
   - name: SENTENCEINCHOATEFLAG
     description: |-
-      TODO(#12372)
+      CMINCHOATE code for inchoate. #TODO(#12372) Update with answer on if these add special consideration for sentence.
     known_values:
       - value: "H"
         description: Attempt
@@ -296,7 +312,7 @@ columns:
       Count of prior violent convictions.
   - name: OFFENSESPECIALID
     description: |-
-      TODO(#12372)
+      CMOFFSPCLID code for special offense ids.
     known_values:
       - value: "1"
         description: Special Drug Offender
@@ -316,7 +332,7 @@ columns:
         description: Repeated Theft from Store
   - name: OFFENSESPECIALID2
     description: |-
-      TODO(#12372)
+      CMOFFSPCLID code for special offense ids.
     known_values:
       - value: "2"
         description: Domestic Violence
@@ -326,7 +342,7 @@ columns:
         description: At-Risk Adult / Juvenile
   - name: OFFENSESPECIALID3
     description: |-
-      All values in this field are null.
+      CMOFFSPCLID code - All values in this field are null.
   - name: LIFESENTENCETYPE
     description: |-
       CMLIFETYPE code indicating the type of life sentence received.
@@ -340,52 +356,57 @@ columns:
       - value: "MXL"
         description: Indeterminate Min to Life Max
       - value: "N/A"
-        description: "Not Applicable"
+        description: Not Applicable
       - value: "WIP"
         description: Life with Parole
       - value: "WOP"
         description: Life w/o Parole
   - name: MANDATORYVIOLENTSENTENCEFLAG
     description: |-
-      TODO(#12372)
+      CIMANDVIOSENT code indicates if there is a mandatory sentence for violent crime.
     known_values:
       - value: "N"
         description: "No"
       - value: "Y"
         description: "Yes"
       - value: "U"
-        description: Unknown
+        description: "Unknown"
   - name: VIOLENTTODOCSTAFF
     description: |-
-      Indicates if person has been or has a history of being violent to DOC staff.
+      CIVIOTODOC code indicates if a person has a history of being violent to DOC staff.
     known_values:
       - value: "N"
         description: "No"
       - value: "Y"
         description: "Yes"
       - value: "U"
-        description: Unknown
+        description: "Unknown"
   - name: MARTINCOOPERFLAG
     description: |-
-      TODO(#12372)
+      CDYESNO flag indicating if there is a Martin Cooper Flag #TODO(#12372) Update with details on martincooper
   - name: PAROLEEARNEDTIMEFLAG
     description: |-
-      TODO(#12372)
+      CIHB1087 code for parole earned time flag.
+    known_values: []
   - name: GALLEGOSFLAG
     description: |-
-      TODO(#12372)
+      CDYESNO code indicating if there is a Gallegos flag #TODO(#12372)
   - name: SEXCRIMEFLAG
     description: |-
-      Yes or No flag indicating if the crime was a sex crime.
+      SEXCRMFL code flag indicating if the crime was a sex crime.
+    known_values: []
   - name: OFFENSEENHANCEMENTCODE
     description: |-
-      TODO(#12372)
+      CMOFFENH code indicating if the offense leads to a sentence enhancement.
+    known_values: []
   - name: OFFENSEENHANCEMENTCODE2
     description: |-
-      TODO(#12372)
+      CMOFFENH code indicating if a secondary offense enhances sentence.
+    known_values: []
   - name: OFFENSEENHANCEMENTCODE3
     description: |-
-      TODO(#12372)
+      CMOFFENH code indicating if a third offense enhances sentence.
+    known_values: []
   - name: SENTENCELAWCODE
     description: |-
       CILAWCODE for lawcode related to sentence.
@@ -466,7 +487,7 @@ columns:
         description: "Y2"
   - name: COMPSTATUSCODE
     description: |-
-      The status of sentece (ie active).
+      CMCMPSTA code got the status of sentece (active, commuted, discharged, etc.).
     known_values:
       - value: "1"
         description: Active (Imposed)
@@ -541,34 +562,34 @@ columns:
         description: Not included in Computation
   - name: SENTENCECOUNT
     description: |-
-      TODO(#12372)
+      Sentence component number - all values in this field are null.
   - name: AMENDEDDATAFROMCJIS
     description: |-
-      TODO(#12372)
+      Amended Offender Time Computation (OTC) Data from CJIS.
   - name: COMPONENTEFFECTIVEDATE
     description: |-
       Date the sentence component became effective.
   - name: TIMECOMPFLAG
     description: |-
-      TODO(#12372)
+      Time computation flag - #TODO(#12372) Update wih additional information.
   - name: PROBATIONTERMY
     description: |-
-      TODO(#12372)
+      Probation term (YEARS - 360 day years).
   - name: PROBATIONTERMM
     description: |-
-      TODO(#12372)
+      Probation term (MONTHS - 30 day months).
   - name: PROBATIONTERMD
     description: |-
-      TODO(#12372)
+      Probation term (DAYS).
   - name: OFFICIALVERSIONOFCRIME
     description: |-
-      TODO(#12372)
+      Official version of the crime.
   - name: HOWSERVEDSUMMARY
     description: |-
-      TODO(#12372)
+      Indicates if the sentence is being served concurrently or consecutively to other sentences. ("CS" consecutive, "CC" concurrent, and then "commitment prefix/sentence component" pointing to the consecutive or concurrent sentence)
   - name: CO_SENT_SRL
     description: |-
-      TODO(#12372)
+      Sentence serial number.
   - name: CO_CRIME_SRL
     description: |-
-      TODO(#12372)
+      Crime serial number.

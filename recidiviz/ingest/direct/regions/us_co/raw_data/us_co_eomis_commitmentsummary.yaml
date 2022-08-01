@@ -14,23 +14,330 @@ columns:
       Commitment prefix is used as one of multiple primary keys in a table to contribute to a unique identifier.
   - name: TYPEORDER
     description: |-
-      TODO(#12372)
+      CMORDER code for know the type of order.
+    known_values:
+      - value: A
+        description: Amended Mittimus
+      - value: C
+        description: Admin Correction Mittimus
+      - value: M
+        description: Modified Mittimus
+      - value: O
+        description: Original Mittimus
+      - value: Z
+        description: Interstate Mittimus
   - name: OTHSTATE
     description: |-
-      TODO(#12372)
+      CMOTHST code for other state involved in sentencing, if any.
+    known_values:
+      - value: "01"
+        description: Judicial District 1
+      - value: "02"
+        description: Judicial District 2
+      - value: "03"
+        description: Judicial District 3
+      - value: "04"
+        description: Judicial District 4
+      - value: "05"
+        description: Judicial District 5
+      - value: "06"
+        description: Judicial District 6
+      - value: "07"
+        description: Judicial District 7
+      - value: "08"
+        description: Judicial District 8
+      - value: "09"
+        description: Judicial District 9
+      - value: "10"
+        description: Judicial District 10
+      - value: "11"
+        description: Judicial District 11
+      - value: "AK"
+        description: Alaska
+      - value: "AL"
+        description: Alabama
+      - value: "AR"
+        description: Arkansas
+      - value: "AU"
+        description: TODO(#12372)
+      - value: "AZ"
+        description: Arizona
+      - value: "CA"
+        description: California
+      - value: "CN"
+        description: TODO(#12372)
+      - value: "CO"
+        description: Colorado
+      - value: "CT"
+        description: Connecticut
+      - value: "DC"
+        description: District of Columbia
+      - value: "DE"
+        description: Delaware
+      - value: "ER"
+        description: TODO(#12372)
+      - value: "FD"
+        description: TODO(#12372)
+      - value: "FL"
+        description: Florida
+      - value: "GA"
+        description: Georgia
+      - value: "GE"
+        description: TODO(#12372)
+      - value: "GM"
+        description: Guam
+      - value: "HI"
+        description: Hawaii
+      - value: "IA"
+        description: Iowa
+      - value: "ID"
+        description: Idaho
+      - value: "IL"
+        description: Illinois
+      - value: "IN"
+        description: Indiana
+      - value: "IO"
+        description: TODO(#12372)
+      - value: "IS"
+        description: TODO(#12372)
+      - value: "KS"
+        description: Kansas
+      - value: "KY"
+        description: Kentucky
+      - value: "LA"
+        description: Louisiana
+      - value: "MA"
+        description: Massachusetts
+      - value: "MD"
+        description: Maryland
+      - value: "ME"
+        description: Maine
+      - value: "MI"
+        description: Michigan
+      - value: "MM"
+        description: TODO(#12372)
+      - value: "MN"
+        description: Minnesota
+      - value: "MO"
+        description: Missouri
+      - value: "MS"
+        description: Mississippi
+      - value: "MT"
+        description: Montana
+      - value: "MY"
+        description: TODO(#12372)
+      - value: "NB"
+        description: TODO(#12372)
+      - value: "NC"
+        description: North Carolina
+      - value: "ND"
+        description: North Dakota
+      - value: "NE"
+        description: Nebraska
+      - value: "NH"
+        description: New Hampshire
+      - value: "NI"
+        description: TODO(#12372)
+      - value: "NJ"
+        description: New Jersey
+      - value: "NM"
+        description: New Mexico
+      - value: "NT"
+        description: Northwest Territories
+      - value: "NV"
+        description: Nevada
+      - value: "NY"
+        description: New York
+      - value: "OH"
+        description: Ohio
+      - value: "OK"
+        description: Oklahoma
+      - value: "OR"
+        description: Oregon
+      - value: "PA"
+        description: Pennsylvania
+      - value: "PR"
+        description: Puerto Rico
+      - value: "RI"
+        description: Rhode Island
+      - value: "SC"
+        description: South Carolina
+      - value: "SD"
+        description: South Dakota
+      - value: "TN"
+        description: Tennessee
+      - value: "TX"
+        description: Texas
+      - value: "TZ"
+        description: TODO(#12372)
+      - value: "UK"
+        description: Unknown
+      - value: "US"
+        description: United States
+      - value: "UT"
+        description: Utah
+      - value: "VA"
+        description: Virginia
+      - value: "VT"
+        description: Vermont
+      - value: "WA"
+        description: Washington
+      - value: "WI"
+        description: Wisconsin
+      - value: "WS"
+        description: TODO(#12372)
+      - value: "WV"
+        description: West Virginia
+      - value: "WY"
+        description: Wyoming
   - name: COURTCASETYPE
     description: |-
-      TODO(#12372)
+      CMCASETYPE code indicating the type of court case.
+    known_values:
+      - value: C
+        description: County Court
+      - value: D
+        description: District Court
   - name: COUNTYOFCONVICTION
     description: |-
-      County where convicted.
-    known_values: []
+      CDCOARAG code for the county where convicted.
+    known_values:
+      - value: "000"
+        description: Other State
+      - value: "001"
+        description: Adams
+      - value: "002"
+        description: Alamosa
+      - value: "003"
+        description: Arapahoe
+      - value: "004"
+        description: Archuleta
+      - value: "005"
+        description: Baca
+      - value: "006"
+        description: Bent
+      - value: "007"
+        description: Boulder
+      - value: "008"
+        description: Chaffee
+      - value: "009"
+        description: Cheyenne
+      - value: "010"
+        description: Clear Creek
+      - value: "011"
+        description: Conejos
+      - value: "012"
+        description: Costilla
+      - value: "013"
+        description: Crowley
+      - value: "014"
+        description: Custer
+      - value: "015"
+        description: Delta
+      - value: "016"
+        description: Denver
+      - value: "017"
+        description: Dolores
+      - value: "018"
+        description: Douglas
+      - value: "019"
+        description: Eagle
+      - value: "020"
+        description: Elbert
+      - value: "021"
+        description: El Paso
+      - value: "022"
+        description: Fremont
+      - value: "023"
+        description: Garfield
+      - value: "024"
+        description: Gilpin
+      - value: "025"
+        description: Grand
+      - value: "026"
+        description: Gunnison
+      - value: "027"
+        description: Hinsdale
+      - value: "028"
+        description: Huerfano
+      - value: "029"
+        description: Jackson
+      - value: "030"
+        description: Jefferson
+      - value: "031"
+        description: Kiowa
+      - value: "032"
+        description: Kit Carson
+      - value: "033"
+        description: Lake
+      - value: "034"
+        description: La Plata
+      - value: "035"
+        description: Larimer
+      - value: "036"
+        description: Las Animas
+      - value: "037"
+        description: Lincoln
+      - value: "038"
+        description: Logan
+      - value: "039"
+        description: Mesa
+      - value: "041"
+        description: Moffat
+      - value: "042"
+        description: Montezuma
+      - value: "043"
+        description: Montrose
+      - value: "044"
+        description: Morgan
+      - value: "045"
+        description: Otero
+      - value: "046"
+        description: Ouray
+      - value: "047"
+        description: Park
+      - value: "048"
+        description: Phillips
+      - value: "049"
+        description: Pitkin
+      - value: "050"
+        description: Prowers
+      - value: "051"
+        description: Pueblo
+      - value: "052"
+        description: Rio Blanco
+      - value: "053"
+        description: Rio Grande
+      - value: "054"
+        description: Routt
+      - value: "055"
+        description: Saguache
+      - value: "057"
+        description: San Miguel
+      - value: "058"
+        description: Sedgwick
+      - value: "059"
+        description: Summit
+      - value: "060"
+        description: Teller
+      - value: "061"
+        description: Washington
+      - value: "062"
+        description: Weld
+      - value: "063"
+        description: Yuma
+      - value: "080"
+        description: Broomfield
+      - value: "099"
+        description: Unknown/NA
+      - value: "99"
+        description: Unknown
   - name: DOCKETNUMBER
     description: |-
-      TODO(#12372)
+      Docket number of the case.
   - name: CURRCOMMITCONVICTIONDT
     description: |-
-      TODO(#12372)
+      Date of the current commitment conviction.
   - name: SENTENCEIMPOSEDDATE
     description: |-
       Date the sentence was imposed.
@@ -39,85 +346,244 @@ columns:
       Date the sentence became effective.
   - name: JUDGENAME
     description: |-
-      The name of the judge in the case.
+      Name of the judge in the case.
   - name: DEFENSEATTORNEYNAME
     description: |-
-      The name of the defense attorney involved in commitment.
+      Name of the defense attorney involved in commitment.
   - name: STATEATTORNEYNAME
     description: |-
-      The name of the state attorney involved in commitment.
+      Name of the state attorney involved in commitment.
   - name: SEXVLNTPRED
     description: |-
-      TODO(#12372)
+      CMSEXPRD code indicating if sexually violent predator.
+    known_values:
+      - value: "N"
+        description: None
+      - value: "U"
+        description: Unknown (Conversion)
+      - value: "X"
+        description: No SVP Finding, Must Register as SXO
+      - value: "Y"
+        description: Sexual Violent Predator
   - name: OVERALLFINDING
     description: |-
-      TODO(#12372)
+      Overall finding in case.
   - name: INCARCERATIONSTART
     description: |-
-      TODO(#12372)
+      Start of incarceration period.
   - name: EARLIESTSENTENCEBEGINDATE
     description: |-
-      TODO(#12372)
+      Date the earliest sentence begins.
   - name: PAROLETERMINMONTHS
     description: |-
-      TODO(#12372)
+      Length of parole time in months.
   - name: JAILTIME
     description: |-
-      TODO(#12372)
+      Length of jail time.
   - name: JAILCREDITS
     description: |-
-      TODO(#12372)
+      Credit for jail days already served in sentence.
   - name: COMMITMENTSTATUS
     description: |-
-      TODO(#12372)
+      CMSTAFLG code for commitment status.
+    known_values:
+      - value: "1"
+        description: Imposed
+      - value: "8"
+        description: Early Termination
+      - value: "9"
+        description: Vacated
   - name: COMMSTATUSDATE
     description: |-
-      TODO(#12372)
+      P&P Commitment status date (Probation and Parole, but no probation in CO, so only parole).
   - name: COURTCMTCOMMENTS
     description: |-
-      TODO(#12372)
+      Court commitment comments
   - name: CJISCOMMENTS
     description: |-
-      TODO(#12372)
+      CJIS Comments
   - name: DATELASTUPDATE
     description: |-
-      TODO(#12372)
+      Date of last update.
   - name: TIMELASTUPDATE
     description: |-
-      TODO(#12372)
+      Time of last update.
   - name: STAFFLASTUPDATE
     description: |-
-      TODO(#12372)
+      User making last update.
   - name: MAXIMUMPRISONTERM
     description: |-
-      TODO(#12372)
+      Maximum prison term (Y/M/D)
   - name: SENTENCINGDATACONDITION
     description: |-
-      TODO(#12372)
+      CMSNTDATACOND code for condition of the sentencing data.
+    known_values:
+      - value: "1"
+        description: Data Ready for Use
+      - value: "2"
+        description: Imported from CJIS - To Be Reviewed
   - name: AMENDEDDATAFROMCJIS
     description: |-
-      TODO(#12372)
+      Amended Offender Time Computation (OTC) Data from CJIS.
   - name: OBLIGATIONSFLAG
     description: |-
-      TODO(#12372)
+      ObligationsFlag code for free of obligations flag - TODO(#12372) ?
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "U"
+        description: "Unknown"
   - name: COURTID
     description: |-
-      TODO(#12372)
+      Court ID Number.
   - name: INTAKEDATE
     description: |-
-      TODO(#12372)
+      Date of intake.
   - name: COUNTYOFSENTENCING
     description: |-
-      TODO(#12372)
+      CMCNTYSNT code for county of sentencing. #TODO(#12372) - looks odd
+    known_values:
+      - value: "000"
+        description: TODO(#12372)
+      - value: "001"
+        description: TODO(#12372)
+      - value: "002"
+        description: TODO(#12372)
+      - value: "003"
+        description: TODO(#12372)
+      - value: "004"
+        description: TODO(#12372)
+      - value: "005"
+        description: TODO(#12372)
+      - value: "006"
+        description: TODO(#12372)
+      - value: "007"
+        description: TODO(#12372)
+      - value: "008"
+        description: TODO(#12372)
+      - value: "009"
+        description: TODO(#12372)
+      - value: "010"
+        description: TODO(#12372)
+      - value: "011"
+        description: TODO(#12372)
+      - value: "012"
+        description: TODO(#12372)
+      - value: "013"
+        description: TODO(#12372)
+      - value: "014"
+        description: TODO(#12372)
+      - value: "015"
+        description: TODO(#12372)
+      - value: "016"
+        description: TODO(#12372)
+      - value: "017"
+        description: TODO(#12372)
+      - value: "018"
+        description: TODO(#12372)
+      - value: "019"
+        description: TODO(#12372)
+      - value: "020"
+        description: TODO(#12372)
+      - value: "021"
+        description: TODO(#12372)
+      - value: "022"
+        description: TODO(#12372)
+      - value: "023"
+        description: TODO(#12372)
+      - value: "024"
+        description: TODO(#12372)
+      - value: "025"
+        description: TODO(#12372)
+      - value: "026"
+        description: TODO(#12372)
+      - value: "027"
+        description: TODO(#12372)
+      - value: "028"
+        description: TODO(#12372)
+      - value: "029"
+        description: TODO(#12372)
+      - value: "030"
+        description: TODO(#12372)
+      - value: "031"
+        description: TODO(#12372)
+      - value: "032"
+        description: TODO(#12372)
+      - value: "033"
+        description: TODO(#12372)
+      - value: "034"
+        description: TODO(#12372)
+      - value: "035"
+        description: TODO(#12372)
+      - value: "036"
+        description: TODO(#12372)
+      - value: "037"
+        description: TODO(#12372)
+      - value: "038"
+        description: TODO(#12372)
+      - value: "039"
+        description: TODO(#12372)
+      - value: "040"
+        description: TODO(#12372)
+      - value: "041"
+        description: TODO(#12372)
+      - value: "042"
+        description: TODO(#12372)
+      - value: "043"
+        description: TODO(#12372)
+      - value: "044"
+        description: TODO(#12372)
+      - value: "045"
+        description: TODO(#12372)
+      - value: "046"
+        description: TODO(#12372)
+      - value: "047"
+        description: TODO(#12372)
+      - value: "048"
+        description: TODO(#12372)
+      - value: "049"
+        description: TODO(#12372)
+      - value: "050"
+        description: TODO(#12372)
+      - value: "051"
+        description: TODO(#12372)
+      - value: "052"
+        description: TODO(#12372)
+      - value: "053"
+        description: TODO(#12372)
+      - value: "054"
+        description: TODO(#12372)
+      - value: "055"
+        description: TODO(#12372)
+      - value: "056"
+        description: TODO(#12372)
+      - value: "057"
+        description: TODO(#12372)
+      - value: "058"
+        description: TODO(#12372)
+      - value: "059"
+        description: TODO(#12372)
+      - value: "060"
+        description: TODO(#12372)
+      - value: "061"
+        description: TODO(#12372)
+      - value: "062"
+        description: TODO(#12372)
+      - value: "063"
+        description: TODO(#12372)
+      - value: "080"
+        description: TODO(#12372)
+      - value: "099"
+        description: TODO(#12372)
   - name: OFFENDERVERSIONOFCRIME
     description: |-
-      TODO(#12372)
+      Offenders version of the crime.
   - name: CODEFENDANTNAME
     description: |-
-      TODO(#12372)
+      Name of the co-defendant.
   - name: OVERALLPLEA
     description: |-
-      TODO(#12372)
+      OverallPlea code for the overall plea in the case.
   - name: CO_MITT_SRL
     description: |-
-      TODO(#12372)
+      CO_MITT_SRLy10y - Mitt serial number from legacy system.

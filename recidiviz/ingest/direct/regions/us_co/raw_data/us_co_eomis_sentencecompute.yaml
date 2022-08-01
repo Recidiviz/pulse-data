@@ -1,6 +1,6 @@
 file_tag: eomis_sentencecompute
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  This file contains information used to compute people's sentence length.
 data_classification: source
 primary_key_cols:
   - OFFENDERID
@@ -10,97 +10,113 @@ primary_key_cols:
 columns:
   - name: OFFENDERID
     description: |-
-      TODO(#12372)
+      This is a unique identifier assigned to each incarcerated person (PID).
   - name: INCARCERATIONBEGINDT
     description: |-
-      TODO(#12372)
+      Date incarceration began.
   - name: CHAINSEQUENCE
     description: |-
-      TODO(#12372)
+      Sentence chain sequence number.
   - name: SENTENCESEQUENCE
     description: |-
-      TODO(#12372)
+      Sentence sequence with commit.
   - name: TIMELINETYPE
     description: |-
-      TODO(#12372)
+      CDTIMELINETYPE code for release date timeline type.
+    known_values:
+      - value: "1"
+        description: Incarceration
+      - value: "2"
+        description: Parole
+      - value: "3"
+        description: Revocation
   - name: SENTENCESTATUSFLAG
     description: |-
-      TODO(#12372)
+      CISTAFLG code for sentence status flag.
+    known_values:
+      - value: "0"
+        description: Future
+      - value: "1"
+        description: Active
+      - value: "2"
+        description: Expired
+      - value: "9"
+        description: Vacated
   - name: TIMESTARTDATE
     description: |-
-      TODO(#12372)
+      Date time started (TSD). #TODO(#12372) Update with context from CDOC
   - name: MAXIMUMTERM
     description: |-
-      TODO(#12372)
+      Maximum prison term (Y/M/D).
   - name: MAXSENTDAYSMR
     description: |-
-      TODO(#12372)
+      Max sentence in days (MR).
   - name: CNTYJAILTIME
     description: |-
-      TODO(#12372)
+      Time spent in a county jail in days (CJT).
   - name: CNTYJAILTIMEMAX
     description: |-
-      TODO(#12372)
+      Max time spent in a county jail in days (CJT). #TODO(#12372) Update with answer from CO onwhy is it always the same as CNTYJAILTIME except for 24 rows
   - name: CNTYJAILCREDIT
     description: |-
-      TODO(#12372)
+      Credit received for county jail time in days.
   - name: CNTYJAILCREDITMAX
     description: |-
-      TODO(#12372)
+      Max credit received for county jail time in days #TODO(#12372) Update with answer on difference from CNTYJAILCREDIT
   - name: SENTENCEREDUCTIONMAX
     description: |-
-      TODO(#12372)
+      Sentence reduction time #TODO(#12372) Update with answer from CDOC
   - name: SENTENCEREDUCTIONLOSTMAX
     description: |-
-      TODO(#12372)
+      Sentence reduction time lost #TODO(#12372) Update with answer from CDOC
   - name: NULLTIMEBEFOREMR
     description: |-
-      TODO(#12372)
+      OTMX- Null time during maximum #TODO(#12372) Update with answer from CDOC
   - name: MANDATORYRELEASEDATECTRL
     description: |-
-      TODO(#12372)
+      Flat control release date (FMD) #TODO(#12372) Update with answer from CDOC
   - name: STATUTORYGOODTIME
     description: |-
-      TODO(#12372)
+      Old law statutory good time (earned credit) #TODO(#12372) Update with answer from CDOC
   - name: TRUSTYTIME
     description: |-
-      TODO(#12372)
+      Old law trusty time poliocy for good time, max of 10 days for good time for every 30. #TODO(#12372) Confirm with CDOC
   - name: TRUSTYTIMELOST
     description: |-
-      TODO(#12372)
+      Old Law Trusty Time Lost #TODO(#12372) Update with answer from CDOC
   - name: EARNEDTIMEVESTED
     description: |-
-      TODO(#12372)
+      Earned time vested #TODO(#12372) Update with answer from CDOC
   - name: EARNEDTIMEDISASTERRELIEFVESTED
     description: |-
-      TODO(#12372)
+      Earned Time Disaster Relief Vested.
   - name: EARNEDTIMEACHIEVEMENTSVESTED
     description: |-
-      TODO(#12372)
+      Earned Time Achievements Vested.
   - name: EARNEDTIMEEXCEPCONDUCTVESTED
     description: |-
-      TODO(#12372)
+      Earned Time Exceptional Conduct Vested.
   - name: EARNEDTIMEPROJECTED
     description: |-
-      TODO(#12372)
+      Projected earned time.
   - name: PROVEARNEDTIMEPROJECTED
     description: |-
-      TODO(#12372)
+      Provisional projected earned time.
   - name: MANDATORYRELEASEDATEACTUAL
     description: |-
-      TODO(#12372)
+      Actual mandatory release date.  #TODO(#12372) Update with answer from CDOC on if this includes all earned time.
   - name: EARNEDTIME
     description: |-
-      TODO(#12372)
+      Earned time - #TODO(#12372) in days?
   - name: EARNEDTIMEDISASTERRELIEF
     description: |-
-      TODO(#12372)
+      Earned time disaster relief - can earn one day of earned time for each day spent working at disaster site.
   - name: EARNEDTIMEACHIEVEMENTS
     description: |-
-      TODO(#12372)
+      Earned time for achievements, such as specific class/program completion.
   - name: EARNEDTIMEEXCEPTIONALCONDUCT
     description: |-
-      TODO(#12372)
+      Earned time from exceptional conduct that promotoes safety of DOC employees, contract workers and volunteers, or other offenders.
   - name: NULLTIMEACTIVEMR
     description: |-
       TODO(#12372)
@@ -112,19 +128,19 @@ columns:
       TODO(#12372)
   - name: EARNEDTIMEPOSSIBLE
     description: |-
-      TODO(#12372)
+      Earned time possible is the calculation for if one keeps earning at their current rate.
   - name: MANDATORYRELEASEDATEPOSSIBLE
     description: |-
-      TODO(#12372)
+      The mandatory release date if person keeps earning time at their current rate.
   - name: EARNEDTIMEPOTENTIALMONTHS
     description: |-
-      TODO(#12372)
+      The potential earned time in months if earning the max each month.
   - name: EARNEDTIMEPOTENTIAL
     description: |-
-      TODO(#12372)
+      The potential earned time if earning the max each month.
   - name: MANDATORYRELEASEDATEPOTENTIAL
     description: |-
-      TODO(#12372)
+      The mandatory release date if person earns the max each month.
   - name: EARNEDRELEASETIME
     description: |-
       TODO(#12372)
@@ -221,9 +237,11 @@ columns:
   - name: PERULINGINDICATOR
     description: |-
       TODO(#12372)
+    known_values: []
   - name: TIMEGAPEFFECTSTHISPED
     description: |-
       TODO(#12372)
+    known_values: []
   - name: PETIMESERVED
     description: |-
       TODO(#12372)
@@ -256,7 +274,10 @@ columns:
       TODO(#12372)
   - name: PAROLEREVOKEDFLAG
     description: |-
-      TODO(#12372)
+      Flag to indicate if parole has been revoked.
+    known_values:
+      - value: "N"
+        description: "No"
   - name: LASTRULSENTSEQNO
     description: |-
       TODO(#12372)
@@ -295,7 +316,82 @@ columns:
       TODO(#12372)
   - name: SENTENCELAWCODE
     description: |-
-      TODO(#12372)
+      CILAWCODE for the law code for the sentence.
+    known_values:
+      - value: "."
+        description: Interstate Compact
+      - value: "0R"
+        description: "0R"
+      - value: "79"
+        description: Old Law
+      - value: "B"
+        description: New Law
+      - value: "BS"
+        description: New Law with Mandatory Parole
+      - value: "BV"
+        description: BV
+      - value: "C"
+        description: TODO(#12372)
+      - value: "C3"
+        description: TODO(#12372)
+      - value: "E1"
+        description: V enh (one prior violent)
+      - value: "E2"
+        description: V enh (two or more prior violent)
+      - value: "E3"
+        description: B enh (93-04 one prior violent)
+      - value: "E4"
+        description: B enh (93-04 two or more prior violent)
+      - value: "F"
+        description: "F Law"
+      - value: "J"
+        description: Mandatory years habitual
+      - value: "J3"
+        description: J enh (93-03 one prior violent)
+      - value: "J4"
+        description: J enh (93-03 two or more prior violent)
+      - value: "L"
+        description: TODO(#12372)
+      - value: "LS"
+        description: LS
+      - value: "N"
+        description: "N Law"
+      - value: "P"
+        description: P Law
+      - value: "R0"
+        description: B enh (felony class 2 or 3)
+      - value: "R1"
+        description: B enh (felony class 4 or 5)
+      - value: "R2"
+        description: B enh (felony 2/3, 1 prior OR 2 or more prior)
+      - value: "S"
+        description: Mandatory years sex offender
+      - value: "S1"
+        description: S enh (87-93 one prior violent)
+      - value: "S2"
+        description: S enh (87-93 two or more prior violent)
+      - value: "S3"
+        description: S enh (93-02 one prior violent)
+      - value: "S4"
+        description: S enh (93-02 two or more prior violent)
+      - value: "UN"
+        description: Unknown (Conversion)
+      - value: "V"
+        description: V (Discretionary) Law
+      - value: "V1"
+        description: "V1"
+      - value: "V2"
+        description: "V2"
+      - value: "VB"
+        description: "VB"
+      - value: "X"
+        description: Martin/Cooper
+      - value: "X3"
+        description: X enh (one prior violent)
+      - value: "X4"
+        description: X enh (two or more prior violent)
+      - value: "Y2"
+        description: "Y2"
   - name: OCSEARLIESTSTARTDATE
     description: |-
       TODO(#12372)
