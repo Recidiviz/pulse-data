@@ -58,9 +58,9 @@ const ConfirmHeaderContainer = styled.div`
   width: 100%;
   position: fixed;
   background: white;
-  top: 64px;
+  top: 0px;
   z-index: 1;
-  padding-top: ${CONTAINER_HORIZONTAL_PADDING}px;
+  padding-top: 88px;
   display: flex;
   flex-direction: column;
   align-items: center;
