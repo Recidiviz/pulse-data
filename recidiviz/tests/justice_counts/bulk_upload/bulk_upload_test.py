@@ -65,6 +65,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution",
         )
+        self.supervision_directory = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/supervision",
+        )
         self.prosecution_excel = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution/prosecution_metrics.xlsx",
@@ -75,12 +79,18 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
 
         user_account = self.test_schema_objects.test_user_A
-        agency = self.test_schema_objects.test_agency_F
+        prison_agency = self.test_schema_objects.test_agency_G
+        prosecution_agency = self.test_schema_objects.test_agency_F
+        supervision_agency = self.test_schema_objects.test_agency_E
         with SessionFactory.using_database(self.database_key) as session:
-            session.add_all([user_account, agency])
+            session.add_all(
+                [user_account, prison_agency, prosecution_agency, supervision_agency]
+            )
             session.commit()
             session.flush()
-            self.prosecution_agency_id = agency.id
+            self.prison_agency_id = prison_agency.id
+            self.prosecution_agency_id = prosecution_agency.id
+            self.supervision_agency_id = supervision_agency.id
             self.user_account_id = user_account.id
 
     def test_validation(self) -> None:
@@ -116,20 +126,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
     def test_prison_new(self) -> None:
         """Bulk upload prison metrics into an empty database."""
-
-        user_account = self.test_schema_objects.test_user_A
-        agency = self.test_schema_objects.test_agency_G
-
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(user_account)
-            session.add(agency)
-            session.commit()
-            session.flush()
-
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
             self.bulk_uploader.upload_directory(
                 session=session,
                 directory=self.prisons_directory,
-                agency_id=agency.id,
+                agency_id=self.prison_agency_id,
                 system=schema.System.PRISONS,
                 user_account=user_account,
                 catch_errors=False,
@@ -137,7 +141,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
-                agency_id=agency.id,
+                agency_id=self.prison_agency_id,
                 include_datapoints=True,
             )
             reports_by_instance = {report.instance: report for report in reports}
@@ -244,6 +248,56 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_prosecution(reports_by_instance=reports_by_instance)
+
+    def test_supervision_new(self) -> None:
+        """Bulk upload supervision metrics into an empty database."""
+
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            self.bulk_uploader.upload_directory(
+                session=session,
+                directory=self.supervision_directory,
+                agency_id=self.supervision_agency_id,
+                system=schema.System.SUPERVISION,
+                user_account=user_account,
+                catch_errors=False,
+            )
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.supervision_agency_id,
+                include_datapoints=True,
+            )
+            reports_by_instance = {report.instance: report for report in reports}
+            annual_report_1 = reports_by_instance["2021 Annual Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    session=session, report=annual_report_1
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].value, None)
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].value, None)
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].value, 400)
+
+            annual_report_2 = reports_by_instance["2022 Annual Metrics"]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    session=session, report=annual_report_2
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].value, 2000)
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].value, 300)
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].value, 1000)
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
