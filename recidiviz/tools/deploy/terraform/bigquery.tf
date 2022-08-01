@@ -173,6 +173,11 @@ resource "google_bigquery_table" "workflows_client_record_archive" {
         "mode": "NULLABLE"
     },
     {
+        "name": "remaining_criteria_needed",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
         "name": "officer_id",
         "type": "STRING",
         "mode": "NULLABLE"
