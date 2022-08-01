@@ -33,6 +33,7 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -51,6 +52,63 @@ from recidiviz.view_registry.address_overrides_factory import (
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
+
+
+def _get_root_view_builders_to_load(
+    all_view_builders: List[BigQueryViewBuilder],
+    view_ids_to_load: Optional[List[str]] = None,
+    dataset_ids_to_load: Optional[List[str]] = None,
+) -> List[BigQueryViewBuilder]:
+    """Returns the list of view builders that match either the addresses in
+    view_ids_to_load or dataset_ids in dataset_ids_to_load.
+    """
+    if view_ids_to_load:
+        if dataset_ids_to_load:
+            raise ValueError(
+                f"Expected dataset_ids_to_load to be null but found: {dataset_ids_to_load}."
+            )
+
+        view_addresses_to_load = [
+            BigQueryAddress(
+                dataset_id=view_id_str.split(".")[0],
+                table_id=view_id_str.split(".")[1],
+            )
+            for view_id_str in view_ids_to_load
+        ]
+
+        if len(set(view_addresses_to_load)) != len(view_addresses_to_load):
+            raise ValueError(
+                f"Found duplicates in list of input views to load: {view_addresses_to_load}"
+            )
+        view_builders_to_load = [
+            view for view in all_view_builders if view.address in view_addresses_to_load
+        ]
+        if len(view_builders_to_load) != len(view_addresses_to_load):
+            found_builders_set = {vb.address for vb in view_builders_to_load}
+            expected_builders_set = set(view_addresses_to_load)
+            missing = expected_builders_set - found_builders_set
+            raise ValueError(
+                f"Expected to find [{len(view_addresses_to_load)}], but only "
+                f"found [{len(view_builders_to_load)}] that matched managed views. "
+                f"Did not find views that matched the following expected "
+                f"addresses: {missing}."
+            )
+        return view_builders_to_load
+
+    if dataset_ids_to_load:
+        view_builders_to_load = [
+            view for view in all_view_builders if view.dataset_id in dataset_ids_to_load
+        ]
+
+        found_datasets = {view.dataset_id for view in view_builders_to_load}
+        if found_datasets != set(dataset_ids_to_load):
+            missing_datasets = set(dataset_ids_to_load) - found_datasets
+            raise ValueError(
+                f"Did not find any views in the following datasets: {missing_datasets}"
+            )
+        return view_builders_to_load
+
+    raise ValueError("view_ids_to_load and dataset_ids_to_load not defined.")
 
 
 def load_views_to_sandbox(
@@ -112,35 +170,25 @@ def load_views_to_sandbox(
     logging.info("Gathering all deployed views...")
     view_builders = deployed_view_builders(project_id())
 
-    # if view_ids_to_load or dataset_ids_to_load, use dag walker to get ancestor views
+    # If view_ids_to_load or dataset_ids_to_load, use dag walker to get ancestor views
     # and potentially descendant views, which will be updated, too.
     if view_ids_to_load or dataset_ids_to_load:
-
-        # get views for all view_ids in view_ids_to_load or dataset_ids_to_load
-        view_builders_to_load: List[BigQueryViewBuilder] = []
-        if view_ids_to_load:
-            view_builders_to_load.extend(
-                view
-                for view in view_builders
-                if view.dataset_id + "." + view.view_id in view_ids_to_load
-            )
-        elif dataset_ids_to_load:  # mypy
-            view_builders_to_load.extend(
-                view for view in view_builders if view.dataset_id in dataset_ids_to_load
-            )
-        else:
-            raise ValueError("view_ids_to_load and dataset_ids_to_load not defined.")
+        root_view_builders_to_load = _get_root_view_builders_to_load(
+            all_view_builders=view_builders,
+            dataset_ids_to_load=dataset_ids_to_load,
+            view_ids_to_load=view_ids_to_load,
+        )
 
         logging.info("Gathering views to load to sandbox...")
         builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
-            view_builders_to_load=view_builders_to_load,
+            view_builders_to_load=root_view_builders_to_load,
             all_view_builders_in_dag=view_builders,
             get_ancestors=update_ancestors,
             get_descendants=update_descendants,
             include_dataflow_views=(dataflow_dataset_override is not None),
         )
 
-    # update all view builders if view_ids_to_load not specified
+    # Update all view builders if view_ids_to_load or dataset_ids_to_load not specified
     else:
         prompt_for_confirmation("This will load all sandbox views, continue?")
         builders_to_update = [

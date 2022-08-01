@@ -292,6 +292,11 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     # projects. If an empty set, does not deploy in any projects.
     projects_to_deploy: Optional[Set[str]]
 
+    @property
+    def address(self) -> BigQueryAddress:
+        """Returns the address of this view, with no dataset overrides applied."""
+        return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
+
     def build(
         self,
         *,
