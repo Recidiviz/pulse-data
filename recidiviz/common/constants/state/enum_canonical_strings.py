@@ -432,6 +432,9 @@ state_supervision_contact_location_treatment_provider = "TREATMENT_PROVIDER"
 state_supervision_contact_location_law_enforcement_agency = "LAW_ENFORCEMENT_AGENCY"
 state_supervision_contact_location_parole_commission = "PAROLE_COMMISSION"
 state_supervision_contact_location_alternative_work_site = "ALTERNATIVE_WORK_SITE"
+state_supervision_contact_location_alternative_place_of_employment = (
+    "ALTERNATIVE_PLACE_OF_EMPLOYMENT"
+)
 
 # state_employment_period.py
 state_employment_period_employment_status_alternate_income_source = (
