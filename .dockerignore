@@ -5,3 +5,21 @@
 recidiviz/case_triage/local/**/*
 
 **/node_modules
+
+
+# Ignoring Dockle Alerts
+
+# use latest version: Ignoring because the container, that was Dockle-tested, was built with
+# the latest image, and has nothing to do with the Dockerfile
+
+DKL-DI-0006
+
+
+# storing credentials in env var/files
+# Ignoring because in prior conversations with Aurora, there are no actual secrets being exposed in the
+# Dockerfile
+CIS-DI-0010
+
+# use non-root user
+# Ignoring because there is no actual security risk here and no need to change the user
+CIS-DI-0001
