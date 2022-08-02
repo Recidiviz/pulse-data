@@ -49,7 +49,7 @@ repos:
         name: generate_calc_documentation
         entry: pipenv run python -m recidiviz.calculator.calculation_documentation_generator
         language: system
-        files: ^recidiviz/calculator/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/|^recidiviz/persistence/database/schema/|^recidiviz/persistence/entity/
+        files: ^recidiviz/calculator/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/|^recidiviz/persistence/database/schema/|^recidiviz/persistence/entity/|^recidiviz/task_eligibility/
         exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
         require_serial: true
       - id: generate_ingest_mappings_schema_documentation

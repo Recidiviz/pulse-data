@@ -1244,6 +1244,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="population_projection_data", table_id="simulation_run_dates"
             ),
             BigQueryAddress(dataset_id="sessions", table_id="cohort_month_index"),
+            # TODO(#14317): Remove this line once task eligibility views are defined for
+            #  our first state.
+            BigQueryAddress(dataset_id="task_eligibility", table_id="all_tasks"),
         }
         if node.dag_key.view_address in known_empty_parent_view_addresss:
             return

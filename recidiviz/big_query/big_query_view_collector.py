@@ -17,6 +17,7 @@
 """A class that collects top-level BigQueryViewBuilder instances in a directory and uses them to build BigQueryViews."""
 import abc
 import os
+from types import ModuleType
 from typing import Generic, List, Optional, Type
 
 import recidiviz
@@ -53,6 +54,28 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         """
         sub_module_parts = os.path.normpath(relative_dir_path).split("/")
         view_dir_module = cls.get_relative_module(recidiviz, sub_module_parts)
+        return cls.collect_view_builders_in_module(
+            builder_type=builder_type,
+            view_dir_module=view_dir_module,
+            view_file_prefix_filter=view_file_prefix_filter,
+        )
+
+    @classmethod
+    def collect_view_builders_in_module(
+        cls,
+        builder_type: Type[BigQueryViewBuilderType],
+        view_dir_module: ModuleType,
+        view_file_prefix_filter: Optional[str] = None,
+    ) -> List[BigQueryViewBuilderType]:
+        """Collects all view builders in a directory module and returns a list of all
+        views that can be built from builders defined in files in that directory.
+
+        Args:
+            builder_type: The type of builder that we expect to find in this subdir
+            view_dir_module: The module for the directory that contains all the view definition files.
+            view_file_prefix_filter: When set, collection filters out any files whose name does not have this prefix.
+        """
+
         view_modules = cls.get_submodules(view_dir_module, view_file_prefix_filter)
 
         builders = []
