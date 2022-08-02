@@ -122,31 +122,30 @@ const Menu = () => {
 
       {/* Agencies Dropdown */}
       {(userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) ||
-        userStore.permissions.includes(Permission.SWITCH_AGENCIES)) &&
-        location.pathname === "/" && (
-          <MenuItem active={activeMenuItem === MenuItems.Agencies}>
-            <Dropdown>
-              <ExtendedDropdownToggle kind="borderless">
-                Agencies
-              </ExtendedDropdownToggle>
-              <DropdownMenu alignment="right">
-                {userStore.userAgencies?.map((agency) => {
-                  return (
-                    <ExtendedDropdownMenuItem
-                      key={agency.id}
-                      onClick={() => {
-                        userStore.setCurrentAgencyId(agency.id);
-                      }}
-                      highlight={userStore.currentAgency?.id === agency.id}
-                    >
-                      {agency.name}
-                    </ExtendedDropdownMenuItem>
-                  );
-                })}
-              </DropdownMenu>
-            </Dropdown>
-          </MenuItem>
-        )}
+        userStore.permissions.includes(Permission.SWITCH_AGENCIES)) && (
+        <MenuItem active={activeMenuItem === MenuItems.Agencies}>
+          <Dropdown>
+            <ExtendedDropdownToggle kind="borderless">
+              Agencies
+            </ExtendedDropdownToggle>
+            <DropdownMenu alignment="right">
+              {userStore.userAgencies?.map((agency) => {
+                return (
+                  <ExtendedDropdownMenuItem
+                    key={agency.id}
+                    onClick={() => {
+                      userStore.setCurrentAgencyId(agency.id);
+                    }}
+                    highlight={userStore.currentAgency?.id === agency.id}
+                  >
+                    {agency.name}
+                  </ExtendedDropdownMenuItem>
+                );
+              })}
+            </DropdownMenu>
+          </Dropdown>
+        </MenuItem>
+      )}
 
       {/* Settings */}
       <MenuItem

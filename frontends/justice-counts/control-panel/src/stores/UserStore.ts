@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { makeAutoObservable, runInAction, when } from "mobx";
+import { makePersistable } from "mobx-persist-store";
 
 import { APP_METADATA_CLAIM, AuthStore } from "../components/Auth";
 import { showToast } from "../components/Toast";
@@ -44,6 +45,12 @@ class UserStore {
 
   constructor(authStore: AuthStore, api: API) {
     makeAutoObservable(this);
+    makePersistable(this, {
+      name: "UserStore",
+      properties: ["currentAgencyId"],
+      storage: window.localStorage,
+    });
+
     this.authStore = authStore;
     this.api = api;
     this.auth0UserID = this.authStore.user?.id;
@@ -124,6 +131,19 @@ class UserStore {
   }
 
   getInitialAgencyId(): number | undefined {
+    // this.currentAgencyId is persisted in the user's localStorage.
+    // First, try to retrieve the persisted value
+    if (this.currentAgencyId !== undefined) {
+      const currentAgency = this.userAgencies?.find(
+        (agency) => agency.id === this.currentAgencyId
+      );
+      // if the agency exists, set current agency to the persisted value
+      if (currentAgency) {
+        return this.currentAgencyId;
+      }
+    }
+    // if the agency does not exist, or there is no persisted currentAgencyId value,
+    // just set the current agency id to the first agency in the array of user agencies
     if (this.userAgencies && this.userAgencies.length > 0) {
       // attempting to access 0 index in the empty array leads to the mobx warning "[mobx] Out of bounds read: 0"
       // so check the length of the array before accessing
