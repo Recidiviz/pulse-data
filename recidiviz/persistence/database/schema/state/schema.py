@@ -541,6 +541,7 @@ state_acting_body_type = Enum(
 
 state_custodial_authority = Enum(
     state_enum_strings.state_custodial_authority_court,
+    state_enum_strings.state_custodial_authority_county,
     state_enum_strings.state_custodial_authority_federal,
     state_enum_strings.state_custodial_authority_other_country,
     state_enum_strings.state_custodial_authority_other_state,

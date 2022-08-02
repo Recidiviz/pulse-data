@@ -89,6 +89,7 @@ class StateCustodialAuthority(StateEntityEnum):
 
     # TODO(#12648): Rename to COUNTY
     COURT = state_enum_strings.state_custodial_authority_court
+    COUNTY = state_enum_strings.state_custodial_authority_county
     FEDERAL = state_enum_strings.state_custodial_authority_federal
     OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
     OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
@@ -140,6 +141,16 @@ _STATE_CUSTODIAL_AUTHORITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "`StateCustodialAuthority.STATE_PRISON` and a "
     "`StateIncarcerationType.COUNTY_JAIL`. TODO(#12648): THIS WILL SOON BE RENAMED "
     "TO `COUNTY` .",
+    StateCustodialAuthority.COUNTY: "Describes a county-level authority, "
+    "usually a county jail entity. This is typically used when a person is being held "
+    "in a county jail, and is under the authority of the county. It is rare to see "
+    "this value on `StateSupervisionPeriod` entities. When used on "
+    "`StateIncarcerationPeriod` entities, it usually indicates that we are "
+    "receiving data directly from the county jail systems. If a person is being held "
+    "in a county jail on behalf of the state prison (if, for example, the prison "
+    "does not have room for everyone in their facilities) then we would see "
+    "`StateCustodialAuthority.STATE_PRISON` and a "
+    "`StateIncarcerationType.COUNTY_JAIL`.",
     StateCustodialAuthority.FEDERAL: "Represents some kind of federal authority.",
     StateCustodialAuthority.OTHER_COUNTRY: "Represents the authority of another "
     "country.",
@@ -167,6 +178,7 @@ _STATE_CUSTODIAL_AUTHORITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 
 _STATE_CUSTODIAL_AUTHORITY_MAP = {
     "COURT": StateCustodialAuthority.COURT,
+    "COUNTY": StateCustodialAuthority.COUNTY,
     "EXTERNAL UNKNOWN": StateCustodialAuthority.EXTERNAL_UNKNOWN,
     "FEDERAL": StateCustodialAuthority.FEDERAL,
     "INTERNAL UNKNOWN": StateCustodialAuthority.INTERNAL_UNKNOWN,
