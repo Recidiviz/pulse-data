@@ -75,6 +75,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.date_imposed,
         sis.completion_date,
         sis.status,
+        sis.parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sis.projected_min_release_date AS projected_completion_date_min,
         sis.projected_max_release_date AS projected_completion_date_max,
@@ -114,6 +115,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.date_imposed,
         sss.completion_date,
         sss.status,
+        NULL AS parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sss.projected_completion_date AS projected_completion_date_min,
         sss.projected_completion_date AS projected_completion_date_max,
@@ -154,6 +156,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         MIN(effective_date) AS effective_date,
         MIN(date_imposed) AS date_imposed,
         MAX(completion_date) AS completion_date,
+        MAX(parole_eligibility_date) AS parole_eligibility_date,
         MAX(projected_completion_date_min) AS projected_completion_date_min,
         MAX(projected_completion_date_max) AS projected_completion_date_max,
     FROM sentences_cte
@@ -176,6 +179,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         dedup.completion_date,
         sen.status,
         raw.status_raw_text,
+        dedup.parole_eligibility_date,
         dedup.projected_completion_date_min,
         dedup.projected_completion_date_max,
         sen.initial_time_served_days,
