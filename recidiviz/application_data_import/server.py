@@ -27,8 +27,8 @@ from google.api_core.exceptions import AlreadyExists
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
+from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
-from recidiviz.case_triage.pathways.metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )

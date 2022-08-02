@@ -33,20 +33,13 @@ class FetchMetricsParamsSchemaTest(SchemaTestCase):
     test_invalid_group = invalid_schema_test({"group": "asdf"}, ["group"])
 
     test_invalid_filters = invalid_schema_test(
-        {"group": Dimension.YEAR_MONTH.value, "filters": {"fake": ["value"]}},
+        {"group": Dimension.AGE_GROUP.value, "filters": {"fake": ["value"]}},
         ["filters"],
     )
 
     test_valid_filters = valid_schema_test(
         {
-            "group": Dimension.YEAR_MONTH.value,
+            "group": Dimension.AGE_GROUP.value,
             "filters": {Dimension.GENDER.value: ["MALE"]},
         }
-    )
-
-    test_invalid_filter_year_month = invalid_schema_test(
-        {
-            "group": Dimension.YEAR_MONTH.value,
-            "filters": {Dimension.YEAR_MONTH: ["2022-03-01"]},
-        },
     )

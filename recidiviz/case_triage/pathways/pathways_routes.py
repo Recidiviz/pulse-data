@@ -29,8 +29,10 @@ from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (
     get_dimension_transformer,
 )
+from recidiviz.case_triage.pathways.enabled_metrics import (
+    ENABLED_METRICS_BY_STATE_BY_NAME,
+)
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
-from recidiviz.case_triage.pathways.metrics import ENABLED_METRICS_BY_STATE_BY_NAME
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )

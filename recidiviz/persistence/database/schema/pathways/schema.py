@@ -19,6 +19,7 @@
 from typing import List, Optional
 
 from sqlalchemy import (
+    TIMESTAMP,
     BigInteger,
     Column,
     Date,
@@ -27,11 +28,15 @@ from sqlalchemy import (
     Integer,
     SmallInteger,
     String,
+    func,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 # Defines the base class for all table classes in the pathways schema.
 # For actual schema definitions, see /pathways/schema.py.
+from sqlalchemy.sql.ddl import DDLElement
+
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 
 PathwaysBase: DeclarativeMeta = declarative_base(
@@ -61,7 +66,15 @@ def build_covered_indexes(
     ]
 
 
-class LibertyToPrisonTransitions(PathwaysBase):
+class TransitionsOverTimeMixin:
+    transition_date: Column
+
+    @hybrid_property
+    def month_timestamp(self) -> DDLElement:
+        return func.date_trunc("month", func.cast(self.transition_date, TIMESTAMP))
+
+
+class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions`
     """
@@ -102,8 +115,7 @@ class PrisonPopulationOverTime(PathwaysBase):
         Index(
             "prison_population_over_time_pk",
             "person_id",
-            "year",
-            "month",
+            "date_in_population",
             "age_group",
             "facility",
             "gender",
@@ -113,11 +125,9 @@ class PrisonPopulationOverTime(PathwaysBase):
         ),
         Index(
             "prison_population_over_time_time_series",
-            "time_period",
-            "year",
-            "month",
-            "person_id",
+            "date_in_population",
             postgresql_include=[
+                "person_id",
                 "age_group",
                 "gender",
                 "facility",
@@ -125,13 +135,17 @@ class PrisonPopulationOverTime(PathwaysBase):
                 "race",
             ],
         ),
+        # Allows fast execution of select min(date_in_population)
+        Index(
+            "prison_population_over_time_watermark",
+            "time_period",
+            "date_in_population",
+        ),
     )
 
     state_code = Column(String, primary_key=True, nullable=False)
-    # Denormalized date in population year
-    year = Column(SmallInteger, primary_key=True, nullable=False)
-    # Denormalized date in population month
-    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # Date in population
+    date_in_population = Column(Date, primary_key=True, nullable=False)
     # Bin of when the person was in population (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
     time_period = Column(String, primary_key=True, nullable=False)
     # Person ID for the session. BigInt has faster sorting/grouping than String
@@ -241,7 +255,7 @@ class PrisonPopulationPersonLevel(PathwaysBase):
     race = Column(String)
 
 
-class PrisonToSupervisionTransitions(PathwaysBase):
+class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.prison_to_supervision_transitions`
     """
@@ -285,8 +299,7 @@ class SupervisionPopulationOverTime(PathwaysBase):
     __table_args__ = (
         Index(
             "supervision_population_over_time_pk",
-            "year",
-            "month",
+            "date_in_population",
             "supervision_district",
             "supervision_level",
             "race",
@@ -295,24 +308,26 @@ class SupervisionPopulationOverTime(PathwaysBase):
         ),
         Index(
             "supervision_population_over_time_time_series",
-            "time_period",
-            "year",
-            "month",
+            "date_in_population",
             postgresql_include=[
+                "person_id",
                 "supervision_district",
                 "supervision_level",
                 "race",
-                "person_id",
             ],
+        ),
+        # Allows fast execution of select min(date_in_population)
+        Index(
+            "supervision_population_over_time_watermark",
+            "time_period",
+            "date_in_population",
         ),
     )
 
     state_code = Column(String, primary_key=True, nullable=False)
 
-    # Denormalized date in population year
-    year = Column(SmallInteger, primary_key=True, nullable=False)
-    # Denormalized date in population month
-    month = Column(SmallInteger, primary_key=True, nullable=False)
+    # Date in population
+    date_in_population = Column(Date, primary_key=True, nullable=False)
     # Bin of when the person was in population (see recidiviz.calculator.query.bq_utils.get_binned_time_period_months)
     time_period = Column(String, primary_key=True, nullable=False)
     # Person ID for the session. BigInt has faster sorting/grouping than String
@@ -386,7 +401,7 @@ class SupervisionPopulationProjection(PathwaysBase):
     total_population_max = Column(Float, nullable=False)
 
 
-class SupervisionToLibertyTransitions(PathwaysBase):
+class SupervisionToLibertyTransitions(PathwaysBase, TransitionsOverTimeMixin):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_liberty_transitions`
     """
@@ -427,7 +442,7 @@ class SupervisionToLibertyTransitions(PathwaysBase):
     state_code = Column(String, nullable=False)
 
 
-class SupervisionToPrisonTransitions(PathwaysBase):
+class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     """ETL data imported from
     `recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions`
     """

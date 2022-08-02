@@ -41,7 +41,9 @@ from recidiviz.persistence.database.schema.pathways.schema import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.pathways.metrics_test import load_metrics_fixture
+from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
+    load_metrics_fixture,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -368,16 +370,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={
-                "group": Dimension.YEAR_MONTH.value,
+                "group": Dimension.RACE.value,
                 "time_period": TimePeriod.MONTHS_0_6.value,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             [
-                {"count": 1, "month": 1, "year": 2022},
-                {"count": 1, "month": 2, "year": 2022},
-                {"count": 3, "month": 3, "year": 2022},
+                {"count": 1, "race": "ASIAN"},
+                {"count": 2, "race": "BLACK"},
+                {"count": 2, "race": "WHITE"},
             ],
             response.get_json(),
         )
@@ -386,17 +388,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             self.count_by_dimension_metric_path,
             headers={"Origin": "http://localhost:3000"},
             query_string={
-                "group": Dimension.YEAR_MONTH.value,
+                "group": Dimension.RACE.value,
                 "filters[time_period]": TimePeriod.MONTHS_25_60.value,
             },
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             [
-                {"count": 1, "month": 1, "year": 2021},
-                {"count": 1, "month": 1, "year": 2022},
-                {"count": 1, "month": 2, "year": 2022},
-                {"count": 3, "month": 3, "year": 2022},
+                {"count": 1, "race": "ASIAN"},
+                {"count": 2, "race": "BLACK"},
+                {"count": 3, "race": "WHITE"},
             ],
             response.get_json(),
         )
@@ -495,7 +496,7 @@ class TestAuthorizationIntegration(PathwaysBlueprintTestCase):
     def test_all_non_options_request_require_authorization(self) -> None:
         self.test_client.get(
             "/pathways/US_TN/LibertyToPrisonTransitionsCount",
-            query_string={"group": Dimension.YEAR_MONTH.value},
+            query_string={"group": Dimension.RACE.value},
         )
 
         self.mock_authorization_handler.assert_called()

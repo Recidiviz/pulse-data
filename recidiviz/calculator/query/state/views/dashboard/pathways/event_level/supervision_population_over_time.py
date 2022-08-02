@@ -37,15 +37,14 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT {columns}
     FROM `{project_id}.{dashboards_dataset}.supervision_population`
     WHERE time_period IS NOT NULL
-    ORDER BY state_code, person_id, year, month
+    ORDER BY state_code, person_id, date_in_population
 """
 
 SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         "state_code",
         "person_id",
-        "year",
-        "month",
+        "date_in_population",
         "time_period",
         "supervision_district",
         "supervision_level",

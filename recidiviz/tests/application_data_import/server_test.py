@@ -23,8 +23,8 @@ from unittest.mock import ANY, MagicMock, patch
 from fakeredis import FakeRedis
 
 from recidiviz.application_data_import.server import app
-from recidiviz.case_triage.pathways.metric_queries import (
-    LibertyToPrisonTransitionsCount,
+from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
+    ALL_METRICS_BY_NAME,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -157,7 +157,7 @@ class TestApplicationDataImportRoutes(TestCase):
                 state_code=StateCode.US_XX, metric_fetcher=ANY, redis=ANY
             )
             mock_metric_cache.return_value.reset_cache.assert_called_with(
-                LibertyToPrisonTransitionsCount
+                ALL_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)

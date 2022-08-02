@@ -53,8 +53,7 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     add_mapped_dimensions AS (
         SELECT 
             pop.state_code,
-            year,
-            month,
+            date_of_stay AS date_in_population,
             {time_period_months} AS time_period,
             gender,
             admission_reason,
@@ -72,15 +71,14 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     , filtered_rows AS (
         SELECT 
             state_code,
-            year,
-            month,
+            date_in_population,
             time_period,
             person_id,
             {dimensions_clause},
         FROM add_mapped_dimensions
         {filter_to_enabled_states}
         AND {facility_filter}
-        AND DATE(year, month, 1) <= CURRENT_DATE('US/Eastern')
+        AND date_in_population <= CURRENT_DATE('US/Eastern')
         AND time_period IS NOT NULL
         # TODO(#13850) Remove age_group filter for US_MI when Pathways is on the new backend
         AND CASE
@@ -92,15 +90,14 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT
         {columns}
     FROM filtered_rows
-    ORDER BY state_code, year, month, person_id
+    ORDER BY state_code, date_in_population, person_id
 """
 
 PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         "state_code",
         "person_id",
-        "year",
-        "month",
+        "date_in_population",
         "time_period",
         "gender",
         "admission_reason",
@@ -129,7 +126,7 @@ PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ),
     facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
     time_period_months=get_binned_time_period_months(
-        "DATE(year, month, 1)",
+        "date_of_stay",
         current_date_expr="DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)",
     ),
 )

@@ -1,6 +1,6 @@
-state_code,year,month,time_period,person_id,supervision_district,supervision_level,race
-US_XX,2022,1,months_7_12,0001,District 1,HIGH,HISPANIC
-US_XX,2022,1,months_7_12,0001,District 2,HIGH,HISPANIC
-US_XX,2022,1,months_7_12,0002,OTHER,MINIMUM,WHITE
-US_XX,2022,2,months_0_6,0001,District 1,HIGH,HISPANIC
-US_XX,2022,2,months_0_6,0002,OTHER,MINIMUM,WHITE
+state_code,date_in_population,time_period,person_id,supervision_district,supervision_level,race
+US_XX,2022-01-01,months_7_12,0001,District 1,HIGH,HISPANIC
+US_XX,2022-01-01,months_7_12,0001,District 2,HIGH,HISPANIC
+US_XX,2022-01-01,months_7_12,0002,OTHER,MINIMUM,WHITE
+US_XX,2022-02-01,months_0_6,0001,District 1,HIGH,HISPANIC
+US_XX,2022-02-01,months_0_6,0002,OTHER,MINIMUM,WHITE

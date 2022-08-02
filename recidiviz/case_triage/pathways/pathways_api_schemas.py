@@ -15,103 +15,51 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Contains Marshmallow schemas for the Pathways API """
-import datetime
+from typing import Dict, Union
 
-from marshmallow import Schema, ValidationError, fields, validate
+import attr
+import marshmallow.fields
+from marshmallow import Schema, fields, validate
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
     DimensionOperation,
 )
-from recidiviz.case_triage.pathways.metrics import (
-    ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE,
-    ENABLED_PERSON_LEVEL_METRICS_BY_STATE,
-    ENABLED_PROJECTION_METRICS_BY_STATE,
-)
+from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_METRICS
 
 FETCH_METRIC_SCHEMAS_BY_NAME = {}
 
 
-def is_date_string(value: str) -> None:
-    try:
-        datetime.datetime.strptime(value, "%Y-%m-%d")
-    except ValueError as e:
-        raise ValidationError("Not a date string in YYYY-MM-DD format") from e
+for metric_class in ALL_METRICS:
+    dimension_mapping_collection = metric_class.dimension_mapping_collection
 
-
-for enabled_metrics in ENABLED_COUNT_BY_DIMENSION_METRICS_BY_STATE.values():
-    for metric_class in enabled_metrics:
-        dimension_mapping_collection = metric_class.dimension_mapping_collection
-
-        FETCH_METRIC_SCHEMAS_BY_NAME[metric_class.name] = Schema.from_dict(
-            {
-                "group": EnumField(
-                    Dimension,
-                    by_value=True,
-                    required=True,
-                    validate=validate.OneOf(
-                        dimension_mapping_collection.operable_map[
-                            DimensionOperation.GROUP
-                        ].keys()
-                    ),
+    schema_fields: Dict[str, Union[marshmallow.fields.Field, type]] = {
+        "filters": fields.Dict(
+            EnumField(
+                Dimension,
+                by_value=True,
+                validate=validate.OneOf(
+                    dimension_mapping_collection.operable_map[
+                        DimensionOperation.FILTER
+                    ].keys()
                 ),
-                "filters": fields.Dict(
-                    EnumField(
-                        Dimension,
-                        by_value=True,
-                        validate=validate.OneOf(
-                            dimension_mapping_collection.operable_map[
-                                DimensionOperation.FILTER
-                            ].keys()
-                        ),
-                    ),
-                    fields.List(fields.Str),
-                ),
-            }
+            ),
+            fields.List(fields.Str),
+        ),
+    }
+    if any(
+        field.name == "group" for field in attr.fields(metric_class.get_params_class())
+    ):
+        schema_fields["group"] = EnumField(
+            Dimension,
+            by_value=True,
+            required=True,
+            validate=validate.OneOf(
+                dimension_mapping_collection.operable_map[
+                    DimensionOperation.GROUP
+                ].keys()
+            ),
         )
 
-for enabled_person_metrics in ENABLED_PERSON_LEVEL_METRICS_BY_STATE.values():
-    for person_metric_class in enabled_person_metrics:
-        dimension_mapping_collection = person_metric_class.dimension_mapping_collection
-
-        FETCH_METRIC_SCHEMAS_BY_NAME[person_metric_class.name] = Schema.from_dict(
-            {
-                "filters": fields.Dict(
-                    EnumField(
-                        Dimension,
-                        by_value=True,
-                        validate=validate.OneOf(
-                            dimension_mapping_collection.operable_map[
-                                DimensionOperation.FILTER
-                            ].keys(),
-                        ),
-                    ),
-                    fields.List(fields.Str),
-                ),
-            }
-        )
-
-
-for enabled_projection_metrics in ENABLED_PROJECTION_METRICS_BY_STATE.values():
-    for projection_metric_class in enabled_projection_metrics:
-        dimension_mapping_collection = (
-            projection_metric_class.dimension_mapping_collection
-        )
-
-        FETCH_METRIC_SCHEMAS_BY_NAME[projection_metric_class.name] = Schema.from_dict(
-            {
-                "filters": fields.Dict(
-                    EnumField(
-                        Dimension,
-                        by_value=True,
-                        validate=validate.OneOf(
-                            dimension_mapping_collection.operable_map[
-                                DimensionOperation.FILTER
-                            ].keys(),
-                        ),
-                    ),
-                    fields.List(fields.Str),
-                ),
-            }
-        )
+    FETCH_METRIC_SCHEMAS_BY_NAME[metric_class.name] = Schema.from_dict(schema_fields)

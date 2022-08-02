@@ -57,6 +57,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
             sessions.start_date,
             sessions.end_date,
             sessions.dataflow_session_id,
+            date_in_population,
             EXTRACT(YEAR FROM date_in_population) AS year,
             EXTRACT(MONTH FROM date_in_population) AS month,
             {time_period_months} AS time_period,            
@@ -85,6 +86,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
         SELECT
             state_code,
             person_id,
+            date_in_population,
             year,
             month,
             time_period,
@@ -106,6 +108,7 @@ SUPERVISION_POPULATION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "person_id",
         "start_date",
         "end_date",
+        "date_in_population",
         "year",
         "month",
         "time_period",
