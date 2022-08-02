@@ -37,7 +37,7 @@ export const PageWrapper = styled.div`
   background: ${palette.solid.white};
 `;
 
-export const FormWrapper = styled.form`
+export const FormWrapper = styled.div`
   flex: 0 1 ${DATA_ENTRY_WIDTH}px;
   display: flex;
   flex-direction: column;
