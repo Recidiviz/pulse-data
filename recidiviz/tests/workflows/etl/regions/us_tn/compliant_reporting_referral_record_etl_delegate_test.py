@@ -16,8 +16,16 @@
 #  =============================================================================
 """Tests the ability for CompliantReportingReferralRecordEtlDelegate to parse json rows."""
 import os
-from unittest import TestCase
+from datetime import datetime, timezone
+from unittest import TestCase, mock
+from unittest.mock import MagicMock, call, patch
 
+from freezegun import freeze_time
+
+from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
+    FakeFileStream,
+)
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
     CompliantReportingReferralRecordETLDelegate,
 )
@@ -176,3 +184,63 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
             doc_id, row = delegate.transform_row(fixture)
             self.assertIsNone(doc_id)
             self.assertIsNone(row)
+
+    @patch("google.cloud.firestore.Client")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+    @patch(
+        "recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents"
+    )
+    @patch(
+        "recidiviz.workflows.etl.workflows_etl_delegate.WorkflowsETLDelegate.get_file_stream"
+    )
+    def test_run_etl_imports_old_and_new_ids(
+        self,
+        mock_get_file_stream: MagicMock,
+        mock_delete_old_documents: MagicMock,  # pylint: disable=unused-argument
+        mock_batch_writer: MagicMock,
+        mock_get_collection: MagicMock,
+        mock_firestore_client: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
+        """Tests that the ETL Delegate for CompliantReportingReferralRecord imports the collection with both the
+        row_id and document_id."""
+        # TODO(#14213): Delete this test once we remove importing collection with both IDs
+        mock_batch_set = MagicMock()
+        mock_batch_writer.return_value = mock_batch_set
+        mock_get_file_stream.return_value = [FakeFileStream(1)]
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+        mock_document_ref = MagicMock()
+        mock_collection.document.return_value = mock_document_ref
+        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
+        document_id = "us_tn_123"
+        with local_project_id_override("test-project"):
+            with freeze_time(mock_now):
+                with mock.patch.object(
+                    CompliantReportingReferralRecordETLDelegate, "transform_row"
+                ) as mock_transform:
+                    mock_transform.return_value = (123, {"personExternalId": 123})
+                    delegate = CompliantReportingReferralRecordETLDelegate()
+                    delegate.run_etl()
+                    mock_collection.document.assert_has_calls(
+                        [call(123), call(document_id)]
+                    )
+                    mock_batch_set.set.assert_has_calls(
+                        [
+                            call(
+                                mock_document_ref,
+                                {
+                                    "personExternalId": 123,
+                                    "deprecate": True,
+                                    "__loadedAt": mock_now,
+                                },
+                            ),
+                            call(
+                                mock_document_ref,
+                                {
+                                    "personExternalId": 123,
+                                    "__loadedAt": mock_now,
+                                },
+                            ),
+                        ]
+                    )

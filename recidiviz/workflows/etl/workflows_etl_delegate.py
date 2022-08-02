@@ -20,7 +20,7 @@ import abc
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Iterator, Optional, TextIO, Tuple
+from typing import Any, Dict, Iterator, Optional, TextIO, Tuple
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -30,7 +30,8 @@ from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
 # Firestore client caps us at 500 records per batch
-MAX_FIRESTORE_RECORDS_PER_BATCH = 499
+# TODO(#14213): Set max records back to 499
+MAX_FIRESTORE_RECORDS_PER_BATCH = 498
 
 
 class WorkflowsETLDelegate(abc.ABC):
@@ -134,8 +135,27 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                 row_id, document_fields = self.transform_row(line)
                 if row_id is None or document_fields is None:
                     continue
-                new_document = {**document_fields, self.timestamp_key: etl_timestamp}
-                batch.set(firestore_collection.document(row_id), new_document)
+                document_id = f"{self.STATE_CODE.lower()}_{row_id}"
+                new_document = {
+                    **document_fields,
+                    self.timestamp_key: etl_timestamp,
+                }
+                # TODO(#14213): Delete writing to row_id keys once the frontend is querying for the new document IDs.
+                if (
+                    f"{self.__class__.__name__}"
+                    == "CompliantReportingReferralRecordETLDelegate"
+                ):
+                    # Set deprecate to True for the old IDs so we can delete these documents later.
+                    deprecated_document: Dict[str, Any] = {
+                        **new_document,
+                        "deprecate": True,
+                    }
+                    batch.set(
+                        firestore_collection.document(row_id), deprecated_document
+                    )
+                    num_records_to_write += 1
+                    total_records_written += 1
+                batch.set(firestore_collection.document(document_id), new_document)
                 num_records_to_write += 1
                 total_records_written += 1
 
