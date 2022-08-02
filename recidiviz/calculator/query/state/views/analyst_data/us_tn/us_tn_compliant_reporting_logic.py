@@ -264,7 +264,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
     ),
     -- This CTE looks at anyone who has ever received a ZTPD contact (zero tolerance contact for failing a meth test) so they can be excluded from almost-eligible
-    -- TODO(#13587) - reference state-agnostic view when #13587 is closed
+    -- TODO(#14347) - reference state-agnostic view
     meth_contacts AS (
         SELECT DISTINCT OffenderID AS Offender_ID
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
@@ -285,6 +285,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         AND ContactNoteType LIKE '%DRU%'
     ),
     -- This CTE calculates total drug screens and total negative screens in the past year
+    -- TODO(#14347) - reference state-agnostic view
     dru_contacts AS (
         SELECT Offender_ID, 
                 sum(drug_screen) AS total_screens_in_past_year,
