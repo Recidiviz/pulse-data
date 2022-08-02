@@ -556,6 +556,16 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
             ExportOutputFormatType.HEADERLESS_CSV,
         ],
     ),
+    # Pathways prison event level. This is a separate export type because our export
+    # infrastructure assumes an export type can only belong to one product.
+    ExportViewCollectionConfig(
+        view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
+        output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PATHWAYS_PRISON_EVENT_LEVEL",
+        export_output_formats=[
+            ExportOutputFormatType.HEADERLESS_CSV,
+        ],
+    ),
     # Workflows Firestore ETL views
     ExportViewCollectionConfig(
         view_builders_to_export=FIRESTORE_VIEW_BUILDERS,
