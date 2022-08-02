@@ -18,7 +18,6 @@
 eligiblity spans into central locations.
 """
 
-import logging
 from typing import List, Sequence
 
 from recidiviz.big_query.big_query_view import (
@@ -29,19 +28,6 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector imp
     SingleTaskEligibilityBigQueryViewCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
-
-# TODO(#14309): Remove this variable once we have defined a task for at least one
-#  state.
-TEMP_EMPTY_ALL_TASKS_TEMPLATE = """
-SELECT 
-    'FAKE_TASK' AS task_name,
-    0 AS person_id,
-    NULL AS start_date,
-    NULL AS end_date,
-    True AS is_eligible,
-    [] AS ineligible_criteria,
-    [] as reasons;
-"""
 
 ALL_TASKS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
 This view contains all task eligiblity spans for {state_code} tasks. It unions the 
@@ -92,17 +78,9 @@ def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
         )
 
     if not state_specific_unioned_view_builders:
-        # TODO(#14317): Remove this clause once we have defined a task for at least one
-        #  state.
-        logging.error("No task views defined for any state")
-        return [
-            SimpleBigQueryViewBuilder(
-                dataset_id=TASK_ELIGIBILITY_DATASET_ID,
-                view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID,
-                description=ALL_TASKS_ALL_STATES_DESCRIPTION,
-                view_query_template=TEMP_EMPTY_ALL_TASKS_TEMPLATE,
-            )
-        ]
+        raise ValueError(
+            "Found no defined SingleTaskEligibilityBigQueryViews defined for any state."
+        )
 
     return state_specific_unioned_view_builders + [
         _build_union_all_view_builder(
