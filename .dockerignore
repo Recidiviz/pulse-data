@@ -1,8 +1,14 @@
 **/__pycache__
 **/*.pyc
 
-# Case Triage local files
+# Local emulator files
+recidiviz/local/**/*
+
+# Local Case Triage files
 recidiviz/case_triage/local/**/*
+
+# Local Justice Counts files
+recidiviz/justice_counts/control_panel/local/**/*
 
 **/node_modules
 
