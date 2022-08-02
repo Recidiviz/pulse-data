@@ -1,7 +1,7 @@
-state_code,person_id,time_period,year,month,gender,admission_reason,facility,age_group,race
-US_XX,1,months_0_6,2022,1,MALE,NEW_ADMISSION,F1,25-29,WHITE
-US_XX,2,months_0_6,2022,1,MALE,REVOCATION,F1,60+,BLACK
-US_XX,1,months_0_6,2022,2,MALE,NEW_ADMISSION,F1,25-29,WHITE
-US_XX,2,months_0_6,2022,2,MALE,REVOCATION,F1,60+,BLACK
-US_XX,1,months_0_6,2022,3,MALE,NEW_ADMISSION,F1,25-29,WHITE
-US_XX,2,months_0_6,2022,3,MALE,REVOCATION,F1,60+,BLACK
+state_code,person_id,time_period,date_in_population,gender,admission_reason,facility,age_group,race
+US_XX,1,months_0_6,2022-01-01,MALE,NEW_ADMISSION,F1,25-29,WHITE
+US_XX,2,months_0_6,2022-01-01,MALE,REVOCATION,F1,60+,BLACK
+US_XX,1,months_0_6,2022-02-01,MALE,NEW_ADMISSION,F1,25-29,WHITE
+US_XX,2,months_0_6,2022-02-01,MALE,REVOCATION,F1,60+,BLACK
+US_XX,1,months_0_6,2022-03-01,MALE,NEW_ADMISSION,F1,25-29,WHITE
+US_XX,2,months_0_6,2022-03-01,MALE,REVOCATION,F1,60+,BLACK

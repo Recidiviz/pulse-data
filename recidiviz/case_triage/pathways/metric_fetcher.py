@@ -21,7 +21,7 @@ from typing import List, Mapping, Union
 import attr
 from sqlalchemy.orm import sessionmaker
 
-from recidiviz.case_triage.pathways.metric_queries import (
+from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
 )

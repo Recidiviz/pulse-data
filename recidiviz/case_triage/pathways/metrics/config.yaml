@@ -1,0 +1,255 @@
+# Defines metrics that are exposed in the Pathways API
+# /pathways/<state_code>/<metric_name>
+#
+#  Example entry:
+#  MyMetric: # Routes to /pathways/<state_code>/MyMetric
+#    # Database entity as defined in recidiviz.persistence.database.schema.pathways.schema
+#    # This will be queried by the `query_builder_class`
+#    database_entity: MetricRecord
+#    query_builder_class: OverTimeMetricQueryBuilder
+#    query_builder_options: # Dictionary of kwargs to be passed to the query builder.
+#   dimension_mappings: # Dictionary of dimension values as keys.
+#     # Values can either be a string, which specifies which `DimensionOperation` to enable
+#     # or a dictionary containing:
+#     # - column: str # name of the column to filter
+#     # - operations: str # `DimensionOperation`
+#     # - alias: str # optional label for the column in the API response
+#     # Enables filtering functionality of Dimension.GENDER i.e. /pathways/US_XX/MyMetric?filters[gender]=MALE
+#     gender: FILTER
+#     # Enables both filtering and grouping functionality for Dimension.TIME_PERIOD
+#     time_period: ALL
+#
+LibertyToPrisonTransitionsOverTime:
+  database_entity: LibertyToPrisonTransitions
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    date_column: month_timestamp
+  dimension_mappings:
+    age_group: FILTER
+    gender: FILTER
+    judicial_district: FILTER
+    prior_length_of_incarceration: FILTER
+    race: FILTER
+    time_period: FILTER
+
+LibertyToPrisonTransitionsCount:
+  database_entity: LibertyToPrisonTransitions
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    age_group: ALL
+    gender: ALL
+    judicial_district: ALL
+    prior_length_of_incarceration: ALL
+    race: ALL
+    time_period: FILTER
+
+PrisonPopulationOverTime:
+  database_entity: PrisonPopulationOverTime
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    date_column: date_in_population
+  dimension_mappings:
+    admission_reason: FILTER
+    age_group: FILTER
+    facility: FILTER
+    gender: FILTER
+    race: FILTER
+    time_period: FILTER
+
+PrisonPopulationByDimensionCount:
+  database_entity: PrisonPopulationByDimension
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+  dimension_mappings:
+    admission_reason: ALL
+    age_group: ALL
+    facility: ALL
+    gender: ALL
+    length_of_stay: ALL
+    race: ALL
+
+PrisonPopulationPersonLevel:
+  database_entity: PrisonPopulationPersonLevel
+  query_builder_class: PersonLevelMetricQueryBuilder
+  query_builder_options:
+    non_aggregate_columns:
+      - full_name
+      - state_id
+    aggregate_columns:
+      - age
+      - facility
+  dimension_mappings:
+    admission_reason: FILTER
+    age_group: FILTER
+    facility: FILTER
+    gender: FILTER
+    race: FILTER
+
+PrisonPopulationProjection:
+  database_entity: PrisonPopulationProjection
+  query_builder_class: PopulationProjectionMetricQueryBuilder
+  dimension_mappings:
+    admission_reason: FILTER
+    gender: FILTER
+
+PrisonToSupervisionTransitionsCount:
+  database_entity: PrisonToSupervisionTransitions
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    age_group: ALL
+    facility: ALL
+    gender: ALL
+    race: ALL
+    time_period: FILTER
+
+PrisonToSupervisionTransitionsOverTime:
+  database_entity: PrisonToSupervisionTransitions
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+    date_column: transition_date
+  dimension_mappings:
+    age_group: FILTER
+    facility: FILTER
+    gender: FILTER
+    race: FILTER
+    time_period: FILTER
+
+PrisonToSupervisionTransitionsPersonLevel:
+  database_entity: PrisonToSupervisionTransitions
+  query_builder_class: PersonLevelMetricQueryBuilder
+  query_builder_options:
+    non_aggregate_columns:
+      - full_name
+      - state_id
+    aggregate_columns:
+      - age
+      - facility
+  dimension_mappings:
+    age_group: FILTER
+    facility: FILTER
+    gender: FILTER
+    race: FILTER
+    time_period: FILTER
+
+SupervisionPopulationOverTime:
+  database_entity: SupervisionPopulationOverTime
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+    date_column: date_in_population
+  dimension_mappings:
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: FILTER
+    race: FILTER
+    supervision_district: FILTER
+    supervision_level: FILTER
+    time_period: FILTER
+
+SupervisionPopulationByDimensionCount:
+  database_entity: SupervisionPopulationByDimension
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+  dimension_mappings:
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: ALL
+    race: ALL
+    supervision_district: ALL
+    supervision_level: ALL
+
+SupervisionPopulationProjection:
+  database_entity: SupervisionPopulationProjection
+  query_builder_class: PopulationProjectionMetricQueryBuilder
+  dimension_mappings:
+    admission_reason: FILTER
+    gender: FILTER
+
+SupervisionToLibertyTransitionsCount:
+  database_entity: SupervisionToLibertyTransitions
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    age_group: ALL
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: ALL
+    gender: ALL
+    length_of_stay: ALL
+    race: ALL
+    supervision_district: ALL
+    supervision_level: ALL
+    supervising_officer: ALL
+    supervision_type: ALL
+    time_period: FILTER
+
+SupervisionToLibertyTransitionsOverTime:
+  database_entity: SupervisionToLibertyTransitions
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+    date_column: month_timestamp
+  dimension_mappings:
+    age_group: FILTER
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: FILTER
+    gender: FILTER
+    length_of_stay: FILTER
+    race: FILTER
+    supervision_district: FILTER
+    supervision_level: FILTER
+    supervising_officer: FILTER
+    supervision_type: FILTER
+    time_period: FILTER
+
+SupervisionToPrisonTransitionsCount:
+  database_entity: SupervisionToPrisonTransitions
+  query_builder_class: CountByDimensionMetricQueryBuilder
+  dimension_mappings:
+    age_group: ALL
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: ALL
+    gender: ALL
+    length_of_stay: ALL
+    race: ALL
+    supervision_district: ALL
+    supervision_level: ALL
+    supervision_type: ALL
+    supervising_officer: ALL
+    time_period: FILTER
+
+SupervisionToPrisonTransitionsOverTime:
+  database_entity: SupervisionToPrisonTransitions
+  query_builder_class: OverTimeMetricQueryBuilder
+  query_builder_options:
+    counting_column: person_id
+    date_column: month_timestamp
+  dimension_mappings:
+    age_group: FILTER
+    # TODO(#13552): Remove this once FE uses supervision_district
+    district:
+      column: supervision_district
+      column_label: district
+      operations: FILTER
+    gender: FILTER
+    length_of_stay: FILTER
+    race: FILTER
+    supervision_district: FILTER
+    supervision_level: FILTER
+    supervising_officer: FILTER
+    supervision_type: FILTER
+    time_period: FILTER

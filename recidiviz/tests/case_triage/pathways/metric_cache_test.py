@@ -23,16 +23,18 @@ from fakeredis import FakeRedis
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
+    DimensionMapping,
     DimensionMappingCollection,
+    DimensionOperation,
 )
 from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
-from recidiviz.case_triage.pathways.metric_queries import (
+from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
+    ALL_METRICS_BY_NAME,
+)
+from recidiviz.case_triage.pathways.metrics.query_builders.count_by_dimension_metric_query_builder import (
     CountByDimensionMetricParams,
-    DimensionMapping,
-    DimensionOperation,
-    LibertyToPrisonTransitionsCount,
 )
 from recidiviz.common.constants.states import _FakeStateCode
 
@@ -42,7 +44,7 @@ class PathwaysMetricCacheTest(TestCase):
 
     def setUp(self) -> None:
         self.redis = FakeRedis()
-        self.query_builder = LibertyToPrisonTransitionsCount
+        self.query_builder = ALL_METRICS_BY_NAME["LibertyToPrisonTransitionsCount"]
 
         self.metric_cache = PathwaysMetricCache(
             # TODO(#13950): Replace with StateCode

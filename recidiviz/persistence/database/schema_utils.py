@@ -154,6 +154,10 @@ def get_pathways_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(pathways_schema)
 
 
+def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
+    return list(_get_all_database_entities_in_module(pathways_schema))
+
+
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):
