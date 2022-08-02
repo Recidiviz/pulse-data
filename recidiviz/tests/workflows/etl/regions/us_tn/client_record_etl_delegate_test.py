@@ -16,8 +16,16 @@
 #  =============================================================================
 """Tests the ability for ClientRecordEtlDelegate to parse json rows."""
 import os
+from datetime import datetime, timezone
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
+from freezegun import freeze_time
+
+from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
+    FakeFileStream,
+)
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
     ClientRecordETLDelegate,
 )
@@ -200,3 +208,47 @@ class ClientRecordEtlDelegateTest(TestCase):
                     },
                 },
             )
+
+    @patch("google.cloud.firestore.Client")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
+    @patch(
+        "recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents"
+    )
+    @patch(
+        "recidiviz.workflows.etl.workflows_etl_delegate.WorkflowsETLDelegate.get_file_stream"
+    )
+    def test_run_etl_imports_with_document_id(
+        self,
+        mock_get_file_stream: MagicMock,
+        mock_delete_old_documents: MagicMock,  # pylint: disable=unused-argument
+        mock_batch_writer: MagicMock,
+        mock_get_collection: MagicMock,
+        mock_firestore_client: MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
+        """Tests that the ETL Delegate for Clients imports the collection with the document ID."""
+        mock_batch_set = MagicMock()
+        mock_batch_writer.return_value = mock_batch_set
+        mock_get_file_stream.return_value = [FakeFileStream(1)]
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+        mock_document_ref = MagicMock()
+        mock_collection.document.return_value = mock_document_ref
+        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
+        document_id = "us_tn_123"
+        with local_project_id_override("test-project"):
+            with freeze_time(mock_now):
+                with patch.object(
+                    ClientRecordETLDelegate, "transform_row"
+                ) as mock_transform:
+                    mock_transform.return_value = (123, {"personExternalId": 123})
+                    delegate = ClientRecordETLDelegate()
+                    delegate.run_etl()
+                    mock_collection.document.assert_called_once_with(document_id)
+                    mock_batch_set.set.assert_called_once_with(
+                        mock_document_ref,
+                        {
+                            "personExternalId": 123,
+                            "__loadedAt": mock_now,
+                        },
+                    )
