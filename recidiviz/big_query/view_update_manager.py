@@ -325,11 +325,16 @@ def build_views_to_update(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
             )
 
-        views_to_update.append(
-            view_builder.build(
+        try:
+            view = view_builder.build(
                 address_overrides=address_overrides,
             )
-        )
+        except Exception as e:
+            raise ValueError(
+                f"Unable to build view at address [{view_builder.address}]"
+            ) from e
+
+        views_to_update.append(view)
     return views_to_update
 
 
