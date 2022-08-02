@@ -60,6 +60,15 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_lsu import (
+    US_ID_DAY_0_LSU_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_overdue_discharge import (
+    US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_supervision_downgrade import (
+    US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_requests import (
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
 )
@@ -86,6 +95,21 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_early_discharge import (
+    US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_sccp import (
+    US_ME_DAY_0_SCCP_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_supervision_downgrade import (
+    US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_early_termination import (
+    US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_overdue_discharge import (
+    US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
@@ -132,6 +156,9 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
+    US_ID_DAY_0_LSU_VIEW_BUILDER,
+    US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
+    US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
     US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
@@ -141,7 +168,12 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
+    US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
+    US_ME_DAY_0_SCCP_VIEW_BUILDER,
+    US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+    US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
+    US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
