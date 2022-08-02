@@ -82,6 +82,8 @@ US_ID_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
         
         # Store an array of all raw text test results for a single drug screen date
         ARRAY_AGG(COALESCE(result_raw_text, 'UNKNOWN')) OVER w AS result_raw_text,
+        CAST(NULL AS STRING) AS substance_detected,
+        false as is_inferred
     FROM drug_screens_raw_cte
     QUALIFY ROW_NUMBER() OVER w = 1
     WINDOW w AS (PARTITION BY person_id, state_code, drug_screen_date, sample_type)
