@@ -303,6 +303,7 @@ def main() -> int:
                 "recidiviz.reporting",
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
+                "recidiviz.task_eligibility",
                 # TODO(#4472): Refactor justice counts code out of the tools directory
                 "recidiviz.tools.justice_counts.manual_upload",
                 "recidiviz.utils",

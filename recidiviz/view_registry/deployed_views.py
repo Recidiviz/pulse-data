@@ -44,6 +44,9 @@ from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.task_eligibility.view_config import (
+    get_view_builders_for_views_to_update as get_task_eligibility_view_builders,
+)
 from recidiviz.utils import environment
 from recidiviz.validation.views.view_config import (
     METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
@@ -64,6 +67,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
             JUSTICE_COUNTS_VIEW_BUILDERS,
             INGEST_METADATA_VIEW_BUILDERS,
             STATE_VIEW_BUILDERS,
+            get_task_eligibility_view_builders(),
             get_validation_view_builders(),
             VALIDATION_METADATA_VIEW_BUILDERS,
         )
@@ -114,6 +118,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "reference_views",
     "sessions",
     "shared_metric_views",
+    "task_eligibility",
     "us_ca_raw_data_up_to_date_views",
     "us_co_raw_data_up_to_date_views",
     "us_id_raw_data_up_to_date_views",
