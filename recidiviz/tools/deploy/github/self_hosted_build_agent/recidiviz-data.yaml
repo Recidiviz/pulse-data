@@ -7,6 +7,6 @@ resources:
   memory_gb: 4
 automatic_scaling:
   min_num_instances: 1
-  max_num_instances: 12
+  max_num_instances: 36
   cpu_utilization:
     target_utilization: 0.8
