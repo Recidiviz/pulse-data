@@ -183,6 +183,7 @@ def test_get_all_table_classes() -> None:
         "user_account",
         "datapoint",
         "datapoint_history",
+        "spreadsheet",
     ]
     pathways_table_names = [
         "liberty_to_prison_transitions",

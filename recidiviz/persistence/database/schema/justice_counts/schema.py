@@ -187,6 +187,19 @@ class Project(enum.Enum):
     JUSTICE_COUNTS_CONTROL_PANEL = "JUSTICE_COUNTS_CONTROL_PANEL"
 
 
+class SpreadsheetStatus(enum.Enum):
+    """Spreadsheets can be in one of the following states:
+    - UP: The spreadsheet has been uploaded by a user.
+    - INGESTED: A recidiviz admin has ingested the spreadsheet and the data has been recorded.
+    - ERRORED: The spreadsheet ingest has raised an error, and as a result, the spreadsheet has not been
+      successfully processed and spreadsheet data has not been recorded.
+    """
+
+    UPLOADED = "UPLOADED"
+    INGESTED = "INGESTED"
+    ERRORED = "ERRORED"
+
+
 class ReportStatus(enum.Enum):
     """Reports can be in one of the following states:
     - NOT STARTED: Report was created, but no data has been filled in
@@ -308,6 +321,35 @@ class UserAccount(JusticeCountsBase):
             "agencies": [agency.to_json() for agency in agencies or []],
             "permissions": permissions or [],
         }
+
+
+class Spreadsheet(JusticeCountsBase):
+    """A single spreadsheet uploaded by an Agency."""
+
+    __tablename__ = "spreadsheet"
+
+    id = Column(Integer, autoincrement=True)
+    # The original filename of the spreadsheet (e.g "justice_counts_metrics.xlsx")
+    original_name = Column(String, nullable=False)
+    # The standardized filename of the spreadsheet, formatted as "<agency_id>:<system>:<upload_timestamp>.xlsx"
+    standardized_name = Column(String, nullable=False)
+    agency_id = Column(Integer, nullable=False)
+    system = Column(Enum(System), nullable=False)
+    status = Column(Enum(SpreadsheetStatus), nullable=False)
+    # The date the spreadsheet was uploaded
+    uploaded_at = Column(Date, nullable=False)
+    # The auth0_user_id of the user who uploaded the spreadsheet
+    uploaded_by = Column(String, nullable=False)
+    # The auth0_user_id of the user who ingested the spreadsheet
+    ingested_by = Column(String, nullable=True)
+    # The date the spreadsheet was ingested
+    ingested_at = Column(Date, nullable=True)
+
+    upload_note = Column(String, nullable=True)
+
+    __table_args__ = tuple(
+        [PrimaryKeyConstraint(id), ForeignKeyConstraint([agency_id], [Agency.id])]
+    )
 
 
 class Report(JusticeCountsBase):
