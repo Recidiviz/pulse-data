@@ -862,10 +862,7 @@ class StateIncarcerationPeriod(
         return self.release_date
 
     def __attrs_post_init__(self) -> None:
-        if (
-            self.state_code not in ("US_ND")
-            and self.custodial_authority == StateCustodialAuthority.COURT
-        ):
+        if self.custodial_authority == StateCustodialAuthority.COURT:
             raise ValueError(
                 f"StateCustodialAuthority.COURT is deprecated for {self.state_code}."
             )
@@ -987,10 +984,7 @@ class StateSupervisionPeriod(
         return self.termination_date
 
     def __attrs_post_init__(self) -> None:
-        if (
-            self.state_code not in ("US_ND")
-            and self.custodial_authority == StateCustodialAuthority.COURT
-        ):
+        if self.custodial_authority == StateCustodialAuthority.COURT:
             raise ValueError(
                 f"StateCustodialAuthority.COURT is deprecated for {self.state_code}."
             )
