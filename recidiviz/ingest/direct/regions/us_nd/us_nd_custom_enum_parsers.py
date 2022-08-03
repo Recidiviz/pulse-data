@@ -39,7 +39,7 @@ OTHER_STATE_FACILITY = "OOS"
 POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
     StateCustodialAuthority, List[str]
 ] = {
-    StateCustodialAuthority.COURT: [
+    StateCustodialAuthority.COUNTY: [
         "CJ",
         "DEFP",
         # There are only a few of these, and they seem to represent judicial
