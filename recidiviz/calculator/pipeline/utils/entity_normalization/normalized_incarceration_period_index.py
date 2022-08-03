@@ -69,13 +69,13 @@ class NormalizedIncarcerationPeriodIndex:
     # Incarceration periods during which a person cannot also be counted in the
     # supervision population
     incarceration_periods_that_exclude_person_from_supervision_population: List[
-        StateIncarcerationPeriod
+        NormalizedStateIncarcerationPeriod
     ] = attr.ib()
 
     @incarceration_periods_that_exclude_person_from_supervision_population.default
     def _incarceration_periods_that_exclude_person_from_supervision_population(
         self,
-    ) -> List[StateIncarcerationPeriod]:
+    ) -> List[NormalizedStateIncarcerationPeriod]:
         """The incarceration periods in the sorted_incarceration_periods list during which a
         person cannot also be counted in the supervision population. If a person is
         in a facility, but is under the custodial authority of a supervision

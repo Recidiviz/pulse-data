@@ -22,11 +22,17 @@ import attr
 from recidiviz.calculator.pipeline.utils.identifier_models import (
     IncludedInStateMixin,
     Span,
+    SupervisionLocationMixin,
 )
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 @attr.s(frozen=True)
@@ -43,4 +49,28 @@ class IncarcerationPopulationSpan(Span, IncludedInStateMixin):
 
     # Area of jurisdictional coverage of the court that sentenced the person to this
     # incarceration
+    judicial_district_code: Optional[str] = attr.ib(default=None)
+
+
+@attr.s(frozen=True)
+class SupervisionPopulationSpan(Span, SupervisionLocationMixin, IncludedInStateMixin):
+    """Models a span of time that a person is on supervision."""
+
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
+
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
+
+    # External ID of the officer who is supervising the person during this span of time
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # Area of jurisdictional coverage of the court that sentenced the person to this
+    # period of supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)

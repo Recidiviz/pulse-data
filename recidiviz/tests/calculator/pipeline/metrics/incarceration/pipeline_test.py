@@ -253,7 +253,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             facility="San Quentin",
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            admission_date=date(2017, 1, 4),
+            admission_date=date(2015, 1, 4),
             person_id=fake_person_id,
         )
 

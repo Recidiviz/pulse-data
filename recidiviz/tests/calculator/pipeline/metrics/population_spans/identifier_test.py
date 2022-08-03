@@ -22,9 +22,12 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 from recidiviz.calculator.pipeline.metrics.population_spans import identifier
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
+    SupervisionPopulationSpan,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.identifier_models import Span
@@ -34,9 +37,16 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_delegate import (
     UsXxIncarcerationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -44,6 +54,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -54,6 +70,16 @@ _DEFAULT_IP_ID = 123
 
 _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
     {"incarceration_period_id": _DEFAULT_IP_ID, "judicial_district_code": "NW"}
+]
+
+_DEFAULT_SP_ID = 234
+
+_DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
+    {"supervision_period_id": _DEFAULT_SP_ID, "judicial_district_code": "NW"}
+]
+
+_DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION = [
+    {"supervision_period_id": _DEFAULT_SP_ID, "agent_external_id": "TODDB"}
 ]
 
 
@@ -83,6 +109,12 @@ class TestFindPopulationSpans(unittest.TestCase):
         incarceration_period_judicial_district_association: Optional[
             List[Dict[str, Any]]
         ] = None,
+        supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
+        supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
+        supervision_period_judicial_district_association: Optional[
+            List[Dict[str, Any]]
+        ] = None,
+        supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
@@ -90,10 +122,18 @@ class TestFindPopulationSpans(unittest.TestCase):
             or [],
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association
             or _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
+            NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
+            or [],
+            "supervision_period_judicial_district_association": supervision_period_judicial_district_association
+            or _DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
+            "supervision_period_to_agent_association": supervision_period_to_agent_association
+            or _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
         }
         required_delegates: Dict[str, StateSpecificDelegate] = {
             "StateSpecificIncarcerationDelegate": incarceration_delegate
             or UsXxIncarcerationDelegate(),
+            "StateSpecificSupervisionDelegate": supervision_delegate
+            or UsXxSupervisionDelegate(),
         }
 
         all_kwargs: Dict[
@@ -172,11 +212,6 @@ class TestFindPopulationSpans(unittest.TestCase):
 
         self.assertEqual(expected_spans, spans)
 
-    def test_find_incarceration_spans_none(self) -> None:
-        population_spans = self._run_find_population_spans([])
-
-        self.assertEqual([], population_spans)
-
     def test_find_incarceration_spans_out_of_state(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -206,6 +241,577 @@ class TestFindPopulationSpans(unittest.TestCase):
 
         self.assertEqual(expected_spans, spans)
 
+    def test_find_supervision_spans(self) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2009, 11, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2015, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            supervision_periods=[supervision_period]
+        )
+
+        expected_spans = [
+            expected_supervision_span(
+                supervision_period,
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+            )
+        ]
+
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_supervision_spans_multiple(self) -> None:
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2009, 11, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2015, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=222,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2015, 2, 3),
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            termination_date=date(2020, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=1,
+        )
+
+        spans = self._run_find_population_spans(
+            supervision_periods=[supervision_period_1, supervision_period_2]
+        )
+
+        expected_spans = [
+            expected_supervision_span(
+                supervision_period_1,
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+            ),
+            expected_supervision_span(
+                supervision_period_2,
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+            ),
+        ]
+
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_no_spans_none(self) -> None:
+        population_spans = self._run_find_population_spans([])
+
+        self.assertEqual([], population_spans)
+
+    def test_find_both_types_of_spans(self) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2009, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2009, 11, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2015, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period,
+                judicial_district_code="NW",
+            ),
+            expected_supervision_span(
+                supervision_period,
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+            ),
+        ]
+
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_with_overlaps(self) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2009, 1, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2008, 12, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2015, 2, 3),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+        )
+        print(spans)
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period,
+                judicial_district_code="NW",
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2008, 12, 20),
+                end_date_exclusive=date(2009, 1, 4),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2009, 1, 4),
+                end_date_exclusive=date(2015, 2, 3),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_with_overlap_open_incarceration_and_supervision(
+        self,
+    ) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=None,
+            release_reason=None,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2008, 8, 20),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=None,
+            termination_reason=None,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period,
+                judicial_district_code="NW",
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2008, 8, 20),
+                end_date_exclusive=date(2008, 11, 20),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2008, 11, 20),
+                end_date_exclusive=None,
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_overlapping_consecutive_incarceration_periods(
+        self,
+    ) -> None:
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2010, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2011, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
+        )
+
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2011, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2011, 3, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=1,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2010, 12, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2012, 1, 1),
+            termination_reason=None,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period_1, incarceration_period_2],
+            supervision_periods=[supervision_period],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period_1,
+                judicial_district_code="NW",
+            ),
+            expected_incarceration_span(incarceration_period_2),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2010, 12, 1),
+                end_date_exclusive=date(2011, 3, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 3, 1),
+                end_date_exclusive=date(2012, 1, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_multiple_incarceration_periods_during_supervision(
+        self,
+    ) -> None:
+        incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2011, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2011, 3, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
+        )
+
+        incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2011, 5, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2011, 7, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=1,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2010, 12, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2012, 1, 1),
+            termination_reason=None,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period_1, incarceration_period_2],
+            supervision_periods=[supervision_period],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period_1,
+                judicial_district_code="NW",
+            ),
+            expected_incarceration_span(incarceration_period_2),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2010, 12, 1),
+                end_date_exclusive=date(2011, 1, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 1, 1),
+                end_date_exclusive=date(2011, 3, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 3, 1),
+                end_date_exclusive=date(2011, 5, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 5, 1),
+                end_date_exclusive=date(2011, 7, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period,
+                start_date_inclusive=date(2011, 7, 1),
+                end_date_exclusive=date(2012, 1, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=True,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
+    def test_find_both_types_of_spans_multiple_supervision_periods_during_incarceration(
+        self,
+    ) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=_DEFAULT_IP_ID,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2010, 12, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="INCARCERATION_ADMISSION",
+            release_date=date(2012, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            sequence_num=0,
+        )
+        supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2011, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2011, 3, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=0,
+        )
+        supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2222,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            state_code="US_XX",
+            supervision_site="SUPERVISION SITE 3",
+            start_date=date(2011, 5, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_date=date(2011, 7, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            case_type_entries=[
+                NormalizedStateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code="US_XX", case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            sequence_num=1,
+        )
+
+        spans = self._run_find_population_spans(
+            incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period_1, supervision_period_2],
+        )
+
+        expected_spans = [
+            expected_incarceration_span(
+                incarceration_period,
+                judicial_district_code="NW",
+            ),
+            expected_supervision_span(
+                supervision_period_1,
+                start_date_inclusive=date(2011, 1, 1),
+                end_date_exclusive=date(2011, 3, 1),
+                judicial_district_code="NW",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_officer_external_id="TODDB",
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+            expected_supervision_span(
+                supervision_period_2,
+                start_date_inclusive=date(2011, 5, 1),
+                end_date_exclusive=date(2011, 7, 1),
+                case_type=StateSupervisionCaseType.GENERAL,
+                level_1_supervision_location_external_id="SUPERVISION SITE 3",
+                included_in_state_population=False,
+            ),
+        ]
+        self.assertEqual(expected_spans, spans)
+
 
 def expected_incarceration_span(
     incarceration_period: NormalizedStateIncarcerationPeriod,
@@ -227,4 +833,36 @@ def expected_incarceration_span(
         or StateSpecializedPurposeForIncarceration.GENERAL,
         included_in_state_population=included_in_state_population,
         custodial_authority=custodial_authority,
+    )
+
+
+def expected_supervision_span(
+    supervision_period: NormalizedStateSupervisionPeriod,
+    start_date_inclusive: Optional[date] = None,
+    end_date_exclusive: Optional[date] = None,
+    judicial_district_code: Optional[str] = None,
+    case_type: Optional[StateSupervisionCaseType] = None,
+    supervising_officer_external_id: Optional[str] = None,
+    level_1_supervision_location_external_id: Optional[str] = None,
+    level_2_supervision_location_external_id: Optional[str] = None,
+    included_in_state_population: bool = True,
+) -> SupervisionPopulationSpan:
+    if supervision_period.start_date is None:
+        raise ValueError(
+            f"Can't create expected span for period [{supervision_period.supervision_period_id}] with missing start date."
+        )
+    return SupervisionPopulationSpan(
+        state_code=supervision_period.state_code,
+        start_date_inclusive=start_date_inclusive or supervision_period.start_date,
+        end_date_exclusive=end_date_exclusive or supervision_period.termination_date,
+        judicial_district_code=judicial_district_code,
+        case_type=case_type,
+        custodial_authority=supervision_period.custodial_authority,
+        supervising_officer_external_id=supervising_officer_external_id,
+        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
+        supervision_type=supervision_period.supervision_type,
+        supervision_level=supervision_period.supervision_level,
+        supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+        included_in_state_population=included_in_state_population,
     )
