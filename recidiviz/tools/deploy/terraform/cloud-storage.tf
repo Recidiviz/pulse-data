@@ -28,6 +28,19 @@ module "justice-counts-ingest" {
   name_suffix = "justice-counts-ingest"
 }
 
+module "justice-counts-control-panel-ingest" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "justice-counts-control-panel-ingest"
+}
+
+resource "google_storage_bucket_iam_member" "justice-counts-control-panel-ingest-bucket-member" {
+  bucket = module.justice-counts-control-panel-ingest.name
+  role   = "roles/storage.admin"
+  member = data.google_service_account.justice_counts_cloud_run.email
+}
+
 module "direct-ingest-state-storage" {
   source = "./modules/cloud-storage-bucket"
 
