@@ -108,6 +108,11 @@ class UsPaSupervisionNormalizationDelegate(
                     termination_date = next_supervision_start_date
                 else:
                     termination_date = next_incarceration_admission_date
+                if (
+                    termination_date
+                    and termination_date < supervision_period.termination_date
+                ):
+                    continue
                 new_supervision_period = StateSupervisionPeriod(
                     state_code=StateCode.US_PA.value,
                     start_date=supervision_period.termination_date,
