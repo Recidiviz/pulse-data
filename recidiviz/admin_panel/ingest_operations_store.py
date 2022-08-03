@@ -51,14 +51,14 @@ from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -491,7 +491,7 @@ class IngestOperationsStore(AdminPanelStore):
         for state_code in get_direct_ingest_states_launched_in_env():
             instance_to_status_dict = {}
             for i_instance in DirectIngestInstance:  # new direct ingest instance
-                status_manager = DirectIngestInstanceStatusManager(
+                status_manager = PostgresDirectIngestInstanceStatusManager(
                     region_code=state_code.value, ingest_instance=i_instance
                 )
                 curr_status = status_manager.get_current_status()

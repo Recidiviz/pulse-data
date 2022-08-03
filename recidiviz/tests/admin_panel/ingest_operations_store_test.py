@@ -34,11 +34,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    DirectIngestInstanceStatusManager,
-)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -116,21 +116,21 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
     def setUp(self) -> None:
         super().setUp()
 
-        self.us_xx_primary_status_manager = DirectIngestInstanceStatusManager(
+        self.us_xx_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
 
-        self.us_xx_secondary_status_manager = DirectIngestInstanceStatusManager(
+        self.us_xx_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
         )
-        self.us_yy_primary_status_manager = DirectIngestInstanceStatusManager(
+        self.us_yy_primary_status_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.PRIMARY,
         )
 
-        self.us_yy_secondary_status_manager = DirectIngestInstanceStatusManager(
+        self.us_yy_secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_YY.value,
             DirectIngestInstance.SECONDARY,
         )

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements tests for the DirectIngestInstanceStatusManager."""
+"""Implements tests for the PostgresDirectIngestInstanceStatusManager."""
 from typing import List, Optional
 from unittest.case import TestCase
 
@@ -28,7 +28,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     INVALID_STATUSES,
     VALID_CURRENT_STATUS_TRANSITIONS,
     VALID_START_OF_RERUN_STATUSES,
-    DirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -37,8 +39,8 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @pytest.mark.uses_db
-class DirectIngestInstanceStatusManagerManagerTest(TestCase):
-    """Implements tests for DirectIngestInstanceStatusManager."""
+class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
+    """Implements tests for PostgresDirectIngestInstanceStatusManager."""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -54,12 +56,12 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
 
-        self.us_xx_primary_manager = DirectIngestInstanceStatusManager(
+        self.us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
 
-        self.us_xx_secondary_manager = DirectIngestInstanceStatusManager(
+        self.us_xx_secondary_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
         )
@@ -164,17 +166,16 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
             instance,
             valid_status_transitions,
         ) in VALID_CURRENT_STATUS_TRANSITIONS.items():
-            us_yy_manager = DirectIngestInstanceStatusManager(
+            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance
             )
             for new_status in VALID_CURRENT_STATUS_TRANSITIONS[instance].keys():
                 invalid_previous_statuses = list(
-                    set(self.all_status_enum_values) - set(valid_status_transitions)
+                    set(self.all_status_enum_values)
+                    - set(valid_status_transitions[new_status])
                 )
-
                 for invalid_previous_status in invalid_previous_statuses:
                     us_yy_manager.add_instance_status(invalid_previous_status)
-
                     with self.assertRaisesRegex(
                         ValueError, "Can only transition from the following"
                     ):
@@ -183,7 +184,7 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
     def test_change_status_to_invalid_instance_specific_statuses(self) -> None:
         """Ensure that all invalid statuses raise the correct error."""
         for instance, invalid_statuses in INVALID_STATUSES.items():
-            us_yy_manager = DirectIngestInstanceStatusManager(
+            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance
             )
 
@@ -199,7 +200,7 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
     def test_change_status_to_invalid_initial_statuses(self) -> None:
         """Ensure that all invalid initial statuses raise the correct error."""
         for instance, valid_initial_statuses in VALID_START_OF_RERUN_STATUSES.items():
-            us_yy_manager = DirectIngestInstanceStatusManager(
+            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance
             )
 
@@ -216,7 +217,7 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
 
     def _run_test_for_status_transitions(
         self,
-        manager: DirectIngestInstanceStatusManager,
+        manager: PostgresDirectIngestInstanceStatusManager,
         statuses: List[DirectIngestStatus],
         expected_raw_data_source: Optional[DirectIngestInstance] = None,
     ) -> None:
@@ -433,6 +434,25 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
         )
 
+    def test_duplicate_statuses_are_not_added_twice(
+        self,
+    ) -> None:
+        self.us_xx_secondary_manager.change_status_to(
+            new_status=DirectIngestStatus.STANDARD_RERUN_STARTED
+        )
+        reused_status = DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+        self.us_xx_secondary_manager.change_status_to(new_status=reused_status)
+        self.us_xx_secondary_manager.change_status_to(new_status=reused_status)
+
+        added_statuses = [
+            status.status for status in self.us_xx_secondary_manager.get_all_statuses()
+        ]
+        expected_statuses = [
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            reused_status,
+        ]
+        self.assertCountEqual(added_statuses, expected_statuses)
+
     def test_primary_flashed_from_secondary(self) -> None:
         primary_standard_flow_statuses = [
             DirectIngestStatus.STANDARD_RERUN_STARTED,
@@ -445,7 +465,7 @@ class DirectIngestInstanceStatusManagerManagerTest(TestCase):
         # Flashing could start when ingest is at any point in PRIMARY - it doesn't
         # matter because everything in PRIMARY will be overwritten.
         for i in range(1, len(primary_standard_flow_statuses)):
-            us_xx_primary_manager = DirectIngestInstanceStatusManager(
+            us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_XX.value,
                 DirectIngestInstance.PRIMARY,
             )

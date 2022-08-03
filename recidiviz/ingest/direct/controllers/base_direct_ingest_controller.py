@@ -223,8 +223,10 @@ class BaseDirectIngestController:
             launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_instance_status_manager = DirectIngestInstancePauseStatusManager(
-            self.region_code(), self.ingest_instance
+        self.ingest_instance_pause_status_manager = (
+            DirectIngestInstancePauseStatusManager(
+                self.region_code(), self.ingest_instance
+            )
         )
         self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
@@ -318,7 +320,7 @@ class BaseDirectIngestController:
         """Internal helper for scheduling the next ingest task. DOes"""
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_status_manager.is_instance_paused():
+        if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
                 "Ingest out of [%s] is currently paused.", self.ingest_instance
             )
@@ -506,7 +508,7 @@ class BaseDirectIngestController:
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_status_manager.is_instance_paused():
+        if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
                 "Ingest out of [%s] is currently paused.", self.ingest_instance
             )
@@ -745,7 +747,7 @@ class BaseDirectIngestController:
                 "endpoint and any cloud functions that trigger ingest."
             )
 
-        if self.ingest_instance_status_manager.is_instance_paused():
+        if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
                 "Ingest out of [%s] is currently paused.", self.ingest_instance
             )
@@ -804,7 +806,7 @@ class BaseDirectIngestController:
         """
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_status_manager.is_instance_paused():
+        if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
                 "Ingest out of [%s] is currently paused.", self.ingest_instance
             )
@@ -879,7 +881,7 @@ class BaseDirectIngestController:
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_status_manager.is_instance_paused():
+        if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
                 "Ingest out of [%s] is currently paused.", self.ingest_instance
             )
