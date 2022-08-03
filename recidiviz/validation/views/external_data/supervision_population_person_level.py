@@ -55,12 +55,12 @@ FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DailyCommunitySupervision
 --     'US_ND' as region_code,
 --     TRIM(SID) as person_external_id,
 --     DATE('2020-06-01') as date_of_supervision,
---     MIN(supervising_district_external_id) as district,
+--     MIN(level_1_supervision_location_external_id) as district,
 --     NULL as supervising_officer,
 --     NULL as supervision_level
 -- FROM `{project_id}.{us_nd_validation_dataset}.open_supervision_2020_06_01`
--- LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_id_to_name_latest`
---     ON SITE_NAME = supervising_district_name
+-- LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+--     ON SITE_NAME = level_1_supervision_location_name
 -- GROUP BY SID)
 """
 
