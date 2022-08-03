@@ -1,0 +1,10 @@
+US_CO,leadership_role,TRUE,FALSE,FALSE,"{""community_projections"":false,""facilities_projections"":true,""community_practices"":false,""system_libertyToPrison"":false,""system_prison"":false,""system_prisonToSupervision"":true,""system_supervision"":true,""system_supervisionToLiberty"":true,""system_supervisionToPrison"":false,""operations"":false}"
+US_ID,line_staff_user,FALSE,TRUE,FALSE,
+US_ID,leadership_role,,FALSE,FALSE,"{""system_prisonToSupervision"":false}"
+US_ME,leadership_role,FALSE,FALSE,TRUE,"{""community_projections"":false}"
+US_MI,leadership_role,TRUE,FALSE,,"{""system_prisonToSupervision"":true,""system_supervision"":false}"
+US_MO,level_1_access_role,TRUE,TRUE,TRUE,"{""community_projections"":false,""facility_projections"":true}"
+US_MO,leadership_role,TRUE,TRUE,FALSE,
+US_ND,leadership_role,TRUE,FALSE,TRUE,"{""system_prisonToSupervision"":true,""system_supervision"":false,""system_supervisionToLiberty"":true,""system_supervisionToPrison"":true}"
+US_TN,line_staff_user,,,,
+US_TN,leadership_role,FALSE,FALSE,FALSE,"{""system_prisonToSupervision"":false,""system_supervision"":false,""system_supervisionToLiberty"":true,""system_supervisionToPrison"":false}"

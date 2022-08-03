@@ -63,4 +63,7 @@ interface StateUserPermissionsResponse {
     [route: string]: boolean;
   };
   shouldSeeBetaCharts: boolean;
+  blocked: boolean;
+  firstName: str;
+  lastName: str;
 }

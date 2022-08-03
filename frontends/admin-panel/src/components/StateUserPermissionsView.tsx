@@ -43,7 +43,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     }: FilterDropdownProps) => (
       <div style={{ padding: 8 }}>
         <Input
-          placeholder="Search Emails"
+          placeholder="Search..."
           value={selectedKeys[0]}
           onChange={(e) =>
             setSelectedKeys(e.target.value ? [e.target.value] : [])
@@ -95,11 +95,20 @@ const StateUserPermissionsView = (): JSX.Element => {
     {
       title: "Email",
       dataIndex: "restrictedUserEmail",
+      width: 250,
       sorter: (
         a: StateUserPermissionsResponse,
         b: StateUserPermissionsResponse
       ) => a.restrictedUserEmail.localeCompare(b.restrictedUserEmail),
       ...getColumnSearchProps("restrictedUserEmail"),
+    },
+    {
+      title: "First Name",
+      dataIndex: "firstName",
+    },
+    {
+      title: "Last Name",
+      dataIndex: "lastName",
     },
     {
       title: "State",
@@ -147,33 +156,20 @@ const StateUserPermissionsView = (): JSX.Element => {
       ) => a.stateCode.localeCompare(b.stateCode),
     },
     {
-      title: "Allowed Supervision Location IDs",
-      dataIndex: "allowedSupervisionLocationIds",
-    },
-    {
-      title: "Allowed Supervision Location Level",
-      dataIndex: "allowedSupervisionLocationLevel",
-    },
-    {
       title: "Can Access Leadership Dashboard",
       dataIndex: "canAccessLeadershipDashboard",
       render: (_: string, record: StateUserPermissionsResponse) => {
-        return record.canAccessLeadershipDashboard.toString();
+        if (record.canAccessLeadershipDashboard != null) {
+          return record.canAccessLeadershipDashboard.toString();
+        }
       },
     },
     {
       title: "Can Access Case Triage",
       dataIndex: "canAccessCaseTriage",
       render: (_: string, record: StateUserPermissionsResponse) => {
-        return record.canAccessCaseTriage.toString();
-      },
-    },
-    {
-      title: "Routes",
-      dataIndex: "routes",
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.routes) {
-          return JSON.stringify(record.routes, null, "\t").slice(2, -2);
+        if (record.canAccessCaseTriage != null) {
+          return record.canAccessCaseTriage.toString();
         }
       },
     },
@@ -181,7 +177,35 @@ const StateUserPermissionsView = (): JSX.Element => {
       title: "Should See Beta Charts",
       dataIndex: "shouldSeeBetaCharts",
       render: (_: string, record: StateUserPermissionsResponse) => {
-        return record.shouldSeeBetaCharts.toString();
+        if (record.shouldSeeBetaCharts != null) {
+          return record.shouldSeeBetaCharts.toString();
+        }
+      },
+    },
+    {
+      title: "Routes",
+      dataIndex: "routes",
+      width: 300,
+      render: (_: string, record: StateUserPermissionsResponse) => {
+        if (record.routes) {
+          return JSON.stringify(record.routes, null, "\t").slice(2, -2);
+        }
+      },
+    },
+    {
+      title: "Allowed Supervision Location IDs",
+      dataIndex: "allowedSupervisionLocationIds",
+    },
+    {
+      title: "Allowed Supervision Location Level",
+      dataIndex: "allowedSupervisionLocationLevel",
+      width: 220,
+    },
+    {
+      title: "Blocked",
+      dataIndex: "blocked",
+      render: (_: string, record: StateUserPermissionsResponse) => {
+        return record.blocked.toString();
       },
     },
   ];
@@ -189,7 +213,7 @@ const StateUserPermissionsView = (): JSX.Element => {
   return (
     <>
       <PageHeader title="State User Permissions" />
-      <Table dataSource={data} columns={columns} />
+      <Table dataSource={data} columns={columns} scroll={{ x: 1700, y: 700 }} />
     </>
   );
 };
