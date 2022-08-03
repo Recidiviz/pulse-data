@@ -87,11 +87,9 @@ services:
     environment:
       POSTGRES_USER: pathways_user
       POSTGRES_PASSWORD: example
-      POSTGRES_MULTIPLE_DATABASES: us_id,us_me,us_mo,us_nd,us_tn
     ports:
       - "5432:5432"
     volumes:
-      - ./recidiviz/tools/postgres/pg_init_scripts:/docker-entrypoint-initdb.d
       - pathways_db_data:/var/lib/postgresql/data
       - pathways_db_socket:/var/run/postgresql/
 

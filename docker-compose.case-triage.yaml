@@ -8,6 +8,7 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
       - case_triage_db_socket:/cloudsql/case_triage
       - pathways_db_socket:/cloudsql/pathways
     depends_on:
@@ -25,6 +26,7 @@ services:
       # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
       # They can safely be excluded from the stat reloader for a performance boost
       - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
     links:

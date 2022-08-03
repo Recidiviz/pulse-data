@@ -285,13 +285,15 @@ def get_on_disk_postgres_temp_dir_prefix() -> str:
 
 
 @environment.local_only
-def on_disk_postgres_db_url() -> URL:
+def on_disk_postgres_db_url(
+    database: str = get_on_disk_postgres_database_name(),
+) -> URL:
     return URL.create(
         drivername="postgresql",
         username=TEST_POSTGRES_USER_NAME,
         host="localhost",
         port=get_on_disk_postgres_port(),
-        database=get_on_disk_postgres_database_name(),
+        database=database,
     )
 
 
