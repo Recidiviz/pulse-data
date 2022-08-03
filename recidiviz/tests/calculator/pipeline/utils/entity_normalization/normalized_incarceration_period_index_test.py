@@ -1134,7 +1134,6 @@ class TestIncarcerationPeriodsThatExcludePersonFromSupervisionPopulation(
                 if incarceration_period.custodial_authority
                 not in (
                     StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    StateCustodialAuthority.COURT,
                     StateCustodialAuthority.COUNTY,
                 )
                 else []
