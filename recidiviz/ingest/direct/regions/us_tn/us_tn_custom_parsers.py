@@ -82,7 +82,7 @@ def parse_custodial_authority(raw_text: str) -> StateCustodialAuthority:
         site in ("019", "033", "046", "047", "054", "057", "075", "079", "082")
         or site_type == "JA"
     ):
-        return StateCustodialAuthority.COURT
+        return StateCustodialAuthority.COUNTY
     if site_type == "IN":  # Institution
         return StateCustodialAuthority.STATE_PRISON
     if site_type in (
