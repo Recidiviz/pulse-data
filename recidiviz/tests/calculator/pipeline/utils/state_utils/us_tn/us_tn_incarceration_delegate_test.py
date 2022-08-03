@@ -74,7 +74,6 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             incarceration_period.custodial_authority = custodial_authority
             if custodial_authority in (
                 StateCustodialAuthority.STATE_PRISON,
-                StateCustodialAuthority.COURT,
                 StateCustodialAuthority.COUNTY,
             ):
                 self.assertTrue(
