@@ -43,6 +43,7 @@ from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
 )
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
+    SupervisionPopulationSpan,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
@@ -61,9 +62,16 @@ from recidiviz.calculator.pipeline.utils.identifier_models import Span
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
     UsXxIncarcerationMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
+    UsXxSupervisionMetricsProducerDelegate,
+)
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -76,6 +84,12 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import (
@@ -119,7 +133,8 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self.state_specific_metrics_producer_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_metrics_producer_delegates",
             return_value={
-                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate(),
+                StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate(),
             },
         )
         self.mock_get_required_state_metrics_producer_delegate = (
@@ -135,7 +150,10 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
     def build_data_dict(
-        self, fake_person_id: int, fake_incarceration_period_id: int
+        self,
+        fake_person_id: int,
+        fake_incarceration_period_id: int,
+        fake_supervision_period_id: int,
     ) -> Dict[str, List[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
@@ -195,6 +213,43 @@ class TestPopulationSpanPipeline(unittest.TestCase):
                 "judicial_district_code": "NW",
             }
         ]
+
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=fake_supervision_period_id,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            state_code="US_XX",
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            start_date=date(2018, 1, 1),
+            termination_date=date(2020, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            person_id=fake_person_id,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+        )
+
+        supervision_periods_data = [
+            normalized_database_base_dict(supervision_period, {"sequence_num": 0})
+        ]
+
+        supervision_period_judicial_district_association_data = [
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": fake_supervision_period_id,
+                "judicial_district_code": "NW",
+            }
+        ]
+
+        supervision_period_to_agent_association = [
+            {
+                "state_code": "US_XX",
+                "person_id": fake_person_id,
+                "supervision_period_id": fake_supervision_period_id,
+                "agent_external_id": "OFFICER 1",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -210,10 +265,11 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
-            "supervision_period_judicial_district_association": [],
-            "supervision_period_to_agent_association": [],
+            "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
+            "supervision_period_to_agent_association": supervision_period_to_agent_association,
         }
         # Given the empty dictionaries, we ignore the overall type until we fill in data.
         data_dict.update(data_dict_overrides)  # type:ignore
@@ -259,24 +315,30 @@ class TestPopulationSpanPipeline(unittest.TestCase):
     def test_population_spans_pipeline(self) -> None:
         """Tests the population_spans_pipeline."""
         data_dict = self.build_data_dict(
-            fake_person_id=12345, fake_incarceration_period_id=23456
+            fake_person_id=12345,
+            fake_incarceration_period_id=23456,
+            fake_supervision_period_id=34567,
         )
         self.run_test_pipeline(
             data_dict,
             expected_metric_types={
-                PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN
+                PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+                PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
             },
         )
 
     def test_population_spans_pipeline_with_filter_set(self) -> None:
         """Tests the population spans pipeline with a proper filter set."""
         data_dict = self.build_data_dict(
-            fake_person_id=12345, fake_incarceration_period_id=23456
+            fake_person_id=12345,
+            fake_incarceration_period_id=23456,
+            fake_supervision_period_id=34567,
         )
         self.run_test_pipeline(
             data_dict,
             expected_metric_types={
-                PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN
+                PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+                PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
             },
             unifying_id_field_filter_set={12345},
         )
@@ -284,9 +346,12 @@ class TestPopulationSpanPipeline(unittest.TestCase):
     def test_population_spans_pipeline_with_no_data(self) -> None:
         """Tests the population spans pipeline when a person doesn't have any period data."""
         data_dict = self.build_data_dict(
-            fake_person_id=12345, fake_incarceration_period_id=23456
+            fake_person_id=12345,
+            fake_incarceration_period_id=23456,
+            fake_supervision_period_id=34567,
         )
         data_dict[schema.StateIncarcerationPeriod.__tablename__] = []
+        data_dict[schema.StateSupervisionPeriod.__tablename__] = []
         self.run_test_pipeline(data_dict, expected_metric_types=set())
 
 
@@ -364,10 +429,44 @@ class TestClassifyResults(unittest.TestCase):
             "judicial_district_code": "NW",
         }
 
+        supervision_period = (
+            normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=2222,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code="US_XX",
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text="MEDIUM",
+                start_date=date(2018, 1, 1),
+                termination_date=date(2020, 1, 1),
+                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+                termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                supervision_site="site",
+                sequence_num=0,
+            )
+        )
+
+        supervision_period_judicial_district_association_result = {
+            "person_id": self.fake_person_id,
+            "supervision_period_id": 2222,
+            "judicial_district_code": "NW",
+        }
+
+        supervision_period_agent_association_result = {
+            "person_id": self.fake_person_id,
+            "agent_external_id": "OFFICER 1",
+            "supervision_period_id": 2222,
+        }
+
         self.assertIsNotNone(incarceration_period.admission_date)
         self.assertIsNotNone(incarceration_period.admission_reason)
         self.assertIsNotNone(incarceration_period.release_date)
         self.assertIsNotNone(incarceration_period.release_reason)
+
+        self.assertIsNotNone(supervision_period.start_date)
+        self.assertIsNotNone(supervision_period.admission_reason)
+        self.assertIsNotNone(supervision_period.termination_date)
+        self.assertIsNotNone(supervision_period.termination_reason)
 
         spans = [
             IncarcerationPopulationSpan(
@@ -379,7 +478,23 @@ class TestClassifyResults(unittest.TestCase):
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
                 judicial_district_code="NW",
-            )
+            ),
+            SupervisionPopulationSpan(
+                included_in_state_population=True,
+                state_code="US_XX",
+                start_date_inclusive=date(2018, 1, 1),
+                end_date_exclusive=date(2020, 1, 1),
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text="MEDIUM",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=None,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                level_1_supervision_location_external_id="site",
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="OFFICER 1",
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                judicial_district_code="NW",
+            ),
         ]
 
         correct_output = [(self.fake_person_id, (self.fake_person, spans))]
@@ -387,9 +502,14 @@ class TestClassifyResults(unittest.TestCase):
         person_entities = self.load_person_entities_dict(
             person=self.fake_person,
             incarceration_periods=[incarceration_period],
+            supervision_periods=[supervision_period],
             ip_to_judicial_district_kv=[
-                incarceration_period_judicial_district_association_result
+                incarceration_period_judicial_district_association_result,
             ],
+            sp_to_judicial_district_kv=[
+                supervision_period_judicial_district_association_result
+            ],
+            sp_to_agent_kv=[supervision_period_agent_association_result],
         )
 
         test_pipeline = TestPipeline()
@@ -513,11 +633,28 @@ class TestProduceMetrics(unittest.TestCase):
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
                 judicial_district_code="NW",
-            )
+            ),
+            SupervisionPopulationSpan(
+                included_in_state_population=True,
+                state_code="US_XX",
+                start_date_inclusive=date(2018, 1, 1),
+                end_date_exclusive=date(2020, 1, 1),
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                supervision_level_raw_text="MEDIUM",
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervising_district_external_id=None,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                level_1_supervision_location_external_id="site",
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id="OFFICER 1",
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                judicial_district_code="NW",
+            ),
         ]
 
         expected_metric_counts: Dict[PopulationSpanMetricType, int] = {
-            PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN: 4
+            PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN: 4,
+            PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN: 4,
         }
 
         test_pipeline = TestPipeline()

@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
 from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
     PopulationSpanMetricType,
+    SupervisionPopulationSpanMetric,
 )
 from recidiviz.calculator.pipeline.metrics.program.metrics import (
     ProgramMetricType,
@@ -69,6 +70,7 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
     ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+    PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
 ]
 
 # The maximum number days of output that should be stored in a dataflow metrics table
@@ -88,6 +90,7 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     IncarcerationReleaseMetric: "incarceration_release_metrics",
     # PopulationSpanMetrics
     IncarcerationPopulationSpanMetric: "incarceration_population_span_metrics",
+    SupervisionPopulationSpanMetric: "supervision_population_span_metrics",
     # ProgramMetrics
     ProgramReferralMetric: "program_referral_metrics",
     ProgramParticipationMetric: "program_participation_metrics",
@@ -115,6 +118,7 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "incarceration_release_metrics": IncarcerationMetricType.INCARCERATION_RELEASE,
     # PopulationSpanMetrics
     "incarceration_population_span_metrics": PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
+    "supervision_population_span_metrics": PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
     # ProgramMetrics
     "program_referral_metrics": ProgramMetricType.PROGRAM_REFERRAL,
     "program_participation_metrics": ProgramMetricType.PROGRAM_PARTICIPATION,

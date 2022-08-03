@@ -27,16 +27,25 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetricType,
     SecondaryPersonExternalIdMetric,
 )
+from recidiviz.calculator.pipeline.utils.identifier_models import (
+    SupervisionLocationMixin,
+)
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 class PopulationSpanMetricType(RecidivizMetricType):
     """The type of population span metrics."""
 
     INCARCERATION_POPULATION_SPAN = "INCARCERATION_POPULATION_SPAN"
+    SUPERVISION_POPULATION_SPAN = "SUPERVISION_POPULATION_SPAN"
 
 
 @attr.s
@@ -83,7 +92,7 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
 
     # Required characteristics
 
-    # The type of IncarcerationMetric
+    # The type of PopulationSpanMetric
     metric_type: PopulationSpanMetricType = attr.ib(
         init=False, default=PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN
     )
@@ -103,4 +112,54 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
 
     # Area of jurisdictional coverage of the court that sentenced the person to this
     # incarceration
+    judicial_district_code: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class SupervisionPopulationSpanMetric(PopulationSpanMetric, SupervisionLocationMixin):
+    """Subclass of PopulationSpanMetric that represents the span of a person on supervision."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return """
+The `SupervisionPopulationSpanMetric` stores information about a span of time that an individual spent on supervision. This metric tracks the period of time on which an individual was on supervision and whether they're counted towards the state's supervision population during that time, and includes information related to their supervision type and level. Note, the overall span of time spent contiguously on supervision with certain characteristics may be overall more than a year, but spans are split based on a person's age at that time if the birthdate exists for that person.
+
+With this metric, we can answer questions like:
+
+- How long does a person spend on supervision on average?
+- Who was on supervision in district X on day Y?
+
+This metric is derived from the `StateSupervisionPeriod` entities, which store information about periods of time that an individual was on supervision. All population span metrics are end date exclusive, meaning that a person is not counted in population on the date that their supervision period is terminated."""
+
+    # Required characteristics
+
+    # The type of PopulationSpanMetric
+    metric_type: PopulationSpanMetricType = attr.ib(
+        init=False, default=PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN
+    )
+
+    # Optional characteristics
+
+    # Supervision Type
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None
+    )
+
+    # Supervision Level
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+    # Supervision Level Raw Text
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None)
+
+    # Case Type
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None)
+
+    # Custodial Authority
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
+
+    # External ID of the officer who is supervising the person during this span of time
+    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # Area of jurisdictional coverage of the court that sentenced the person to this
+    # period of supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)

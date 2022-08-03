@@ -35,6 +35,7 @@ from recidiviz.calculator.dataflow_orchestration_utils import (
 )
 from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
+    SupervisionPopulationSpanMetric,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
@@ -101,6 +102,7 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
             if table_id in (
                 DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric],
                 DATAFLOW_METRICS_TO_TABLES[IncarcerationPopulationSpanMetric],
+                DATAFLOW_METRICS_TO_TABLES[SupervisionPopulationSpanMetric],
             ):
                 table.clustering_fields = None
             else:

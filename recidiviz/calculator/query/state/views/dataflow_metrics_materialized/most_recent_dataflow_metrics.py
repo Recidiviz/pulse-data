@@ -32,6 +32,7 @@ DEFAULT_JOIN_INDICES: str = "job_id, state_code, year, month, metric_type"
 METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
     "recidivism_rate_metrics": "job_id, state_code, metric_type",
     "incarceration_population_span_metrics": "job_id, state_code, metric_type",
+    "supervision_population_span_metrics": "job_id, state_code, metric_type",
 }
 
 DEFAULT_JOB_RECENCY_PRIMARY_KEYS: str = "job_id, year, month, state_code, metric_type"
@@ -40,6 +41,7 @@ DEFAULT_JOB_RECENCY_PRIMARY_KEYS: str = "job_id, year, month, state_code, metric
 JOB_RECENCY_PRIMARY_KEY_OVERRIDES: Dict[str, str] = {
     "recidivism_rate_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
     "incarceration_population_span_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
+    "supervision_population_span_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
 }
 
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
