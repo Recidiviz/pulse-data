@@ -26,9 +26,11 @@ from recidiviz.calculator.pipeline.metrics.population_spans import metric_produc
 from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
     PopulationSpanMetricType,
+    SupervisionPopulationSpanMetric,
 )
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
+    SupervisionPopulationSpan,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
@@ -37,9 +39,16 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_metrics_producer_delegate import (
     UsXxIncarcerationMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
+    UsXxSupervisionMetricsProducerDelegate,
+)
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -49,6 +58,10 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
@@ -58,6 +71,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 ALL_METRICS_INCLUSIONS_DICT = {
     PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN: True,
+    PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN: True,
 }
 
 PIPELINE_JOB_ID = "TEST_JOB_ID"
@@ -97,7 +111,8 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
         self.metrics_producer_delegates: Dict[
             str, StateSpecificMetricsProducerDelegate
         ] = {
-            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+            StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate(),
+            StateSpecificSupervisionMetricsProducerDelegate.__name__: UsXxSupervisionMetricsProducerDelegate(),
         }
 
     @freeze_time(CURRENT_DATE)
@@ -335,6 +350,462 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
                     judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
+                ),
+            ],
+        )
+
+    @freeze_time(CURRENT_DATE)
+    def test_produce_supervision_span_metrics(self) -> None:
+        supervision_span = SupervisionPopulationSpan(
+            state_code="US_XX",
+            included_in_state_population=True,
+            level_1_supervision_location_external_id="site",
+            start_date_inclusive=date(2000, 3, 12),
+            end_date_exclusive=date(2000, 7, 12),
+            supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+            supervision_level=StateSupervisionLevel.DIVERSION,
+            supervision_level_raw_text="DIVERSION",
+            case_type=StateSupervisionCaseType.GENERAL,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervising_officer_external_id="OFFICER 1",
+            judicial_district_code="XXX",
+        )
+
+        metrics = self.metric_producer.produce_metrics(
+            person=self.person,
+            identifier_results=[supervision_span],
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            person_metadata=self.person_metadata,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates=self.metrics_producer_delegates,
+        )
+
+        self.assertEqual(
+            metrics,
+            [
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    age=17,
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2000, 3, 12),
+                    end_date_exclusive=date(2000, 7, 12),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
+                    supervision_level=StateSupervisionLevel.DIVERSION,
+                    supervision_level_raw_text="DIVERSION",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                )
+            ],
+        )
+
+    @freeze_time(CURRENT_DATE)
+    def test_produce_supervision_span_metrics_split_into_age_spans(self) -> None:
+        supervision_span = SupervisionPopulationSpan(
+            state_code="US_XX",
+            included_in_state_population=True,
+            level_1_supervision_location_external_id="site",
+            start_date_inclusive=date(2000, 3, 12),
+            end_date_exclusive=date(2002, 1, 2),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            case_type=StateSupervisionCaseType.GENERAL,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervising_officer_external_id="OFFICER 1",
+            judicial_district_code="XXX",
+        )
+
+        metrics = self.metric_producer.produce_metrics(
+            person=self.person,
+            identifier_results=[supervision_span],
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            person_metadata=self.person_metadata,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates=self.metrics_producer_delegates,
+        )
+
+        self.assertEqual(
+            metrics,
+            [
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    age=17,
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2000, 3, 12),
+                    end_date_exclusive=date(2000, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    age=18,
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2000, 8, 31),
+                    end_date_exclusive=date(2001, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    age=19,
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2001, 8, 31),
+                    end_date_exclusive=date(2002, 1, 2),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+            ],
+        )
+
+    @freeze_time(CURRENT_DATE)
+    def test_produce_supervision_span_metrics_no_birthdate(self) -> None:
+        person_with_no_birthday = attr.evolve(self.person, birthdate=None)
+
+        supervision_span = SupervisionPopulationSpan(
+            state_code="US_XX",
+            included_in_state_population=True,
+            level_1_supervision_location_external_id="site",
+            start_date_inclusive=date(2000, 3, 12),
+            end_date_exclusive=date(2002, 7, 2),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            case_type=StateSupervisionCaseType.GENERAL,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervising_officer_external_id="OFFICER 1",
+            judicial_district_code="XXX",
+        )
+
+        metrics = self.metric_producer.produce_metrics(
+            person=person_with_no_birthday,
+            identifier_results=[supervision_span],
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            person_metadata=self.person_metadata,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates=self.metrics_producer_delegates,
+        )
+
+        self.assertEqual(
+            metrics,
+            [
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2000, 3, 12),
+                    end_date_exclusive=date(2002, 7, 2),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+            ],
+        )
+
+    @freeze_time(CURRENT_DATE)
+    def test_produce_supervision_span_metrics_open_span(self) -> None:
+        supervision_span = SupervisionPopulationSpan(
+            state_code="US_XX",
+            included_in_state_population=True,
+            level_1_supervision_location_external_id="site",
+            start_date_inclusive=date(2019, 3, 12),
+            end_date_exclusive=None,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            case_type=StateSupervisionCaseType.GENERAL,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervising_officer_external_id="OFFICER 1",
+            judicial_district_code="XXX",
+        )
+
+        metrics = self.metric_producer.produce_metrics(
+            person=self.person,
+            identifier_results=[supervision_span],
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            person_metadata=self.person_metadata,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates=self.metrics_producer_delegates,
+        )
+
+        self.assertEqual(
+            metrics,
+            [
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=36,
+                    start_date_inclusive=date(2019, 3, 12),
+                    end_date_exclusive=date(2019, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=37,
+                    start_date_inclusive=date(2019, 8, 31),
+                    end_date_exclusive=None,
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+            ],
+        )
+
+    @freeze_time(CURRENT_DATE)
+    def test_produce_all_spans(self) -> None:
+        incarceration_span = IncarcerationPopulationSpan(
+            state_code="US_XX",
+            facility="FACILITY X",
+            start_date_inclusive=date(2015, 3, 1),
+            end_date_exclusive=date(2017, 3, 1),
+            judicial_district_code="XXX",
+            purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            included_in_state_population=True,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+        supervision_span = SupervisionPopulationSpan(
+            state_code="US_XX",
+            included_in_state_population=True,
+            level_1_supervision_location_external_id="site",
+            start_date_inclusive=date(2017, 3, 2),
+            end_date_exclusive=None,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text="MEDIUM",
+            case_type=StateSupervisionCaseType.GENERAL,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            supervising_officer_external_id="OFFICER 1",
+            judicial_district_code="XXX",
+        )
+
+        metrics = self.metric_producer.produce_metrics(
+            person=self.person,
+            identifier_results=[incarceration_span, supervision_span],
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            person_metadata=self.person_metadata,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates=self.metrics_producer_delegates,
+        )
+
+        self.assertEqual(
+            metrics,
+            [
+                IncarcerationPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="DOC1341",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    age=32,
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2015, 3, 1),
+                    end_date_exclusive=date(2015, 8, 31),
+                    included_in_state_population=True,
+                    facility="FACILITY X",
+                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                    judicial_district_code="XXX",
+                    secondary_person_external_id="SID9889",
+                ),
+                IncarcerationPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="DOC1341",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    age=33,
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2015, 8, 31),
+                    end_date_exclusive=date(2016, 8, 31),
+                    included_in_state_population=True,
+                    facility="FACILITY X",
+                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                    judicial_district_code="XXX",
+                    secondary_person_external_id="SID9889",
+                ),
+                IncarcerationPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="DOC1341",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    age=34,
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    start_date_inclusive=date(2016, 8, 31),
+                    end_date_exclusive=date(2017, 3, 1),
+                    included_in_state_population=True,
+                    facility="FACILITY X",
+                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                    custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                    judicial_district_code="XXX",
+                    secondary_person_external_id="SID9889",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=34,
+                    start_date_inclusive=date(2017, 3, 2),
+                    end_date_exclusive=date(2017, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=35,
+                    start_date_inclusive=date(2017, 8, 31),
+                    end_date_exclusive=date(2018, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=36,
+                    start_date_inclusive=date(2018, 8, 31),
+                    end_date_exclusive=date(2019, 8, 31),
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
+                ),
+                SupervisionPopulationSpanMetric(
+                    person_id=12345,
+                    person_external_id="SID9889",
+                    job_id=PIPELINE_JOB_ID,
+                    state_code="US_XX",
+                    prioritized_race_or_ethnicity="WHITE",
+                    gender=StateGender.FEMALE,
+                    created_on=CURRENT_DATE,
+                    age=37,
+                    start_date_inclusive=date(2019, 8, 31),
+                    end_date_exclusive=None,
+                    included_in_state_population=True,
+                    supervising_officer_external_id="OFFICER 1",
+                    level_1_supervision_location_external_id="site",
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    supervision_level=StateSupervisionLevel.MEDIUM,
+                    supervision_level_raw_text="MEDIUM",
+                    case_type=StateSupervisionCaseType.GENERAL,
+                    custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                    judicial_district_code="XXX",
                 ),
             ],
         )

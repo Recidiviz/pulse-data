@@ -27,9 +27,11 @@ from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
     PopulationSpanMetric,
     PopulationSpanMetricType,
+    SupervisionPopulationSpanMetric,
 )
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
+    SupervisionPopulationSpan,
 )
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     produce_standard_span_metrics,
@@ -45,6 +47,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+    StateSpecificSupervisionMetricsProducerDelegate,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -58,9 +63,11 @@ class PopulationSpanMetricProducer(
         self.metric_class = PopulationSpanMetric  # type: ignore
         self.event_to_metric_classes = {
             IncarcerationPopulationSpan: [IncarcerationPopulationSpanMetric],
+            SupervisionPopulationSpan: [SupervisionPopulationSpanMetric],
         }
         self.metrics_producer_delegate_classes = {
-            IncarcerationPopulationSpanMetric: StateSpecificIncarcerationMetricsProducerDelegate
+            IncarcerationPopulationSpanMetric: StateSpecificIncarcerationMetricsProducerDelegate,
+            SupervisionPopulationSpanMetric: StateSpecificSupervisionMetricsProducerDelegate,
         }
 
     def produce_metrics(
