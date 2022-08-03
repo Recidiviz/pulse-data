@@ -24,8 +24,6 @@ from recidiviz.calculator.query.county.views.charges import charge_views
 from recidiviz.calculator.query.county.views.population import population_views
 from recidiviz.calculator.query.county.views.vera import vera_views
 
-# NOTE: The views in the STATE_AGGREGATE_VIEW_BUILDERS and the STITCH_VIEW_BUILDERS are not included in this
-# view update list because compiling the views require SQLAlchemy DB connections
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
