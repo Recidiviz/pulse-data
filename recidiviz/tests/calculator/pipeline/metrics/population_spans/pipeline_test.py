@@ -212,8 +212,11 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
+            "supervision_period_judicial_district_association": [],
+            "supervision_period_to_agent_association": [],
         }
-        data_dict.update(data_dict_overrides)
+        # Given the empty dictionaries, we ignore the overall type until we fill in data.
+        data_dict.update(data_dict_overrides)  # type:ignore
         return data_dict
 
     def run_test_pipeline(
@@ -319,6 +322,9 @@ class TestClassifyResults(unittest.TestCase):
         person: entities.StatePerson,
         incarceration_periods: List[entities.StateIncarcerationPeriod] = None,
         ip_to_judicial_district_kv: List[Dict[Any, Any]] = None,
+        supervision_periods: List[entities.StateSupervisionPeriod] = None,
+        sp_to_judicial_district_kv: List[Dict[Any, Any]] = None,
+        sp_to_agent_kv: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List]:
         return {
             entities.StatePerson.__name__: [person],
@@ -327,6 +333,12 @@ class TestClassifyResults(unittest.TestCase):
             else [],
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
             or [],
+            "supervision_period_judicial_district_association": sp_to_judicial_district_kv
+            or [],
+            entities.StateSupervisionPeriod.__name__: supervision_periods
+            if supervision_periods
+            else [],
+            "supervision_period_to_agent_association": sp_to_agent_kv or [],
         }
 
     def test_classify_results(self) -> None:

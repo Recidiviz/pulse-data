@@ -1546,7 +1546,18 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
             incarceration_period
         )
-        self.assertEqual(board_hold.duration, most_recent_board_hold_span)
+        self.assertEqual(
+            board_hold.duration.lower_bound_inclusive_date,
+            most_recent_board_hold_span.lower_bound_inclusive_date
+            if most_recent_board_hold_span
+            else None,
+        )
+        self.assertEqual(
+            board_hold.duration.upper_bound_exclusive_date,
+            most_recent_board_hold_span.upper_bound_exclusive_date
+            if most_recent_board_hold_span
+            else None,
+        )
 
     def test_most_recent_board_hold_span_in_index_later_period(self) -> None:
         """Tests that this returns the period directly preceding the given period
@@ -1594,7 +1605,18 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         most_recent_board_hold_span = index.most_recent_board_hold_span_in_index(
             incarceration_period_2
         )
-        self.assertEqual(board_hold.duration, most_recent_board_hold_span)
+        self.assertEqual(
+            board_hold.duration.lower_bound_inclusive_date,
+            most_recent_board_hold_span.lower_bound_inclusive_date
+            if most_recent_board_hold_span
+            else None,
+        )
+        self.assertEqual(
+            board_hold.duration.upper_bound_exclusive_date,
+            most_recent_board_hold_span.upper_bound_exclusive_date
+            if most_recent_board_hold_span
+            else None,
+        )
 
     def test_most_recent_board_hold_span_in_index_not_in_index(self) -> None:
         """Tests that this raises a KeyError when the given period is not in the

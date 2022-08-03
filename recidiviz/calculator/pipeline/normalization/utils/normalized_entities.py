@@ -24,6 +24,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 )
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_list
+from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -159,6 +160,14 @@ class NormalizedStateIncarcerationPeriod(
 
     purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
+    @property
+    def duration(self) -> NonNegativeDateRange:
+        duration_unsafe = super().duration
+        return NonNegativeDateRange(
+            duration_unsafe.lower_bound_inclusive_date,
+            duration_unsafe.upper_bound_exclusive_date,
+        )
+
 
 # StateProgramAssignment subtree
 @attr.s(
@@ -184,6 +193,14 @@ class NormalizedStateSupervisionPeriod(
 ):
     """Stores instances of StateSupervisionPeriod entities that have been
     normalized and are prepared to be used in calculations."""
+
+    @property
+    def duration(self) -> NonNegativeDateRange:
+        duration_unsafe = super().duration
+        return NonNegativeDateRange(
+            duration_unsafe.lower_bound_inclusive_date,
+            duration_unsafe.upper_bound_exclusive_date,
+        )
 
 
 @attr.s(

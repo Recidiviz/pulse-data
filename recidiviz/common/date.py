@@ -66,9 +66,14 @@ def year_and_month_for_today() -> Tuple[int, int]:
     return today.year, today.month
 
 
+def tomorrow() -> datetime.date:
+    """Returns tomorrow's date."""
+    return datetime.date.today() + datetime.timedelta(days=1)
+
+
 def date_or_tomorrow(date: Optional[datetime.date]) -> datetime.date:
     """Returns the date if set, otherwise tomorrow"""
-    return date if date else datetime.date.today() + datetime.timedelta(days=1)
+    return date if date else tomorrow()
 
 
 def first_day_of_month(date: datetime.date) -> datetime.date:
@@ -208,59 +213,83 @@ class DateRangeDiff:
             upper_bound_exclusive_date=upper_bound_exclusive_date,
         )
 
+    # Date range portion of range_1 that comes before range_2
+    @property
+    def range_1_non_overlapping_before_part(self) -> Optional[DateRange]:
+        return (
+            DateRange(
+                lower_bound_inclusive_date=self.range_1.lower_bound_inclusive_date,
+                upper_bound_exclusive_date=self.range_2.lower_bound_inclusive_date,
+            )
+            if (
+                self.range_1.lower_bound_inclusive_date
+                < self.range_2.lower_bound_inclusive_date
+            )
+            else None
+        )
+
+    # Date range portion of range_1 that comes after range_2
+    @property
+    def range_1_non_overlapping_after_part(self) -> Optional[DateRange]:
+        return (
+            DateRange(
+                lower_bound_inclusive_date=self.range_2.upper_bound_exclusive_date,
+                upper_bound_exclusive_date=self.range_1.upper_bound_exclusive_date,
+            )
+            if (
+                self.range_1.upper_bound_exclusive_date
+                > self.range_2.upper_bound_exclusive_date
+            )
+            else None
+        )
+
     # Date ranges in range_1 that do not overlap with range_2
     @property
     def range_1_non_overlapping_parts(self) -> List[DateRange]:
-        parts = []
-        if (
-            self.range_1.lower_bound_inclusive_date
-            < self.range_2.lower_bound_inclusive_date
-        ):
-            parts.append(
-                DateRange(
-                    lower_bound_inclusive_date=self.range_1.lower_bound_inclusive_date,
-                    upper_bound_exclusive_date=self.range_2.lower_bound_inclusive_date,
-                )
-            )
+        parts = [
+            self.range_1_non_overlapping_before_part,
+            self.range_1_non_overlapping_after_part,
+        ]
+        return [p for p in parts if p is not None]
 
-        if (
-            self.range_1.upper_bound_exclusive_date
-            > self.range_2.upper_bound_exclusive_date
-        ):
-            parts.append(
-                DateRange(
-                    lower_bound_inclusive_date=self.range_2.upper_bound_exclusive_date,
-                    upper_bound_exclusive_date=self.range_1.upper_bound_exclusive_date,
-                )
+    # Date range portion of range_2 that comes before range_1
+    @property
+    def range_2_non_overlapping_before_part(self) -> Optional[DateRange]:
+        return (
+            DateRange(
+                lower_bound_inclusive_date=self.range_2.lower_bound_inclusive_date,
+                upper_bound_exclusive_date=self.range_1.lower_bound_inclusive_date,
             )
-        return parts
+            if (
+                self.range_2.lower_bound_inclusive_date
+                < self.range_1.lower_bound_inclusive_date
+            )
+            else None
+        )
+
+    # Date range portion or range_2 that comes after range_1
+    @property
+    def range_2_non_overlapping_after_part(self) -> Optional[DateRange]:
+        return (
+            DateRange(
+                lower_bound_inclusive_date=self.range_1.upper_bound_exclusive_date,
+                upper_bound_exclusive_date=self.range_2.upper_bound_exclusive_date,
+            )
+            if (
+                self.range_2.upper_bound_exclusive_date
+                > self.range_1.upper_bound_exclusive_date
+            )
+            else None
+        )
 
     # Date ranges in range_2 that do not overlap with range_1
     @property
     def range_2_non_overlapping_parts(self) -> List[DateRange]:
-        parts = []
-        if (
-            self.range_2.lower_bound_inclusive_date
-            < self.range_1.lower_bound_inclusive_date
-        ):
-            parts.append(
-                DateRange(
-                    lower_bound_inclusive_date=self.range_2.lower_bound_inclusive_date,
-                    upper_bound_exclusive_date=self.range_1.lower_bound_inclusive_date,
-                )
-            )
-
-        if (
-            self.range_2.upper_bound_exclusive_date
-            > self.range_1.upper_bound_exclusive_date
-        ):
-            parts.append(
-                DateRange(
-                    lower_bound_inclusive_date=self.range_1.upper_bound_exclusive_date,
-                    upper_bound_exclusive_date=self.range_2.upper_bound_exclusive_date,
-                )
-            )
-        return parts
+        parts = [
+            self.range_2_non_overlapping_before_part,
+            self.range_2_non_overlapping_after_part,
+        ]
+        return [p for p in parts if p is not None]
 
 
 class DurationMixin(metaclass=ABCMeta):
@@ -356,3 +385,24 @@ def split_range_by_birthdate(
         split_date = safe_year_replace(birthdate, year=(split_date.year + 1))
 
     yield (start_date, end_date)
+
+
+def merge_sorted_date_ranges(
+    sorted_date_ranges: List[NonNegativeDateRange],
+) -> List[NonNegativeDateRange]:
+    """Given a sorted list of date ranges, returns a list where all consecutive ranges
+    have been merged into a single range."""
+    merged_ranges: List[NonNegativeDateRange] = []
+    for date_range in sorted_date_ranges:
+        if merged_ranges:
+            prev_duration = merged_ranges[-1]
+            if (
+                date_range.lower_bound_inclusive_date
+                == prev_duration.upper_bound_exclusive_date
+            ):
+                merged_ranges[
+                    -1
+                ].upper_bound_exclusive_date = date_range.upper_bound_exclusive_date
+                continue
+        merged_ranges.append(date_range)
+    return merged_ranges

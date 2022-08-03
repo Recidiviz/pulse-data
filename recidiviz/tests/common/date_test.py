@@ -26,6 +26,7 @@ from recidiviz.common.date import (
     DateRangeDiff,
     NonNegativeDateRange,
     is_date_str,
+    merge_sorted_date_ranges,
     munge_date_string,
     safe_strptime,
     split_range_by_birthdate,
@@ -331,5 +332,36 @@ class TestSplitRangeByBirthdate(unittest.TestCase):
                 (datetime.date(2000, 1, 1), datetime.date(2005, 1, 1)),
                 datetime.date(2000, 2, 29),
             )
+        )
+        self.assertListEqual(expected_results, results)
+
+
+class TestMergeSortedDateRange(unittest.TestCase):
+    """Tests for merge_sorted_date_ranges"""
+
+    def test_merge_sorted_date_ranges(self) -> None:
+        expected_results = [
+            NonNegativeDateRange(datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)),
+            NonNegativeDateRange(datetime.date(2001, 3, 1), datetime.date(2001, 9, 1)),
+            NonNegativeDateRange(datetime.date(2002, 1, 1), datetime.date(2002, 10, 1)),
+        ]
+        results = merge_sorted_date_ranges(
+            [
+                NonNegativeDateRange(
+                    datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)
+                ),
+                NonNegativeDateRange(
+                    datetime.date(2001, 3, 1), datetime.date(2001, 6, 1)
+                ),
+                NonNegativeDateRange(
+                    datetime.date(2001, 6, 1), datetime.date(2001, 9, 1)
+                ),
+                NonNegativeDateRange(
+                    datetime.date(2002, 1, 1), datetime.date(2002, 5, 1)
+                ),
+                NonNegativeDateRange(
+                    datetime.date(2002, 5, 1), datetime.date(2002, 10, 1)
+                ),
+            ]
         )
         self.assertListEqual(expected_results, results)
