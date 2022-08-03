@@ -46,7 +46,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.auth.helpers import (
-    add_users_to_database_session,
+    add_entity_to_database_session,
     generate_fake_user_restrictions,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -226,7 +226,7 @@ class TestGCSImportToCloudSQL(TestCase):
             "user-5@test.gov",
             allowed_supervision_location_ids="AB",
         )
-        add_users_to_database_session(self.database_key, [user_1, user_2])
+        add_entity_to_database_session(self.database_key, [user_1, user_2])
 
         def _mock_side_effect(**_kwargs: Any) -> str:
             return self._mock_load_data_from_csv(
@@ -264,7 +264,7 @@ class TestGCSImportToCloudSQL(TestCase):
                 "user-3@test.gov",
                 allowed_supervision_location_ids="1,2",
             )
-            add_users_to_database_session(self.database_key, [user_1])
+            add_entity_to_database_session(self.database_key, [user_1])
             self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
                 "Error while importing CSV to temp table"
             )
@@ -292,7 +292,7 @@ class TestGCSImportToCloudSQL(TestCase):
                 "user-3@test.gov",
                 allowed_supervision_location_ids="1,2",
             )
-            add_users_to_database_session(self.database_key, [user_1])
+            add_entity_to_database_session(self.database_key, [user_1])
 
             def _mock_side_effect(**_kwargs: Any) -> str:
                 raise ValueError("An error occurred!")

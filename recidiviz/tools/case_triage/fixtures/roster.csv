@@ -1,0 +1,8 @@
+US_ID,ayesha@recidiviz.org,XXXXXXXX,leadership_role,D4,Ayesha,Khawaja
+US_TN,test@recidiviz.org,Y28U1092,line_staff_user,District_Office_12,Test,Sample
+US_ND,noexternalid@recidiviz.org,,leadership_role,DISTRICT_OFFICE_1,John,Doe
+US_MI,nofirstname@recidviz.org,1372ajk23,leadership_role,10,,Smith
+US_TN,nolastname@recidiviz.org,external,line_staff_user,4,Jane,
+US_MO,nodistrict@recidiviz.org,NDISTRICT,leadership_role,,First,Last
+US_CO,jane@domain.org,,leadership_role,,Jane,Doe
+US_MO,missouri@recidiviz.org,54321,level_1_access_role,"1A, 2B",Hello,World

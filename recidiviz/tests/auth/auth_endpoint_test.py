@@ -34,7 +34,11 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.auth.helpers import (
-    add_users_to_database_session,
+    add_entity_to_database_session,
+    generate_fake_default_permissions,
+    generate_fake_permissions_overrides,
+    generate_fake_rosters,
+    generate_fake_user_overrides,
     generate_fake_user_restrictions,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -77,6 +81,7 @@ class AuthEndpointTests(TestCase):
             f"{self.bucket}/{self.region_code}/dashboard_user_restrictions.csv"
         )
         self.columns = [col.name for col in DashboardUserRestrictions.__table__.columns]
+        self.maxDiff = None
 
         # Setup database
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
@@ -95,6 +100,7 @@ class AuthEndpointTests(TestCase):
             self.dashboard_user_restrictions = flask.url_for(
                 "auth_endpoint_blueprint.dashboard_user_restrictions"
             )
+            self.users = flask.url_for("auth_endpoint_blueprint.users")
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -328,7 +334,7 @@ class AuthEndpointTests(TestCase):
             "user-2@test.gov",
             allowed_supervision_location_ids="AB",
         )
-        add_users_to_database_session(self.database_key, [user_1, user_2])
+        add_entity_to_database_session(self.database_key, [user_1, user_2])
 
         with self.app.test_request_context():
             expected_restrictions = {
@@ -363,7 +369,7 @@ class AuthEndpointTests(TestCase):
             include_hash=False,
         )
 
-        add_users_to_database_session(self.database_key, [user_1])
+        add_entity_to_database_session(self.database_key, [user_1])
 
         with self.app.test_request_context():
             expected_restrictions = {
@@ -439,7 +445,7 @@ class AuthEndpointTests(TestCase):
             allowed_supervision_location_ids="1, 2",
             include_hash=False,
         )
-        add_users_to_database_session(self.database_key, [user_1])
+        add_entity_to_database_session(self.database_key, [user_1])
         with self.app.test_request_context():
             expected_restrictions = [
                 {
@@ -482,7 +488,7 @@ class AuthEndpointTests(TestCase):
             include_hash=False,
             can_access_case_triage=True,
         )
-        add_users_to_database_session(self.database_key, [user_1, user_2, user_3])
+        add_entity_to_database_session(self.database_key, [user_1, user_2, user_3])
         with self.app.test_request_context():
             expected_restrictions = [
                 {
@@ -523,7 +529,6 @@ class AuthEndpointTests(TestCase):
         self.assertEqual(expected_restrictions, json.loads(response.data))
 
     def test_dashboard_user_restrictions_no_users(self) -> None:
-        add_users_to_database_session(self.database_key, [])
         with self.app.test_request_context():
             expected_restrictions: list[str] = []
         response = self.client.get(
@@ -531,3 +536,300 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
         )
         self.assertEqual(expected_restrictions, json.loads(response.data))
+
+    def test_users_some_overrides(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="test@domain.org",
+            region_code="US_ND",
+            role="leadership_role",
+            district="D1",
+            first_name="Fake",
+            last_name="User",
+        )
+        user_2 = generate_fake_rosters(
+            email="secondtest@domain.org",
+            region_code="US_ID",
+            external_id="abc",
+            role="line_staff",
+            district="D3",
+            first_name="John",
+            last_name="Doe",
+        )
+        user_1_override = generate_fake_user_overrides(
+            email="test@domain.org",
+            region_code="US_ND",
+            external_id="user_1_override.external_id",
+            role="user_1_override.role",
+            blocked=True,
+        )
+        default_1 = generate_fake_default_permissions(
+            state="US_ND",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": False, "B": True},
+        )
+        default_2 = generate_fake_default_permissions(
+            state="US_ND",
+            role="user_1_override.role",
+            can_access_leadership_dashboard=False,
+            can_access_case_triage=True,
+            should_see_beta_charts=True,
+        )
+        default_3 = generate_fake_default_permissions(
+            state="US_ID",
+            role="line_staff",
+            can_access_leadership_dashboard=False,
+            can_access_case_triage=True,
+            should_see_beta_charts=True,
+        )
+        new_permissions = generate_fake_permissions_overrides(
+            email="test@domain.org",
+            routes={"overridden route": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                user_1,
+                user_2,
+                user_1_override,
+                default_1,
+                default_2,
+                default_3,
+                new_permissions,
+            ],
+        )
+        with self.app.test_request_context():
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": False,
+                    "district": "D1",
+                    "restrictedUserEmail": "test@domain.org",
+                    "externalId": "user_1_override.external_id",
+                    "firstName": "Fake",
+                    "lastName": "User",
+                    "role": "user_1_override.role",
+                    "stateCode": "US_ND",
+                    "shouldSeeBetaCharts": True,
+                    "routes": {"overridden route": True},
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": False,
+                    "district": "D3",
+                    "restrictedUserEmail": "secondtest@domain.org",
+                    "externalId": "abc",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "role": "line_staff",
+                    "stateCode": "US_ID",
+                    "shouldSeeBetaCharts": True,
+                    "routes": None,
+                },
+            ]
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))
+
+    def test_users_with_empty_overrides(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="test_user@domain.org",
+            region_code="US_MO",
+            external_id="12345",
+            role="leadership_role",
+            district="4, 10A",
+            first_name="Test A.",
+            last_name="User",
+        )
+        default = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+        )
+        add_entity_to_database_session(self.database_key, [user_1, default])
+        with self.app.test_request_context():
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "4, 10A",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "blocked": False,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "district": "4, 10A",
+                    "restrictedUserEmail": "test_user@domain.org",
+                    "externalId": "12345",
+                    "firstName": "Test A.",
+                    "lastName": "User",
+                    "role": "leadership_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": True,
+                    "routes": None,
+                },
+            ]
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))
+
+    def test_users_with_null_values(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="user@domain.org",
+            region_code="US_ME",
+            role="leadership_role",
+        )
+        applicable_override = generate_fake_user_overrides(
+            email="user@domain.org",
+            region_code="US_ME",
+            external_id="A1B2",
+            blocked=True,
+        )
+        default_1 = generate_fake_default_permissions(
+            state="US_ME",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+        )
+        new_permissions = generate_fake_permissions_overrides(
+            email="user@domain.org",
+            routes={"A": True, "C": False},
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, applicable_override, default_1, new_permissions]
+        )
+        with self.app.test_request_context():
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "district": None,
+                    "restrictedUserEmail": "user@domain.org",
+                    "externalId": "A1B2",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_ME",
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"A": True, "C": False},
+                },
+            ]
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))
+
+    def test_users_no_users(self) -> None:
+        with self.app.test_request_context():
+            expected_restrictions: list[str] = []
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected_restrictions, json.loads(response.data))
+
+    def test_users_no_permissions(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="test_user@domain.org",
+            region_code="US_CO",
+            external_id="12345",
+            role="leadership_role",
+            district="District 4",
+            first_name="Test A.",
+            last_name="User",
+        )
+        add_entity_to_database_session(self.database_key, [user_1])
+        with self.app.test_request_context():
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": False,
+                    "district": "District 4",
+                    "restrictedUserEmail": "test_user@domain.org",
+                    "externalId": "12345",
+                    "firstName": "Test A.",
+                    "lastName": "User",
+                    "role": "leadership_role",
+                    "stateCode": "US_CO",
+                    "shouldSeeBetaCharts": False,
+                    "routes": None,
+                },
+            ]
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))
+
+    def test_users_add_user(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="test_user@domain.org",
+            region_code="US_CO",
+            external_id="ABC",
+            role="leadership_role",
+            district="District",
+        )
+        new_user_override_user = generate_fake_user_overrides(
+            email="hello@domain.org",
+            region_code="US_MI",
+        )
+        add_entity_to_database_session(
+            self.database_key, [user_1, new_user_override_user]
+        )
+        with self.app.test_request_context():
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": False,
+                    "district": None,
+                    "restrictedUserEmail": "hello@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": None,
+                    "stateCode": "US_MI",
+                    "shouldSeeBetaCharts": False,
+                    "routes": None,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": False,
+                    "district": "District",
+                    "restrictedUserEmail": "test_user@domain.org",
+                    "externalId": "ABC",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_CO",
+                    "shouldSeeBetaCharts": False,
+                    "routes": None,
+                },
+            ]
+        response = self.client.get(
+            self.users,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))

@@ -111,5 +111,5 @@ export const getListBatchInfo = async (
 
 // State User Permissions
 export const getStateUserPermissions = async (): Promise<Response> => {
-  return getAuthResource("/dashboard_user_restrictions");
+  return getAuthResource("/users");
 };

@@ -44,6 +44,10 @@ from recidiviz.metrics.export.export_config import (
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
+    PermissionsOverride,
+    Roster,
+    StateRolePermissions,
+    UserOverride,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -321,3 +325,105 @@ def dashboard_user_restrictions() -> Response:
             for res in user_restrictions
         ]
     )
+
+
+@auth_endpoint_blueprint.route("/users", methods=["GET"])
+@requires_gae_auth
+def users() -> Union[str, Response]:
+    """
+    This endpoint is accessed via the admin panel. It queries data from four Case Triage CloudSQL instance tables
+    (roster, user_override, state_role_permissions, and permissions_overrides) in order to account for overrides to
+    a user's roster data or permissions.
+
+    Returns: JSON string with accurate information about state users and their permissions
+    """
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    with SessionFactory.using_database(database_key, autocommit=False) as session:
+        user_info = (
+            session.query(
+                func.coalesce(UserOverride.state_code, Roster.state_code).label(
+                    "state_code"
+                ),
+                func.coalesce(UserOverride.email_address, Roster.email_address).label(
+                    "email_address"
+                ),
+                func.coalesce(UserOverride.external_id, Roster.external_id).label(
+                    "external_id"
+                ),
+                func.coalesce(UserOverride.role, Roster.role).label("role"),
+                func.coalesce(UserOverride.district, Roster.district).label("district"),
+                func.coalesce(UserOverride.first_name, Roster.first_name).label(
+                    "first_name"
+                ),
+                func.coalesce(UserOverride.last_name, Roster.last_name).label(
+                    "last_name"
+                ),
+                func.coalesce(UserOverride.blocked, False).label("blocked"),
+                func.coalesce(
+                    PermissionsOverride.can_access_leadership_dashboard,
+                    StateRolePermissions.can_access_leadership_dashboard,
+                    False,
+                ).label("can_access_leadership_dashboard"),
+                func.coalesce(
+                    PermissionsOverride.can_access_case_triage,
+                    StateRolePermissions.can_access_case_triage,
+                    False,
+                ).label("can_access_case_triage"),
+                func.coalesce(
+                    PermissionsOverride.should_see_beta_charts,
+                    StateRolePermissions.should_see_beta_charts,
+                    False,
+                ).label("should_see_beta_charts"),
+                func.coalesce(
+                    PermissionsOverride.routes, StateRolePermissions.routes
+                ).label("routes"),
+            )
+            .select_from(Roster)
+            .join(
+                UserOverride,
+                UserOverride.email_address == Roster.email_address,
+                full=True,
+            )
+            .outerjoin(
+                StateRolePermissions,
+                (
+                    func.coalesce(UserOverride.state_code, Roster.state_code)
+                    == StateRolePermissions.state_code
+                )
+                & (
+                    func.coalesce(UserOverride.role, Roster.role)
+                    == StateRolePermissions.role
+                ),
+            )
+            .outerjoin(
+                PermissionsOverride,
+                func.coalesce(UserOverride.email_address, Roster.email_address)
+                == PermissionsOverride.user_email,
+            )
+            .all()
+        )
+        return jsonify(
+            [
+                {
+                    "restrictedUserEmail": user.email_address,
+                    "stateCode": user.state_code,
+                    "externalId": user.external_id,
+                    "role": user.role,
+                    "district": user.district,
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
+                    "allowedSupervisionLocationIds": user.district
+                    if user.state_code == "US_MO"
+                    else "",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location"
+                    if user.state_code == "US_MO" and user.district is not None
+                    else "",
+                    "canAccessLeadershipDashboard": user.can_access_leadership_dashboard,
+                    "canAccessCaseTriage": user.can_access_case_triage,
+                    "shouldSeeBetaCharts": user.should_see_beta_charts,
+                    "routes": user.routes,
+                    "blocked": user.blocked,
+                }
+                for user in user_info
+            ]
+        )
