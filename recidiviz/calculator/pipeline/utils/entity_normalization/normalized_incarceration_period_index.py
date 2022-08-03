@@ -91,6 +91,7 @@ class NormalizedIncarcerationPeriodIndex:
             not in (
                 StateCustodialAuthority.SUPERVISION_AUTHORITY,
                 StateCustodialAuthority.COURT,
+                StateCustodialAuthority.COUNTY,
             )
         ]
 

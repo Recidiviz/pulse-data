@@ -44,5 +44,6 @@ class UsTnIncarcerationDelegate(StateSpecificIncarcerationDelegate):
             in (
                 StateCustodialAuthority.STATE_PRISON,
                 StateCustodialAuthority.COURT,
+                StateCustodialAuthority.COUNTY,
             )
         )

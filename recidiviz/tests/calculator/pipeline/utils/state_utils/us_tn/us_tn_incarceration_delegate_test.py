@@ -75,6 +75,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             if custodial_authority in (
                 StateCustodialAuthority.STATE_PRISON,
                 StateCustodialAuthority.COURT,
+                StateCustodialAuthority.COUNTY,
             ):
                 self.assertTrue(
                     self.delegate.is_period_included_in_state_population(
@@ -94,7 +95,7 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
-            custodial_authority=StateCustodialAuthority.COURT,
+            custodial_authority=StateCustodialAuthority.COUNTY,
             state_code=_STATE_CODE,
             admission_date=date(2008, 12, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
