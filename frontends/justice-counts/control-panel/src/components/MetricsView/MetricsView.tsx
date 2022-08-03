@@ -19,7 +19,7 @@ import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 
-import { FormError, ReportFrequency } from "../../shared/types";
+import { FormError, Permission, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
 import { removeCommaSpaceAndTrim } from "../../utils";
 import notReportedIcon from "../assets/not-reported-icon.png";
@@ -532,7 +532,12 @@ export const MetricsView: React.FC = observer(() => {
   const metricFilterOptions = ["All Metrics", "Active"] as const;
   type MetricFilterOptions = typeof metricFilterOptions[number];
 
-  const configSections = ["Configuration", "Context", "Data"] as const;
+  // TODO(#13805) Temporarily hiding the data tab until it is implemented. Currently it's only visible to Recidiviz admins.
+  const configSections = userStore.permissions.includes(
+    Permission.RECIDIVIZ_ADMIN
+  )
+    ? ["Configuration", "Context", "Data"]
+    : ["Configuration", "Context"];
   type ConfigSections = typeof configSections[number];
 
   const [activeMetricFilter, setActiveMetricFilter] =
