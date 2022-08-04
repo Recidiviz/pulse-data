@@ -130,8 +130,8 @@ class BulkUploader:
 
             try:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
-                # Drop any rows that only contain NaN values
-                df = df.dropna(axis=0, how="all")
+                # Drop any rows that contain any NaN values
+                df = df.dropna()
                 # Convert dataframe to a list of dictionaries
                 rows = df.to_dict("records")
 
@@ -506,7 +506,6 @@ class BulkUploader:
             )
 
         column_value = row[column_name]
-
         # Allow numeric values with columns in them (e.g. 1,000)
         if isinstance(column_value, str):
             column_value = column_value.replace(",", "")
@@ -514,14 +513,19 @@ class BulkUploader:
         try:
             value = column_type(column_value)
         except Exception as e:
-            if column_name != "month":
+            if column_name == "month":
+                # Allow "month" column to be either numbers or month names
+                column_value = self._get_month_column_value(column_value=column_value)
+                value = column_type(column_value)
+            elif column_name == "year" and "-" in str(column_value):
+                column_value = self._get_annual_year_from_fiscal_year(
+                    column_value=str(column_value)
+                )
+                value = column_type(column_value)
+            else:
                 raise ValueError(
                     f"Expected the column {column_name} to be of type {column_type}. Got {row.items()}."
                 ) from e
-
-            # Allow "month" column to be either numbers or month names
-            column_value = self._get_month_column_value(column_value=column_value)
-            value = column_type(column_value)
 
         # Round numbers to two decimal places
         if isinstance(value, float):
@@ -539,3 +543,7 @@ class BulkUploader:
                 analyzer=self.text_analyzer, text=column_value, options=MONTH_NAMES
             )
         return MONTH_NAMES.index(column_value)
+
+    def _get_annual_year_from_fiscal_year(self, column_value: str) -> Optional[str]:
+        """Takes as input a string and attempts to find the corresponding year"""
+        return column_value[0 : column_value.index("-")]
