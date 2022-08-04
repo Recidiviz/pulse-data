@@ -21,7 +21,11 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { FormError, Permission, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
-import { removeCommaSpaceAndTrim } from "../../utils";
+import {
+  memoizeDebounce,
+  MemoizeDebouncedFunction,
+  removeCommaSpaceAndTrim,
+} from "../../utils";
 import {
   BinaryRadioButton,
   BinaryRadioGroupClearButton,
@@ -326,6 +330,12 @@ type MetricContextConfigurationProps = {
     typeOfUpdate: MetricSettingsUpdateOptions,
     updatedSetting: MetricSettings
   ) => void;
+  debouncedSave: MemoizeDebouncedFunction<
+    (
+      typeOfUpdate: MetricSettingsUpdateOptions,
+      updatedSetting: MetricSettings
+    ) => Promise<void>
+  >;
 };
 
 const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
@@ -333,6 +343,7 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
   contexts,
   updateMetricSettings,
   saveAndUpdateMetricSettings,
+  debouncedSave,
 }) => {
   const [contextErrors, setContextErrors] =
     useState<{ [key: string]: FormError }>();
@@ -345,10 +356,10 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
     if (!isPositiveNumber && cleanValue !== "") {
       setContextErrors({
         [key]: {
-          message:
-            "The value entered cannot be saved. Please enter a valid number.",
+          message: "Please enter a valid number.",
         },
       });
+
       return false;
     }
 
@@ -438,22 +449,17 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
                 error={contextErrors?.[context.key]}
                 onChange={(e) => {
                   if (context.type === "NUMBER") {
-                    const isContextValid = contextNumberValidation(
-                      context.key,
-                      e.currentTarget.value
-                    );
-
-                    if (!isContextValid) {
-                      return updateMetricSettings("CONTEXT", {
-                        key: metricKey,
-                        contexts: [
-                          { key: context.key, value: e.currentTarget.value },
-                        ],
-                      });
-                    }
+                    contextNumberValidation(context.key, e.currentTarget.value);
                   }
 
-                  saveAndUpdateMetricSettings("CONTEXT", {
+                  updateMetricSettings("CONTEXT", {
+                    key: metricKey,
+                    contexts: [
+                      { key: context.key, value: e.currentTarget.value },
+                    ],
+                  });
+
+                  debouncedSave("CONTEXT", {
                     key: metricKey,
                     contexts: [
                       { key: context.key, value: e.currentTarget.value },
@@ -720,22 +726,22 @@ export const MetricsView: React.FC = observer(() => {
     typeOfUpdate: MetricSettingsUpdateOptions,
     updatedSetting: MetricSettings
   ) => {
+    updateMetricSettings(typeOfUpdate, updatedSetting);
+
     const response = (await reportStore.updateReportSettings([
       updatedSetting,
     ])) as Response;
 
     if (response.status === 200) {
-      updateMetricSettings(typeOfUpdate, updatedSetting);
       showToast(`Settings saved.`, true, "grey", 4000);
     } else {
-      showToast(
-        `Something went wrong with saving the settings. Please try again.`,
-        true,
-        "red",
-        4000
-      );
+      showToast(`Failed to save.`, true, "red", 4000);
     }
   };
+
+  const debouncedSave = useRef(
+    memoizeDebounce(saveAndUpdateMetricSettings, 1500)
+  ).current;
 
   useEffect(
     () =>
@@ -873,6 +879,7 @@ export const MetricsView: React.FC = observer(() => {
                     contexts={metricSettings[activeMetricKey]?.contexts}
                     updateMetricSettings={updateMetricSettings}
                     saveAndUpdateMetricSettings={saveAndUpdateMetricSettings}
+                    debouncedSave={debouncedSave}
                   />
                 )}
 
