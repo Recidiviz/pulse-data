@@ -535,12 +535,14 @@ class JusticeCountsSchemaTestObjects:
                         OffenseType.PERSON: 10,
                         OffenseType.PROPERTY: 40,
                         OffenseType.UNKNOWN: 10,
+                        OffenseType.OTHER: 0,
                     },
                     dimension_to_enabled_status={
                         OffenseType.DRUG: True,
                         OffenseType.PERSON: True,
                         OffenseType.PROPERTY: True,
                         OffenseType.UNKNOWN: True,
+                        OffenseType.OTHER: True,
                     },
                 )
             ],

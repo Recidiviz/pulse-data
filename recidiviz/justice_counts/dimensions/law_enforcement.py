@@ -35,6 +35,7 @@ class OffenseType(DimensionBase, enum.Enum):
     PERSON = "Person"
     PROPERTY = "Property"
     DRUG = "Drug"
+    OTHER = "Other"
     UNKNOWN = "Unknown"
 
     @classmethod

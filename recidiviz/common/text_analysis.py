@@ -37,6 +37,8 @@ DEFAULT_MATCHING_SCORE_CUTOFF = 90
 
 # A set of substitutions used to normalize input text, executed in order
 TEXT_NORMALIZERS: List[Tuple[str, str]] = [
+    # remove hyphens
+    ("-", ""),
     # words with a number, "@", website, or encoding string
     (r"\S*(\d|@|http|www|\ufffd)\S*", " "),
     # all non characters (numbers, punctuation, non-spaces)

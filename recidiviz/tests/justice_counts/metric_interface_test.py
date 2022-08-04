@@ -406,6 +406,12 @@ class TestJusticeCountsMetricInterface(TestCase):
                                 "value": 10,
                                 "enabled": True,
                             },
+                            {
+                                "key": "Other",
+                                "label": "Other",
+                                "value": 0,
+                                "enabled": True,
+                            },
                         ],
                     }
                 ],
@@ -513,6 +519,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                         {"key": OffenseType.PERSON.value, "value": 50},
                         {"key": OffenseType.PROPERTY.value, "value": 0},
                         {"key": OffenseType.UNKNOWN.value, "value": 0},
+                        {"key": OffenseType.OTHER.value, "value": 0},
                     ],
                 }
             ],
@@ -535,6 +542,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                             OffenseType.PERSON: 50,
                             OffenseType.PROPERTY: 0,
                             OffenseType.UNKNOWN: 0,
+                            OffenseType.OTHER: 0,
                         }
                     )
                 ],

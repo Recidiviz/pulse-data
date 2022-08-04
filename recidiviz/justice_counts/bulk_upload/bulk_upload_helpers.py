@@ -30,6 +30,11 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     PrisonReleaseTypes,
     ReadmissionType,
 )
+from recidiviz.justice_counts.dimensions.law_enforcement import (
+    CallType,
+    ForceType,
+    OffenseType,
+)
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -48,6 +53,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     SupervisionViolationType,
 )
 from recidiviz.justice_counts.metrics import (
+    law_enforcement,
     parole,
     prisons,
     probation,
@@ -404,12 +410,70 @@ PROBATION_METRIC_FILES = [
     ),
 ]
 
+LAW_ENFORCEMENT_METRIC_FILE = [
+    MetricFile(
+        filenames=["annual_budget"],
+        definition=law_enforcement.annual_budget,
+    ),
+    MetricFile(
+        filenames=["police_officers"],
+        definition=law_enforcement.police_officers,
+    ),
+    MetricFile(
+        filenames=["calls_for_service"],
+        definition=law_enforcement.calls_for_service,
+        disaggregation=CallType,
+        disaggregation_column_name="call_type",
+    ),
+    MetricFile(
+        filenames=["reported_crime"],
+        definition=law_enforcement.reported_crime,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
+        filenames=["arrests_by_offense_type"],
+        definition=law_enforcement.total_arrests,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
+        filenames=[
+            "arrests_by_race/ethnicity",
+            "arrests_by_raceethnicity",
+            "arrests_by_race",
+        ],
+        definition=law_enforcement.total_arrests,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        filenames=["arrests_by_gender"],
+        definition=law_enforcement.total_arrests,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        filenames=[
+            "officer_use_of_force_incidents",
+        ],
+        definition=law_enforcement.officer_use_of_force_incidents,
+        disaggregation=ForceType,
+        disaggregation_column_name="force_type",
+    ),
+    MetricFile(
+        filenames=["civilian_complaints_sustained"],
+        definition=law_enforcement.civilian_complaints_sustained,
+    ),
+]
+
 system_to_metric_files = {
     schema.System.PROSECUTION: PROSECUTION_METRIC_FILES,
     schema.System.PRISONS: PRISON_METRIC_FILES,
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
     schema.System.PAROLE: PAROLE_METRIC_FILES,
     schema.System.PROBATION: PROBATION_METRIC_FILES,
+    schema.System.LAW_ENFORCEMENT: LAW_ENFORCEMENT_METRIC_FILE,
 }
 
 # The `test_metricfile_list` unit test ensures that this dictionary
