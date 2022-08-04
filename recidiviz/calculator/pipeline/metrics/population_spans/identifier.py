@@ -278,6 +278,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             ) = supervision_delegate.supervision_location_from_supervision_site(
                 supervision_period.supervision_site
             )
+            deprecated_supervising_district_external_id = (
+                supervision_delegate.get_deprecated_supervising_district_external_id(
+                    level_1_supervision_location, level_2_supervision_location
+                )
+            )
             supervising_officer_external_id = supervision_delegate.get_supervising_officer_external_id_for_supervision_period(
                 supervision_period, supervision_period_to_agent
             )
@@ -311,6 +316,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                         custodial_authority=supervision_period.custodial_authority,
                         judicial_district_code=judicial_district_code,
                         supervising_officer_external_id=supervising_officer_external_id,
+                        supervising_district_external_id=deprecated_supervising_district_external_id,
                         level_1_supervision_location_external_id=level_1_supervision_location,
                         level_2_supervision_location_external_id=level_2_supervision_location,
                         included_in_state_population=included_in_state_population,
