@@ -1001,6 +1001,13 @@ class StatePerson(StateBase):
         comment="The raw text used to derive a person's reported residency status.",
     )
 
+    current_email_address = Column(
+        Text, comment="The current email address of the person."
+    )
+    current_phone_number = Column(
+        Text, comment="The current phone number of the person."
+    )
+
     @declared_attr
     def supervising_officer_id(self) -> Column:
         return Column(
