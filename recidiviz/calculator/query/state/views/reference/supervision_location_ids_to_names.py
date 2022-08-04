@@ -86,15 +86,16 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     ),
     nd_location_names AS (
         SELECT
-            state_code,
-            level_3_supervision_location_external_id,
-            level_3_supervision_location_name,
-            level_2_supervision_location_external_id,
-            level_2_supervision_location_name,
-            level_1_supervision_location_external_id,
-            level_1_supervision_location_name,
+            DISTINCT
+                'US_ND' AS state_code,
+                'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_3_supervision_location_name,
+                'NOT_APPLICABLE' AS level_2_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_2_supervision_location_name,
+                supervising_district_external_id as level_1_supervision_location_external_id,
+                supervising_district_name as level_1_supervision_location_name,
         FROM
-            `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+            `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_district_id_to_name_latest`
     ),
     pa_location_names AS (
         SELECT 
