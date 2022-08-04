@@ -18,6 +18,8 @@
 import { Spin, Table } from "antd";
 import { getAllIngestInstanceStatuses } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
+import { INGEST_ACTIONS_ROUTE } from "../../navigation/IngestOperations";
+import NewTabLink from "../NewTabLink";
 import { IngestInstanceStatusResponse } from "./constants";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
@@ -56,6 +58,11 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "State Code",
       dataIndex: "stateCode",
       key: "stateCode",
+      render: (stateCode: string) => (
+        <NewTabLink href={`${INGEST_ACTIONS_ROUTE}?stateCode=${stateCode}`}>
+          {stateCode}
+        </NewTabLink>
+      ),
     },
     {
       title: "Primary Instance Status",
