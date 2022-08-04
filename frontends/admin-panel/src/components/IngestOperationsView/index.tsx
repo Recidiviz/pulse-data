@@ -20,6 +20,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { fetchIngestStateCodes } from "../../AdminPanelAPI";
 import StateSelector from "../Utilities/StateSelector";
 import { StateCodeInfo } from "./constants";
+import IngestInstaneCurrentStatusSummary from "./IngestInstanceCurrentStatusSummary";
 import StateSpecificIngestOperationsMetadata from "./StateSpecificIngestOperationsMetadata";
 
 const IngestOperationsView = (): JSX.Element => {
@@ -60,11 +61,14 @@ const IngestOperationsView = (): JSX.Element => {
       {stateCode ? (
         <StateSpecificIngestOperationsMetadata stateCode={stateCode} />
       ) : (
-        <Alert
-          message="A region must be selected to view the below information"
-          type="warning"
-          showIcon
-        />
+        <>
+          <Alert
+            message="Select a region to view region-specific ingest details"
+            type="warning"
+            showIcon
+          />
+          <IngestInstaneCurrentStatusSummary />
+        </>
       )}
     </>
   );

@@ -18,7 +18,7 @@ import {
   DirectIngestInstance,
   QueueState,
 } from "../components/IngestOperationsView/constants";
-import { postWithURLAndBody } from "./utils";
+import { getResource, postWithURLAndBody } from "./utils";
 
 // Fetch states with ingest
 export const fetchIngestStateCodes = async (): Promise<Response> => {
@@ -273,4 +273,9 @@ export const transferIngestViewMetadataToNewInstance = async (
       destIngestInstance,
     }
   );
+};
+
+// Get all ingest instance statuses
+export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
+  return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
