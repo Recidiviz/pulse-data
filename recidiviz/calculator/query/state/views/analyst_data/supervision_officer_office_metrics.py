@@ -358,7 +358,7 @@ WITH date_array AS (
 #################
 
 , window_metrics AS (
-    # For all metrics below, we include all date indexes from other joined tables besides 
+    # For all metrics below, we include all indexes from other joined tables besides 
     # the relevant table for the current metric in the window partition, 
     # to avoid counting duplicates.
     SELECT
@@ -382,7 +382,7 @@ WITH date_array AS (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
             d.employment_status_start_date, e.employer_name, e.employment_start_date,
-            h.response_date
+            h.response_date, h.violation_type
         ) AS days_incarcerated_1yr,
         
         # Number of days from officer assignment to first incarceration, within a year of first assignment
@@ -392,7 +392,7 @@ WITH date_array AS (
                 PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
                 supervising_officer_external_id, district, office, date, 
                 d.employment_status_start_date, e.employer_name, e.employment_start_date,
-                h.response_date
+                h.response_date, h.violation_type
             )
         , a.start_date, DAY) 
          AS days_to_first_incarceration_1yr,
@@ -448,7 +448,7 @@ WITH date_array AS (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
             c.start_date, e.employer_name, e.employment_start_date,
-            h.response_date
+            h.response_date, h.violation_type
         ) AS days_employed_1yr,
 
         # Number of days at the longest stint with a consistent employer within a year 
@@ -468,7 +468,7 @@ WITH date_array AS (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
             c.start_date, d.employment_status_start_date,
-            h.response_date
+            h.response_date, h.violation_type
         ) AS max_days_stable_employment_1yr,
 
         # Number of unique employers within a year of first assignment to officer
@@ -476,7 +476,7 @@ WITH date_array AS (
             PARTITION BY sss.supervision_super_session_id, a.state_code, a.person_id, 
             supervising_officer_external_id, district, office, date, 
             c.start_date, d.employment_status_start_date,
-            h.response_date
+            h.response_date, h.violation_type
         ) AS num_unique_employers_1yr,
         
         # Change in risk score within first year of client-assignment, for clients who were reassessed
