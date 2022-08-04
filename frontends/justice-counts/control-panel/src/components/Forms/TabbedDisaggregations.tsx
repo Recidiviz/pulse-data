@@ -26,6 +26,7 @@ import {
   DisaggregationHasInputIndicator,
   DisaggregationInputWrapper,
   DisaggregationTabsContainer,
+  NotReportedIcon,
   TabDisplay,
   TabItem,
   TabsRow,
@@ -156,6 +157,26 @@ export const TabbedDisaggregations: React.FC<{
     }));
   };
 
+  const renderIcon = (
+    foundError: boolean,
+    disaggregationEnabled: boolean | undefined,
+    hasInput: boolean | undefined
+  ) => {
+    if (!disaggregationEnabled) {
+      return <NotReportedIcon size={16} lighter />;
+    }
+
+    if (foundError && disaggregationEnabled) {
+      return <img src={errorIcon} alt="" width="16px" height="16px" />;
+    }
+
+    if (hasInput && !foundError && disaggregationEnabled) {
+      return <img src={successIcon} alt="" width="16px" height="16px" />;
+    }
+
+    return <></>;
+  };
+
   return (
     <DisaggregationTabsContainer>
       <TabsRow>
@@ -192,16 +213,11 @@ export const TabbedDisaggregations: React.FC<{
                 error={foundError}
                 hasInput={disaggregationHasInput[disaggregation.key]?.hasInput}
               >
-                {/* Error State Icon */}
-                {foundError && (
-                  <img src={errorIcon} alt="" width="16px" height="16px" />
+                {renderIcon(
+                  foundError,
+                  disaggregation.enabled,
+                  disaggregationHasInput[disaggregation.key]?.hasInput
                 )}
-
-                {/* Success State Icon */}
-                {disaggregationHasInput[disaggregation.key]?.hasInput &&
-                  !foundError && (
-                    <img src={successIcon} alt="" width="16px" height="16px" />
-                  )}
               </DisaggregationHasInputIndicator>
             </TabItem>
           );
@@ -212,15 +228,18 @@ export const TabbedDisaggregations: React.FC<{
         {reportMetrics[currentIndex].disaggregations[
           activeDisaggregation[metric.key]?.disaggregationIndex || 0
         ]?.dimensions.map((dimension, dimensionIndex) => {
+          const activeDisaggregationOrZerothIndex =
+            activeDisaggregation[metric.key]?.disaggregationIndex || 0;
+          const disaggregation =
+            metric.disaggregations[activeDisaggregationOrZerothIndex];
+
           return (
             <DisaggregationInputWrapper
               key={dimension.key}
               onChange={() =>
                 searchDimensionsForInput(
-                  metric.disaggregations[
-                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                  ].key,
-                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
+                  disaggregation.key,
+                  activeDisaggregationOrZerothIndex
                 )
               }
             >
@@ -229,14 +248,8 @@ export const TabbedDisaggregations: React.FC<{
                 key={dimension.key + dimension.reporting_note}
                 metric={metric}
                 dimension={dimension}
-                disaggregation={
-                  metric.disaggregations[
-                    activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                  ]
-                }
-                disaggregationIndex={
-                  activeDisaggregation[metric.key]?.disaggregationIndex || 0
-                }
+                disaggregation={disaggregation}
+                disaggregationIndex={activeDisaggregationOrZerothIndex}
                 dimensionIndex={dimensionIndex}
                 updateFieldDescription={() =>
                   updateFieldDescription(
@@ -244,7 +257,9 @@ export const TabbedDisaggregations: React.FC<{
                     dimension.reporting_note
                   )
                 }
-                disabled={disabled}
+                disabled={
+                  disabled || !disaggregation.enabled || !dimension.enabled
+                }
                 clearFieldDescription={() => updateFieldDescription(undefined)}
               />
             </DisaggregationInputWrapper>

@@ -114,7 +114,9 @@ const ReportDataEntry = () => {
   };
 
   useEffect(() => {
-    if (reportMetrics) updateActiveMetric(reportMetrics[0].key); // open to the first metric by default
+    const firstEnabledMetric = reportMetrics?.find((metric) => metric.enabled);
+    if (reportMetrics && firstEnabledMetric)
+      updateActiveMetric(firstEnabledMetric.key); // open to the first enabled metric by default
   }, [reportMetrics, reportID]);
 
   if (isLoading) {

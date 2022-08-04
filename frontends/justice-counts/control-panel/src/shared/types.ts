@@ -83,6 +83,7 @@ export interface Metric {
   definitions: MetricDefinition[];
   contexts: MetricContext[];
   disaggregations: MetricDisaggregations[];
+  enabled?: boolean;
 }
 
 export interface MetricDefinition {
@@ -106,6 +107,7 @@ export interface MetricDisaggregations {
   dimensions: MetricDisaggregationDimensions[];
   required: boolean;
   helper_text: string | null | undefined;
+  enabled?: boolean;
 }
 
 export interface MetricDisaggregationDimensions {
@@ -113,6 +115,7 @@ export interface MetricDisaggregationDimensions {
   label: string;
   value: string | number | boolean | null | undefined;
   reporting_note: string;
+  enabled?: boolean;
 }
 
 export interface CreateReportFormValuesType extends Record<string, unknown> {

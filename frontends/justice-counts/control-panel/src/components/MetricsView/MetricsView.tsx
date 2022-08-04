@@ -22,12 +22,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { FormError, Permission, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
 import { removeCommaSpaceAndTrim } from "../../utils";
-import notReportedIcon from "../assets/not-reported-icon.png";
 import {
   BinaryRadioButton,
   BinaryRadioGroupClearButton,
   BinaryRadioGroupContainer,
   BinaryRadioGroupQuestion,
+  NotReportedIcon,
   TextInput,
 } from "../Forms";
 import { PageTitle, TabbedBar, TabbedItem, TabbedOptions } from "../Reports";
@@ -57,7 +57,6 @@ import {
   MetricsViewContainer,
   MetricsViewControlPanel,
   MultipleChoiceWrapper,
-  NotReportedIcon,
   PanelContainerLeft,
   PanelContainerRight,
   RadioButtonGroupWrapper,
@@ -130,7 +129,7 @@ const MetricBox: React.FC<MetricBoxProps> = ({
           </MetricsViewBadge>
         </MetricNameBadgeWrapper>
 
-        {!enabled && <NotReportedIcon src={notReportedIcon} alt="" />}
+        {!enabled && <NotReportedIcon noTooltip />}
       </MetricNameBadgeToggleWrapper>
 
       <MetricDescription>{description}</MetricDescription>

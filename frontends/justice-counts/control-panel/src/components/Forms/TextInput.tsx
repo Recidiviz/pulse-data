@@ -24,6 +24,7 @@ import infoRedIcon from "../assets/info-red-icon.png";
 import statusCheckIcon from "../assets/status-check-icon.png";
 import statusErrorIcon from "../assets/status-error-icon.png";
 import { palette, typography } from "../GlobalStyles";
+import { NotReportedIcon } from ".";
 
 export const InputWrapper = styled.div`
   position: relative;
@@ -37,6 +38,7 @@ type InputProps = {
   placeholder?: string;
   multiline?: boolean;
   persistLabel?: boolean;
+  notReporting?: boolean;
 };
 
 export const Input = styled.input<InputProps>`
@@ -46,14 +48,19 @@ export const Input = styled.input<InputProps>`
   height: ${({ multiline }) => (multiline ? "200px;" : "71px;")};
   padding: ${({ persistLabel }) =>
     persistLabel ? "42px 16px 16px 16px" : "16px 55px 10px 16px"}};
-  background: ${({ value, error }) => {
+  background: ${({ value, error, notReporting }) => {
     if (error) {
       return palette.highlight.red;
+    }
+    if (notReporting) {
+      return palette.highlight.grey1;
     }
     return value || value === 0
       ? palette.highlight.lightblue1
       : palette.highlight.grey1;
   }};
+  ${({ notReporting }) => notReporting && `color: ${palette.highlight.grey6}`};
+  
   caret-color: ${({ error }) => {
     if (error) {
       return palette.solid.red;
@@ -114,6 +121,7 @@ type InputLabelProps = {
   isDisabled?: boolean;
   error?: string;
   persistLabel?: boolean;
+  notReporting?: boolean;
 };
 
 export const InputLabel = styled.label<InputLabelProps>`
@@ -133,11 +141,11 @@ export const InputLabel = styled.label<InputLabelProps>`
   z-index: -1;
   transition: 0.2s ease;
 
-  color: ${({ error, isDisabled, inputHasValue }) => {
+  color: ${({ error, isDisabled, inputHasValue, notReporting }) => {
     if (error) {
       return palette.solid.red;
     }
-    if (isDisabled) {
+    if (isDisabled || notReporting) {
       return palette.highlight.grey6;
     }
     return inputHasValue ? palette.solid.blue : palette.highlight.grey8;
@@ -252,6 +260,7 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   multiline?: boolean;
   persistLabel?: boolean;
   metricKey?: string;
+  notReporting?: boolean;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
@@ -262,6 +271,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   placeholder,
   persistLabel,
   metricKey,
+  notReporting,
   ...props
 }): JSX.Element => {
   const [showTooltip, setShowTooltip] = useState<boolean>();
@@ -270,7 +280,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   const showTooltipIfTruncated = (
     e: React.MouseEvent<HTMLInputElement, MouseEvent>
   ) => {
-    const labelElement = e.currentTarget.lastElementChild as HTMLElement;
+    const labelElement = e.currentTarget.querySelector("label") as HTMLElement;
     if (labelElement.offsetWidth < labelElement.scrollWidth) {
       setShowTooltip(true);
     }
@@ -294,6 +304,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         id={`input-${name}`}
         placeholder={placeholder}
         persistLabel={persistLabel}
+        notReporting={notReporting}
       />
 
       {/* Text Input Label (appears inside of text input) */}
@@ -303,6 +314,7 @@ export const TextInput: React.FC<TextInputProps> = ({
         isDisabled={disabled}
         persistLabel={persistLabel}
         error={error?.message}
+        notReporting={notReporting}
       >
         {label}
       </InputLabel>
@@ -327,16 +339,22 @@ export const TextInput: React.FC<TextInputProps> = ({
           <RequiredChip />
         </LabelChipPosition>
       )} */}
+      {/* Chip: Not Reporting Status */}
+      {notReporting && (
+        <LabelChipPosition>
+          <NotReportedIcon lighter />
+        </LabelChipPosition>
+      )}
 
       {/* Chip: Error Status */}
-      {error && (
+      {error && !notReporting && (
         <LabelChipPosition>
           <img src={statusErrorIcon} alt="" width="24px" height="24px" />
         </LabelChipPosition>
       )}
 
       {/* Chip: Validated Successfully Status */}
-      {!error && value && (
+      {!error && !notReporting && value && (
         <LabelChipPosition>
           <img src={statusCheckIcon} alt="" width="24px" height="24px" />
         </LabelChipPosition>

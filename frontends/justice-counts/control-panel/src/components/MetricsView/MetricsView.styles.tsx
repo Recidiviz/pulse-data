@@ -335,11 +335,6 @@ export const ToggleSwitchLabel = styled.span<{ switchedOn?: boolean }>`
   }
 `;
 
-export const NotReportedIcon = styled.img`
-  width: 23px;
-  height: 23px;
-`;
-
 export const MultipleChoiceWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
