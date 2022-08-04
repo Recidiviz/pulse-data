@@ -347,8 +347,9 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
   saveAndUpdateMetricSettings,
   debouncedSave,
 }) => {
-  const [contextErrors, setContextErrors] =
-    useState<{ [key: string]: FormError }>();
+  const [contextErrors, setContextErrors] = useState<{
+    [key: string]: FormError;
+  }>();
 
   const contextNumberValidation = (key: string, value: string) => {
     const cleanValue = removeCommaSpaceAndTrim(value);

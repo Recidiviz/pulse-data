@@ -53,7 +53,11 @@ MONTH_NAMES = list(calendar.month_name)
 class BulkUploader:
     """Functionality for bulk upload of data into the Justice Counts database."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, infer_aggregate_value: bool = False, catch_errors: bool = True
+    ) -> None:
+        self.catch_errors = catch_errors
+        self.infer_aggregate_value = infer_aggregate_value
         self.text_analyzer = TextAnalyzer(
             configuration=TextMatchingConfiguration(
                 # We don't want to treat "other" as a stop word,
@@ -69,7 +73,6 @@ class BulkUploader:
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
-        catch_errors: bool = True,
     ) -> Dict[str, Exception]:
         """Iterate through all CSV files in the given directory and upload them
         to the Justice Counts database using the `upload_csv` method defined below.
@@ -96,7 +99,7 @@ class BulkUploader:
                     user_account=user_account,
                 )
             except Exception as e:
-                if catch_errors:
+                if self.catch_errors:
                     filename_to_error[filename] = e
                 else:
                     raise e
@@ -109,13 +112,12 @@ class BulkUploader:
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
-    ) -> List[Tuple[str, Exception]]:
+    ) -> Dict[str, Exception]:
         """Iterate through all tabs in an Excel spreadsheet and upload them
         to the Justice Counts database using the `upload_rows` method defined below.
         If an error is encountered on a particular tab, log it and continue.
         """
-        success_files = []
-        error_files = []
+        sheet_to_error = {}
 
         # TODO(#13731): Save raw Excel file in GCS
 
@@ -128,6 +130,9 @@ class BulkUploader:
 
             try:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
+                # Drop any rows that only contain NaN values
+                df = df.dropna(axis=0, how="all")
+                # Convert dataframe to a list of dictionaries
                 rows = df.to_dict("records")
 
                 self._upload_rows(
@@ -138,12 +143,13 @@ class BulkUploader:
                     agency_id=agency_id,
                     user_account=user_account,
                 )
-                success_files.append(sheet_name)
             except Exception as e:
-                error_files.append((sheet_name, e))
-                raise e
+                if self.catch_errors:
+                    sheet_to_error[sheet_name] = e
+                else:
+                    raise e
 
-        return error_files
+        return sheet_to_error
 
     def upload_csv(
         self,
@@ -450,17 +456,33 @@ class BulkUploader:
                         )  # type: ignore[call-arg]
                     dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
-            if aggregate_value is None and not metricfile.supplementary_disaggregation:
-                # If this file contains a non-primary aggregation, like gender or race,
-                # the aggregate values don't need to be reported, because they've already been
-                # reported on the primary aggregation. If the aggregate value IS reported,
-                # it will later be validated to match that of the primary aggregation (see
-                # `use_existing_aggregate_value` flag).
-                raise ValueError(
-                    f"No aggregate metric value found for the metric `{metricfile.filenames[0]}` "
-                    f"and time period {time_range}. Make sure to include a row labeled `All` "
-                    "for every time period."
-                )
+            if aggregate_value is None:
+                # If aggregate_value is None, that means the input file doesn't contain a
+                # row with the value 'All'. It only contains breakdown values.
+                if metricfile.supplementary_disaggregation:
+                    # If this file contains a non-primary aggregation, like gender or race,
+                    # the aggregate values don't need to be reported, because they've already been
+                    # reported on the primary aggregation. If the aggregate value IS reported,
+                    # it will later be validated to match that of the primary aggregation (see
+                    # `use_existing_aggregate_value` flag).
+                    pass
+                else:
+                    # Otherwise, whether or not we require the aggregate value to be reported
+                    # depends on the `infer_aggregate_value` flag. If this is True, we
+                    # calculate the aggregate value by summing up all breakdowns. If this is
+                    # False, and no aggregate value is reported, we throw an error.
+                    if self.infer_aggregate_value:
+                        aggregate_value = sum(
+                            val  # type: ignore[misc]
+                            for val in dimension_to_value.values()  # type: ignore[union-attr]
+                            if val is not None
+                        )
+                    else:
+                        raise ValueError(
+                            f"No aggregate metric value found for the metric `{metricfile.filenames[0]}` "
+                            f"and time period {time_range}. Make sure to include a row labeled `All` "
+                            "for every time period."
+                        )
 
         return MetricInterface(
             key=metricfile.definition.key,

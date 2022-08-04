@@ -52,6 +52,7 @@ const JusticeCountsBulkUploadView = (): JSX.Element => {
     user: string;
     system: string;
     upload: File[];
+    inferAggregateValue: boolean;
   }
 
   const onFinish = async (values: BulkUploadFormData) => {
@@ -61,6 +62,10 @@ const JusticeCountsBulkUploadView = (): JSX.Element => {
     formData.append("user_id", values.user);
     formData.append("system", values.system);
     formData.append("file", values.upload[0]);
+    formData.append(
+      "infer_aggregate_value",
+      String(values.inferAggregateValue)
+    );
     const response = await bulkUpload(formData);
     if (response.status === 200) {
       setUploadResult({
@@ -142,6 +147,13 @@ const JusticeCountsBulkUploadView = (): JSX.Element => {
               Upload Spreadsheet
             </Button>
           </Upload>
+        </Form.Item>
+        <Form.Item
+          label="Infer Aggregate Value"
+          name="inferAggregateValue"
+          valuePropName="checked"
+        >
+          <input type="checkbox" />
         </Form.Item>
         <Form.Item wrapperCol={{ offset: 4, span: 20 }}>
           <Button type="primary" htmlType="submit" disabled={showSpinner}>

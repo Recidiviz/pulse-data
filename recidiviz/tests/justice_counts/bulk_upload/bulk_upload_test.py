@@ -32,6 +32,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     ProsecutionAndDefenseStaffType,
 )
+from recidiviz.justice_counts.dimensions.supervision import SupervisionStaffType
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -55,7 +56,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.bulk_uploader = BulkUploader()
+        self.uploader = BulkUploader(catch_errors=False)
+        self.uploader_catch_errors = BulkUploader(catch_errors=True)
+        self.uploader_infer = BulkUploader(infer_aggregate_value=True)
 
         self.prisons_directory = os.path.join(
             os.path.dirname(__file__),
@@ -103,7 +106,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            filename_to_error = self.bulk_uploader.upload_directory(
+            filename_to_error = self.uploader_catch_errors.upload_directory(
                 session=session,
                 directory=self.invalid_directory,
                 agency_id=self.prosecution_agency_id,
@@ -134,13 +137,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.bulk_uploader.upload_directory(
+            self.uploader.upload_directory(
                 session=session,
                 directory=self.prisons_directory,
                 agency_id=self.prison_agency_id,
                 system=schema.System.PRISONS,
                 user_account=user_account,
-                catch_errors=False,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -176,13 +178,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.bulk_uploader.upload_directory(
+            self.uploader.upload_directory(
                 session=session,
                 directory=self.prosecution_directory,
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
-                catch_errors=False,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -213,13 +214,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             user_account = session.query(schema.UserAccount).limit(1).one()
 
-            self.bulk_uploader.upload_directory(
+            self.uploader.upload_directory(
                 session=session,
                 directory=self.prosecution_directory,
                 agency_id=PROSECUTION_AGENCY_ID,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
-                catch_errors=False,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -237,7 +237,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.bulk_uploader.upload_excel(
+            self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.prosecution_excel),
                 agency_id=self.prosecution_agency_id,
@@ -260,13 +260,22 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.bulk_uploader.upload_directory(
+
+            with self.assertRaisesRegex(ValueError, "No aggregate metric value"):
+                self.uploader.upload_directory(
+                    session=session,
+                    directory=self.supervision_directory,
+                    agency_id=self.supervision_agency_id,
+                    system=schema.System.SUPERVISION,
+                    user_account=user_account,
+                )
+
+            self.uploader_infer.upload_directory(
                 session=session,
                 directory=self.supervision_directory,
                 agency_id=self.supervision_agency_id,
                 system=schema.System.SUPERVISION,
                 user_account=user_account,
-                catch_errors=False,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -284,14 +293,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.bulk_uploader.upload_excel(
+
+            self.uploader_infer.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.supervision_excel),
                 agency_id=self.supervision_agency_id,
                 system=schema.System.SUPERVISION,
                 user_account=user_account,
             )
-
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
                 agency_id=self.supervision_agency_id,
@@ -363,6 +372,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
 
     def _test_supervision(self, reports_by_instance: Dict[str, schema.Report]) -> None:
+        """Spot check an annual report."""
         with SessionFactory.using_database(self.database_key) as session:
             annual_report_1 = reports_by_instance["2021 Annual Metrics"]
             metrics = sorted(
@@ -377,6 +387,17 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(metrics[3].value, None)
             self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
             self.assertEqual(metrics[6].value, 400)
+
+            self.assertEqual(
+                metrics[8].key, "SUPERVISION_TOTAL_STAFF_metric/staff/supervision/type"
+            )
+            self.assertEqual(metrics[8].value, 150)
+            self.assertEqual(
+                metrics[8]
+                .aggregated_dimensions[0]  # type: ignore[index]
+                .dimension_to_value[SupervisionStaffType.SUPERVISION_OFFICERS],
+                100,
+            )
 
             annual_report_2 = reports_by_instance["2022 Annual Metrics"]
             metrics = sorted(

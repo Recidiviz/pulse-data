@@ -447,8 +447,20 @@ class MetricInterface:
         systems: Set[schema.System],
         report_type: Optional[schema.ReportingFrequency] = None,
     ) -> List[MetricDefinition]:
+        """Given a list of systems and report frequency, return all
+        MetricDefinitions that belong to one of the systems and have
+        the given frequency."""
         metrics = list(
-            itertools.chain(*[METRICS_BY_SYSTEM[system.value] for system in systems])
+            itertools.chain(
+                *[
+                    METRICS_BY_SYSTEM[system.value]
+                    # Sort systems so that Supervision comes before Parole/Probation
+                    # in the UI
+                    for system in sorted(
+                        list(systems), key=lambda x: x.value, reverse=True
+                    )
+                ]
+            )
         )
         metric_definitions = []
         for metric in metrics:
