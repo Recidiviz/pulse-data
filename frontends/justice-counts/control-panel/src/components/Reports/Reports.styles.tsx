@@ -41,7 +41,6 @@ export const TabbedBar = styled.div<{ noPadding?: boolean }>`
   align-items: center;
   position: relative;
   padding: ${({ noPadding }) => (noPadding ? `none` : `0px 22px`)};
-  margin-bottom: 10px;
   border-bottom: 1px solid ${palette.highlight.grey9};
 `;
 

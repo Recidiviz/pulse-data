@@ -38,6 +38,7 @@ import Loading from "../Loading";
 import { PageTitle, TabbedBar, TabbedItem, TabbedOptions } from "../Reports";
 import { showToast } from "../Toast";
 import {
+  ActiveMetricSettingHeader,
   Dimension,
   DimensionTitle,
   DimensionTitleWrapper,
@@ -47,6 +48,7 @@ import {
   Header,
   Label,
   MetricBoxContainer,
+  MetricBoxWrapper,
   MetricConfigurationContainer,
   MetricContextContainer,
   MetricContextItem,
@@ -57,7 +59,6 @@ import {
   MetricNameBadgeToggleWrapper,
   MetricNameBadgeWrapper,
   MetricOnOffWrapper,
-  MetricSettingsDisplayError,
   MetricsViewBadge,
   MetricsViewContainer,
   MetricsViewControlPanel,
@@ -829,60 +830,73 @@ export const MetricsView: React.FC = observer(() => {
 
         <MetricsViewControlPanel>
           {/* List Of Metrics */}
-          <PanelContainerLeft
-            onClick={() => {
-              if (configPanelRef.current) {
-                configPanelRef.current.scrollTo({
-                  top: 0,
-                  behavior: "smooth",
-                });
-              }
-              setActiveConfigSection(configSections[0]);
-            }}
-          >
+          <PanelContainerLeft>
             {filteredMetricSettings &&
               Object.values(filteredMetricSettings).map((metric) => (
-                <MetricBox
+                <MetricBoxWrapper
                   key={metric.key}
-                  metricKey={metric.key}
-                  displayName={metric.display_name}
-                  frequency={metric.frequency as ReportFrequency}
-                  description={metric.description}
-                  enabled={metric.enabled}
-                  activeMetricKey={activeMetricKey}
-                  setActiveMetricKey={setActiveMetricKey}
-                />
+                  onClick={() => {
+                    if (configPanelRef.current) {
+                      configPanelRef.current.scrollTo({
+                        top: 0,
+                        behavior: "smooth",
+                      });
+                    }
+                    setActiveConfigSection(configSections[0]);
+                  }}
+                >
+                  <MetricBox
+                    metricKey={metric.key}
+                    displayName={metric.display_name}
+                    frequency={metric.frequency as ReportFrequency}
+                    description={metric.description}
+                    enabled={metric.enabled}
+                    activeMetricKey={activeMetricKey}
+                    setActiveMetricKey={setActiveMetricKey}
+                  />
+                </MetricBoxWrapper>
               ))}
           </PanelContainerLeft>
 
           {/* Configuration | Context | Data */}
           <PanelContainerRight ref={configPanelRef}>
-            <MetricNameBadgeWrapper>
-              <MetricName isTitle>
-                {metricSettings[activeMetricKey]?.display_name}
-              </MetricName>
-              <MetricsViewBadge
-                frequency={
-                  metricSettings[activeMetricKey]?.frequency as ReportFrequency
-                }
-              >
-                {metricSettings[activeMetricKey]?.frequency}
-              </MetricsViewBadge>
-            </MetricNameBadgeWrapper>
+            <ActiveMetricSettingHeader>
+              <MetricNameBadgeWrapper>
+                <MetricName isTitle>
+                  {metricSettings[activeMetricKey]?.display_name}
+                </MetricName>
+                <MetricsViewBadge
+                  frequency={
+                    metricSettings[activeMetricKey]
+                      ?.frequency as ReportFrequency
+                  }
+                >
+                  {metricSettings[activeMetricKey]?.frequency}
+                </MetricsViewBadge>
+              </MetricNameBadgeWrapper>
 
-            <TabbedBar noPadding>
-              <TabbedOptions>
-                {configSections.map((section) => (
-                  <TabbedItem
-                    key={section}
-                    selected={activeConfigSection === section}
-                    onClick={() => setActiveConfigSection(section)}
-                  >
-                    {section}
-                  </TabbedItem>
-                ))}
-              </TabbedOptions>
-            </TabbedBar>
+              <TabbedBar noPadding>
+                <TabbedOptions>
+                  {configSections.map((section) => (
+                    <TabbedItem
+                      key={section}
+                      selected={activeConfigSection === section}
+                      onClick={() => {
+                        setActiveConfigSection(section);
+                        if (configPanelRef.current) {
+                          configPanelRef.current.scrollTo({
+                            top: 0,
+                            behavior: "smooth",
+                          });
+                        }
+                      }}
+                    >
+                      {section}
+                    </TabbedItem>
+                  ))}
+                </TabbedOptions>
+              </TabbedBar>
+            </ActiveMetricSettingHeader>
 
             <MetricDetailsDisplay>
               {/* Configuration */}
