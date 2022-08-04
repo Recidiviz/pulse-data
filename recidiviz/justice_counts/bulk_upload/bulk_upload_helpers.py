@@ -42,6 +42,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
+    SupervisionIndividualType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
@@ -238,26 +239,28 @@ SUPERVISION_METRIC_FILES = [
     MetricFile(
         filenames=["individuals_under_supervision"],
         definition=supervision.individuals_under_supervision,
-        disaggregation=SupervisionCaseType,
+        disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_gender",
-            "individuals_under_supervision_gender",
+            "individuals_gender",
         ],
         definition=supervision.individuals_under_supervision,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
+        supplementary_disaggregation=True,
     ),
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_race/ethnicity",
-            "individuals_under_supervision_race",
+            "individuals_race",
         ],
         definition=supervision.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
+        supplementary_disaggregation=True,
     ),
     MetricFile(
         filenames=[
@@ -268,7 +271,7 @@ SUPERVISION_METRIC_FILES = [
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision"],
+        filenames=["reconviction_while_on_supervision", "reconvictions"],
         definition=supervision.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
@@ -301,13 +304,13 @@ PAROLE_METRIC_FILES = [
     MetricFile(
         filenames=["individuals_under_supervision"],
         definition=parole.individuals_under_supervision,
-        disaggregation=SupervisionCaseType,
+        disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_gender",
-            "individuals_under_supervision_gender",
+            "individuals_gender",
         ],
         definition=parole.individuals_under_supervision,
         disaggregation=GenderRestricted,
@@ -316,7 +319,7 @@ PAROLE_METRIC_FILES = [
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_race/ethnicity",
-            "individuals_under_supervision_race",
+            "individuals_race",
         ],
         definition=parole.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
@@ -331,7 +334,7 @@ PAROLE_METRIC_FILES = [
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision"],
+        filenames=["reconviction_while_on_supervision", "reconvictions"],
         definition=parole.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
@@ -364,13 +367,13 @@ PROBATION_METRIC_FILES = [
     MetricFile(
         filenames=["individuals_under_supervision"],
         definition=probation.individuals_under_supervision,
-        disaggregation=SupervisionCaseType,
+        disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_gender",
-            "individuals_under_supervision_gender",
+            "individuals_gender",
         ],
         definition=probation.individuals_under_supervision,
         disaggregation=GenderRestricted,
@@ -379,7 +382,7 @@ PROBATION_METRIC_FILES = [
     MetricFile(
         filenames=[
             "individuals_under_supervision_by_race/ethnicity",
-            "individuals_under_supervision_race",
+            "individuals_race",
         ],
         definition=probation.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
@@ -394,7 +397,7 @@ PROBATION_METRIC_FILES = [
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision"],
+        filenames=["reconviction_while_on_supervision", "reconvictions"],
         definition=probation.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
