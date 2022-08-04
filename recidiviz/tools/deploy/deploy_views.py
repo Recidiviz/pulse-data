@@ -117,7 +117,7 @@ def deploy_views(
         ]
         view_builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
             view_builders_to_load=view_builders_in_datasets,
-            all_view_builders_in_dag=view_builders_in_datasets,
+            all_view_builders_in_dag=all_view_builders_in_dag,
             get_ancestors=True,
             get_descendants=False,
         )
