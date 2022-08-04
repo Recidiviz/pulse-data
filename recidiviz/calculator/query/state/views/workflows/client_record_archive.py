@@ -44,7 +44,8 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     )
     , records_by_state_by_date AS (
         SELECT
-            * EXCEPT (path_parts),
+            * EXCEPT (path_parts, remaining_criteria_needed),
+            CAST(remaining_criteria_needed AS INT64) AS remaining_criteria_needed,
             DATE(path_parts[OFFSET(1)]) AS export_date,
             path_parts[OFFSET(2)] AS state_code,
         FROM split_path
