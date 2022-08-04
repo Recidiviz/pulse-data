@@ -93,6 +93,7 @@ export {
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
+  getAllIngestInstanceStatuses,
   getIngestInstanceSummary,
   getIngestFileProcessingStatus,
   getIngestQueuesState,
@@ -102,8 +103,8 @@ export {
   moveIngestViewResultsToBackup,
   pauseDirectIngestInstance,
   releaseBQExportLock,
-  triggerTaskScheduler,
   transferIngestViewMetadataToNewInstance,
+  triggerTaskScheduler,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "./IngestOperations";
@@ -115,6 +116,6 @@ export {
   fetchRosterStateCodes,
   generateNonETLExports,
   getPOFeedback,
-  runCloudSQLImport,
   getStateUserPermissions,
+  runCloudSQLImport,
 } from "./LineStaffTools";

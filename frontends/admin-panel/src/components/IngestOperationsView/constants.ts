@@ -48,6 +48,13 @@ export type QueueMetadata = {
   state: QueueState;
 };
 
+export type IngestInstanceStatusResponse = {
+  [stateCode: string]: {
+    primary?: string;
+    secondary?: string;
+  };
+};
+
 export enum DirectIngestInstance {
   PRIMARY = "PRIMARY",
   SECONDARY = "SECONDARY",
