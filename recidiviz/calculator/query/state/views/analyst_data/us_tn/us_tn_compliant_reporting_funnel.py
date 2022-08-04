@@ -31,6 +31,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Eligible" AS step,
     eligible_start AS start,
@@ -42,6 +43,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Surfaced" AS step,
     first_surfaced AS start,
@@ -54,6 +56,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Form viewed" AS step,
     first_viewed AS start,
@@ -66,6 +69,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Form completed" AS step,
     last_updated AS start,
@@ -78,6 +82,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Transferred" AS step,
     downgraded AS start,
@@ -90,6 +95,7 @@ US_TN_COMPLIANT_REPORTING_FUNNEL_QUERY_TEMPLATE = """
     SELECT
     person_id,
     compliant_reporting_eligible,
+    remaining_criteria_needed_latest,
     status,
     "Marked ineligible" AS step,
     last_updated AS start,
