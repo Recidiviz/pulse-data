@@ -54,6 +54,7 @@ export const FormWrapper = styled.div`
 
 export const Form = styled.form`
   display: block;
+  padding-bottom: 100px;
 `;
 
 type TitleWrapperProps = {
@@ -89,6 +90,7 @@ export const OnePanelBackLinkContainer = styled(PreTitle)`
 export const MetricsSectionTitle = styled.div`
   ${typography.sizeCSS.normal}
   margin-top: 6px;
+  margin-right: 17px;
 `;
 
 export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
@@ -114,14 +116,23 @@ export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
   `}
 `;
 
-export const Metric = styled.div`
+export const Metric = styled.div<{ notReporting?: boolean }>`
   margin-top: -6.5em;
   padding-top: 6.5em;
-  margin-bottom: 194px;
+  margin-bottom: ${({ notReporting }) => (notReporting ? `50px` : `194px`)};
+`;
+
+export const MetricSectionTitleWrapper = styled.div`
+  display: flex;
+  align-items: flex-end;
+  /* img {
+    margin-top: 32px;
+  } */
 `;
 
 export const MetricSectionTitle = styled.div`
   ${typography.sizeCSS.large}
+  margin-right: 17px;
   margin-top: 32px;
 `;
 
@@ -191,7 +202,7 @@ export const TabDisplay = styled.div`
 export const DisaggregationInputWrapper = styled.div`
   label {
     width: 100%;
-    padding-right: 26px;
+    padding-right: 60px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

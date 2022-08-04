@@ -40,6 +40,8 @@ import {
   Metric,
   MetricSectionSubTitle,
   MetricSectionTitle,
+  MetricSectionTitleWrapper,
+  NotReportedIcon,
   OnePanelBackLinkContainer,
   OpacityGradient,
   PreTitle,
@@ -279,123 +281,135 @@ const DataEntryForm: React.FC<{
             <Metric
               key={metric.key}
               id={metric.key}
-              ref={(e: HTMLDivElement) => metricsRef.current?.push(e)}
+              ref={(e: HTMLDivElement) =>
+                metric.enabled && metricsRef.current?.push(e)
+              }
+              notReporting={!metric.enabled}
             >
-              <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
+              <MetricSectionTitleWrapper>
+                <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
+                {!metric.enabled && <NotReportedIcon />}
+              </MetricSectionTitleWrapper>
               <MetricSectionSubTitle>
                 {metric.description}
               </MetricSectionSubTitle>
 
-              {/* Metric Value */}
-              <MetricTextInput
-                reportID={reportID}
-                metric={metric}
-                autoFocus={index === 0}
-                disabled={isPublished || hasVersionConflict}
-              />
+              {metric.enabled && (
+                <>
+                  {/* Metric Value */}
+                  <MetricTextInput
+                    reportID={reportID}
+                    metric={metric}
+                    autoFocus={index === 0}
+                    disabled={isPublished || hasVersionConflict}
+                  />
 
-              {/* Disaggregations */}
-              {metric.disaggregations.length > 0 && (
-                <TabbedDisaggregations
-                  reportID={reportID}
-                  currentIndex={index}
-                  reportMetrics={reportMetrics}
-                  metric={metric}
-                  updateFieldDescription={updateFieldDescription}
-                  disabled={isPublished || hasVersionConflict}
-                />
-              )}
+                  {/* Disaggregations */}
+                  {metric.disaggregations.length > 0 && (
+                    <TabbedDisaggregations
+                      reportID={reportID}
+                      currentIndex={index}
+                      reportMetrics={reportMetrics}
+                      metric={metric}
+                      updateFieldDescription={updateFieldDescription}
+                      disabled={isPublished || hasVersionConflict}
+                    />
+                  )}
 
-              {/* Contexts */}
-              {/* TODO(#13314): display multiple choice options as drop down if there are >2 options */}
-              {metric.contexts.length > 0 &&
-                metric.contexts.map((context, contextIndex) => {
-                  if (context.type === "MULTIPLE_CHOICE") {
-                    const contextError =
-                      formStore.contexts?.[reportID]?.[metric.key]?.[
-                        context.key
-                      ]?.error;
-                    return (
-                      <BinaryRadioGroupContainer key={context.key}>
-                        <BinaryRadioGroupQuestion>
-                          {context.required && <DataEntryFormRequiredChip />}
-                          {context.display_name}
-                        </BinaryRadioGroupQuestion>
+                  {/* Contexts */}
+                  {/* TODO(#13314): display multiple choice options as drop down if there are >2 options */}
+                  {metric.contexts.length > 0 &&
+                    metric.contexts.map((context, contextIndex) => {
+                      if (context.type === "MULTIPLE_CHOICE") {
+                        const contextError =
+                          formStore.contexts?.[reportID]?.[metric.key]?.[
+                            context.key
+                          ]?.error;
+                        return (
+                          <BinaryRadioGroupContainer key={context.key}>
+                            <BinaryRadioGroupQuestion>
+                              {context.required && (
+                                <DataEntryFormRequiredChip />
+                              )}
+                              {context.display_name}
+                            </BinaryRadioGroupQuestion>
 
-                        <BinaryRadioGroupWrapper>
-                          <BinaryRadioButtonInputs
+                            <BinaryRadioGroupWrapper>
+                              <BinaryRadioButtonInputs
+                                reportID={reportID}
+                                metric={metric}
+                                context={context}
+                                contextIndex={contextIndex}
+                                options={context.multiple_choice_options}
+                                disabled={isPublished || hasVersionConflict}
+                              />
+                            </BinaryRadioGroupWrapper>
+                            <BinaryRadioGroupClearButton
+                              onClick={() => {
+                                if (
+                                  !isPublished &&
+                                  !hasVersionConflict &&
+                                  (formStore.contexts?.[reportID]?.[
+                                    metric.key
+                                  ]?.[context.key]?.value ||
+                                    context.value)
+                                ) {
+                                  formStore.resetBinaryInput(
+                                    reportID,
+                                    metric.key,
+                                    context.key,
+                                    context.required
+                                  );
+                                  showToast(
+                                    "Saving...",
+                                    false,
+                                    "grey",
+                                    undefined,
+                                    true
+                                  );
+                                  debouncedSave(metric.key);
+                                }
+                              }}
+                              disabled={isPublished || hasVersionConflict}
+                            >
+                              Clear Input
+                            </BinaryRadioGroupClearButton>
+
+                            {/* Error */}
+                            {contextError && (
+                              <DataEntryFormErrorWithTooltipContainer>
+                                <ErrorWithTooltip error={contextError} />
+                              </DataEntryFormErrorWithTooltipContainer>
+                            )}
+                          </BinaryRadioGroupContainer>
+                        );
+                      }
+                      return (
+                        <Fragment key={context.key}>
+                          <AdditionalContextLabel>
+                            {context.display_name}
+                          </AdditionalContextLabel>
+                          <AdditionalContextInput
                             reportID={reportID}
                             metric={metric}
                             context={context}
                             contextIndex={contextIndex}
-                            options={context.multiple_choice_options}
+                            updateFieldDescription={() =>
+                              updateFieldDescription(
+                                context.display_name as string,
+                                context.reporting_note as string
+                              )
+                            }
+                            clearFieldDescription={() =>
+                              updateFieldDescription(undefined)
+                            }
                             disabled={isPublished || hasVersionConflict}
                           />
-                        </BinaryRadioGroupWrapper>
-                        <BinaryRadioGroupClearButton
-                          onClick={() => {
-                            if (
-                              !isPublished &&
-                              !hasVersionConflict &&
-                              (formStore.contexts?.[reportID]?.[metric.key]?.[
-                                context.key
-                              ]?.value ||
-                                context.value)
-                            ) {
-                              formStore.resetBinaryInput(
-                                reportID,
-                                metric.key,
-                                context.key,
-                                context.required
-                              );
-                              showToast(
-                                "Saving...",
-                                false,
-                                "grey",
-                                undefined,
-                                true
-                              );
-                              debouncedSave(metric.key);
-                            }
-                          }}
-                          disabled={isPublished || hasVersionConflict}
-                        >
-                          Clear Input
-                        </BinaryRadioGroupClearButton>
-
-                        {/* Error */}
-                        {contextError && (
-                          <DataEntryFormErrorWithTooltipContainer>
-                            <ErrorWithTooltip error={contextError} />
-                          </DataEntryFormErrorWithTooltipContainer>
-                        )}
-                      </BinaryRadioGroupContainer>
-                    );
-                  }
-                  return (
-                    <Fragment key={context.key}>
-                      <AdditionalContextLabel>
-                        {context.display_name}
-                      </AdditionalContextLabel>
-                      <AdditionalContextInput
-                        reportID={reportID}
-                        metric={metric}
-                        context={context}
-                        contextIndex={contextIndex}
-                        updateFieldDescription={() =>
-                          updateFieldDescription(
-                            context.display_name as string,
-                            context.reporting_note as string
-                          )
-                        }
-                        clearFieldDescription={() =>
-                          updateFieldDescription(undefined)
-                        }
-                        disabled={isPublished || hasVersionConflict}
-                      />
-                    </Fragment>
-                  );
-                })}
+                        </Fragment>
+                      );
+                    })}
+                </>
+              )}
             </Metric>
           );
         })}

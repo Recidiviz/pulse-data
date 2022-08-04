@@ -140,6 +140,13 @@ const ReportStatusIcon = styled.div<{
   border: 1px solid ${palette.highlight.grey4};
 `;
 
+export const NotReportedHeader = styled.div`
+  ${typography.sizeCSS.normal}
+  color: ${palette.highlight.grey8};
+  margin-top: 16px;
+  margin-bottom: 2px;
+`;
+
 export const EditDetails = styled.div`
   width: 307px;
   position: fixed;
@@ -278,12 +285,27 @@ const ReportSummaryPanel: React.FC<{
 
       <ReportSummaryProgressIndicatorWrapper>
         {Object.entries(metricsBySystem).map(([system, metrics]) => {
+          const { enabledMetrics, disabledMetrics } = metrics.reduce<{
+            enabledMetrics: Metric[];
+            disabledMetrics: Metric[];
+          }>(
+            (acc, currentMetric) => {
+              if (currentMetric.enabled) {
+                acc.enabledMetrics.push(currentMetric);
+              } else {
+                acc.disabledMetrics.push(currentMetric);
+              }
+              return acc;
+            },
+            { enabledMetrics: [], disabledMetrics: [] }
+          );
+
           return (
             <React.Fragment key={system}>
               {showMetricSectionTitles ? (
                 <MetricsSectionTitle>{system}</MetricsSectionTitle>
               ) : null}
-              {metrics.map((metric) => {
+              {enabledMetrics.map((metric) => {
                 const foundErrors = checkMetricForErrorsInUpdatedValues(
                   metric.key
                 );
@@ -296,6 +318,22 @@ const ReportSummaryPanel: React.FC<{
                     metricHasValidInput={Boolean(
                       formStore.metricsValues?.[reportID]?.[metric.key]?.value
                     )}
+                    metric={metric}
+                  />
+                );
+              })}
+
+              {/* Metrics Not Reported */}
+              {disabledMetrics.length > 0 && (
+                <NotReportedHeader>Not Reported</NotReportedHeader>
+              )}
+              {disabledMetrics.map((metric) => {
+                return (
+                  <ReportStatusIconComponent
+                    key={metric.key}
+                    activeMetric={activeMetric}
+                    metricHasError={false}
+                    metricHasValidInput={false}
                     metric={metric}
                   />
                 );

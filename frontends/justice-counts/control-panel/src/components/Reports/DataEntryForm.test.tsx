@@ -96,6 +96,7 @@ describe("test data entry form", () => {
             unit: "people",
             category: "CAPACITY_AND_COST",
             label: "Total Staff",
+            enabled: true,
             definitions: [
               {
                 term: "full-time staff",

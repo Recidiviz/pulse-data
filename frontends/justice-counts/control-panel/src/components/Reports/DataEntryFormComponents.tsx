@@ -149,6 +149,7 @@ export const DisaggregationDimensionTextInput = observer(
         onFocus={updateFieldDescription}
         onBlur={clearFieldDescription}
         disabled={disabled}
+        notReporting={!disaggregation.enabled || !dimension.enabled}
       />
     );
   }
