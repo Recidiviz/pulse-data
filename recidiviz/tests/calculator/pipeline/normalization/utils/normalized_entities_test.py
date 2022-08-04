@@ -154,7 +154,8 @@ class TestNormalizedEntities(unittest.TestCase):
         for entity_cls in self.normalized_entity_classes:
             unique_fields = fields_unique_to_normalized_class(entity_cls)
 
-            for field, attribute in attr.fields_dict(entity_cls).items():
+            fields_dict = attr.fields_dict(entity_cls)  # type: ignore[arg-type]
+            for field, attribute in fields_dict.items():
                 if field not in unique_fields:
                     continue
 

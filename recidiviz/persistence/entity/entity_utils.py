@@ -927,13 +927,11 @@ def get_single_state_code(
     return state_code
 
 
-def get_non_flat_property_class_name(
-    obj: Union[list, Entity], property_name: str
-) -> Optional[str]:
+def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optional[str]:
     """Returns the class name of the property with |property_name| on obj, or
     None if the property is a flat field.
     """
-    if not isinstance(obj, Entity) and not isinstance(obj, list):
+    if not isinstance(obj, Entity):
         raise TypeError(f"Unexpected type [{type(obj)}]")
 
     if _is_property_flat_field(obj, property_name):
@@ -956,11 +954,11 @@ def get_non_flat_property_class_name(
 
 # TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
 #  as a flat field
-def _is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool:
+def _is_property_flat_field(obj: Entity, property_name: str) -> bool:
     """Returns true if the attribute corresponding to |property_name| on the
     given object is a flat field (not a List, attr class, or ForwardRef)."""
 
-    if not isinstance(obj, Entity) and not isinstance(obj, list):
+    if not isinstance(obj, Entity):
         raise TypeError(f"Unexpected type [{type(obj)}]")
 
     attribute = attr.fields_dict(obj.__class__).get(property_name)

@@ -276,7 +276,7 @@ class DefaultableAttr:
             the attributes are set to their default or None if a default is
             unspecified.
         """
-        for field, attribute in attr.fields_dict(cls).items():
+        for field, attribute in attr.fields_dict(cls).items():  # type: ignore[arg-type]
             default = attribute.default
 
             # Don't set a default if the field is already set
