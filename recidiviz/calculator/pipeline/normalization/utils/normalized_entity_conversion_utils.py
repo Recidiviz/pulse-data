@@ -471,9 +471,9 @@ def _get_fields_unique_to_normalized_class(
     to their BuildableAttrFieldType for a class if the attributes of the class aren't
     yet in the cached _class_structure_reference.
     """
-    normalized_class_fields_dict = attr.fields_dict(entity_cls)
+    normalized_class_fields_dict = attr.fields_dict(entity_cls)  # type: ignore[arg-type]
     base_class: Type[BuildableAttr] = entity_cls.__base__
-    base_class_fields_dict = attr.fields_dict(base_class)
+    base_class_fields_dict = attr.fields_dict(base_class)  # type: ignore[arg-type]
 
     return set(normalized_class_fields_dict.keys()).difference(
         set(base_class_fields_dict.keys())

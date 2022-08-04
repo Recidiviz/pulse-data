@@ -25,7 +25,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Type
+from typing import Any, Dict, List, Optional, Set, Type
 
 import attr
 from google.cloud import bigquery
@@ -1096,8 +1096,12 @@ class CalculationDocumentationGenerator:
             "**Enum Class**",
         ]
 
-        shared_attributes = set(attr.fields_dict(RecidivizMetric).keys()).union(
-            set(attr.fields_dict(PersonLevelMetric).keys())
+        # Cast these as Any so mypy does not complain that 'Only concrete class can be
+        # given where "Type[AttrsInstance]" is expected'
+        recidiviz_metric_cls: Any = RecidivizMetric
+        person_level_metric_cls: Any = PersonLevelMetric
+        shared_attributes = set(attr.fields_dict(recidiviz_metric_cls).keys()).union(
+            set(attr.fields_dict(person_level_metric_cls).keys())
         )
 
         metric_attribute_table_matrix = [
