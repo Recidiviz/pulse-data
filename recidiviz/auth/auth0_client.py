@@ -150,7 +150,7 @@ class Auth0Client:
         while continue_fetching:
             response = self.client.users.list(
                 per_page=MAX_RESULTS_PER_PAGE,
-                fields=["user_id", "email", "app_metadata"],
+                fields=["user_id", "name", "email", "app_metadata"],
             )
             users = response["users"]
             all_users.extend(users)
