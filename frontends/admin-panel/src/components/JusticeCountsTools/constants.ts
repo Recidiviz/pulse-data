@@ -30,11 +30,12 @@ export type ErrorResponse = {
 
 /* eslint-disable camelcase */
 export type User = {
-  id: number;
-  email_address: string;
+  auth0_user_id: string;
+  auth0_email: string;
+  auth0_name: string;
+  db_name?: string;
+  db_id?: string;
   agencies: Agency[];
-  name?: string;
-  auth0_user_id?: string;
 };
 /* eslint-enable camelcase */
 

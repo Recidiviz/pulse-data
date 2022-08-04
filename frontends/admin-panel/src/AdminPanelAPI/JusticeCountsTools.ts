@@ -47,8 +47,6 @@ export const createOrUpdateUser = async (
   agencyIds?: number[]
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/users`, {
-    email: user.email_address,
-    name: user.name,
     auth0_user_id: user.auth0_user_id,
     agency_ids: agencyIds,
   });

@@ -55,7 +55,7 @@ const UserProvisioningView = (): JSX.Element => {
         return;
       }
       message.success(
-        `"${user.email_address}" moved to "${agenciesData?.agencies
+        `"${user.auth0_email}" moved to "${agenciesData?.agencies
           .filter((agency) => agencyIds.includes(agency.id))
           ?.map((agency) => agency.name)}"!`
       );
@@ -110,13 +110,6 @@ const UserProvisioningView = (): JSX.Element => {
 
   const columns = [
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      ...getColumnSearchProps("id"),
-      width: "10%",
-    },
-    {
       title: "Auth0 ID",
       dataIndex: "auth0_user_id",
       key: "auth0_user_id",
@@ -126,18 +119,30 @@ const UserProvisioningView = (): JSX.Element => {
     },
     {
       title: "Email",
-      dataIndex: "email_address",
-      key: "email_address",
-      ...getColumnSearchProps("email_address"),
+      dataIndex: "auth0_email",
+      key: "auth0_email",
+      ...getColumnSearchProps("auth0_email"),
+      width: "15%",
+      ellipsis: true,
     },
     {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      ...getColumnSearchProps("name"),
+      title: "Auth0 Name",
+      dataIndex: "auth0_name",
+      key: "auth0_name",
+      ...getColumnSearchProps("auth0_name"),
+      width: "15%",
+      ellipsis: true,
     },
     {
-      title: "Agency",
+      title: "DB Name",
+      dataIndex: "db_name",
+      key: "db_name",
+      ...getColumnSearchProps("db_name"),
+      width: "15%",
+      ellipsis: true,
+    },
+    {
+      title: "Agencies",
       dataIndex: "agencies",
       key: "agency",
       render: (agencies: Agency[], user: User) => {
@@ -181,7 +186,7 @@ const UserProvisioningView = (): JSX.Element => {
           showSizeChanger: true,
           size: "small",
         }}
-        rowKey={(user) => user.id}
+        rowKey={(user) => user.auth0_user_id}
       />
     </>
   );

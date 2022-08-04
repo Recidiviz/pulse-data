@@ -45,7 +45,7 @@ const JusticeCountsBulkUploadView = (): JSX.Element => {
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
-  const usersToShow = usersData?.users.filter((user) => user.id != null);
+  const usersToShow = usersData?.users.filter((user) => user.db_id != null);
 
   interface BulkUploadFormData {
     agency: string;
@@ -116,10 +116,10 @@ const JusticeCountsBulkUploadView = (): JSX.Element => {
         <Form.Item label="User" name="user" rules={[{ required: true }]}>
           <Select disabled={showSpinner} style={{ width: 200 }}>
             {usersToShow?.map((user) => (
-              <Select.Option key={user.id} value={user.id}>
-                {`${user.id}: ${
-                  user.email_address != null
-                    ? user.email_address
+              <Select.Option key={user.db_id} value={user.db_id}>
+                {`${user.db_id}: ${
+                  user.auth0_email != null
+                    ? user.auth0_email
                     : "<no email address>"
                 }`}
               </Select.Option>

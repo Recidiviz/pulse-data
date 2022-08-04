@@ -41,17 +41,21 @@ from recidiviz.utils.types import assert_type, non_optional
 
 @attr.define()
 class JusticeCountsUser:
-    name: Optional[str] = None
-    auth0_user_id: Optional[str] = None
+    auth0_user_id: str
+    auth0_email: str
+    auth0_name: str
+    db_name: Optional[str] = None
     db_id: Optional[int] = None
     agency_ids: List[int] = attr.field(factory=list)
     agencies: List[Dict[str, Any]] = attr.field(factory=list)
 
     def to_json(self) -> Dict[str, Any]:
         return {
-            "name": self.name,
             "auth0_user_id": self.auth0_user_id,
-            "id": self.db_id,
+            "auth0_email": self.auth0_email,
+            "auth0_name": self.auth0_name,
+            "db_name": self.db_name,
+            "db_id": self.db_id,
             "agencies": self.agencies,
         }
 
@@ -153,37 +157,29 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
     @requires_gae_auth
-    def create_or_update_user() -> Tuple[Response, HTTPStatus]:
+    def update_user() -> Tuple[Response, HTTPStatus]:
         """
-        Creates or updates a User and returns the User.
+        Updates a User.
         """
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-        ) as session:
-            request_json = assert_type(request.json, dict)
-            name = request_json.get("name")
-            auth0_user_id = request_json.get("auth0_user_id")
-            agency_ids = request_json.get("agency_ids")
-            try:
-                user = UserAccountInterface.create_or_update_user(
-                    session=session,
-                    name=name,
-                )
-                _update_auth0_user_app_metadata(
-                    auth0_client=_get_auth0_client(),
-                    auth0_user_id=auth0_user_id,
-                    agency_ids=agency_ids,
-                )
-            except ValueError as e:
-                return (
-                    jsonify({"error": str(e)}),
-                    HTTPStatus.UNPROCESSABLE_ENTITY,
-                )
-
-            return (
-                jsonify({"user": user.to_json()}),
-                HTTPStatus.OK,
+        request_json = assert_type(request.json, dict)
+        auth0_user_id = request_json.get("auth0_user_id")
+        agency_ids = request_json.get("agency_ids")
+        try:
+            _update_auth0_user_app_metadata(
+                auth0_client=_get_auth0_client(),
+                auth0_user_id=auth0_user_id,
+                agency_ids=agency_ids,
             )
+        except ValueError as e:
+            return (
+                jsonify({"error": str(e)}),
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+            )
+
+        return (
+            jsonify({"status": "ok"}),
+            HTTPStatus.OK,
+        )
 
     @bp.route("/api/justice_counts_tools/bulk_upload", methods=["POST"])
     @requires_gae_auth
@@ -231,27 +227,29 @@ def _merge_auth0_and_db_users(
     for db_user in db_users:
         auth0_user_id = db_user.auth0_user_id
         matching_auth0_user = auth0_users_by_id.get(auth0_user_id)
-        if matching_auth0_user:
-            # User appears in both Auth0 and our DB
-            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
-                name=db_user.name,
-                auth0_user_id=matching_auth0_user["user_id"],
-                db_id=db_user.id,
-                agency_ids=matching_auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
-            )
-        else:
+        if not matching_auth0_user:
             # User just appears in our DB
-            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
-                auth0_user_id=auth0_user_id,
-                name=db_user.name,
-                db_id=db_user.id,
-            )
+            # This should actually never happen anymore!
+            # (except when using fixture data)
+            continue
+
+        # User appears in both Auth0 and our DB
+        all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
+            auth0_user_id=matching_auth0_user["user_id"],
+            auth0_name=matching_auth0_user["name"],
+            auth0_email=matching_auth0_user["email"],
+            db_name=db_user.name,
+            db_id=db_user.id,
+            agency_ids=matching_auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
+        )
 
     for auth0_user_id, auth0_user in auth0_users_by_id.items():
         if auth0_user_id not in all_users_by_auth0_id:
             # User just appears in Auth0
             all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
                 auth0_user_id=auth0_user["user_id"],
+                auth0_name=auth0_user["name"],
+                auth0_email=auth0_user["email"],
                 agency_ids=auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
             )
 
