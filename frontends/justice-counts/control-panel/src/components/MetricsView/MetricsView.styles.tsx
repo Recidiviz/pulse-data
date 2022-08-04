@@ -29,29 +29,29 @@ export const MetricsViewContainer = styled.div`
 `;
 
 export const MetricsViewControlPanel = styled.div`
-  height: calc(100% - 200px);
+  height: calc(100% - 170px);
   width: 100%;
   display: flex;
-  justify-content: space-evenly;
-  padding: 20px 24px;
+  justify-content: space-between;
 `;
 
 export const PanelContainerLeft = styled.div`
-  width: 50%;
+  width: 35%;
   height: 100%;
-  padding-right: 126px;
   overflow: scroll;
+  padding: 10px 15px 0 15px;
 
   @media only screen and (max-width: 1000px) {
-    padding-right: 50px;
+    margin-right: 50px;
   }
 `;
 
 export const PanelContainerRight = styled.div`
-  width: 50%;
+  width: 65%;
   height: 100%;
-  overflow: scroll;
-  padding-right: 15px;
+  display: flex;
+  position: relative;
+  flex-direction: column;
 `;
 
 type MetricBoxContainerProps = {
@@ -66,7 +66,7 @@ export const MetricBoxContainer = styled.div<MetricBoxContainerProps>`
     ${({ selected }) =>
       selected ? palette.solid.blue : palette.highlight.grey2};
   border-radius: 12px;
-  padding: 27px 19px;
+  padding: 15px;
   margin-bottom: 11px;
   transition: 0.2s ease;
   color: ${({ enabled }) =>
@@ -79,6 +79,17 @@ export const MetricBoxContainer = styled.div<MetricBoxContainerProps>`
     ${({ selected }) =>
       !selected && `border: 1px solid ${palette.highlight.lightblue2}`};
   }
+`;
+
+export const MetricBoxWrapper = styled.div`
+  display: block;
+`;
+
+export const ActiveMetricSettingHeader = styled.div`
+  position: relative;
+  z-index: 3;
+  background: ${palette.solid.white};
+  padding: 10px 15px 0 15px;
 `;
 
 export const MetricNameBadgeToggleWrapper = styled.div`
@@ -105,7 +116,7 @@ export const MetricsViewBadge = styled.div<MetricsViewBadgeProps>`
   color: ${palette.solid.white};
   padding: 4px 8px;
   margin-left: 10px;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 600;
   text-transform: capitalize;
 
@@ -130,11 +141,7 @@ type MetricNameProps = { isTitle?: boolean };
 
 export const MetricName = styled.div<MetricNameProps>`
   ${({ isTitle }) =>
-    isTitle ? typography.sizeCSS.title : typography.sizeCSS.large}
-
-  @media only screen and (max-width: 1000px) {
-    ${typography.sizeCSS.medium}
-  }
+    isTitle ? typography.sizeCSS.title : typography.sizeCSS.medium}
 `;
 
 export const MetricDescription = styled.div`
@@ -148,8 +155,8 @@ export const MetricDescription = styled.div`
 
 export const MetricDetailsDisplay = styled.div`
   width: 100%;
-  height: 100%;
-  margin-top: 24px;
+  overflow-y: scroll;
+  padding: 24px 15px 0 15px;
 `;
 
 export const MetricOnOffWrapper = styled.div`
@@ -163,13 +170,12 @@ export const Header = styled.div`
 
 export const Subheader = styled.div`
   ${typography.sizeCSS.normal};
-  width: 62%;
   color: ${palette.highlight.grey9};
   margin-bottom: 9px;
 `;
 
 export const RadioButtonGroupWrapper = styled(BinaryRadioGroupWrapper)`
-  width: 50%;
+  display: flex;
 `;
 
 export const MetricDisaggregations = styled.div<{ enabled?: boolean }>`
