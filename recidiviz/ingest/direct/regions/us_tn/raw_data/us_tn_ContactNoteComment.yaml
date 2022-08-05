@@ -2,6 +2,8 @@ file_tag: ContactNoteComment
 file_description: |-
   This table contains for all comments (collected together) associated with a contact. Because of the size of the origin table, it has been split into ~20 separate files when exported.
 data_classification: source
+# While the individual files we recieve of this file are always hitorical exports, they are parsed into 18+ different files due to size. Therefore, the full historical is split across multiple files so no single file has the full copy.
+always_historical_export: False
 primary_key_cols:
   - OffenderID
   - ContactNoteDateTime
