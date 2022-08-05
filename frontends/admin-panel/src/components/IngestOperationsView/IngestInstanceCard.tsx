@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Descriptions } from "antd";
+import { Button, Card, Col, Descriptions } from "antd";
 import * as React from "react";
 import NewTabLink from "../NewTabLink";
 import {
@@ -27,7 +27,9 @@ import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
-  data: IngestInstanceSummary;
+  instance: DirectIngestInstance;
+  dataLoading: boolean;
+  data: IngestInstanceSummary | undefined;
   env: string;
   stateCode: string;
   handleOnClick: (
@@ -37,28 +39,41 @@ interface IngestInstanceCardProps {
 }
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
+  instance,
   data,
+  dataLoading,
   env,
   stateCode,
   handleOnClick,
 }) => {
   const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
   const logsEnv = env === "production" ? "prod" : "staging";
-  const logsUrl = `http://go/${logsEnv}-ingest-${data.instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
-  const non200Url = `http://go/${logsEnv}-non-200-ingest-${data.instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
-  const pauseUnpauseInstanceAction = data.operations.isPaused
+  const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
+  const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
+  const pauseUnpauseInstanceAction = data?.operations.isPaused
     ? IngestActions.UnpauseIngestInstance
     : IngestActions.PauseIngestInstance;
+
+  if (dataLoading) {
+    return (
+      <Col span={12} key={instance}>
+        <Card title={instance} loading />
+      </Col>
+    );
+  }
+
+  if (data === undefined) {
+    throw new Error(`No summary data for ${instance}`);
+  }
+
   return (
     <Card
-      title={data.instance}
+      title={instance}
       extra={
         <>
           <Button
             style={{ marginRight: 5 }}
-            onClick={() =>
-              handleOnClick(IngestActions.ExportToGCS, data.instance)
-            }
+            onClick={() => handleOnClick(IngestActions.ExportToGCS, instance)}
           >
             {actionNames[IngestActions.ExportToGCS]}
           </Button>
@@ -69,14 +84,14 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
                 : { marginRight: 5 }
             }
             onClick={() => {
-              handleOnClick(IngestActions.TriggerTaskScheduler, data.instance);
+              handleOnClick(IngestActions.TriggerTaskScheduler, instance);
             }}
           >
             {actionNames[IngestActions.TriggerTaskScheduler]}
           </Button>
           <Button
             onClick={() => {
-              handleOnClick(pauseUnpauseInstanceAction, data.instance);
+              handleOnClick(pauseUnpauseInstanceAction, instance);
             }}
             type="primary"
           >
@@ -94,7 +109,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       <h1>Raw data</h1>
       <InstanceRawFileMetadata
         stateCode={stateCode}
-        instance={data.instance}
+        instance={instance}
         operationsInfo={data.operations}
         numFilesIngestBucket={data.ingestBucketNumFiles}
       />
