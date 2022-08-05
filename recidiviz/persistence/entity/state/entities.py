@@ -868,12 +868,6 @@ class StateIncarcerationPeriod(
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.release_date
 
-    def __attrs_post_init__(self) -> None:
-        if self.custodial_authority == StateCustodialAuthority.COURT:
-            raise ValueError(
-                f"StateCustodialAuthority.COURT is deprecated for {self.state_code}."
-            )
-
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionPeriod(
@@ -989,12 +983,6 @@ class StateSupervisionPeriod(
     @property
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.termination_date
-
-    def __attrs_post_init__(self) -> None:
-        if self.custodial_authority == StateCustodialAuthority.COURT:
-            raise ValueError(
-                f"StateCustodialAuthority.COURT is deprecated for {self.state_code}."
-            )
 
 
 @attr.s(eq=False, kw_only=True)
