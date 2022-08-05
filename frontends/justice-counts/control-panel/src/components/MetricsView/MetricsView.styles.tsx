@@ -87,7 +87,7 @@ export const MetricBoxWrapper = styled.div`
 
 export const ActiveMetricSettingHeader = styled.div`
   position: relative;
-  z-index: 3;
+  z-index: 1;
   background: ${palette.solid.white};
   padding: 10px 15px 0 15px;
 `;
