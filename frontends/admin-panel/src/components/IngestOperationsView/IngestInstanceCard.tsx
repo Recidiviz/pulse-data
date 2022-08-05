@@ -25,6 +25,7 @@ import {
   IngestRawFileProcessingStatus,
   IngestInstanceSummary,
 } from "./constants";
+import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
 
@@ -65,11 +66,16 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
-    const primaryResponse = await getIngestRawFileProcessingStatus(
-      stateCode,
-      instance
-    );
-    setIngestRawFileProcessingStatus(await primaryResponse.json());
+    if (instance === DirectIngestInstance.PRIMARY) {
+      const primaryResponse = await getIngestRawFileProcessingStatus(
+        stateCode,
+        instance
+      );
+      setIngestRawFileProcessingStatus(await primaryResponse.json());
+    } else {
+      // TODO(#12387): Update this also pull from endpoint if the current secondary rerun is using raw data in secondary.
+      setIngestRawFileProcessingStatus([]);
+    }
     setIngestRawFileProcessingStatusLoading(false);
   }, [instance, stateCode]);
 
@@ -133,11 +139,17 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       {ingestRawFileProcessingStatusLoading ? (
         <Spin />
       ) : (
-        <InstanceRawFileMetadata
-          stateCode={stateCode}
-          instance={instance}
-          ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
-        />
+        <>
+          <InstanceRawFileMetadata
+            stateCode={stateCode}
+            instance={instance}
+            ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+          />
+          <br />
+          <IngestRawFileProcessingStatusTable
+            ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+          />
+        </>
       )}
       <br />
       <h1>Ingest views</h1>
