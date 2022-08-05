@@ -14,13 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Col, Descriptions } from "antd";
-import * as React from "react";
+import { Button, Card, Col, Descriptions, Spin } from "antd";
+import { useCallback, useEffect, useState } from "react";
+import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import {
   actionNames,
   DirectIngestInstance,
   IngestActions,
+  IngestRawFileProcessingStatus,
   IngestInstanceSummary,
 } from "./constants";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
@@ -53,6 +55,27 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   const pauseUnpauseInstanceAction = data?.operations.isPaused
     ? IngestActions.UnpauseIngestInstance
     : IngestActions.PauseIngestInstance;
+
+  const [
+    ingestRawFileProcessingStatusLoading,
+    setIngestRawFileProcessingStatusLoading,
+  ] = useState<boolean>(true);
+  const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
+    useState<IngestRawFileProcessingStatus[]>([]);
+
+  const getRawFileProcessingStatusData = useCallback(async () => {
+    setIngestRawFileProcessingStatusLoading(true);
+    const primaryResponse = await getIngestRawFileProcessingStatus(
+      stateCode,
+      instance
+    );
+    setIngestRawFileProcessingStatus(await primaryResponse.json());
+    setIngestRawFileProcessingStatusLoading(false);
+  }, [instance, stateCode]);
+
+  useEffect(() => {
+    getRawFileProcessingStatusData();
+  }, [getRawFileProcessingStatusData, data, instance, stateCode]);
 
   if (dataLoading) {
     return (
@@ -107,12 +130,15 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       </Descriptions>
       <br />
       <h1>Raw data</h1>
-      <InstanceRawFileMetadata
-        stateCode={stateCode}
-        instance={instance}
-        operationsInfo={data.operations}
-        numFilesIngestBucket={data.ingestBucketNumFiles}
-      />
+      {ingestRawFileProcessingStatusLoading ? (
+        <Spin />
+      ) : (
+        <InstanceRawFileMetadata
+          stateCode={stateCode}
+          instance={instance}
+          ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+        />
+      )}
       <br />
       <h1>Ingest views</h1>
       <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
