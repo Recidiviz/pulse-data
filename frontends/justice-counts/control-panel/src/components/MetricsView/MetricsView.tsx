@@ -15,17 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { debounce as _debounce } from "lodash";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 
 import { FormError, Permission, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
-import {
-  memoizeDebounce,
-  MemoizeDebouncedFunction,
-  removeCommaSpaceAndTrim,
-} from "../../utils";
+import { removeCommaSpaceAndTrim } from "../../utils";
 import {
   BinaryRadioButton,
   BinaryRadioGroupClearButton,
@@ -148,7 +145,8 @@ type MetricConfigurationProps = {
   metricSettings: { [key: string]: MetricsViewMetric };
   saveAndUpdateMetricSettings: (
     typeOfUpdate: "METRIC" | "DISAGGREGATION" | "DIMENSION" | "CONTEXT",
-    updatedSetting: MetricSettings
+    updatedSetting: MetricSettings,
+    debounce?: boolean
   ) => void;
 };
 
@@ -324,28 +322,17 @@ type MetricContextConfigurationProps = {
     value: string | null;
     multiple_choice_options?: string[];
   }[];
-  updateMetricSettings: (
-    typeOfUpdate: MetricSettingsUpdateOptions,
-    updatedSetting: MetricSettings
-  ) => void;
   saveAndUpdateMetricSettings: (
     typeOfUpdate: MetricSettingsUpdateOptions,
-    updatedSetting: MetricSettings
+    updatedSetting: MetricSettings,
+    debounce?: boolean
   ) => void;
-  debouncedSave: MemoizeDebouncedFunction<
-    (
-      typeOfUpdate: MetricSettingsUpdateOptions,
-      updatedSetting: MetricSettings
-    ) => Promise<void>
-  >;
 };
 
 const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
   metricKey,
   contexts,
-  updateMetricSettings,
   saveAndUpdateMetricSettings,
-  debouncedSave,
 }) => {
   const [contextErrors, setContextErrors] = useState<{
     [key: string]: FormError;
@@ -455,19 +442,16 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
                     contextNumberValidation(context.key, e.currentTarget.value);
                   }
 
-                  updateMetricSettings("CONTEXT", {
-                    key: metricKey,
-                    contexts: [
-                      { key: context.key, value: e.currentTarget.value },
-                    ],
-                  });
-
-                  debouncedSave("CONTEXT", {
-                    key: metricKey,
-                    contexts: [
-                      { key: context.key, value: e.currentTarget.value },
-                    ],
-                  });
+                  saveAndUpdateMetricSettings(
+                    "CONTEXT",
+                    {
+                      key: metricKey,
+                      contexts: [
+                        { key: context.key, value: e.currentTarget.value },
+                      ],
+                    },
+                    true
+                  );
                 }}
               />
             </>
@@ -731,12 +715,7 @@ export const MetricsView: React.FC = observer(() => {
     });
   };
 
-  const saveAndUpdateMetricSettings = async (
-    typeOfUpdate: MetricSettingsUpdateOptions,
-    updatedSetting: MetricSettings
-  ) => {
-    updateMetricSettings(typeOfUpdate, updatedSetting);
-
+  const saveMetricSettings = async (updatedSetting: MetricSettings) => {
     const response = (await reportStore.updateReportSettings([
       updatedSetting,
     ])) as Response;
@@ -748,9 +727,20 @@ export const MetricsView: React.FC = observer(() => {
     }
   };
 
-  const debouncedSave = useRef(
-    memoizeDebounce(saveAndUpdateMetricSettings, 1500)
-  ).current;
+  const debouncedSave = useRef(_debounce(saveMetricSettings, 1500)).current;
+
+  const saveAndUpdateMetricSettings = (
+    typeOfUpdate: MetricSettingsUpdateOptions,
+    updatedSetting: MetricSettings,
+    debounce?: boolean
+  ) => {
+    updateMetricSettings(typeOfUpdate, updatedSetting);
+    if (debounce) {
+      debouncedSave(updatedSetting);
+    } else {
+      saveMetricSettings(updatedSetting);
+    }
+  };
 
   useEffect(
     () =>
@@ -914,9 +904,7 @@ export const MetricsView: React.FC = observer(() => {
                 <MetricContextConfiguration
                   metricKey={activeMetricKey}
                   contexts={metricSettings[activeMetricKey]?.contexts}
-                  updateMetricSettings={updateMetricSettings}
                   saveAndUpdateMetricSettings={saveAndUpdateMetricSettings}
-                  debouncedSave={debouncedSave}
                 />
               )}
 
