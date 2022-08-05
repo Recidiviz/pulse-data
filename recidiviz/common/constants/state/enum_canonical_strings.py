@@ -465,7 +465,6 @@ state_acting_body_type_supervision_officer = "SUPERVISION_OFFICER"
 state_acting_body_type_sentenced_person = "SENTENCED_PERSON"
 
 
-state_custodial_authority_court = "COURT"
 state_custodial_authority_county = "COUNTY"
 state_custodial_authority_federal = "FEDERAL"
 state_custodial_authority_other_country = "OTHER_COUNTRY"
