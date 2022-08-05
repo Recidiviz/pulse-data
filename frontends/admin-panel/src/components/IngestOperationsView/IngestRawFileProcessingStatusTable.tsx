@@ -43,6 +43,12 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
           multiple: 2,
         },
         defaultSortOrder: "ascend",
+        filters: ingestRawFileProcessingStatus.map(({ fileTag }) => ({
+          text: fileTag,
+          value: fileTag,
+        })),
+        onFilter: (value, content) => content.fileTag === value,
+        filterSearch: true,
       },
       {
         title: "Last Recieved",
@@ -75,7 +81,18 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
     ];
 
     return (
-      <Table dataSource={ingestRawFileProcessingStatus} columns={columns} />
+      <Table
+        dataSource={ingestRawFileProcessingStatus}
+        columns={columns}
+        rowKey="fileTag"
+        pagination={{
+          hideOnSinglePage: true,
+          showSizeChanger: true,
+          defaultPageSize: 50,
+          pageSizeOptions: ["25", "50", "100", "500"],
+          size: "small",
+        }}
+      />
     );
   };
 
