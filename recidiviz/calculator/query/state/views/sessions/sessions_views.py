@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key
 from recidiviz.calculator.query.state.views.sessions.assessment_score_sessions import (
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.charges_preprocessed import (
+    CHARGES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.cohort_month_index import (
     COHORT_MONTH_INDEX_VIEW_BUILDER,
 )
@@ -156,6 +159,9 @@ from recidiviz.calculator.query.state.views.sessions.us_id.us_id_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_me.us_me_supervision_population_metrics_preprocessed import (
     US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
+    US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_supervision_population_metrics_preprocessed import (
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -192,6 +198,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
+    CHARGES_PREPROCESSED_VIEW_BUILDER,
     COHORT_MONTH_INDEX_VIEW_BUILDER,
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_LEVEL_1_SUPER_SESSIONS_VIEW_BUILDER,
@@ -229,6 +236,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+    US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
