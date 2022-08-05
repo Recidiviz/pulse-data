@@ -71,12 +71,12 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         charge.offense_type,
         charge.ncic_code,
         charge.statute,
-        charge.court_case_id,
+        charge.judicial_district,
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge` charge
+    LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sis.external_id IS NOT NULL
@@ -113,12 +113,12 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         charge.offense_type,
         charge.ncic_code,
         charge.statute,
-        charge.court_case_id,
+        charge.judicial_district,
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge` charge
+    LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sss.external_id IS NOT NULL
@@ -134,7 +134,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.sentence_id,
         sen.external_id AS external_id,
         sen.sentence_type,
-        COALESCE(court.judicial_district_code, 'EXTERNAL_UNKNOWN') AS judicial_district,
+        sen.judicial_district,
         sen.consecutive_sentence_external_id,
         sen.effective_date,
         sen.date_imposed,
@@ -180,10 +180,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON sen.state_code = offense_type_ref.state_code
         AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
-    -- Pull the judicial district from state_court_case
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_court_case` court
-        ON court.state_code = sen.state_code
-        AND court.court_case_id = sen.court_case_id
     QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, external_id, charge_id, sentence_type
         ORDER BY ABS(sentence_to_session_offset_days) ASC) = 1
 

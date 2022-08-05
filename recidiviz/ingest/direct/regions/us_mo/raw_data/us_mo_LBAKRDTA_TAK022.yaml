@@ -64,7 +64,7 @@ columns:
       Sentence County
   - name: BS_CRC
     description: |-
-      Court Circuit
+      Court Circuit (judicial district code)
   - name: BS_CRD
     description: |-
       Court Division
