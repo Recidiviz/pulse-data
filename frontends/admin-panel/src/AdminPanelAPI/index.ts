@@ -95,7 +95,7 @@ export {
   fetchIngestStateCodes,
   getAllIngestInstanceStatuses,
   getIngestInstanceSummary,
-  getIngestFileProcessingStatus,
+  getIngestRawFileProcessingStatus,
   getIngestQueuesState,
   importDatabaseFromGCS,
   markInstanceIngestViewDataInvalidated,

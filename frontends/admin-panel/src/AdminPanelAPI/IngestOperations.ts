@@ -76,8 +76,8 @@ export const getIngestInstanceSummary = async (
   );
 };
 
-// Get ingest file processing status
-export const getIngestFileProcessingStatus = async (
+// Get ingest raw file processing status
+export const getIngestRawFileProcessingStatus = async (
   regionCode: string,
   ingestInstance: DirectIngestInstance
 ): Promise<Response> => {

@@ -16,20 +16,21 @@
 // =============================================================================
 import { Descriptions } from "antd";
 import * as React from "react";
-import { DirectIngestInstance, OperationsDbInfo } from "./constants";
+import {
+  DirectIngestInstance,
+  IngestRawFileProcessingStatus,
+} from "./constants";
 
 interface InstanceRawFileMetadataProps {
   stateCode: string;
   instance: DirectIngestInstance;
-  operationsInfo: OperationsDbInfo;
-  numFilesIngestBucket: number;
+  ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
 }
 
 const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   stateCode,
   instance,
-  operationsInfo,
-  numFilesIngestBucket,
+  ingestRawFileProcessingStatus: ingestFileProcessingStatus,
 }) => {
   // TODO(#12387): Update this to change if the current secondary rerun is using raw data in secondary.
   const isSecondaryUsingPrimary = instance === DirectIngestInstance.SECONDARY;
@@ -44,40 +45,47 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
         <Descriptions.Item
           label={
             <div title="Number of raw data files registered in the operations database that are not yet marked as processed.">
-              Unprocessed files
+              # Files Pending Import
             </div>
           }
           span={3}
         >
           {isSecondaryUsingPrimary
             ? "N/A - ingest in SECONDARY using PRIMARY raw data"
-            : operationsInfo.unprocessedFilesRaw}
+            : getNumberOfFilesPendingUpload(ingestFileProcessingStatus)}
         </Descriptions.Item>
         <Descriptions.Item
           label={
-            <div title="Number of raw data files registered in the operations database that have been marked as processed.">
-              Processed files
+            <div title="Number of raw data files found in ingest bucket that don't have configuration yaml.">
+              # Unrecognized Files
             </div>
           }
           span={3}
         >
           {isSecondaryUsingPrimary
             ? "N/A - ingest in SECONDARY using PRIMARY raw data"
-            : operationsInfo.processedFilesRaw}
-        </Descriptions.Item>
-        <Descriptions.Item
-          label={
-            <div title="Number of raw data files of any kind in the ingest bucket. This should match the number of unprocessed files.">
-              Files in ingest bucket
-            </div>
-          }
-          span={3}
-        >
-          {numFilesIngestBucket}
+            : getNumberOfUnrecognizedFiles(ingestFileProcessingStatus)}
         </Descriptions.Item>
       </Descriptions>
     </div>
   );
 };
+
+function getNumberOfFilesPendingUpload(
+  ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[]
+): number {
+  return ingestRawFileProcessingStatus
+    .map((x) => x.numberUnprocessedFiles)
+    .reduce((a, b) => a + b, 0);
+}
+
+function getNumberOfUnrecognizedFiles(
+  ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[]
+): number {
+  return ingestRawFileProcessingStatus
+    .filter((x) => !x.hasConfig)
+    .map((x) => x.numberFilesInBucket)
+    .reduce((a, b) => a + b, 0);
+}
 
 export default InstanceRawFileMetadata;
