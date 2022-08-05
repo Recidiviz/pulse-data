@@ -11,12 +11,16 @@ columns:
   - name: social_security_number
     is_pii: True
   - name: last_name
+    description: Employee last name
     is_pii: True
   - name: first_name
+    description: Employee first name
     is_pii: True
   - name: middle_name
+    description: Employee middle name
     is_pii: True
   - name: name_suffix
+    description: Employee name suffix
     is_pii: True
   - name: birth_date
     is_pii: True
