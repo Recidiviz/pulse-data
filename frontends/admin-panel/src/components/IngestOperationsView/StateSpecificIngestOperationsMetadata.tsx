@@ -16,16 +16,7 @@
 // =============================================================================
 
 import { SyncOutlined } from "@ant-design/icons";
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Divider,
-  message,
-  PageHeader,
-  Row,
-} from "antd";
+import { Alert, Button, Col, Divider, message, PageHeader, Row } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import {
   exportDatabaseToGCS,
@@ -251,28 +242,22 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
 
         <div className="site-card-wrapper">
           <Row gutter={[16, 16]}>
-            {ingestInstanceSummariesLoading
-              ? Object.keys(DirectIngestInstance).map((instance) => {
-                  return (
-                    <Col span={12} key={instance}>
-                      <Card title={instance} loading />
-                    </Col>
-                  );
-                })
-              : ingestInstanceSummaries.map(
-                  (summary: IngestInstanceSummary) => {
-                    return (
-                      <Col span={12} key={summary.instance}>
-                        <IngestInstanceCard
-                          data={summary}
-                          env={env}
-                          stateCode={stateCode}
-                          handleOnClick={handleIngestActionOnClick}
-                        />
-                      </Col>
-                    );
-                  }
-                )}
+            {Object.entries(DirectIngestInstance).map((instance) => {
+              return (
+                <Col span={12} key={instance[0]}>
+                  <IngestInstanceCard
+                    instance={instance[1]}
+                    dataLoading={ingestInstanceSummariesLoading}
+                    data={ingestInstanceSummaries.find(
+                      (x) => x.instance === instance[1]
+                    )}
+                    env={env}
+                    stateCode={stateCode}
+                    handleOnClick={handleIngestActionOnClick}
+                  />
+                </Col>
+              );
+            })}
           </Row>
         </div>
       </>
