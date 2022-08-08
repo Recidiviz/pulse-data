@@ -26,6 +26,9 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -58,6 +61,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
+from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
+    FakeDirectIngestInstanceStatusManager,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import (
     FakeGCSFileSystem,
     FakeGCSFileSystemDelegate,
@@ -380,6 +386,9 @@ def build_fake_direct_ingest_controller(
     ), patch(
         f"{BaseDirectIngestController.__module__}.InstanceIngestViewContentsImpl",
         FakeInstanceIngestViewContents,
+    ), patch(
+        f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
+        FakeDirectIngestInstanceStatusManager,
     ):
         task_manager = (
             FakeAsyncDirectIngestCloudTaskManager()
@@ -405,5 +414,8 @@ def build_fake_direct_ingest_controller(
                     DirectIngestFakeGCSFileSystemDelegate(
                         controller, can_start_ingest=can_start_ingest
                     )
+                )
+                controller.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.STANDARD_RERUN_STARTED
                 )
                 return controller

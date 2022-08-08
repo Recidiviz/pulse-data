@@ -28,6 +28,9 @@ import pytest
 from freezegun import freeze_time
 from mock import patch
 
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
@@ -361,6 +364,9 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             lower_bound_datetime=yesterday,
         )
 
+        self.controller.ingest_instance_status_manager.change_status_to(
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+        )
         self.controller.do_ingest_view_materialization(materialization_job_args)
 
         run_task_queues_to_empty(self.controller)
