@@ -1,0 +1,70 @@
+file_tag: eomis_bedassignment
+file_description: |-
+  This file contains information on a person's bed assignment within a facility.
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - BEDASSIGNMENTDATE
+  - BEDASSIGNMENTTIME
+columns:
+  - name: OFFENDERID
+    description: |-
+      This is a unique identifier assigned to each incarcerated person (PID).
+  - name: BEDASSIGNMENTDATE
+    description: |-
+      Date the offender was assigned to this bed.
+    is_datetime: True
+  - name: BEDASSIGNMENTTIME
+    description: |-
+      Time the offender was assigned to this bed.
+  - name: FACILITYWHEREBEDLOCATED
+    description: |-
+      Facility where the bed is located.
+  - name: INMATEHOUSINGAREAID
+    description: |-
+      #TODO(#12372)
+  - name: INMATEBEDNUMBER
+    description: |-
+      Number of the bed assigned.
+  - name: BEDUSE
+    description: |-
+      #TODO(#12372)
+  - name: BEDASSIGNMENTREASON
+    description: |-
+      #TODO(#12372)
+  - name: BEDASSIGNAPPRBY
+    description: |-
+      #TODO(#12372)
+  - name: BEDASSIGNMENTSTATUS
+    description: |-
+      #TODO(#12372)
+  - name: INMBEDSTATUSDATE
+    description: |-
+      #TODO(#12372)
+  - name: INMBEDSTATUSTIME
+    description: |-
+      #TODO(#12372)
+  - name: INMBEDCOMMENTS
+    description: |-
+      #TODO(#12372)
+  - name: DATELASTUPDATE
+    description: |-
+      #TODO(#12372)
+  - name: TIMELASTUPDATE
+    description: |-
+      #TODO(#12372)
+  - name: STAFFLASTUPDATE
+    description: |-
+      #TODO(#12372)
+  - name: INMATEBEDSECURITYLEVEL
+    description: |-
+      #TODO(#12372)
+  - name: INMATEBEDCUSTODYLEVEL
+    description: |-
+      #TODO(#12372)
+  - name: HOLDBEDFLAG
+    description: |-
+      #TODO(#12372)
+  - name: UNASSIGNHELDBEDFLAG
+    description: |-
+      #TODO(#12372)
