@@ -159,27 +159,41 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     @requires_gae_auth
     def update_user() -> Tuple[Response, HTTPStatus]:
         """
-        Updates a User.
+        Updates a User. If name is provided, update in our DB and Auth0.
+        If agencies are provided, update in Auth0.
         """
-        request_json = assert_type(request.json, dict)
-        auth0_user_id = request_json.get("auth0_user_id")
-        agency_ids = request_json.get("agency_ids")
-        try:
-            _update_auth0_user_app_metadata(
-                auth0_client=_get_auth0_client(),
-                auth0_user_id=auth0_user_id,
-                agency_ids=agency_ids,
-            )
-        except ValueError as e:
-            return (
-                jsonify({"error": str(e)}),
-                HTTPStatus.UNPROCESSABLE_ENTITY,
-            )
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            name = request_json.get("name")
+            auth0_user_id = request_json.get("auth0_user_id")
+            agency_ids = request_json.get("agency_ids")
 
-        return (
-            jsonify({"status": "ok"}),
-            HTTPStatus.OK,
-        )
+            if auth0_user_id is None:
+                raise ValueError("auth0_user_id is required")
+
+            if name is not None:
+                UserAccountInterface.create_or_update_user(
+                    session=session,
+                    name=name,
+                    auth0_user_id=auth0_user_id,
+                )
+
+            if name is not None or agency_ids is not None:
+                app_metadata = (
+                    {"agency_ids": agency_ids} if agency_ids is not None else None
+                )
+                _get_auth0_client().update_user(
+                    user_id=auth0_user_id,
+                    name=name,
+                    app_metadata=app_metadata,
+                )
+
+            return (
+                jsonify({"status": "ok"}),
+                HTTPStatus.OK,
+            )
 
     @bp.route("/api/justice_counts_tools/bulk_upload", methods=["POST"])
     @requires_gae_auth
@@ -271,24 +285,3 @@ def _merge_auth0_and_db_users(
         ]
 
     return list(all_users_by_auth0_id.values())
-
-
-def _update_auth0_user_app_metadata(
-    auth0_client: Auth0Client,
-    auth0_user_id: Optional[str],
-    agency_ids: Optional[List[int]],
-) -> None:
-    """Update the user's Auth0 app_metadata to include the given `agency_ids`."""
-    if agency_ids is None:
-        return
-
-    if auth0_user_id is None:
-        raise ValueError(
-            "Agency_ids were specified, but user has no auth0_user_id, "
-            "so we cannot update their app_metadata to connect them with these agencies."
-        )
-
-    app_metadata = {"agency_ids": agency_ids}
-    auth0_client.update_user_app_metadata(
-        user_id=auth0_user_id, app_metadata=app_metadata
-    )
