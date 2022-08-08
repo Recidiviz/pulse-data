@@ -90,7 +90,7 @@ beforeEach(() => {
 });
 
 test("metrics value handler updates the metric value", () => {
-  formStore.updateMetricsValues(0, "PROSECUTION_STAFF", "2000");
+  formStore.updateMetricsValues(0, "PROSECUTION_STAFF", "2000", true);
 
   expect(formStore.metricsValues[0].PROSECUTION_STAFF.value).toEqual("2000");
 
@@ -104,7 +104,8 @@ test("disaggregation dimension value handler updates the disaggregation dimensio
     "PROSECUTION_STAFF_TYPE",
     "SUPPORT",
     "200",
-    false
+    false,
+    true
   );
 
   expect(
@@ -122,7 +123,8 @@ test("context value handler updates the context value", () => {
     "PROGRAMMATIC_OR_MEDICAL_STAFF",
     "100",
     false,
-    "NUMBER"
+    "NUMBER",
+    true
   );
 
   expect(

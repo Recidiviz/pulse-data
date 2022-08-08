@@ -57,7 +57,8 @@ class FormStore {
         this.updateMetricsValues(
           reportID,
           metric.key,
-          normalizeToString(metric.value)
+          normalizeToString(metric.value),
+          metric.enabled
         );
       }
 
@@ -70,7 +71,8 @@ class FormStore {
               disaggregation.key,
               dimension.key,
               normalizeToString(dimension.value),
-              disaggregation.required
+              disaggregation.required,
+              metric.enabled
             );
           }
         });
@@ -84,7 +86,8 @@ class FormStore {
             context.key,
             normalizeToString(context.value),
             context.required,
-            context.type
+            context.type,
+            metric.enabled
           );
         }
       });
@@ -150,7 +153,8 @@ class FormStore {
             reportID,
             metric.key,
             normalizeToString(metricValues?.value) ||
-              normalizeToString(metric.value)
+              normalizeToString(metric.value),
+            metric.enabled
           );
         }
 
@@ -174,7 +178,8 @@ class FormStore {
                 normalizeToString(contexts?.[context.key]?.value) ||
                   normalizeToString(context.value),
                 context.required,
-                context.type
+                context.type,
+                metric.enabled
               );
             }
 
@@ -413,7 +418,8 @@ class FormStore {
   updateMetricsValues = (
     reportID: number,
     metricKey: string,
-    updatedValue: string
+    updatedValue: string,
+    metricEnabled: boolean | undefined
   ): void => {
     /**
      * Create an empty object within the property if none exist to improve access
@@ -427,7 +433,9 @@ class FormStore {
     }
 
     this.metricsValues[reportID][metricKey].value = updatedValue;
-    this.validate("NUMBER", updatedValue, true, reportID, metricKey);
+    if (metricEnabled) {
+      this.validate("NUMBER", updatedValue, true, reportID, metricKey);
+    }
   };
 
   updateDisaggregationDimensionValue = (
@@ -436,7 +444,8 @@ class FormStore {
     disaggregationKey: string,
     dimensionKey: string,
     updatedValue: string,
-    required: boolean
+    required: boolean,
+    metricEnabled: boolean | undefined
   ): void => {
     /**
      * Create empty objects within the properties if none exist to improve access
@@ -468,15 +477,17 @@ class FormStore {
       dimensionKey
     ].value = updatedValue;
 
-    this.validate(
-      "NUMBER",
-      updatedValue,
-      required,
-      reportID,
-      metricKey,
-      disaggregationKey,
-      dimensionKey
-    );
+    if (metricEnabled) {
+      this.validate(
+        "NUMBER",
+        updatedValue,
+        required,
+        reportID,
+        metricKey,
+        disaggregationKey,
+        dimensionKey
+      );
+    }
   };
 
   updateContextValue = (
@@ -485,7 +496,8 @@ class FormStore {
     contextKey: string,
     updatedValue: string,
     required: boolean,
-    contextType: string
+    contextType: string,
+    metricEnabled: boolean | undefined
   ): void => {
     /**
      * Create an empty object within the property if none exist to improve access
@@ -505,14 +517,16 @@ class FormStore {
 
     this.contexts[reportID][metricKey][contextKey].value = updatedValue;
 
-    this.validate(
-      contextType,
-      updatedValue,
-      required,
-      reportID,
-      metricKey,
-      contextKey
-    );
+    if (metricEnabled) {
+      this.validate(
+        contextType,
+        updatedValue,
+        required,
+        reportID,
+        metricKey,
+        contextKey
+      );
+    }
   };
 
   resetBinaryInput = (

@@ -59,7 +59,7 @@ export const NotReportedIconTooltip = styled.div`
   color: ${palette.solid.white};
   padding: 15px;
   border-radius: 5px;
-  box-shadow: 0px 4px 10px rgba(0, 115, 229, 0.25);
+  box-shadow: 0px 4px 10px ${palette.highlight.grey3};
   ${typography.sizeCSS.normal}
 
   @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {

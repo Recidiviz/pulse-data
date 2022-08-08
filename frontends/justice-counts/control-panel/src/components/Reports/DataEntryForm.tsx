@@ -287,7 +287,9 @@ const DataEntryForm: React.FC<{
               notReporting={!metric.enabled}
             >
               <MetricSectionTitleWrapper>
-                <MetricSectionTitle>{metric.display_name}</MetricSectionTitle>
+                <MetricSectionTitle notReporting={!metric.enabled}>
+                  {metric.display_name}
+                </MetricSectionTitle>
                 {!metric.enabled && <NotReportedIcon />}
               </MetricSectionTitleWrapper>
               <MetricSectionSubTitle>
