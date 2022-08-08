@@ -20,8 +20,11 @@ supervision."""
 # pylint: disable=unused-argument
 import abc
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
+    SupervisionPopulationSpan,
+)
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
@@ -89,7 +92,10 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         return level_2_supervision_location or level_1_supervision_location
 
     def is_supervision_location_out_of_state(
-        self, supervision_population_event: SupervisionPopulationEvent
+        self,
+        supervision_population_event: Union[
+            SupervisionPopulationEvent, SupervisionPopulationSpan
+        ],
     ) -> bool:
         """Returns whether the location on the supervision_population_event indicates supervision
         served out-of-state."""

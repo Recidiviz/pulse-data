@@ -17,6 +17,8 @@
 """Identifier class for events related to incarceration."""
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import attr
+
 from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -47,6 +49,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
+    supervision_period_is_out_of_state,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -56,6 +59,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_judicia
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.date import (
     DateRange,
@@ -294,6 +300,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             sp_in_state_population_based_on_metadata = supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
                 supervision_period, supervising_officer_external_id
             )
+            supervision_type = (
+                supervision_period.supervision_type
+                if supervision_period.supervision_type
+                else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+            )
 
             for sp_duration, overlaps_with_ip in sub_supervision_period_durations:
                 included_in_state_population = (
@@ -304,24 +315,29 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     if sp_duration.upper_bound_exclusive_date != tomorrow()
                     else None
                 )
-                supervision_spans.append(
-                    SupervisionPopulationSpan(
-                        state_code=supervision_period.state_code,
-                        start_date_inclusive=sp_duration.lower_bound_inclusive_date,
-                        end_date_exclusive=end_date_exclusive,
-                        supervision_level=supervision_period.supervision_level,
-                        supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                        supervision_type=supervision_period.supervision_type,
-                        case_type=case_type,
-                        custodial_authority=supervision_period.custodial_authority,
-                        judicial_district_code=judicial_district_code,
-                        supervising_officer_external_id=supervising_officer_external_id,
-                        supervising_district_external_id=deprecated_supervising_district_external_id,
-                        level_1_supervision_location_external_id=level_1_supervision_location,
-                        level_2_supervision_location_external_id=level_2_supervision_location,
-                        included_in_state_population=included_in_state_population,
-                    )
+                span = SupervisionPopulationSpan(
+                    state_code=supervision_period.state_code,
+                    start_date_inclusive=sp_duration.lower_bound_inclusive_date,
+                    end_date_exclusive=end_date_exclusive,
+                    supervision_level=supervision_period.supervision_level,
+                    supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                    supervision_type=supervision_type,
+                    case_type=case_type,
+                    custodial_authority=supervision_period.custodial_authority,
+                    judicial_district_code=judicial_district_code,
+                    supervising_officer_external_id=supervising_officer_external_id,
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=level_1_supervision_location,
+                    level_2_supervision_location_external_id=level_2_supervision_location,
+                    included_in_state_population=included_in_state_population,
                 )
+                attr.evolve(
+                    span,
+                    included_in_state_population=supervision_period_is_out_of_state(
+                        span, supervision_delegate
+                    ),
+                )
+                supervision_spans.append(span)
 
         return supervision_spans
 

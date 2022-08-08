@@ -74,3 +74,11 @@ class SupervisionPopulationSpan(Span, SupervisionLocationMixin, IncludedInStateM
     # Area of jurisdictional coverage of the court that sentenced the person to this
     # period of supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
+
+    @property
+    def is_out_of_state_custodial_authority(self) -> bool:
+        return self.custodial_authority is not None and self.custodial_authority in (
+            StateCustodialAuthority.FEDERAL,
+            StateCustodialAuthority.OTHER_COUNTRY,
+            StateCustodialAuthority.OTHER_STATE,
+        )
