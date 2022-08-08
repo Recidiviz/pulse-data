@@ -18,11 +18,14 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List
+from typing import Dict, List, Union
 from unittest import mock
 
 from freezegun import freeze_time
 
+from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
+    SupervisionPopulationSpan,
+)
 from recidiviz.calculator.pipeline.metrics.supervision import (
     identifier,
     metric_producer,
@@ -2042,7 +2045,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
     class OutOfStateDelegate(UsXxSupervisionDelegate):
         def is_supervision_location_out_of_state(
-            self, _: SupervisionPopulationEvent
+            self, _: Union[SupervisionPopulationEvent, SupervisionPopulationSpan]
         ) -> bool:
             return True
 

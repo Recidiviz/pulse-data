@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID implementation of the supervision delegate"""
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
+from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
+    SupervisionPopulationSpan,
+)
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
@@ -61,7 +64,10 @@ class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
         )
 
     def is_supervision_location_out_of_state(
-        self, supervision_population_event: SupervisionPopulationEvent
+        self,
+        supervision_population_event: Union[
+            SupervisionPopulationEvent, SupervisionPopulationSpan
+        ],
     ) -> bool:
         """For Idaho, we look at the supervision district identifier to see if it's a non-Idaho
         entity/jurisdiction."""
