@@ -27,6 +27,7 @@ import {
   BinaryRadioButton,
   BinaryRadioGroupWrapper,
   Form,
+  FormWrapper,
   GoBackToReportsOverviewLink,
   MetricSectionSubTitle,
   MetricSectionTitle,
@@ -171,66 +172,69 @@ const CreateReport = () => {
       </ReportSummaryWrapper>
 
       {/* Create Report Form */}
-      <Form>
-        {/* Form Title */}
-        <OnePanelBackLinkContainer>
-          <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
-        </OnePanelBackLinkContainer>
-        <PreTitle>Create Report</PreTitle>
-        <Title>New Report</Title>
-        <TitleWrapper underlined>
-          <MetricSectionTitle>Report Parameters</MetricSectionTitle>
-          <MetricSectionSubTitle />
-        </TitleWrapper>
-        <Heading>What reporting frequency is this report?</Heading>
-        <BinaryRadioGroupWrapper>
-          <BinaryRadioButton
-            type="radio"
-            id="monthly"
-            name="frequency"
-            label="Monthly"
-            value="MONTHLY"
-            onChange={updateFrequency}
-            defaultChecked={frequency === "MONTHLY"}
-          />
-          <BinaryRadioButton
-            type="radio"
-            id="annual"
-            name="frequency"
-            label="Annual"
-            value="ANNUAL"
-            onChange={updateFrequency}
-            defaultChecked={frequency === "ANNUAL"}
-          />
-        </BinaryRadioGroupWrapper>
-        {createReportFormValues.frequency === "ANNUAL" && (
-          <>
-            <Heading>What year standard do you use for annual reports?</Heading>
-            <BinaryRadioGroupWrapper>
-              <BinaryRadioButton
-                type="radio"
-                id="calendar"
-                name="yearStandard"
-                label="Calendar Year (Jan - Dec)"
-                value={1}
-                onChange={updateYearStandard}
-                defaultChecked={annualStartMonth === 1}
-              />
-              <BinaryRadioButton
-                type="radio"
-                id="fiscal"
-                name="yearStandard"
-                label="Fiscal Year (Jul - Jun)"
-                value={7}
-                onChange={updateYearStandard}
-                defaultChecked={annualStartMonth === 7}
-              />
-            </BinaryRadioGroupWrapper>
-          </>
-        )}
-        {/* Disable recurring report toggle for now */}
-        {/* TODO(#13229): Create recurring report flow */}
-        {/* <Heading>Is this a recurring report?</Heading>
+      <FormWrapper>
+        <Form>
+          {/* Form Title */}
+          <OnePanelBackLinkContainer>
+            <GoBackToReportsOverviewLink onClick={() => navigate("/")} />
+          </OnePanelBackLinkContainer>
+          <PreTitle>Create Report</PreTitle>
+          <Title>New Report</Title>
+          <TitleWrapper underlined>
+            <MetricSectionTitle>Report Parameters</MetricSectionTitle>
+            <MetricSectionSubTitle />
+          </TitleWrapper>
+          <Heading>What reporting frequency is this report?</Heading>
+          <BinaryRadioGroupWrapper>
+            <BinaryRadioButton
+              type="radio"
+              id="monthly"
+              name="frequency"
+              label="Monthly"
+              value="MONTHLY"
+              onChange={updateFrequency}
+              defaultChecked={frequency === "MONTHLY"}
+            />
+            <BinaryRadioButton
+              type="radio"
+              id="annual"
+              name="frequency"
+              label="Annual"
+              value="ANNUAL"
+              onChange={updateFrequency}
+              defaultChecked={frequency === "ANNUAL"}
+            />
+          </BinaryRadioGroupWrapper>
+          {createReportFormValues.frequency === "ANNUAL" && (
+            <>
+              <Heading>
+                What year standard do you use for annual reports?
+              </Heading>
+              <BinaryRadioGroupWrapper>
+                <BinaryRadioButton
+                  type="radio"
+                  id="calendar"
+                  name="yearStandard"
+                  label="Calendar Year (Jan - Dec)"
+                  value={1}
+                  onChange={updateYearStandard}
+                  defaultChecked={annualStartMonth === 1}
+                />
+                <BinaryRadioButton
+                  type="radio"
+                  id="fiscal"
+                  name="yearStandard"
+                  label="Fiscal Year (Jul - Jun)"
+                  value={7}
+                  onChange={updateYearStandard}
+                  defaultChecked={annualStartMonth === 7}
+                />
+              </BinaryRadioGroupWrapper>
+            </>
+          )}
+          {/* Disable recurring report toggle for now */}
+          {/* TODO(#13229): Create recurring report flow */}
+          {/* <Heading>Is this a recurring report?</Heading>
         <BinaryRadioGroupContainer>
           <BinaryRadioButton
             type="radio"
@@ -250,56 +254,57 @@ const CreateReport = () => {
             onChange={() => updateIsRecurring(true)}
           />
         </BinaryRadioGroupContainer> */}
-        {createReportFormValues.isRecurring === false && (
-          <>
-            <Heading>When should this report start?</Heading>
-            <BinaryRadioGroupWrapper>
-              {createReportFormValues.frequency === "MONTHLY" && (
-                <Dropdown onChange={updateMonth} value={month}>
-                  {monthsByName.map((m, i) => {
-                    return (
-                      <option key={m} value={i + 1}>
-                        {m}
-                      </option>
-                    );
-                  })}
-                </Dropdown>
-              )}
-
-              <Dropdown onChange={updateYear} value={year}>
-                {createIntegerRange(1970, new Date().getFullYear() + 1).map(
-                  (yr) => {
-                    return (
-                      <option key={yr} value={yr}>
-                        {yr}
-                      </option>
-                    );
-                  }
+          {createReportFormValues.isRecurring === false && (
+            <>
+              <Heading>When should this report start?</Heading>
+              <BinaryRadioGroupWrapper>
+                {createReportFormValues.frequency === "MONTHLY" && (
+                  <Dropdown onChange={updateMonth} value={month}>
+                    {monthsByName.map((m, i) => {
+                      return (
+                        <option key={m} value={i + 1}>
+                          {m}
+                        </option>
+                      );
+                    })}
+                  </Dropdown>
                 )}
-              </Dropdown>
-            </BinaryRadioGroupWrapper>
-          </>
-        )}
-        <CreateReportInfoContainer>
-          The <BoldFont>{isRecurring ? `recurring` : ``}</BoldFont> report will
-          be created for{` `}
-          <BoldFont>
-            {printDateRangeFromMonthYear(
-              frequency === "ANNUAL" ? annualStartMonth : month,
-              isRecurring ? new Date(Date.now()).getFullYear() : year,
-              frequency
-            )}
-          </BoldFont>
-          .
-        </CreateReportInfoContainer>
-        <FormCreateButton
-          onClick={(e) => {
-            e.preventDefault();
-            /** Should trigger a confirmation dialogue before submitting */
-            createNewReport();
-          }}
-        />
-      </Form>
+
+                <Dropdown onChange={updateYear} value={year}>
+                  {createIntegerRange(1970, new Date().getFullYear() + 1).map(
+                    (yr) => {
+                      return (
+                        <option key={yr} value={yr}>
+                          {yr}
+                        </option>
+                      );
+                    }
+                  )}
+                </Dropdown>
+              </BinaryRadioGroupWrapper>
+            </>
+          )}
+          <CreateReportInfoContainer>
+            The <BoldFont>{isRecurring ? `recurring` : ``}</BoldFont> report
+            will be created for{` `}
+            <BoldFont>
+              {printDateRangeFromMonthYear(
+                frequency === "ANNUAL" ? annualStartMonth : month,
+                isRecurring ? new Date(Date.now()).getFullYear() : year,
+                frequency
+              )}
+            </BoldFont>
+            .
+          </CreateReportInfoContainer>
+          <FormCreateButton
+            onClick={(e) => {
+              e.preventDefault();
+              /** Should trigger a confirmation dialogue before submitting */
+              createNewReport();
+            }}
+          />
+        </Form>
+      </FormWrapper>
 
       {/* Create Report Review Panel */}
       <PublishDataWrapper>
