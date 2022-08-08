@@ -87,7 +87,7 @@ def get_api_blueprint(
                 )
 
             if name is not None or email is not None:
-                auth0_client.update_user_name_and_email(
+                auth0_client.update_user(
                     user_id=auth0_user_id,
                     name=name,
                     email=email,

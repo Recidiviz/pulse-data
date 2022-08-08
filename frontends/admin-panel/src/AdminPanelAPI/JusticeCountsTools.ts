@@ -42,11 +42,13 @@ export const getUsers = async (): Promise<Response> => {
   return getResource(`/api/justice_counts_tools/users`);
 };
 
-export const createOrUpdateUser = async (
+export const updateUser = async (
   user: User,
-  agencyIds?: number[]
+  name: string | null,
+  agencyIds: number[] | null
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/users`, {
+    name,
     auth0_user_id: user.auth0_user_id,
     agency_ids: agencyIds,
   });

@@ -28,7 +28,7 @@ import {
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
-import { createOrUpdateUser } from "../../AdminPanelAPI/JusticeCountsTools";
+import { updateUser } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
   AgenciesResponse,
@@ -46,19 +46,33 @@ const UserProvisioningView = (): JSX.Element => {
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
 
-  const onChange = async (user: User, agencyIds: number[]) => {
+  const onAgencyChange = async (user: User, agencyIds: number[]) => {
     try {
-      const response = await createOrUpdateUser(user, agencyIds);
+      const response = await updateUser(user, null, agencyIds);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
         return;
       }
       message.success(
-        `"${user.auth0_email}" moved to "${agenciesData?.agencies
+        `${user.auth0_email} moved to ${agenciesData?.agencies
           .filter((agency) => agencyIds.includes(agency.id))
-          ?.map((agency) => agency.name)}"!`
+          ?.map((agency) => agency.name)}!`
       );
+    } catch (err) {
+      message.error(`An error occured: ${err}`);
+    }
+  };
+
+  const onNameChange = async (user: User, name: string) => {
+    try {
+      const response = await updateUser(user, name, null);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
+      }
+      message.success(`${user.auth0_email}'s name changed to ${name}!`);
     } catch (err) {
       message.error(`An error occured: ${err}`);
     }
@@ -139,7 +153,14 @@ const UserProvisioningView = (): JSX.Element => {
       key: "db_name",
       ...getColumnSearchProps("db_name"),
       width: "15%",
-      ellipsis: true,
+      render: (_: string, user: User) => {
+        return (
+          <Input
+            defaultValue={user.db_name}
+            onBlur={(e) => onNameChange(user, e.target.value)}
+          />
+        );
+      },
     },
     {
       title: "Agencies",
@@ -160,7 +181,7 @@ const UserProvisioningView = (): JSX.Element => {
                 .toLowerCase()
                 .indexOf(input.toLowerCase()) >= 0
             }
-            onChange={(agencyIds: number[]) => onChange(user, agencyIds)}
+            onChange={(agencyIds: number[]) => onAgencyChange(user, agencyIds)}
             style={{ minWidth: 250 }}
           >
             {/* #TODO(#12091): Replace with debounced search bar */}

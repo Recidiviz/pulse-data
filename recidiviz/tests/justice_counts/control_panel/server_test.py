@@ -385,7 +385,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         auth0_user["app_metadata"] = JusticeCountsAuth0AppMetadata(
             agency_ids=[agency.id], has_seen_onboarding={}
         )
-        self.test_auth0_client.update_user_name_and_email.return_value = auth0_user
+        self.test_auth0_client.update_user.return_value = auth0_user
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=auth0_user["user_id"], user_account=db_user
@@ -399,7 +399,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             )
         self.assertEqual(response.status_code, 200)
-        self.test_auth0_client.update_user_name_and_email.assert_called_once_with(
+        self.test_auth0_client.update_user.assert_called_once_with(
             user_id=auth0_user.get("user_id"),
             name=new_name,
             email=new_email_address,

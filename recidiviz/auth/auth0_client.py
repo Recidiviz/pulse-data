@@ -180,24 +180,31 @@ class Auth0Client:
     @sleep_and_retry
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
     @_refresh_token_if_needed
-    def update_user_name_and_email(
+    def update_user(
         self,
         user_id: str,
         name: Optional[str] = None,
         email: Optional[str] = None,
         email_verified: Optional[bool] = False,
+        app_metadata: Optional[
+            Union[JusticeCountsAuth0AppMetadata, CaseTriageAuth0AppMetadata]
+        ] = None,
     ) -> Auth0User:
-        """Updates a single Auth0 user's name and email fields.
+        """Updates a single Auth0 user's name, email, and app_metadata fields.
         This function is limited to two calls per second. Any calls beyond that will cause the function to sleep until
         it is safe to call again."""
 
         body: Dict[str, Any] = {}
-        if email:
+        if email is not None:
             body["email"] = email
             body["email_verified"] = email_verified
 
-        if name:
+        if name is not None:
             body["name"] = name
+
+        if app_metadata is not None:
+            body["app_metadata"] = app_metadata
+
         return self.client.users.update(id=user_id, body=body)
 
     @sleep_and_retry
