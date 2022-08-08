@@ -23,6 +23,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { FormError, Permission, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
 import { removeCommaSpaceAndTrim } from "../../utils";
+import { Badge, BadgeColorMapping } from "../Badge";
 import {
   BinaryRadioButton,
   BinaryRadioGroupClearButton,
@@ -56,7 +57,6 @@ import {
   MetricNameBadgeToggleWrapper,
   MetricNameBadgeWrapper,
   MetricOnOffWrapper,
-  MetricsViewBadge,
   MetricsViewContainer,
   MetricsViewControlPanel,
   MultipleChoiceWrapper,
@@ -109,6 +109,11 @@ type MetricBoxProps = {
   setActiveMetricKey: React.Dispatch<React.SetStateAction<string>>;
 };
 
+const reportFrequencyBadgeColors: BadgeColorMapping = {
+  ANNUAL: "ORANGE",
+  MONTHLY: "GREEN",
+};
+
 const MetricBox: React.FC<MetricBoxProps> = ({
   metricKey,
   displayName,
@@ -127,9 +132,12 @@ const MetricBox: React.FC<MetricBoxProps> = ({
       <MetricNameBadgeToggleWrapper>
         <MetricNameBadgeWrapper>
           <MetricName>{displayName}</MetricName>
-          <MetricsViewBadge frequency={frequency} enabled={enabled}>
+          <Badge
+            color={reportFrequencyBadgeColors[frequency]}
+            disabled={!enabled}
+          >
             {frequency}
-          </MetricsViewBadge>
+          </Badge>
         </MetricNameBadgeWrapper>
 
         {!enabled && <NotReportedIcon noTooltip />}
@@ -856,14 +864,15 @@ export const MetricsView: React.FC = observer(() => {
                 <MetricName isTitle>
                   {metricSettings[activeMetricKey]?.display_name}
                 </MetricName>
-                <MetricsViewBadge
-                  frequency={
-                    metricSettings[activeMetricKey]
-                      ?.frequency as ReportFrequency
+                <Badge
+                  color={
+                    reportFrequencyBadgeColors[
+                      metricSettings[activeMetricKey]?.frequency
+                    ]
                   }
                 >
                   {metricSettings[activeMetricKey]?.frequency}
-                </MetricsViewBadge>
+                </Badge>
               </MetricNameBadgeWrapper>
 
               <TabbedBar noPadding>

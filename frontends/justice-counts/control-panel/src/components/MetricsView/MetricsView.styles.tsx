@@ -17,7 +17,6 @@
 
 import styled from "styled-components/macro";
 
-import { ReportFrequency } from "../../shared/types";
 import { BinaryRadioGroupWrapper } from "../Forms";
 import { palette, typography } from "../GlobalStyles";
 
@@ -101,40 +100,6 @@ export const MetricNameBadgeToggleWrapper = styled.div`
 export const MetricNameBadgeWrapper = styled.div`
   display: flex;
   align-items: center;
-`;
-
-type MetricsViewBadgeProps = {
-  frequency: ReportFrequency;
-  enabled?: boolean;
-};
-
-export const MetricsViewBadge = styled.div<MetricsViewBadgeProps>`
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: ${palette.solid.white};
-  padding: 4px 8px;
-  margin-left: 10px;
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: capitalize;
-
-  background: ${({ frequency, enabled }) => {
-    if (enabled === false) {
-      return palette.highlight.grey9;
-    }
-    if (frequency === "MONTHLY") {
-      return palette.solid.green;
-    }
-    if (frequency === "ANNUAL") {
-      return palette.solid.orange;
-    }
-  }};
-
-  @media only screen and (max-width: 1000px) {
-    font-size: 0.6rem;
-  }
 `;
 
 type MetricNameProps = { isTitle?: boolean };

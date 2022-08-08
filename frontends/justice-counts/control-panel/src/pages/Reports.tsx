@@ -21,11 +21,11 @@ import React, { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import checkmarkIcon from "../components/assets/status-check-icon.png";
+import { Badge, BadgeColorMapping } from "../components/Badge";
 import Loading from "../components/Loading";
 import { Onboarding } from "../components/Onboarding";
 import {
   AdditionalEditorsTooltip,
-  Badge,
   Cell,
   EmptySelectionCircle,
   Label,
@@ -168,6 +168,13 @@ const Reports: React.FC = () => {
     if (loadingError) {
       return <Row>{`Error: ${loadingError}`}</Row>;
     }
+
+    const reportStatusBadgeColors: BadgeColorMapping = {
+      DRAFT: "ORANGE",
+      PUBLISHED: "GREEN",
+      NOT_STARTED: "RED",
+    };
+
     return (
       <>
         {filteredReportsMemoized.length > 0 ? (
@@ -202,7 +209,7 @@ const Reports: React.FC = () => {
                       report.year,
                       report.frequency
                     )}
-                    <Badge status={report.status}>
+                    <Badge color={reportStatusBadgeColors[report.status]}>
                       {removeSnakeCase(report.status).toLowerCase()}
                     </Badge>
                   </Cell>
