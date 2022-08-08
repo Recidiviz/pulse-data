@@ -251,30 +251,6 @@ export const AdditionalEditorsTooltip = styled.div`
   box-shadow: 2px 2px 8px ${palette.highlight.grey5};
 `;
 
-export const Badge = styled.div<{ status?: string }>`
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: ${({ status }) => {
-    if (status === "DRAFT") {
-      return palette.solid.orange;
-    }
-    if (status === "PUBLISHED") {
-      return palette.solid.green;
-    }
-    if (status === "NOT_STARTED") {
-      return palette.solid.red;
-    }
-  }};
-  color: ${palette.solid.white};
-  padding: 4px 8px;
-  margin-left: 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: capitalize;
-`;
-
 export const NoReportsDisplay = styled.div`
   display: flex;
   justify-content: center;
