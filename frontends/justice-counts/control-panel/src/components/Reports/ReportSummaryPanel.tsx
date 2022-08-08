@@ -65,22 +65,27 @@ export const ReportSummaryWrapper = styled.div`
 
 export const ReportSummaryProgressIndicatorWrapper = styled.div`
   margin-top: 28px;
+  height: 37vh;
+  overflow-y: scroll;
+
+  &::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 5px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: ${palette.highlight.grey8};
+    box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+    -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+  }
 
   @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
     height: 30vh;
-    overflow-y: scroll;
+  }
 
-    &::-webkit-scrollbar {
-      -webkit-appearance: none;
-      width: 5px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      border-radius: 4px;
-      background-color: ${palette.solid.blue};
-      box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
-      -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
-    }
+  @media only screen and (max-height: 750px) {
+    height: 60vh;
+    padding-bottom: 50px;
   }
 `;
 
@@ -153,6 +158,9 @@ export const EditDetails = styled.div`
   bottom: 61px;
 
   @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
+    display: none;
+  }
+  @media only screen and (max-height: 750px) {
     display: none;
   }
 `;
