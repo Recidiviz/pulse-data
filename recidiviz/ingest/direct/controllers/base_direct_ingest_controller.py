@@ -32,6 +32,9 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlready
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
@@ -92,6 +95,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -228,6 +234,11 @@ class BaseDirectIngestController:
                 self.region_code(), self.ingest_instance
             )
         )
+
+        self.ingest_instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+            self.region_code(), self.ingest_instance
+        )
+
         self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
     @property
@@ -317,8 +328,9 @@ class BaseDirectIngestController:
         self._schedule_next_ingest_task(just_finished_job=just_finished_job)
 
     def _schedule_next_ingest_task(self, just_finished_job: bool) -> None:
-        """Internal helper for scheduling the next ingest task. DOes"""
+        """Internal helper for scheduling the next ingest task."""
         check_is_region_launched_in_env(self.region)
+        current_status = self.ingest_instance_status_manager.get_current_status()
 
         if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
@@ -327,74 +339,53 @@ class BaseDirectIngestController:
             return
 
         if self._schedule_raw_data_import_tasks():
+            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
+            # admin panel.
+            if current_status:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+                )
             logging.info(
                 "Found pre-ingest raw data import tasks to schedule - returning."
             )
             return
 
         if self._schedule_ingest_view_materialization_tasks():
+            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
+            # admin panel.
+            if current_status:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+                )
             logging.info(
                 "Found ingest view materialization tasks to schedule - returning."
             )
             return
 
-        if self.region_lock_manager.is_locked():
-            logging.info("Direct ingest is already locked on region [%s]", self.region)
+        if self._schedule_extract_and_merge_tasks(just_finished_job):
+            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
+            # admin panel.
+            if current_status:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+                )
+
+            logging.info("Found extract and merge tasks to schedule - returning.")
             return
 
-        extract_and_merge_queue_info = (
-            self.cloud_task_manager.get_extract_and_merge_queue_info(
-                self.region,
-                self.ingest_instance,
-            )
-        )
-        if (
-            extract_and_merge_queue_info.has_any_tasks_for_instance(
-                region_code=self.region_code(), ingest_instance=self.ingest_instance
-            )
-            and not just_finished_job
-        ):
-            logging.info(
-                "Already running job [%s] - will not schedule another job for "
-                "region [%s]",
-                extract_and_merge_queue_info.task_names[0],
-                self.region.region_code,
-            )
-            return
-
-        next_job_args = self.job_prioritizer.get_next_job_args()
-
-        if not next_job_args:
-            logging.info(
-                "No more extract and merge to run for region [%s] - returning",
-                self.region.region_code,
-            )
-            return
-
-        if extract_and_merge_queue_info.is_task_already_queued(
-            self.region_code(), next_job_args
-        ):
-            logging.info(
-                "Already have task queued for next extract and merge job [%s] - returning.",
-                next_job_args.job_tag(),
-            )
-            return
-
-        if not self.region_lock_manager.can_proceed():
-            logging.info(
-                "CloudSQL to BigQuery refresh is running, cannot run ingest - returning"
-            )
-            return
-
-        logging.info(
-            "Creating cloud task to run extract and merge job [%s]",
-            next_job_args.job_tag(),
-        )
-
-        self.cloud_task_manager.create_direct_ingest_extract_and_merge_task(
-            region=self.region,
-            task_args=next_job_args,
-        )
+        # TODO(#13406): Remove check for existence of current status until `STARTED`
+        #  statuses are set in the admin panel.
+        if current_status:
+            # If there aren't any more tasks to schedule for the region, update to the appropriate next
+            # status, based on the ingest instance.
+            if self.ingest_instance == DirectIngestInstance.SECONDARY:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.READY_TO_FLASH
+                )
+            else:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.UP_TO_DATE
+                )
 
     def _schedule_raw_data_import_tasks(self) -> bool:
         """Schedules all pending raw data import tasks for launched ingest view tags, if
@@ -490,6 +481,73 @@ class BaseDirectIngestController:
             did_schedule = True
 
         return did_schedule
+
+    def _schedule_extract_and_merge_tasks(self, just_finished_job: bool) -> bool:
+        """Schedules the next pending extract and merge task, if it has not been
+        scheduled. If there is still extract and merge work to do, returns True.
+        Otherwise, if it's safe to proceed with next steps of ingest, returns False.
+        """
+        extract_and_merge_queue_info = (
+            self.cloud_task_manager.get_extract_and_merge_queue_info(
+                self.region,
+                self.ingest_instance,
+            )
+        )
+        next_job_args = self.job_prioritizer.get_next_job_args()
+
+        if (
+            extract_and_merge_queue_info.has_any_tasks_for_instance(
+                region_code=self.region_code(), ingest_instance=self.ingest_instance
+            )
+            and not just_finished_job
+        ):
+            logging.info(
+                "Already running job [%s] - will not schedule another job for "
+                "region [%s]",
+                extract_and_merge_queue_info.task_names[0],
+                self.region.region_code,
+            )
+            return True
+
+        if not next_job_args:
+            logging.info(
+                "No more extract and merge to run for region [%s] - returning",
+                self.region.region_code,
+            )
+            return False
+
+        if extract_and_merge_queue_info.is_task_already_queued(
+            self.region_code(), next_job_args
+        ):
+            logging.info(
+                "Already have task queued for next extract and merge job [%s] - returning.",
+                next_job_args.job_tag(),
+            )
+            return True
+
+        # At this point we have found a new extract and merge job to schedule.  However, we might have to wait until
+        # the locks are released to actually schedule this task.
+        if self.region_lock_manager.is_locked():
+            logging.info("Direct ingest is already locked on region [%s]", self.region)
+            return True
+
+        if not self.region_lock_manager.can_proceed():
+            logging.info(
+                "CloudSQL to BigQuery refresh is running, cannot run ingest - returning"
+            )
+            return True
+
+        logging.info(
+            "Creating cloud task to run extract and merge job [%s]",
+            next_job_args.job_tag(),
+        )
+
+        self.cloud_task_manager.create_direct_ingest_extract_and_merge_task(
+            region=self.region,
+            task_args=next_job_args,
+        )
+
+        return True
 
     # =================== #
     # SINGLE JOB RUN CODE #
