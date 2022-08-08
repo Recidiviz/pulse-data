@@ -131,7 +131,7 @@ class BulkUploader:
             try:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
                 # Drop any rows that contain any NaN values
-                df = df.dropna()
+                df = df.dropna(axis=0, how="any", subset="value")
                 # Convert dataframe to a list of dictionaries
                 rows = df.to_dict("records")
 

@@ -543,8 +543,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 metrics[3]  # type: ignore[index]
                 .aggregated_dimensions[0]
-                .dimension_to_value[ForceType.PHYSICAL],
-                5,
+                .dimension_to_value,
+                {
+                    ForceType.PHYSICAL: 5,
+                    ForceType.RESTRAINT: None,
+                    ForceType.VERBAL: None,
+                    ForceType.WEAPON: None,
+                    ForceType.UNKNOWN: None,
+                },
             )
             monthly_report = reports_by_instance["01 2021 Metrics"]
             metrics = sorted(
@@ -561,8 +567,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 metrics[1]  # type: ignore[index]
                 .aggregated_dimensions[0]
-                .dimension_to_value[CallType.EMERGENCY],
-                700,
+                .dimension_to_value,
+                {
+                    CallType.UNKNOWN: None,
+                    CallType.EMERGENCY: 700,
+                    CallType.NON_EMERGENCY: 700,
+                },
             )
             self.assertEqual(metrics[2].value, 800)
             self.assertEqual(len(metrics[2].aggregated_dimensions), 1)
@@ -570,6 +580,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 metrics[2]  # type: ignore[index]
                 .aggregated_dimensions[0]
-                .dimension_to_value[OffenseType.PERSON],
-                700,
+                .dimension_to_value,
+                {
+                    OffenseType.PERSON: 700,
+                    OffenseType.DRUG: None,
+                    OffenseType.OTHER: None,
+                    OffenseType.PROPERTY: None,
+                    OffenseType.UNKNOWN: None,
+                },
             )
