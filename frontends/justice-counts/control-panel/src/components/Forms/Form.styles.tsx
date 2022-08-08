@@ -125,15 +125,14 @@ export const Metric = styled.div<{ notReporting?: boolean }>`
 export const MetricSectionTitleWrapper = styled.div`
   display: flex;
   align-items: flex-end;
-  /* img {
-    margin-top: 32px;
-  } */
 `;
 
-export const MetricSectionTitle = styled.div`
+export const MetricSectionTitle = styled.div<{ notReporting?: boolean }>`
   ${typography.sizeCSS.large}
   margin-right: 17px;
   margin-top: 32px;
+  color: ${({ notReporting }) =>
+    notReporting ? palette.highlight.grey8 : palette.solid.darkgrey};
 `;
 
 export const MetricSectionSubTitle = styled.div`

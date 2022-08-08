@@ -50,7 +50,7 @@ export const MetricTextInput = observer(
     const { metricsValues, updateMetricsValues } = formStore;
 
     const handleMetricChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-      updateMetricsValues(reportID, metric.key, e.target.value);
+      updateMetricsValues(reportID, metric.key, e.target.value, metric.enabled);
 
     return (
       <TextInput
@@ -110,7 +110,8 @@ export const DisaggregationDimensionTextInput = observer(
         disaggregation.key,
         dimension.key,
         e.target.value,
-        false
+        false,
+        metric.enabled
       );
 
     return (
@@ -184,7 +185,8 @@ export const BinaryRadioButtonInputs = observer(
           context.key,
           e.target.value,
           context.required,
-          context.type
+          context.type,
+          metric.enabled
         );
       }
     };
@@ -250,7 +252,8 @@ export const AdditionalContextInput = observer(
         context.key,
         e.target.value,
         context.required,
-        context.type
+        context.type,
+        metric.enabled
       );
 
     return (
