@@ -62,6 +62,12 @@ class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
         logging.info("Getting next extract and merge job args")
         highest_pri_batch = None
 
+        if not self.ingest_view_rank_list:
+            logging.info(
+                "No ingest views are defined defined, so there are no ingest view result rows to process"
+            )
+            return None
+
         next_batch_for_each_view = (
             self.ingest_view_contents.get_next_unprocessed_batch_info_by_view()
         )

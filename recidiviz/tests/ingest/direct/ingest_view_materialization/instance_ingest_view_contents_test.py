@@ -21,6 +21,7 @@ from unittest import mock
 from unittest.mock import call, create_autospec, patch
 
 from freezegun import freeze_time
+from google.api_core import exceptions
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
@@ -202,6 +203,25 @@ WHERE
         )
 
         self.mock_bq_client.list_tables.return_value = []
+
+        batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
+
+        self.assertEqual({}, batch_info)
+
+        self.assertEqual(
+            [call.list_tables("us_xx_ingest_view_results_primary")],
+            self.mock_bq_client.mock_calls,
+        )
+
+    def test_get_next_unprocessed_batch_info_by_view_no_results_dataset(self) -> None:
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            big_query_client=self.mock_bq_client,
+            region_code=self.region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_prefix=None,
+        )
+
+        self.mock_bq_client.list_tables.side_effect = exceptions.NotFound("no dataset")
 
         batch_info = ingest_view_contents.get_next_unprocessed_batch_info_by_view()
 

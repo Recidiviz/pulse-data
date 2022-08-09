@@ -24,6 +24,7 @@ import uuid
 from typing import Any, Dict, Iterable, Optional, Union
 
 import attr
+from google.api_core import exceptions
 from google.cloud import bigquery
 from more_itertools import one, peekable
 
@@ -503,11 +504,14 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
     ) -> Dict[str, Optional[ResultsBatchInfo]]:
         highest_priority_row_for_view_queries = []
 
+        try:
+            results_tables = self._big_query_client.list_tables(self.results_dataset())
+        except exceptions.NotFound:
+            # Results dataset doesn't exist yet, just return.
+            return {}
+
         ingest_views_with_results = [
-            results_table.table_id
-            for results_table in self._big_query_client.list_tables(
-                self.results_dataset()
-            )
+            results_table.table_id for results_table in results_tables
         ]
         if not ingest_views_with_results:
             return {}
@@ -608,11 +612,14 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         """Returns the most recent date of processed data for a given ingest view before the provided datetime."""
         max_date_of_data_processed_before_datetime_for_view_queries = []
 
+        try:
+            results_tables = self._big_query_client.list_tables(self.results_dataset())
+        except exceptions.NotFound:
+            # Results dataset doesn't exist yet, just return.
+            return {}
+
         ingest_views_with_results = [
-            results_table.table_id
-            for results_table in self._big_query_client.list_tables(
-                self.results_dataset()
-            )
+            results_table.table_id for results_table in results_tables
         ]
         if not ingest_views_with_results:
             return {}
@@ -655,11 +662,14 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         """Returns a dictionary with one entry per ingest view with the max date on any processed results row."""
         min_date_of_unprocessed_data_for_view_queries = []
 
+        try:
+            results_tables = self._big_query_client.list_tables(self.results_dataset())
+        except exceptions.NotFound:
+            # Results dataset doesn't exist yet, just return.
+            return {}
+
         ingest_views_with_results = [
-            results_table.table_id
-            for results_table in self._big_query_client.list_tables(
-                self.results_dataset()
-            )
+            results_table.table_id for results_table in results_tables
         ]
         if not ingest_views_with_results:
             return {}
