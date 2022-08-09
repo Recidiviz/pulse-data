@@ -24,6 +24,9 @@ from typing import Tuple
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
 
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
@@ -93,6 +96,11 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
             f"Invalid filename {filename}, must match a Pathways event-level view",
             HTTPStatus.BAD_REQUEST,
         )
+    if not isinstance(view_builder.delegate, SelectedColumnsBigQueryViewBuilder):
+        return (
+            f"Unexpected view builder delegate found when importing {filename}",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
     try:
         db_entity = get_database_entity_by_table_name(
@@ -113,7 +121,7 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         PathwaysDatabaseManager.database_key_for_state(state_code),
         db_entity,
         csv_path,
-        view_builder.columns,
+        view_builder.delegate.columns,
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
 

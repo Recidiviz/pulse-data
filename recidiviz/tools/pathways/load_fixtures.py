@@ -108,7 +108,7 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
             view_builder = builder
     if not view_builder:
         raise ValueError(f"missing view builder {table.__tablename__}")
-    return view_builder.columns
+    return view_builder.delegate.columns
 
 
 def import_pathways_from_gcs(

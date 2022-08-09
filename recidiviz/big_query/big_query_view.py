@@ -86,6 +86,7 @@ class BigQueryView(bigquery.TableReference):
             dataset_id, default_project=project_id
         )
         super().__init__(dataset_ref, view_id)
+        # TODO(#14545): Stop adding description to query_format_kwargs
         self.query_format_kwargs = {
             **query_format_kwargs,
             "description": description,

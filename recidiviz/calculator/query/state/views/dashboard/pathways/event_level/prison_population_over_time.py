@@ -22,6 +22,9 @@ python -m recidiviz.calculator.query.state.views.dashboard.pathways.event_level.
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
     filter_to_enabled_states,
@@ -93,41 +96,44 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     ORDER BY state_code, date_in_population, person_id
 """
 
-PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    columns=[
-        "state_code",
-        "person_id",
-        "date_in_population",
-        "time_period",
-        "gender",
-        "admission_reason",
-        "facility",
-        "age_group",
-        "race",
-    ],
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=PRISON_POPULATION_OVER_TIME_VIEW_NAME,
-    view_query_template=PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE,
-    description=PRISON_POPULATION_OVER_TIME_VIEW_DESCRIPTION,
-    dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    add_age_groups=add_age_groups(),
-    filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="state_code", enabled_states=get_pathways_enabled_states()
-    ),
-    dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
-        [
+PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=state_specific_query_strings.get_pathways_incarceration_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        columns=[
+            "state_code",
+            "person_id",
+            "date_in_population",
+            "time_period",
             "gender",
             "admission_reason",
             "facility",
             "age_group",
             "race",
-        ]
-    ),
-    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
-    time_period_months=get_binned_time_period_months(
-        "date_of_stay",
-        current_date_expr="DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)",
+        ],
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=PRISON_POPULATION_OVER_TIME_VIEW_NAME,
+        view_query_template=PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE,
+        description=PRISON_POPULATION_OVER_TIME_VIEW_DESCRIPTION,
+        dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+        materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        add_age_groups=add_age_groups(),
+        filter_to_enabled_states=filter_to_enabled_states(
+            state_code_column="state_code", enabled_states=get_pathways_enabled_states()
+        ),
+        dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
+            [
+                "gender",
+                "admission_reason",
+                "facility",
+                "age_group",
+                "race",
+            ]
+        ),
+        facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+        time_period_months=get_binned_time_period_months(
+            "date_of_stay",
+            current_date_expr="DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH)",
+        ),
     ),
 )
 

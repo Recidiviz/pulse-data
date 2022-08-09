@@ -22,7 +22,13 @@ python -m recidiviz.calculator.query.state.views.dashboard.pathways.event_level.
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_pathways_supervision_last_updated_date,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -40,21 +46,24 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     ORDER BY state_code, person_id, date_in_population
 """
 
-SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    columns=[
-        "state_code",
-        "person_id",
-        "date_in_population",
-        "time_period",
-        "supervision_district",
-        "supervision_level",
-        "race",
-    ],
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=SUPERVISION_POPULATION_OVER_TIME_VIEW_NAME,
-    view_query_template=SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE,
-    description=SUPERVISION_POPULATION_OVER_TIME_VIEW_DESCRIPTION,
-    dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=get_pathways_supervision_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        columns=[
+            "state_code",
+            "person_id",
+            "date_in_population",
+            "time_period",
+            "supervision_district",
+            "supervision_level",
+            "race",
+        ],
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=SUPERVISION_POPULATION_OVER_TIME_VIEW_NAME,
+        view_query_template=SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE,
+        description=SUPERVISION_POPULATION_OVER_TIME_VIEW_DESCRIPTION,
+        dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+    ),
 )
 
 if __name__ == "__main__":

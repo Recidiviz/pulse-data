@@ -14,10 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""People who have transitioned from liberty to prison by date of incarceration."""
+"""People who have transitioned from liberty to prison by date of incarceration.
+
+To generate the BQ view, run:
+python -m recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions
+"""
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
@@ -26,6 +33,9 @@ from recidiviz.calculator.query.bq_utils import (
     get_binned_time_period_months,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_pathways_incarceration_last_updated_date,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
@@ -88,31 +98,34 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
     SELECT DISTINCT {columns} FROM all_transitions
 """
 
-LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=LIBERTY_TO_PRISON_TRANSITIONS_VIEW_NAME,
-    view_query_template=LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
-    description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
-    age_group=add_age_groups("age_start"),
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
-    enabled_states=str(tuple(get_pathways_enabled_states())),
-    binned_time_periods=get_binned_time_period_months("sum_length.transition_date"),
-    length_of_stay=create_buckets_with_cap(
-        convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11
+LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=get_pathways_incarceration_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=LIBERTY_TO_PRISON_TRANSITIONS_VIEW_NAME,
+        view_query_template=LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
+        description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
+        age_group=add_age_groups("age_start"),
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
+        enabled_states=str(tuple(get_pathways_enabled_states())),
+        binned_time_periods=get_binned_time_period_months("sum_length.transition_date"),
+        length_of_stay=create_buckets_with_cap(
+            convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11
+        ),
+        columns=[
+            "transition_date",
+            "year",
+            "month",
+            "time_period",
+            "person_id",
+            "age_group",
+            "gender",
+            "race",
+            "judicial_district",
+            "prior_length_of_incarceration",
+            "state_code",
+        ],
     ),
-    columns=[
-        "transition_date",
-        "year",
-        "month",
-        "time_period",
-        "person_id",
-        "age_group",
-        "gender",
-        "race",
-        "judicial_district",
-        "prior_length_of_incarceration",
-        "state_code",
-    ],
 )
 
 if __name__ == "__main__":
