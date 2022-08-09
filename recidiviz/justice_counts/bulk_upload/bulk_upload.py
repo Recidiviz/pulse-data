@@ -31,11 +31,13 @@ from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    SYSTEM_TO_FILENAME_TO_METRICFILE,
-    MetricFile,
     fuzzy_match_against_options,
 )
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.metricfile import MetricFile
+from recidiviz.justice_counts.metricfiles.metricfile_registry import (
+    SYSTEM_TO_FILENAME_TO_METRICFILE,
+)
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricInterface,
