@@ -31,18 +31,25 @@ INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
         DirectIngestStatus.READY_TO_FLASH,
         DirectIngestStatus.STALE_RAW_DATA,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+        DirectIngestStatus.NO_RERUN_IN_PROGRESS,
     ],
     DirectIngestInstance.SECONDARY: [DirectIngestStatus.UP_TO_DATE],
 }
 
-# Valid start of rerun statuses, by instance.
-VALID_START_OF_RERUN_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
+# Valid initial statuses, by instance.
+VALID_INITIAL_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.PRIMARY: [
+        # UP_TO_DATE can be a default initial state for PRIMARY, when the primary instance
+        # has no work done and no work to do yet.
+        DirectIngestStatus.UP_TO_DATE,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
     ],
     DirectIngestInstance.SECONDARY: [
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
+        # NO_RERUN_IN_PROGRESS can be a default initial state for SECONDARY, when the secondary instance
+        # has no work done and no work to do yet.
+        DirectIngestStatus.NO_RERUN_IN_PROGRESS,
     ],
 }
 
@@ -50,7 +57,6 @@ VALID_START_OF_RERUN_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatu
 SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS: Dict[
     DirectIngestStatus, List[DirectIngestStatus]
 ] = {
-    DirectIngestStatus.STANDARD_RERUN_STARTED: [DirectIngestStatus.FLASH_COMPLETED],
     DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
@@ -77,9 +83,9 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
     DirectIngestInstance, Dict[DirectIngestStatus, List[DirectIngestStatus]]
 ] = {
     DirectIngestInstance.PRIMARY: {
-        DirectIngestStatus.STANDARD_RERUN_STARTED: [DirectIngestStatus.UP_TO_DATE]
-        + SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.STANDARD_RERUN_STARTED
+        DirectIngestStatus.STANDARD_RERUN_STARTED: [
+            DirectIngestStatus.UP_TO_DATE,
+            DirectIngestStatus.FLASH_COMPLETED,
         ],
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
             DirectIngestStatus.FLASH_COMPLETED,
@@ -115,11 +121,11 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         ],
     },
     DirectIngestInstance.SECONDARY: {
-        DirectIngestStatus.STANDARD_RERUN_STARTED: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.STANDARD_RERUN_STARTED
+        DirectIngestStatus.STANDARD_RERUN_STARTED: [
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS
         ],
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED: [
-            DirectIngestStatus.FLASH_COMPLETED
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS,
         ],
         # SECONDARY specific check for FLASH_IN_PROGRESS.
         DirectIngestStatus.FLASH_IN_PROGRESS: [DirectIngestStatus.READY_TO_FLASH],
@@ -153,6 +159,7 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         DirectIngestStatus.FLASH_COMPLETED: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
             DirectIngestStatus.FLASH_COMPLETED
         ],
+        DirectIngestStatus.NO_RERUN_IN_PROGRESS: [DirectIngestStatus.FLASH_COMPLETED],
     },
 }
 
@@ -194,13 +201,13 @@ class DirectIngestInstanceStatusManager:
 
         if (
             current_status is None
-            and new_status not in VALID_START_OF_RERUN_STATUSES[ingest_instance]
+            and new_status not in VALID_INITIAL_STATUSES[ingest_instance]
         ):
             raise ValueError(
                 f"Invalid initial status [{new_status}] for instance "
                 f"[{ingest_instance}]. Initial statuses can only be one of "
                 f"the following: "
-                f"{VALID_START_OF_RERUN_STATUSES[ingest_instance]}"
+                f"{VALID_INITIAL_STATUSES[ingest_instance]}"
             )
 
         if current_status is None:

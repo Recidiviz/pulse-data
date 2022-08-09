@@ -27,7 +27,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     INVALID_STATUSES,
     VALID_CURRENT_STATUS_TRANSITIONS,
-    VALID_START_OF_RERUN_STATUSES,
+    VALID_INITIAL_STATUSES,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -199,7 +199,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
 
     def test_change_status_to_invalid_initial_statuses(self) -> None:
         """Ensure that all invalid initial statuses raise the correct error."""
-        for instance, valid_initial_statuses in VALID_START_OF_RERUN_STATUSES.items():
+        for instance, valid_initial_statuses in VALID_INITIAL_STATUSES.items():
             us_yy_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance
             )
@@ -225,7 +225,16 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
             manager.change_status_to(new_status=status)
             self.assertEqual(status, manager.get_current_status())
             if expected_raw_data_source:
-                if status != DirectIngestStatus.FLASH_COMPLETED:
+                # Only assert raw data source if not at terminating status.
+                if (
+                    # Terminating status in PRIMARY is UP_TO_DATE.
+                    manager.ingest_instance == DirectIngestInstance.PRIMARY
+                    and status != DirectIngestStatus.UP_TO_DATE
+                ) or (
+                    # Terminating status in SECONDARY is NO_RERUN_IN_PROGRESS.
+                    manager.ingest_instance == DirectIngestInstance.SECONDARY
+                    and status != DirectIngestStatus.NO_RERUN_IN_PROGRESS
+                ):
                     self.assertEqual(
                         expected_raw_data_source, manager.get_raw_data_source_instance()
                     )
@@ -253,6 +262,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.FLASH_IN_PROGRESS,
                 DirectIngestStatus.FLASH_COMPLETED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             ],
             expected_raw_data_source=DirectIngestInstance.PRIMARY,
         )
@@ -268,6 +278,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.FLASH_IN_PROGRESS,
                 DirectIngestStatus.FLASH_COMPLETED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             ],
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
         )
@@ -406,6 +417,27 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.FLASH_IN_PROGRESS,
                 DirectIngestStatus.FLASH_COMPLETED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_initial_status_secondary_no_rerun_in_progress(self) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_initial_status_primary_up_to_date(self) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_primary_manager,
+            [
+                DirectIngestStatus.UP_TO_DATE,
                 DirectIngestStatus.STANDARD_RERUN_STARTED,
             ],
             expected_raw_data_source=DirectIngestInstance.PRIMARY,
@@ -423,6 +455,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.FLASH_IN_PROGRESS,
                 DirectIngestStatus.FLASH_COMPLETED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             ],
             expected_raw_data_source=DirectIngestInstance.PRIMARY,
         )
