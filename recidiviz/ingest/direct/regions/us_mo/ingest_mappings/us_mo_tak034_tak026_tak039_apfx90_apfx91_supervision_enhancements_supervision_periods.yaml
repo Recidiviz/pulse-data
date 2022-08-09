@@ -109,7 +109,7 @@ output:
                   # The following codes are no longer used according to MO, but may appear in historical records
                   - "RTF" # Residential Treatment facility
                   - "VCT" # Residential Violator Center
-                StateSupervisionLevel.INCARCERATED:
+                StateSupervisionLevel.IN_CUSTODY:
                   - "ITC" # Institutional Treatment Center
                   - "JAL" # Incarceration/Jail
                   - "PRS" # Incarceration/Prison
