@@ -187,7 +187,7 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
 
             if data.get("almost_eligible_serious_sanctions") and (
                 serious_sanctions_eligibility_date := data.get(
-                    "date_serious_sanctions_eligible"
+                    "date_serious_sanction_eligible"
                 )
             ):
                 almost_eligible_criteria[
