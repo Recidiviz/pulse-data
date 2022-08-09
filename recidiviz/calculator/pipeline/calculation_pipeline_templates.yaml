@@ -44,6 +44,53 @@ normalization_pipelines:
     region: us-central1
 
 incremental_metric_pipelines:
+  # Full calculations with no time limit
+  - pipeline: recidivism_metrics
+    job_name: full-us-nd-recidivism-metrics
+    state_code: US_ND
+    metric_types: REINCARCERATION_COUNT REINCARCERATION_RATE
+    region: us-west1
+  - pipeline: population_span_metrics
+    job_name: full-us-co-population-span-metrics
+    state_code: US_CO
+    metric_types: INCARCERATION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: population_span_metrics
+    job_name: full-us-nd-population-span-metrics
+    state_code: US_ND
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: population_span_metrics
+    job_name: full-us-mo-population-span-metrics
+    state_code: US_MO
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: population_span_metrics
+    job_name: full-us-id-population-span-metrics
+    state_code: US_ID
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: population_span_metrics
+    job_name: full-us-pa-population-span-metrics
+    state_code: US_PA
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-west1
+  - pipeline: population_span_metrics
+    job_name: full-us-tn-population-span-metrics
+    state_code: US_TN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-central1
+  - pipeline: population_span_metrics
+    job_name: full-us-me-population-span-metrics
+    state_code: US_ME
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: population_span_metrics
+    job_name: full-us-mi-population-span-metrics
+    state_code: US_MI
+    metric_types: INCARCERATION_POPULATION_SPAN
+    region: us-west1
+
   # Daily US_CO calculations
   - pipeline: incarceration_metrics
     job_name: us-co-incarceration-metrics-36
@@ -51,13 +98,6 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
     region: us-west3
-
-  # Full US_ND calculations with no time limit
-  - pipeline: recidivism_metrics
-    job_name: full-us-nd-recidivism-metrics
-    state_code: US_ND
-    metric_types: REINCARCERATION_COUNT REINCARCERATION_RATE
-    region: us-west1
 
   # Daily US_ND calculations
   - pipeline: supervision_metrics
