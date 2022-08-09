@@ -24,6 +24,11 @@ variable "oidc_audience" {
   default = ""
 }
 
+variable "ack_deadline_seconds" {
+  type    = number
+  default = 10
+}
+
 resource "google_storage_notification" "notification" {
   bucket         = var.bucket_name
   payload_format = "JSON_API_V1"
@@ -59,6 +64,9 @@ resource "google_pubsub_subscription" "subscription" {
       audience              = var.oidc_audience
     }
   }
+
+  ack_deadline_seconds = var.ack_deadline_seconds
+
 }
 moved {
   from = google_pubsub_subscription.example
