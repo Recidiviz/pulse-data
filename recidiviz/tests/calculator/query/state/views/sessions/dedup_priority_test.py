@@ -128,6 +128,8 @@ class SupervisionLevelDedupPriorityEnumCoverageTest(unittest.TestCase):
 
     def test_supervision_level(self) -> None:
         for level in StateSupervisionLevel:
+            if level == StateSupervisionLevel.INCARCERATED:
+                continue
             if level not in SUPERVISION_LEVEL_ORDERED_PRIORITY:
                 raise ValueError(
                     f"Missing {level} in "

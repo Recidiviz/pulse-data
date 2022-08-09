@@ -1402,7 +1402,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionLevel.INTERNAL_UNKNOWN,
             StateSupervisionLevel.PRESENT_WITHOUT_INFO,
             StateSupervisionLevel.DIVERSION,
-            StateSupervisionLevel.INCARCERATED,
             StateSupervisionLevel.IN_CUSTODY,
             StateSupervisionLevel.INTERSTATE_COMPACT,
             StateSupervisionLevel.LIMITED,
