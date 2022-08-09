@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.liberty_to_prison_transitions import (
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
@@ -122,7 +125,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_pr
 )
 
 # If adding a PRISON module specific view builder to this list, also add it to the PATHWAYS_PRISON export in products.yaml
-PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: Set[SelectedColumnsBigQueryViewBuilder] = {
+PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: Set[
+    WithMetadataQueryBigQueryViewBuilder[SelectedColumnsBigQueryViewBuilder]
+] = {
     LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER,

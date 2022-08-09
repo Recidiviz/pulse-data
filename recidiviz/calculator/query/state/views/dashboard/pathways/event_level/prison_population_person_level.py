@@ -18,6 +18,9 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
     filter_to_enabled_states,
@@ -73,41 +76,45 @@ PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE = """
     FROM filtered_rows
 """
 
-PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    columns=[
-        "state_code",
-        "gender",
-        "admission_reason",
-        "facility",
-        "age_group",
-        "race",
-        "state_id",
-        "full_name",
-        "age",
-    ],
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=PRISON_POPULATION_PERSON_LEVEL_VIEW_NAME,
-    view_query_template=PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE,
-    description=PRISON_POPULATION_PERSON_LEVEL_DESCRIPTION,
-    dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
-        [
+PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=state_specific_query_strings.get_pathways_incarceration_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        columns=[
+            "state_code",
             "gender",
             "admission_reason",
             "facility",
             "age_group",
             "race",
             "state_id",
-        ]
+            "full_name",
+            "age",
+        ],
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=PRISON_POPULATION_PERSON_LEVEL_VIEW_NAME,
+        view_query_template=PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE,
+        description=PRISON_POPULATION_PERSON_LEVEL_DESCRIPTION,
+        dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
+            [
+                "gender",
+                "admission_reason",
+                "facility",
+                "age_group",
+                "race",
+                "state_id",
+            ]
+        ),
+        dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+        materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        add_age_groups=add_age_groups(),
+        filter_to_enabled_states=filter_to_enabled_states(
+            state_code_column="pop.state_code",
+            enabled_states=get_pathways_enabled_states(),
+        ),
+        formatted_name=get_person_full_name("person.full_name"),
+        facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
     ),
-    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    add_age_groups=add_age_groups(),
-    filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="pop.state_code", enabled_states=get_pathways_enabled_states()
-    ),
-    formatted_name=get_person_full_name("person.full_name"),
-    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
 )
 
 if __name__ == "__main__":

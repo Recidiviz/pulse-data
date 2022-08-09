@@ -19,6 +19,9 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
     get_binned_time_period_months,
@@ -99,38 +102,41 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
     AND rn = 1
 """
 
-PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_NAME,
-    view_query_template=PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE,
-    description=PRISON_TO_SUPERVISION_TRANSITIONS_DESCRIPTION,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
-    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    outflow_compartments='("SUPERVISION")',
-    age_group=add_age_groups("sessions.age_end"),
-    enabled_states=str(tuple(get_pathways_enabled_states())),
-    facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
-    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    formatted_name=get_person_full_name("person.full_name"),
-    state_id_type=state_specific_query_strings.state_specific_external_id_type(
-        "sessions_data"
+PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=state_specific_query_strings.get_pathways_incarceration_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_NAME,
+        view_query_template=PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE,
+        description=PRISON_TO_SUPERVISION_TRANSITIONS_DESCRIPTION,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
+        dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
+        outflow_compartments='("SUPERVISION")',
+        age_group=add_age_groups("sessions.age_end"),
+        enabled_states=str(tuple(get_pathways_enabled_states())),
+        facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
+        state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        formatted_name=get_person_full_name("person.full_name"),
+        state_id_type=state_specific_query_strings.state_specific_external_id_type(
+            "sessions_data"
+        ),
+        transition_time_period=get_binned_time_period_months("transition_date"),
+        columns=[
+            "transition_date",
+            "year",
+            "month",
+            "person_id",
+            "age_group",
+            "age",
+            "gender",
+            "race",
+            "facility",
+            "full_name",
+            "time_period",
+            "state_id",
+            "state_code",
+        ],
     ),
-    transition_time_period=get_binned_time_period_months("transition_date"),
-    columns=[
-        "transition_date",
-        "year",
-        "month",
-        "person_id",
-        "age_group",
-        "age",
-        "gender",
-        "race",
-        "facility",
-        "full_name",
-        "time_period",
-        "state_id",
-        "state_code",
-    ],
 )
 
 if __name__ == "__main__":

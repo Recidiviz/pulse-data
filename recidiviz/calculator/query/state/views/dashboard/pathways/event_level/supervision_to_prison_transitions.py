@@ -19,6 +19,9 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
     first_known_location,
@@ -28,6 +31,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_pathways_supervision_last_updated_date,
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
@@ -113,47 +117,50 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
     SELECT {columns} FROM transitions
 """
 
-SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    columns=[
-        "state_code",
-        "person_id",
-        "transition_date",
-        "year",
-        "month",
-        "supervision_type",
-        "supervision_level",
-        "age",
-        "age_group",
-        "gender",
-        "race",
-        "supervising_officer",
-        "supervision_start_date",
-        "supervision_district",
-        "time_period",
-        "length_of_stay",
-    ],
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_NAME,
-    view_query_template=SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
-    description=SUPERVISION_TO_PRISON_TRANSITIONS_DESCRIPTION,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
-    age_group=add_age_groups("sessions.age_end"),
-    first_known_location=first_known_location("compartment_location_end"),
-    non_active_supervision_levels=non_active_supervision_levels(),
-    enabled_states=str(tuple(get_pathways_enabled_states())),
-    state_specific_supervision_level=pathways_state_specific_supervision_level(
-        "sessions.state_code",
-        "sessions.correctional_level_end",
+SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=get_pathways_supervision_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        columns=[
+            "state_code",
+            "person_id",
+            "transition_date",
+            "year",
+            "month",
+            "supervision_type",
+            "supervision_level",
+            "age",
+            "age_group",
+            "gender",
+            "race",
+            "supervising_officer",
+            "supervision_start_date",
+            "supervision_district",
+            "time_period",
+            "length_of_stay",
+        ],
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_NAME,
+        view_query_template=SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE,
+        description=SUPERVISION_TO_PRISON_TRANSITIONS_DESCRIPTION,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
+        age_group=add_age_groups("sessions.age_end"),
+        first_known_location=first_known_location("compartment_location_end"),
+        non_active_supervision_levels=non_active_supervision_levels(),
+        enabled_states=str(tuple(get_pathways_enabled_states())),
+        state_specific_supervision_level=pathways_state_specific_supervision_level(
+            "sessions.state_code",
+            "sessions.correctional_level_end",
+        ),
+        supervision_sessions_state_specific_supervision_level=pathways_state_specific_supervision_level(
+            "supervision_sessions.state_code",
+            "supervision_sessions.most_recent_active_supervision_level",
+        ),
+        transition_time_period=get_binned_time_period_months("transition_date"),
+        length_of_stay_months_grouped=length_of_stay_month_groups(
+            "DATE_DIFF(base_data.transition_date, base_data.supervision_start_date, MONTH)"
+        ),
+        dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     ),
-    supervision_sessions_state_specific_supervision_level=pathways_state_specific_supervision_level(
-        "supervision_sessions.state_code",
-        "supervision_sessions.most_recent_active_supervision_level",
-    ),
-    transition_time_period=get_binned_time_period_months("transition_date"),
-    length_of_stay_months_grouped=length_of_stay_month_groups(
-        "DATE_DIFF(base_data.transition_date, base_data.supervision_start_date, MONTH)"
-    ),
-    dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

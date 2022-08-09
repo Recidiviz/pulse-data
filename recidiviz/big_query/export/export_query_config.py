@@ -35,6 +35,9 @@ class ExportOutputFormatType(Enum):
     HEADERLESS_CSV = "headerless_csv"
     CSV = "csv"
     JSON = "json"
+    # TODO(#14474): Allow other types to be exported with metadata, ideally by delegating the output
+    # format type instead of hardcoding all the "_with_metadata" format types.
+    HEADERLESS_CSV_WITH_METADATA = "headerless_csv_with_metadata"
 
 
 @attr.s(frozen=True)

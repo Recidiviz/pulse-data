@@ -543,7 +543,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_EVENT_LEVEL",
         export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV,
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
         ],
     ),
     # Pathways and projections event level. This is a separate export type because our export
@@ -553,7 +553,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL",
         export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV,
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
         ],
     ),
     # Pathways prison event level. This is a separate export type because our export
@@ -563,7 +563,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON_EVENT_LEVEL",
         export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV,
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
         ],
     ),
     # Workflows Firestore ETL views

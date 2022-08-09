@@ -20,7 +20,13 @@ from datetime import date
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.big_query.with_metadata_query_big_query_view import (
+    WithMetadataQueryBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_pathways_supervision_last_updated_date,
+)
 from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projection_time_series_query_template import (
     population_projection_query,
 )
@@ -43,25 +49,28 @@ SUPERVISION_POPULATION_PROJECTION_QUERY_TEMPLATE = f"""
     FROM remapped_admission_reason
 """
 
-SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
-    dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=SUPERVISION_POPULATION_PROJECTION_VIEW_NAME,
-    view_query_template=SUPERVISION_POPULATION_PROJECTION_QUERY_TEMPLATE,
-    description=SUPERVISION_POPULATION_PROJECTION_DESCRIPTION,
-    columns=[
-        "state_code",
-        "year",
-        "month",
-        "simulation_tag",
-        "gender",
-        "admission_reason",
-        "total_population",
-        "total_population_min",
-        "total_population_max",
-    ],
-    population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    cur_year=str(date.today().year),
-    cur_month=str(date.today().month),
+SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
+    metadata_query=get_pathways_supervision_last_updated_date(),
+    delegate=SelectedColumnsBigQueryViewBuilder(
+        dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
+        view_id=SUPERVISION_POPULATION_PROJECTION_VIEW_NAME,
+        view_query_template=SUPERVISION_POPULATION_PROJECTION_QUERY_TEMPLATE,
+        description=SUPERVISION_POPULATION_PROJECTION_DESCRIPTION,
+        columns=[
+            "state_code",
+            "year",
+            "month",
+            "simulation_tag",
+            "gender",
+            "admission_reason",
+            "total_population",
+            "total_population_min",
+            "total_population_max",
+        ],
+        population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
+        cur_year=str(date.today().year),
+        cur_month=str(date.today().month),
+    ),
 )
 
 if __name__ == "__main__":

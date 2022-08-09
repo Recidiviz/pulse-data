@@ -54,6 +54,9 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
 from recidiviz.metrics.export.view_export_cloud_task_manager import (
     ViewExportCloudTaskManager,
 )
+from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
+    WithMetadataQueryBigQueryViewExporter,
+)
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
@@ -316,12 +319,16 @@ def get_delegate_export_map(
         metric_exporter = OptimizedMetricBigQueryViewExporter(
             bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client)
         )
+        with_metadata_query_exporter = WithMetadataQueryBigQueryViewExporter(
+            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        )
 
         delegate_export_map = {
             ExportOutputFormatType.CSV: csv_exporter,
             ExportOutputFormatType.HEADERLESS_CSV: csv_exporter,
             ExportOutputFormatType.JSON: json_exporter,
             ExportOutputFormatType.METRIC: metric_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: with_metadata_query_exporter,
         }
     else:
         delegate_export_map = {
@@ -329,6 +336,7 @@ def get_delegate_export_map(
             ExportOutputFormatType.HEADERLESS_CSV: override_view_exporter,
             ExportOutputFormatType.JSON: override_view_exporter,
             ExportOutputFormatType.METRIC: override_view_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: override_view_exporter,
         }
     return delegate_export_map
 
