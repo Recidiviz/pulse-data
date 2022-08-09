@@ -52,6 +52,7 @@ direct_ingest_status = Enum(
     enum_canonical_strings.direct_ingest_status_up_to_date,
     enum_canonical_strings.direct_ingest_status_flash_in_progress,
     enum_canonical_strings.direct_ingest_status_flash_completed,
+    enum_canonical_strings.direct_ingest_status_no_rerun_in_progress,
     name="direct_ingest_status",
 )
 

@@ -25,7 +25,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    VALID_START_OF_RERUN_STATUSES,
+    VALID_INITIAL_STATUSES,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -159,7 +159,11 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
     ) -> Optional[List[DirectIngestInstanceStatus]]:
         """Returns all the rows associated with a current rerun, if applicable."""
         most_recent_completed = self._get_most_recent_row_with_status(
-            session=session, status=DirectIngestStatus.FLASH_COMPLETED
+            session=session,
+            # Terminating status is UP_TO_DATE in PRIMARY and NO_RERUN_IN_PROGRESS in SECONDARY.
+            status=DirectIngestStatus.UP_TO_DATE
+            if self.ingest_instance == DirectIngestInstance.PRIMARY
+            else DirectIngestStatus.NO_RERUN_IN_PROGRESS,
         )
         if most_recent_completed:
             current_rerun_status_rows: List[
@@ -195,7 +199,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             current_rerun_start_status = one(
                 row.status
                 for row in current_rerun_status_rows
-                if row.status in VALID_START_OF_RERUN_STATUSES[self.ingest_instance]
+                if row.status in VALID_INITIAL_STATUSES[self.ingest_instance]
             )
 
             # If the rerun only involves regenerating and running ingest views, then the

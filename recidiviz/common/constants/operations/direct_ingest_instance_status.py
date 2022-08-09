@@ -47,6 +47,9 @@ class DirectIngestStatus(OperationsEnum):
     FLASH_COMPLETED = operations_enum_strings.direct_ingest_status_flash_completed
     UP_TO_DATE = operations_enum_strings.direct_ingest_status_up_to_date
     STALE_RAW_DATA = operations_enum_strings.direct_ingest_status_stale_raw_data
+    NO_RERUN_IN_PROGRESS = (
+        operations_enum_strings.direct_ingest_status_no_rerun_in_progress
+    )
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -87,4 +90,6 @@ _DIRECT_INGEST_INSTANCE_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     DirectIngestStatus.STALE_RAW_DATA: "Rows are added with this status (in SECONDARY instances only) if a) we are "
     "doing a rerun using SECONDARY raw data and b) the scheduler has found no more work to do and c) the PRIMARY "
     "raw data is more up to date than the SECONDARY raw data.",
+    DirectIngestStatus.NO_RERUN_IN_PROGRESS: "Rows are added with this status (in SECONDARY instances only) if no "
+    "rerun is in progress.",
 }
