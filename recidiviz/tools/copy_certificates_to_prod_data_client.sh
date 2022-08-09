@@ -97,3 +97,13 @@ copy_secret $STAGING_PROJECT state_v2_db_client_cert  "certs" "dev-state-client-
 copy_secret $PRODUCTION_PROJECT state_v2_db_client_key   "private" "state-client-key.pem"
 copy_secret $PRODUCTION_PROJECT state_v2_db_server_cert  "certs"   "state-server-ca.pem"
 copy_secret $PRODUCTION_PROJECT state_v2_db_client_cert  "certs"   "state-client-cert.pem"
+
+
+# Pathways certs:
+copy_secret $STAGING_PROJECT pathways_db_client_key   "private" "dev-pathways-client-key.pem"
+copy_secret $STAGING_PROJECT pathways_db_server_cert  "certs" "dev-pathways-server-ca.pem"
+copy_secret $STAGING_PROJECT pathways_db_client_cert  "certs" "dev-pathways-client-cert.pem"
+
+copy_secret $PRODUCTION_PROJECT pathways_db_client_key   "private" "pathways-client-key.pem"
+copy_secret $PRODUCTION_PROJECT pathways_db_server_cert  "certs"   "pathways-server-ca.pem"
+copy_secret $PRODUCTION_PROJECT pathways_db_client_cert  "certs"   "pathways-client-cert.pem"
