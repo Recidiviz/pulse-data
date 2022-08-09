@@ -75,6 +75,9 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
             len(object_group),
         )
         session.add_all(object_group)
+        session.execute(
+            "SELECT pg_catalog.setval(pg_get_serial_sequence('user_account', 'id'), MAX(id)) FROM user_account;"
+        )
         session.commit()
 
 
