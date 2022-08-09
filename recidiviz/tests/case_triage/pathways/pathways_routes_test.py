@@ -206,7 +206,8 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             response.get_json(),
             [
-                {"count": 2, "ageGroup": "20-25"},
+                {"count": 3, "ageGroup": "20-25"},
+                {"count": 1, "ageGroup": "30-34"},
                 {"count": 4, "ageGroup": "60+"},
             ],
         )
@@ -360,7 +361,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(
             [
                 {"count": 1, "race": "BLACK"},
-                {"count": 3, "race": "WHITE"},
+                {"count": 4, "race": "WHITE"},
             ],
             response.get_json(),
         )
@@ -377,9 +378,9 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             [
-                {"count": 1, "race": "ASIAN"},
+                {"count": 2, "race": "ASIAN"},
                 {"count": 2, "race": "BLACK"},
-                {"count": 2, "race": "WHITE"},
+                {"count": 3, "race": "WHITE"},
             ],
             response.get_json(),
         )
@@ -395,9 +396,9 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             [
-                {"count": 1, "race": "ASIAN"},
+                {"count": 2, "race": "ASIAN"},
                 {"count": 2, "race": "BLACK"},
-                {"count": 3, "race": "WHITE"},
+                {"count": 4, "race": "WHITE"},
             ],
             response.get_json(),
         )

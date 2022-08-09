@@ -81,30 +81,32 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         return {
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 5},
+                {"gender": "MALE", "count": 6},
+                {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 2},
+                {"age_group": "20-25", "count": 3},
+                {"age_group": "30-34", "count": 1},
                 {"age_group": "60+", "count": 4},
             ],
             Dimension.RACE: [
-                {"race": "ASIAN", "count": 1},
+                {"race": "ASIAN", "count": 2},
                 {"race": "BLACK", "count": 2},
-                {"race": "WHITE", "count": 3},
+                {"race": "WHITE", "count": 4},
             ],
             Dimension.JUDICIAL_DISTRICT: [
-                {"judicial_district": "D1", "count": 4},
-                {"judicial_district": "D2", "count": 1},
+                {"judicial_district": "D1", "count": 5},
+                {"judicial_district": "D2", "count": 2},
                 {"judicial_district": "D3", "count": 1},
             ],
             Dimension.PRIOR_LENGTH_OF_INCARCERATION: [
                 {
                     "prior_length_of_incarceration": "months_0_3",
-                    "count": 5,
+                    "count": 6,
                 },
                 {
                     "prior_length_of_incarceration": "months_3_6",
-                    "count": 1,
+                    "count": 2,
                 },
             ],
         }
@@ -120,7 +122,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
             ),
         )
 
-        self.test.assertEqual([{"gender": "MALE", "count": 3}], results)
+        self.test.assertEqual([{"gender": "MALE", "count": 4}], results)
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is dropped from the counts"""
@@ -133,7 +135,12 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 4}], results
+            [
+                {"gender": "FEMALE", "count": 1},
+                {"gender": "MALE", "count": 5},
+                {"gender": "NON_BINARY", "count": 1},
+            ],
+            results,
         )
 
 

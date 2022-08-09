@@ -108,7 +108,7 @@ PrisonToSupervisionTransitionsOverTime:
   query_builder_class: OverTimeMetricQueryBuilder
   query_builder_options:
     counting_column: person_id
-    date_column: transition_date
+    date_column: month_timestamp
   dimension_mappings:
     age_group: FILTER
     facility: FILTER
