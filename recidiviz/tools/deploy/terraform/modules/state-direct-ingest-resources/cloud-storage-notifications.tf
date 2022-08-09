@@ -23,6 +23,7 @@ module "primary_ingest" {
   service_account_email = var.storage_notification_service_account_email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = var.storage_notification_oidc_audience
+  ack_deadline_seconds = 20
 }
 
 module "secondary_ingest" {

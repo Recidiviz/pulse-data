@@ -20,9 +20,10 @@ import logging
 from concurrent import futures
 from enum import Enum
 from http import HTTPStatus
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 from flask import Blueprint
+from google.api_core import retry
 from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
@@ -77,6 +78,14 @@ TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 # https://github.com/googleapis/python-storage/issues/253
 MAX_WORKERS = 10
 
+
+def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
+    """ "A function that will determine whether we should retry a given Google exception."""
+    return retry.if_transient_error(exception) or retry.if_exception_type(
+        exceptions.Conflict
+    )(exception)
+
+
 view_update_manager_blueprint = Blueprint("view_update", __name__)
 
 
@@ -85,6 +94,7 @@ view_update_manager_blueprint = Blueprint("view_update", __name__)
 #  and will be deleted once we put the BigQuery view update into the DAG.
 @view_update_manager_blueprint.route("/update_all_managed_views", methods=["POST"])
 @requires_gae_auth
+@retry.Retry(predicate=retry_predicate)
 def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
     create_managed_dataset_and_deploy_views_for_view_builders(
