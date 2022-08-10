@@ -22,8 +22,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_early_discharge_date_within_30_days,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
-    early_termination_date_within_30_days,
     implied_valid_early_termination_sentence_type,
     implied_valid_early_termination_supervision_level,
     not_in_active_revocation_status,
@@ -31,6 +33,8 @@ from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in ND is eligible
 to have early termination paperwork completed for them in preparation for an early
@@ -43,9 +47,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        early_termination_date_within_30_days.VIEW_BUILDER,
+        supervision_early_discharge_date_within_30_days.VIEW_BUILDER,
         implied_valid_early_termination_sentence_type.VIEW_BUILDER,
         implied_valid_early_termination_supervision_level.VIEW_BUILDER,
         not_in_active_revocation_status.VIEW_BUILDER,
     ],
 )
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()

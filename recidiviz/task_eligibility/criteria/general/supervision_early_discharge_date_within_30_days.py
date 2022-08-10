@@ -14,46 +14,53 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone in ND
-is within 30 days of their early termination date or has passed their early termination
+"""Defines a criteria span view that shows spans of time during which someone is within
+30 days of their early discharge date or has passed their early discharge
 date.
 """
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    state_task_deadline_eligible_date_updates_cte,
+    task_deadline_critical_date_update_datetimes_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ND_EARLY_TERMINATION_DATE_WITHIN_30_DAYS"
+_CRITERIA_NAME = "SUPERVISION_EARLY_DISCHARGE_DATE_WITHIN_30_DAYS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone in ND is within 30 days of their supervision early termination date, or has
-passed their early termination date."""
+someone is within 30 days of their supervision early discharge eligible date, or has
+passed their early discharge eligible date."""
 
+_DAYS_BEFORE_ELIGIBLE_DATE = 30
 _QUERY_TEMPLATE = f"""
 /*{{description}}*/
-WITH 
-{state_task_deadline_eligible_date_updates_cte(StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION)}
--- TODO(#14317): Actually build criteria spans here.
+WITH
+{task_deadline_critical_date_update_datetimes_cte(
+    task_type=StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,
+    critical_date_column='eligible_date')
+},
+{critical_date_has_passed_spans_cte(
+    meets_criteria_leading_window_days=_DAYS_BEFORE_ELIGIBLE_DATE
+)}
 SELECT
     state_code,
     person_id,
-    CAST(update_datetime AS DATE) AS start_date,
-    NULL AS end_date,
-    False AS meets_criteria,
-    NULL AS reason
-FROM task_deadlines;
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+FROM critical_date_has_passed_spans
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        state_code=StateCode.US_ND,
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
