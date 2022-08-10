@@ -2,7 +2,7 @@
 """clear_mo_supoff_from_person
 
 Revision ID: b23f1567bce5
-Revises: fdca0d088c46
+Revises: 5af027f85d2e
 Create Date: 2022-08-09 10:50:33.020600
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 from recidiviz.utils.string import StrictStringFormatter
 
 revision = "b23f1567bce5"
-down_revision = "fdca0d088c46"
+down_revision = "5af027f85d2e"
 branch_labels = None
 depends_on = None
 
