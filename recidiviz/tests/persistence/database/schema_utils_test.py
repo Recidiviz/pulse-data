@@ -186,6 +186,7 @@ def test_get_all_table_classes() -> None:
         "spreadsheet",
     ]
     pathways_table_names = [
+        "metric_metadata",
         "liberty_to_prison_transitions",
         "prison_population_over_time",
         "prison_population_by_dimension",

@@ -43,6 +43,9 @@ PathwaysBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="PathwaysBase"
 )
 
+# Key to pass to __table_args__["info"] to keep the table up-to-date with alembic migrations.
+RUN_MIGRATIONS = "run_migrations"
+
 
 def build_covered_indexes(
     *,
@@ -72,6 +75,18 @@ class TransitionsOverTimeMixin:
     @hybrid_property
     def month_timestamp(self) -> DDLElement:
         return func.date_trunc("month", func.cast(self.transition_date, TIMESTAMP))
+
+
+class MetricMetadata(PathwaysBase):
+    """Table storing metadata about our metrics."""
+
+    __tablename__ = "metric_metadata"
+    # Other tables are deleted/recreated at import time, but this table needs to be kept up to date
+    # via alembic migrations.
+    __table_args__ = {"info": {RUN_MIGRATIONS: True}}
+
+    metric = Column(String, primary_key=True, nullable=False)
+    last_updated = Column(Date, nullable=False)
 
 
 class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
