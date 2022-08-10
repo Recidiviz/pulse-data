@@ -23,6 +23,7 @@ from typing import Tuple
 
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
+from sqlalchemy import delete
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
@@ -36,6 +37,7 @@ from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
@@ -46,9 +48,11 @@ from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
@@ -117,13 +121,32 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         )
     )
 
+    database_key = PathwaysDatabaseManager.database_key_for_state(state_code)
     import_gcs_csv_to_cloud_sql(
-        PathwaysDatabaseManager.database_key_for_state(state_code),
+        database_key,
         db_entity,
         csv_path,
         view_builder.delegate.columns,
     )
     logging.info("View (%s) successfully imported", view_builder.view_id)
+
+    gcsfs = GcsfsFactory.build()
+    object_metadata = gcsfs.get_metadata(csv_path) or {}
+    last_updated = object_metadata.get("last_updated", None)
+    if last_updated:
+        with SessionFactory.using_database(database_key=database_key) as session:
+            # Replace any existing entries with this state code + metric with the new one
+            session.execute(
+                delete(MetricMetadata).where(
+                    MetricMetadata.metric == db_entity.__name__
+                )
+            )
+            session.add(
+                MetricMetadata(
+                    metric=db_entity.__name__,
+                    last_updated=last_updated,
+                )
+            )
 
     metric_cache = PathwaysMetricCache.build(_FakeStateCode(state_code))
     for metric in get_metrics_for_entity(db_entity):

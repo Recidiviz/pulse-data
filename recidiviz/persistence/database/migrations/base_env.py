@@ -17,6 +17,7 @@
 """Helpers for running alembic migrations from the Alembic env.py file."""
 
 import os
+from typing import Any
 
 import alembic
 from alembic import context
@@ -51,7 +52,7 @@ def get_sqlalchemy_url() -> str:
     return _get_sqlalchemy_url(use_ssl=bool(use_ssl))
 
 
-def run_migrations_offline(target_metadata: DeclarativeMeta) -> None:
+def run_migrations_offline(target_metadata: DeclarativeMeta, **kwargs: Any) -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -70,13 +71,14 @@ def run_migrations_offline(target_metadata: DeclarativeMeta) -> None:
         transaction_per_migration=True,
         literal_binds=True,
         compare_type=True,
+        **kwargs,
     )
 
     context.run_migrations()
 
 
 def run_migrations_online(
-    target_metadata: DeclarativeMeta, config: alembic.config.Config
+    target_metadata: DeclarativeMeta, config: alembic.config.Config, **kwargs: Any
 ) -> None:
     """Run migrations in 'online' mode.
 
@@ -94,6 +96,7 @@ def run_migrations_online(
             target_metadata=target_metadata,
             transaction_per_migration=True,
             compare_type=True,
+            **kwargs,
         )
 
         context.run_migrations()
