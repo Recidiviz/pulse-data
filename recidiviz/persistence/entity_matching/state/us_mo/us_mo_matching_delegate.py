@@ -16,17 +16,11 @@
 # =============================================================================
 """Contains logic for US_MO specific entity matching overrides."""
 
-import logging
-from typing import List
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
-)
-from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils import (
-    set_current_supervising_officer_from_supervision_periods,
 )
 
 
@@ -35,13 +29,3 @@ class UsMoMatchingDelegate(BaseStateMatchingDelegate):
 
     def __init__(self, ingest_metadata: IngestMetadata):
         super().__init__(StateCode.US_MO.value.lower(), ingest_metadata)
-
-    def perform_match_postprocessing(
-        self, matched_persons: List[schema.StatePerson]
-    ) -> None:
-        logging.info(
-            "[Entity matching] Set current / last supervising officer from supervision periods."
-        )
-        set_current_supervising_officer_from_supervision_periods(
-            matched_persons, field_index=self.field_index
-        )
