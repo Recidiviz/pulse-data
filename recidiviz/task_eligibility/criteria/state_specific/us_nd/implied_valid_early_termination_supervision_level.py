@@ -19,14 +19,21 @@ someone in ND has a valid supervision level to qualify them for supervision earl
 termination, as inferred by the presence of a set early termination date in
 docstars_offenders.
 """
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_exists_spans_cte,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    state_task_deadline_eligible_date_updates_cte,
+    task_deadline_critical_date_update_datetimes_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,19 +45,39 @@ someone in ND has a valid supervision level to qualify them for supervision earl
 termination, as inferred by the presence of a set early termination date in
 docstars_offenders."""
 
+
 _QUERY_TEMPLATE = f"""
 /*{{description}}*/
-WITH 
-{state_task_deadline_eligible_date_updates_cte(StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION)}
--- TODO(#14317): Actually build criteria spans here.
+WITH
+{task_deadline_critical_date_update_datetimes_cte(
+    task_type=StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,
+    critical_date_column='eligible_date')
+},
+{critical_date_exists_spans_cte()}
 SELECT
-    state_code,
-    person_id,
-    CAST(update_datetime AS DATE) AS start_date,
-    NULL AS end_date,
-    False AS meets_criteria,
-    NULL AS reason
-FROM task_deadlines;
+    et_criteria.state_code,
+    et_criteria.person_id,
+    et_criteria.start_date,
+    et_criteria.end_date,
+    -- Mark this span as meeting the criteria if the eligible date is set
+    critical_date_exists AS meets_criteria,
+    TO_JSON(
+        STRUCT(supervision_level AS supervision_level)
+    ) AS reason,
+FROM critical_date_exists_spans et_criteria
+-- Join all the overlapping supervision level sessions
+LEFT JOIN `{{project_id}}.{{sessions_data}}.supervision_level_sessions_materialized` sup_level
+    ON sup_level.state_code = et_criteria.state_code
+    AND sup_level.person_id = et_criteria.person_id
+    AND sup_level.start_date < {nonnull_end_date_clause('et_criteria.end_date')}
+    AND et_criteria.start_date < {nonnull_end_date_clause('sup_level.end_date')}
+-- Prioritize the latest non-null supervision level
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY state_code, person_id, start_date
+    ORDER BY
+        supervision_level IS NOT NULL DESC,
+        {nonnull_end_date_clause('sup_level.end_date')} DESC
+) = 1
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -60,6 +87,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        sessions_data=SESSIONS_DATASET,
     )
 )
 

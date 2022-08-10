@@ -20,15 +20,18 @@ someone in ND has a valid sentence type to qualify them for supervision early
 termination, as inferred by the presence of a set early termination date in
 docstars_offenders.
 """
-
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_exists_spans_cte,
+)
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    state_task_deadline_eligible_date_updates_cte,
+    task_deadline_critical_date_update_datetimes_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -43,17 +46,41 @@ docstars_offenders.
 
 _QUERY_TEMPLATE = f"""
 /*{{description}}*/
-WITH 
-{state_task_deadline_eligible_date_updates_cte(StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION)}
--- TODO(#14317): Actually build criteria spans here.
+WITH
+{task_deadline_critical_date_update_datetimes_cte(
+    task_type=StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,
+    critical_date_column='eligible_date')
+},
+{critical_date_exists_spans_cte()}
 SELECT
-    state_code,
-    person_id,
-    CAST(update_datetime AS DATE) AS start_date,
-    NULL AS end_date,
-    False AS meets_criteria,
-    NULL AS reason
-FROM task_deadlines;
+    et_criteria.state_code,
+    et_criteria.person_id,
+    et_criteria.start_date,
+    et_criteria.end_date,
+    -- Mark this span as meeting the criteria if the eligible date is set and the
+    -- sentence type is not interstate compact parole
+    critical_date_exists
+        AND sup_type.supervision_type_raw_text != "IC PAROLE"
+    AS meets_criteria,
+    TO_JSON(
+        STRUCT(sup_type.supervision_type_raw_text AS supervision_type)
+    ) AS reason,
+FROM critical_date_exists_spans et_criteria
+-- Join all the overlapping supervision type sessions
+LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sup_type
+    ON sup_type.state_code = et_criteria.state_code
+    AND sup_type.person_id = et_criteria.person_id
+    AND sup_type.start_date < {nonnull_end_date_clause('et_criteria.end_date')}
+    AND et_criteria.start_date < {nonnull_end_date_clause('sup_type.termination_date')}
+-- Prioritize the latest non-parole supervision type
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY state_code, person_id, et_criteria.start_date
+    ORDER BY
+        -- Prioritize the supervision type that is not parole for dual-sentence clients
+        sup_type.supervision_type LIKE "%PAROLE",
+        {nonnull_end_date_clause('sup_type.termination_date')} DESC,
+        sup_type.start_date DESC
+) = 1
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

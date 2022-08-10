@@ -21,6 +21,8 @@
 
 from typing import List, Optional, Set
 
+MAGIC_END_DATE = "9999-12-31"
+
 
 def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
     """Returns a WHERE clause to filter out rows that are missing values for any of the
@@ -248,3 +250,13 @@ def non_active_supervision_levels() -> str:
     return (
         '("EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN", "IN_CUSTODY", "WARRANT", "ABSCONDED")'
     )
+
+
+def nonnull_end_date_clause(column_name: str) -> str:
+    """Convert NULL end dates to dates far in the future to help with the date logic"""
+    return f'COALESCE({column_name}, "{MAGIC_END_DATE}")'
+
+
+def revert_nonnull_end_date_clause(column_name: str) -> str:
+    """Convert end dates far in the future to NULL"""
+    return f'IF({column_name} = "{MAGIC_END_DATE}", NULL, {column_name})'

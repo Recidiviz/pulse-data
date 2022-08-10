@@ -20,26 +20,21 @@ normalized_state dataset.
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 
 
-def state_task_deadline_eligible_date_updates_cte(task_type: StateTaskType) -> str:
-    """Returns a CTE that, for each StateTaskDeadline with the provided |task_type|,
-    returns all rows when the eligible_date changed for a given person.
+def task_deadline_critical_date_update_datetimes_cte(
+    task_type: StateTaskType, critical_date_column: str
+) -> str:
+    """Returns a CTE that selects all StateTaskDeadline rows with the provided
+    |task_type] and renames the |critical_date_column| to `critical_date` for standard
+    processing.
     """
-    return f"""task_deadlines AS (
-    SELECT * EXCEPT(new_span)
-    FROM (
+    if critical_date_column not in {"eligible_date", "due_date"}:
+        raise ValueError(f"Unsupported critical date column {critical_date_column}")
+    return f"""critical_date_update_datetimes AS (
         SELECT
             state_code,
             person_id,
-            eligible_date,
-            update_datetime,
-            COALESCE(
-                COALESCE(eligible_date, "9999-12-31") != LAG(COALESCE(eligible_date, "9999-12-31")) OVER (
-                    PARTITION BY person_id ORDER BY update_datetime ASC
-                ), 
-                TRUE
-            ) AS new_span,
+            {critical_date_column} AS critical_date,
+            update_datetime
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_task_deadline`
         WHERE task_type = '{task_type.value}'
-        QUALIFY new_span
-    )
-)"""
+    )"""

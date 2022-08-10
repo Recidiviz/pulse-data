@@ -30,7 +30,6 @@ _DESCRIPTION = """Selects all spans of time in which a person is actively superv
 as tracked by data in our `sessions` dataset.
 """
 
-# TODO(#14317): Confirm that this is the correct query for ND ET TES.
 _QUERY_TEMPLATE = """
 /*{description}*/
 SELECT DISTINCT
