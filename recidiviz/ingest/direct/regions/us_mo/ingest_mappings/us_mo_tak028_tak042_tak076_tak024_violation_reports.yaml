@@ -1,20 +1,48 @@
-key_mappings:
-  BY_DV: state_supervision_violation.violation_date
-
-child_key_mappings:
-  BY_VE: state_supervision_violation_response.response_date
-  BY_VRT: state_supervision_violation_response.response_subtype
-
-ancestor_keys:
-  BY_DOC: state_person.state_person_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak028_tak042_tak076_tak024_violation_reports` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - BY_DOC
+  - BY_CYC
+  - BY_VSN
+  - BY_VE
+  - BY_VWI
+  - BY_VRT
+  - BY_VSI
+  - BY_VPH
+  - BY_VBG
+  - BY_VA
+  - BY_VIC
+  - BY_DAX
+  - BY_VC
+  - BY_VD
+  - BY_VIH
+  - BY_VIM
+  - BY_VIL
+  - BY_VOR
+  - BY_PIN
+  - BY_PLN
+  - BY_PON
+  - BY_RCA
+  - BY_VTY
+  - BY_DV
+  - BY_UID
+  - BY_UIU
+  - VIOLATED_CONDITIONS
+  - CZ_DOC
+  - CZ_CYC
+  - CZ_SEO
+  - CZ_FSO
+  - FINAL_FORMED_CREATE_DATE
+  - FINAL_FORMED_UPDATE_DATE
+  - BDGNO
+  - CLSTTL
+  - LNAME
+  - FNAME
+  - MINTL
+unused_columns:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - VIOLATED_CONDITIONS #  List of conditions violated - Handled manually in controller
-  - BY_CYC # Offender Cycle Number - Handled manually in the controller
-  - BY_VSN # Violation Sequence Number - Handled manually in the controller
-  - BY_VTY # Violation Types - Handled manually in the controller
-  - BY_VOR # Violation Report Recommendations - Handled manually in the controller
   - BY_VWI # Unused - Violation warrant flag
   - BY_VSI # Unused - Advised of Statements
   - BY_VPH # Unused - Preliminary hearing
@@ -33,15 +61,112 @@ keys_to_ignore:
   - BY_RCA # Unused - Requires court action
   - BY_UID
   - BY_UIU
-  - CZ_DOC # Duplicate of BY_DOC - Handled manually in controller
-  - CZ_CYC # Duplicate of BY_CYC - Handled manually in controller
-  - CZ_SEO # Sentence Key Sequence Number - Handled manually in controller
-  - CZ_FSO # Field Sentence Sequence Number - Handled manually in controller
-  - FINAL_FORMED_CREATE_DATE # Finally formed create date (E6_* cols) - Handled manually in controller
+  - CZ_DOC # Duplicate of BY_DOC
+  - CZ_CYC # Duplicate of BY_CYC
+  - CZ_SEO # Sentence Key Sequence Number
+  - CZ_FSO # Field Sentence Sequence Number
   - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
-  # TODO(#9376): This should be used in the v2 YAML mappings file when we migrate.
-  - BDGNO # Employee Id - Handled manually in the controller
-  - LNAME # Employee Last Name - Handled manually in the controller
-  - FNAME # Employee First Name - Handled manually in the controller
-  - MINTL # Employee Middle Initial - Handled manually in the controller
-  - CLSTTL # Job role - Handled manually in controller
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: BY_DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - BY_DOC
+                - BY_CYC
+                - $literal("R")
+                - BY_VSN
+          violation_date: BY_DV
+          supervision_violation_types:
+            - $foreach:
+                $iterable: BY_VTY
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - "A"
+                          StateSupervisionViolationType.ESCAPED:
+                            - "E"
+                          StateSupervisionViolationType.FELONY:
+                            - "F"
+                          StateSupervisionViolationType.MISDEMEANOR:
+                            - "M"
+                          StateSupervisionViolationType.MUNICIPAL:
+                            - "O"
+                          StateSupervisionViolationType.TECHNICAL:
+                            - "T"
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable: VIOLATED_CONDITIONS
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition: $iter_item
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - BY_DOC
+                      - BY_CYC
+                      - $literal("R")
+                      - BY_VSN
+                deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                decision_agents:
+                  - StateAgent:
+                      external_id: BDGNO
+                      agent_type:
+                        $enum_mapping:
+                          $raw_text: CLSTTL
+                          $custom_parser: us_mo_custom_enum_parsers.parse_supervising_officer_type
+                      full_name:
+                        $person_name:
+                          $given_names: FNAME
+                          $middle_names: MINTL
+                          $surname: LNAME
+                is_draft:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_is_draft_on_response
+                    $args:
+                      final_formed_create_date: FINAL_FORMED_CREATE_DATE
+                      response_date: BY_VE
+                response_date: BY_VE
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_subtype: BY_VRT
+                supervision_violation_response_decisions:
+                  - $foreach:
+                      $iterable: BY_VOR
+                      $result:
+                        StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - "CO" # Court Ordered Detention Sanction
+                                StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED:
+                                  - "RN" # Court Ordered Detention Sanction  # SIS revoke to SES
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - "I"
+                                  - "R"
+                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                  - "C"
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - "D"
+                                StateSupervisionViolationResponseDecision.EXTENSION:
+                                  - "E"
+                                StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                  - "T"
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "A"
+                                StateSupervisionViolationResponseDecision.SUSPENSION:
+                                  - "S"
+                              $ignore:
+                                - "NOREC"

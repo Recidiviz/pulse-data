@@ -314,24 +314,10 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._set_finally_formed_date_on_response,
         ]
 
-        tak028_tak042_tak076_tak024_violation_reports_row_processors: List[Callable] = [
-            self._gen_violation_response_type_posthook(
-                StateSupervisionViolationResponseType.VIOLATION_REPORT
-            ),
-            self._set_deciding_body_as_supervising_officer,
-            self._set_violated_conditions_on_violation,
-            self._set_violation_type_on_violation,
-            self._set_recommendations_on_violation_response,
-            self._set_violation_response_id_from_violation,
-            self._set_finally_formed_date_on_response,
-            self._set_decision_agent,
-        ]
-
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": incarceration_period_row_posthooks,
-            "tak028_tak042_tak076_tak024_violation_reports": tak028_tak042_tak076_tak024_violation_reports_row_processors,
             "tak291_tak292_tak024_citations": tak291_tak292_tak024_citations_row_processors,
         }
 
