@@ -94,3 +94,28 @@ tr.metadata-table-row > td.ant-table-cell > div {
     border-right-width: 0;
   }
 }
+/* Actions and Summaries*/
+.ingest-status-cell-green {
+  color: #ffffff;
+  background-color: #389e0d;
+  height: 30px;
+  width: 450px;
+  text-align: center;
+
+
+}
+.ingest-status-cell-grey {
+  color: #ffffff;
+  background-color: #a9a9a9;
+  height: 30px;
+  width: 450px;
+  text-align: center;
+}
+.ingest-status-cell-yellow {
+  color: #000000;
+  background-color: #ffff00;
+  height: 30px;
+  width: 450px;
+  text-align: center;
+
+}
