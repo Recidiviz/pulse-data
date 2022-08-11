@@ -14,17 +14,174 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { PageHeader, Table, Button, Input, Space, Spin } from "antd";
+import {
+  PageHeader,
+  Table,
+  Button,
+  Form,
+  Input,
+  message,
+  Modal,
+  Space,
+  Spin,
+  Alert,
+} from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { SearchOutlined } from "@ant-design/icons";
+import Draggable from "react-draggable";
 import * as React from "react";
-import { getStateUserPermissions } from "../AdminPanelAPI";
+import { useRef, useState } from "react";
+import { getStateUserPermissions, createNewUser } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
 
-const StateUserPermissionsView = (): JSX.Element => {
-  const { loading, data } = useFetchedDataJSON<StateUserPermissionsResponse[]>(
-    getStateUserPermissions
+const CreateAddUserForm = ({
+  visible,
+  onCreate,
+  onCancel,
+}: {
+  visible: boolean;
+  onCreate: (arg0: StateUserPermissionsResponse) => Promise<void>;
+  onCancel: () => void;
+}) => {
+  const [form] = Form.useForm();
+
+  // make modal draggable
+  const [disabled, setDisabled] = useState(false);
+  const [bounds, setBounds] = useState({
+    left: 0,
+    top: 0,
+    bottom: 0,
+    right: 0,
+  });
+  const dragRef = useRef<HTMLInputElement>(null);
+  const onStart = (_event: unknown, uiData: { x: number; y: number }) => {
+    const { clientWidth, clientHeight } = window.document.documentElement;
+    const targetRect = dragRef.current?.getBoundingClientRect();
+    if (!targetRect) {
+      return;
+    }
+    setBounds({
+      left: -targetRect.left + uiData.x,
+      right: clientWidth - (targetRect.right - uiData.x),
+      top: -targetRect.top + uiData.y,
+      bottom: clientHeight - (targetRect.bottom - uiData.y),
+    });
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      title={
+        <div
+          style={{
+            width: "100%",
+            cursor: "move",
+          }}
+          onMouseOver={() => {
+            if (disabled) {
+              setDisabled(false);
+            }
+          }}
+          onMouseOut={() => {
+            setDisabled(true);
+          }}
+          onFocus={() => undefined}
+          onBlur={() => undefined}
+        >
+          Add a New User
+        </div>
+      }
+      okText="Add"
+      cancelText="Cancel"
+      onCancel={onCancel}
+      onOk={() => {
+        form.validateFields().then((values) => {
+          form.resetFields();
+          onCreate(values);
+        });
+      }}
+      modalRender={(modal) => (
+        <Draggable
+          disabled={disabled}
+          bounds={bounds}
+          onStart={(event, uiData) => onStart(event, uiData)}
+        >
+          <div ref={dragRef}>{modal}</div>
+        </Draggable>
+      )}
+    >
+      <Alert
+        message="Caution!"
+        description="This form should only be used by members of the Polaris team."
+        type="warning"
+        showIcon
+      />
+      <br />
+      <Form
+        form={form}
+        layout="horizontal"
+        onFinish={onCreate}
+        labelCol={{ span: 6 }}
+      >
+        <Form.Item
+          name="emailAddress"
+          label="Email Address"
+          rules={[
+            {
+              required: true,
+              message: "Please input the user's email address.",
+            },
+            { type: "email", message: "Please enter a valid email." },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="stateCode"
+          label="State"
+          rules={[
+            {
+              required: true,
+              message: "Please input the user's state code.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="role"
+          label="Role"
+          rules={[
+            {
+              required: true,
+              message: "Please input the user's role.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item name="externalId" label="External ID">
+          <Input />
+        </Form.Item>
+        <Form.Item name="district" label="District">
+          <Input />
+        </Form.Item>
+        <Form.Item name="firstName" label="First Name">
+          <Input />
+        </Form.Item>
+        <Form.Item name="lastName" label="Last Name">
+          <Input />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
+};
+
+const StateUserPermissionsView = (): JSX.Element => {
+  const { loading, data, setData } = useFetchedDataJSON<
+    StateUserPermissionsResponse[]
+  >(getStateUserPermissions);
+  const [visible, setVisible] = useState(false);
 
   if (loading || !data) {
     return (
@@ -33,6 +190,39 @@ const StateUserPermissionsView = (): JSX.Element => {
       </div>
     );
   }
+
+  const onAdd = async ({
+    emailAddress,
+    stateCode,
+    externalId,
+    role,
+    district,
+    firstName,
+    lastName,
+  }: StateUserPermissionsResponse) => {
+    try {
+      const response = await createNewUser(
+        emailAddress,
+        stateCode,
+        externalId,
+        role,
+        district,
+        firstName,
+        lastName
+      );
+      if (!response.ok) {
+        const { error } = await response.json();
+        message.error(`An error occurred: ${error}`);
+        return;
+      }
+      const user = await response.json();
+      setData([...data, user]);
+      setVisible(false);
+      message.success(`"${emailAddress}" added!`);
+    } catch (err) {
+      message.error(`An error occurred: ${err}`);
+    }
+  };
 
   const getColumnSearchProps = (dataIndex: string) => ({
     filterDropdown: ({
@@ -94,13 +284,13 @@ const StateUserPermissionsView = (): JSX.Element => {
   const columns = [
     {
       title: "Email",
-      dataIndex: "restrictedUserEmail",
+      dataIndex: "emailAddress",
       width: 250,
       sorter: (
         a: StateUserPermissionsResponse,
         b: StateUserPermissionsResponse
-      ) => a.restrictedUserEmail.localeCompare(b.restrictedUserEmail),
-      ...getColumnSearchProps("restrictedUserEmail"),
+      ) => a.emailAddress.localeCompare(b.emailAddress),
+      ...getColumnSearchProps("emailAddress"),
     },
     {
       title: "First Name",
@@ -205,7 +395,9 @@ const StateUserPermissionsView = (): JSX.Element => {
       title: "Blocked",
       dataIndex: "blocked",
       render: (_: string, record: StateUserPermissionsResponse) => {
-        return record.blocked.toString();
+        if (record.blocked != null) {
+          return record.blocked.toString();
+        }
       },
     },
   ];
@@ -213,6 +405,21 @@ const StateUserPermissionsView = (): JSX.Element => {
   return (
     <>
       <PageHeader title="State User Permissions" />
+      <Button
+        onClick={() => {
+          setVisible(true);
+        }}
+      >
+        Add User
+      </Button>
+      <CreateAddUserForm
+        visible={visible}
+        onCreate={onAdd}
+        onCancel={() => {
+          setVisible(false);
+        }}
+      />
+      <br /> <br />
       <Table dataSource={data} columns={columns} scroll={{ x: 1700, y: 700 }} />
     </>
   );

@@ -24,7 +24,9 @@ from typing import Any, Dict, List, Mapping, Tuple, Union
 
 import sqlalchemy.orm.exc
 from flask import Blueprint, Response, jsonify, request
+from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
@@ -58,6 +60,7 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.utils.string import StrictStringFormatter
+from recidiviz.utils.types import assert_type
 
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
 
@@ -405,7 +408,7 @@ def users() -> Union[str, Response]:
         return jsonify(
             [
                 {
-                    "restrictedUserEmail": user.email_address,
+                    "emailAddress": user.email_address,
                     "stateCode": user.state_code,
                     "externalId": user.external_id,
                     "role": user.role,
@@ -425,5 +428,137 @@ def users() -> Union[str, Response]:
                     "blocked": user.blocked,
                 }
                 for user in user_info
+            ]
+        )
+
+
+@auth_endpoint_blueprint.route("/users/<email>", methods=["POST"])
+@requires_gae_auth
+def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Adds a new user to UserOverride and returns the created user.
+    Returns an error message if a user already exists with that email address.
+    """
+    try:
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            state_code = assert_type(
+                request_json.get("stateCode"), str
+            )  # required field for new user, non-nullable
+            external_id = request_json.get("externalId")
+            role = assert_type(
+                request_json.get("role"), str
+            )  # required field for new user, non-nullable
+            district = request_json.get("district")
+            first_name = request_json.get("firstName")
+            last_name = request_json.get("lastName")
+            if (
+                session.query(Roster).filter(Roster.email_address == email).first()
+                is not None
+            ):
+                return (
+                    "A user with this email already exists in Roster.",
+                    HTTPStatus.UNPROCESSABLE_ENTITY,
+                )
+            user = UserOverride(
+                state_code=state_code,
+                email_address=email,
+                external_id=external_id,
+                role=role,
+                district=district,
+                first_name=first_name,
+                last_name=last_name,
+            )
+            session.add(user)
+            session.commit()
+            permissions = (
+                session.query(StateRolePermissions)
+                .filter(StateRolePermissions.state_code == state_code)
+                .filter(StateRolePermissions.role == role)
+                .first()
+            )
+            return (
+                jsonify(
+                    {
+                        "stateCode": user.state_code,
+                        "emailAddress": user.email_address,
+                        "externalId": user.external_id,
+                        "role": user.role,
+                        "district": user.district,
+                        "firstName": user.first_name,
+                        "lastName": user.last_name,
+                        "allowedSupervisionLocationIds": user.district
+                        if user.state_code == "US_MO"
+                        else "",
+                        "allowedSupervisionLocationLevel": "level_1_supervision_location"
+                        if user.state_code == "US_MO" and user.district is not None
+                        else "",
+                        "canAccessLeadershipDashboard": permissions.can_access_leadership_dashboard
+                        if permissions is not None
+                        else False,
+                        "canAccessCaseTriage": permissions.can_access_case_triage
+                        if permissions is not None
+                        else False,
+                        "shouldSeeBetaCharts": permissions.should_see_beta_charts
+                        if permissions is not None
+                        else False,
+                        "routes": permissions.routes
+                        if permissions is not None
+                        else None,
+                        "blocked": False,
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return (
+                "A user with this email already exists in UserOverride.",
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+            )
+        raise e
+    except ValueError as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/state/<state_code>", methods=["GET"])
+@requires_gae_auth
+def state_info(state_code: str) -> Response:
+    """Returns the unique districts, roles, and default user permissions for a given state."""
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    with SessionFactory.using_database(database_key, autocommit=False) as session:
+        districts = (
+            session.query(Roster.district)
+            .filter(Roster.state_code == state_code)
+            .distinct()
+            .all()
+        )
+        role_permissions = (
+            session.query(StateRolePermissions)
+            .filter(StateRolePermissions.state_code == state_code)
+            .distinct()
+            .all()
+        )
+        return jsonify(
+            [
+                {
+                    "districts": [dis.district for dis in districts],
+                    "roles": [
+                        {
+                            "name": per.role,
+                            "permissions": {
+                                "can_access_leadership_dashboard": per.can_access_leadership_dashboard,
+                                "can_access_case_triage": per.can_access_case_triage,
+                                "should_see_beta_charts": per.should_see_beta_charts,
+                                "routes": per.routes,
+                            },
+                        }
+                        for per in role_permissions
+                    ],
+                }
             ]
         )
