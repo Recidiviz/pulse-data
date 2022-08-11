@@ -16,7 +16,7 @@
 # =============================================================================
 """This class implements tests for Pathways count by dimension metrics."""
 import abc
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 from unittest.case import TestCase
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
@@ -46,6 +46,11 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         ...
 
+    @property
+    @abc.abstractmethod
+    def expected_metadata(self) -> Dict[str, Any]:
+        ...
+
     def test_metrics_base(self) -> None:
         results = {}
         # TODO(#13950): Replace with StateCode
@@ -60,9 +65,12 @@ class PathwaysCountByMetricTestBase(PathwaysMetricTestBase):
                 )
 
         for dimension, expected_counts in self.all_expected_counts.items():
-            self.test.assertEqual(expected_counts, results.get(dimension))
+            self.test.assertEqual(
+                {"data": expected_counts, "metadata": self.expected_metadata},
+                results.get(dimension),
+            )
 
-        self.test.assertEqual(self.all_expected_counts, results)
+        # self.test.assertEqual(self.all_expected_counts, results)
 
 
 class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCase):
@@ -85,9 +93,9 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
                 {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 3},
-                {"age_group": "30-34", "count": 1},
-                {"age_group": "60+", "count": 4},
+                {"ageGroup": "20-25", "count": 3},
+                {"ageGroup": "30-34", "count": 1},
+                {"ageGroup": "60+", "count": 4},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 2},
@@ -95,21 +103,25 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
                 {"race": "WHITE", "count": 4},
             ],
             Dimension.JUDICIAL_DISTRICT: [
-                {"judicial_district": "D1", "count": 5},
-                {"judicial_district": "D2", "count": 2},
-                {"judicial_district": "D3", "count": 1},
+                {"judicialDistrict": "D1", "count": 5},
+                {"judicialDistrict": "D2", "count": 2},
+                {"judicialDistrict": "D3", "count": 1},
             ],
             Dimension.PRIOR_LENGTH_OF_INCARCERATION: [
                 {
-                    "prior_length_of_incarceration": "months_0_3",
+                    "priorLengthOfIncarceration": "months_0_3",
                     "count": 6,
                 },
                 {
-                    "prior_length_of_incarceration": "months_3_6",
+                    "priorLengthOfIncarceration": "months_3_6",
                     "count": 2,
                 },
             ],
         }
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-01"}
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
@@ -122,7 +134,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
             ),
         )
 
-        self.test.assertEqual([{"gender": "MALE", "count": 4}], results)
+        self.test.assertEqual([{"gender": "MALE", "count": 4}], results["data"])
 
     def test_filter_time_period(self) -> None:
         """Asserts that person id 6 is dropped from the counts"""
@@ -140,7 +152,7 @@ class TestLibertyToPrisonTransitionsCount(PathwaysCountByMetricTestBase, TestCas
                 {"gender": "MALE", "count": 5},
                 {"gender": "NON_BINARY", "count": 1},
             ],
-            results,
+            results["data"],
         )
 
 
@@ -163,8 +175,8 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
                 {"gender": "MALE", "count": 6},
             ],
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 2},
-                {"age_group": "60+", "count": 5},
+                {"ageGroup": "20-25", "count": 2},
+                {"ageGroup": "60+", "count": 5},
             ],
             Dimension.FACILITY: [
                 {"facility": "ABC", "count": 3},
@@ -178,6 +190,10 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
             ],
         }
 
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-05"}
+
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
             self.query_builder,
@@ -190,7 +206,8 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}], results
+            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}],
+            results["data"],
         )
 
     def test_filter_time_period(self) -> None:
@@ -204,7 +221,8 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"facility": "ABC", "count": 3}, {"facility": "DEF", "count": 3}], results
+            [{"facility": "ABC", "count": 3}, {"facility": "DEF", "count": 3}],
+            results["data"],
         )
 
 
@@ -228,9 +246,9 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
                 {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 1},
-                {"age_group": "26-35", "count": 3},
-                {"age_group": "60+", "count": 1},
+                {"ageGroup": "20-25", "count": 1},
+                {"ageGroup": "26-35", "count": 3},
+                {"ageGroup": "60+", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
@@ -238,35 +256,39 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
                 {"race": "WHITE", "count": 3},
             ],
             Dimension.SUPERVISION_TYPE: [
-                {"supervision_type": "PAROLE", "count": 2},
-                {"supervision_type": "PROBATION", "count": 3},
+                {"supervisionType": "PAROLE", "count": 2},
+                {"supervisionType": "PROBATION", "count": 3},
             ],
             Dimension.SUPERVISION_LEVEL: [
-                {"supervision_level": "MAXIMUM", "count": 1},
-                {"supervision_level": "MEDIUM", "count": 2},
-                {"supervision_level": "MINIMUM", "count": 2},
+                {"supervisionLevel": "MAXIMUM", "count": 1},
+                {"supervisionLevel": "MEDIUM", "count": 2},
+                {"supervisionLevel": "MINIMUM", "count": 2},
             ],
             Dimension.SUPERVISION_DISTRICT: [
-                {"supervision_district": "DISTRICT_10", "count": 2},
-                {"supervision_district": "DISTRICT_18", "count": 3},
+                {"supervisionDistrict": "DISTRICT_10", "count": 2},
+                {"supervisionDistrict": "DISTRICT_18", "count": 3},
             ],
             Dimension.DISTRICT: [
                 {"district": "DISTRICT_10", "count": 2},
                 {"district": "DISTRICT_18", "count": 3},
             ],
             Dimension.SUPERVISING_OFFICER: [
-                {"supervising_officer": "3456", "count": 1},
-                {"supervising_officer": "4567", "count": 1},
-                {"supervising_officer": "7890", "count": 2},
-                {"supervising_officer": "9999", "count": 1},
+                {"supervisingOfficer": "3456", "count": 1},
+                {"supervisingOfficer": "4567", "count": 1},
+                {"supervisingOfficer": "7890", "count": 2},
+                {"supervisingOfficer": "9999", "count": 1},
             ],
             Dimension.LENGTH_OF_STAY: [
-                {"length_of_stay": "months_0_3", "count": 1},
-                {"length_of_stay": "months_25_60", "count": 1},
-                {"length_of_stay": "months_3_6", "count": 1},
-                {"length_of_stay": "months_6_9", "count": 2},
+                {"lengthOfStay": "months_0_3", "count": 1},
+                {"lengthOfStay": "months_25_60", "count": 1},
+                {"lengthOfStay": "months_3_6", "count": 1},
+                {"lengthOfStay": "months_6_9", "count": 2},
             ],
         }
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-09"}
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
@@ -284,7 +306,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
                 {"district": "DISTRICT_10", "count": 1},
                 {"district": "DISTRICT_18", "count": 2},
             ],
-            results,
+            results["data"],
         )
 
     def test_filter_time_period(self) -> None:
@@ -301,7 +323,7 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
             [
                 {"gender": "MALE", "count": 1},
             ],
-            results,
+            results["data"],
         )
 
 
@@ -320,9 +342,9 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
     def all_expected_counts(self) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.AGE_GROUP: [
-                {"age_group": "20-25", "count": 1},
-                {"age_group": "26-35", "count": 3},
-                {"age_group": "60+", "count": 1},
+                {"ageGroup": "20-25", "count": 1},
+                {"ageGroup": "26-35", "count": 3},
+                {"ageGroup": "60+", "count": 1},
             ],
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 2},
@@ -330,10 +352,10 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
                 {"gender": "NON_BINARY", "count": 1},
             ],
             Dimension.LENGTH_OF_STAY: [
-                {"length_of_stay": "months_0_3", "count": 1},
-                {"length_of_stay": "months_24_36", "count": 1},
-                {"length_of_stay": "months_3_6", "count": 1},
-                {"length_of_stay": "months_6_9", "count": 2},
+                {"lengthOfStay": "months_0_3", "count": 1},
+                {"lengthOfStay": "months_24_36", "count": 1},
+                {"lengthOfStay": "months_3_6", "count": 1},
+                {"lengthOfStay": "months_6_9", "count": 2},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
@@ -341,32 +363,36 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
                 {"race": "WHITE", "count": 3},
             ],
             Dimension.SUPERVISION_TYPE: [
-                {"supervision_type": "PAROLE", "count": 2},
-                {"supervision_type": "PROBATION", "count": 3},
+                {"supervisionType": "PAROLE", "count": 2},
+                {"supervisionType": "PROBATION", "count": 3},
             ],
             Dimension.SUPERVISION_LEVEL: [
-                {"supervision_level": "MAXIMUM", "count": 1},
-                {"supervision_level": "MEDIUM", "count": 2},
-                {"supervision_level": "MINIMUM", "count": 2},
+                {"supervisionLevel": "MAXIMUM", "count": 1},
+                {"supervisionLevel": "MEDIUM", "count": 2},
+                {"supervisionLevel": "MINIMUM", "count": 2},
             ],
             Dimension.SUPERVISION_DISTRICT: [
-                {"supervision_district": "DISTRICT_10", "count": 2},
-                {"supervision_district": "DISTRICT_18", "count": 2},
-                {"supervision_district": "DISTRICT_20", "count": 1},
+                {"supervisionDistrict": "DISTRICT_10", "count": 2},
+                {"supervisionDistrict": "DISTRICT_18", "count": 2},
+                {"supervisionDistrict": "DISTRICT_20", "count": 1},
             ],
-            # TODO(#13552): Remove this once FE uses supervision_district
+            # TODO(#13552): Remove this once FE uses supervisionDistrict
             Dimension.DISTRICT: [
                 {"district": "DISTRICT_10", "count": 2},
                 {"district": "DISTRICT_18", "count": 2},
                 {"district": "DISTRICT_20", "count": 1},
             ],
             Dimension.SUPERVISING_OFFICER: [
-                {"supervising_officer": "3456", "count": 1},
-                {"supervising_officer": "4567", "count": 1},
-                {"supervising_officer": "7890", "count": 2},
-                {"supervising_officer": "9999", "count": 1},
+                {"supervisingOfficer": "3456", "count": 1},
+                {"supervisingOfficer": "4567", "count": 1},
+                {"supervisingOfficer": "7890", "count": 2},
+                {"supervisingOfficer": "9999", "count": 1},
             ],
         }
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-08"}
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
@@ -385,7 +411,7 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
                 {"gender": "MALE", "count": 1},
                 {"gender": "NON_BINARY", "count": 1},
             ],
-            results,
+            results["data"],
         )
 
     def test_filter_time_period(self) -> None:
@@ -400,10 +426,10 @@ class TestSupervisionToLibertyTransitionsCount(PathwaysCountByMetricTestBase, Te
 
         self.test.assertEqual(
             [
-                {"supervision_district": "DISTRICT_10", "count": 2},
-                {"supervision_district": "DISTRICT_18", "count": 2},
+                {"supervisionDistrict": "DISTRICT_10", "count": 2},
+                {"supervisionDistrict": "DISTRICT_18", "count": 2},
             ],
-            results,
+            results["data"],
         )
 
 
@@ -426,8 +452,8 @@ class TestSupervisionPopulationByDimensionCount(
     ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.SUPERVISION_LEVEL: [
-                {"supervision_level": "HIGH", "count": 1},
-                {"supervision_level": "MINIMUM", "count": 1},
+                {"supervisionLevel": "HIGH", "count": 1},
+                {"supervisionLevel": "MINIMUM", "count": 1},
             ],
             Dimension.DISTRICT: [
                 {"district": "District 1", "count": 1},
@@ -435,15 +461,19 @@ class TestSupervisionPopulationByDimensionCount(
                 {"district": "OTHER", "count": 1},
             ],
             Dimension.SUPERVISION_DISTRICT: [
-                {"supervision_district": "District 1", "count": 1},
-                {"supervision_district": "District 2", "count": 1},
-                {"supervision_district": "OTHER", "count": 1},
+                {"supervisionDistrict": "District 1", "count": 1},
+                {"supervisionDistrict": "District 2", "count": 1},
+                {"supervisionDistrict": "OTHER", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "HISPANIC", "count": 1},
                 {"race": "WHITE", "count": 1},
             ],
         }
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-06"}
 
     def test_metrics_filter(self) -> None:
         # TODO(#13950): Replace with StateCode
@@ -461,7 +491,7 @@ class TestSupervisionPopulationByDimensionCount(
             [
                 {"race": "WHITE", "count": 1},
             ],
-            results,
+            results["data"],
         )
 
 
@@ -482,8 +512,8 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
     ) -> Dict[Dimension, List[Dict[str, Union[str, int]]]]:
         return {
             Dimension.AGE_GROUP: [
-                {"age_group": "25-29", "count": 1},
-                {"age_group": "60+", "count": 3},
+                {"ageGroup": "25-29", "count": 1},
+                {"ageGroup": "60+", "count": 3},
             ],
             Dimension.FACILITY: [
                 {"facility": "F1", "count": 4},
@@ -493,13 +523,17 @@ class TestPrisonPopulationByDimensionCount(PathwaysCountByMetricTestBase, TestCa
                 {"gender": "MALE", "count": 2},
             ],
             Dimension.ADMISSION_REASON: [
-                {"admission_reason": "NEW_ADMISSION", "count": 1},
-                {"admission_reason": "REVOCATION", "count": 2},
-                {"admission_reason": "UNKNOWN", "count": 1},
+                {"admissionReason": "NEW_ADMISSION", "count": 1},
+                {"admissionReason": "REVOCATION", "count": 2},
+                {"admissionReason": "UNKNOWN", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "BLACK", "count": 2},
                 {"race": "WHITE", "count": 2},
             ],
-            Dimension.LENGTH_OF_STAY: [{"count": 4, "length_of_stay": "months_0_3"}],
+            Dimension.LENGTH_OF_STAY: [{"count": 4, "lengthOfStay": "months_0_3"}],
         }
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-02"}

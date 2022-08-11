@@ -20,6 +20,7 @@ from typing import List, Mapping, Union
 
 import attr
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
@@ -29,6 +30,7 @@ from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
 from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.str_field_utils import snake_to_camel
 
 
 @attr.s(auto_attribs=True)
@@ -45,16 +47,30 @@ class PathwaysMetricFetcher:
 
     def fetch(
         self, mapper: MetricQueryBuilder, params: FetchMetricParams
-    ) -> List[Mapping[str, Union[str, int]]]:
+    ) -> Mapping[
+        str, Union[List[Mapping[str, Union[str, int]]], Mapping[str, Union[str, int]]]
+    ]:
         with self.database_session() as session:
-            query = mapper.build_query(params).with_session(session)
-
-            return [
+            data_query = mapper.build_query(params).with_session(session)
+            data: List[Mapping[str, Union[str, int]]] = [
                 {
-                    column: result[index]
+                    snake_to_camel(column): result[index]
                     for index, column in enumerate(
-                        query.statement.selected_columns.keys()
+                        data_query.statement.selected_columns.keys()
                     )
                 }
-                for result in query.all()
+                for result in data_query.all()
             ]
+
+            try:
+                metadata_query = mapper.build_metadata_query().with_session(session)
+                metadata = metadata_query.one().to_json()
+                # We don't need to return the value of metric
+                metadata.pop("metric", None)
+            except NoResultFound:
+                metadata = {}
+
+            return {
+                "data": data,
+                "metadata": metadata,
+            }

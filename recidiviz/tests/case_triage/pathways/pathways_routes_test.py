@@ -36,6 +36,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
+    MetricMetadata,
     PrisonToSupervisionTransitions,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -124,6 +125,8 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 session.add(LibertyToPrisonTransitions(**metric))
             for metric in load_metrics_fixture(PrisonToSupervisionTransitions):
                 session.add(PrisonToSupervisionTransitions(**metric))
+            for metadata in load_metrics_fixture(MetricMetadata):
+                session.add(MetricMetadata(**metadata))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -205,11 +208,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             response.get_json(),
-            [
-                {"count": 3, "ageGroup": "20-25"},
-                {"count": 1, "ageGroup": "30-34"},
-                {"count": 4, "ageGroup": "60+"},
-            ],
+            {
+                "data": [
+                    {"count": 3, "ageGroup": "20-25"},
+                    {"count": 1, "ageGroup": "30-34"},
+                    {"count": 4, "ageGroup": "60+"},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-01",
+                },
+            },
         )
 
         response = self.test_client.get(
@@ -222,9 +230,14 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
         self.assertEqual(
-            [
-                {"count": 2, "race": "BLACK"},
-            ],
+            {
+                "data": [
+                    {"count": 2, "race": "BLACK"},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-01",
+                },
+            },
             response.get_json(),
         )
 
@@ -237,68 +250,73 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
             response.get_json(),
-            [
-                {
-                    "ageGroup": "20-25",
-                    "age": "22, 23",
-                    "gender": "MALE",
-                    "race": "WHITE",
-                    "facility": "ABC, DEF",
-                    "fullName": "TEST, PERSON",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0001",
+            {
+                "data": [
+                    {
+                        "ageGroup": "20-25",
+                        "age": "22, 23",
+                        "gender": "MALE",
+                        "race": "WHITE",
+                        "facility": "ABC, DEF",
+                        "fullName": "TEST, PERSON",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0001",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "62",
+                        "gender": "FEMALE",
+                        "race": "BLACK",
+                        "facility": "ABC",
+                        "fullName": "FAKE, USER",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0003",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "64",
+                        "gender": "MALE",
+                        "race": "ASIAN",
+                        "facility": "ABC",
+                        "fullName": "EXAMPLE, INDIVIDUAL",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0005",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "63",
+                        "gender": "MALE",
+                        "race": "BLACK",
+                        "facility": "DEF",
+                        "fullName": "FAKE2, USER2",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0004",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "61",
+                        "gender": "MALE",
+                        "race": "WHITE",
+                        "facility": "DEF",
+                        "fullName": "TEST, PERSON2",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0002",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "65",
+                        "gender": "MALE",
+                        "race": "WHITE",
+                        "facility": "GHI",
+                        "fullName": "EXAMPLE, TIME",
+                        "timePeriod": "months_25_60",
+                        "stateId": "0006",
+                    },
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-05",
                 },
-                {
-                    "ageGroup": "60+",
-                    "age": "62",
-                    "gender": "FEMALE",
-                    "race": "BLACK",
-                    "facility": "ABC",
-                    "fullName": "FAKE, USER",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0003",
-                },
-                {
-                    "ageGroup": "60+",
-                    "age": "64",
-                    "gender": "MALE",
-                    "race": "ASIAN",
-                    "facility": "ABC",
-                    "fullName": "EXAMPLE, INDIVIDUAL",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0005",
-                },
-                {
-                    "ageGroup": "60+",
-                    "age": "63",
-                    "gender": "MALE",
-                    "race": "BLACK",
-                    "facility": "DEF",
-                    "fullName": "FAKE2, USER2",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0004",
-                },
-                {
-                    "ageGroup": "60+",
-                    "age": "61",
-                    "gender": "MALE",
-                    "race": "WHITE",
-                    "facility": "DEF",
-                    "fullName": "TEST, PERSON2",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0002",
-                },
-                {
-                    "ageGroup": "60+",
-                    "age": "65",
-                    "gender": "MALE",
-                    "race": "WHITE",
-                    "facility": "GHI",
-                    "fullName": "EXAMPLE, TIME",
-                    "timePeriod": "months_25_60",
-                    "stateId": "0006",
-                },
-            ],
+            },
         )
 
         response = self.test_client.get(
@@ -310,38 +328,43 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
         self.assertEqual(
-            [
-                {
-                    "ageGroup": "20-25",
-                    "age": "23",
-                    "gender": "MALE",
-                    "race": "WHITE",
-                    "facility": "DEF",
-                    "fullName": "TEST, PERSON",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0001",
+            {
+                "data": [
+                    {
+                        "ageGroup": "20-25",
+                        "age": "23",
+                        "gender": "MALE",
+                        "race": "WHITE",
+                        "facility": "DEF",
+                        "fullName": "TEST, PERSON",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0001",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "63",
+                        "gender": "MALE",
+                        "race": "BLACK",
+                        "facility": "DEF",
+                        "fullName": "FAKE2, USER2",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0004",
+                    },
+                    {
+                        "ageGroup": "60+",
+                        "age": "61",
+                        "gender": "MALE",
+                        "race": "WHITE",
+                        "facility": "DEF",
+                        "fullName": "TEST, PERSON2",
+                        "timePeriod": "months_0_6",
+                        "stateId": "0002",
+                    },
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-05",
                 },
-                {
-                    "ageGroup": "60+",
-                    "age": "63",
-                    "gender": "MALE",
-                    "race": "BLACK",
-                    "facility": "DEF",
-                    "fullName": "FAKE2, USER2",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0004",
-                },
-                {
-                    "ageGroup": "60+",
-                    "age": "61",
-                    "gender": "MALE",
-                    "race": "WHITE",
-                    "facility": "DEF",
-                    "fullName": "TEST, PERSON2",
-                    "timePeriod": "months_0_6",
-                    "stateId": "0002",
-                },
-            ],
+            },
             response.get_json(),
         )
 
@@ -359,10 +382,15 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
         self.assertEqual(
-            [
-                {"count": 1, "race": "BLACK"},
-                {"count": 4, "race": "WHITE"},
-            ],
+            {
+                "data": [
+                    {"count": 1, "race": "BLACK"},
+                    {"count": 4, "race": "WHITE"},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-01",
+                },
+            },
             response.get_json(),
         )
 
@@ -377,11 +405,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
-            [
-                {"count": 2, "race": "ASIAN"},
-                {"count": 2, "race": "BLACK"},
-                {"count": 3, "race": "WHITE"},
-            ],
+            {
+                "data": [
+                    {"count": 2, "race": "ASIAN"},
+                    {"count": 2, "race": "BLACK"},
+                    {"count": 3, "race": "WHITE"},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-01",
+                },
+            },
             response.get_json(),
         )
 
@@ -395,11 +428,16 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
         self.assertEqual(
-            [
-                {"count": 2, "race": "ASIAN"},
-                {"count": 2, "race": "BLACK"},
-                {"count": 4, "race": "WHITE"},
-            ],
+            {
+                "data": [
+                    {"count": 2, "race": "ASIAN"},
+                    {"count": 2, "race": "BLACK"},
+                    {"count": 4, "race": "WHITE"},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-01",
+                },
+            },
             response.get_json(),
         )
 

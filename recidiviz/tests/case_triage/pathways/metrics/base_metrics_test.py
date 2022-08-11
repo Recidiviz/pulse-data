@@ -32,6 +32,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
 )
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
+    MetricMetadata,
     PathwaysBase,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -85,6 +86,8 @@ class PathwaysMetricTestBase:
         with SessionFactory.using_database(self.database_key) as session:
             for metric in load_metrics_fixture(self.schema):
                 session.add(self.schema(**metric))
+            for metric_metadata in load_metrics_fixture(MetricMetadata):
+                session.add(MetricMetadata(**metric_metadata))
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)

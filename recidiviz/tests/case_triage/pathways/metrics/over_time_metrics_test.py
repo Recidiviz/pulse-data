@@ -16,7 +16,7 @@
 # =============================================================================
 """This class implements tests for Pathways over time metrics."""
 import abc
-from typing import Dict, List
+from typing import Any, Dict, List
 from unittest.case import TestCase
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
@@ -42,6 +42,11 @@ class OverTimeMetricTestBase(PathwaysMetricTestBase):
     def all_expected_counts(self) -> List[Dict[str, int]]:
         ...
 
+    @property
+    @abc.abstractmethod
+    def expected_metadata(self) -> Dict[str, Any]:
+        ...
+
     def test_metrics_base(self) -> None:
         # TODO(#13950): Replace with StateCode
         metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
@@ -51,7 +56,10 @@ class OverTimeMetricTestBase(PathwaysMetricTestBase):
                 {"filters": {Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]}}
             ),
         )
-        self.test.assertEqual(self.all_expected_counts, results)
+        self.test.assertEqual(
+            {"data": self.all_expected_counts, "metadata": self.expected_metadata},
+            results,
+        )
 
 
 class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
@@ -71,6 +79,10 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
     ) -> List[Dict[str, int]]:
         return [{"avg90day": 2, "count": 2, "month": 2, "year": 2022}]
 
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-07"}
+
     def test_filter_time_period(self) -> None:
         """When filtering for a time period that doesn't exist in the data,
         the earliest date is selected from the list of time periods in range"""
@@ -87,7 +99,7 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
                 {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
                 {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
             ],
-            results,
+            results["data"],
         )
 
 
@@ -112,6 +124,10 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
             {"avg90day": 2, "count": 2, "month": 3, "year": 2022},
         ]
 
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-03"}
+
 
 class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
     """Test for PrisonPopulationOverTimeCount metric."""
@@ -133,6 +149,10 @@ class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
             {"avg90day": 2, "count": 3, "month": 2, "year": 2022},
             {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-01"}
 
 
 class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCase):
@@ -156,6 +176,10 @@ class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCas
             {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
         ]
 
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-05"}
+
 
 class TestSupervisionToLibertyTransitionsOverTime(OverTimeMetricTestBase, TestCase):
     """Test for SupervisionToLibertyTransitionsOverTime metric."""
@@ -178,6 +202,10 @@ class TestSupervisionToLibertyTransitionsOverTime(OverTimeMetricTestBase, TestCa
             {"avg90day": 1, "count": 1, "month": 3, "year": 2022},
         ]
 
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-08"}
+
 
 class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
     """Test for SupervisionToPrisonTransitionsOverTime metric."""
@@ -199,6 +227,10 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
             {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
             {"avg90day": 1, "count": 1, "month": 3, "year": 2022},
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-09"}
 
     def test_month_backtrack(self) -> None:
         """If the `time_period` switches in the middle of the month,
@@ -259,5 +291,5 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
             [
                 {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
             ],
-            results,
+            results["data"],
         )
