@@ -56,6 +56,7 @@ class PopulationProjector:
         self.one_month_error = pd.DataFrame()
         self.historical_population = pd.DataFrame()
         self.prediction_intervals = pd.DataFrame()
+        self.validation_projections = pd.DataFrame()
 
     def run_projection(self) -> None:
         """Execute the entire projection pipeline:
@@ -80,14 +81,15 @@ class PopulationProjector:
             freq="MS",
         )
         logging.info("Running %s simulations", (len(run_dates) + 1))
-        # Run all the validation sims for only 1 prediction month
-        # projection_time_steps_override = 2 since the first time step is spent on initialization
-        self.simulation.microsim_baseline_over_time(
-            run_dates.tolist(), projection_time_steps_override=2
-        )
+        # Run one validation simulation for each run date
+        self.simulation.microsim_baseline_over_time(run_dates.tolist())
+
+        # Get the validation results
+        self.get_validation_projections()
+
         # Load the historical data and compute the error for the first prediction month
         self.historical_population = self.get_historical_population_data()
-        self.one_month_error = self.compute_prediction_error()
+        self.one_month_error = self.compute_prediction_error(time_steps=1)
 
         # Run the baseline projection over the latest month
         print(
@@ -227,6 +229,35 @@ class PopulationProjector:
 
         return prediction_intervals
 
+    def get_validation_projections(self) -> None:
+        """Creates a dataframe with the validation projection results"""
+
+        population_simulation_dict = self.simulation.get_population_simulations()
+
+        validation_projections_list = []
+
+        for (
+            simulation_name,
+            population_simulation,
+        ) in population_simulation_dict.items():
+            # Get population projection
+            validation_projection = population_simulation.get_population_projections()
+
+            # Extract the run_date (simulation name format: "baseline_2017-01-01")
+            run_date = simulation_name.split("_")[1]
+
+            # Add the run date indicator
+            validation_projection["run_date"] = run_date
+
+            validation_projections_list.append(validation_projection)
+
+        self.validation_projections = pd.concat(validation_projections_list)
+
+        # convert run_date from string to date type
+        self.validation_projections["run_date"] = pd.to_datetime(
+            self.validation_projections["run_date"]
+        )
+
     @staticmethod
     def resample_stationary(
         error: np.ndarray,
@@ -292,6 +323,10 @@ class PopulationProjector:
         """Upload the projection data to BigQuery"""
         self.simulation.upload_baseline_simulation_results_to_bq(
             override_population_data=self.prediction_intervals
+        )
+
+        self.simulation.upload_validation_projection_results_to_bq(
+            validation_projections_data=self.validation_projections
         )
 
     def convert_time_step(

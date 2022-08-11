@@ -80,6 +80,17 @@ BASELINE_PROJECTED_OUTFLOWS_SCHEMA = [
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
+VALIDATIONS_DATA_TABLE_NAME = "microsim_validation_data_raw"
+VALIDATION_SCHEMA = [
+    {"name": "state_code", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
+    {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
+    {"name": "run_date", "type": "DATE", "mode": "REQUIRED"},
+]
+
 
 def store_simulation_results(
     project_id: str,
@@ -255,4 +266,26 @@ def upload_baseline_simulation_results(
         BASELINE_PROJECTED_OUTFLOWS_TABLE_NAME,
         BASELINE_PROJECTED_OUTFLOWS_SCHEMA,
         microsim_outflows_df,
+    )
+
+
+def upload_validation_projection_results(
+    project_id: str,
+    validation_projections_df: pd.DataFrame,
+    state_code: str,
+) -> None:
+
+    # Set the upload timestamp for the population output to the current time in PST
+    upload_time = datetime.datetime.now(tz=timezone("US/Pacific"))
+
+    validation_projections_df = add_simulation_date_column(validation_projections_df)
+    validation_projections_df["state_code"] = state_code
+    validation_projections_df["date_created"] = upload_time
+
+    store_simulation_results(
+        project_id,
+        SPARK_OUTPUT_DATASET,
+        VALIDATIONS_DATA_TABLE_NAME,
+        VALIDATION_SCHEMA,
+        validation_projections_df,
     )
