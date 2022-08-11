@@ -55,6 +55,8 @@ WITH overdue_contacts AS (
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
 
+    {vitals_state_specific_supervision_location_exclusions}
+
     SELECT DISTINCT
         overdue_contacts.state_code,
         overdue_contacts.date_of_supervision,
@@ -64,7 +66,7 @@ WITH overdue_contacts AS (
         total_overdue,
         sup_pop.supervisees_requiring_contact AS supervisees_requiring_contact,
         IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_contact - total_overdue), sup_pop.supervisees_requiring_contact), 1) * 100 AS timely_contact,
-    FROM overdue_contacts
+    FROM overdue_contacts_excluded_locations overdue_contacts
     INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = overdue_contacts.state_code
         AND sup_pop.date_of_supervision = overdue_contacts.date_of_supervision
@@ -84,6 +86,9 @@ TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         "overdue_contacts"
     ),
     vitals_level_1_state_codes=VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+    vitals_state_specific_supervision_location_exclusions=state_specific_query_strings.vitals_state_specific_supervision_location_exclusions(
+        "overdue_contacts"
+    ),
 )
 
 if __name__ == "__main__":

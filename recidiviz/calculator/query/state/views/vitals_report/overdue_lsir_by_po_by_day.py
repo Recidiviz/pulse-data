@@ -63,7 +63,9 @@ WITH overdue_lsir AS (
         level_2_supervision_location_external_id
     )
 
-    SELECT
+    {vitals_state_specific_supervision_location_exclusions}
+
+    SELECT DISTINCT
         overdue_lsir.state_code,
         overdue_lsir.date_of_supervision,
         IFNULL(overdue_lsir.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
@@ -72,7 +74,7 @@ WITH overdue_lsir AS (
         total_overdue,
         sup_pop.supervisees_requiring_risk_assessment AS total_requiring_risk_assessment,
         IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_risk_assessment - total_overdue), sup_pop.supervisees_requiring_risk_assessment), 1) * 100 AS timely_risk_assessment,
-    FROM overdue_lsir
+    FROM overdue_lsir_excluded_locations overdue_lsir
     INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = overdue_lsir.state_code
         AND sup_pop.date_of_supervision = overdue_lsir.date_of_supervision
@@ -93,6 +95,9 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         "overdue_lsir"
     ),
     vitals_level_1_state_codes=VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+    vitals_state_specific_supervision_location_exclusions=state_specific_query_strings.vitals_state_specific_supervision_location_exclusions(
+        "overdue_lsir"
+    ),
 )
 
 if __name__ == "__main__":
