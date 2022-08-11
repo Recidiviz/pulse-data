@@ -28,6 +28,10 @@ from flask import Flask
 from mock import Mock, call, create_autospec, patch
 from paramiko.hostkeys import HostKeyEntry
 
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
+    GCSPseudoLockAlreadyExists,
+    GCSPseudoLockBody,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
@@ -99,9 +103,10 @@ class TestDirectIngestControl(unittest.TestCase):
         self.project_id_patcher.start().return_value = "recidiviz-project"
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
+        self.fake_fs = FakeGCSFileSystem()
 
         def mock_build_fs() -> FakeGCSFileSystem:
-            return FakeGCSFileSystem()
+            return self.fake_fs
 
         self.fs_patcher = patch.object(GcsfsFactory, "build", new=mock_build_fs)
 
@@ -1696,6 +1701,82 @@ class TestDirectIngestControl(unittest.TestCase):
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @patch.object(
+        target=RecidivizSftpConnection,
+        attribute="__enter__",
+        return_value=Mock(spec=RecidivizSftpConnection),
+    )
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.sftp.download_files_from_sftp.SftpAuth.for_region")
+    @patch(
+        "recidiviz.ingest.direct.sftp.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build"
+    )
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
+    @patch(
+        "recidiviz.ingest.direct.sftp.download_files_from_sftp."
+        "DownloadFilesFromSftpController"
+    )
+    @patch(
+        "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller."
+        "UploadStateFilesToIngestBucketController"
+    )
+    @patch.object(
+        DownloadFilesFromSftpController,
+        "do_fetch",
+        lambda _: MultiRequestResultWithSkipped[
+            Tuple[str, datetime.datetime], str, str
+        ](
+            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+            failures=[],
+            skipped=[],
+        ),
+    )
+    @patch.object(
+        UploadStateFilesToIngestBucketController,
+        "do_upload",
+        lambda _: MultiRequestResultWithSkipped[str, str, str](
+            successes=["test_file1.txt", "test_file2.txt"], failures=[], skipped=[]
+        ),
+    )
+    @patch("recidiviz.utils.regions.get_region")
+    @patch(
+        "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GCSPseudoLockManager._lock_body_for_path"
+    )
+    def test_upload_from_sftp_skips_if_locks_acquired(
+        self,
+        mock_get_lock_body: mock.MagicMock,
+        _mock_get_region: mock.MagicMock,
+        _mock_upload_controller: mock.MagicMock,
+        _mock_download_controller: mock.MagicMock,
+        _mock_fs_factory: mock.MagicMock,
+        _mock_download_delegate_factory: mock.MagicMock,
+        _mock_sftp_auth: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+        _mock_client: mock.MagicMock,
+    ) -> None:
+        region_code = "us_xx"
+        mock_environment.return_value = "staging"
+        request_args = {"region": region_code, "date": "2021-01-01"}
+        headers = APP_ENGINE_HEADERS
+
+        self.fake_fs.test_add_path(
+            GcsfsFilePath(
+                bucket_name="recidiviz-project-gcslock",
+                blob_name="GCS_SFTP_BUCKET_LOCK_US_XX",
+            ),
+            None,
+        )
+
+        mock_get_lock_body.return_value = GCSPseudoLockBody(
+            lock_time=datetime.datetime.now(), expiration_in_seconds=3600 * 3
+        )
+
+        with self.assertRaises(GCSPseudoLockAlreadyExists):
+            response = self.client.post(
+                "/upload_from_sftp", query_string=request_args, headers=headers
+            )
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
 
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @patch("recidiviz.utils.environment.get_gcp_environment")
