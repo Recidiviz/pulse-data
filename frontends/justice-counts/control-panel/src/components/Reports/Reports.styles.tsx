@@ -19,12 +19,15 @@ import styled from "styled-components/macro";
 
 import { palette, typography } from "../GlobalStyles";
 
-export const ReportsHeader = styled.div`
+export const PageHeader = styled.div`
   width: 100%;
   background: ${palette.solid.white};
   position: fixed;
-  top: 64px;
   z-index: 1;
+`;
+
+export const ReportsHeader = styled(PageHeader)`
+  top: 64px;
 `;
 
 export const PageTitle = styled.div`
@@ -62,6 +65,11 @@ export const TabbedItem = styled.div<{ selected?: boolean }>`
     cursor: pointer;
     color: ${palette.solid.darkgrey};
   }
+`;
+
+export const TabbedActionsWrapper = styled.div`
+  display: flex;
+  gap: 15px;
 `;
 
 export const ReportActions = styled.div`
@@ -126,7 +134,7 @@ export const ReportActionsNewIcon = styled(ReportActionsSelectIcon)`
 
 export const Table = styled.div`
   width: 100%;
-  padding: 222px 0 50px 0;
+  padding: 212px 0 50px 0;
 `;
 
 export const Row = styled.div<{
