@@ -16,11 +16,13 @@
 // =============================================================================
 
 import { Spin, Table } from "antd";
+import classNames from "classnames";
 import { getAllIngestInstanceStatuses } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
 import { INGEST_ACTIONS_ROUTE } from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import { IngestInstanceStatusResponse } from "./constants";
+import { getStatusBoxColor } from "./ingestUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   const { loading, data: ingestInstanceStatuses } =
@@ -53,6 +55,12 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     };
   });
 
+  const renderStatusColor = (status: string) => {
+    const statusColorClassName = getStatusBoxColor(status);
+
+    return <div className={classNames(statusColorClassName)}>{status}</div>;
+  };
+
   const columns = [
     {
       title: "State Code",
@@ -68,11 +76,15 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Primary Instance Status",
       dataIndex: "primary",
       key: "primary",
+      render: (primary: string) => <span>{renderStatusColor(primary)}</span>,
     },
     {
       title: "Secondary Instance Status",
       dataIndex: "secondary",
       key: "secondary",
+      render: (secondary: string) => (
+        <span>{renderStatusColor(secondary)}</span>
+      ),
     },
   ];
   return (
