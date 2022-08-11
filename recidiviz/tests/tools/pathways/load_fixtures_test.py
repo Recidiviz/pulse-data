@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the load fixtures script."""
+from datetime import date
 from typing import Optional
 from unittest import TestCase
 
@@ -23,6 +24,7 @@ import pytest
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
+    MetricMetadata,
     PathwaysBase,
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
@@ -117,14 +119,16 @@ class TestLoadFixtures(TestCase):
     def test_import_pathways_from_gcs(self) -> None:
         bucket = "recidiviz-456-dashboard-event-level-data"
         fake_gcs = FakeGCSFileSystem()
+        fake_csv_path = GcsfsFilePath.from_absolute_path(
+            f"gs://{bucket}/US_XX/liberty_to_prison_transitions.csv"
+        )
         fake_gcs.upload_from_string(
-            path=GcsfsFilePath.from_absolute_path(
-                f"gs://{bucket}/US_XX/liberty_to_prison_transitions.csv"
-            ),
+            path=fake_csv_path,
             # Columns here are in the order they're exported in the BQ views
             contents="2022-01-01,2022,1,months_0_6,1,20-25,MALE,WHITE,D1,months_0_3,US_XX",
             content_type="text/csv",
         )
+        fake_gcs.update_metadata(fake_csv_path, {"last_updated": "2022-08-01"})
         fake_gcs.upload_from_string(
             path=GcsfsFilePath.from_absolute_path(
                 f"gs://{bucket}/US_XX/supervision_population_over_time.csv"
@@ -150,6 +154,9 @@ class TestLoadFixtures(TestCase):
             self.assertTrue(
                 len(read_session.query(SupervisionPopulationOverTime).all()) > 0
             )
+            mm = read_session.query(MetricMetadata).one()
+            self.assertEqual(mm.metric, "LibertyToPrisonTransitions")
+            self.assertEqual(mm.last_updated, date(2022, 8, 1))
             # We didn't import this table
             self.assertTrue(
                 len(read_session.query(PrisonToSupervisionTransitions).all()) == 0
