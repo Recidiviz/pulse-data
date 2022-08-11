@@ -1,21 +1,60 @@
-key_mappings:
-  # Violated conditions field is handled manually, and is_violent is always set to
-  # None, this is a hack to ensure we update the entity to make sure it gets
-  # processed by the manual post-hook for this file
-  VIOLATED_CONDITIONS: state_supervision_violation.is_violent
-
-child_key_mappings:
-  MAX_DATE: state_supervision_violation_response.response_date
-
-ancestor_keys:
-  JT_DOC: state_person.state_person_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak291_tak292_tak024_citations` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - JT_DOC
+  - JT_CYC
+  - JT_CSQ
+  - VIOLATED_CONDITIONS
+  - MAX_DATE
+  - JS_DOC
+  - JS_CYC
+  - JS_SEO
+  - JS_FSO
+  - FINAL_FORMED_CREATE_DATE
+unused_columns:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - JT_CYC # Offender Cycle Number - Handled manually in the controller
-  - JT_CSQ # Citation Sequence Number - Handled manually in the controller
-  - JS_DOC # Duplicate of JT_DOC - Handled manually in the controller
-  - JS_CYC # Duplicate of JT_CYC - Handled manually in the controller
-  - JS_SEO # Sentence Key Sequence Number - Handled manually in controller
-  - JS_FSO # Field Sentence Sequence Number - Handled manually in controller
-  - FINAL_FORMED_CREATE_DATE # Finally formed create date (E6_* cols) - Handled manually in controller
+  - JS_DOC # Duplicate of JT_DOC
+  - JS_CYC # Duplicate of JT_CYC
+  - JS_SEO # Sentence Key Sequence Number
+  - JS_FSO # Field Sentence Sequence Number
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: JT_DOC
+          id_type: $literal("US_MO_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - JT_DOC
+                - JT_CYC
+                - $literal("C")
+                - JT_CSQ
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable: VIOLATED_CONDITIONS
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition: $iter_item
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - JT_DOC
+                      - JT_CYC
+                      - $literal("C")
+                      - JT_CSQ
+                deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                is_draft:
+                  $custom:
+                    $function: us_mo_custom_parsers.set_is_draft_on_response
+                    $args:
+                      final_formed_create_date: FINAL_FORMED_CREATE_DATE
+                      response_date: MAX_DATE
+                response_date: MAX_DATE
+                response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)
