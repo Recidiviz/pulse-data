@@ -119,6 +119,26 @@ class Exporter:
             "population_diff": aggregate_output_data,
         }
 
+    def upload_validation_projection_results_to_bq(
+        self,
+        project_id: str,
+        simulation_tag: Optional[str],
+        validation_projections_data: pd.DataFrame,
+    ) -> None:
+        if "time_step" in validation_projections_data.columns:
+            validation_projections_data[
+                "year"
+            ] = self.time_converter.convert_time_steps_to_year(
+                validation_projections_data["time_step"]
+            )
+            validation_projections_data.drop("time_step", axis=1, inplace=True)
+
+        bq_utils.upload_validation_projection_results(
+            project_id,
+            validation_projections_data,
+            simulation_tag if simulation_tag else self.simulation_tag,
+        )
+
     @classmethod
     def _prep_for_upload(
         cls,

@@ -205,6 +205,17 @@ class SuperSimulation:
             disaggregation_axes,
         )
 
+    def upload_validation_projection_results_to_bq(
+        self,
+        validation_projections_data: pd.DataFrame,
+        simulation_tag: Optional[str] = None,
+    ) -> None:
+        return self.exporter.upload_validation_projection_results_to_bq(
+            project_id="recidiviz-staging",
+            simulation_tag=simulation_tag,
+            validation_projections_data=validation_projections_data,
+        )
+
     def get_population_simulations(self) -> Dict[str, PopulationSimulation]:
         return self.simulator.get_population_simulations()
 
