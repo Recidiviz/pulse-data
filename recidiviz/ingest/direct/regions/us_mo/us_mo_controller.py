@@ -37,22 +37,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecidingBodyType,
-    StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
-)
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import munge_date_string
-from recidiviz.common.str_field_utils import parse_days, sorted_list_from_str
+from recidiviz.common.str_field_utils import parse_days
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
-    create_if_not_exists,
     update_overrides_from_maps,
 )
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
@@ -67,8 +57,6 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks i
     gen_set_field_as_concatenated_values_hook,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
-    CITATION_ID_PREFIX,
-    CITATION_KEY_SEQ,
     CYCLE_ID,
     DOC_ID,
     FIELD_KEY_SEQ,
@@ -76,13 +64,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     PERIOD_CLOSE_CODE,
     PERIOD_CLOSE_CODE_SUBTYPE,
     SENTENCE_KEY_SEQ,
-    SUPERVISION_VIOLATION_RECOMMENDATIONS,
-    SUPERVISION_VIOLATION_TYPES,
-    SUPERVISION_VIOLATION_VIOLATED_CONDITIONS,
     TAK076_PREFIX,
     TAK291_PREFIX,
     VIOLATION_KEY_SEQ,
-    VIOLATION_REPORT_ID_PREFIX,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
@@ -93,15 +77,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
-from recidiviz.ingest.models.ingest_info import (
-    IngestObject,
-    StateAgent,
-    StateIncarcerationPeriod,
-    StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
-)
+from recidiviz.ingest.models.ingest_info import IngestObject, StateIncarcerationPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -239,46 +215,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "I",  # Inst Treatment Center
             "L",  # Long Term Drug Treatment
         ],
-        StateSupervisionViolationResponseDecidingBodyType.COURT: [
-            "CT",  # New Court Commitment
-            "IS",  # Interstate Case
-        ],
-        StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD: [
-            "BH",  # Board Holdover
-            "BP",  # Board Parole
-        ],
-        StateSupervisionViolationType.ABSCONDED: ["A"],
-        StateSupervisionViolationType.ESCAPED: ["E"],
-        StateSupervisionViolationType.FELONY: ["F"],
-        StateSupervisionViolationType.MISDEMEANOR: ["M"],
-        StateSupervisionViolationType.MUNICIPAL: ["O"],
-        StateSupervisionViolationType.TECHNICAL: ["T"],
-        StateSupervisionViolationResponseDecision.REVOCATION: [
-            "I",  # Inmate Return
-            "R",  # Revocation
-        ],
-        StateSupervisionViolationResponseDecision.CONTINUANCE: ["C"],
-        StateSupervisionViolationResponseDecision.DELAYED_ACTION: ["D"],
-        StateSupervisionViolationResponseDecision.EXTENSION: ["E"],
-        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION: [
-            "CO",  # Court Ordered Detention Sanction
-        ],
-        StateSupervisionViolationResponseDecision.SUSPENSION: ["S"],
-        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED: [
-            "RN"  # SIS revoke to SES
-        ],
-        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: ["T"],
-        StateSupervisionViolationResponseDecision.WARRANT_ISSUED: [
-            "A",  # Capias,
-        ],
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
         StateSpecializedPurposeForIncarceration: [
             "X",  # Unknown
-        ],
-        StateSupervisionViolationResponseDecision: [
-            "NOREC",  # No Recommendation
         ],
     }
 
@@ -304,21 +245,10 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ),
         ]
 
-        tak291_tak292_tak024_citations_row_processors: List[Callable] = [
-            self._gen_violation_response_type_posthook(
-                StateSupervisionViolationResponseType.CITATION
-            ),
-            self._set_deciding_body_as_supervising_officer,
-            self._set_violated_conditions_on_violation,
-            self._set_violation_response_id_from_violation,
-            self._set_finally_formed_date_on_response,
-        ]
-
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": incarceration_period_row_posthooks,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": incarceration_period_row_posthooks,
-            "tak291_tak292_tak024_citations": tak291_tak292_tak024_citations_row_processors,
         }
 
         self.primary_key_override_by_file: Dict[
@@ -327,8 +257,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._generate_incarceration_period_id_coords,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._generate_incarceration_period_id_coords,
-            "tak028_tak042_tak076_tak024_violation_reports": self._generate_supervision_violation_id_coords_for_reports,
-            "tak291_tak292_tak024_citations": self._generate_supervision_violation_id_coords_for_citations,
         }
 
         self.ancestor_chain_override_by_file: Dict[
@@ -337,8 +265,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # SQL Preprocessing View
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": self._incarceration_sentence_ancestor_chain_override,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": self._supervision_sentence_ancestor_chain_override,
-            "tak028_tak042_tak076_tak024_violation_reports": self._supervision_violation_report_ancestor_chain_override,
-            "tak291_tak292_tak024_citations": self._supervision_violation_citation_ancestor_chain_override,
         }
 
     def get_ingest_view_rank_list(self) -> List[str]:
@@ -421,200 +347,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         return None
 
-    @classmethod
-    def _gen_violation_response_type_posthook(
-        cls, response_type: StateSupervisionViolationResponseType
-    ) -> IngestRowPosthookCallable:
-        def _set_response_type(
-            _gating_context: IngestGatingContext,
-            _row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache,
-        ) -> None:
-            for obj in extracted_objects:
-                if isinstance(obj, StateSupervisionViolation):
-                    for response in obj.state_supervision_violation_responses:
-                        response.response_type = response_type.value
-
-        return _set_response_type
-
-    @classmethod
-    def _set_deciding_body_as_supervising_officer(
-        cls,
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                for response in obj.state_supervision_violation_responses:
-                    response.deciding_body_type = (
-                        StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER.value
-                    )
-
     # TODO(#2701): Remove posthook in place of general child-id setting solution.
-    @classmethod
-    def _set_violation_response_id_from_violation(
-        cls,
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                violation_id = obj.state_supervision_violation_id
-                for response in obj.state_supervision_violation_responses:
-                    response.state_supervision_violation_response_id = violation_id
-
-    @classmethod
-    def _set_finally_formed_date_on_response(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Finally formed documents are the ones that are no longer in a draft state.
-
-        Updates the SupervisionViolationResponses in |extracted_objects| based on whether or not a finally formed
-        date is present in the given |row|.
-        """
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                julian_date_str = row.get("FINAL_FORMED_CREATE_DATE", None)
-                finally_formed_date = cls.mo_julian_date_to_iso(julian_date_str)
-
-                for response in obj.state_supervision_violation_responses:
-                    is_draft = True
-                    if finally_formed_date:
-                        response.response_date = finally_formed_date
-                        is_draft = False
-                    response.is_draft = str(is_draft)
-
-    @classmethod
-    def _set_violated_conditions_on_violation(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Manually adds StateSupervisionViolatedConditionEntries to StateSupervisionViolations."""
-        conditions_txt = row.get(SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, "")
-        if conditions_txt == "":
-            return
-        conditions = conditions_txt.split(",")
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                for condition in conditions:
-                    # We assign the violated conditions to the is_violent field as a
-                    # hack in the ingest mappings to make sure that the
-                    # StateSupervisionViolation entity is processed by this post-hook,
-                    # but the is_violent field should always be unset
-                    obj.is_violent = None
-                    vc = StateSupervisionViolatedConditionEntry(condition=condition)
-                    create_if_not_exists(
-                        vc, obj, "state_supervision_violated_conditions"
-                    )
-
-    @classmethod
-    def _set_violation_type_on_violation(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Manually adds StateSupervisionViolationTypeEntries to StateSupervisionViolations."""
-        violation_types_txt = row.get(SUPERVISION_VIOLATION_TYPES, "")
-        if violation_types_txt == "":
-            return
-        violation_types = list(violation_types_txt)
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                for violation_type in violation_types:
-                    vt = StateSupervisionViolationTypeEntry(
-                        violation_type=violation_type
-                    )
-                    create_if_not_exists(vt, obj, "state_supervision_violation_types")
-
-    def _set_recommendations_on_violation_response(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Manually adds StateSupervisionViolationResponses to StateSupervisionViolations."""
-        recommendation_txt = row.get(SUPERVISION_VIOLATION_RECOMMENDATIONS, "")
-        # Return if there is no recommendation, or if the text explicitly refers
-        # to either "No Recommendation".
-        if recommendation_txt in ("", "NOREC"):
-            return
-
-        if recommendation_txt in ("CO", "RN"):
-            # CO and RN are the only recommendations we process that are more
-            # than one letter, and they do not occur with any other
-            # recommendations.
-            recommendations = [recommendation_txt]
-        else:
-            # If not one of the above recommendations, any number of single
-            # character recommendations can be provided.
-            recommendations = list(recommendation_txt)
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                for response in obj.state_supervision_violation_responses:
-                    for recommendation in recommendations:
-                        rec = StateSupervisionViolationResponseDecisionEntry(
-                            decision=recommendation,
-                        )
-                        create_if_not_exists(
-                            rec,
-                            response,
-                            "state_supervision_violation_response_decisions",
-                        )
-
-    @classmethod
-    def _set_decision_agent(
-        cls,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the responding agent to any SupervisionViolationRespones."""
-        agent_to_create = cls._get_agent_from_row(row)
-        if not agent_to_create:
-            return
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionViolation):
-                for response in obj.state_supervision_violation_responses:
-                    create_if_not_exists(agent_to_create, response, "decision_agents")
-
-    @classmethod
-    def _get_agent_from_row(cls, row: Dict[str, str]) -> Optional[StateAgent]:
-        agent_id = row.get("BDGNO", "")
-        agent_type = row.get("CLSTTL", "")
-        given_names = row.get("FNAME", "")
-        surname = row.get("LNAME", "")
-        middle_names = row.get("MINTL", "")
-
-        if not agent_id:
-            return None
-
-        return StateAgent(
-            state_agent_id=agent_id,
-            agent_type=agent_type,
-            given_names=given_names,
-            middle_names=middle_names,
-            surname=surname,
-        )
 
     @classmethod
     def _replace_invalid_release_date(
@@ -769,28 +502,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         )
 
     @classmethod
-    def _generate_supervision_period_id_coords(
-        cls, gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(
-            gating_context.ingest_view_name
-        )
-
-        doc_cycle_id = cls._generate_doc_cycle_id(col_prefix, row)
-
-        field_assignment_seq = row["FIELD_ASSIGNMENT_SEQ_NUM"]
-        start_status_seq_num = row["START_STATUS_SEQ_NUM"]
-        supervision_period_id = (
-            f"{doc_cycle_id}-{field_assignment_seq}-{start_status_seq_num}"
-        )
-
-        return IngestFieldCoordinates(
-            "state_supervision_period",
-            "state_supervision_period_id",
-            supervision_period_id,
-        )
-
-    @classmethod
     def _generate_incarceration_period_id_coords(
         cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
@@ -822,34 +533,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return f"{doc_cycle_id}-{sen_seq_num}"
 
     @classmethod
-    def _generate_supervision_violation_id_coords_for_reports(
-        cls, gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(
-            gating_context.ingest_view_name
-        )
-        return IngestFieldCoordinates(
-            "state_supervision_violation",
-            "state_supervision_violation_id",
-            cls._generate_supervision_violation_id_with_report_prefix(col_prefix, row),
-        )
-
-    @classmethod
-    def _generate_supervision_violation_id_coords_for_citations(
-        cls, gating_context: IngestGatingContext, row: Dict[str, str]
-    ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(
-            gating_context.ingest_view_name
-        )
-        return IngestFieldCoordinates(
-            "state_supervision_violation",
-            "state_supervision_violation_id",
-            cls._generate_supervision_violation_id_with_citation_prefix(
-                col_prefix, row
-            ),
-        )
-
-    @classmethod
     def _generate_doc_cycle_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
 
         if col_prefix:
@@ -859,39 +542,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             doc_id = row[DOC_ID]
             cyc_id = row[CYCLE_ID]
         return f"{doc_id}-{cyc_id}"
-
-    @classmethod
-    def _generate_supervision_violation_id_with_report_prefix(
-        cls, col_prefix: str, row: Dict[str, str]
-    ) -> str:
-        return cls._generate_supervision_violation_id_with_prefix(
-            col_prefix,
-            row,
-            TAK076_PREFIX,
-            VIOLATION_REPORT_ID_PREFIX,
-            VIOLATION_KEY_SEQ,
-        )
-
-    @classmethod
-    def _generate_supervision_violation_id_with_citation_prefix(
-        cls, col_prefix: str, row: Dict[str, str]
-    ) -> str:
-        return cls._generate_supervision_violation_id_with_prefix(
-            col_prefix, row, TAK291_PREFIX, CITATION_ID_PREFIX, CITATION_KEY_SEQ
-        )
-
-    @classmethod
-    def _generate_supervision_violation_id_with_prefix(
-        cls,
-        col_prefix: str,
-        row: Dict[str, str],
-        xref_prefix: str,
-        violation_id_prefix: str,
-        violation_key_seq: str,
-    ) -> str:
-        violation_seq_num = row[f"{col_prefix}_{violation_key_seq}"]
-        group_id = cls._generate_doc_cycle_id(xref_prefix, row)
-        return f"{group_id}-{violation_id_prefix}{violation_seq_num}"
 
     @classmethod
     def _generate_supervision_violation_id(
@@ -914,52 +564,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             return True
         except ValueError:
             return False
-
-    @classmethod
-    def _parse_days_with_long_range(cls, time_string: str) -> str:
-        """Parses a time string that we assume to have a range long enough that it cannot be parsed by our standard
-        Python date parsing utilities.
-
-        Some length strings in Missouri sentence data, particularly for life sentences, will have very long ranges,
-        like '9999Y 99M 99D'. These cannot be natively interpreted by the Python date parser, which has a MAXYEAR
-        setting that cannot be altered. So we check for these kinds of strings and parse them using basic, approximate
-        arithmetic to generate a usable value.
-
-        If there is a structural issue that this function cannot handle, it returns the given time string unaltered.
-        """
-        try:
-            date_string = munge_date_string(time_string)
-            components = date_string.split(" ")
-            total_days = 0.0
-
-            for component in components:
-                if "year" in component:
-                    year_count_str = component.split("year")[0]
-                    try:
-                        year_count = int(year_count_str)
-                        total_days += year_count * 365.25
-                    except ValueError:
-                        pass
-                elif "month" in component:
-                    month_count_str = component.split("month")[0]
-                    try:
-                        month_count = int(month_count_str)
-                        total_days += month_count * 30.5
-                    except ValueError:
-                        pass
-                elif "day" in component:
-                    day_count_str = component.split("day")[0]
-                    try:
-                        day_count = int(day_count_str)
-                        total_days += day_count
-                    except ValueError:
-                        pass
-
-            return str(int(total_days))
-        except ValueError:
-            return time_string
-
-    JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")
 
     @classmethod
     def mo_julian_date_to_iso(cls, julian_date_str: Optional[str]) -> Optional[str]:
@@ -988,7 +592,4 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ) + datetime.timedelta(days=days_since_jan_1)
         return date.isoformat()
 
-    @classmethod
-    def _sorted_list_from_col(cls, row: Dict[str, str], col_name: str) -> List[str]:
-        value = row.get(col_name, "")
-        return sorted_list_from_str(value)
+    JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")
