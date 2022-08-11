@@ -23,6 +23,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     MOST_RECENT_METRICS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_population_span_to_single_day_metrics import (
+    MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_single_day_dataflow_metrics import (
     MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS,
 )
@@ -31,5 +34,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 # then view X should appear in the list before view Y.
 
 DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
-    MOST_RECENT_METRICS_VIEW_BUILDERS + MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS
+    MOST_RECENT_METRICS_VIEW_BUILDERS
+    + MOST_RECENT_SINGLE_DAY_METRICS_VIEW_BUILDERS
+    + MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_VIEW_BUILDERS
 )
