@@ -55,3 +55,16 @@ export const getAuthResource = async (url: string): Promise<Response> => {
     },
   });
 };
+
+export const postAuthWithURLAndBody = async (
+  url: string,
+  body: Record<string, unknown> = {}
+): Promise<Response> => {
+  return fetch(`/auth${url}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};

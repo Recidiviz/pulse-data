@@ -101,6 +101,10 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.dashboard_user_restrictions"
             )
             self.users = flask.url_for("auth_endpoint_blueprint.users")
+            self.add_user = flask.url_for(
+                "auth_endpoint_blueprint.add_user",
+                email="parameter@domain.org",
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -609,7 +613,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "district": "D1",
-                    "restrictedUserEmail": "test@domain.org",
+                    "emailAddress": "test@domain.org",
                     "externalId": "user_1_override.external_id",
                     "firstName": "Fake",
                     "lastName": "User",
@@ -625,7 +629,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "district": "D3",
-                    "restrictedUserEmail": "secondtest@domain.org",
+                    "emailAddress": "secondtest@domain.org",
                     "externalId": "abc",
                     "firstName": "John",
                     "lastName": "Doe",
@@ -668,7 +672,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": True,
                     "district": "4, 10A",
-                    "restrictedUserEmail": "test_user@domain.org",
+                    "emailAddress": "test_user@domain.org",
                     "externalId": "12345",
                     "firstName": "Test A.",
                     "lastName": "User",
@@ -717,7 +721,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": True,
                     "district": None,
-                    "restrictedUserEmail": "user@domain.org",
+                    "emailAddress": "user@domain.org",
                     "externalId": "A1B2",
                     "firstName": None,
                     "lastName": None,
@@ -762,7 +766,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": False,
                     "district": "District 4",
-                    "restrictedUserEmail": "test_user@domain.org",
+                    "emailAddress": "test_user@domain.org",
                     "externalId": "12345",
                     "firstName": "Test A.",
                     "lastName": "User",
@@ -780,36 +784,50 @@ class AuthEndpointTests(TestCase):
 
     def test_users_add_user(self) -> None:
         user_1 = generate_fake_rosters(
-            email="test_user@domain.org",
+            email="add_user@domain.org",
             region_code="US_CO",
             external_id="ABC",
             role="leadership_role",
             district="District",
         )
-        new_user_override_user = generate_fake_user_overrides(
-            email="hello@domain.org",
-            region_code="US_MI",
+        default = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": "B", "B": "C"},
         )
-        add_entity_to_database_session(
-            self.database_key, [user_1, new_user_override_user]
+        add_entity_to_database_session(self.database_key, [user_1, default])
+        self.client.post(
+            self.add_user,
+            headers=self.headers,
+            json={
+                "stateCode": "US_MO",
+                "externalId": None,
+                "role": "leadership_role",
+                "district": "1, 2",
+                "firstName": None,
+                "lastName": None,
+            },
         )
         with self.app.test_request_context():
             expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
+                {  # handles MO's specific logic
+                    "allowedSupervisionLocationIds": "1, 2",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
                     "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
-                    "district": None,
-                    "restrictedUserEmail": "hello@domain.org",
+                    "canAccessLeadershipDashboard": True,
+                    "district": "1, 2",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": None,
-                    "stateCode": "US_MI",
-                    "shouldSeeBetaCharts": False,
-                    "routes": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": True,
+                    "routes": {"A": "B", "B": "C"},
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -818,7 +836,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": False,
                     "district": "District",
-                    "restrictedUserEmail": "test_user@domain.org",
+                    "emailAddress": "add_user@domain.org",
                     "externalId": "ABC",
                     "firstName": None,
                     "lastName": None,
@@ -833,3 +851,117 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
         )
         self.assertEqual(expected, json.loads(response.data))
+
+    def test_add_user_bad_request(self) -> None:
+        no_state = self.client.post(
+            self.add_user,
+            headers=self.headers,
+            json={
+                "stateCode": None,
+                "externalId": "XYZ",
+                "role": "leadership_role",
+                "district": "D1",
+                "firstName": "Test",
+                "lastName": "User",
+            },
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, no_state.status_code)
+        no_role = self.client.post(
+            self.add_user,
+            headers=self.headers,
+            json={
+                "stateCode": "US_ID",
+                "externalId": "XYZ",
+                "role": None,
+                "district": "D1",
+                "firstName": "Test",
+                "lastName": "User",
+            },
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, no_role.status_code)
+        wrong_type = self.client.post(
+            self.add_user,
+            headers=self.headers,
+            json={
+                "stateCode": "US_ID",
+                "externalId": "XYZ",
+                "role": True,
+                "district": "D1",
+                "firstName": "Test",
+                "lastName": "User",
+            },
+        )
+        self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
+
+    def test_add_user_repeat_email(self) -> None:
+        with self.app.test_request_context():
+            user_override_user = self.client.post(
+                self.add_user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_ID",
+                    "externalId": "XYZ",
+                    "role": "leadership_role",
+                    "district": "D1",
+                    "firstName": "Test",
+                    "lastName": "User",
+                },
+            )
+            expected = {  # no default permissions
+                "allowedSupervisionLocationIds": "",
+                "allowedSupervisionLocationLevel": "",
+                "blocked": False,
+                "canAccessCaseTriage": False,
+                "canAccessLeadershipDashboard": False,
+                "district": "D1",
+                "emailAddress": "parameter@domain.org",
+                "externalId": "XYZ",
+                "firstName": "Test",
+                "lastName": "User",
+                "role": "leadership_role",
+                "stateCode": "US_ID",
+                "shouldSeeBetaCharts": False,
+                "routes": None,
+            }
+            self.assertEqual(expected, json.loads(user_override_user.data))
+            repeat_user_override_user = self.client.post(
+                self.add_user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_ND",
+                    "externalId": None,
+                    "role": "leadership_role",
+                    "district": None,
+                    "firstName": None,
+                    "lastName": None,
+                },
+            )
+            self.assertEqual(HTTPStatus.OK, user_override_user.status_code)
+            self.assertEqual(
+                HTTPStatus.UNPROCESSABLE_ENTITY, repeat_user_override_user.status_code
+            )
+
+    def test_add_user_repeat_roster_email(self) -> None:
+        roster_user = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_TN",
+            role="leadership_role",
+            district="40",
+        )
+        add_entity_to_database_session(self.database_key, [roster_user])
+        with self.app.test_request_context():
+            repeat_roster_user = self.client.post(
+                self.add_user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "externalId": None,
+                    "role": "leadership_role",
+                    "district": "40",
+                    "firstName": None,
+                    "lastName": None,
+                },
+            )
+            self.assertEqual(
+                HTTPStatus.UNPROCESSABLE_ENTITY, repeat_roster_user.status_code
+            )

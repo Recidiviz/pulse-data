@@ -53,7 +53,7 @@ interface POFeedbackResponse {
 
 // State User Permissions
 interface StateUserPermissionsResponse {
-  restrictedUserEmail: string;
+  emailAddress: string;
   stateCode: string;
   allowedSupervisionLocationIds: string;
   allowedSupervisionLocationLevel: string;
@@ -64,6 +64,9 @@ interface StateUserPermissionsResponse {
   };
   shouldSeeBetaCharts: boolean;
   blocked: boolean;
-  firstName: str;
-  lastName: str;
+  firstName: string;
+  lastName: string;
+  externalId: string;
+  role: string;
+  district: string;
 }

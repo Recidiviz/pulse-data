@@ -117,5 +117,6 @@ export {
   generateNonETLExports,
   getPOFeedback,
   getStateUserPermissions,
+  createNewUser,
   runCloudSQLImport,
 } from "./LineStaffTools";
