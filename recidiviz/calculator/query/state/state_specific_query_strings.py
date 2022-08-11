@@ -359,6 +359,28 @@ def vitals_state_specific_district_display_name(
     """
 
 
+def vitals_state_specific_supervision_location_exclusions(cte: str) -> str:
+    """State-specific logic to exclude duplicate locations."""
+    return f""",
+    {cte}_excluded_locations AS (
+        SELECT *
+        FROM {cte}
+        WHERE
+            CASE
+                WHEN state_code NOT IN {VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS} THEN
+                    CASE
+                        -- do not include ALL aggregations for level_2 supervision locations
+                        WHEN supervising_officer_external_id = 'ALL' AND level_1_supervision_location_external_id = 'ALL'
+                            THEN level_2_supervision_location_external_id = 'ALL'
+                        ELSE TRUE
+                    END
+                -- take no action for other states
+                ELSE TRUE
+            END
+    )
+    """
+
+
 def agent_state_specific_full_name(state_code: str) -> str:
     """State-specific logic to normalize agent names into displayable versions."""
 

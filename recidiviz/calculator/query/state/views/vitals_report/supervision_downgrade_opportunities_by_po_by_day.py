@@ -55,7 +55,10 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 210 DAY)
         GROUP BY 1, 2, 3, 4, 5
     )
-    SELECT
+
+    {vitals_state_specific_supervision_location_exclusions}
+
+    SELECT DISTINCT
         downgrade_opportunities.state_code,
         downgrade_opportunities.date_of_supervision,
         IFNULL(downgrade_opportunities.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
@@ -64,7 +67,7 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         total_downgrade_opportunities,
         sup_pop.people_under_supervision AS total_under_supervision,
         IFNULL(SAFE_DIVIDE((sup_pop.people_under_supervision - total_downgrade_opportunities), sup_pop.people_under_supervision), 1) * 100 AS timely_downgrade,
-    FROM downgrade_opportunities
+    FROM downgrade_opportunities_excluded_locations downgrade_opportunities
     INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = downgrade_opportunities.state_code
         AND sup_pop.date_of_supervision = downgrade_opportunities.date_of_supervision
@@ -86,6 +89,9 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryVi
         "downgrade_opportunities"
     ),
     vitals_level_1_state_codes=VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+    vitals_state_specific_supervision_location_exclusions=state_specific_query_strings.vitals_state_specific_supervision_location_exclusions(
+        "downgrade_opportunities"
+    ),
 )
 
 if __name__ == "__main__":
