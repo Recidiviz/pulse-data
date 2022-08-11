@@ -27,7 +27,10 @@ import pytz
 from flask import Blueprint, request
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
+    GCSPseudoLockAlreadyExists,
+    GCSPseudoLockManager,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
@@ -662,133 +665,149 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
+    gcs_sftp_bucket_lock_resource_name = f"GCS_SFTP_BUCKET_LOCK_{region_code.upper()}"
+    gcs_ingest_bucket_lock_resource_name = (
+        f"GCS_INGEST_BUCKET_LOCK_{region_code.upper()}"
+    )
+    timeout_in_seconds = 3600 * 3  # 3 hour timeout
+    gcs_lock_manager = GCSPseudoLockManager()
+
     with monitoring.push_region_tag(region_code, ingest_instance=None):
         lower_bound_update_datetime = (
             datetime.datetime.fromisoformat(date_str)
             if date_str is not None
             else datetime.datetime.now(tz=pytz.UTC) - datetime.timedelta(1)
         )
-        sftp_controller = DownloadFilesFromSftpController(
-            project_id=metadata.project_id(),
-            region_code=region_code,
-            lower_bound_update_datetime=lower_bound_update_datetime,
-            gcs_destination_path=gcs_destination_bucket_override,
-        )
-        download_result = sftp_controller.do_fetch()
 
-        with monitoring.measurements(
-            {TagKey.SFTP_TASK_TYPE: "download"}
-        ) as download_measurements:
-            download_measurements.measure_int_put(
-                m_sftp_attempts,
-                len(download_result.successes) + len(download_result.failures),
+        with gcs_lock_manager.using_lock(
+            name=gcs_sftp_bucket_lock_resource_name,
+            expiration_in_seconds=timeout_in_seconds,
+        ), gcs_lock_manager.using_lock(
+            name=gcs_ingest_bucket_lock_resource_name,
+            expiration_in_seconds=timeout_in_seconds,
+        ):
+            sftp_controller = DownloadFilesFromSftpController(
+                project_id=metadata.project_id(),
+                region_code=region_code,
+                lower_bound_update_datetime=lower_bound_update_datetime,
+                gcs_destination_path=gcs_destination_bucket_override,
             )
-            download_measurements.measure_int_put(
-                m_sftp_errors, len(download_result.failures)
-            )
+            download_result = sftp_controller.do_fetch()
 
-        unable_to_download_text = (
-            f"Unable to download the following files: {download_result.failures}"
-            if download_result.failures
-            else ""
-        )
-        skipped_download_text = (
-            f"Skipped downloading the following files: {download_result.skipped}"
-            if download_result.skipped
-            else ""
-        )
-
-        if not download_result.successes and download_result.failures:
-            return (
-                f"All files failed to download. {unable_to_download_text}",
-                HTTPStatus.BAD_REQUEST,
-            )
-
-        if not download_result.successes and not download_result.skipped:
-            return f"No items to download for {region_code}", HTTPStatus.OK
-
-        if not download_result.successes and download_result.skipped:
-            return f"All files skipped. {skipped_download_text}", HTTPStatus.OK
-
-        if not download_result.successes:
-            raise ValueError("Expected non-empty successes here.")
-
-        upload_controller = UploadStateFilesToIngestBucketController(
-            paths_with_timestamps=download_result.successes,
-            project_id=metadata.project_id(),
-            region_code=region_code,
-            gcs_destination_path=gcs_destination_bucket_override,
-        )
-        upload_result = upload_controller.do_upload()
-
-        with monitoring.measurements(
-            {TagKey.SFTP_TASK_TYPE: "upload"}
-        ) as upload_measurements:
-            upload_measurements.measure_int_put(
-                m_sftp_attempts,
-                len(upload_result.successes) + len(upload_result.failures),
-            )
-            upload_measurements.measure_int_put(
-                m_sftp_errors, len(upload_result.failures)
-            )
-
-        unable_to_upload_text = (
-            f"Unable to upload the following files: {upload_result.failures}"
-            if upload_result.failures
-            else ""
-        )
-        skipped_text = (
-            f"Skipped uploading the following files: {upload_controller.skipped_files}"
-            if upload_result.skipped
-            else ""
-        )
-        if not upload_result.successes and not upload_result.skipped:
-            return (
-                f"{unable_to_download_text}"
-                f" All files failed to upload. {unable_to_upload_text}"
-                f"{skipped_text}",
-                HTTPStatus.BAD_REQUEST,
-            )
-
-        if download_result.failures or upload_result.failures:
-            return (
-                f"{unable_to_download_text}"
-                f" {unable_to_upload_text}"
-                f"{skipped_text}",
-                HTTPStatus.MULTI_STATUS,
-            )
-
-        if not upload_result.successes and upload_result.skipped:
-            return f"All files skipped. {skipped_text}", HTTPStatus.OK
-
-        if upload_result.skipped:
-            return (
-                f"{unable_to_download_text}"
-                f" {unable_to_upload_text}"
-                f"{skipped_text}",
-                HTTPStatus.MULTI_STATUS,
-            )
-
-        # Trigger ingest to handle copied files (in case queue has emptied already while
-        # ingest was paused).
-        direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
-
-        if not gcs_destination_bucket_override:
-            try:
-                ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
-                    upload_controller.destination_ingest_bucket
+            with monitoring.measurements(
+                {TagKey.SFTP_TASK_TYPE: "download"}
+            ) as download_measurements:
+                download_measurements.measure_int_put(
+                    m_sftp_attempts,
+                    len(download_result.successes) + len(download_result.failures),
                 )
-            except ValueError:
-                # If the destination path is not a real ingest bucket, do not
-                # trigger the scheduler.
-                ingest_instance = None
-
-            if ingest_instance:
-                direct_ingest_cloud_task_manager.create_direct_ingest_handle_new_files_task(
-                    region=_region_for_region_code(region_code),
-                    ingest_instance=ingest_instance,
-                    can_start_ingest=True,
+                download_measurements.measure_int_put(
+                    m_sftp_errors, len(download_result.failures)
                 )
+
+            unable_to_download_text = (
+                f"Unable to download the following files: {download_result.failures}"
+                if download_result.failures
+                else ""
+            )
+            skipped_download_text = (
+                f"Skipped downloading the following files: {download_result.skipped}"
+                if download_result.skipped
+                else ""
+            )
+
+            if not download_result.successes and download_result.failures:
+                return (
+                    f"All files failed to download. {unable_to_download_text}",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            if not download_result.successes and not download_result.skipped:
+                return f"No items to download for {region_code}", HTTPStatus.OK
+
+            if not download_result.successes and download_result.skipped:
+                return f"All files skipped. {skipped_download_text}", HTTPStatus.OK
+
+            if not download_result.successes:
+                raise ValueError("Expected non-empty successes here.")
+
+            upload_controller = UploadStateFilesToIngestBucketController(
+                paths_with_timestamps=download_result.successes,
+                project_id=metadata.project_id(),
+                region_code=region_code,
+                gcs_destination_path=gcs_destination_bucket_override,
+            )
+
+            upload_result = upload_controller.do_upload()
+
+            with monitoring.measurements(
+                {TagKey.SFTP_TASK_TYPE: "upload"}
+            ) as upload_measurements:
+                upload_measurements.measure_int_put(
+                    m_sftp_attempts,
+                    len(upload_result.successes) + len(upload_result.failures),
+                )
+                upload_measurements.measure_int_put(
+                    m_sftp_errors, len(upload_result.failures)
+                )
+
+            unable_to_upload_text = (
+                f"Unable to upload the following files: {upload_result.failures}"
+                if upload_result.failures
+                else ""
+            )
+            skipped_text = (
+                f"Skipped uploading the following files: {upload_controller.skipped_files}"
+                if upload_result.skipped
+                else ""
+            )
+            if not upload_result.successes and not upload_result.skipped:
+                return (
+                    f"{unable_to_download_text}"
+                    f" All files failed to upload. {unable_to_upload_text}"
+                    f"{skipped_text}",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            if download_result.failures or upload_result.failures:
+                return (
+                    f"{unable_to_download_text}"
+                    f" {unable_to_upload_text}"
+                    f"{skipped_text}",
+                    HTTPStatus.MULTI_STATUS,
+                )
+
+            if not upload_result.successes and upload_result.skipped:
+                return f"All files skipped. {skipped_text}", HTTPStatus.OK
+
+            if upload_result.skipped:
+                return (
+                    f"{unable_to_download_text}"
+                    f" {unable_to_upload_text}"
+                    f"{skipped_text}",
+                    HTTPStatus.MULTI_STATUS,
+                )
+
+            # Trigger ingest to handle copied files (in case queue has emptied already while
+            # ingest was paused).
+            direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+
+            if not gcs_destination_bucket_override:
+                try:
+                    ingest_instance = DirectIngestInstanceFactory.for_ingest_bucket(
+                        upload_controller.destination_ingest_bucket
+                    )
+                except ValueError:
+                    # If the destination path is not a real ingest bucket, do not
+                    # trigger the scheduler.
+                    ingest_instance = None
+
+                if ingest_instance:
+                    direct_ingest_cloud_task_manager.create_direct_ingest_handle_new_files_task(
+                        region=_region_for_region_code(region_code),
+                        ingest_instance=ingest_instance,
+                        can_start_ingest=True,
+                    )
 
         return "", HTTPStatus.OK
 
