@@ -35,6 +35,10 @@ docker exec pulse-data-case_triage_backend-1 pipenv run python -m recidiviz.tool
     --tables liberty_to_prison_transitions supervision_to_prison_transitions \
     --gcs_bucket recidiviz-staging-dashboard-event-level-data
 
+Note that when running with FIXTURE data and the --tables parameter, metric_metadata will need to be
+explicitly specified if you'd like to load it, whereas with GCS it is updated automatically for each
+table.
+
 WARNING: These tables take up multiple GB of space, and loading all data for all states is likely to
 impact your computer's performance. Use the `state_codes` and `tables` parameters to only load the
 data you need for development at a given moment, and reset tables you don't need the data for
@@ -67,7 +71,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
-from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.pathways.schema import (
+    MetricMetadata,
+    PathwaysBase,
+)
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_database_entity_by_table_name,
@@ -120,8 +127,12 @@ def import_pathways_from_gcs(
 ) -> None:
     """Imports data from a given GCS bucket into the specified tables using the provided SQLALchemy Engine"""
     connection = engine.raw_connection()
+    PathwaysBase.metadata.create_all(engine, tables=[MetricMetadata.__table__])
 
     for table in tables:
+        if table == MetricMetadata:
+            # We'll import into MetricMetadata for each metric we import
+            continue
         table_name = table.__tablename__
 
         # Recreate table
@@ -133,11 +144,24 @@ def import_pathways_from_gcs(
         # Import CSV from GCS
         gcs_path = f"gs://{gcs_bucket}/{state}/{table_name}.csv"
         logging.info("importing into %s.%s from %s", state, table_name, gcs_path)
-        with gcsfs.open(GcsfsFilePath.from_absolute_path(gcs_path)) as fp:
+        gcsfs_path = GcsfsFilePath.from_absolute_path(gcs_path)
+        with gcsfs.open(gcsfs_path) as fp:
             cursor = connection.cursor()
             cursor.copy_expert(
                 f"COPY {table_name} ({','.join(get_table_columns(table))}) FROM STDIN CSV",
                 fp,
+            )
+            cursor.close()
+            connection.commit()
+        object_metadata = gcsfs.get_metadata(gcsfs_path) or {}
+        last_updated = object_metadata.get("last_updated", None)
+        if last_updated:
+            cursor = connection.cursor()
+            cursor.execute(
+                f"""INSERT INTO {MetricMetadata.__tablename__} (metric, last_updated)
+                VALUES(%s, %s)
+                ON CONFLICT (metric) DO UPDATE SET last_updated=EXCLUDED.last_updated""",
+                (table.__name__, last_updated),
             )
             cursor.close()
             connection.commit()
