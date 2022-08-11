@@ -17,7 +17,7 @@
 """This class implements tests for Pathways person level metrics."""
 import abc
 from datetime import date
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 from unittest import TestCase
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
@@ -42,12 +42,17 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
         ...
 
+    @property
+    @abc.abstractmethod
+    def expected_metadata(self) -> Dict[str, Any]:
+        ...
+
     def test_metrics_base(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(
-            self.all_expected_rows,
+            {"data": self.all_expected_rows, "metadata": self.expected_metadata},
             results,
         )
 
@@ -68,25 +73,29 @@ class TestPrisonPopulationPersonLevel(PathwaysPersonLevelMetricTestBase, TestCas
         return [
             {
                 "age": "25",
-                "age_group": "25-29",
+                "ageGroup": "25-29",
                 "facility": "F1",
-                "full_name": "Example,Person",
+                "fullName": "Example,Person",
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "race": "WHITE",
-                "state_id": "1",
+                "stateId": "1",
             },
             {
                 "age": "65",
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "facility": "F2",
-                "full_name": "Fake,Person",
+                "fullName": "Fake,Person",
                 "gender": "FEMALE",
-                "admission_reason": "RETURN_FROM_TEMPORARY_RELEASE",
+                "admissionReason": "RETURN_FROM_TEMPORARY_RELEASE",
                 "race": "BLACK",
-                "state_id": "2",
+                "stateId": "2",
             },
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-04"}
 
 
 class TestPrisonToSupervisionTransitionsPersonLevel(
@@ -106,66 +115,70 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
         return [
             {
-                "age_group": "20-25",
+                "ageGroup": "20-25",
                 "age": "22, 23",
                 "gender": "MALE",
                 "race": "WHITE",
                 "facility": "ABC, DEF",
-                "full_name": "TEST, PERSON",
-                "time_period": "months_0_6",
-                "state_id": "0001",
+                "fullName": "TEST, PERSON",
+                "timePeriod": "months_0_6",
+                "stateId": "0001",
             },
             {
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "age": "62",
                 "gender": "FEMALE",
                 "race": "BLACK",
                 "facility": "ABC",
-                "full_name": "FAKE, USER",
-                "time_period": "months_0_6",
-                "state_id": "0003",
+                "fullName": "FAKE, USER",
+                "timePeriod": "months_0_6",
+                "stateId": "0003",
             },
             {
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "age": "64",
                 "gender": "MALE",
                 "race": "ASIAN",
                 "facility": "ABC",
-                "full_name": "EXAMPLE, INDIVIDUAL",
-                "time_period": "months_0_6",
-                "state_id": "0005",
+                "fullName": "EXAMPLE, INDIVIDUAL",
+                "timePeriod": "months_0_6",
+                "stateId": "0005",
             },
             {
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "age": "63",
                 "gender": "MALE",
                 "race": "BLACK",
                 "facility": "DEF",
-                "full_name": "FAKE2, USER2",
-                "time_period": "months_0_6",
-                "state_id": "0004",
+                "fullName": "FAKE2, USER2",
+                "timePeriod": "months_0_6",
+                "stateId": "0004",
             },
             {
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "age": "61",
                 "gender": "MALE",
                 "race": "WHITE",
                 "facility": "DEF",
-                "full_name": "TEST, PERSON2",
-                "time_period": "months_0_6",
-                "state_id": "0002",
+                "fullName": "TEST, PERSON2",
+                "timePeriod": "months_0_6",
+                "stateId": "0002",
             },
             {
                 "age": "65",
-                "age_group": "60+",
+                "ageGroup": "60+",
                 "facility": "GHI",
-                "full_name": "EXAMPLE, TIME",
+                "fullName": "EXAMPLE, TIME",
                 "gender": "MALE",
                 "race": "WHITE",
-                "state_id": "0006",
-                "time_period": "months_25_60",
+                "stateId": "0006",
+                "timePeriod": "months_25_60",
             },
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-05"}
 
     def test_metrics_filter(self) -> None:
         results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
@@ -180,40 +193,40 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
         self.test.assertEqual(
             [
                 {
-                    "age_group": "20-25",
+                    "ageGroup": "20-25",
                     "age": "22",
                     "gender": "MALE",
                     "race": "WHITE",
                     "facility": "ABC",
-                    "full_name": "TEST, PERSON",
-                    "time_period": "months_0_6",
-                    "state_id": "0001",
+                    "fullName": "TEST, PERSON",
+                    "timePeriod": "months_0_6",
+                    "stateId": "0001",
                 },
                 {
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "age": "62",
                     "gender": "FEMALE",
                     "race": "BLACK",
                     "facility": "ABC",
-                    "full_name": "FAKE, USER",
-                    "time_period": "months_0_6",
-                    "state_id": "0003",
+                    "fullName": "FAKE, USER",
+                    "timePeriod": "months_0_6",
+                    "stateId": "0003",
                 },
                 {
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "age": "64",
                     "gender": "MALE",
                     "race": "ASIAN",
                     "facility": "ABC",
-                    "full_name": "EXAMPLE, INDIVIDUAL",
-                    "time_period": "months_0_6",
-                    "state_id": "0005",
+                    "fullName": "EXAMPLE, INDIVIDUAL",
+                    "timePeriod": "months_0_6",
+                    "stateId": "0005",
                 },
             ],
-            results,
+            results["data"],
         )
 
-    def test_filter_time_period(self) -> None:
+    def test_filter_timePeriod(self) -> None:
         """Tests that person id 6 is not included in the response"""
         results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
@@ -226,54 +239,54 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
             [
                 {
                     "age": "22, 23",
-                    "age_group": "20-25",
+                    "ageGroup": "20-25",
                     "facility": "ABC, DEF",
-                    "full_name": "TEST, PERSON",
+                    "fullName": "TEST, PERSON",
                     "gender": "MALE",
                     "race": "WHITE",
-                    "state_id": "0001",
-                    "time_period": "months_0_6",
+                    "stateId": "0001",
+                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "62",
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "facility": "ABC",
-                    "full_name": "FAKE, USER",
+                    "fullName": "FAKE, USER",
                     "gender": "FEMALE",
                     "race": "BLACK",
-                    "state_id": "0003",
-                    "time_period": "months_0_6",
+                    "stateId": "0003",
+                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "64",
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "facility": "ABC",
-                    "full_name": "EXAMPLE, INDIVIDUAL",
+                    "fullName": "EXAMPLE, INDIVIDUAL",
                     "gender": "MALE",
                     "race": "ASIAN",
-                    "state_id": "0005",
-                    "time_period": "months_0_6",
+                    "stateId": "0005",
+                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "63",
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "facility": "DEF",
-                    "full_name": "FAKE2, USER2",
+                    "fullName": "FAKE2, USER2",
                     "gender": "MALE",
                     "race": "BLACK",
-                    "state_id": "0004",
-                    "time_period": "months_0_6",
+                    "stateId": "0004",
+                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "61",
-                    "age_group": "60+",
+                    "ageGroup": "60+",
                     "facility": "DEF",
-                    "full_name": "TEST, PERSON2",
+                    "fullName": "TEST, PERSON2",
                     "gender": "MALE",
                     "race": "WHITE",
-                    "state_id": "0002",
-                    "time_period": "months_0_6",
+                    "stateId": "0002",
+                    "timePeriod": "months_0_6",
                 },
             ],
-            results,
+            results["data"],
         )

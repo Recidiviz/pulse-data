@@ -16,7 +16,7 @@
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Pathways related entities.
 """
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import (
     TIMESTAMP,
@@ -87,6 +87,14 @@ class MetricMetadata(PathwaysBase):
 
     metric = Column(String, primary_key=True, nullable=False)
     last_updated = Column(Date, nullable=False)
+
+    def to_json(self) -> Dict[str, Any]:
+        json_dict = {}
+        if self.metric:
+            json_dict["metric"] = self.metric
+        if self.last_updated:
+            json_dict["lastUpdated"] = self.last_updated.isoformat()
+        return json_dict
 
 
 class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):

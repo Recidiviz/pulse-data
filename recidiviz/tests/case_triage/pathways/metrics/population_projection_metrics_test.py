@@ -16,7 +16,7 @@
 # =============================================================================
 """This class implements tests for Pathways population projection metrics."""
 import abc
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 from unittest import TestCase
 
 from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
@@ -39,12 +39,17 @@ class PathwaysPopulationProjectionMetricTestBase(PathwaysMetricTestBase):
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, float]]]:
         ...
 
+    @property
+    @abc.abstractmethod
+    def expected_metadata(self) -> Dict[str, Any]:
+        ...
+
     def test_metrics_base(self) -> None:
         metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(
-            self.all_expected_rows,
+            {"data": self.all_expected_rows, "metadata": self.expected_metadata},
             results,
         )
 
@@ -69,65 +74,69 @@ class TestPrisonPopulationProjectionMetric(
         return [
             {
                 "gender": "FEMALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 1,
-                "simulation_tag": "HISTORICAL",
-                "total_population": 1,
-                "total_population_max": 1.25,
-                "total_population_min": 0.25,
+                "simulationTag": "HISTORICAL",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.25,
+                "totalPopulationMin": 0.25,
                 "year": 2022,
             },
             {
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 1,
-                "simulation_tag": "HISTORICAL",
-                "total_population": 1,
-                "total_population_max": 1.5,
-                "total_population_min": 0.5,
+                "simulationTag": "HISTORICAL",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.5,
+                "totalPopulationMin": 0.5,
                 "year": 2022,
             },
             {
                 "gender": "FEMALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 2,
-                "simulation_tag": "BASELINE",
-                "total_population": 1,
-                "total_population_max": 1.25,
-                "total_population_min": 0.25,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.25,
+                "totalPopulationMin": 0.25,
                 "year": 2022,
             },
             {
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 2,
-                "simulation_tag": "BASELINE",
-                "total_population": 2,
-                "total_population_max": 1.5,
-                "total_population_min": 0.5,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 2,
+                "totalPopulationMax": 1.5,
+                "totalPopulationMin": 0.5,
                 "year": 2022,
             },
             {
                 "gender": "FEMALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 3,
-                "simulation_tag": "BASELINE",
-                "total_population": 1,
-                "total_population_max": 1.25,
-                "total_population_min": 0.25,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.25,
+                "totalPopulationMin": 0.25,
                 "year": 2022,
             },
             {
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 3,
-                "simulation_tag": "BASELINE",
-                "total_population": 3,
-                "total_population_max": 1.5,
-                "total_population_min": 0.5,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 3,
+                "totalPopulationMax": 1.5,
+                "totalPopulationMin": 0.5,
                 "year": 2022,
             },
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-10"}
 
 
 class TestSupervisionPopulationProjectionMetric(
@@ -150,42 +159,46 @@ class TestSupervisionPopulationProjectionMetric(
         return [
             {
                 "gender": "FEMALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 1,
-                "simulation_tag": "HISTORICAL",
-                "total_population": 1,
-                "total_population_max": 1.25,
-                "total_population_min": 0.25,
+                "simulationTag": "HISTORICAL",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.25,
+                "totalPopulationMin": 0.25,
                 "year": 2022,
             },
             {
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 1,
-                "simulation_tag": "HISTORICAL",
-                "total_population": 1,
-                "total_population_max": 1.5,
-                "total_population_min": 0.5,
+                "simulationTag": "HISTORICAL",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.5,
+                "totalPopulationMin": 0.5,
                 "year": 2022,
             },
             {
                 "gender": "FEMALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 2,
-                "simulation_tag": "BASELINE",
-                "total_population": 1,
-                "total_population_max": 1.25,
-                "total_population_min": 0.25,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 1,
+                "totalPopulationMax": 1.25,
+                "totalPopulationMin": 0.25,
                 "year": 2022,
             },
             {
                 "gender": "MALE",
-                "admission_reason": "NEW_ADMISSION",
+                "admissionReason": "NEW_ADMISSION",
                 "month": 2,
-                "simulation_tag": "BASELINE",
-                "total_population": 2,
-                "total_population_max": 1.5,
-                "total_population_min": 0.5,
+                "simulationTag": "BASELINE",
+                "totalPopulation": 2,
+                "totalPopulationMax": 1.5,
+                "totalPopulationMin": 0.5,
                 "year": 2022,
             },
         ]
+
+    @property
+    def expected_metadata(self) -> Dict[str, Any]:
+        return {"lastUpdated": "2022-08-11"}

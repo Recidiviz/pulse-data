@@ -27,7 +27,10 @@ from recidiviz.case_triage.pathways.dimensions.dimension_mapping import (
     DimensionMappingCollection,
     DimensionOperation,
 )
-from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema.pathways.schema import (
+    MetricMetadata,
+    PathwaysBase,
+)
 
 
 @attr.s(auto_attribs=True)
@@ -81,6 +84,11 @@ class MetricQueryBuilder(Generic[ParamsType]):
     @abc.abstractmethod
     def build_query(self, params: ParamsType) -> Query:
         ...
+
+    def build_metadata_query(self) -> Query:
+        return Query(MetricMetadata).filter(
+            MetricMetadata.metric == self.model.__name__
+        )
 
     @classmethod
     def get_params_class(cls) -> Type[FetchMetricParams]:
