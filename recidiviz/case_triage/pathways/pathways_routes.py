@@ -44,6 +44,7 @@ from recidiviz.utils.flask_exception import FlaskException
 
 PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
+    r"http\://localhost:5000",
     r"https\://dashboard-staging\.recidiviz\.org$",
     r"https\://dashboard\.recidiviz\.org$",
     r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
