@@ -263,12 +263,18 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
             USING(Offender_ID)
     ),
-    -- This CTE looks at anyone who has ever received a ZTPD contact (zero tolerance contact for failing a meth test) so they can be excluded from almost-eligible
+    -- These CTEs looks at anyone who has ever received a ZTPD contact (zero tolerance contact for failing a meth test) or meth positive test 
+    -- so they can be excluded from almost-eligible but for drug screen
     -- TODO(#14347) - reference state-agnostic view
     meth_contacts AS (
         SELECT DISTINCT OffenderID AS Offender_ID
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType LIKE '%ZTPD%'
+    ),
+    meth_positive_tests AS (
+        SELECT DISTINCT OffenderID AS Offender_ID
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DrugTestDrugClass_latest`
+        WHERE DrugClass IN ('MET','MTD') AND FinalResult = 'P'
     ),
     -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
     contacts_cte AS (
@@ -661,8 +667,11 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                                 WHEN sum_negative_tests_in_past_year >= 1
                                 -- If someone has had a positive test, even if its more than 6 months old, we enforce that their most recent test is negative
                                 AND is_most_recent_test_negative = 1
-                            THEN 'eligible'
-                            WHEN COALESCE(total_screens_in_past_year,0) = 0 AND meth_contacts.Offender_ID IS NULL THEN 'almost_eligible'
+                                THEN 'eligible'
+                            WHEN COALESCE(total_screens_in_past_year,0) = 0 
+                                AND meth_contacts.Offender_ID IS NULL
+                                AND meth_positive_tests.Offender_ID IS NULL 
+                                THEN 'almost_eligible'
                             END
                         ) 
                     WHEN COALESCE(high_ad_client,0) = 1 
@@ -818,6 +827,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
         LEFT JOIN meth_contacts
             USING(Offender_ID)
+        LEFT JOIN meth_positive_tests
+            USING(Offender_ID)    
         LEFT JOIN special_conditions
             USING(person_id)
         LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
