@@ -353,7 +353,6 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_medium,
     state_enum_strings.state_supervision_period_supervision_level_high,
     state_enum_strings.state_supervision_period_supervision_level_maximum,
-    state_enum_strings.state_supervision_period_supervision_level_incarcerated,
     state_enum_strings.state_supervision_period_supervision_level_in_custody,
     state_enum_strings.state_supervision_period_supervision_level_diversion,
     state_enum_strings.state_supervision_period_supervision_level_interstate_compact,

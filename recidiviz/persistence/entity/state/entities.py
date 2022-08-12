@@ -984,12 +984,6 @@ class StateSupervisionPeriod(
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.termination_date
 
-    def __attrs_post_init__(self) -> None:
-        if self.supervision_level == StateSupervisionLevel.INCARCERATED:
-            raise ValueError(
-                f"StateSupervisionLevel.INCARCERATED is deprecated for {self.state_code}."
-            )
-
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
