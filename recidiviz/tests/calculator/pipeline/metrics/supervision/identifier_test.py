@@ -6511,8 +6511,6 @@ class TestSupervisionLevelDowngradeOccurred(unittest.TestCase):
         """Ensures that all values in StateSupervisionLevel are covered by _supervision_level_downgrade_occurred."""
 
         for level in StateSupervisionLevel:
-            if level == StateSupervisionLevel.INCARCERATED:
-                continue
             self.identifier._supervision_level_downgrade_occurred(
                 level, StateSupervisionLevel.MAXIMUM
             )

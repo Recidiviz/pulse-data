@@ -208,10 +208,6 @@ class StateSupervisionLevel(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     DIVERSION = state_enum_strings.state_supervision_period_supervision_level_diversion
-    # TODO(#12648): DEPRECATED - USE IN_CUSTODY INSTEAD
-    INCARCERATED = (
-        state_enum_strings.state_supervision_period_supervision_level_incarcerated
-    )
     # TODO(#9421): Re-evaluate the use of this value when we standardize the
     #  representation of community centers
     IN_CUSTODY = (
@@ -304,10 +300,6 @@ _STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSupervisionLevel.HIGH: "Used when a person is on a high level of "
     "supervision that is not the maximum level of supervision, as defined by the "
     "state.",
-    StateSupervisionLevel.INCARCERATED: "Used on a period of supervision when the "
-    "person is simultaneously incarcerated (e.g. in prison for a parole board hold). "
-    "TODO(#12648): THIS WILL SOON BE MERGED WITH `IN_CUSTODY`. IF YOU ARE ADDING NEW "
-    "ENUM MAPPINGS, USE `IN_CUSTODY` INSTEAD.",
     StateSupervisionLevel.INTERSTATE_COMPACT: "Used on a period of supervision when "
     "the person is being supervised in a state that is different than the state where "
     "they were sentenced. For example, this is used in Idaho when someone is being "
@@ -498,7 +490,7 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     "EXTERNAL UNKNOWN": StateSupervisionLevel.EXTERNAL_UNKNOWN,
     "INTERNAL UNKNOWN": StateSupervisionLevel.INTERNAL_UNKNOWN,
     "PRESENT WITHOUT INFO": StateSupervisionLevel.PRESENT_WITHOUT_INFO,
-    "INCARCERATED": StateSupervisionLevel.INCARCERATED,
+    "INCARCERATED": StateSupervisionLevel.IN_CUSTODY,
     "IN CUSTODY": StateSupervisionLevel.IN_CUSTODY,
     "MINIMUM": StateSupervisionLevel.MINIMUM,
     "MIN": StateSupervisionLevel.MINIMUM,
