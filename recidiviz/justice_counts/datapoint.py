@@ -74,9 +74,7 @@ class DatapointInterface:
         )
 
         metric_definitions = MetricInterface.get_metric_definitions(
-            systems={schema.System[system] for system in agency.systems}
-            if agency.systems is not None
-            else {agency.system}
+            systems={schema.System[system] for system in agency.systems or []}
         )
 
         metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
