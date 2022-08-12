@@ -166,11 +166,12 @@ individual_sentence AS (
     inds.crime_subtypes,
     inds.crime_classifications,
     inds.supervision_type,
+    JSON_VALUE(te.reasons[2].reason, '$.supervision_level') AS supervision_level,
     inds.probation_expiration_date,
     --create sentence ranking by supervision type (not IC probation), length, and charge severity 
     ROW_NUMBER() OVER (PARTITION BY person_external_id ORDER BY supervision_type_rank,
                                     probation_expiration_date DESC, crime_classifications[OFFSET(0)], 
-                                    crime_subtypes[OFFSET(0)]) AS sentence_rank,
+                                    crime_subtypes[OFFSET(0)], supervision_external_id) AS sentence_rank,
     INITCAP(JSON_VALUE(PARSE_JSON(dm.full_name), '$.given_names'))
         || " " 
         || INITCAP(JSON_VALUE(PARSE_JSON(dm.full_name), '$.surname')) AS probation_officer_full_name,
@@ -215,6 +216,7 @@ probation_officer_full_name AS form_information_probation_officer_full_name,
 reasons,
 number_of_sentences > 1 AS metadata_multiple_sentences,
 supervision_type = "IC PROBATION" AS metadata_out_of_state,
+supervision_level = "INTERSTATE_COMPACT" AS metadata_IC_OUT,
 FROM individual_sentence_ranks
 WHERE sentence_rank = 1 --only choose one sentence 
 ORDER BY person_external_id
