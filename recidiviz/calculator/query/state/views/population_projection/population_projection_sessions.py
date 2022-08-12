@@ -43,7 +43,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
         ON session.state_code = prev_rel_session.state_code
         AND session.person_id = prev_rel_session.person_id
         AND prev_rel_session.start_date BETWEEN prev_inc_session.end_date AND session.start_date
-        AND prev_rel_session.compartment_level_1 IN ('RELEASE', 'SUPERVISION')
+        AND prev_rel_session.compartment_level_1 IN ('LIBERTY', 'SUPERVISION')
       GROUP BY state_code, person_id, session_id
     ), all_sessions AS (
     SELECT
@@ -78,7 +78,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inflow_from_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
                 ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
            END
-        WHEN inflow_from_level_1 IS NULL THEN 'PRETRIAL'
+        WHEN inflow_from_level_2 = 'LIBERTY_FIRST_TIME_IN_SYSTEM' THEN 'PRETRIAL'
         WHEN inflow_from_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
         ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
       END AS inflow_from,
@@ -91,8 +91,8 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
                 ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
            END
            WHEN outflow_to_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
-           -- TODO(#7385): handle incarceration to 0 day supervision period as full release
-           WHEN outflow_to_level_1 = 'PENDING_SUPERVISION' THEN 'RELEASE - RELEASE'
+           -- TODO(#7385): handle incarceration to 0 day supervision period as release to liberty
+           WHEN outflow_to_level_1 = 'PENDING_SUPERVISION' THEN 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
         ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
       END AS outflow_to,
       session_length_days,

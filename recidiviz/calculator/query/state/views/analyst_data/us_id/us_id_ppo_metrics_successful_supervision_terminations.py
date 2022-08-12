@@ -29,7 +29,7 @@ US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_NAME = (
 )
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_DESCRIPTION = """View capturing successful supervision terminations, captured by transition from SUPERVISION compartment to
-    RELEASE outflow and with DISCHARGED/EXPIRATION/COMMUTED/PARDONED end reason."""
+    LIBERTY outflow and with DISCHARGED/EXPIRATION/COMMUTED/PARDONED end reason."""
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE = """
     /*{description}*/
@@ -46,7 +46,7 @@ US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE = """
         compartment_level_2 as supervision_type,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
     WHERE compartment_level_1 = 'SUPERVISION'
-        AND outflow_to_level_1 = 'RELEASE'
+        AND outflow_to_level_1 = 'LIBERTY'
         AND end_reason in ('DISCHARGE', 'EXPIRATION', 'COMMUTED', 'PARDONED')  
     """
 

@@ -104,7 +104,7 @@ At a high-level, the following steps are taken to generate `compartment_sessions
         
         1. **Cases that lead to further aggregation**. This is occurs when we have a gap in data with identical compartment values for the periods surrounding that gap. If this occurs _and_ there are no matching dataflow events that indicate a transition, we assume that this is missing data and that this gap should take on the compartment values of its neighboring sessions. When this occurs, those adjacent sessions will then be re-aggregated into one larger compartment session. The `session_days_inferred` can be used to identify compartment sessions that have some portion of its time inferred by this methodology 
         2. **Cases that take on an inferred compartment value**. This refers to cases where the session gap gets a new compartment value (not equal to one of our population metric-derived values) based on the dataflow start/end reasons. The most common and straightforward example of this is the `RELEASE` compartment. This occurs when we have a gap in the data where the preceding session end reason is one that would indicate the person leaving the system (`SENTENCE_SERVED`, `COMMUTED`, `DISCHARGE`, `EXPIRATION`, `PARDONED`). The full set of inferred compartment values is listed below along with the criteria used to determine compartment values.
-            1. `RELEASE` - preceding end reason indicates transition to liberty
+            1. `LIBERTY` - preceding end reason indicates transition to liberty
             2. `PENDING_CUSTODY` - preceding end reason of is a supervision session ending in revocation or the subsequent start reason indicates a revocation or sanction admission
             3. `PENDING_SUPERVISION` - previous end reason is a incarceration session ending in conditional release
             4. `SUSPENSION` - previous end reason is suspension
@@ -407,7 +407,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     sessions_with_inferred_compartments AS
     /*
     The subquery uses start reasons, end reasons, inflows and outflows to categorize people into compartments. 
-    Additional compartments include "RELEASE", "ABSCONSION", "DEATH", "ERRONEOUS_RELEASE", "PENDING_CUSTODY",
+    Additional compartments include "LIBERTY", "ABSCONSION", "DEATH", "ERRONEOUS_RELEASE", "PENDING_CUSTODY",
     "PENDING_SUPERVISION", "SUSPENSION", "INCARCERATION - OUT_OF_STATE", and "SUPERVISION - OUT_OF_STATE". The
     "ABSCONSION" compartment type is also applied to non-inferred sessions that have "ABSCONSION" as the start reason.
     Gaps where a person inflows and outflows to the same compartment_level_1 and compartment_level_2 AND has null start
@@ -422,7 +422,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id_end,
         state_code,
         COALESCE(
-            CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
+            CASE WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY'
                 WHEN inferred_escape
                     OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
                     THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
@@ -437,7 +437,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inferred_suspension OR inferred_mo_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
-            CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
+            CASE WHEN inferred_release OR inferred_mo_release THEN 'LIBERTY_REPEAT_IN_SYSTEM'
                 WHEN inferred_escape
                     OR (start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION"))
                     THEN 'ABSCONSION'
@@ -706,8 +706,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.end_reason AS end_reason_original,
         earliest_start_date,
         last_day_of_data,
-        sessions.inflow_from_level_1,
-        sessions.inflow_from_level_2,
+        COALESCE(sessions.inflow_from_level_1, 'LIBERTY') AS inflow_from_level_1,
+        COALESCE(sessions.inflow_from_level_2, 'LIBERTY_FIRST_TIME_IN_SYSTEM') AS inflow_from_level_2,
         sessions.outflow_to_level_1,
         sessions.outflow_to_level_2,
         age_start,

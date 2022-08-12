@@ -49,7 +49,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         ON sessions.start_date < run_dates.run_date
-      WHERE compartment NOT IN ('RELEASE - RELEASE', 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN')
+      WHERE compartment NOT IN ('LIBERTY - LIBERTY_REPEAT_IN_SYSTEM', 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN')
           -- Only take data from the 10 years prior to the run date to match short-term behavior better
           AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 10
           -- Drop sessions that are on the cusp of the session-start boundary

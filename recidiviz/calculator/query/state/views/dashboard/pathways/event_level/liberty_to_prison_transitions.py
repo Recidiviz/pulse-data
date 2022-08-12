@@ -71,7 +71,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         WHERE
             compartment.state_code IN {enabled_states}
             AND compartment.compartment_level_1 = 'INCARCERATION'
-            AND (compartment.inflow_from_level_1 = 'RELEASE' OR compartment.inflow_from_level_1 is NULL)
+            AND compartment.inflow_from_level_1 = 'LIBERTY'
             AND compartment.start_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
             -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
     )

@@ -78,8 +78,8 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.transitions_data = pd.DataFrame(
             {
-                "compartment": ["PRISON", "PRISON", "RELEASE", "RELEASE"] * 2,
-                "outflow_to": ["RELEASE", "RELEASE", "PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
+                "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
                 "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
@@ -88,8 +88,8 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.transitions_data_with_null_values = pd.DataFrame(
             {
-                "compartment": ["PRISON", "PRISON", "RELEASE", "RELEASE"] * 2,
-                "outflow_to": ["RELEASE", "RELEASE", "PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
+                "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "crime_type": [nan] * 4 + ["VIOLENT"] * 4,  # type: ignore
                 "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
@@ -98,8 +98,8 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.transitions_data_wrong_disaggregation_axis = pd.DataFrame(
             {
-                "compartment": ["PRISON", "PRISON", "RELEASE", "RELEASE"] * 2,
-                "outflow_to": ["RELEASE", "RELEASE", "PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
+                "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "age": ["young"] * 4 + ["old"] * 4,
                 "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
@@ -108,7 +108,7 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.total_population_data = pd.DataFrame(
             {
-                "compartment": ["PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "total_population": [300.0, 500.0, 30.0, 50.0],
@@ -117,7 +117,7 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.total_population_data_wrong_disaggregation_axis = pd.DataFrame(
             {
-                "compartment": ["PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "age": ["young"] * 2 + ["old"] * 2,
                 "total_population": [300.0, 500.0, 30.0, 50.0],
@@ -126,7 +126,7 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.total_population_data_missing_column = pd.DataFrame(
             {
-                "compartment": ["PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "LIBERTY"] * 2,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "total_population": [300.0, 500.0, 30.0, 50.0],
             }
@@ -134,7 +134,7 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.total_population_data_extra_column = pd.DataFrame(
             {
-                "compartment": ["PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "total_population": [300.0, 500.0, 30.0, 50.0],
@@ -144,7 +144,7 @@ class TestSparkBQUtils(unittest.TestCase):
 
         self.total_population_data_wrong_type = pd.DataFrame(
             {
-                "compartment": ["PRISON", "RELEASE"] * 2,
+                "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "total_population": [300, 500, 30, 50],

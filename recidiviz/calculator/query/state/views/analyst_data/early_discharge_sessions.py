@@ -49,7 +49,7 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
             SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
         )
         -- Only count sessions ending in release where the discharge date is within a specified number of days of session end date
-        WHERE outflow_to_level_1 = 'RELEASE'
+        WHERE outflow_to_level_1 = 'LIBERTY'
             AND discharge_to_session_end_days <= CAST({discharge_session_diff_days} AS INT64)
     ),
     -- Create a flag for early discharge

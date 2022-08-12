@@ -77,7 +77,7 @@ WITH date_array AS (
         AND a.end_date = b.date
     WHERE
         a.compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
-        AND a.outflow_to_level_1 = "RELEASE"
+        AND a.outflow_to_level_1 = "LIBERTY"
 )
 # Valid earned discharge requests
 , earned_discharge_requests AS (

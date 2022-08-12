@@ -6,7 +6,7 @@ user_inputs:
 
 compartments_architecture:
   PRETRIAL: shell
-  RELEASE: full
+  LIBERTY: full
   PRISON: full
 
 reference_date: 2019.0
@@ -17,7 +17,7 @@ disaggregation_axes:
   - gender
 
 per_year_costs:
-  RELEASE: 0.0
+  LIBERTY: 0.0
   PRISON: 0.0
 
 data_inputs:
