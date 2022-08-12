@@ -28,6 +28,7 @@ export const ONE_PANEL_MAX_WIDTH =
   DATA_ENTRY_WIDTH + SIDE_PANEL_WIDTH + SIDE_PANEL_HORIZONTAL_PADDING; // data entry panel (644) + left side panel (360) + right padding from the right side panel (24)
 export const SINGLE_COLUMN_MAX_WIDTH =
   DATA_ENTRY_WIDTH + SIDE_PANEL_HORIZONTAL_PADDING * 2; // data entry panel (644) + left and right padding (24 * 2)
+export const BREAKPOINT_HEIGHT = 750;
 
 export const PublishDataWrapper = styled.div`
   width: ${SIDE_PANEL_WIDTH}px;
