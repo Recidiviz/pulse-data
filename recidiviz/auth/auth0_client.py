@@ -147,13 +147,16 @@ class Auth0Client:
         """Return a list of all Auth0 users associated with this tenant."""
         all_users = []
         continue_fetching = True
+        page = 0
         while continue_fetching:
             response = self.client.users.list(
+                page=page,
                 per_page=MAX_RESULTS_PER_PAGE,
                 fields=["user_id", "name", "email", "app_metadata"],
             )
             users = response["users"]
             all_users.extend(users)
+            page += 1
             continue_fetching = len(users) == MAX_RESULTS_PER_PAGE
         return all_users
 
