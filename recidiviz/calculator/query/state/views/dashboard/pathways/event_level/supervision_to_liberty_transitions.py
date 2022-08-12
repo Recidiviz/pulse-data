@@ -92,7 +92,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
             base_data.prioritized_race_or_ethnicity AS race,
             base_data.supervising_officer,
             base_data.supervision_start_date,
-            COALESCE(location.location_name, base_data.district_id, 'EXTERNAL_UNKNOWN')
+            UPPER(COALESCE(location.location_name, base_data.district_id, 'EXTERNAL_UNKNOWN'))
                 AS supervision_district,
             {transition_time_period} AS time_period,
             {length_of_stay_months_grouped} AS length_of_stay,

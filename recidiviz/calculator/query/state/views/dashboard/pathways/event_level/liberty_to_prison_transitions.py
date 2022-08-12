@@ -61,7 +61,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             {age_group}
             gender,
             prioritized_race_or_ethnicity AS race,
-            IFNULL(judicial_district_code_start, 'UNKNOWN') AS judicial_district,
+            UPPER(IFNULL(judicial_district_code_start, 'UNKNOWN')) AS judicial_district,
             IFNULL(previous_incarceration.session_length_days, 0) AS previous_incarceration_session_length_days,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment
         LEFT JOIN `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` previous_incarceration
