@@ -38,6 +38,7 @@ import {
 import { palette, typography } from "../GlobalStyles";
 import HelperText from "./HelperText";
 import {
+  BREAKPOINT_HEIGHT,
   FieldDescription,
   FieldDescriptionProps,
   ONE_PANEL_MAX_WIDTH,
@@ -63,6 +64,8 @@ export const ReportSummaryWrapper = styled.div`
   }
 `;
 
+const PUBLISH_CONFIRMATION_BUTTON_HEIGHT_AND_PADDING = 128;
+
 export const ReportSummaryProgressIndicatorWrapper = styled.div`
   margin-top: 28px;
   height: 37vh;
@@ -83,8 +86,8 @@ export const ReportSummaryProgressIndicatorWrapper = styled.div`
     height: 30vh;
   }
 
-  @media only screen and (max-height: 750px) {
-    height: 60vh;
+  @media only screen and (max-height: ${BREAKPOINT_HEIGHT}px) {
+    height: calc(55vh - ${PUBLISH_CONFIRMATION_BUTTON_HEIGHT_AND_PADDING}px);
     padding-bottom: 50px;
   }
 `;
@@ -184,10 +187,16 @@ const PublishContainer = styled.div`
     display: block;
     position: absolute;
     border-top: 1px solid ${palette.highlight.grey9};
+    background: ${palette.solid.white};
     right: 0;
     bottom: 0;
     left: 0;
-    margin: 24px;
+    margin: 0 24px;
+    padding: 24px 0;
+  }
+
+  @media only screen and (max-height: ${BREAKPOINT_HEIGHT}px) {
+    border: none;
   }
 `;
 

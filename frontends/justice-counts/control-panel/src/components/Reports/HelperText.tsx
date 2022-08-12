@@ -20,7 +20,10 @@ import styled from "styled-components/macro";
 
 import { useStore } from "../../stores";
 import { palette, typography } from "../GlobalStyles";
-import { TWO_PANEL_MAX_WIDTH } from "./ReportDataEntry.styles";
+import {
+  BREAKPOINT_HEIGHT,
+  TWO_PANEL_MAX_WIDTH,
+} from "./ReportDataEntry.styles";
 
 const HelperTextContainer = styled.div`
   height: 70vh;
@@ -41,7 +44,7 @@ const HelperTextContainer = styled.div`
   }
 
   @media only screen and (max-width: ${TWO_PANEL_MAX_WIDTH}px) {
-    height: 30vh;
+    height: 20vh;
     padding-right: 7px;
     &::-webkit-scrollbar {
       -webkit-appearance: none;
@@ -53,6 +56,10 @@ const HelperTextContainer = styled.div`
       background-color: ${palette.highlight.grey8};
       box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
       -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    @media only screen and (max-height: ${BREAKPOINT_HEIGHT}px) {
+      display: none;
     }
   }
 `;
