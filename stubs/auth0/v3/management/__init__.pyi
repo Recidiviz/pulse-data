@@ -26,7 +26,11 @@ from ..rest import RestClientOptions
 
 class Users:
     def list(
-        self, per_page: int, fields: List[str], q: Optional[str] = None
+        self,
+        per_page: int,
+        fields: List[str],
+        page: Optional[int] = None,
+        q: Optional[str] = None,
     ) -> Dict[str, Any]: ...
     def update(
         self,
