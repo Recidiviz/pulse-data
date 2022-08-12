@@ -196,7 +196,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
             schema.Agency(
                 id=agency_id,
                 name=agency_name,
-                system=agency_system,
+                systems=[agency_system.value],
                 state_code="US_NY",
                 fips_county_code="us_ny_new_york",
             )

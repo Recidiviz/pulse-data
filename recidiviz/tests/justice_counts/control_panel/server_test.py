@@ -360,8 +360,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "fips_county_code": agency.fips_county_code,
                     "id": agency.id,
                     "name": agency.name,
-                    "system": agency.system.value,
-                    "systems": [],
+                    "systems": agency.systems,
                     "state_code": agency.state_code,
                 }
             ],
@@ -433,7 +432,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     endpoint,
                     json={
                         "status": "DRAFT",
-                        "time_loaded": datetime.datetime.now().timestamp(),
+                        "time_loaded": update_datetime.timestamp(),
                         "metrics": [
                             {
                                 "key": law_enforcement.calls_for_service.key,
@@ -455,7 +454,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     endpoint,
                     json={
                         "status": "PUBLISHED",
-                        "time_loaded": datetime.datetime.now().timestamp(),
+                        "time_loaded": update_datetime.timestamp(),
                         "metrics": [
                             {
                                 "key": law_enforcement.calls_for_service.key,

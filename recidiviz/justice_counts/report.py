@@ -354,10 +354,7 @@ class ReportInterface:
         #   - Report frequency (e.g. only annual metrics)
         metric_definitions = MetricInterface.get_metric_definitions(
             report_type=report.type,
-            systems={schema.System[system] for system in report.source.systems}
-            if report.source.systems is not None
-            # TODO(#13216): Get rid of this `source.system` after migrating over to `systems`
-            else {report.source.system},
+            systems={schema.System[system] for system in report.source.systems or []},
         )
 
         agency_datapoints = DatapointInterface.get_agency_datapoints(
