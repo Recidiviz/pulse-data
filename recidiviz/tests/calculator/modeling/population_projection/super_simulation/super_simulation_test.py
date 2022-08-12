@@ -56,8 +56,8 @@ outflows_data_macro = pd.DataFrame(
 
 transitions_data_macro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "PRISON", "RELEASE", "RELEASE"] * 2,
-        "outflow_to": ["RELEASE", "RELEASE", "PRISON", "RELEASE"] * 2,
+        "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
+        "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
         "compartment_duration": [3, 5, 3, 50] * 2,
         "simulation_tag": ["test_data"] * 8,
         "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
@@ -67,7 +67,7 @@ transitions_data_macro = pd.DataFrame(
 
 total_population_data_macro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "RELEASE"] * 2,
+        "compartment": ["PRISON", "LIBERTY"] * 2,
         "time_step": [9] * 4,
         "simulation_tag": ["test_data"] * 4,
         "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
@@ -136,8 +136,8 @@ outflows_data_micro_missing_time_steps = pd.DataFrame(
 
 transitions_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "PRISON", "RELEASE"] * 4,
-        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 4,
+        "compartment": ["PRISON", "PRISON", "LIBERTY"] * 4,
+        "outflow_to": ["LIBERTY", "LIBERTY", "LIBERTY"] * 4,
         "compartment_duration": [3, 5, 3] * 4,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
@@ -148,8 +148,8 @@ transitions_data_micro = pd.DataFrame(
 
 remaining_sentence_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "PRISON", "RELEASE"] * 4,
-        "outflow_to": ["RELEASE", "RELEASE", "RELEASE"] * 4,
+        "compartment": ["PRISON", "PRISON", "LIBERTY"] * 4,
+        "outflow_to": ["LIBERTY", "LIBERTY", "LIBERTY"] * 4,
         "compartment_duration": [1, 2, 1] * 4,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
@@ -160,7 +160,7 @@ remaining_sentence_data_micro = pd.DataFrame(
 
 total_population_data_micro = pd.DataFrame(
     {
-        "compartment": ["PRISON", "RELEASE"] * 4,
+        "compartment": ["PRISON", "LIBERTY"] * 4,
         "time_step": [datetime(2020, 12, 1)] * 4 + [datetime(2021, 1, 1)] * 4,
         "state_code": ["test_state"] * 8,
         "run_date": [datetime(2021, 1, 1)] * 8,
@@ -422,7 +422,7 @@ class TestSuperSimulation(unittest.TestCase):
             TransitionTable.apply_reductions,
             reduction_df=pd.DataFrame(
                 {
-                    "outflow": ["RELEASE"],
+                    "outflow": ["LIBERTY"],
                     "reduction_size": [0.5],
                     "affected_fraction": [0.75],
                 }

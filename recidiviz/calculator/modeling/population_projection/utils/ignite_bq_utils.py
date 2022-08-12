@@ -35,16 +35,16 @@ def load_ignite_table_from_big_query(
 
 
 def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
-    """Add rows for the RELEASE compartment transitions"""
+    """Add rows for the terminal compartment transitions (LIBERTY and DEATH)"""
     complete_transitions = transition_data.copy()
     for run_date in transition_data.run_date.unique():
-        extra_rows_release = []
+        terminal_compartment_transitions = []
         for terminal_compartment in [
-            "RELEASE - RELEASE",
+            "LIBERTY - LIBERTY_REPEAT_IN_SYSTEM",
             "DEATH - DEATH",
         ]:
             for gender in ["FEMALE", "MALE"]:
-                extra_rows_release.append(
+                terminal_compartment_transitions.append(
                     {
                         "compartment": terminal_compartment,
                         "outflow_to": terminal_compartment,
@@ -54,7 +54,9 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
                         "run_date": run_date,
                     }
                 )
-        extra_rows_release = pd.DataFrame(extra_rows_release)
+        terminal_compartment_transitions = pd.DataFrame(
+            terminal_compartment_transitions
+        )
         long_sentences = 1 - np.round(
             transition_data[transition_data.run_date == run_date]
             .groupby(["compartment", "gender"])
@@ -71,7 +73,7 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
         complete_transitions = pd.concat(
             [
                 complete_transitions,
-                extra_rows_release,
+                terminal_compartment_transitions,
             ]
         )
     return complete_transitions
@@ -86,7 +88,7 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
     for run_date in remaining_sentence_data.run_date.unique():
         extra_rows = []
         for terminal_compartment in [
-            "RELEASE - RELEASE",
+            "LIBERTY - LIBERTY_REPEAT_IN_SYSTEM",
             "DEATH - DEATH",
         ]:
             for gender in ["FEMALE", "MALE"]:

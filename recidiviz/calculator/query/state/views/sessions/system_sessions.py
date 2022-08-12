@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """An aggregated view of sessions that shows continuous stays within the system (supervision or incarceration). A
- session in a RELEASE compartment triggers the start of a new system session."""
+ session in a LIBERTY compartment triggers the start of a new system session."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -28,7 +28,7 @@ SYSTEM_SESSIONS_VIEW_DESCRIPTION = """
 ## Overview
 
 This view is an aggregated view of sessions that represent a continuous stay within the 
-system. A `RELEASE` session triggers the start of a new system session. This view is 
+system. A `LIBERTY` session triggers the start of a new system session. This view is 
 unique on person and system session id.
 
 As an example, say a person had the following compartment sessions:
@@ -37,9 +37,9 @@ As an example, say a person had the following compartment sessions:
 2. `SUPERVISION - PAROLE`
 3. `INCARCERATION - GENERAL`
 4. `SUPERVISION - PAROLE`
-5. `RELEASE`
+5. `LIBERTY - LIBERTY_REPEAT_IN_SYSTEM`
 6. `SUPERVISION - PROBATION`
-7. `RELEASE`
+7. `LIBERTY - LIBERTY_FIRST_TIME_IN_SYSTEM`
 
 This person would have two system sessions - one that encompasses compartment sessions 
 1 - 4 and one that encompasses compartment session 6. 
@@ -50,7 +50,7 @@ This person would have two system sessions - one that encompasses compartment se
 |	--------------------	|	--------------------	|
 |	state_code	|	State code of the person	|
 |	person_id	|	Unique person identifier	|
-|	system_session_id	|	System session identifier. A new ID is triggered based on a RELEASE compartment session	|
+|	system_session_id	|	System session identifier. A new ID is triggered based on a LIBERTY compartment session	|
 |	start_date	|	System session start date	|
 |	end_date	|	System session end date	|
 |	incarceration_days	|	Days of system session spent in incarceration	|
@@ -80,12 +80,12 @@ SYSTEM_SESSIONS_QUERY_TEMPLATE = """
         (
         SELECT 
             *,
-            SUM(CASE WHEN compartment_level_1 = 'RELEASE' THEN 1 ELSE 0 END) 
+            SUM(CASE WHEN compartment_level_1 = 'LIBERTY' THEN 1 ELSE 0 END) 
                 OVER(PARTITION BY state_code, person_id ORDER BY start_date) + 1 
                 AS system_session_id
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` 
         )
-    WHERE compartment_level_1 != 'RELEASE'
+    WHERE compartment_level_1 != 'LIBERTY'
     GROUP BY 1, 2, 3
     """
 

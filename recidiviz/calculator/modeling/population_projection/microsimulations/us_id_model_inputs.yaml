@@ -6,7 +6,7 @@ user_inputs:
 
 compartments_architecture:
   PRETRIAL: shell
-  RELEASE: shell
+  LIBERTY: shell
   DEATH - DEATH: full
   INCARCERATION - GENERAL: full
   INCARCERATION - TREATMENT_IN_PRISON: full
@@ -23,7 +23,7 @@ compartments_architecture:
   SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION: full
   SUPERVISION_OUT_OF_STATE - PROBATION: full
   SUPERVISION_OUT_OF_STATE - PAROLE: full
-  RELEASE - RELEASE: full
+  LIBERTY - LIBERTY_REPEAT_IN_SYSTEM: full
 
 reference_date: 2021.0
 
@@ -49,7 +49,7 @@ per_year_costs:
   SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION: 0.0
   SUPERVISION_OUT_OF_STATE - PROBATION: 0.0
   SUPERVISION_OUT_OF_STATE - PAROLE: 0.0
-  RELEASE - RELEASE: 0.0
+  LIBERTY - LIBERTY_REPEAT_IN_SYSTEM: 0.0
 
 data_inputs:
   big_query_inputs:

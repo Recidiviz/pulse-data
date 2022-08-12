@@ -49,7 +49,7 @@ SELECT
 FROM
     `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
 WHERE
-    compartment_level_1 IN ("SUPERVISION", "INCARCERATION", "RELEASE")
+    compartment_level_1 IN ("SUPERVISION", "INCARCERATION", "LIBERTY")
 
 UNION ALL
 
@@ -334,7 +334,7 @@ FROM
     `{project_id}.{shared_metric_views_dataset}.overdue_discharge_outcomes`
 WHERE
     discharge_date IS NOT NULL
-    AND discharge_outflow = "RELEASE"
+    AND discharge_outflow = "LIBERTY"
 
 UNION ALL
 

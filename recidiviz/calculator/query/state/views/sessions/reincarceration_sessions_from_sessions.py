@@ -71,7 +71,7 @@ The table is deduped so that each person's release session is associated with th
 
 Releases are identified as those incarceration sessions that meet the following criteria:
 
-1. Outflow to `SUPERVISION` or `RELEASE`
+1. Outflow to `SUPERVISION` or `LIBERTY`
 2. Are not parole board hold sessions
 
 Reincarcerations are then joined to these releases based on:
@@ -151,7 +151,7 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
             OR reincarceration_session.inflow_from_level_2 IN ('PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY','SHOCK_INCARCERATION','COMMUNITY_CONFINEMENT'))
     WHERE release_session.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
         AND release_session.compartment_level_2 NOT IN ('PAROLE_BOARD_HOLD','TEMPORARY_CUSTODY','SHOCK_INCARCERATION','COMMUNITY_CONFINEMENT')
-        AND (release_session.outflow_to_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE','RELEASE', 'PENDING_SUPERVISION') OR
+        AND (release_session.outflow_to_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE','LIBERTY', 'PENDING_SUPERVISION') OR
             release_session.outflow_to_level_2 = 'COMMUNITY_CONFINEMENT')
     )
     SELECT * EXCEPT(rn)

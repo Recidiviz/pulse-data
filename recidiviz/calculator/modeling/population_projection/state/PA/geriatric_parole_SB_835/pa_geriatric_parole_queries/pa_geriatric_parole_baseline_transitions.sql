@@ -6,5 +6,5 @@ where age_at_sentence_completion >= 55;
 -- from `recidiviz-staging.analyst_data_scratch_space.pa_geriatric_parole_base_query`
 -- where age_end >= 55
 -- and sentence_start_date >='2002-01-01'
--- and COALESCE(inflow_from_level_1,'PRETRIAL') in ('RELEASE','PRETRIAL')
+-- and COALESCE(inflow_from_level_1,'PRETRIAL') in ('LIBERTY','PRETRIAL')
 -- and coalesce(outflow_to_level_1,'OPEN') in ('SUPERVISION')

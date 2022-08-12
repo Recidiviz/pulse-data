@@ -5,7 +5,7 @@ user_inputs:
 
 compartments_architecture:
   PRETRIAL: shell
-  RELEASE: full
+  LIBERTY: full
   PRISON: full
 
 reference_date: 2010.0
@@ -19,5 +19,5 @@ data_inputs:
   big_query_simulation_tag: test_data
 
 per_year_costs:
-  RELEASE: 0.0
+  LIBERTY: 0.0
   PRISON: 1000.0

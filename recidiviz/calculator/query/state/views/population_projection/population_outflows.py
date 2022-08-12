@@ -32,9 +32,9 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             DATE_TRUNC(start_date, MONTH) AS time_step,
             -- distinguish shell release compartment from full release compartment
             CASE
-                WHEN inflow_from = 'RELEASE - RELEASE' THEN 'RELEASE'
-                -- Count all admissions from "PRETRIAL" -> "PAROLE" in ND as coming from "RELEASE" instead of "PRETRIAL"
-                WHEN state_code = 'US_ND' AND compartment = 'SUPERVISION - PAROLE' AND inflow_from = 'PRETRIAL' THEN 'RELEASE'
+                WHEN inflow_from = 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM' THEN 'LIBERTY'
+                -- Count all admissions from "PRETRIAL" -> "PAROLE" in ND as coming from "LIBERTY" instead of "PRETRIAL"
+                WHEN state_code = 'US_ND' AND compartment = 'SUPERVISION - PAROLE' AND inflow_from = 'PRETRIAL' THEN 'LIBERTY'
                 ELSE inflow_from
             END AS compartment,
             CASE
@@ -60,7 +60,7 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION',
               'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PROBATION', 
               'SUPERVISION - INFORMAL_PROBATION')
-          WHEN compartment = 'RELEASE'
+          WHEN compartment = 'LIBERTY'
             THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
               'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION')
           ELSE FALSE

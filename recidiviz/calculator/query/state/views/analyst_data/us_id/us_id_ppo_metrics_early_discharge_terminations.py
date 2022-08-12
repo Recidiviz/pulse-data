@@ -28,7 +28,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_NAME = (
 )
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_DESCRIPTION = """View capturing proportion of successful supervision terminations via granted early discharge in the past 2 years.
-    Successful termination defined as transition from SUPERVISION to RELEASE compartment, and early discharge grants 
+    Successful termination defined as transition from SUPERVISION to LIBERTY compartment, and early discharge grants
     identified from either supervision period termination reasons (probation) or incarceration sentence status (parole)"""
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_QUERY_TEMPLATE = """
