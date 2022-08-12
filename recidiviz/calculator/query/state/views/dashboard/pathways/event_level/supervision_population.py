@@ -61,7 +61,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
             EXTRACT(YEAR FROM date_in_population) AS year,
             EXTRACT(MONTH FROM date_in_population) AS month,
             {time_period_months} AS time_period,            
-            COALESCE(name_map.location_name, session_attributes.supervision_office, "UNKNOWN") AS supervision_district,
+            UPPER(COALESCE(name_map.location_name, session_attributes.supervision_office, "UNKNOWN")) AS supervision_district,
             COALESCE(CASE
                 WHEN sessions.state_code="US_ND" THEN NULL
                 ELSE {state_specific_supervision_level}
