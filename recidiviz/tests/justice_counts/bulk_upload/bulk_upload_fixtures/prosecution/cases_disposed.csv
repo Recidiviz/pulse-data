@@ -1,7 +1,4 @@
-year,month,value,disposition_type
-2021,1,130,All
-2021,1,40,Rejected
-2021,1,25,Dismissal
-2021,2,260,All
-2022,3,100,All
-2022,3,30,Acquittal
+year,month,value
+2021,1,130
+2021,2,260
+2022,3,100

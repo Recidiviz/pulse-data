@@ -32,67 +32,91 @@ from recidiviz.justice_counts.metrics import prisons
 
 PRISON_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=prisons.annual_budget,
     ),
     MetricFile(
-        filenames=["total_staff"],
+        canonical_filename="total_staff",
+        definition=prisons.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
         definition=prisons.total_staff,
         disaggregation=CorrectionalFacilityStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        filenames=["readmission_rate"],
+        canonical_filename="readmissions",
+        definition=prisons.readmissions,
+    ),
+    MetricFile(
+        canonical_filename="readmissions_by_type",
         definition=prisons.readmissions,
         disaggregation=ReadmissionType,
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(
-        filenames=["admissions"],
+        canonical_filename="admissions",
+        definition=prisons.admissions,
+    ),
+    MetricFile(
+        canonical_filename="admissions_by_type",
         definition=prisons.admissions,
         disaggregation=PrisonPopulationType,
         disaggregation_column_name="admission_type",
     ),
     MetricFile(
-        filenames=["average_daily_population"],
+        canonical_filename="average_daily_population",
+        definition=prisons.average_daily_population,
+    ),
+    MetricFile(
+        canonical_filename="average_daily_population_by_type",
         definition=prisons.average_daily_population,
         disaggregation=PrisonPopulationType,
         disaggregation_column_name="population_type",
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="average_daily_population_by_race",
+        allowed_filenames=[
             "average_daily_population_by_race/ethnicity",
             "average_daily_population_race",
         ],
         definition=prisons.average_daily_population,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="average_daily_population_by_gender",
+        allowed_filenames=[
             "average_daily_population_by_gender",
             "average_daily_population_gender",
         ],
         definition=prisons.average_daily_population,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=["releases"],
+        canonical_filename="releases",
+        definition=prisons.releases,
+    ),
+    MetricFile(
+        canonical_filename="releases_by_type",
         definition=prisons.releases,
         disaggregation=PrisonReleaseTypes,
         disaggregation_column_name="release_type",
     ),
     MetricFile(
-        filenames=["staff_use_of_force_incidents"],
+        canonical_filename="use_of_force",
+        definition=prisons.staff_use_of_force_incidents,
+    ),
+    MetricFile(
+        canonical_filename="use_of_force_by_type",
         definition=prisons.staff_use_of_force_incidents,
         disaggregation=CorrectionalFacilityForceType,
         disaggregation_column_name="force_type",
     ),
     MetricFile(
-        filenames=["grievances_upheld"],
+        canonical_filename="grievances_upheld",
         definition=prisons.grievances_upheld,
     ),
 ]

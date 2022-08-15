@@ -30,55 +30,75 @@ from recidiviz.justice_counts.metrics import prosecution
 
 PROSECUTION_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=prosecution.annual_budget,
     ),
     MetricFile(
-        filenames=["caseloads"],
+        canonical_filename="caseloads",
+        definition=prosecution.caseloads,
+    ),
+    MetricFile(
+        canonical_filename="caseloads_by_severity",
         definition=prosecution.caseloads,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
-        filenames=["cases_disposed"],
+        canonical_filename="cases_disposed",
+        definition=prosecution.cases_disposed,
+    ),
+    MetricFile(
+        canonical_filename="cases_disposed_by_type",
         definition=prosecution.cases_disposed,
         disaggregation=DispositionType,
         disaggregation_column_name="disposition_type",
     ),
     MetricFile(
-        filenames=["cases_referred"],
+        canonical_filename="cases_referred",
+        definition=prosecution.cases_referred,
+    ),
+    MetricFile(
+        canonical_filename="cases_referred_by_severity",
         definition=prosecution.cases_referred,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
-        filenames=["cases_rejected"],
+        canonical_filename="cases_rejected",
+        definition=prosecution.cases_rejected,
+    ),
+    MetricFile(
+        canonical_filename="cases_rejected_by_severity",
         definition=prosecution.cases_rejected,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
-        filenames=["cases_rejected_by_gender", "cases_rejected_gender"],
+        canonical_filename="cases_rejected_by_gender",
+        allowed_filenames=["cases_rejected_gender"],
         definition=prosecution.cases_rejected,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=["cases_rejected_by_raceethnicity", "cases_rejected_race"],
+        canonical_filename="cases_rejected_by_race",
+        allowed_filenames=["cases_rejected_by_raceethnicity", "cases_rejected_race"],
         definition=prosecution.cases_rejected,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=["total_staff"],
+        canonical_filename="total_staff",
+        definition=prosecution.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
         definition=prosecution.total_staff,
         disaggregation=ProsecutionAndDefenseStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        filenames=["violations_filed"],
+        canonical_filename="violations_filed",
         definition=prosecution.violations,
     ),
 ]

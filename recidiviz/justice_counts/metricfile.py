@@ -26,16 +26,18 @@ from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 
 @attr.define()
 class MetricFile:
-    """Describes the structure of a CSV file for a particular Justice Counts metric.
-    If the metric has <= 1 disaggregation, there will be one corresponding file.
-    If the metric has multiple disaggregations (e.g. gender and race) there will be
-    one CSV for each disaggregation.
+    """Describes the structure of a CSV file for a particular Justice Counts metric,
+    according to the technical specification. This format is used for bulk upload/ingest
+    and for generating the public feeds.
+
+    If the metric has no disaggregations, there will be one corresponding file.
+    If the metric has disaggregations (e.g. gender and race) there will be
+    one CSV for the aggregate value and one CSV for each disaggregation.
     """
 
-    # Allowed names of the CSV file (minus the .csv extension).
-    # We use a list of allowed names because fuzzy matching doesn't
-    # work well at distinguishing them
-    filenames: List[str]
+    # Filename used for the technical specifiction.
+    canonical_filename: str
+
     # The definition of the corresponding Justice Counts metric.
     definition: MetricDefinition
 
@@ -47,9 +49,10 @@ class MetricFile:
     # e.g. `race/ethnicity`.
     disaggregation_column_name: Optional[str] = None
 
-    # Indicates whether this file contains a non-primary aggregation,
-    # like gender or race. In this case, the aggregate values don't
-    # need to be reported, because they already have been reported
-    # on the primary aggregation. If they are reported, they should
-    # match the primary aggregation's values.
-    supplementary_disaggregation: bool = False
+    # List of filenames that are accepted during bulk upload.
+    allowed_filenames: List[str] = attr.field(factory=list)
+
+    def __attrs_post_init__(self) -> None:
+        self.allowed_filenames = list(
+            set(self.allowed_filenames) | {self.canonical_filename}
+        )

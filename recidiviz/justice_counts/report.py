@@ -259,6 +259,7 @@ class ReportInterface:
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
         is specified, we validate that it matches what is already in the db.
+        If nothing is in the DB, we save the new aggregate value.
         """
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.utcnow()
