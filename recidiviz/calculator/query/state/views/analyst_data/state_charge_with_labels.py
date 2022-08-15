@@ -68,7 +68,7 @@ STATE_CHARGE_WITH_LABELS_QUERY_TEMPLATE = f"""
     SELECT
         state_charge.*,
         probability AS probability_match_uniform,
-        {null_if_low_probability('l.uccs_code')} AS uccs_code_uniforn,
+        {null_if_low_probability('l.uccs_code')} AS uccs_code_uniform,
         {hydrate_by_probability('l.uccs_description')} AS uccs_description_uniform,
         {hydrate_by_probability('l.uccs_category')} AS uccs_category_uniform,
         {hydrate_by_probability('l.ncic_code')} AS ncic_code_uniform,
@@ -77,7 +77,7 @@ STATE_CHARGE_WITH_LABELS_QUERY_TEMPLATE = f"""
         {hydrate_by_probability('l.nbirs_code')} AS nbirs_code_uniform,
         {hydrate_by_probability('l.nbirs_description')} AS nbirs_description_uniform,
         {hydrate_by_probability('l.nbirs_category')} AS nbirs_category_uniform,
-        {hydrate_by_probability('l.uccs_description')} AS crime_against_uniform,
+        {hydrate_by_probability('l.crime_against')} AS crime_against_uniform,
         {null_if_low_probability('l.is_drug')} AS is_drug_uniform,
         {null_if_low_probability('l.is_violent')} AS is_violent_uniform,
         {null_if_low_probability('l.offense_completed')} AS offense_completed_uniform,
