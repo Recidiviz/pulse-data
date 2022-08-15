@@ -63,8 +63,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         super().setUp()
 
         self.uploader = BulkUploader(catch_errors=False)
-        self.uploader_catch_errors = BulkUploader(catch_errors=True)
-        self.uploader_infer = BulkUploader(infer_aggregate_value=True)
+        self.uploader_infer = BulkUploader(
+            catch_errors=False, infer_aggregate_value=True
+        )
+        self.uploader_infer_catch_errors = BulkUploader(infer_aggregate_value=True)
 
         self.prisons_directory = os.path.join(
             os.path.dirname(__file__),
@@ -129,29 +131,25 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            filename_to_error = self.uploader_catch_errors.upload_directory(
+            filename_to_error = self.uploader_infer_catch_errors.upload_directory(
                 session=session,
                 directory=self.invalid_directory,
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 4)
+            self.assertEqual(len(filename_to_error), 3)
             self.assertTrue(
                 "No metric corresponds to the filename `gender`"
                 in str(filename_to_error["gender.csv"])
             )
             self.assertTrue(
-                "No aggregate metric value found for the metric `caseloads`"
-                in str(filename_to_error["caseloads.csv"])
-            )
-            self.assertTrue(
                 "No fuzzy matches found with high enough score. Input=Xxx"
-                in str(filename_to_error["cases_disposed.csv"])
+                in str(filename_to_error["cases_disposed_by_type.csv"])
             )
             self.assertTrue(
-                "aggregate value either read or inferred from incoming data does not match the existing aggregate value."
-                in str(filename_to_error["cases_rejected_by_gender.csv"])
+                "the aggregate value either read or inferred from incoming data does not match the existing aggregate value"
+                in str(filename_to_error["caseloads_by_severity.csv"])
             )
 
     def test_prison_new(self) -> None:
@@ -369,15 +367,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-
-            with self.assertRaisesRegex(ValueError, "No aggregate metric value"):
-                self.uploader.upload_directory(
-                    session=session,
-                    directory=self.supervision_directory,
-                    agency_id=self.supervision_agency_id,
-                    system=schema.System.SUPERVISION,
-                    user_account=user_account,
-                )
 
             self.uploader_infer.upload_directory(
                 session=session,

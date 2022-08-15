@@ -224,6 +224,7 @@ class DatapointInterface:
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
         is specified, we validate that it matches what is already in the db.
+        If nothing is in the DB, we save the new aggregate value.
         """
 
         # Don't save invalid datapoint values when publishing
@@ -261,22 +262,19 @@ class DatapointInterface:
 
         if use_existing_aggregate_value:
             # Validate that the incoming aggregate value matches what's already
-            # in the db. If not, raise an error. If so, continue without
-            # making any changes.m
+            # in the db. If not, raise an error. If so, continue without making
+            # any changes. If nothing is in the DB, save the new aggregate value.
             expunge_existing(session=session, ingested_entity=ingested_entity)
             existing_entity = get_existing_entity(ingested_entity, session)
-            if existing_entity is None:
-                raise ValueError(
-                    "`use_existing_aggregate_value was specified, "
-                    "but no existing aggregate value for the metric was found."
-                )
-            if abs(float(existing_entity.value) - value) > 1:
+            if (
+                existing_entity is not None
+                and abs(float(existing_entity.value) - value) > 1
+            ):
                 raise ValueError(
                     "`use_existing_aggregate_value was specified, "
                     "but the aggregate value either read or inferred from "
                     "incoming data does not match the existing aggregate value."
                 )
-            return None
 
         datapoint, existing_datapoint = update_existing_or_create(
             ingested_entity,

@@ -30,57 +30,71 @@ from recidiviz.justice_counts.metrics import law_enforcement
 
 LAW_ENFORCEMENT_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=law_enforcement.annual_budget,
     ),
     MetricFile(
-        filenames=["police_officers"],
+        canonical_filename="police_officers",
         definition=law_enforcement.police_officers,
     ),
     MetricFile(
-        filenames=["calls_for_service"],
+        canonical_filename="calls_for_service",
+        definition=law_enforcement.calls_for_service,
+    ),
+    MetricFile(
+        canonical_filename="calls_for_service_by_type",
         definition=law_enforcement.calls_for_service,
         disaggregation=CallType,
         disaggregation_column_name="call_type",
     ),
     MetricFile(
-        filenames=["reported_crime"],
+        canonical_filename="reported_crime",
+        definition=law_enforcement.reported_crime,
+    ),
+    MetricFile(
+        canonical_filename="reported_crime_by_type",
         definition=law_enforcement.reported_crime,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
-        filenames=["arrests_by_offense_type"],
+        canonical_filename="arrests",
+        definition=law_enforcement.total_arrests,
+    ),
+    MetricFile(
+        canonical_filename="arrests_by_type",
         definition=law_enforcement.total_arrests,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="arrests_by_race",
+        allowed_filenames=[
             "arrests_by_race/ethnicity",
             "arrests_by_raceethnicity",
-            "arrests_by_race",
         ],
         definition=law_enforcement.total_arrests,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        filenames=["arrests_by_gender"],
+        canonical_filename="arrests_by_gender",
         definition=law_enforcement.total_arrests,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
     ),
     MetricFile(
-        filenames=[
-            "officer_use_of_force_incidents",
-        ],
+        canonical_filename="use_of_force",
+        definition=law_enforcement.officer_use_of_force_incidents,
+    ),
+    MetricFile(
+        canonical_filename="use_of_force_by_type",
         definition=law_enforcement.officer_use_of_force_incidents,
         disaggregation=ForceType,
         disaggregation_column_name="force_type",
     ),
     MetricFile(
-        filenames=["civilian_complaints_sustained"],
+        canonical_filename="civilian_complaints_sustained",
         definition=law_enforcement.civilian_complaints_sustained,
     ),
 ]

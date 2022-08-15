@@ -323,7 +323,7 @@ class BulkUploader:
                 report=report,
                 report_metric=report_metric,
                 user_account=user_account,
-                use_existing_aggregate_value=metricfile.supplementary_disaggregation,
+                use_existing_aggregate_value=metricfile.disaggregation is not None,
             )
 
             ReportInterface.update_report_metadata(
@@ -405,7 +405,7 @@ class BulkUploader:
             if len(rows_for_this_time_range) != 1:
                 raise ValueError(
                     f"Only expected one row for time range {time_range} "
-                    f"because {metricfile.filenames[0]} doesn't have any disaggregations, "
+                    f"because {metricfile.canonical_filename} doesn't have any disaggregations, "
                     f"but found {len(rows_for_this_time_range)} rows."
                 )
 
@@ -436,55 +436,33 @@ class BulkUploader:
                     column_name=metricfile.disaggregation_column_name,
                     column_type=str,
                 )
-                if disaggregation_value.lower() == "all":
-                    aggregate_value = value
-                else:
-                    try:
-                        matching_disaggregation_member = metricfile.disaggregation(disaggregation_value)  # type: ignore
-                    except ValueError:
-                        # A ValueError will be thrown by the line above if the user-entered disaggregation
-                        # value is not actually a member of the disaggreation enum. In that case, we fuzzy
-                        # match against the enum members and try again.
-                        disaggregation_options = [
-                            member.value for member in metricfile.disaggregation  # type: ignore[attr-defined]
-                        ]
-                        disaggregation_value = fuzzy_match_against_options(
-                            analyzer=self.text_analyzer,
-                            text=disaggregation_value,
-                            options=disaggregation_options,
-                        )
-                        matching_disaggregation_member = metricfile.disaggregation(
-                            disaggregation_value
-                        )  # type: ignore[call-arg]
-                    dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
-            if aggregate_value is None:
-                # If aggregate_value is None, that means the input file doesn't contain a
-                # row with the value 'All'. It only contains breakdown values.
-                if metricfile.supplementary_disaggregation:
-                    # If this file contains a non-primary aggregation, like gender or race,
-                    # the aggregate values don't need to be reported, because they've already been
-                    # reported on the primary aggregation. If the aggregate value IS reported,
-                    # it will later be validated to match that of the primary aggregation (see
-                    # `use_existing_aggregate_value` flag).
-                    pass
-                else:
-                    # Otherwise, whether or not we require the aggregate value to be reported
-                    # depends on the `infer_aggregate_value` flag. If this is True, we
-                    # calculate the aggregate value by summing up all breakdowns. If this is
-                    # False, and no aggregate value is reported, we throw an error.
-                    if self.infer_aggregate_value:
-                        aggregate_value = sum(
-                            val  # type: ignore[misc]
-                            for val in dimension_to_value.values()  # type: ignore[union-attr]
-                            if val is not None
-                        )
-                    else:
-                        raise ValueError(
-                            f"No aggregate metric value found for the metric `{metricfile.filenames[0]}` "
-                            f"and time period {time_range}. Make sure to include a row labeled `All` "
-                            "for every time period."
-                        )
+                try:
+                    matching_disaggregation_member = metricfile.disaggregation(disaggregation_value)  # type: ignore
+                except ValueError:
+                    # A ValueError will be thrown by the line above if the user-entered disaggregation
+                    # value is not actually a member of the disaggreation enum. In that case, we fuzzy
+                    # match against the enum members and try again.
+                    disaggregation_options = [
+                        member.value for member in metricfile.disaggregation  # type: ignore[attr-defined]
+                    ]
+                    disaggregation_value = fuzzy_match_against_options(
+                        analyzer=self.text_analyzer,
+                        text=disaggregation_value,
+                        options=disaggregation_options,
+                    )
+                    matching_disaggregation_member = metricfile.disaggregation(
+                        disaggregation_value
+                    )  # type: ignore[call-arg]
+                dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
+
+            if self.infer_aggregate_value:
+                # If this is True, we calculate the aggregate value by summing up all breakdowns.
+                aggregate_value = sum(
+                    val  # type: ignore[misc]
+                    for val in dimension_to_value.values()  # type: ignore[union-attr]
+                    if val is not None
+                )
 
         return MetricInterface(
             key=metricfile.definition.key,

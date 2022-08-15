@@ -33,63 +33,82 @@ from recidiviz.justice_counts.metrics import parole, probation, supervision
 
 SUPERVISION_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=supervision.annual_budget,
     ),
     MetricFile(
-        filenames=["total_staff"],
+        canonical_filename="total_staff",
+        definition=supervision.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
         definition=supervision.total_staff,
         disaggregation=SupervisionStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        filenames=["supervision_violations"],
+        canonical_filename="supervision_violations",
+        definition=supervision.supervision_violations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_violations_by_type",
         definition=supervision.supervision_violations,
         disaggregation=SupervisionViolationType,
         disaggregation_column_name="violation_type",
     ),
     MetricFile(
-        filenames=["new_supervision_cases"],
+        canonical_filename="new_supervision_cases",
+        definition=supervision.new_supervision_cases,
+    ),
+    MetricFile(
+        canonical_filename="new_supervision_cases_by_type",
         definition=supervision.new_supervision_cases,
         disaggregation=SupervisionCaseType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=["individuals_under_supervision"],
+        canonical_filename="individuals_under_supervision",
+        definition=supervision.individuals_under_supervision,
+    ),
+    MetricFile(
+        canonical_filename="individuals_under_supervision_by_type",
         definition=supervision.individuals_under_supervision,
         disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=[
-            "individuals_under_supervision_by_gender",
-            "individuals_gender",
-        ],
+        canonical_filename="individuals_under_supervision_by_gender",
+        allowed_filenames=["individuals_gender"],
         definition=supervision.individuals_under_supervision,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="individuals_under_supervision_by_race",
+        allowed_filenames=[
             "individuals_under_supervision_by_race/ethnicity",
             "individuals_race",
         ],
         definition=supervision.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
-        supplementary_disaggregation=True,
     ),
     MetricFile(
-        filenames=[
-            "supervision_terminations",
-        ],
+        canonical_filename="supervision_terminations",
+        definition=supervision.supervision_terminations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_terminations_by_type",
         definition=supervision.supervision_terminations,
         disaggregation=SupervisionTerminationType,
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision", "reconvictions"],
+        canonical_filename="reconvictions",
+        definition=supervision.reconviction_while_on_supervision,
+    ),
+    MetricFile(
+        canonical_filename="reconvictions_by_type",
         definition=supervision.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
@@ -98,44 +117,59 @@ SUPERVISION_METRIC_FILES = [
 
 PAROLE_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=parole.annual_budget,
     ),
     MetricFile(
-        filenames=["total_staff"],
+        canonical_filename="total_staff",
+        definition=parole.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
         definition=parole.total_staff,
         disaggregation=SupervisionStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        filenames=["supervision_violations"],
+        canonical_filename="supervision_violations",
+        definition=parole.supervision_violations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_violations_by_type",
         definition=parole.supervision_violations,
         disaggregation=SupervisionViolationType,
         disaggregation_column_name="violation_type",
     ),
     MetricFile(
-        filenames=["new_supervision_cases"],
+        canonical_filename="new_supervision_cases",
+        definition=parole.new_supervision_cases,
+    ),
+    MetricFile(
+        canonical_filename="new_supervision_cases_by_type",
         definition=parole.new_supervision_cases,
         disaggregation=SupervisionCaseType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=["individuals_under_supervision"],
+        canonical_filename="individuals_under_supervision",
+        definition=parole.individuals_under_supervision,
+    ),
+    MetricFile(
+        canonical_filename="individuals_under_supervision_by_type",
         definition=parole.individuals_under_supervision,
         disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=[
-            "individuals_under_supervision_by_gender",
-            "individuals_gender",
-        ],
+        canonical_filename="individuals_under_supervision_by_gender",
+        allowed_filenames=["individuals_gender"],
         definition=parole.individuals_under_supervision,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="individuals_under_supervision_by_race",
+        allowed_filenames=[
             "individuals_under_supervision_by_race/ethnicity",
             "individuals_race",
         ],
@@ -144,15 +178,21 @@ PAROLE_METRIC_FILES = [
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        filenames=[
-            "supervision_terminations",
-        ],
+        canonical_filename="supervision_terminations",
+        definition=parole.supervision_terminations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_terminations_by_type",
         definition=parole.supervision_terminations,
         disaggregation=SupervisionTerminationType,
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision", "reconvictions"],
+        canonical_filename="reconvictions",
+        definition=parole.reconviction_while_on_supervision,
+    ),
+    MetricFile(
+        canonical_filename="reconvictions_by_type",
         definition=parole.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
@@ -161,44 +201,59 @@ PAROLE_METRIC_FILES = [
 
 PROBATION_METRIC_FILES = [
     MetricFile(
-        filenames=["annual_budget"],
+        canonical_filename="annual_budget",
         definition=probation.annual_budget,
     ),
     MetricFile(
-        filenames=["total_staff"],
+        canonical_filename="total_staff",
+        definition=probation.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
         definition=probation.total_staff,
         disaggregation=SupervisionStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        filenames=["supervision_violations"],
+        canonical_filename="supervision_violations",
+        definition=probation.supervision_violations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_violations_by_type",
         definition=probation.supervision_violations,
         disaggregation=SupervisionViolationType,
         disaggregation_column_name="violation_type",
     ),
     MetricFile(
-        filenames=["new_supervision_cases"],
+        canonical_filename="new_supervision_cases",
+        definition=probation.new_supervision_cases,
+    ),
+    MetricFile(
+        canonical_filename="new_supervision_cases_by_type",
         definition=probation.new_supervision_cases,
         disaggregation=SupervisionCaseType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=["individuals_under_supervision"],
+        canonical_filename="individuals_under_supervision",
+        definition=probation.individuals_under_supervision,
+    ),
+    MetricFile(
+        canonical_filename="individuals_under_supervision_by_type",
         definition=probation.individuals_under_supervision,
         disaggregation=SupervisionIndividualType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        filenames=[
-            "individuals_under_supervision_by_gender",
-            "individuals_gender",
-        ],
+        canonical_filename="individuals_under_supervision_by_gender",
+        allowed_filenames=["individuals_gender"],
         definition=probation.individuals_under_supervision,
         disaggregation=GenderRestricted,
         disaggregation_column_name="gender",
     ),
     MetricFile(
-        filenames=[
+        canonical_filename="individuals_under_supervision_by_race",
+        allowed_filenames=[
             "individuals_under_supervision_by_race/ethnicity",
             "individuals_race",
         ],
@@ -207,15 +262,21 @@ PROBATION_METRIC_FILES = [
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        filenames=[
-            "supervision_terminations",
-        ],
+        canonical_filename="supervision_terminations",
+        definition=probation.supervision_terminations,
+    ),
+    MetricFile(
+        canonical_filename="supervision_terminations_by_type",
         definition=probation.supervision_terminations,
         disaggregation=SupervisionTerminationType,
         disaggregation_column_name="termination_type",
     ),
     MetricFile(
-        filenames=["reconviction_while_on_supervision", "reconvictions"],
+        canonical_filename="reconvictions",
+        definition=probation.reconviction_while_on_supervision,
+    ),
+    MetricFile(
+        canonical_filename="reconvictions_by_type",
         definition=probation.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
