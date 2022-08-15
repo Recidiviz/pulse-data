@@ -35,25 +35,8 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
     (
     SELECT 
         lk.*,
-        sentence.min_sentence_length_days_calculated,
-        sentence.max_sentence_length_days_calculated,
-        sentence.effective_date,
-        sentence.completion_date,
-        sentence.parole_eligibility_date,
-        sentence.projected_completion_date_max,
-        sentence.projected_completion_date_min,
-        sentence.initial_time_served_days,
-        sentence.charge_id,
-        sentence.is_violent,
-        sentence.classification_type,
-        sentence.classification_subtype,
-        sentence.description,
-        sentence.offense_type,
-        sentence.ncic_code,
-        sentence.statute,
-        sentence.offense_type_short,
-        sentence.offense_date,
-        sentence.judicial_district,
+        sentence.* EXCEPT(person_id, sentence_id, sentence_type, state_code, date_imposed, session_id_imposed),
+        
         /*
         this field is used to calculate the total length. we need to know the longest sentence within each level so that
         we can sum up the longest sentences at each level. note that levels are not necessarily contained within
@@ -128,9 +111,26 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         --assumption here is that the felony sentence will be more severe than the misdemeanor sentence
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_type, NULL)) AS most_severe_classification_type,
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_subtype, NULL)) AS most_severe_classification_subtype,
+        LOGICAL_OR(is_violent) AS any_is_violent,
+        ANY_VALUE(IF(is_longest_in_imposed_group, uccs_code_uniform, NULL)) AS most_severe_uccs_code_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, uccs_description_uniform, NULL)) AS most_severe_uccs_description_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, uccs_category_uniform, NULL)) AS most_severe_uccs_category_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, ncic_code_uniform, NULL)) AS most_severe_ncic_code_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, ncic_description_uniform, NULL)) AS most_severe_ncic_description_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, ncic_category_uniform, NULL)) AS most_severe_ncic_category_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, nbirs_code_uniform, NULL)) AS most_severe_nbirs_code_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, nbirs_description_uniform, NULL)) AS most_severe_nbirs_description_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, nbirs_category_uniform, NULL)) AS most_severe_nbirs_category_uniform,
+        ANY_VALUE(IF(is_longest_in_imposed_group, crime_against_uniform, NULL)) AS most_severe_crime_against_uniform,
+    
+        LOGICAL_OR(is_drug_uniform) AS any_is_drug_uniform,
+        LOGICAL_OR(is_violent_uniform) AS any_is_violent_uniform,
+        LOGICAL_OR(offense_completed_uniform) AS any_offense_completed_uniform,
+        LOGICAL_OR(offense_attempted_uniform) AS any_offense_attempted_uniform,
+        LOGICAL_OR(offense_conspired_uniform) AS any_offense_conspired_uniform,        
+        
         ANY_VALUE(IF(is_first_sentence, sentence_type, NULL)) AS parent_sentence_type,
         ANY_VALUE(IF(is_first_sentence, judicial_district, NULL)) AS judicial_district,
-        LOGICAL_OR(is_violent) AS any_is_violent,
         COUNT(1) AS number_of_sentences,
         ANY_VALUE(num_levels) AS num_levels,
         IF(date_imposed>=MAX(effective_date), DATE_DIFF(date_imposed, MAX(effective_date), DAY), 0) AS days_effective_prior_to_imposed, 
@@ -147,7 +147,22 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
                 offense_type,
                 ncic_code,
                 statute,
-                offense_type_short 
+                offense_type_short,
+                uccs_code_uniform,
+                uccs_description_uniform,
+                uccs_category_uniform,
+                ncic_code_uniform,
+                ncic_description_uniform,
+                ncic_category_uniform,
+                nbirs_code_uniform,
+                nbirs_description_uniform,
+                nbirs_category_uniform,
+                crime_against_uniform,
+                is_drug_uniform,
+                is_violent_uniform,
+                offense_completed_uniform,
+                offense_attempted_uniform,
+                offense_conspired_uniform
                 )
             ORDER BY offense_date, charge_id
         ) AS offense_attributes

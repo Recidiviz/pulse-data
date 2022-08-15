@@ -62,16 +62,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         COALESCE(sis.is_life, FALSE) AS life_sentence,
         sis.min_length_days,
         sis.max_length_days,
-        charge.charge_id,
-        charge.offense_date,
-        charge.is_violent,
-        charge.classification_type,
-        charge.classification_subtype,
-        charge.description,
-        charge.offense_type,
-        charge.ncic_code,
-        charge.statute,
-        charge.judicial_district,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text)
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
@@ -104,16 +95,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         FALSE AS life_sentence,
         sss.min_length_days,
         sss.max_length_days,
-        charge.charge_id,
-        charge.offense_date,
-        charge.is_violent,
-        charge.classification_type,
-        charge.classification_subtype,
-        charge.description,
-        charge.offense_type,
-        charge.ncic_code,
-        charge.statute,
-        charge.judicial_district,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text)
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
@@ -158,6 +140,21 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.ncic_code,
         sen.statute,
         COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
+        sen.uccs_code_uniform,
+        sen.uccs_description_uniform,
+        sen.uccs_category_uniform,
+        sen.ncic_code_uniform,
+        sen.ncic_description_uniform,
+        sen.ncic_category_uniform,
+        sen.nbirs_code_uniform,
+        sen.nbirs_description_uniform,
+        sen.nbirs_category_uniform,
+        sen.crime_against_uniform,
+        sen.is_drug_uniform,
+        sen.is_violent_uniform,
+        sen.offense_completed_uniform,
+        sen.offense_attempted_uniform,
+        sen.offense_conspired_uniform,        
         consecutive_sentence.sentence_id AS consecutive_sentence_id,
         -- Set the session_id_imposed if the sentence date imposed matches the session start date
         IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
