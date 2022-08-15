@@ -7,9 +7,17 @@ primary_key_cols:
   - TreatTrackCloseCasesCode
 columns:
   - name: TreatTrackCloseCasesCode
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackCloseCasesID
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackCloseCasesDesc
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: Active
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: LastModifiedBy
     is_pii: True
   - name: LastModifiedDateTime

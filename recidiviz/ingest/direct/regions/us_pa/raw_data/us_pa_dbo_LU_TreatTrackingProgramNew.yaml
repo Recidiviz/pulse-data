@@ -8,15 +8,37 @@ data_classification: source
 primary_key_cols: []
 columns:
   - name: Type
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: SortID
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackProgCode
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackProgDescrip
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackClass
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TreatTrackNo
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: Active
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: LastModifiedBy
     is_pii: True
   - name: LastModifiedDateTime
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: EnableResourceTab
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: SortViolSevID
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TechID
+    description: |-
+      TODO(#13772) Add in description from PA.

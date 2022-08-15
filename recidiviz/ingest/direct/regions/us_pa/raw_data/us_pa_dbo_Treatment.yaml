@@ -17,6 +17,8 @@ columns:
     description: |-
       External ID for a particular bout of treatment.
   - name: TrtType
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtDO
     description: |-
       The two-digit supervision district the treatment took place in.
@@ -30,6 +32,8 @@ columns:
       program (e.g. Housing, Mental Health, etc). The latter two digits describe the program
       subtype (e.g. Inpatient, Outpatient, etc).
   - name: TrtIndProgID
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtStartDateYear
     description: |-
       The year that treatment started.
@@ -49,14 +53,22 @@ columns:
     description: |-
       The day that treatment ended.
   - name: TrtStatusCode
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtProgramCode
     description: |-
       The code associated with the given treatment program.
   - name: TrtProgramDescription
     is_pii: True
   - name: TrtIndexAct97
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: OtherState
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: OtherStateFac
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: LastModifiedBy
     is_pii: True
     description: |-
@@ -66,7 +78,11 @@ columns:
     description: |-
       When the record was last modified.
   - name: TrtHrsImposed
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtHrsCompleted
+    description: |-
+      TODO(#13772) Add in description from PA.
 separator: ‡
 custom_line_terminator: †
 ignore_quotes: True
