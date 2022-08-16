@@ -102,6 +102,6 @@ class WorkflowsFirestoreDemoEtlDelegateTest(TestCase):
         mock_get_file_stream.return_value = [FakeFileStream(1)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
-            delegate.run_etl()
+            delegate.run_etl("US_TN", "test_export.json")
 
         mock_get_collection.assert_called_once_with("DEMO_test_collection")

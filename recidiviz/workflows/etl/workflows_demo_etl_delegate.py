@@ -30,30 +30,31 @@ from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_e
 from recidiviz.workflows.etl.regions.us_tn.staff_record_etl_delegate import (
     StaffRecordETLDelegate,
 )
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleStateETLDelegate,
+)
 
 
-class WorkflowsFirestoreDemoETLDelegate(WorkflowsFirestoreETLDelegate):
+class WorkflowsFirestoreDemoETLDelegate(WorkflowsSingleStateETLDelegate):
     """Abstract class containing the ETL logic for exporting a specified demo data fixture to Firestore."""
 
     @property
     def fixture_filepath(self) -> Path:
         return Path(__file__).parent / "demo_fixtures" / self.EXPORT_FILENAME
 
-    @property
-    def filepath_url(self) -> str:
+    def filepath_url(self, _state_code: str, _filename: str) -> str:
         return self.fixture_filepath.as_uri()
 
-    def get_file_stream(self) -> Iterator[TextIO]:
+    def get_file_stream(self, _state_code: str, _filename: str) -> Iterator[TextIO]:
         """Returns a stream of the contents of the file this delegate is watching for."""
         # bypassing self.get_filepath since it assumes a GCS file
         with open(self.fixture_filepath, "r", encoding="utf8") as f:
             yield f
 
     @property
-    def collection_name(self) -> str:
+    def COLLECTION_BY_FILENAME(self) -> dict[str, str]:
         """Name of the Firestore collection this delegate will ETL into."""
-        return f"DEMO_{self._COLLECTION_NAME_BASE}"
+        return {self.EXPORT_FILENAME: f"DEMO_{self._COLLECTION_NAME_BASE}"}
 
 
 class StaffRecordDemoETLDelegate(
@@ -77,6 +78,8 @@ class CompliantReportingReferralRecordDemoETLDelegate(
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        StaffRecordDemoETLDelegate().run_etl()
-        ClientRecordDemoETLDelegate().run_etl()
-        CompliantReportingReferralRecordDemoETLDelegate().run_etl()
+        StaffRecordDemoETLDelegate().run_etl("US_TN", "staff_record.json")
+        ClientRecordDemoETLDelegate().run_etl("US_TN", "client_record.json")
+        CompliantReportingReferralRecordDemoETLDelegate().run_etl(
+            "US_TN", "compliant_reporting_referral_record.json"
+        )

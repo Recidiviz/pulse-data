@@ -128,7 +128,7 @@ class StaffRecordEtlDelegateTest(TestCase):
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
                     delegate = StaffRecordETLDelegate()
-                    delegate.run_etl()
+                    delegate.run_etl("US_TN", "staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,
