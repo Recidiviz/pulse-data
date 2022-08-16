@@ -113,10 +113,12 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
         if "expiration_date" in data:
             new_document["expirationDate"] = data["expiration_date"]
 
-        if "earliest_supervision_start_date_in_latest_system" in data:
+        if "supervision_start_date" in data:
+            # TODO(#14224) Remove once frontend is migrated away from earliestSupervisionStartDateInLatestSystem
             new_document["earliestSupervisionStartDateInLatestSystem"] = data[
-                "earliest_supervision_start_date_in_latest_system"
+                "supervision_start_date"
             ]
+            new_document["supervisionStartDate"] = data["supervision_start_date"]
 
         # add nullable objects
         if "compliant_reporting_eligible" in data:
