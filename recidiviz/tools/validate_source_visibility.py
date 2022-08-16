@@ -344,6 +344,7 @@ def main() -> int:
                 "recidiviz.persistence",
                 "recidiviz.utils",
                 "recidiviz.auth",
+                "recidiviz.cloud_storage",
             }
         ),
     )
