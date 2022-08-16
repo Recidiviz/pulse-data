@@ -38,6 +38,9 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.io.flask_file_storage_contents_handle import (
+    FlaskFileStorageContentsHandle,
+)
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
 
@@ -200,7 +203,9 @@ class FakeGCSFileSystem(GCSFileSystem):
         timeout: int = 60,
     ) -> None:
         temp_path = generate_random_temp_path()
-        if isinstance(contents_handle, LocalFileContentsHandle):
+        if isinstance(contents_handle, FlaskFileStorageContentsHandle):
+            contents_path = contents_handle.file_storage.filename or ""
+        elif isinstance(contents_handle, LocalFileContentsHandle):
             contents_path = contents_handle.local_file_path
         elif isinstance(contents_handle, SftpFileContentsHandle):
             contents_path = contents_handle.sftp_file_path

@@ -27,7 +27,6 @@ and make joins easier.
 If this causes issues with database serialization in the future, we can evaluate using these directly as primary keys
 or adding `source.id` to the primary key of all objects and partitioning along that.
 """
-
 import enum
 import re
 from typing import Any, Dict, List, Optional, TypeVar
@@ -333,13 +332,13 @@ class Spreadsheet(JusticeCountsBase):
     system = Column(Enum(System), nullable=False)
     status = Column(Enum(SpreadsheetStatus), nullable=False)
     # The date the spreadsheet was uploaded
-    uploaded_at = Column(Date, nullable=False)
+    uploaded_at = Column(DateTime, nullable=False)
     # The auth0_user_id of the user who uploaded the spreadsheet
     uploaded_by = Column(String, nullable=False)
     # The auth0_user_id of the user who ingested the spreadsheet
     ingested_by = Column(String, nullable=True)
     # The date the spreadsheet was ingested
-    ingested_at = Column(Date, nullable=True)
+    ingested_at = Column(DateTime, nullable=True)
 
     upload_note = Column(String, nullable=True)
 

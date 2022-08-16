@@ -17,14 +17,19 @@
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
 from http import HTTPStatus
+from pathlib import Path
+from unittest import mock
 
 import pytest
 from flask import g, session
 from freezegun import freeze_time
 from mock import patch
+from more_itertools import one
 from sqlalchemy.engine import Engine
 
 from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
@@ -41,9 +46,12 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
     ReportStatus,
     Source,
+    Spreadsheet,
+    System,
     UserAccount,
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
@@ -58,6 +66,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel backend API."""
 
     def setUp(self) -> None:
+        self.now_time = datetime.datetime(2022, 2, 15, 0, 0, 0, 0)
+        self.freezer = freeze_time(self.now_time)
+        self.freezer.start()
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        mock_project_id_fn = self.project_id_patcher.start()
+        mock_project_id_fn.return_value = "justice-counts"
+
+        self.bulk_upload_test_files = Path(
+            "recidiviz/tests/justice_counts/bulk_upload/bulk_upload_fixtures"
+        )
         self.client_patcher = patch("recidiviz.auth.auth0_client.Auth0")
         self.test_auth0_client = self.client_patcher.start().return_value
         self.secrets_patcher = patch("recidiviz.auth.auth0_client.secrets")
@@ -76,6 +94,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             AUTH0_CLIENT=self.test_auth0_client,
             SEGMENT_KEY="fake_segment_key",
         )
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = mock.patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+
         self.app = create_app(config=test_config)
         self.client = self.app.test_client()
         self.app.secret_key = "NOT A SECRET"
@@ -411,107 +433,105 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(db_user.name, new_name)
 
     def test_update_report(self) -> None:
-        update_datetime = datetime.datetime(2022, 2, 1, 0, 0, 0)
-        with freeze_time(update_datetime):
-            report = self.test_schema_objects.test_report_monthly
-            user = self.test_schema_objects.test_user_A
-            self.session.add_all([user, report])
-            self.session.commit()
-            with self.app.test_request_context():
-                user_account = UserAccountInterface.get_user_by_auth0_user_id(
-                    session=self.session, auth0_user_id=user.auth0_user_id
-                )
-                g.user_context = UserContext(
-                    auth0_user_id=user.auth0_user_id,
-                    user_account=user_account,
-                    agency_ids=[report.source_id],
-                )
-                value = 100
-                endpoint = f"/api/reports/{report.id}"
-                response = self.client.post(
-                    endpoint,
-                    json={
-                        "status": "DRAFT",
-                        "time_loaded": update_datetime.timestamp(),
-                        "metrics": [
-                            {
-                                "key": law_enforcement.calls_for_service.key,
-                                "value": value,
-                            }
-                        ],
-                    },
-                )
-                self.assertEqual(response.status_code, 200)
-                report = self.session.query(Report).one_or_none()
-                self.assertEqual(report.status, ReportStatus.DRAFT)
-                self.assertEqual(report.last_modified_at, update_datetime)
-                self.assertEqual(report.datapoints[0].get_value(), value)
-                self.assertEqual(
-                    report.modified_by,
-                    [user_account.id],
-                )
-                response = self.client.post(
-                    endpoint,
-                    json={
-                        "status": "PUBLISHED",
-                        "time_loaded": update_datetime.timestamp(),
-                        "metrics": [
-                            {
-                                "key": law_enforcement.calls_for_service.key,
-                                "value": value + 10,
-                                "disaggregations": [
-                                    {
-                                        "key": CallType.dimension_identifier(),
-                                        "dimensions": [
-                                            {
-                                                "key": CallType.EMERGENCY.value,
-                                                "value": value,
-                                            },
-                                            {
-                                                "key": CallType.NON_EMERGENCY.value,
-                                                "value": 10,
-                                            },
-                                            {
-                                                "key": CallType.UNKNOWN.value,
-                                                "value": None,
-                                            },
-                                        ],
-                                    }
-                                ],
-                                "contexts": [
-                                    {
-                                        "key": ContextKey.ALL_CALLS_OR_CALLS_RESPONDED.value,
-                                        "value": CallsRespondedOptions.ALL_CALLS.value,
-                                    },
-                                ],
-                            },
-                            {
-                                "key": law_enforcement.annual_budget.key,
-                                "value": 2000000,
-                                "contexts": [
-                                    {
-                                        "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
-                                        "value": "test context",
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                )
-                self.assertEqual(response.status_code, 200)
-                report = self.session.query(Report).one_or_none()
-                self.assertEqual(report.status, ReportStatus.PUBLISHED)
-                datapoints = report.datapoints
-                self.assertEqual(len(datapoints), 7)
-                self.assertEqual(report.datapoints[0].get_value(), 110)
-                # Empty CallType dimension values
-                self.assertEqual(datapoints[1].get_value(), value)
-                self.assertEqual(datapoints[2].get_value(), 10)
-                self.assertEqual(datapoints[3].get_value(), None)
-                self.assertEqual(
-                    datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
-                )
-                self.assertEqual(datapoints[5].get_value(), 2000000)
+        report = self.test_schema_objects.test_report_monthly
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([user, report])
+        self.session.commit()
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=user.auth0_user_id
+            )
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                user_account=user_account,
+                agency_ids=[report.source_id],
+            )
+            value = 100
+            endpoint = f"/api/reports/{report.id}"
+            response = self.client.post(
+                endpoint,
+                json={
+                    "status": "DRAFT",
+                    "time_loaded": datetime.datetime.now().timestamp(),
+                    "metrics": [
+                        {
+                            "key": law_enforcement.calls_for_service.key,
+                            "value": value,
+                        }
+                    ],
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            report = self.session.query(Report).one_or_none()
+            self.assertEqual(report.status, ReportStatus.DRAFT)
+            self.assertEqual(report.last_modified_at, self.now_time)
+            self.assertEqual(report.datapoints[0].get_value(), value)
+            self.assertEqual(
+                report.modified_by,
+                [user_account.id],
+            )
+            response = self.client.post(
+                endpoint,
+                json={
+                    "status": "PUBLISHED",
+                    "time_loaded": datetime.datetime.now().timestamp(),
+                    "metrics": [
+                        {
+                            "key": law_enforcement.calls_for_service.key,
+                            "value": value + 10,
+                            "disaggregations": [
+                                {
+                                    "key": CallType.dimension_identifier(),
+                                    "dimensions": [
+                                        {
+                                            "key": CallType.EMERGENCY.value,
+                                            "value": value,
+                                        },
+                                        {
+                                            "key": CallType.NON_EMERGENCY.value,
+                                            "value": 10,
+                                        },
+                                        {
+                                            "key": CallType.UNKNOWN.value,
+                                            "value": None,
+                                        },
+                                    ],
+                                }
+                            ],
+                            "contexts": [
+                                {
+                                    "key": ContextKey.ALL_CALLS_OR_CALLS_RESPONDED.value,
+                                    "value": CallsRespondedOptions.ALL_CALLS.value,
+                                },
+                            ],
+                        },
+                        {
+                            "key": law_enforcement.annual_budget.key,
+                            "value": 2000000,
+                            "contexts": [
+                                {
+                                    "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
+                                    "value": "test context",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            report = self.session.query(Report).one_or_none()
+            self.assertEqual(report.status, ReportStatus.PUBLISHED)
+            datapoints = report.datapoints
+            self.assertEqual(len(datapoints), 7)
+            self.assertEqual(report.datapoints[0].get_value(), 110)
+            # Empty CallType dimension values
+            self.assertEqual(datapoints[1].get_value(), value)
+            self.assertEqual(datapoints[2].get_value(), 10)
+            self.assertEqual(datapoints[3].get_value(), None)
+            self.assertEqual(
+                datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
+            )
+            self.assertEqual(datapoints[5].get_value(), 2000000)
 
     def test_update_report_version_conflict(self) -> None:
         report = self.test_schema_objects.test_report_monthly
@@ -602,6 +622,71 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agency_datapoints = self.session.query(Datapoint).all()
         # 1 metric datapoint, 2 breakdown datapoints, and 1 and one context datapoint
         self.assertEqual(len(agency_datapoints), 4)
+
+    def test_upload_spreadsheet(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+
+            response = self.client.post(
+                "/api/spreadsheets",
+                data={
+                    "agency_id": agency.id,
+                    "file": (
+                        self.bulk_upload_test_files
+                        / "law_enforcement/law_enforcement_metrics.xlsx"
+                    ).open("rb"),
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(
+                response.json,
+                {
+                    "id": 1,
+                    "name": "law_enforcement_metrics.xlsx",
+                    "uploaded_at": datetime.datetime.utcnow().timestamp(),
+                    "uploaded_by": "Jane Doe",
+                    "ingested_at": None,
+                    "status": "UPLOADED",
+                    "system": "LAW_ENFORCEMENT",
+                },
+            )
+            spreadsheet = self.session.query(Spreadsheet).one()
+            self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
+            self.assertEqual(
+                spreadsheet.uploaded_by,
+                self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
+            standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.utcnow().timestamp()}.xlsx"
+            self.assertEqual(
+                spreadsheet.standardized_name,
+                standardized_name,
+            )
+            self.assertEqual(1, len(self.fs.uploaded_paths))
+            path = one(self.fs.uploaded_paths)
+            self.assertEqual(
+                GcsfsFilePath(
+                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                    blob_name=standardized_name,
+                ),
+                path,
+            )
 
     def test_session(self) -> None:
         # Add data

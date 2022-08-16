@@ -44,6 +44,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricInterface,
 )
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.flask_exception import FlaskException
@@ -380,6 +381,32 @@ def get_api_blueprint(
 
         except Exception as e:
             raise _get_error(error=e) from e
+
+    @api_blueprint.route("/spreadsheets", methods=["POST"])
+    @auth_decorator
+    def upload_spreadsheet() -> Response:
+        """Upload spreadsheet for an agency."""
+        data = assert_type(request.form, dict)
+        agency_id = int(data["agency_id"])
+        auth0_user_id = get_auth0_user_id(request_dict=data)
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+        file = request.files["file"]
+        spreadsheet = SpreadsheetInterface.upload_spreadsheet(
+            session=current_session,
+            file_storage=file,
+            agency_id=agency_id,
+            auth0_user_id=auth0_user_id,
+            # TODO(#14593) Handle agencies with more than one system.
+            system=agency.systems[0],
+        )
+
+        return jsonify(
+            SpreadsheetInterface.get_spreadsheet_json(
+                spreadsheet=spreadsheet, session=current_session
+            )
+        )
 
     return api_blueprint
 
