@@ -38,9 +38,36 @@ import {
   TabbedOptions,
   Table,
 } from "../Reports";
+import { showToast } from "../Toast";
 
 const HEADER_HEIGHT = 170;
 const ROW_HEIGHT = 42;
+
+export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERROR";
+
+export type UploadedFileAttempt = {
+  name: string;
+  upload_attempt_timestamp: number;
+  status?: "ERROR";
+};
+
+export type UploadedFile = {
+  name: string;
+  id: number;
+  uploaded_at: number;
+  ingested_at: number;
+  uploaded_by: string;
+  system: string;
+  status: UploadedFileStatus | null;
+};
+
+const isUploadedFile = (
+  file: UploadedFile | UploadedFileAttempt
+): file is UploadedFile => {
+  return (file as UploadedFile).id !== undefined;
+};
+
+export type ButtonTypes = "borderless" | "blue";
 
 export const ExtendedTabbedBar = styled(TabbedBar)`
   height: 66px;
@@ -127,8 +154,6 @@ export const ButtonWrapper = styled.div`
   margin: 13px 0;
 `;
 
-type ButtonTypes = "borderless" | "blue";
-
 export const Button = styled.div<{ type?: ButtonTypes }>`
   ${typography.sizeCSS.normal};
   display: flex;
@@ -184,18 +209,10 @@ export const Icon = styled.img<{ grayscale?: boolean }>`
   ${({ grayscale }) => grayscale && `filter: grayscale(1);`}
 `;
 
-type UploadedFile = {
-  name: string;
-  date_uploaded: string;
-  date_ingested: string | null;
-  uploaded_by: string | undefined;
-  status: string | null;
-};
-
 const uploadStatusColorMapping: BadgeColorMapping = {
-  Pending: "ORANGE",
-  Ingested: "GREEN",
-  Error: "RED",
+  UPLOADED: "ORANGE",
+  INGESTED: "GREEN",
+  ERROR: "RED",
 };
 
 export const DataUpload: React.FC = observer(() => {
@@ -207,53 +224,99 @@ export const DataUpload: React.FC = observer(() => {
     "Uploaded By",
   ];
   const [activeMenuItem, setActiveMenuItem] = useState(dataUploadMenuItems[0]);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const { userStore } = useStore();
+  const [uploadedFiles, setUploadedFiles] = useState<
+    (UploadedFile | UploadedFileAttempt)[]
+  >([]);
+  const { userStore, reportStore } = useStore();
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const fileName = file?.name;
-
-    if (fileName) {
-      const normalizedDateNow = Intl.DateTimeFormat("en-US", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(Date.now());
-
-      const uploadedFileDetails = {
-        name: fileName,
-        date_uploaded: normalizedDateNow,
-        date_ingested: null,
-        uploaded_by: userStore.nameOrEmail,
-        status: null,
-      };
-
-      setUploadedFiles((prev) => {
-        let matchFound = false;
-        const updatedFilesList = prev.map((list) => {
-          if (list.name === fileName) {
-            matchFound = true;
-            return uploadedFileDetails;
-          }
-          return list;
-        });
-
-        return matchFound ? updatedFilesList : [uploadedFileDetails, ...prev];
+  const updateUploadedFilesList = (
+    fileDetails: UploadedFile | UploadedFileAttempt
+  ) => {
+    setUploadedFiles((prev) => {
+      let matchFound = false;
+      const updatedFilesList = prev.map((file) => {
+        if (file.name === fileDetails.name && !file.status) {
+          matchFound = true;
+          return fileDetails;
+        }
+        return file;
       });
 
-      // Mock successful server response
-      setTimeout(() => {
-        setUploadedFiles((prev) => {
-          return prev.map((list) => {
-            if (list.name === fileName) {
-              return { ...list, status: "Pending" };
-            }
-            return list;
-          });
-        });
-      }, 2000);
+      return matchFound ? updatedFilesList : [fileDetails, ...prev];
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileName = file?.name;
+    const formData = new FormData();
+
+    if (fileName && userStore.currentAgencyId) {
+      formData.append("file", file);
+      formData.append("name", fileName);
+      formData.append("agency_id", userStore.currentAgencyId.toString());
+      const newFileDetails = {
+        name: fileName,
+        upload_attempt_timestamp: Date.now(),
+      };
+
+      updateUploadedFilesList(newFileDetails);
+
+      const response = await reportStore.uploadExcelSpreadsheet(formData);
+
+      if (response instanceof Error) {
+        showToast("Failed to upload. Please try again.", false, "red");
+        return updateUploadedFilesList({ ...newFileDetails, status: "ERROR" });
+      }
+
+      const fullFileDetails = await response?.json();
+
+      showToast(
+        "File uploaded successfully and is pending processing by a Justice Counts administrator.",
+        true,
+        undefined,
+        3500
+      );
+      updateUploadedFilesList(fullFileDetails);
     }
+  };
+
+  const getFileRowDetails = (file: UploadedFile | UploadedFileAttempt) => {
+    const fileStatus = file.status === "UPLOADED" ? "PENDING" : file.status;
+
+    if (isUploadedFile(file)) {
+      const formatDate = (timestamp: number) =>
+        Intl.DateTimeFormat("en-US", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(timestamp);
+
+      return {
+        key: `${file.name}-${file.id}`,
+        selected: !file.status,
+        name: file.name,
+        badgeColor: file.status
+          ? uploadStatusColorMapping[file.status]
+          : "GREY",
+        badgeText: fileStatus?.toLowerCase() || "Uploading...",
+        dateUploaded: formatDate(file.uploaded_at),
+        dateIngested: file.ingested_at ? formatDate(file.ingested_at) : "--",
+        uploadedBy: file.uploaded_by,
+      };
+    }
+    return {
+      key: `${file.name}-${file.upload_attempt_timestamp}`,
+      selected: false,
+      name: file.name,
+      badgeColor: file.status ? uploadStatusColorMapping[file.status] : "GREY",
+      badgeText: file.status?.toLowerCase() || "Uploading...",
+      dateUploaded: "--",
+      dateIngested: "--",
+      uploadedBy: "--",
+    };
   };
 
   return (
@@ -286,7 +349,7 @@ export const DataUpload: React.FC = observer(() => {
                   type="file"
                   id="upload-data"
                   name="upload-data"
-                  accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                  accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                   onChange={handleFileUpload}
                   onClick={() => setActiveMenuItem("Uploaded Files")}
                 />
@@ -326,6 +389,7 @@ export const DataUpload: React.FC = observer(() => {
         )}
 
         {/* Uploaded Files */}
+
         {activeMenuItem === "Uploaded Files" && (
           <UploadedFilesContainer>
             <UploadedFilesTable>
@@ -334,35 +398,38 @@ export const DataUpload: React.FC = observer(() => {
                   <Label key={title}>{title}</Label>
                 ))}
               </ExtendedLabelRow>
-              {uploadedFiles.map((fileDetails) => (
-                <ExtendedRow
-                  key={fileDetails.name}
-                  selected={!fileDetails.status}
-                >
-                  {/* Filename */}
-                  <Cell>
-                    {fileDetails.name}
-                    <Badge
-                      color={
-                        fileDetails.status
-                          ? uploadStatusColorMapping[fileDetails.status]
-                          : "GREY"
-                      }
-                    >
-                      {fileDetails.status || "Uploading..."}
-                    </Badge>
-                  </Cell>
 
-                  {/* Date Uploaded */}
-                  <Cell capitalize>{fileDetails.date_uploaded}</Cell>
+              {uploadedFiles.map((fileDetails) => {
+                const {
+                  key,
+                  selected,
+                  name,
+                  badgeColor,
+                  badgeText,
+                  dateUploaded,
+                  dateIngested,
+                  uploadedBy,
+                } = getFileRowDetails(fileDetails);
 
-                  {/* Date Ingested */}
-                  <Cell>{fileDetails.date_ingested || "--"}</Cell>
+                return (
+                  <ExtendedRow key={key} selected={selected}>
+                    {/* Filename */}
+                    <Cell>
+                      {name}
+                      <Badge color={badgeColor}>{badgeText}</Badge>
+                    </Cell>
 
-                  {/* Uploaded By */}
-                  <Cell>{fileDetails.uploaded_by}</Cell>
-                </ExtendedRow>
-              ))}
+                    {/* Date Uploaded */}
+                    <Cell capitalize>{dateUploaded}</Cell>
+
+                    {/* Date Ingested */}
+                    <Cell>{dateIngested}</Cell>
+
+                    {/* Uploaded By */}
+                    <Cell>{uploadedBy}</Cell>
+                  </ExtendedRow>
+                );
+              })}
             </UploadedFilesTable>
           </UploadedFilesContainer>
         )}

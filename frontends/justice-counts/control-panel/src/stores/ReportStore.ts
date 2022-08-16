@@ -17,6 +17,7 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
+import { UploadedFileStatus } from "../components/DataUpload";
 import { MetricSettings } from "../components/MetricsView";
 import {
   Metric,
@@ -258,6 +259,64 @@ class ReportStore {
 
       if (response.status !== 200) {
         throw new Error("There was an issue updating the report settings.");
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async getUploadedFilesList(): Promise<Response | Error | undefined> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/spreadsheets`,
+        method: "GET",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue retrieving the list of files.");
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async uploadExcelSpreadsheet(
+    formData: FormData
+  ): Promise<Response | Error | undefined> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/spreadsheets`,
+        body: formData,
+        method: "POST",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue uploading the file.");
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof Error) return new Error(error.message);
+    }
+  }
+
+  async updateFileStatus(
+    spreadsheetID: number,
+    status: UploadedFileStatus
+  ): Promise<Response | Error | undefined> {
+    try {
+      const response = (await this.api.request({
+        path: `/api/spreadsheets/${spreadsheetID}`,
+        body: { status },
+        method: "POST",
+      })) as Response;
+
+      if (response.status !== 200) {
+        throw new Error("There was an issue updating the file status.");
       }
 
       return response;
