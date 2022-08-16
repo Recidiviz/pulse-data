@@ -81,6 +81,10 @@ columns:
   - name: closing_reason_code
   - name: closing_authority_id
   - name: closing_date
+    description: closing date of the legal order
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: offender_court_last_name
     is_pii: True
