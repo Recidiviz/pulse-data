@@ -31,9 +31,8 @@ from recidiviz.workflows.etl.workflows_etl_delegate import (
 
 
 class TestETLDelegate(WorkflowsFirestoreETLDelegate):
-    EXPORT_FILENAME = "test_export.json"
-    _COLLECTION_NAME_BASE = "test_collection"
-    STATE_CODE = "US_XX"
+    EXPORT_BY_STATE = {"US_XX": ["test_export.json"]}
+    COLLECTION_BY_FILENAME = {"test_export.json": "testOpportunity"}
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         return row, {"data": row}
@@ -101,9 +100,9 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_get_file_stream.return_value = [FakeFileStream(3000)]
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
-            delegate.run_etl()
+            delegate.run_etl("US_XX", "test_export.json")
 
-        mock_get_collection.assert_called_once_with("test_collection")
+        mock_get_collection.assert_called_once_with("testOpportunity")
 
     def test_run_etl_timestamp(
         self,
@@ -121,7 +120,7 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
             with freeze_time(mock_now):
-                delegate.run_etl()
+                delegate.run_etl("US_XX", "test_export.json")
 
     def test_run_etl_delete_outdated(
         self,
@@ -137,8 +136,8 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         with local_project_id_override("test-project"):
             delegate = TestETLDelegate()
             with freeze_time(mock_now):
-                delegate.run_etl()
+                delegate.run_etl("US_XX", "test_export.json")
 
         mock_delete_old_documents.assert_called_once_with(
-            "test_collection", "US_XX", "__loadedAt", mock_now
+            "testOpportunity", "US_XX", "__loadedAt", mock_now
         )

@@ -18,7 +18,7 @@
 import os
 from datetime import datetime, timezone
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 
@@ -204,7 +204,6 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
     ) -> None:
         """Tests that the ETL Delegate for CompliantReportingReferralRecord imports the collection with both the
         row_id and document_id."""
-        # TODO(#14213): Delete this test once we remove importing collection with both IDs
         mock_batch_set = MagicMock()
         mock_batch_writer.return_value = mock_batch_set
         mock_get_file_stream.return_value = [FakeFileStream(1)]
@@ -221,26 +220,14 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
                     delegate = CompliantReportingReferralRecordETLDelegate()
-                    delegate.run_etl()
-                    mock_collection.document.assert_has_calls(
-                        [call(123), call(document_id)]
+                    delegate.run_etl(
+                        "US_TN", "compliant_reporting_referral_record.json"
                     )
-                    mock_batch_set.set.assert_has_calls(
-                        [
-                            call(
-                                mock_document_ref,
-                                {
-                                    "personExternalId": 123,
-                                    "deprecate": True,
-                                    "__loadedAt": mock_now,
-                                },
-                            ),
-                            call(
-                                mock_document_ref,
-                                {
-                                    "personExternalId": 123,
-                                    "__loadedAt": mock_now,
-                                },
-                            ),
-                        ]
+                    mock_collection.document.assert_called_once_with(document_id)
+                    mock_batch_set.set.assert_called_once_with(
+                        mock_document_ref,
+                        {
+                            "personExternalId": 123,
+                            "__loadedAt": mock_now,
+                        },
                     )

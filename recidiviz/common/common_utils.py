@@ -161,3 +161,27 @@ def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+def convert_nested_dictionary_keys(
+    data: dict[str, Any], convert_function: Callable
+) -> dict[str, Any]:
+    """
+    Convert keys of a nested dictionary from one convention to another.
+    """
+    converted_dict = {}
+    for key, value in data.items():
+        converted_value = value
+        if isinstance(value, dict):
+            converted_value = convert_nested_dictionary_keys(value, convert_function)
+        elif isinstance(value, list):
+            converted_value = []
+            for list_item in value:
+                if isinstance(list_item, dict):
+                    converted_value.append(
+                        convert_nested_dictionary_keys(list_item, convert_function)
+                    )
+                else:
+                    converted_value.append(list_item)
+        converted_dict[convert_function(key)] = converted_value
+    return converted_dict

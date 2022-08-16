@@ -22,6 +22,7 @@ from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from mock import MagicMock, call
 
 from recidiviz.common.common_utils import (
+    convert_nested_dictionary_keys,
     create_generated_id,
     create_synthetic_id,
     date_intersects_with_span,
@@ -31,6 +32,7 @@ from recidiviz.common.common_utils import (
     is_generated_id,
     retry_grpc,
 )
+from recidiviz.common.str_field_utils import snake_to_camel
 
 GO_AWAY_ERROR = exceptions.InternalServerError("500 GOAWAY received")
 DEADLINE_EXCEEDED_ERROR = exceptions.DeadlineExceeded("504 Deadline Exceeded")
@@ -225,4 +227,28 @@ class CommonUtilsTest(unittest.TestCase):
             date_spans_overlap_inclusive(
                 start_1=_DATE_5, end_1=_DATE_6, start_2=_DATE_2, end_2=_DATE_4
             )
+        )
+
+    def test_convert_nested_dictionary_keys(self) -> None:
+        data = {
+            "external_id": 123,
+            "nested_dict": {"where_is_my_mind": 500},
+            "list_of_stuff": [
+                "hello",
+                123,
+                {"second_key": 1, "third_key": {"fourth_key": [1, 2, 3]}},
+            ],
+        }
+        converted_dict = convert_nested_dictionary_keys(data, snake_to_camel)
+        self.assertEqual(
+            {
+                "externalId": 123,
+                "nestedDict": {"whereIsMyMind": 500},
+                "listOfStuff": [
+                    "hello",
+                    123,
+                    {"secondKey": 1, "thirdKey": {"fourthKey": [1, 2, 3]}},
+                ],
+            },
+            converted_dict,
         )

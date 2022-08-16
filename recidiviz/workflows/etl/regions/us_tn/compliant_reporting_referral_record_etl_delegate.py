@@ -21,10 +21,12 @@ from typing import Optional, Tuple
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleStateETLDelegate,
+)
 
 
-class CompliantReportingReferralRecordETLDelegate(WorkflowsFirestoreETLDelegate):
+class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegate):
     """Delegate class to ETL the compliant_reporting_referral_record.json file into Firestore."""
 
     STATE_CODE = "US_TN"
@@ -271,4 +273,6 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsFirestoreETLDelegate)
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        CompliantReportingReferralRecordETLDelegate().run_etl()
+        CompliantReportingReferralRecordETLDelegate().run_etl(
+            "US_TN", "compliant_reporting_referral_record.json"
+        )
