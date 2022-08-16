@@ -94,3 +94,12 @@ module "pathways-db-import-queue" {
   # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
   # at a time.
 }
+
+# Queue used for tasks to update DBs backing workflows products.
+module "workflows-etl-operations-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name                = "workflows-etl-operations-queue"
+  region                    = var.app_engine_region
+  max_dispatches_per_second = 100
+}

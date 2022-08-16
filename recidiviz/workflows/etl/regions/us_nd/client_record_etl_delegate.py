@@ -22,10 +22,12 @@ from typing import Optional, Tuple
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_etl_delegate import (
+    WorkflowsSingleStateETLDelegate,
+)
 
 
-class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
+class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
     """Delegate class to ETL the client_record.json file into Firestore."""
 
     STATE_CODE = "US_ND"
@@ -81,4 +83,4 @@ class ClientRecordETLDelegate(WorkflowsFirestoreETLDelegate):
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        ClientRecordETLDelegate().run_etl()
+        ClientRecordETLDelegate().run_etl("US_ND", "client_record.json")
