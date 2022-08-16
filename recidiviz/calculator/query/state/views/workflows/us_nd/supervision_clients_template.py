@@ -99,7 +99,6 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
         SELECT
             external_id AS person_external_id,
             TRUE AS early_termination_eligible
-        # Update dataset when ready
         FROM `{project_id}.{workflows_dataset}.us_nd_complete_discharge_early_from_supervision_record_materialized`
     ),
     nd_clients AS (

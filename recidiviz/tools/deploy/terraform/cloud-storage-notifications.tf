@@ -58,6 +58,16 @@ module "handle_new_case_triage_etl" {
   oidc_audience = local.app_engine_iap_client
 }
 
+module "handle_workflows_firestore_etl" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name           = module.practices-etl-data.name
+  push_endpoint         = "${local.app_engine_url}/practices-etl/handle_workflows_firestore_etl"
+  service_account_email = data.google_app_engine_default_service_account.default.email
+  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+  oidc_audience = local.app_engine_iap_client
+}
+
 locals {
   app_engine_url = "https://${var.project_id}.appspot.com"
   # These client IDs come from the app engine service we want to authenticate to, and can be found
