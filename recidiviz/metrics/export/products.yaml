@@ -146,3 +146,7 @@ products:
     states:
       - state_code: US_TN
         environment: production
+      - state_code: US_ND
+        environment: production
+        # TODO(#14189): Remove allow_empty once staff record is included in export
+        allow_empty: true

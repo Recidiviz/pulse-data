@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Tests the ability for ClientRecordEtlDelegate to parse json rows."""
+"""Tests the ability for US_ND ClientRecordEtlDelegate to parse json rows."""
 import os
 from datetime import datetime, timezone
 from unittest import TestCase
@@ -26,7 +26,7 @@ from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import 
     FakeFileStream,
 )
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
+from recidiviz.workflows.etl.regions.us_nd.client_record_etl_delegate import (
     ClientRecordETLDelegate,
 )
 
@@ -56,41 +56,9 @@ class ClientRecordEtlDelegateTest(TestCase):
             self.assertEqual(
                 row,
                 {
-                    "address": "123 Fake st., Faketown, TN 12345",
-                    "compliantReportingEligible": {
-                        "eligibilityCategory": "c3",
-                        "remainingCriteriaNeeded": 0,
-                        "currentOffenses": None,
-                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
-                        "drugScreensPastYear": [
-                            {"date": "2021-02-03", "result": "DRUN"},
-                            {"date": "2021-04-20", "result": "DRUN"},
-                        ],
-                        "eligibleLevelStart": "2021-03-17",
-                        "judicialDistrict": "7",
-                        "lifetimeOffensesExpired": None,
-                        "mostRecentArrestCheck": "2021-11-15",
-                        "sanctionsPastYear": ["OPRD"],
-                        "finesFeesEligible": "regular_payments",
-                        "zeroToleranceCodes": [
-                            {
-                                "contactNoteType": "COHC",
-                                "contactNoteDate": "2020-02-02",
-                            },
-                            {
-                                "contactNoteType": "PWAR",
-                                "contactNoteDate": "2020-03-03",
-                            },
-                        ],
-                    },
-                    "currentBalance": 45.1,
+                    "address": "123 Fake st., Faketown, ND 12345",
+                    "earlyTerminationEligible": True,
                     "expirationDate": "2022-02-28",
-                    "feeExemptions": "Exemption 1, Exemption2",
-                    "lastPaymentAmount": 10.25,
-                    "lastPaymentDate": "2021-12-20",
-                    "nextSpecialConditionsCheck": "2021-12-02",
-                    "lastSpecialConditionsNote": "2021-07-07",
-                    "specialConditionsTerminatedDate": "2021-08-08",
                     "officerId": "100",
                     "personExternalId": "200",
                     "pseudonymizedId": "p200",
@@ -101,25 +69,11 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "surname": "Mouse-House",
                     },
                     "phoneNumber": "8889997777",
-                    "specialConditions": "SPECIAL",
                     "stateCode": "US_XX",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
-                    "supervisionType": "Probation",
-                    "boardConditions": [
-                        {
-                            "condition": "CT",
-                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
-                        },
-                        {
-                            "condition": "CW",
-                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
-                        },
-                    ],
-                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
+                    "supervisionType": "PROBATION",
                     "supervisionStartDate": "2021-03-04",
-                    "district": "DISTRICT 0",
-                    "specialConditionsFlag": "current",
                 },
             )
 
@@ -140,10 +94,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "surname": "Houdini IV",
                     },
                     "officerId": "102",
-                    "currentBalance": 282,
-                    "district": "DISTRICT X",
-                    "supervisionType": "ISC",
-                    "specialConditions": "NULL",
+                    "supervisionType": "PAROLE",
                 },
             )
 
@@ -162,52 +113,16 @@ class ClientRecordEtlDelegateTest(TestCase):
                         "nameSuffix": "",
                         "surname": "Realname",
                     },
-                    "address": "456 Fake st., Faketown, TN 12345",
-                    "currentBalance": 45.1,
+                    "address": "456 Fake st., Faketown, ND 12345",
                     "expirationDate": "2022-02-28",
-                    "feeExemptions": "Exemption 1, Exemption2",
-                    "lastPaymentAmount": 10.25,
-                    "lastPaymentDate": "2021-12-20",
-                    "nextSpecialConditionsCheck": "2021-12-02",
-                    "lastSpecialConditionsNote": "2021-07-07",
-                    "specialConditionsTerminatedDate": "2021-08-08",
                     "officerId": "100",
                     "phoneNumber": "8889997777",
-                    "specialConditions": "SPECIAL",
                     "stateCode": "US_XX",
-                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevel": "MAXIMUM",
                     "supervisionLevelStart": "2020-03-10",
-                    "supervisionType": "Probation",
-                    "boardConditions": [
-                        {
-                            "condition": "CT",
-                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
-                        },
-                        {
-                            "condition": "CW",
-                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
-                        },
-                    ],
-                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
+                    "supervisionType": "DUAL",
                     "supervisionStartDate": "2021-03-04",
-                    "district": "DISTRICT 0",
-                    "specialConditionsFlag": "current",
-                    "compliantReportingEligible": {
-                        "eligibilityCategory": "c1",
-                        "remainingCriteriaNeeded": 1,
-                        "almostEligibleCriteria": {
-                            "passedDrugScreenNeeded": True,
-                        },
-                        "currentOffenses": None,
-                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
-                        "drugScreensPastYear": [],
-                        "eligibleLevelStart": "2021-03-17",
-                        "judicialDistrict": "7",
-                        "lifetimeOffensesExpired": None,
-                        "mostRecentArrestCheck": "2021-11-15",
-                        "sanctionsPastYear": [],
-                        "finesFeesEligible": "regular_payments",
-                    },
+                    "earlyTerminationEligible": True,
                 },
             )
 
@@ -237,7 +152,7 @@ class ClientRecordEtlDelegateTest(TestCase):
         mock_document_ref = MagicMock()
         mock_collection.document.return_value = mock_document_ref
         mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
-        document_id = "us_tn_123"
+        document_id = "us_nd_123"
         with local_project_id_override("test-project"):
             with freeze_time(mock_now):
                 with patch.object(
