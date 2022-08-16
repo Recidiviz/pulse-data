@@ -8,6 +8,7 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
       - justice_counts_db_socket:/cloudsql/justice_counts
     depends_on:
       - justice_counts_db
@@ -18,6 +19,7 @@ services:
     environment:
       - FLASK_APP=/app/recidiviz/justice_counts/control_panel/server.py
       - FLASK_ENV=development
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       # The virtual env files are packaged with the image so they do not change during the lifecycle of the container
       # They can safely be excluded from the stat reloader for a performance boost
       - FLASK_RUN_EXCLUDE_PATTERNS=/app/.venv/**/*

@@ -34,7 +34,8 @@ from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
-from recidiviz.utils.environment import in_development
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
+from recidiviz.utils.metadata import set_development_project_id_override
 from recidiviz.utils.secrets import get_secret
 
 os.environ.setdefault("APP_URL", "http://localhost:3000")
@@ -76,7 +77,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
             "../../../frontends/justice-counts/control-panel/build/",
         )
     )
-
+    if in_development():
+        # Set the project to recidiviz-staging if we are running the application locallly.
+        set_development_project_id_override(GCP_PROJECT_STAGING)
     app = Flask(__name__, static_folder=static_folder)
     config = config or Config()
     app.config.from_object(config)
