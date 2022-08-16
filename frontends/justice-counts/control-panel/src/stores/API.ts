@@ -24,7 +24,7 @@ import { showToast } from "../components/Toast";
 export interface RequestProps {
   path: string;
   method: "GET" | "POST" | "PUT" | "DELETE";
-  body?: Record<string, unknown>;
+  body?: FormData | Record<string, unknown>;
   retrying?: boolean;
 }
 
@@ -80,14 +80,23 @@ class API {
 
       const token = await this.authStore.getToken();
 
+      // Files are sent as FormData and not JSON
+      const jsonOrFormDataBody =
+        body instanceof FormData ? body : JSON.stringify(body);
+
+      const headers: HeadersInit = {
+        Authorization: `Bearer ${token}`,
+        "X-CSRF-Token": this.csrfToken,
+      };
+
+      if (!(body instanceof FormData)) {
+        headers["Content-Type"] = "application/json";
+      }
+
       const response = await fetch(path, {
-        body: method !== "GET" ? JSON.stringify(body) : null,
+        body: method !== "GET" ? jsonOrFormDataBody : null,
         method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "X-CSRF-Token": this.csrfToken,
-        },
+        headers,
       });
 
       if (response.status >= 400) {
