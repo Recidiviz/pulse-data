@@ -95,7 +95,7 @@ individual_sentence_charges AS (
   charge.classification_subtype AS crime_subclassification,
   CONCAT(
       COALESCE(ncic.description, charge.description, "<to fill>"), 
-      IFNULL(CONCAT(" a Class (", charge.classification_subtype, ") "), " <to fill>"),
+      IFNULL(CONCAT(" a Class (", charge.classification_subtype, ") "), " a Class (<to fill>) "),
       IFNULL(INITCAP(charge.classification_type), " <to fill>")
     ) AS crime_name,
   FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`  sent
