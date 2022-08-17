@@ -230,6 +230,32 @@ class JusticeCountsSchemaTestObjects:
             ],
         )
 
+    # Spreadsheets
+    @staticmethod
+    def get_test_spreadsheet(
+        system: schema.System,
+        user_id: str,
+        agency_id: int,
+        is_ingested: bool = False,
+        upload_offset: int = 0,
+    ) -> schema.Spreadsheet:
+        uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
+        return schema.Spreadsheet(
+            system=system,
+            agency_id=agency_id,
+            standardized_name=f"{str(agency_id)}:{system}:{uploaded_at.timestamp()}.xlsx",
+            original_name=f"{system.value}_metrics.xlsx",
+            uploaded_by=user_id,
+            uploaded_at=uploaded_at + (datetime.timedelta(upload_offset)),
+            ingested_at=uploaded_at + (datetime.timedelta(upload_offset + 50))
+            if is_ingested
+            else None,
+            ingested_by="auth0_id_B" if is_ingested else None,
+            status=schema.SpreadsheetStatus.INGESTED
+            if is_ingested
+            else schema.SpreadsheetStatus.UPLOADED,
+        )
+
     @staticmethod
     def get_report_for_agency(
         agency: schema.Agency, frequency: str = "MONTHLY"

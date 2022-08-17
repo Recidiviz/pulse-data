@@ -189,7 +189,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             monthly_report = self.test_schema_objects.test_report_monthly
             user = self.test_schema_objects.test_user_A
             session.add_all([monthly_report, user])
-            current_time = datetime.datetime.utcnow()
+            current_time = datetime.datetime.now(tz=datetime.timezone.utc)
 
             try:
                 # When a report is in Draft mode, no errors are raised when the value is invalid

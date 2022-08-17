@@ -66,7 +66,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     """Implements tests for the Justice Counts Control Panel backend API."""
 
     def setUp(self) -> None:
-        self.now_time = datetime.datetime(2022, 2, 15, 0, 0, 0, 0)
+        self.now_time = datetime.datetime(
+            2022, 2, 15, 0, 0, 0, 0, datetime.timezone.utc
+        )
         self.freezer = freeze_time(self.now_time)
         self.freezer.start()
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -452,7 +454,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 endpoint,
                 json={
                     "status": "DRAFT",
-                    "time_loaded": datetime.datetime.now().timestamp(),
+                    "time_loaded": datetime.datetime.now(
+                        tz=datetime.timezone.utc
+                    ).timestamp(),
                     "metrics": [
                         {
                             "key": law_enforcement.calls_for_service.key,
@@ -464,7 +468,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             report = self.session.query(Report).one_or_none()
             self.assertEqual(report.status, ReportStatus.DRAFT)
-            self.assertEqual(report.last_modified_at, self.now_time)
+            self.assertEqual(
+                report.last_modified_at.timestamp(), self.now_time.timestamp()
+            )
             self.assertEqual(report.datapoints[0].get_value(), value)
             self.assertEqual(
                 report.modified_by,
@@ -474,7 +480,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 endpoint,
                 json={
                     "status": "PUBLISHED",
-                    "time_loaded": datetime.datetime.now().timestamp(),
+                    "time_loaded": datetime.datetime.now(
+                        tz=datetime.timezone.utc
+                    ).timestamp(),
                     "metrics": [
                         {
                             "key": law_enforcement.calls_for_service.key,
@@ -654,18 +662,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             )
             self.assertEqual(response.status_code, 200)
+            response_dict = assert_type(response.json, dict)
+            self.assertEqual(response_dict.get("name"), "law_enforcement_metrics.xlsx")
             self.assertEqual(
-                response.json,
-                {
-                    "id": 1,
-                    "name": "law_enforcement_metrics.xlsx",
-                    "uploaded_at": datetime.datetime.utcnow().timestamp(),
-                    "uploaded_by": "Jane Doe",
-                    "ingested_at": None,
-                    "status": "UPLOADED",
-                    "system": "LAW_ENFORCEMENT",
-                },
+                response_dict.get("uploaded_at"),
+                datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
             )
+            self.assertEqual(
+                response_dict.get("uploaded_by"),
+                self.test_schema_objects.test_user_A.name,
+            )
+            self.assertEqual(response_dict.get("ingested_at"), None)
+            self.assertEqual(response_dict.get("status"), "UPLOADED")
+            self.assertEqual(response_dict.get("system"), "LAW_ENFORCEMENT")
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
@@ -673,7 +682,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 self.test_schema_objects.test_user_A.auth0_user_id,
             )
             self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
-            standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.utcnow().timestamp()}.xlsx"
+            standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
             self.assertEqual(
                 spreadsheet.standardized_name,
                 standardized_name,
@@ -687,6 +696,102 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 ),
                 path,
             )
+
+    def test_get_spreadsheets(self) -> None:
+        agency = self.test_schema_objects.test_agency_E
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        self.session.refresh(agency)
+        self.session.add_all(
+            [
+                self.test_schema_objects.get_test_spreadsheet(
+                    system=System.SUPERVISION,
+                    user_id=user.auth0_user_id,
+                    agency_id=agency.id,
+                ),
+                self.test_schema_objects.get_test_spreadsheet(
+                    system=System.PAROLE,
+                    user_id=user.auth0_user_id,
+                    agency_id=agency.id,
+                    upload_offset=25,
+                ),
+                self.test_schema_objects.get_test_spreadsheet(
+                    system=System.PROBATION,
+                    is_ingested=True,
+                    user_id=user.auth0_user_id,
+                    agency_id=agency.id,
+                ),
+            ]
+        )
+        self.session.commit()
+        self.session.refresh(agency)
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=user.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+
+            response = self.client.get(
+                "/api/spreadsheets",
+            )
+            self.assertEqual(response.status_code, 200)
+            spreadsheets = assert_type(response.json, list)
+            self.assertEqual(len(spreadsheets), 3)
+            probation_spreadsheet = spreadsheets[0]
+            self.assertEqual(
+                probation_spreadsheet.get("name"), "PROBATION_metrics.xlsx"
+            )
+            self.assertEqual(
+                probation_spreadsheet.get("uploaded_at"),
+                self.now_time.timestamp() * 1000,
+            )
+            self.assertEqual(
+                probation_spreadsheet.get("uploaded_by"),
+                self.test_schema_objects.test_user_A.name,
+            )
+
+            self.assertEqual(
+                probation_spreadsheet.get("ingested_at"),
+                (self.now_time + (datetime.timedelta(50))).timestamp() * 1000,
+            )
+            self.assertEqual(probation_spreadsheet.get("status"), "INGESTED")
+            self.assertEqual(probation_spreadsheet.get("system"), "PROBATION")
+            parole_spreadsheet = spreadsheets[1]
+            self.assertEqual(parole_spreadsheet.get("name"), "PAROLE_metrics.xlsx")
+
+            self.assertEqual(
+                parole_spreadsheet.get("uploaded_at"),
+                (self.now_time + (datetime.timedelta(25))).timestamp() * 1000,
+            )
+            self.assertEqual(
+                parole_spreadsheet.get("uploaded_by"),
+                self.test_schema_objects.test_user_A.name,
+            )
+            self.assertEqual(parole_spreadsheet.get("ingested_at"), None)
+            self.assertEqual(parole_spreadsheet.get("status"), "UPLOADED")
+            self.assertEqual(parole_spreadsheet.get("system"), "PAROLE")
+            supervision_spreadsheet = spreadsheets[2]
+            self.assertEqual(
+                supervision_spreadsheet.get("name"),
+                "SUPERVISION_metrics.xlsx",
+            )
+            self.assertEqual(
+                supervision_spreadsheet.get("uploaded_at"),
+                self.now_time.timestamp() * 1000,
+            )
+            self.assertEqual(
+                supervision_spreadsheet.get("uploaded_by"),
+                self.test_schema_objects.test_user_A.name,
+            )
+            self.assertEqual(supervision_spreadsheet.get("ingested_at"), None)
+            self.assertEqual(supervision_spreadsheet.get("status"), "UPLOADED")
+            self.assertEqual(supervision_spreadsheet.get("system"), "SUPERVISION")
 
     def test_session(self) -> None:
         # Add data

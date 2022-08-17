@@ -17,7 +17,7 @@
 """Interface for working with the Spreadsheet model."""
 import datetime
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import FileStorage
@@ -47,7 +47,7 @@ class SpreadsheetInterface:
     ) -> schema.Spreadsheet:
         """Uploads spreadsheets representing agency data to google cloud storage."""
         fs = GcsfsFactory.build()
-        uploaded_at = datetime.datetime.utcnow()
+        uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
         standardized_name = f"{str(agency_id)}:{system}:{uploaded_at.timestamp()}.xlsx"
         bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
         fs.upload_from_contents_handle_stream(
@@ -82,15 +82,33 @@ class SpreadsheetInterface:
         return {
             "id": spreadsheet.id,
             "name": spreadsheet.original_name,
-            "uploaded_at": spreadsheet.uploaded_at.replace(
-                tzinfo=datetime.timezone.utc
-            ).timestamp(),
+            "uploaded_at": spreadsheet.uploaded_at.timestamp() * 1000,
             "uploaded_by": uploaded_by_user.name,
-            "ingested_at": spreadsheet.ingested_at.replace(
-                tzinfo=datetime.timezone.utc
-            ).timestamp()
+            "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
             if spreadsheet.ingested_at is not None
             else None,
             "status": spreadsheet.status.value,
             "system": spreadsheet.system.value,
         }
+
+    @staticmethod
+    def get_agency_spreadsheets(
+        agency_ids: List[int],
+        session: Session,
+    ) -> List[schema.Spreadsheet]:
+        """Returns spreadsheet for an agency"""
+        spreadsheets = (
+            session.query(schema.Spreadsheet)
+            .filter(schema.Spreadsheet.agency_id.in_(agency_ids))
+            .all()
+        )
+
+        def calc_last_edited_at(s: schema.Spreadsheet) -> float:
+            return (datetime.datetime.now().timestamp() - s.uploaded_at.timestamp()) + (
+                datetime.datetime.now().timestamp() - s.ingested_at.timestamp()
+                if s.ingested_at is not None
+                else datetime.datetime.now().timestamp()
+            )
+
+        spreadsheets = sorted(spreadsheets, key=calc_last_edited_at)
+        return spreadsheets
