@@ -66,6 +66,8 @@ module "handle_workflows_firestore_etl" {
   service_account_email = data.google_app_engine_default_service_account.default.email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = local.app_engine_iap_client
+
+  suffix = "workflows-firestore-etl"
 }
 
 locals {
