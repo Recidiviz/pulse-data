@@ -16,13 +16,14 @@
 // =============================================================================
 
 import { Spin, Table } from "antd";
+import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
 import { getAllIngestInstanceStatuses } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
 import { INGEST_ACTIONS_ROUTE } from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import { IngestInstanceStatusResponse } from "./constants";
-import { getStatusBoxColor } from "./ingestUtils";
+import { getStatusBoxColor, getStatusSortedOrder } from "./ingestStatusUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   const { loading, data: ingestInstanceStatuses } =
@@ -61,7 +62,11 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     return <div className={classNames(statusColorClassName)}>{status}</div>;
   };
 
-  const columns = [
+  const columns: ColumnsType<{
+    stateCode: string;
+    primary: string;
+    secondary: string;
+  }> = [
     {
       title: "State Code",
       dataIndex: "stateCode",
@@ -71,12 +76,17 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
           {stateCode}
         </NewTabLink>
       ),
+      sorter: (a, b) => a.stateCode.localeCompare(b.stateCode),
+      defaultSortOrder: "ascend",
     },
     {
       title: "Primary Instance Status",
       dataIndex: "primary",
       key: "primary",
       render: (primary: string) => <span>{renderStatusColor(primary)}</span>,
+      sorter: (a, b) =>
+        getStatusSortedOrder().indexOf(a.primary) -
+        getStatusSortedOrder().indexOf(b.primary),
     },
     {
       title: "Secondary Instance Status",
@@ -85,6 +95,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       render: (secondary: string) => (
         <span>{renderStatusColor(secondary)}</span>
       ),
+      sorter: (a, b) =>
+        getStatusSortedOrder().indexOf(a.secondary) -
+        getStatusSortedOrder().indexOf(b.secondary),
     },
   ];
   return (
