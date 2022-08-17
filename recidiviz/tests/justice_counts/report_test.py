@@ -192,7 +192,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(report.date_range_end, datetime.date(2022, 12, 1))
         self.assertEqual(
-            report.get_reporting_frequency(), schema.ReportingFrequency.MONTHLY
+            ReportInterface.get_reporting_frequency(report),
+            schema.ReportingFrequency.MONTHLY,
         )
 
         # December, Monthly
@@ -205,7 +206,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(report.date_range_end, datetime.date(2023, 1, 1))
         self.assertEqual(
-            report.get_reporting_frequency(), schema.ReportingFrequency.MONTHLY
+            ReportInterface.get_reporting_frequency(report),
+            schema.ReportingFrequency.MONTHLY,
         )
 
         # January, Annually
@@ -218,7 +220,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(report.date_range_end, datetime.date(2023, 1, 1))
         self.assertEqual(
-            report.get_reporting_frequency(), schema.ReportingFrequency.ANNUAL
+            ReportInterface.get_reporting_frequency(report),
+            schema.ReportingFrequency.ANNUAL,
         )
 
         # July, Annually
@@ -231,7 +234,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(report.date_range_end, datetime.date(2023, 7, 1))
         self.assertEqual(
-            report.get_reporting_frequency(), schema.ReportingFrequency.ANNUAL
+            ReportInterface.get_reporting_frequency(report),
+            schema.ReportingFrequency.ANNUAL,
         )
 
     def test_create_recurring_report(self) -> None:

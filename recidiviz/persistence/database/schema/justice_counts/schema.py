@@ -425,35 +425,6 @@ class Report(JusticeCountsBase):
         passive_deletes=True,
     )
 
-    def get_reporting_frequency(self) -> ReportingFrequency:
-        if (
-            # this case handles Jan - Nov
-            self.date_range_end.year == self.date_range_start.year
-            and self.date_range_end.month - self.date_range_start.month == 1
-        ):
-            inferred_frequency = ReportingFrequency.MONTHLY
-        elif (
-            # This case handles Dec (whose end date is Jan 1 of next year)
-            self.date_range_end.year == self.date_range_start.year + 1
-            and self.date_range_end.month - self.date_range_start.month == -11
-        ):
-            inferred_frequency = ReportingFrequency.MONTHLY
-        elif (
-            self.date_range_end.year == self.date_range_start.year + 1
-            and self.date_range_end.month == self.date_range_start.month
-        ):
-            inferred_frequency = ReportingFrequency.ANNUAL
-        else:
-            raise ValueError(
-                f"Invalid report start and end: {self.date_range_start}, {self.date_range_end}"
-            )
-        report_type_string = str(self.type)
-        if report_type_string.strip() != str(inferred_frequency.value):
-            raise ValueError(
-                f"Invalid Report Type: Report type is {report_type_string}, but inferred a reporting frequency of {str(inferred_frequency.value)} from the report date range."
-            )
-        return inferred_frequency
-
 
 class ReportTableDefinition(JusticeCountsBase):
     """The definition for what a table within a report describes."""
@@ -583,6 +554,24 @@ class Datapoint(JusticeCountsBase):
                         f"Datapoint represents a float value, but is a string. Datapoint ID: {self.id}, value: {value}",
                     ) from e
         return value
+
+    def get_dimension_id(self) -> Optional[str]:
+        if self.dimension_identifier_to_member is None:
+            return None
+        if len(self.dimension_identifier_to_member) > 1:
+            raise ValueError(
+                "Datapoints with more than one dimension are not currently supported."
+            )
+        return list(self.dimension_identifier_to_member.keys())[0]
+
+    def get_dimension_member(self) -> Optional[str]:
+        if self.dimension_identifier_to_member is None:
+            return None
+        if len(self.dimension_identifier_to_member) > 1:
+            raise ValueError(
+                "Datapoints with more than one dimension are not currently supported."
+            )
+        return list(self.dimension_identifier_to_member.values())[0]
 
 
 class ReportTableInstance(JusticeCountsBase):
