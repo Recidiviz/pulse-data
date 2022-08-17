@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components/macro";
 
 import { useStore } from "../../stores";
@@ -318,6 +318,23 @@ export const DataUpload: React.FC = observer(() => {
       uploadedBy: "--",
     };
   };
+
+  useEffect(() => {
+    const fetchFilesList = async () => {
+      const response = (await reportStore.getUploadedFilesList()) as
+        | Response
+        | Error;
+
+      if (response instanceof Error) {
+        return showToast("Failed to get files.", false, "red");
+      }
+
+      const listOfFiles = (await response.json()) as UploadedFile[];
+      setUploadedFiles(listOfFiles);
+    };
+
+    fetchFilesList();
+  }, [reportStore]);
 
   return (
     <>
