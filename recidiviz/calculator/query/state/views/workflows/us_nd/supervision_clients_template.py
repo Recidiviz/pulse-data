@@ -67,6 +67,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
       AND end_date IS NULL
     ),
     phone_numbers AS (
+        # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT 
             state_code, 
             external_id AS person_external_id, 
