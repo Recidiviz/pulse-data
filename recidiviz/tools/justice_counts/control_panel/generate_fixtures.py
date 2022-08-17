@@ -182,21 +182,33 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
     # Use the id that the Agency has on staging, so that users have access
     # on both staging environment and local development
     agency_tuples = [
-        (LAW_ENFORCEMENT_AGENCY_ID, schema.System.LAW_ENFORCEMENT, "Law Enforcement"),
-        (DEFENSE_AGENCY_ID, schema.System.DEFENSE, "Defense"),
-        (PROSECUTION_AGENCY_ID, schema.System.PROSECUTION, "Prosecution"),
-        (COURTS_AND_PRETRIAL_AGENCY_ID, schema.System.COURTS_AND_PRETRIAL, "Courts"),
-        (JAILS_AGENCY_ID, schema.System.JAILS, "Jails"),
-        (PRISONS_AGENCY_ID, schema.System.PRISONS, "Prisons"),
-        (SUPERVISION_AGENCY_ID, schema.System.SUPERVISION, "Supervision"),
+        (
+            LAW_ENFORCEMENT_AGENCY_ID,
+            (schema.System.LAW_ENFORCEMENT,),
+            "Law Enforcement",
+        ),
+        (DEFENSE_AGENCY_ID, (schema.System.DEFENSE,), "Defense"),
+        (PROSECUTION_AGENCY_ID, (schema.System.PROSECUTION,), "Prosecution"),
+        (COURTS_AND_PRETRIAL_AGENCY_ID, (schema.System.COURTS_AND_PRETRIAL,), "Courts"),
+        (JAILS_AGENCY_ID, (schema.System.JAILS,), "Jails"),
+        (PRISONS_AGENCY_ID, (schema.System.PRISONS,), "Prisons"),
+        (
+            SUPERVISION_AGENCY_ID,
+            (
+                schema.System.SUPERVISION,
+                schema.System.PAROLE,
+                schema.System.PROBATION,
+            ),
+            "Supervision",
+        ),
     ]
     agencies = []
-    for agency_id, agency_system, agency_name in agency_tuples:
+    for agency_id, agency_systems, agency_name in agency_tuples:
         agencies.append(
             schema.Agency(
                 id=agency_id,
                 name=agency_name,
-                systems=[agency_system.value],
+                systems=[system.value for system in agency_systems],
                 state_code="US_NY",
                 fips_county_code="us_ny_new_york",
             )
@@ -205,7 +217,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
 
     # Finally add a group of reports (which depend on agencies already being in the DB)
     reports = []
-    for agency_id, agency_system, agency_name in agency_tuples:
+    for agency_id, agency_systems, agency_name in agency_tuples:
         for year in range(2020, 2023):
             annual_report = ReportInterface.create_report_object(
                 agency_id=agency_id,
@@ -217,10 +229,13 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                     start_date=datetime.datetime(2020, 1, 1)
                 ),
             )
-            annual_report.datapoints = _get_datapoints_for_report(
-                report=annual_report,
-                system=agency_system,
-            )
+            annual_report_datapoints = []
+            for system in agency_systems:
+                annual_report_datapoints += _get_datapoints_for_report(
+                    report=annual_report,
+                    system=system,
+                )
+            annual_report.datapoints = annual_report_datapoints
             reports.append(annual_report)
 
             for month in range(1, 13):
@@ -234,10 +249,13 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                         start_date=datetime.datetime(2020, 1, 1)
                     ),
                 )
-                monthly_report.datapoints = _get_datapoints_for_report(
-                    report=monthly_report,
-                    system=agency_system,
-                )
+                monthly_report_datapoints = []
+                for system in agency_systems:
+                    monthly_report_datapoints += _get_datapoints_for_report(
+                        report=monthly_report,
+                        system=system,
+                    )
+                monthly_report.datapoints = monthly_report_datapoints
                 reports.append(monthly_report)
     object_groups.append(reports)
 

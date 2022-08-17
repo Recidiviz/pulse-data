@@ -16,6 +16,8 @@
 # =============================================================================
 """Registers all metric file objects."""
 
+import itertools
+
 from recidiviz.justice_counts.metricfiles.law_enforcement import (
     LAW_ENFORCEMENT_METRIC_FILES,
 )
@@ -28,7 +30,7 @@ from recidiviz.justice_counts.metricfiles.supervision import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 
-system_to_metric_files = {
+SYSTEM_TO_METRICFILES = {
     schema.System.PROSECUTION: PROSECUTION_METRIC_FILES,
     schema.System.PRISONS: PRISON_METRIC_FILES,
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
@@ -45,5 +47,20 @@ SYSTEM_TO_FILENAME_TO_METRICFILE = {
         for metricfile in metric_files
         for filename in metricfile.allowed_filenames
     }
-    for system, metric_files in system_to_metric_files.items()
+    for system, metric_files in SYSTEM_TO_METRICFILES.items()
+}
+
+metric_files = list(itertools.chain(*SYSTEM_TO_METRICFILES.values()))
+
+
+SYSTEM_METRIC_KEY_AND_DIM_ID_TO_METRICFILE = {
+    (
+        system,
+        metricfile.definition.key,
+        metricfile.disaggregation.dimension_identifier()
+        if metricfile.disaggregation
+        else None,
+    ): metricfile
+    for system, metricfiles in SYSTEM_TO_METRICFILES.items()
+    for metricfile in metricfiles
 }

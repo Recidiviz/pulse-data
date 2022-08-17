@@ -32,6 +32,8 @@ from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRI
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
+from .utils.datetime_utils import convert_date_range_to_year_month
+
 
 class ReportInterface:
     """Contains methods for setting and getting Report info."""
@@ -221,7 +223,7 @@ class ReportInterface:
             ]
         else:
             editor_names = [editor_ids_to_names[id] for id in report.modified_by or []]
-        reporting_frequency = report.get_reporting_frequency()
+        reporting_frequency = ReportInterface.get_reporting_frequency(report=report)
         return {
             "id": report.id,
             "agency_id": report.source_id,
@@ -396,3 +398,22 @@ class ReportInterface:
             )
 
         return report_metrics
+
+    @staticmethod
+    def get_reporting_frequency(report: schema.Report) -> ReportingFrequency:
+        _, month = convert_date_range_to_year_month(
+            start_date=report.date_range_start, end_date=report.date_range_end
+        )
+        if month is None:
+            inferred_frequency = ReportingFrequency.ANNUAL
+        else:
+            inferred_frequency = ReportingFrequency.MONTHLY
+
+        report_type_string = str(report.type)
+        if report_type_string.strip() != str(inferred_frequency.value):
+            raise ValueError(
+                f"Invalid Report Type: Report type is {report_type_string}, "
+                f"but inferred a reporting frequency of {str(inferred_frequency.value)} "
+                "from the report date range."
+            )
+        return inferred_frequency

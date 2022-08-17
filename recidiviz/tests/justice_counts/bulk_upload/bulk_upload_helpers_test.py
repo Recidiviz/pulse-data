@@ -19,7 +19,7 @@
 
 from unittest import TestCase
 
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
+from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
