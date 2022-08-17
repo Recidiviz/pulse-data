@@ -189,7 +189,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                 system_supervision,
                 system_supervisionToLiberty,
                 system_supervisionToPrison,
-                operations
+                operations,
+                workflows
             )) AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
