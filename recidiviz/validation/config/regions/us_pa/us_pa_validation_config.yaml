@@ -93,12 +93,21 @@ num_allowed_rows_overrides:
       in the PA supervision_period ingest view. Rerun on 02/15/2022 did not improve these.
       There were 645 of these as of 03/01/2022. There are 1100 as of 07/01/2022.
   - validation_name: supervision_period_dates_existence
-    hard_num_allowed_rows_override: 1
-    override_reason: There is one ingested supervision period that has empty
-      date fields, evidenced at the ingest view layer as well.
+    hard_num_allowed_rows_override: 2
+    override_reason:
+      There are currently two ingested supervision periods that have empty
+      date fields, evidenced at the ingest view layer as well. This is likely due to a specific edge case where a
+      person's last supervision period start edge is a PO transfer with no end date and the subsequent period matching joins the edges twice,
+      causing a supervision type mismatch between start and ends (such as 04 and 04,04) and therefore 2 periods that should
+      actually be one. This will also cause an error for the other half of the duplicated period in
+      superivision_termination_reason_no_date. For now, we will set the threshold at 2 as of 8/17/2022 and add the task
+      into the PA backlog list. TODO(#14683) Fix supervision periods ingest view to be corrected to account for this edge case in order to prevent it happening again
+      in the future.
   - validation_name: supervision_termination_reason_no_date
-    hard_num_allowed_rows_override: 1
-    override_reason: TODO(#9735) - needs investigation
+    hard_num_allowed_rows_override: 2
+    override_reason:
+      See supervision_period_dates_existence description above for issue with open periods and duplication for
+      superivision types. TODO(#14683) - Fix supervision periods ingest view to be corrected to account for this edge case
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 4500
     override_reason:
