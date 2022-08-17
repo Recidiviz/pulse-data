@@ -29,6 +29,18 @@ variable "ack_deadline_seconds" {
   default = 10
 }
 
+# Optional suffix to differentiate storage notifications for the same bucket.
+# In the future it may make more sense to allow for just one topic with multiple subscriptions, but
+# this was easier to implement.
+variable "suffix" {
+  type    = string
+  default = ""
+}
+
+locals {
+  notification_name = "storage-notification-${var.bucket_name}${var.suffix != "" ? "-${var.suffix}" : ""}"
+}
+
 resource "google_storage_notification" "notification" {
   bucket         = var.bucket_name
   payload_format = "JSON_API_V1"
@@ -49,11 +61,11 @@ resource "google_pubsub_topic_iam_binding" "binding" {
 }
 
 resource "google_pubsub_topic" "topic" {
-  name = "storage-notification-${var.bucket_name}"
+  name = local.notification_name
 }
 
 resource "google_pubsub_subscription" "subscription" {
-  name   = "storage-notification-${var.bucket_name}"
+  name   = local.notification_name
   topic  = google_pubsub_topic.topic.name
   filter = var.filter
 
