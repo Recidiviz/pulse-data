@@ -311,7 +311,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.refresh(self.test_schema_objects.test_agency_A)
 
             agency_id = self.test_schema_objects.test_agency_A.id
-            update_datetime = datetime.datetime(2022, 2, 1, 0, 0, 0)
+            update_datetime = datetime.datetime(
+                2022, 2, 1, 0, 0, 0, 0, datetime.timezone.utc
+            )
 
             with freeze_time(update_datetime):
                 user_a_id = UserAccountInterface.get_user_by_auth0_user_id(
@@ -335,7 +337,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
                 self.assertEqual(updated_report.modified_by, [user_a_id])
-                self.assertEqual(updated_report.last_modified_at, update_datetime)
+                self.assertEqual(
+                    updated_report.last_modified_at.timestamp(),
+                    update_datetime.timestamp(),
+                )
                 user_c_id = UserAccountInterface.get_user_by_auth0_user_id(
                     session=session,
                     auth0_user_id=self.test_schema_objects.test_user_C.auth0_user_id,
@@ -360,7 +365,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     [user_c_id, user_a_id],
                 )
 
-            update_datetime = datetime.datetime(2022, 2, 1, 1, 0, 0)
+            update_datetime = datetime.datetime(
+                2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
+            )
             with freeze_time(update_datetime):
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
@@ -369,8 +376,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     editor_id=user_a_id,
                 )
                 self.assertEqual(
-                    updated_report.last_modified_at,
-                    update_datetime,
+                    updated_report.last_modified_at.timestamp(),
+                    update_datetime.timestamp(),
                 )
 
     def test_add_budget_metric(self) -> None:

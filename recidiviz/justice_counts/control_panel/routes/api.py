@@ -408,6 +408,25 @@ def get_api_blueprint(
             )
         )
 
+    @api_blueprint.route("/spreadsheets", methods=["GET"])
+    @auth_decorator
+    def get_spreadsheets() -> Response:
+        try:
+            agency_ids = g.user_context.agency_ids if "user_context" in g else []
+            spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
+                agency_ids=agency_ids, session=current_session
+            )
+            return jsonify(
+                [
+                    SpreadsheetInterface.get_spreadsheet_json(
+                        spreadsheet=spreadsheet, session=current_session
+                    )
+                    for spreadsheet in spreadsheets
+                ]
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     return api_blueprint
 
 

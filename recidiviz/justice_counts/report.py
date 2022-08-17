@@ -97,7 +97,7 @@ class ReportInterface:
             modified_by = list(already_modified_by - {editor_id}) + [editor_id]
         report.modified_by = modified_by
 
-        report.last_modified_at = datetime.datetime.utcnow()
+        report.last_modified_at = datetime.datetime.now(tz=datetime.timezone.utc)
 
         session.commit()
         return report
@@ -168,7 +168,8 @@ class ReportInterface:
             status=schema.ReportStatus.NOT_STARTED,
             date_range_start=date_range_start,
             date_range_end=date_range_end,
-            last_modified_at=last_modified_at or datetime.datetime.utcnow(),
+            last_modified_at=last_modified_at
+            or datetime.datetime.now(tz=datetime.timezone.utc),
             modified_by=[user_account_id],
             is_recurring=is_recurring,
             recurring_report=recurring_report,
@@ -264,7 +265,7 @@ class ReportInterface:
         If nothing is in the DB, we save the new aggregate value.
         """
         # First, add a datapoint for the aggregated_value
-        current_time = datetime.datetime.utcnow()
+        current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
 
         # If we're not supposed to use the existing aggregate value, then we should
