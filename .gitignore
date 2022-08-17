@@ -179,3 +179,6 @@ recidiviz/tools/postgres/vendor/
 
 # Tool logs
 logs/
+get-pip.py
+*.code-workspace
+*.code-workspace
