@@ -14,9 +14,17 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""View to prepare staff records regarding compliant reporting for export to the frontend."""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+"""View to prepare staff records for Workflows for export to the frontend."""
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
+    US_ND_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_staff_template import (
+    US_TN_SUPERVISION_STAFF_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -28,68 +36,35 @@ from recidiviz.utils.metadata import local_project_id_override
 STAFF_RECORD_VIEW_NAME = "staff_record"
 
 STAFF_RECORD_DESCRIPTION = """
-    Nested staff records to be exported to Firestore to power the Compliant Reporting dashboard in TN.
+    Staff records to be exported to Firestore to power Workflows.
     """
 
-STAFF_RECORD_QUERY_TEMPLATE = """
-    /*{description}*/
-    WITH staff_from_report AS (
-        SELECT DISTINCT officer_id AS logic_staff
-        FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
-    ), leadership_users AS (
-        SELECT
-            COALESCE(staff.StaffID, external_id, email_address) AS id,
-            "US_TN" AS state_code,
-            first_name || " " || last_name AS name,
-            CAST(null AS STRING) AS district,
-            LOWER(email_address) AS email,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_tn_leadership_users` leadership
-        LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
-        ON UPPER(leadership.first_name) = staff.FirstName
-            AND UPPER(leadership.last_name) = staff.LastName
-            AND staff.Status = 'A'
-    ), staff_users AS (
-        SELECT
-            StaffID as id,
-            "US_TN" AS state_code,
-            FirstName || " " || LastName AS name,
-            facilities.district AS district,
-            LOWER(roster.email_address) AS email,
-            logic_staff IS NOT NULL AS has_caseload,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
-        LEFT JOIN staff_from_report
-        ON logic_staff = StaffID
-        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
-        ON roster.external_id = staff.UserID
-        LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_locations` facilities
-        ON staff.SiteID=facilities.site_code
-        WHERE Status = 'A'
-            AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM', 'SECR')
-    )
-
-    SELECT * FROM staff_users WHERE id NOT IN (SELECT id FROM leadership_users)
-
-    UNION ALL
-
-    SELECT
-        leadership_users.*,
-        logic_staff IS NOT NULL AS has_caseload,
-    FROM leadership_users
-    LEFT JOIN staff_from_report
-    ON leadership_users.id = staff_from_report.logic_staff
+STAFF_RECORD_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
+    WITH 
+        tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
+        , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
+    
+    SELECT {{columns}} FROM tn_staff
+    UNION ALL 
+    SELECT {{columns}} FROM nd_staff
 """
 
-STAFF_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
     view_id=STAFF_RECORD_VIEW_NAME,
     view_query_template=STAFF_RECORD_QUERY_TEMPLATE,
     description=STAFF_RECORD_DESCRIPTION,
+    columns=["id", "state_code", "name", "district", "email", "has_caseload"],
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         StateCode.US_TN.value
     ),
+    vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
+    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
