@@ -33,6 +33,9 @@ from recidiviz.workflows.etl.archive import archive_etl_file
 from recidiviz.workflows.etl.regions.us_nd.client_record_etl_delegate import (
     ClientRecordETLDelegate as UsNdClientRecordETLDelegate,
 )
+from recidiviz.workflows.etl.regions.us_nd.staff_record_etl_delegate import (
+    StaffRecordETLDelegate as UsNdStaffRecordETLDelegate,
+)
 from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
     ClientRecordETLDelegate as UsTnClientRecordETLDelegate,
 )
@@ -55,6 +58,7 @@ def get_workflows_delegates() -> List[WorkflowsETLDelegate]:
         UsTnStaffRecordETLDelegate(),
         UsTnClientRecordETLDelegate(),
         UsNdClientRecordETLDelegate(),
+        UsNdStaffRecordETLDelegate(),
         CompliantReportingReferralRecordETLDelegate(),
         WorkflowsOpportunityETLDelegate(),
     ]
