@@ -104,6 +104,12 @@ data "google_service_account" "justice_counts_cloud_run" {
   account_id = var.project_id == "recidiviz-123" ? "justice-counts-spotlights-prod" : "jstc-counts-spotlights-staging"
 }
 
+# Grab existing Justice Counts Cloud Run service to determine current revision
+data "google_cloud_run_service" "existing_justice_counts_cloud_run" {
+  name     = "justice-counts-web"
+  location = var.region
+}
+
 # Env vars from secrets
 data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
 
@@ -232,8 +238,16 @@ resource "google_cloud_run_service" "justice-counts" {
     }
   }
 
+  # Keep 100% of traffic on previous revision. This makes it possible for us 
+  # to create and serve revisions in the UI without them being overridden by 
+  # a subsequent data platform deploy.
   traffic {
     percent         = 100
+    revision_name   = data.google_cloud_run_service.existing_justice_counts_cloud_run.template[0].metadata[0].name
+  }
+
+  traffic {
+    percent         = 0
     latest_revision = true
   }
 
