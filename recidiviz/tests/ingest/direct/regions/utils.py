@@ -356,6 +356,7 @@ def add_incarceration_sentence_to_person(
     is_capital_punishment: Optional[bool] = False,
     sentence_metadata: Optional[str] = None,
     conditions: Optional[str] = None,
+    parole_eligibility_date: Optional[datetime.date] = None,
 ) -> entities.StateIncarcerationSentence:
     """Append an incarceration sentence to the person (updates the person entity in place)."""
 
@@ -380,6 +381,7 @@ def add_incarceration_sentence_to_person(
         initial_time_served_days=initial_time_served_days,
         sentence_metadata=sentence_metadata,
         conditions=conditions,
+        parole_eligibility_date=parole_eligibility_date,
         person=person,
     )
 
