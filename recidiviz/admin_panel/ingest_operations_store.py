@@ -482,6 +482,8 @@ class IngestOperationsStore(AdminPanelStore):
             ],
         }
 
+    # TODO(#13791): Update here to change Optional[DirectIngestStatus] ->
+    #  Optional[Tuple[DirectIngestStatus, datetime.datetime]].
     def get_all_current_ingest_instance_statuses(
         self,
     ) -> Dict[StateCode, Dict[DirectIngestInstance, Optional[DirectIngestStatus]]]:
@@ -494,8 +496,12 @@ class IngestOperationsStore(AdminPanelStore):
                 status_manager = PostgresDirectIngestInstanceStatusManager(
                     region_code=state_code.value, ingest_instance=i_instance
                 )
-                curr_status = status_manager.get_current_status()
 
+                curr_status_info = status_manager.get_current_status_info()
+                curr_status = curr_status_info.status if curr_status_info else None
+
+                # TODO(#13791): Update here to store both status and timestamp in the
+                #  dictionary.
                 instance_to_status_dict[i_instance] = curr_status
 
             ingest_statuses[state_code] = instance_to_status_dict
