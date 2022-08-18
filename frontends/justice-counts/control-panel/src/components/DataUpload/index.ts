@@ -16,3 +16,5 @@
 // =============================================================================
 
 export * from "./DataUpload";
+export * from "./DataUpload.styles";
+export * from "./InstructionsTemplate";

@@ -16,32 +16,44 @@
 // =============================================================================
 
 import { observer } from "mobx-react-lite";
-import React, { useEffect, useState } from "react";
-import styled from "styled-components/macro";
+import React, { Fragment, useEffect, useState } from "react";
 
 import { useStore } from "../../stores";
-import DownloadIcon from "../assets/download-icon.png";
+import { removeSnakeCase } from "../../utils";
 import Logo from "../assets/jc-logo-vector.png";
 import SpreadsheetIcon from "../assets/spreadsheet-icon.png";
 import UploadIcon from "../assets/upload-icon.png";
 import { Badge, BadgeColorMapping } from "../Badge";
-import { palette, typography } from "../GlobalStyles";
 import {
   Cell,
   Label,
-  LabelRow,
   PageHeader,
   PageTitle,
-  Row,
-  TabbedBar,
   TabbedItem,
   TabbedOptions,
-  Table,
 } from "../Reports";
 import { showToast } from "../Toast";
-
-const HEADER_HEIGHT = 170;
-const ROW_HEIGHT = 42;
+import {
+  Button,
+  ButtonWrapper,
+  ExtendedLabelRow,
+  ExtendedRow,
+  ExtendedTabbedBar,
+  Icon,
+  Instructions,
+  InstructionsContainer,
+  InstructionsGraphic,
+  InstructionsGraphicWrapper,
+  ModalBody,
+  UploadButtonInput,
+  UploadButtonLabel,
+  UploadedFilesContainer,
+  UploadedFilesTable,
+} from ".";
+import {
+  GeneralInstructions,
+  systemToInstructionsTemplate,
+} from "./InstructionsTemplate";
 
 export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERROR";
 
@@ -67,148 +79,6 @@ const isUploadedFile = (
   return (file as UploadedFile).id !== undefined;
 };
 
-export type ButtonTypes = "borderless" | "blue";
-
-export const ExtendedTabbedBar = styled(TabbedBar)`
-  height: 66px;
-`;
-
-export const ExtendedLabelRow = styled(LabelRow)`
-  position: fixed;
-  top: ${HEADER_HEIGHT}px;
-  background: ${palette.solid.white};
-  z-index: 1;
-`;
-
-export const DataUploadButton = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0, 115, 229, 0.1);
-  padding: 10px 15px;
-  color: ${palette.solid.blue};
-
-  &:hover {
-    cursor: pointer;
-    opacity: 0.9;
-  }
-`;
-
-export const InstructionsContainer = styled.div`
-  height: 100%;
-  display: flex;
-`;
-
-export const InstructionsGraphicWrapper = styled.div`
-  width: 37%;
-  height: 100%;
-  background: linear-gradient(
-    217.89deg,
-    #0073e5 0%,
-    rgba(0, 115, 229, 0.5) 100%
-  );
-  overflow: hidden;
-`;
-
-export const InstructionsGraphic = styled.img`
-  width: 891px;
-  position: absolute;
-  left: -267px;
-  top: 372px;
-  opacity: 0.2;
-`;
-
-export const Instructions = styled.div`
-  width: 63%;
-  height: 100%;
-  padding: 44px 70px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: scroll;
-`;
-
-export const UploadedFilesContainer = styled.div`
-  height: 100%;
-  padding: ${ROW_HEIGHT}px 0;
-  overflow-y: scroll;
-`;
-
-export const UploadedFilesTable = styled(Table)`
-  padding: unset;
-`;
-
-export const ExtendedRow = styled(Row)`
-  color: ${({ selected }) => selected && palette.highlight.grey9};
-`;
-
-export const ModalBody = styled.div<{ hasLabelRow?: boolean }>`
-  width: 100%;
-  height: calc(100% - ${HEADER_HEIGHT}px);
-  position: absolute;
-  top: ${HEADER_HEIGHT}px;
-`;
-
-export const ButtonWrapper = styled.div`
-  display: flex;
-  gap: 10px;
-  margin: 13px 0;
-`;
-
-export const Button = styled.div<{ type?: ButtonTypes }>`
-  ${typography.sizeCSS.normal};
-  display: flex;
-  align-items: center;
-  padding: 10px 15px;
-  border-radius: 3px;
-
-  ${({ type }) => {
-    if (type === "borderless") {
-      return `
-        background: none;
-        color: ${palette.highlight.grey10};
-      `;
-    }
-    if (type === "blue") {
-      return `
-        background: ${palette.solid.blue};
-        color: ${palette.solid.white};
-      `;
-    }
-    return `
-      background: ${palette.highlight.grey1};
-      color: ${palette.highlight.grey10};
-    `;
-  }}
-
-  &:hover {
-    cursor: pointer;
-    ${({ type }) => {
-      if (type === "borderless") {
-        return `opacity: 0.8;`;
-      }
-      if (type === "blue") {
-        return `opacity: 0.9;`;
-      }
-      return `background: ${palette.highlight.grey2};`;
-    }};
-  }
-`;
-
-export const UploadButtonLabel = styled.label`
-  display: block;
-`;
-
-export const UploadButtonInput = styled.input`
-  display: none;
-`;
-
-export const Icon = styled.img<{ grayscale?: boolean }>`
-  width: 16px;
-  aspect-ratio: auto;
-  margin-left: 10px;
-  ${({ grayscale }) => grayscale && `filter: grayscale(1);`}
-`;
-
 const uploadStatusColorMapping: BadgeColorMapping = {
   UPLOADED: "ORANGE",
   INGESTED: "GREEN",
@@ -228,6 +98,19 @@ export const DataUpload: React.FC = observer(() => {
     (UploadedFile | UploadedFileAttempt)[]
   >([]);
   const { userStore, reportStore } = useStore();
+
+  const userSystems = userStore.currentAgency?.systems;
+  const systemToTemplateSpreadsheetFileName: { [system: string]: string } = {
+    LAW_ENFORCEMENT: "LAW_ENFORCEMENT.xlsx",
+    PROSECUTION: "PROSECUTION.xlsx",
+    DEFENSE: "DEFENSE.xlsx",
+    COURTS_AND_PRETRIAL: "COURTS_AND_PRETRIAL.xlsx",
+    JAILS: "JAILS.xlsx",
+    PRISONS: "PRISONS.xlsx",
+    SUPERVISION: "SUPERVISION.xlsx",
+    PAROLE: "SUPERVISION.xlsx",
+    PROBATION: "SUPERVISION.xlsx",
+  };
 
   const updateUploadedFilesList = (
     fileDetails: UploadedFile | UploadedFileAttempt
@@ -383,9 +266,6 @@ export const DataUpload: React.FC = observer(() => {
           </TabbedOptions>
 
           <ButtonWrapper>
-            <Button type="borderless">
-              Download Template <Icon alt="" src={SpreadsheetIcon} />
-            </Button>
             <UploadButtonLabel htmlFor="upload-data">
               <Button type="blue">
                 <UploadButtonInput
@@ -413,20 +293,42 @@ export const DataUpload: React.FC = observer(() => {
             </InstructionsGraphicWrapper>
             <Instructions>
               <h1>How to Upload Data to Justice Counts</h1>
+
+              {/* Download Templates */}
               <ButtonWrapper>
-                <Button>
-                  Download Instructions <Icon alt="" src={DownloadIcon} />
-                </Button>
-                <Button>
-                  Download Template{" "}
-                  <Icon alt="" src={SpreadsheetIcon} grayscale />
-                </Button>
+                {userSystems?.map((system) => {
+                  const systemName = removeSnakeCase(system).toLowerCase();
+                  const systemFileName =
+                    systemToTemplateSpreadsheetFileName[system];
+                  return (
+                    <Button key={system}>
+                      <a
+                        href={`./assets/${systemFileName}`}
+                        download={systemFileName}
+                      >
+                        Download {systemName} Template{" "}
+                        <Icon alt="" src={SpreadsheetIcon} grayscale />
+                      </a>
+                    </Button>
+                  );
+                })}
               </ButtonWrapper>
-              <p>
-                Agencies participating in Justice Counts have two options for
-                reporting their assigned metrics: filling out the autogenerated
-                reports on the Reports page, or uploading a spreadsheet.
-              </p>
+
+              {/* General Instructions */}
+              <GeneralInstructions />
+
+              {/* System Specific Instructions */}
+              {userSystems?.map((system) => {
+                const systemName = removeSnakeCase(system).toLowerCase();
+                const systemTemplate = systemToInstructionsTemplate[system];
+
+                return (
+                  <Fragment key={systemName}>
+                    <h2>{systemName}</h2>
+                    {systemTemplate}
+                  </Fragment>
+                );
+              })}
             </Instructions>
           </InstructionsContainer>
         )}
