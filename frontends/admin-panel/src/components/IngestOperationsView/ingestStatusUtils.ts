@@ -79,7 +79,7 @@ const statusFormattingInfo: {
     color: "ingest-status-cell-green",
     sortRank: 10,
   },
-  NO_RECORDED_STATUSES: {
+  "No recorded statuses": {
     status: "No recorded statuses",
     color: "ingest-status-cell-yellow",
     sortRank: 11,
