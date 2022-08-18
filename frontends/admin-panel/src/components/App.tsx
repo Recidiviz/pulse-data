@@ -14,8 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Layout, Menu, Typography } from "antd";
-import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
+import { Layout, Menu, MenuProps, Typography } from "antd";
+import {
+  Redirect,
+  Route,
+  Switch,
+  useHistory,
+  useLocation,
+} from "react-router-dom";
 import Nelly from "../favicon-32x32.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
@@ -43,124 +49,89 @@ import UploadRostersView from "./UploadRostersView";
 import ValidationDetailView from "./Validation/ValidationDetailView";
 import ValidationStatusView from "./Validation/ValidationStatusView";
 
+type MenuItem = Required<MenuProps>["items"][number];
+
+function getItem(
+  label: React.ReactNode,
+  key: React.Key,
+  icon?: React.ReactNode,
+  children?: MenuItem[],
+  type?: "group"
+): MenuItem {
+  return {
+    key,
+    icon,
+    children,
+    label,
+    type,
+  } as MenuItem;
+}
+
+const items: MenuProps["items"] = [
+  getItem("Ingest", "ingest_group", null, [
+    getItem("Ingest Status", IngestOperations.INGEST_ACTIONS_ROUTE),
+    getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
+    getItem(
+      "Sandbox Raw Data Import",
+      IngestOperations.DIRECT_SANDBOX_RAW_IMPORT
+    ),
+    getItem("Data Freshness", DatasetMetadata.DATA_FRESHNESS_ROUTE),
+    getItem(
+      "State Dataset",
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)
+    ),
+  ]),
+  getItem("Validation", "validation_group", null, [
+    getItem("Validation Status", DatasetMetadata.VALIDATION_STATUS_ROUTE),
+    getItem(
+      "External Accuracy Dataset",
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION)
+    ),
+  ]),
+  getItem("Line Staff Tools", "line_staff_tools_group", null, [
+    getItem("GCS & Cloud SQL", LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE),
+    getItem("Cloud SQL & GCS", LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE),
+    getItem("PO Feedback", LineStaffTools.PO_FEEDBACK_ROUTE),
+    getItem("Email Reports", LineStaffTools.EMAIL_REPORTS_ROUTE),
+    getItem("Upload Rosters", LineStaffTools.UPLOAD_ROSTERS_ROUTE),
+    getItem("Upload Raw Files", LineStaffTools.UPLOAD_RAW_FILES_ROUTE),
+    getItem(
+      "State User Permissions",
+      LineStaffTools.STATE_USER_PERMISSIONS_ROUTE
+    ),
+  ]),
+  getItem("Justice Counts", "justice_counts_group", null, [
+    getItem(
+      "Agency Provisioning",
+      JusticeCountsTools.AGENCY_PROVISIONING_ROUTE
+    ),
+    getItem("User Provisioning", JusticeCountsTools.USER_PROVISIONING_ROUTE),
+    getItem("Bulk Upload", JusticeCountsTools.BULK_UPLOAD_ROUTE),
+  ]),
+];
+
 const App = (): JSX.Element => {
   const location = useLocation();
   const title = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
+  const history = useHistory();
+
+  const onClick: MenuProps["onClick"] = (e) => {
+    history.push(e.key);
+  };
 
   return (
     <Layout style={{ height: "100%" }}>
-      <Layout.Sider>
+      <Layout.Sider width={256}>
         <Typography.Title level={4} style={{ margin: 23 }}>
           {title.toUpperCase()}
           <img src={Nelly} id="adminPanelNelly" alt="Nelly" />
         </Typography.Title>
-        <Menu mode="inline" selectedKeys={selectedMenuKeys(location.pathname)}>
-          <Menu.ItemGroup title="Ingest Metadata">
-            <Menu.Item
-              key={DatasetMetadata.routeForMetadataDataset(
-                MetadataDataset.INGEST
-              )}
-            >
-              <Link
-                to={DatasetMetadata.routeForMetadataDataset(
-                  MetadataDataset.INGEST
-                )}
-              >
-                State Dataset
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
-              <Link to={DatasetMetadata.DATA_FRESHNESS_ROUTE}>
-                Data Freshness
-              </Link>
-            </Menu.Item>
-          </Menu.ItemGroup>
-          <Menu.ItemGroup title="Validation Metadata">
-            <Menu.Item key={DatasetMetadata.VALIDATION_STATUS_ROUTE}>
-              <Link to={DatasetMetadata.VALIDATION_STATUS_ROUTE}>
-                Validation Status
-              </Link>
-            </Menu.Item>
-            <Menu.Item
-              key={DatasetMetadata.routeForMetadataDataset(
-                MetadataDataset.VALIDATION
-              )}
-            >
-              <Link
-                to={DatasetMetadata.routeForMetadataDataset(
-                  MetadataDataset.VALIDATION
-                )}
-              >
-                External Accuracy Dataset
-              </Link>
-            </Menu.Item>
-          </Menu.ItemGroup>
-          <Menu.ItemGroup title="Ingest Operations">
-            <Menu.Item key={IngestOperations.INGEST_ACTIONS_ROUTE}>
-              <Link to={IngestOperations.INGEST_ACTIONS_ROUTE}>
-                Actions &amp; Summaries
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}>
-              <Link to={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}>
-                Sandbox Raw Data Import
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
-              <Link to={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
-                Flash Database
-              </Link>
-            </Menu.Item>
-          </Menu.ItemGroup>
-          <Menu.ItemGroup title="Line Staff Tools">
-            <Menu.Item key={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
-              <Link to={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
-                GCS &rarr; Cloud SQL
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
-              <Link to={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
-                Cloud SQL &rarr; GCS
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.PO_FEEDBACK_ROUTE}>
-              <Link to={LineStaffTools.PO_FEEDBACK_ROUTE}>PO Feedback</Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.EMAIL_REPORTS_ROUTE}>
-              <Link to={LineStaffTools.EMAIL_REPORTS_ROUTE}>Email Reports</Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
-              <Link to={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
-                Upload Rosters
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}>
-              <Link to={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}>
-                Upload Raw Files
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}>
-              <Link to={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}>
-                State User Permissions
-              </Link>
-            </Menu.Item>
-          </Menu.ItemGroup>
-          <Menu.ItemGroup title="Justice Counts Tools">
-            <Menu.Item key={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}>
-              <Link to={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}>
-                Agency Provisioning
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={JusticeCountsTools.USER_PROVISIONING_ROUTE}>
-              <Link to={JusticeCountsTools.USER_PROVISIONING_ROUTE}>
-                User Provisioning
-              </Link>
-            </Menu.Item>
-            <Menu.Item key={JusticeCountsTools.BULK_UPLOAD_ROUTE}>
-              <Link to={JusticeCountsTools.BULK_UPLOAD_ROUTE}>Bulk Upload</Link>
-            </Menu.Item>
-          </Menu.ItemGroup>
-        </Menu>
+        <Menu
+          onClick={onClick}
+          mode="inline"
+          selectedKeys={selectedMenuKeys(location.pathname)}
+          items={items}
+        />
       </Layout.Sider>
       <div className="main-content">
         <Switch>
@@ -243,10 +214,7 @@ const App = (): JSX.Element => {
             path={JusticeCountsTools.BULK_UPLOAD_ROUTE}
             component={JusticeCountsBulkUploadView}
           />
-          <Redirect
-            from="/"
-            to={DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST)}
-          />
+          <Redirect from="/" to={IngestOperations.INGEST_ACTIONS_ROUTE} />
         </Switch>
       </div>
     </Layout>
