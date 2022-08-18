@@ -19,11 +19,12 @@ import logging
 from http import HTTPStatus
 from typing import Callable, Optional
 
-from flask import Blueprint, Response, g, jsonify, make_response, request
+from flask import Blueprint, Response, g, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
+from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -407,6 +408,21 @@ def get_api_blueprint(
                 spreadsheet=spreadsheet, session=current_session
             )
         )
+
+    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["GET"])
+    @auth_decorator
+    def download_spreadsheet(
+        spreadsheet_id: str,
+    ) -> response.Response:
+        """Download a spreadsheet from GCP and return the file"""
+        agency_ids = g.user_context.agency_ids if "user_context" in g else []
+        file = SpreadsheetInterface.download_spreadsheet(
+            spreadsheet_id=int(spreadsheet_id),
+            agency_ids=agency_ids,
+            session=current_session,
+        )
+
+        return send_file(path_or_file=file.local_file_path, as_attachment=True)
 
     @api_blueprint.route("/spreadsheets", methods=["GET"])
     @auth_decorator

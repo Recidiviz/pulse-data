@@ -27,6 +27,11 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.justice_counts.exceptions import (
+    JusticeCountsBadRequestError,
+    JusticeCountsServerError,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -112,3 +117,44 @@ class SpreadsheetInterface:
 
         spreadsheets = sorted(spreadsheets, key=calc_last_edited_at)
         return spreadsheets
+
+    @staticmethod
+    def get_spreadsheet_by_id(
+        session: Session, spreadsheet_id: int
+    ) -> schema.Spreadsheet:
+        return (
+            session.query(schema.Spreadsheet)
+            .filter(schema.Spreadsheet.id == spreadsheet_id)
+            .one()
+        )
+
+    @staticmethod
+    def download_spreadsheet(
+        session: Session,
+        agency_ids: List[int],
+        spreadsheet_id: int,
+    ) -> LocalFileContentsHandle:
+        """Retrieves a spreadsheet from GCS and returns the file as a temporary file."""
+        spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
+            session=session, spreadsheet_id=spreadsheet_id
+        )
+        if spreadsheet.agency_id not in agency_ids:
+            raise JusticeCountsBadRequestError(
+                code="bad_download_permissions",
+                description="User does not have the permissions to download the spreadsheet because they do not belong to the correct agency",
+            )
+        fs = GcsfsFactory.build()
+        bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
+        file = fs.download_to_temp_file(
+            path=GcsfsFilePath(
+                bucket_name=bucket_name,
+                blob_name=spreadsheet.standardized_name,
+            ),
+            retain_original_filename=True,
+        )
+        if file is None:
+            raise JusticeCountsServerError(
+                code="spreadsheet_download_error",
+                description="The selected spreadsheet could not be downloaded",
+            )
+        return file
