@@ -79,6 +79,11 @@ const statusFormattingInfo: {
     color: "ingest-status-cell-green",
     sortRank: 10,
   },
+  NO_RECORDED_STATUSES: {
+    status: "No recorded statuses",
+    color: "ingest-status-cell-yellow",
+    sortRank: 11,
+  },
 };
 
 export const getStatusBoxColor = (status: string): string => {
