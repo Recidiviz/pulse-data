@@ -59,8 +59,7 @@ ENV TZ America/New_York
 # Add a package repo to get archived python versions.
 RUN apt update -y && \
     apt install -y software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa \
-  && rm -rf /var/lib/apt/lists/*
+    add-apt-repository ppa:deadsnakes/ppa
 
 RUN apt update -y && \
     apt install -y \
@@ -70,8 +69,7 @@ RUN apt update -y && \
     python3.9-dev python3.9-distutils python3-pip \
     default-jre \
     libpq-dev \
-    curl \
- && rm -rf /var/lib/apt/lists/*
+    curl
 
 RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
@@ -99,7 +97,7 @@ RUN if [ "$DEV_MODE" = "True" ]; \
     fi
 # Add all the postgres tools installed above to the path, so that we can use pg_ctl, etc. in tests.
 # Uses variable substitution to set PATH_PREFIX to '/usr/lib/postgresql/13/bin/' in DEV_MODE and otherwise leave it
-    
+
 # blank. Docker doesn't support setting environment variables within conditions, so we can't do this above.
 ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/13/bin/:}
 # Then prepend our path with whatever is in PATH_PREFIX.
@@ -144,4 +142,5 @@ CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.serv
 HEALTHCHECK --interval=5s --timeout=3s \
     CMD curl -f http://localhost:8080/health || exit 1
 
-RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*; \
+    apt-get clean;
