@@ -150,12 +150,7 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
     QUALIFY ROW_NUMBER() OVER w = 1
     WINDOW w AS (
         PARTITION BY person_id, state_code, contact_note_date, sample_type
-        -- Prioritize positives and all "passed" negative screens above DRULs, which means "awaiting lab results"
-        ORDER BY CASE contact_note_type WHEN "DRUP" THEN 1 
-                                          WHEN "DRUN" THEN 2 
-                                          WHEN "DRUM" THEN 3
-                                          WHEN "DRUX" THEN 4
-                                          ELSE 5 END, 
+        ORDER BY CASE contact_note_type WHEN "DRUP" THEN 1 WHEN "DRUN" THEN 2 ELSE 3 END
     )
 """
 
