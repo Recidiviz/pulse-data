@@ -296,6 +296,7 @@ export const DataUpload: React.FC = observer(() => {
 
       return {
         key: `${file.name}-${file.id}`,
+        id: file.id,
         selected: !file.status,
         name: file.name,
         badgeColor: file.status
@@ -317,6 +318,31 @@ export const DataUpload: React.FC = observer(() => {
       dateIngested: "--",
       uploadedBy: "--",
     };
+  };
+
+  const handleDownload = async (spreadsheetID: number, name: string) => {
+    const response = await reportStore.fetchSpreadsheetBlob(spreadsheetID);
+
+    if (response instanceof Error) {
+      return showToast("Failed to download. Please try again.", false, "red");
+    }
+
+    const data = await response?.blob();
+
+    if (data) {
+      const blob = new Blob([data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;",
+      });
+
+      const link = document.createElement("a");
+      const url = window.URL.createObjectURL(blob);
+      link.href = url;
+      link.download = name;
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+      link.remove();
+    }
   };
 
   useEffect(() => {
@@ -419,6 +445,7 @@ export const DataUpload: React.FC = observer(() => {
               {uploadedFiles.map((fileDetails) => {
                 const {
                   key,
+                  id,
                   selected,
                   name,
                   badgeColor,
@@ -429,7 +456,11 @@ export const DataUpload: React.FC = observer(() => {
                 } = getFileRowDetails(fileDetails);
 
                 return (
-                  <ExtendedRow key={key} selected={selected}>
+                  <ExtendedRow
+                    key={key}
+                    selected={selected}
+                    onClick={() => id && handleDownload(id, name)}
+                  >
                     {/* Filename */}
                     <Cell>
                       {name}
