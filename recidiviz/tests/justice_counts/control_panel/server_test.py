@@ -793,6 +793,77 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(supervision_spreadsheet.get("status"), "UPLOADED")
             self.assertEqual(supervision_spreadsheet.get("system"), "SUPERVISION")
 
+    def test_download_spreadsheet_fail_without_permissions(self) -> None:
+        agency_A = self.test_schema_objects.test_agency_A
+        agency_B = self.test_schema_objects.test_agency_B
+        self.session.add_all([agency_A, agency_B])
+        self.session.commit()
+        self.session.refresh(agency_A)
+        self.session.refresh(agency_B)
+        spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+            system=System.LAW_ENFORCEMENT,
+            user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            agency_id=agency_A.id,
+        )
+        self.session.add(spreadsheet)
+        self.session.commit()
+        self.session.refresh(spreadsheet)
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency_B.id],
+            )
+
+            response = self.client.get(f"/api/spreadsheets/{spreadsheet.id}")
+            self.assertEqual(response.status_code, 400)
+
+    def test_download_spreadsheet(self) -> None:
+        agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([user, agency])
+        self.session.commit()
+        self.session.refresh(agency)
+        spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+            system=System.LAW_ENFORCEMENT,
+            user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            agency_id=agency.id,
+        )
+        self.session.add(spreadsheet)
+        self.session.commit()
+        self.session.refresh(spreadsheet)
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=user.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            # Upload spreadsheet
+            upload_response = self.client.post(
+                "/api/spreadsheets",
+                data={
+                    "agency_id": agency.id,
+                    "file": (
+                        self.bulk_upload_test_files
+                        / "law_enforcement/law_enforcement_metrics.xlsx"
+                    ).open("rb"),
+                },
+            )
+            self.assertEqual(upload_response.status_code, 200)
+            upload_response_json = assert_type(upload_response.json, dict)
+            spreadsheet_id = upload_response_json.get("id")
+            # Download spreadsheet
+            download_response = self.client.get(f"/api/spreadsheets/{spreadsheet_id}")
+            self.assertEqual(download_response.status_code, 200)
+
     def test_session(self) -> None:
         # Add data
         name = "Agency Alpha"
