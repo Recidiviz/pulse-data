@@ -236,3 +236,8 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 DirectIngestInstanceStatus
             ] = self._get_current_status_row(session)
             return status_row.status if status_row is not None else None
+
+    def get_current_status_info(self) -> Optional[DirectIngestInstanceStatus]:
+        """Get current status and associated information."""
+        with SessionFactory.using_database(self.db_key) as session:
+            return self._get_current_status_row(session)
