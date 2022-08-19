@@ -36,6 +36,7 @@ US_TN_COMPLIANT_REPORTING_GUARDRAIL_QUERY_TEMPLATE = """
         date_of_supervision,
         person_id,
         person_external_id,
+        district,
         compliant_reporting_eligible,
         remaining_criteria_needed,
         officer_id,
