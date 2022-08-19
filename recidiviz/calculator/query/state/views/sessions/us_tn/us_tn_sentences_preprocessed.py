@@ -175,6 +175,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.charge_id,
         sen.offense_date,
         sen.is_violent,
+        sen.is_sex_offense,
         COALESCE(sen.classification_type, 'EXTERNAL_UNKNOWN') AS classification_type,
         COALESCE(sen.classification_subtype, 'EXTERNAL_UNKNOWN') AS classification_subtype,
         sen.description,
