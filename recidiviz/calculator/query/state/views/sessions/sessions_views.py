@@ -66,6 +66,9 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions import
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_unnested import (
     COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.consecutive_sentences_preprocessed import (
+    CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.dataflow_sessions import (
     DATAFLOW_SESSIONS_VIEW_BUILDER,
 )
@@ -159,11 +162,17 @@ from recidiviz.calculator.query.state.views.sessions.us_id.us_id_incarceration_p
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_raw_lsir_assessments import (
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
+    US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_me.us_me_supervision_population_metrics_preprocessed import (
     US_ME_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_consecutive_sentences_preprocessed import (
+    US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_housing_stays_preprocessed import (
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
@@ -176,6 +185,9 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 )
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_compartment_sentences import (
     US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
+    US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_preprocessed import (
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
@@ -216,6 +228,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
     COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,
+    CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     DATAFLOW_SESSIONS_VIEW_BUILDER,
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     DISTRICT_SESSIONS_VIEW_BUILDER,
@@ -242,11 +255,14 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+    US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+    US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
+    US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
