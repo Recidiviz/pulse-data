@@ -20,7 +20,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 
 import { useStore } from "../../stores/StoreProvider";
-import Loading from "../Loading";
+import { Loading } from "../Loading";
 import UnauthorizedPage from "./UnauthorizedPage";
 import VerificationPage from "./VerificationPage";
 

@@ -25,7 +25,7 @@ import { Report } from "../../shared/types";
 import { useStore } from "../../stores";
 import { printReportTitle } from "../../utils";
 import { PageWrapper } from "../Forms";
-import Loading from "../Loading";
+import { Loading } from "../Loading";
 import { showToast } from "../Toast";
 import DataEntryForm from "./DataEntryForm";
 import PublishConfirmation from "./PublishConfirmation";

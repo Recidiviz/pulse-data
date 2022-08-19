@@ -23,21 +23,11 @@ import { removeSnakeCase } from "../../utils";
 import Logo from "../assets/jc-logo-vector.png";
 import SpreadsheetIcon from "../assets/spreadsheet-icon.png";
 import UploadIcon from "../assets/upload-icon.png";
-import { Badge, BadgeColorMapping } from "../Badge";
-import {
-  Cell,
-  Label,
-  PageHeader,
-  PageTitle,
-  TabbedItem,
-  TabbedOptions,
-} from "../Reports";
+import { PageHeader, PageTitle, TabbedItem, TabbedOptions } from "../Reports";
 import { showToast } from "../Toast";
 import {
   Button,
   ButtonWrapper,
-  ExtendedLabelRow,
-  ExtendedRow,
   ExtendedTabbedBar,
   Icon,
   Instructions,
@@ -47,8 +37,7 @@ import {
   ModalBody,
   UploadButtonInput,
   UploadButtonLabel,
-  UploadedFilesContainer,
-  UploadedFilesTable,
+  UploadedFiles,
 } from ".";
 import {
   GeneralInstructions,
@@ -73,26 +62,11 @@ export type UploadedFile = {
   status: UploadedFileStatus | null;
 };
 
-const isUploadedFile = (
-  file: UploadedFile | UploadedFileAttempt
-): file is UploadedFile => {
-  return (file as UploadedFile).id !== undefined;
-};
-
-const uploadStatusColorMapping: BadgeColorMapping = {
-  UPLOADED: "ORANGE",
-  INGESTED: "GREEN",
-  ERROR: "RED",
-};
-
 export const DataUpload: React.FC = observer(() => {
   const dataUploadMenuItems = ["Instructions", "Uploaded Files"];
-  const dataUploadColumnTitles = [
-    "Filename",
-    "Date Uploaded",
-    "Date Ingested",
-    "Uploaded By",
-  ];
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [activeMenuItem, setActiveMenuItem] = useState(dataUploadMenuItems[0]);
   const [uploadedFiles, setUploadedFiles] = useState<
     (UploadedFile | UploadedFileAttempt)[]
@@ -166,77 +140,19 @@ export const DataUpload: React.FC = observer(() => {
     }
   };
 
-  const getFileRowDetails = (file: UploadedFile | UploadedFileAttempt) => {
-    const fileStatus = file.status === "UPLOADED" ? "PENDING" : file.status;
-
-    if (isUploadedFile(file)) {
-      const formatDate = (timestamp: number) =>
-        Intl.DateTimeFormat("en-US", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }).format(timestamp);
-
-      return {
-        key: `${file.name}-${file.id}`,
-        id: file.id,
-        selected: !file.status,
-        name: file.name,
-        badgeColor: file.status
-          ? uploadStatusColorMapping[file.status]
-          : "GREY",
-        badgeText: fileStatus?.toLowerCase() || "Uploading...",
-        dateUploaded: formatDate(file.uploaded_at),
-        dateIngested: file.ingested_at ? formatDate(file.ingested_at) : "--",
-        uploadedBy: file.uploaded_by,
-      };
-    }
-    return {
-      key: `${file.name}-${file.upload_attempt_timestamp}`,
-      selected: false,
-      name: file.name,
-      badgeColor: file.status ? uploadStatusColorMapping[file.status] : "GREY",
-      badgeText: file.status?.toLowerCase() || "Uploading...",
-      dateUploaded: "--",
-      dateIngested: "--",
-      uploadedBy: "--",
-    };
-  };
-
-  const handleDownload = async (spreadsheetID: number, name: string) => {
-    const response = await reportStore.fetchSpreadsheetBlob(spreadsheetID);
-
-    if (response instanceof Error) {
-      return showToast("Failed to download. Please try again.", false, "red");
-    }
-
-    const data = await response?.blob();
-
-    if (data) {
-      const blob = new Blob([data], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;",
-      });
-
-      const link = document.createElement("a");
-      const url = window.URL.createObjectURL(blob);
-      link.href = url;
-      link.download = name;
-      link.click();
-
-      window.URL.revokeObjectURL(url);
-      link.remove();
-    }
-  };
-
   useEffect(() => {
     const fetchFilesList = async () => {
       const response = (await reportStore.getUploadedFilesList()) as
         | Response
         | Error;
 
+      setIsLoading(false);
+
       if (response instanceof Error) {
-        return showToast("Failed to get files.", false, "red");
+        return setFetchError(true);
       }
+
+      setFetchError(false);
 
       const listOfFiles = (await response.json()) as UploadedFile[];
       setUploadedFiles(listOfFiles);
@@ -336,52 +252,11 @@ export const DataUpload: React.FC = observer(() => {
         {/* Uploaded Files */}
 
         {activeMenuItem === "Uploaded Files" && (
-          <UploadedFilesContainer>
-            <UploadedFilesTable>
-              <ExtendedLabelRow>
-                {dataUploadColumnTitles.map((title) => (
-                  <Label key={title}>{title}</Label>
-                ))}
-              </ExtendedLabelRow>
-
-              {uploadedFiles.map((fileDetails) => {
-                const {
-                  key,
-                  id,
-                  selected,
-                  name,
-                  badgeColor,
-                  badgeText,
-                  dateUploaded,
-                  dateIngested,
-                  uploadedBy,
-                } = getFileRowDetails(fileDetails);
-
-                return (
-                  <ExtendedRow
-                    key={key}
-                    selected={selected}
-                    onClick={() => id && handleDownload(id, name)}
-                  >
-                    {/* Filename */}
-                    <Cell>
-                      {name}
-                      <Badge color={badgeColor}>{badgeText}</Badge>
-                    </Cell>
-
-                    {/* Date Uploaded */}
-                    <Cell capitalize>{dateUploaded}</Cell>
-
-                    {/* Date Ingested */}
-                    <Cell>{dateIngested}</Cell>
-
-                    {/* Uploaded By */}
-                    <Cell>{uploadedBy}</Cell>
-                  </ExtendedRow>
-                );
-              })}
-            </UploadedFilesTable>
-          </UploadedFilesContainer>
+          <UploadedFiles
+            isLoading={isLoading}
+            uploadedFiles={uploadedFiles}
+            fetchError={fetchError}
+          />
         )}
       </ModalBody>
     </>

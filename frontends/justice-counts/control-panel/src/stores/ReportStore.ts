@@ -268,20 +268,16 @@ class ReportStore {
   }
 
   async getUploadedFilesList(): Promise<Response | Error | undefined> {
-    try {
-      const response = (await this.api.request({
-        path: `/api/spreadsheets`,
-        method: "GET",
-      })) as Response;
+    const response = (await this.api.request({
+      path: `/api/spreadsheets`,
+      method: "GET",
+    })) as Response;
 
-      if (response.status !== 200) {
-        throw new Error("There was an issue retrieving the list of files.");
-      }
-
-      return response;
-    } catch (error) {
-      if (error instanceof Error) return new Error(error.message);
+    if (response.status !== 200) {
+      return new Error("There was an issue retrieving the list of files.");
     }
+
+    return response;
   }
 
   async fetchSpreadsheetBlob(
