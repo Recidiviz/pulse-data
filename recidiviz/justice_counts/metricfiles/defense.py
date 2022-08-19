@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Metricfile objects used for prosecution metrics."""
+"""Metricfile objects used for Defense metrics."""
 
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -26,78 +26,67 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     ProsecutionAndDefenseStaffType,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
-from recidiviz.justice_counts.metrics import prosecution
+from recidiviz.justice_counts.metrics import defense
 
-PROSECUTION_METRIC_FILES = [
+DEFENSE_METRIC_FILES = [
     MetricFile(
         canonical_filename="annual_budget",
-        definition=prosecution.annual_budget,
+        definition=defense.annual_budget,
     ),
     MetricFile(
         canonical_filename="total_staff",
-        definition=prosecution.total_staff,
+        definition=defense.total_staff,
     ),
     MetricFile(
         canonical_filename="total_staff_by_type",
-        definition=prosecution.total_staff,
+        definition=defense.total_staff,
         disaggregation=ProsecutionAndDefenseStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
+        canonical_filename="cases_appointed",
+        definition=defense.cases_appointed_counsel,
+    ),
+    MetricFile(
+        canonical_filename="cases_appointed_by_severity",
+        definition=defense.cases_appointed_counsel,
+        disaggregation=CaseSeverityType,
+        disaggregation_column_name="severity_type",
+    ),
+    MetricFile(
         canonical_filename="caseloads",
-        definition=prosecution.caseloads,
+        definition=defense.caseloads,
     ),
     MetricFile(
         canonical_filename="caseloads_by_severity",
-        definition=prosecution.caseloads,
+        definition=defense.caseloads,
         disaggregation=CaseSeverityType,
-        disaggregation_column_name="case_severity",
+        disaggregation_column_name="severity_type",
     ),
     MetricFile(
         canonical_filename="cases_disposed",
-        definition=prosecution.cases_disposed,
+        definition=defense.cases_disposed,
     ),
     MetricFile(
         canonical_filename="cases_disposed_by_type",
-        definition=prosecution.cases_disposed,
+        definition=defense.cases_disposed,
         disaggregation=DispositionType,
         disaggregation_column_name="disposition_type",
     ),
     MetricFile(
-        canonical_filename="cases_referred",
-        definition=prosecution.cases_referred,
-    ),
-    MetricFile(
-        canonical_filename="cases_referred_by_severity",
-        definition=prosecution.cases_referred,
-        disaggregation=CaseSeverityType,
-        disaggregation_column_name="case_severity",
-    ),
-    MetricFile(
-        canonical_filename="cases_rejected",
-        definition=prosecution.cases_rejected,
-    ),
-    MetricFile(
-        canonical_filename="cases_rejected_by_severity",
-        definition=prosecution.cases_rejected,
-        disaggregation=CaseSeverityType,
-        disaggregation_column_name="case_severity",
-    ),
-    MetricFile(
-        canonical_filename="cases_rejected_by_gender",
-        definition=prosecution.cases_rejected,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
-    ),
-    MetricFile(
-        canonical_filename="cases_rejected_by_race",
-        allowed_filenames=["cases_rejected_by_race/ethnicity"],
-        definition=prosecution.cases_rejected,
+        canonical_filename="cases_disposed_by_race",
+        definition=defense.cases_disposed,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="violations_filed",
-        definition=prosecution.violations,
+        canonical_filename="cases_disposed_by_gender",
+        definition=defense.cases_disposed,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        canonical_filename="complaints_sustained",
+        definition=defense.complaints,
     ),
 ]

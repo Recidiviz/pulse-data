@@ -71,7 +71,6 @@ LAW_ENFORCEMENT_METRIC_FILES = [
         canonical_filename="arrests_by_race",
         allowed_filenames=[
             "arrests_by_race/ethnicity",
-            "arrests_by_raceethnicity",
         ],
         definition=law_enforcement.total_arrests,
         disaggregation=RaceAndEthnicity,

@@ -18,6 +18,9 @@
 
 import itertools
 
+from recidiviz.justice_counts.metricfiles.courts import COURTS_METRIC_FILES
+from recidiviz.justice_counts.metricfiles.defense import DEFENSE_METRIC_FILES
+from recidiviz.justice_counts.metricfiles.jails import JAILS_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.law_enforcement import (
     LAW_ENFORCEMENT_METRIC_FILES,
 )
@@ -31,12 +34,15 @@ from recidiviz.justice_counts.metricfiles.supervision import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 SYSTEM_TO_METRICFILES = {
+    schema.System.LAW_ENFORCEMENT: LAW_ENFORCEMENT_METRIC_FILES,
+    schema.System.DEFENSE: DEFENSE_METRIC_FILES,
     schema.System.PROSECUTION: PROSECUTION_METRIC_FILES,
+    schema.System.COURTS_AND_PRETRIAL: COURTS_METRIC_FILES,
+    schema.System.JAILS: JAILS_METRIC_FILES,
     schema.System.PRISONS: PRISON_METRIC_FILES,
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
     schema.System.PAROLE: PAROLE_METRIC_FILES,
     schema.System.PROBATION: PROBATION_METRIC_FILES,
-    schema.System.LAW_ENFORCEMENT: LAW_ENFORCEMENT_METRIC_FILES,
 }
 
 # The `test_metricfile_list` unit test ensures that this dictionary
