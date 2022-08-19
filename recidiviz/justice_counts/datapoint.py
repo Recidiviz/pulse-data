@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the Datapoint model."""
 import datetime
+import logging
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -262,19 +263,20 @@ class DatapointInterface:
 
         if use_existing_aggregate_value:
             # Validate that the incoming aggregate value matches what's already
-            # in the db. If not, raise an error. If so, continue without making
-            # any changes. If nothing is in the DB, save the new aggregate value.
+            # in the db. If not, set the value to None. If so, or if nothing is
+            # in the DB, continue on and save the value.
             expunge_existing(session=session, ingested_entity=ingested_entity)
             existing_entity = get_existing_entity(ingested_entity, session)
             if (
                 existing_entity is not None
                 and abs(float(existing_entity.value) - value) > 1
             ):
-                raise ValueError(
+                logging.warning(
                     "`use_existing_aggregate_value was specified, "
                     "but the aggregate value either read or inferred from "
                     "incoming data does not match the existing aggregate value."
                 )
+                ingested_entity.value = None
 
         datapoint, existing_datapoint = update_existing_or_create(
             ingested_entity,
