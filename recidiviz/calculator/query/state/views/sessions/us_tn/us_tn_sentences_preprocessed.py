@@ -70,7 +70,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.incarceration_sentence_id AS sentence_id,
         sis.external_id AS external_id,
         'INCARCERATION' AS sentence_type,
-        JSON_EXTRACT_SCALAR(sis.sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
         sis.start_date AS effective_date,
         sis.date_imposed,
         sis.completion_date,
@@ -103,7 +102,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.supervision_sentence_id AS sentence_id,
         sss.external_id AS external_id,
         'SUPERVISION' AS sentence_type,
-        JSON_EXTRACT_SCALAR(sss.sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
         sss.start_date AS effective_date,
         sss.date_imposed,
         sss.completion_date,
@@ -149,8 +147,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     GROUP BY 1
     )
     /*
-    Joins back to sessions to create a "session_id_imposed" field as well as back to itself to pull in the consecutive
-    sentence internal id.
+    Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
     */
     SELECT 
         sen.person_id,
@@ -159,7 +156,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.external_id AS external_id,
         sen.sentence_type,
         COALESCE(raw.judicial_district, 'EXTERNAL_UNKNOWN') AS judicial_district,
-        sen.consecutive_sentence_external_id,
         dedup.effective_date,
         dedup.date_imposed,
         dedup.completion_date,
@@ -209,12 +205,14 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         raw.total_education_attendance_credits,
         raw.total_treatment_credits,
         
-        consecutive_sentence.sentence_id AS consecutive_sentence_id,
+        cs.consecutive_sentence_id,
         -- Set the session_id_imposed if the sentence date imposed matches the session start date
         IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
         ses.session_id AS session_id_closest,
         DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days,
     FROM sentences_cte sen
+    LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
+        USING (person_id, state_code, sentence_id, sentence_type)
     JOIN dedup_external_id_fields dedup
         USING(external_id)
     LEFT JOIN raw_data_cte AS raw
@@ -226,10 +224,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
         AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
         AND sen.date_imposed < COALESCE(ses.end_date, CURRENT_DATE('US/Eastern'))
-    LEFT JOIN sentences_cte consecutive_sentence
-        ON sen.consecutive_sentence_external_id = consecutive_sentence.external_id
-    ---TODO(#13829): Investigate options for consecutive sentence relationship where supervision sentences are consecutive to incarceration sentences
-        AND sen.sentence_type = consecutive_sentence.sentence_type
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON sen.state_code = offense_type_ref.state_code
         AND sen.description = offense_type_ref.offense_type
