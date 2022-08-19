@@ -322,18 +322,41 @@ class DatapointInterface:
             - This method first determines which contexts we expect for this dimension definition
             - Then it looks at the contexts already reported in the database or saved as pre-filled
             - recurring context options, and fills in any of the expected contexts that have already
-            - been reported with their reported value
+            - been reported with their reported value.
             """
             contexts = []
             for context in metric_definition.contexts:
                 value = None
-                datapoint = (
-                    self.context_key_to_report_datapoint.get(context.key.value)
-                    if self.context_key_to_report_datapoint.get(context.key.value)
-                    else self.context_key_to_agency_datapoint.get(context.key.value)
+                report_datapoint = self.context_key_to_report_datapoint.get(
+                    context.key.value
                 )
-                if datapoint is not None:
-                    value = datapoint.get_value()
+                report_value = (
+                    report_datapoint.get_value()
+                    if report_datapoint is not None
+                    else None
+                )
+                report_status = (
+                    report_datapoint.report.status
+                    if report_datapoint is not None
+                    else schema.ReportStatus.NOT_STARTED
+                )
+                agency_datapoint = self.context_key_to_agency_datapoint.get(
+                    context.key.value
+                )
+                agency_value = (
+                    agency_datapoint.get_value()
+                    if agency_datapoint is not None
+                    else None
+                )
+                # If no data has been reported, the metric is enabled, AND the report is
+                # unpublished, fill context with the value of the agency datapoint.
+                value = (
+                    agency_value
+                    if report_value is None
+                    and self.is_metric_enabled is True
+                    and report_status != schema.ReportStatus.PUBLISHED
+                    else report_value
+                )
                 contexts.append(MetricContextData(key=context.key, value=value))
             return contexts
 
