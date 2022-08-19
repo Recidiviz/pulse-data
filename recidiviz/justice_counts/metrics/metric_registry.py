@@ -24,6 +24,7 @@ from recidiviz.justice_counts.metrics import (
     jails,
     law_enforcement,
     parole,
+    post_release,
     prisons,
     probation,
     prosecution,
@@ -105,6 +106,13 @@ METRICS = [
     probation.reconviction_while_on_supervision,
     probation.supervision_terminations,
     probation.supervision_violations,
+    post_release.annual_budget,
+    post_release.total_staff,
+    post_release.individuals_under_supervision,
+    post_release.new_supervision_cases,
+    post_release.reconviction_while_on_supervision,
+    post_release.supervision_terminations,
+    post_release.supervision_violations,
 ]
 
 METRICS_BY_SYSTEM = {}

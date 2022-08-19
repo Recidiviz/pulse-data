@@ -483,11 +483,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(metrics[6].value, 400)
 
             self.assertEqual(
-                metrics[8].key, "SUPERVISION_TOTAL_STAFF_metric/staff/supervision/type"
+                metrics[7].key, "SUPERVISION_TOTAL_STAFF_metric/staff/supervision/type"
             )
-            self.assertEqual(metrics[8].value, 150)
+            self.assertEqual(metrics[7].value, 150)
             self.assertEqual(
-                metrics[8]
+                metrics[7]
                 .aggregated_dimensions[0]  # type: ignore[index]
                 .dimension_to_value[SupervisionStaffType.SUPERVISION_OFFICERS],
                 100,
