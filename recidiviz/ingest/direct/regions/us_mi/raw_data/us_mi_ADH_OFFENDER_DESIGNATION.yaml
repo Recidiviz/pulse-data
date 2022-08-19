@@ -1,0 +1,17 @@
+file_tag: ADH_OFFENDER_DESIGNATION
+file_description: |-
+  This table contains data for each individual's designation (such as administrative segregation) in the MDOC system
+data_classification: source
+primary_key_cols:
+  - offender_designation_id
+columns:
+  - name: offender_designation_id
+  - name: offender_id
+    is_pii: True
+  - name: offender_designation_code_id
+  - name: start_date
+  - name: end_date
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+  - name: last_update_node

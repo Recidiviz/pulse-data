@@ -1,0 +1,16 @@
+file_tag: ADH_CASE_LOAD
+file_description: |-
+  This table contains data for caseloads in the MDOC system
+data_classification: source
+primary_key_cols:
+  - case_load_id
+columns:
+  - name: case_load_id
+  - name: description
+  - name: case_load_type_id
+  - name: trust_accounts_flag
+  - name: active_flag
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+  - name: last_update_node
