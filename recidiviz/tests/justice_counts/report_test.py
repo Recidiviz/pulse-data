@@ -21,6 +21,7 @@ import datetime
 
 from freezegun import freeze_time
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -1100,4 +1101,48 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System.PAROLE.value,
                     schema.System.PROBATION.value,
                 },
+            )
+
+    def test_backfill_contexts(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            annual_report = self.test_schema_objects.test_report_annual
+            agency = self.test_schema_objects.test_agency_B
+
+            session.add_all([agency, annual_report])
+            session.flush()
+            session.refresh(annual_report)
+            # add report in draft state and add metric
+            ReportInterface.add_or_update_metric(
+                session=session,
+                report=annual_report,
+                report_metric=self.test_schema_objects.get_reported_budget_metric(
+                    include_contexts=False
+                ),
+                user_account=self.test_schema_objects.test_user_A,
+            )
+            report_metrics = ReportInterface.get_metrics_by_report(
+                session=session, report=annual_report
+            )
+            budget_metric = filter(
+                lambda x: x.key == law_enforcement.annual_budget.key, report_metrics
+            )
+            self.assertEqual(list(budget_metric)[0].contexts[0].value, None)
+            # add pre-filled context
+            agency_datapoint = schema.Datapoint(
+                metric_definition_key=law_enforcement.annual_budget.key,
+                context_key=ContextKey.PRIMARY_FUNDING_SOURCE.value,
+                source_id=agency.id,
+                value="THIS IS AN AGENCY PREFILLED DATAPOINT",
+            )
+            session.add(agency_datapoint)
+            session.flush()
+            report_metrics = ReportInterface.get_metrics_by_report(
+                session=session, report=annual_report
+            )
+            budget_metric = filter(
+                lambda x: x.key == law_enforcement.annual_budget.key, report_metrics
+            )
+            self.assertEqual(
+                list(budget_metric)[0].contexts[0].value,
+                "THIS IS AN AGENCY PREFILLED DATAPOINT",
             )
