@@ -34,6 +34,7 @@ from recidiviz.justice_counts.exceptions import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    MetricCategory,
     MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_registry import (
@@ -450,18 +451,32 @@ class MetricInterface:
         """Given a list of systems and report frequency, return all
         MetricDefinitions that belong to one of the systems and have
         the given frequency."""
+        # Sort systems so that Supervision, Parole, Probation, and Post-Release
+        # are always grouped together, in that order
+        all_systems_ordered = list(schema.System)
+        systems_ordered = sorted(list(systems), key=all_systems_ordered.index)
+
         metrics = list(
             itertools.chain(
-                *[
-                    METRICS_BY_SYSTEM[system.value]
-                    # Sort systems so that Supervision comes before Parole/Probation
-                    # in the UI
-                    for system in sorted(
-                        list(systems), key=lambda x: x.value, reverse=True
-                    )
-                ]
+                *[METRICS_BY_SYSTEM[system.value] for system in systems_ordered]
             )
         )
+
+        if systems.intersection(
+            {schema.System.PAROLE, schema.System.PROBATION, schema.System.POST_RELEASE}
+        ):
+            # This agency reports its metrics broken down by parole/probation/post-release,
+            # so we should remove all of the generic "supervision" metrics except for the
+            # cost and capacity ones (i.e. budget and staff)
+            metrics = [
+                metric
+                for metric in metrics
+                if not (
+                    metric.system == schema.System.SUPERVISION
+                    and metric.category != MetricCategory.CAPACITY_AND_COST
+                )
+            ]
+
         metric_definitions = []
         for metric in metrics:
             if report_type is not None and report_type not in {

@@ -170,6 +170,7 @@ class System(enum.Enum):
     SUPERVISION = "SUPERVISION"
     PAROLE = "PAROLE"
     PROBATION = "PROBATION"
+    POST_RELEASE = "POST_RELEASE"
 
     # Used by state scan
     CORRECTIONS = "CORRECTIONS"
