@@ -138,7 +138,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 3)
+            self.assertEqual(len(filename_to_error), 2)
             self.assertTrue(
                 "No metric corresponds to the filename `gender`"
                 in str(filename_to_error["gender.csv"])
@@ -146,10 +146,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertTrue(
                 "No fuzzy matches found with high enough score. Input=Xxx"
                 in str(filename_to_error["cases_disposed_by_type.csv"])
-            )
-            self.assertTrue(
-                "the aggregate value either read or inferred from incoming data does not match the existing aggregate value"
-                in str(filename_to_error["caseloads_by_severity.csv"])
             )
 
     def test_prison_new(self) -> None:
