@@ -1,0 +1,20 @@
+file_tag: ADH_EMPLOYEE_CASE_LOAD
+file_description: |-
+  This table contains data for each MDOC employee's caseload
+data_classification: source
+primary_key_cols:
+  - case_load_id
+columns:
+  - name: case_load_id
+  - name: employee_id
+    is_pii: True
+  - name: assigned_case_load_flag
+  - name: clock_number
+  - name: workload_number
+  - name: active_flag
+  - name: effective_date
+  - name: expiration_date
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+  - name: last_update_node
