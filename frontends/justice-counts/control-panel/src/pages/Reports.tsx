@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 import checkmarkIcon from "../components/assets/status-check-icon.png";
 import { Badge, BadgeColorMapping } from "../components/Badge";
 import { DataUpload, DataUploadButton } from "../components/DataUpload";
-import Loading from "../components/Loading";
+import { Loading } from "../components/Loading";
 import { Modal } from "../components/Modal";
 import { Onboarding } from "../components/Onboarding";
 import {

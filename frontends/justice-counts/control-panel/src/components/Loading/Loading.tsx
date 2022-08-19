@@ -51,12 +51,10 @@ const Loader = styled.div`
     alternate;
 `;
 
-const Loading = () => {
+export const Loading = () => {
   return (
     <LoadingWrapper>
       <Loader data-testid="loading" />
     </LoadingWrapper>
   );
 };
-
-export default Loading;

@@ -32,7 +32,7 @@ import {
   NotReportedIcon,
   TextInput,
 } from "../Forms";
-import Loading from "../Loading";
+import { Loading } from "../Loading";
 import { PageTitle, TabbedBar, TabbedItem, TabbedOptions } from "../Reports";
 import { showToast } from "../Toast";
 import {

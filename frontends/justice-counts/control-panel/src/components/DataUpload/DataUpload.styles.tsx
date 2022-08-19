@@ -234,3 +234,16 @@ export const Icon = styled.img<{ grayscale?: boolean }>`
   margin-left: 10px;
   ${({ grayscale }) => grayscale && `filter: grayscale(1);`}
 `;
+
+export const ModalLoadingWrapper = styled.div`
+  div {
+    height: 100%;
+    top: 25%;
+  }
+`;
+
+export const ModalErrorWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 25px;
+`;

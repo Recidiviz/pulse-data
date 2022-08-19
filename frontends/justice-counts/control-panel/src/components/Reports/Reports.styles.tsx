@@ -19,6 +19,8 @@ import styled from "styled-components/macro";
 
 import { palette, typography } from "../GlobalStyles";
 
+const COLLAPSED_INNER_COLUMNS_WIDTH = 1376;
+
 export const PageHeader = styled.div`
   width: 100%;
   background: ${palette.solid.white};
@@ -196,7 +198,7 @@ export const Label = styled.div`
     text-align: right;
   }
 
-  @media only screen and (max-width: 1150px) {
+  @media only screen and (max-width: ${COLLAPSED_INNER_COLUMNS_WIDTH}px) {
     &:nth-child(2),
     &:nth-child(3) {
       display: none;
@@ -238,7 +240,7 @@ export const Cell = styled.div<{ capitalize?: boolean }>`
     justify-content: flex-end;
   }
 
-  @media only screen and (max-width: 1150px) {
+  @media only screen and (max-width: ${COLLAPSED_INNER_COLUMNS_WIDTH}px) {
     &:nth-child(2),
     &:nth-child(3) {
       display: none;
