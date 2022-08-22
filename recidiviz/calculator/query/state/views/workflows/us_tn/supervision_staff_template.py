@@ -49,7 +49,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_locations` facilities
         ON staff.SiteID=facilities.site_code
         WHERE Status = 'A'
-            AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM', 'SECR')
+            AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM', 'SECR', 'ADSC')
     )
 
     SELECT * FROM staff_users WHERE id NOT IN (SELECT id FROM leadership_users)
