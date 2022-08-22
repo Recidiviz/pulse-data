@@ -102,7 +102,17 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   ];
   return (
     <>
-      <Table dataSource={dataSource} columns={columns} />
+      <Table
+        dataSource={dataSource}
+        columns={columns}
+        pagination={{
+          hideOnSinglePage: true,
+          size: "small",
+          showSizeChanger: true,
+          defaultPageSize: 25,
+          pageSizeOptions: ["25", "50", "100"],
+        }}
+      />
     </>
   );
 };
