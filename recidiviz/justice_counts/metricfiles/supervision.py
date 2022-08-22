@@ -29,7 +29,12 @@ from recidiviz.justice_counts.dimensions.supervision import (
     SupervisionViolationType,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
-from recidiviz.justice_counts.metrics import parole, probation, supervision
+from recidiviz.justice_counts.metrics import (
+    parole,
+    post_release,
+    probation,
+    supervision,
+)
 
 SUPERVISION_METRIC_FILES = [
     MetricFile(
@@ -272,6 +277,88 @@ PROBATION_METRIC_FILES = [
     MetricFile(
         canonical_filename="reconvictions_by_type",
         definition=probation.reconviction_while_on_supervision,
+        disaggregation=NewOffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+]
+
+POST_RELEASE_METRIC_FILES = [
+    MetricFile(
+        canonical_filename="annual_budget",
+        definition=post_release.annual_budget,
+    ),
+    MetricFile(
+        canonical_filename="total_staff",
+        definition=post_release.total_staff,
+    ),
+    MetricFile(
+        canonical_filename="total_staff_by_type",
+        definition=post_release.total_staff,
+        disaggregation=SupervisionStaffType,
+        disaggregation_column_name="staff_type",
+    ),
+    MetricFile(
+        canonical_filename="violations",
+        definition=post_release.supervision_violations,
+    ),
+    MetricFile(
+        canonical_filename="violations_by_type",
+        definition=post_release.supervision_violations,
+        disaggregation=SupervisionViolationType,
+        disaggregation_column_name="violation_type",
+    ),
+    MetricFile(
+        canonical_filename="new_cases",
+        definition=post_release.new_supervision_cases,
+    ),
+    MetricFile(
+        canonical_filename="new_cases_by_type",
+        definition=post_release.new_supervision_cases,
+        disaggregation=SupervisionCaseType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        canonical_filename="population",
+        definition=post_release.individuals_under_supervision,
+    ),
+    MetricFile(
+        canonical_filename="population_by_type",
+        definition=post_release.individuals_under_supervision,
+        disaggregation=SupervisionIndividualType,
+        disaggregation_column_name="supervision_type",
+    ),
+    MetricFile(
+        canonical_filename="population_by_gender",
+        definition=post_release.individuals_under_supervision,
+        disaggregation=GenderRestricted,
+        disaggregation_column_name="gender",
+    ),
+    MetricFile(
+        canonical_filename="population_by_race",
+        allowed_filenames=[
+            "population_by_race/ethnicity",
+        ],
+        definition=post_release.individuals_under_supervision,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        canonical_filename="terminations",
+        definition=post_release.supervision_terminations,
+    ),
+    MetricFile(
+        canonical_filename="terminations_by_type",
+        definition=post_release.supervision_terminations,
+        disaggregation=SupervisionTerminationType,
+        disaggregation_column_name="termination_type",
+    ),
+    MetricFile(
+        canonical_filename="reconvictions",
+        definition=post_release.reconviction_while_on_supervision,
+    ),
+    MetricFile(
+        canonical_filename="reconvictions_by_type",
+        definition=post_release.reconviction_while_on_supervision,
         disaggregation=NewOffenseType,
         disaggregation_column_name="offense_type",
     ),
