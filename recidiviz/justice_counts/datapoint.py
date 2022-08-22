@@ -269,12 +269,15 @@ class DatapointInterface:
             existing_entity = get_existing_entity(ingested_entity, session)
             if (
                 existing_entity is not None
+                and existing_entity.value is not None
                 and abs(float(existing_entity.value) - value) > 1
             ):
                 logging.warning(
-                    "`use_existing_aggregate_value was specified, "
-                    "but the aggregate value either read or inferred from "
-                    "incoming data does not match the existing aggregate value."
+                    "`use_existing_aggregate_value` was specified, but the aggregate "
+                    "value either read or inferred from incoming data (%.2f) does not "
+                    "match the existing aggregate value (%.2f).",
+                    value,
+                    existing_entity.value,
                 )
                 ingested_entity.value = None
 

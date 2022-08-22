@@ -215,13 +215,15 @@ class BulkUploader:
             system_value_to_rows = {
                 k: list(v)
                 for k, v in groupby(
-                    sorted(rows, key=lambda x: x["system"]), lambda x: x["system"]
+                    sorted(rows, key=lambda x: x.get("system", "both")),
+                    lambda x: x.get("system", "both"),
                 )
             }
             normalized_system_value_to_system = {
                 "both": schema.System.SUPERVISION,
                 "parole": schema.System.PAROLE,
                 "probation": schema.System.PROBATION,
+                "post release": schema.System.POST_RELEASE,
             }
             for system_value, system_rows in system_value_to_rows.items():
                 normalized_system_value = system_value.lower().strip()

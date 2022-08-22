@@ -28,6 +28,7 @@ from recidiviz.justice_counts.metricfiles.prisons import PRISON_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.prosecution import PROSECUTION_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.supervision import (
     PAROLE_METRIC_FILES,
+    POST_RELEASE_METRIC_FILES,
     PROBATION_METRIC_FILES,
     SUPERVISION_METRIC_FILES,
 )
@@ -43,6 +44,7 @@ SYSTEM_TO_METRICFILES = {
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
     schema.System.PAROLE: PAROLE_METRIC_FILES,
     schema.System.PROBATION: PROBATION_METRIC_FILES,
+    schema.System.POST_RELEASE: POST_RELEASE_METRIC_FILES,
 }
 
 # The `test_metricfile_list` unit test ensures that this dictionary
