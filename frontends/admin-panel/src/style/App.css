@@ -98,24 +98,24 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .ingest-status-cell-green {
   color: #ffffff;
   background-color: #389e0d;
-  height: 30px;
+  height: 60px;
   width: 450px;
-  text-align: center;
+  padding: 10px;
 
 
 }
 .ingest-status-cell-grey {
   color: #ffffff;
   background-color: #a9a9a9;
-  height: 30px;
+  height: 60px;
   width: 450px;
-  text-align: center;
+  padding: 10px;
 }
 .ingest-status-cell-yellow {
   color: #000000;
   background-color: #ffff00;
-  height: 30px;
+  height: 60px;
   width: 450px;
-  text-align: center;
+  padding: 10px;
 
 }

@@ -19,6 +19,7 @@ export interface DirectIngestStatusFormattingInfo {
   status: string;
   color: string;
   sortRank: number;
+  message: string;
 }
 
 const statusFormattingInfo: {
@@ -28,66 +29,87 @@ const statusFormattingInfo: {
     status: "READY_TO_FLASH",
     color: "ingest-status-cell-yellow",
     sortRank: 0,
+    message:
+      "Scheduler in SECONDARY found no more work to do - flash to PRIMARY is ready to take place",
   },
   EXTRACT_AND_MERGE_IN_PROGRESS: {
     status: "EXTRACT_AND_MERGE_IN_PROGRESS",
     color: "ingest-status-cell-grey",
     sortRank: 1,
+    message:
+      "Conversion of materialized ingest views to Postgres entities is in progress",
   },
   FLASH_IN_PROGRESS: {
     status: "FLASH_IN_PROGRESS",
     color: "ingest-status-cell-grey",
     sortRank: 2,
+    message: "Flash of data from SECONDARY to PRIMARY is in progress",
   },
   INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: {
     status: "INGEST_VIEW_MATERIALIZATION_IN_PROGRESS",
     color: "ingest-status-cell-grey",
     sortRank: 3,
+    message: "Ingest view materialization is in progress",
   },
   RAW_DATA_IMPORT_IN_PROGRESS: {
     status: "RAW_DATA_IMPORT_IN_PROGRESS",
     color: "ingest-status-cell-grey",
     sortRank: 4,
+    message: "Raw data import from GCS to BQ is in progress",
   },
   RERUN_WITH_RAW_DATA_IMPORT_STARTED: {
     status: "RERUN_WITH_RAW_DATA_IMPORT_STARTED",
     color: "ingest-status-cell-grey",
     sortRank: 5,
+    message:
+      "Rerun with both raw data import and ingest vew materialization has been kicked off",
   },
   STALE_RAW_DATA: {
     status: "STALE_RAW_DATA",
     color: "ingest-status-cell-grey",
     sortRank: 6,
+    message:
+      "Raw data in PRIMARY is more up to date than raw data in SECONDARY",
   },
   STANDARD_RERUN_STARTED: {
     status: "STANDARD_RERUN_STARTED",
     color: "ingest-status-cell-grey",
     sortRank: 7,
+    message:
+      "Standard rerun with only ingest view materialization has beek kicked off",
   },
   FLASH_COMPLETED: {
     status: "FLASH_COMPLETED",
     color: "ingest-status-cell-green",
     sortRank: 8,
+    message: "Flash of data from SECONDARY to PRIMARY is completed",
   },
   NO_RERUN_IN_PROGRESS: {
     status: "NO_RERUN_IN_PROGRESS",
     color: "ingest-status-cell-green",
     sortRank: 9,
+    message: "No rerun is currently in progress in SECONDARY",
   },
   UP_TO_DATE: {
     status: "UP_TO_DATE",
     color: "ingest-status-cell-green",
     sortRank: 10,
+    message: "Scheduler in PRIMARY found no more work to do and is up to date",
   },
   "No recorded statuses": {
     status: "No recorded statuses",
     color: "ingest-status-cell-yellow",
     sortRank: 11,
+    message: "No recorded statuses",
   },
 };
 
 export const getStatusBoxColor = (status: string): string => {
   return statusFormattingInfo[status].color;
+};
+
+export const getStatusMessage = (status: string): string => {
+  return statusFormattingInfo[status].message;
 };
 
 export const getStatusSortedOrder = (): string[] => {

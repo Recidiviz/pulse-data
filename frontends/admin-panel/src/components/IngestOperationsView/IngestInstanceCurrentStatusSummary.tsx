@@ -23,7 +23,11 @@ import { useFetchedDataJSON } from "../../hooks";
 import { INGEST_ACTIONS_ROUTE } from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import { IngestInstanceStatusResponse } from "./constants";
-import { getStatusBoxColor, getStatusSortedOrder } from "./ingestStatusUtils";
+import {
+  getStatusBoxColor,
+  getStatusMessage,
+  getStatusSortedOrder,
+} from "./ingestStatusUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   const { loading, data: ingestInstanceStatuses } =
@@ -56,10 +60,13 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     };
   });
 
-  const renderStatusColor = (status: string) => {
+  const renderStatusCell = (status: string) => {
     const statusColorClassName = getStatusBoxColor(status);
+    const statusMessage = getStatusMessage(status);
 
-    return <div className={classNames(statusColorClassName)}>{status}</div>;
+    return (
+      <div className={classNames(statusColorClassName)}>{statusMessage}</div>
+    );
   };
 
   const columns: ColumnsType<{
@@ -83,7 +90,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Primary Instance Status",
       dataIndex: "primary",
       key: "primary",
-      render: (primary: string) => <span>{renderStatusColor(primary)}</span>,
+      render: (primary: string) => <span>{renderStatusCell(primary)}</span>,
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.primary) -
         getStatusSortedOrder().indexOf(b.primary),
@@ -92,9 +99,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Secondary Instance Status",
       dataIndex: "secondary",
       key: "secondary",
-      render: (secondary: string) => (
-        <span>{renderStatusColor(secondary)}</span>
-      ),
+      render: (secondary: string) => <span>{renderStatusCell(secondary)}</span>,
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.secondary) -
         getStatusSortedOrder().indexOf(b.secondary),
