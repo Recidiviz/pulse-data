@@ -261,6 +261,12 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_rows import (
+    CLIENT_RECORD_ARCHIVE_DUPLICATE_ROWS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.client_record_archive_missing_days import (
+    CLIENT_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
+)
 
 
 def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
@@ -432,6 +438,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=CLIENT_RECORD_ARCHIVE_DUPLICATE_ROWS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=CLIENT_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(

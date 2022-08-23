@@ -68,3 +68,9 @@ num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
+  - validation_name: client_record_archive_duplicate_rows
+    hard_num_allowed_rows_override: 300
+    override_reason:
+      TODO(#14693) - Known issue where additional deduping is required. This value is
+      approximately 5% of the expected population, which is a threshold of concern
+      (initially observed error rate was <1%)
