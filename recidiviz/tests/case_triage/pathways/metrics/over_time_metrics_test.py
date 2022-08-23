@@ -16,8 +16,10 @@
 # =============================================================================
 """This class implements tests for Pathways over time metrics."""
 import abc
+from datetime import date
 from typing import Any, Dict, List
 from unittest.case import TestCase
+from unittest.mock import patch
 
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.time_period import TimePeriod
@@ -37,6 +39,8 @@ from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
 
 
 class OverTimeMetricTestBase(PathwaysMetricTestBase):
+    """Test class for Pathways over time metrics."""
+
     @property
     @abc.abstractmethod
     def all_expected_counts(self) -> List[Dict[str, int]]:
@@ -46,6 +50,18 @@ class OverTimeMetricTestBase(PathwaysMetricTestBase):
     @abc.abstractmethod
     def expected_metadata(self) -> Dict[str, Any]:
         ...
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.current_date_patcher = patch(
+            "recidiviz.case_triage.pathways.metrics.query_builders.over_time_metric_query_builder.func.current_date",
+            return_value=date(2022, 3, 3),
+        )
+        self.current_date_patcher.start()
+
+    def tearDown(self) -> None:
+        self.current_date_patcher.stop()
+        super().tearDown()
 
     def test_metrics_base(self) -> None:
         # TODO(#13950): Replace with StateCode
@@ -77,7 +93,10 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
     def all_expected_counts(
         self,
     ) -> List[Dict[str, int]]:
-        return [{"avg90day": 2, "count": 2, "month": 2, "year": 2022}]
+        return [
+            {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+            {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
+        ]
 
     @property
     def expected_metadata(self) -> Dict[str, Any]:
@@ -96,8 +115,9 @@ class TestSupervisionPopulationOverTime(OverTimeMetricTestBase, TestCase):
 
         self.test.assertEqual(
             [
-                {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
-                {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
+                {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
+                {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+                {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
             ],
             results["data"],
         )
@@ -119,8 +139,8 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
             {"avg90day": 2, "count": 2, "month": 3, "year": 2022},
         ]
 
@@ -145,8 +165,8 @@ class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 1, "count": 1, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 3, "month": 2, "year": 2022},
+            {"avg90day": 0, "count": 1, "month": 1, "year": 2022},
+            {"avg90day": 1, "count": 3, "month": 2, "year": 2022},
             {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
         ]
 
@@ -171,8 +191,8 @@ class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCas
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 1, "count": 1, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
+            {"avg90day": 0, "count": 1, "month": 1, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
             {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
         ]
 
@@ -197,9 +217,9 @@ class TestSupervisionToLibertyTransitionsOverTime(OverTimeMetricTestBase, TestCa
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 1, "count": 1, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
-            {"avg90day": 1, "count": 1, "month": 3, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
+            {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 3, "year": 2022},
         ]
 
     @property
@@ -223,8 +243,6 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 1, "count": 1, "month": 1, "year": 2022},
-            {"avg90day": 2, "count": 2, "month": 2, "year": 2022},
             {"avg90day": 1, "count": 1, "month": 3, "year": 2022},
         ]
 
@@ -289,7 +307,9 @@ class TestSupervisionToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCas
 
         self.assertEqual(
             [
-                {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
+                {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
+                {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
+                {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
             ],
             results["data"],
         )
