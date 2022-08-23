@@ -43,6 +43,20 @@ class SpreadsheetInterface:
     """
 
     @staticmethod
+    def update_spreadsheet(
+        session: Session, spreadsheet_id: int, status: str, auth0_user_id: str
+    ) -> schema.Spreadsheet:
+        spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
+            session=session, spreadsheet_id=spreadsheet_id
+        )
+        spreadsheet.status = schema.SpreadsheetStatus[status]
+        if status == schema.SpreadsheetStatus.INGESTED.value:
+            spreadsheet.ingested_by = auth0_user_id
+            spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
+        session.commit()
+        return spreadsheet
+
+    @staticmethod
     def upload_spreadsheet(
         session: Session,
         system: str,
