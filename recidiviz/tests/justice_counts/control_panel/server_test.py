@@ -698,34 +698,40 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
 
     def test_get_spreadsheets(self) -> None:
-        agency = self.test_schema_objects.test_agency_E
+        user_agency = self.test_schema_objects.test_agency_E
+        not_user_agency = self.test_schema_objects.test_agency_A
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([agency, user])
+        self.session.add_all([user_agency, user, not_user_agency])
         self.session.commit()
-        self.session.refresh(agency)
+        self.session.refresh(user_agency)
+        self.session.refresh(not_user_agency)
         self.session.add_all(
             [
                 self.test_schema_objects.get_test_spreadsheet(
+                    system=System.LAW_ENFORCEMENT,
+                    user_id=user.auth0_user_id,
+                    agency_id=not_user_agency.id,
+                ),
+                self.test_schema_objects.get_test_spreadsheet(
                     system=System.SUPERVISION,
                     user_id=user.auth0_user_id,
-                    agency_id=agency.id,
+                    agency_id=user_agency.id,
                 ),
                 self.test_schema_objects.get_test_spreadsheet(
                     system=System.PAROLE,
                     user_id=user.auth0_user_id,
-                    agency_id=agency.id,
+                    agency_id=user_agency.id,
                     upload_offset=25,
                 ),
                 self.test_schema_objects.get_test_spreadsheet(
                     system=System.PROBATION,
                     is_ingested=True,
                     user_id=user.auth0_user_id,
-                    agency_id=agency.id,
+                    agency_id=user_agency.id,
                 ),
             ]
         )
         self.session.commit()
-        self.session.refresh(agency)
         with self.app.test_request_context():
             user_account = UserAccountInterface.get_user_by_auth0_user_id(
                 session=self.session,
@@ -734,11 +740,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 user_account=user_account,
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency.id],
+                agency_ids=[user_agency.id],
             )
 
             response = self.client.get(
-                "/api/spreadsheets",
+                f"/api/agencies/{user_agency.id}/spreadsheets",
             )
             self.assertEqual(response.status_code, 200)
             spreadsheets = assert_type(response.json, list)

@@ -424,13 +424,18 @@ def get_api_blueprint(
 
         return send_file(path_or_file=file.local_file_path, as_attachment=True)
 
-    @api_blueprint.route("/spreadsheets", methods=["GET"])
+    @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
-    def get_spreadsheets() -> Response:
+    def get_spreadsheets(agency_id: str) -> Response:
+        agency_ids = g.user_context.agency_ids if "user_context" in g else []
+        if int(agency_id) not in agency_ids:
+            raise JusticeCountsBadRequestError(
+                code="bad_user_permissions",
+                description="User does not have the permissions to view this list of spreadsheets because they do not belong to the correct agency.",
+            )
         try:
-            agency_ids = g.user_context.agency_ids if "user_context" in g else []
             spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
-                agency_ids=agency_ids, session=current_session
+                agency_id=int(agency_id), session=current_session
             )
             return jsonify(
                 [
