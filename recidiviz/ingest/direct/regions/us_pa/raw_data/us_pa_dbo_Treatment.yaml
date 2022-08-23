@@ -60,6 +60,8 @@ columns:
       The code associated with the given treatment program.
   - name: TrtProgramDescription
     is_pii: True
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtIndexAct97
     description: |-
       TODO(#13772) Add in description from PA.
