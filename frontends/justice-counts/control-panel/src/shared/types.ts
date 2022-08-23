@@ -186,3 +186,71 @@ export interface UpdatedMetricsValues {
     }[];
   }[];
 }
+
+/**
+ * Reports data that comes in from the server.
+ * This closely resembles how report data is stored in our backend.
+ */
+export interface RawDatapoint {
+  id: number;
+  report_id: number | null;
+  start_date: string;
+  end_date: string;
+  metric_definition_key: string;
+  metric_display_name: string | null;
+  disaggregation_display_name: string | null;
+  dimension_display_name: string | null;
+  value: string;
+  is_published: boolean;
+  frequency: ReportFrequency;
+}
+
+/**
+ * A Datapoint is an object representing a piece of justice counts metrics data for rendering in Recharts.
+ * Currently we only render Stacked Bar Charts.
+ * Each Datapoint represents a bar on the bar chart.
+ * Each Datapoint has:
+ * • a unique start_date and end_date, which serve as the x-axis category,
+ * • the frequency of the reporting data, either monthly or annual
+ * • "dataVizMissingData" which is used to render the missing data bar if there are no metrics for the time range represented
+ * • remaning keys which store the name of a piece of the stacked bar chart and its value.
+ *
+ * For example, raw datapoints that look like {start_date: "1/2020", disaggregation: "Gender", dimension: "Male", value: 5},
+ * {start_date: "1/2020", disaggregation: "Gender", dimension: "Female", value: 3}, would be combined into
+ * {start_date: "1/2020", "Male": 5, "Female": 3}
+ * and keyed by "Gender".
+ */
+export interface Datapoint {
+  start_date: string;
+  end_date: string;
+  frequency: ReportFrequency;
+  // dataVizMissingData is used to render the missing data bar if there are no values reported for that time range
+  dataVizMissingData: number;
+  // the value here should really be number | null but Typescript doesn't allow for this easily
+  [dimensionOrAggregatedTotal: string]: string | number | null;
+}
+
+export interface DatapointsGroupedByAggregateAndDisaggregations {
+  aggregate: Datapoint[];
+  disaggregations: {
+    [disaggregation: string]: {
+      [start_date: string]: Datapoint;
+    };
+  };
+}
+
+export interface DatapointsByMetric {
+  [metricKey: string]: DatapointsGroupedByAggregateAndDisaggregations;
+}
+
+export type DataVizTimeRange = 0 | 6 | 12 | 60 | 120;
+
+export const DataVizTimeRangesMap: { [key: string]: DataVizTimeRange } = {
+  All: 0,
+  "6 Months Ago": 6,
+  "1 Year Ago": 12,
+  "5 Years Ago": 60,
+  "10 Years Ago": 120,
+};
+
+export type DatapointsViewSetting = "Count" | "Percentage";

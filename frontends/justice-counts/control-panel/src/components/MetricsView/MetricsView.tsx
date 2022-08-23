@@ -16,14 +16,15 @@
 // =============================================================================
 
 import { debounce as _debounce } from "lodash";
-import { when } from "mobx";
+import { reaction, when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 
-import { FormError, Permission, ReportFrequency } from "../../shared/types";
+import { FormError, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
-import { removeCommaSpaceAndTrim } from "../../utils";
+import { isPositiveNumber, removeCommaSpaceAndTrim } from "../../utils";
 import { Badge, BadgeColorMapping } from "../Badge";
+import DatapointsView from "../DataViz/DatapointsView";
 import {
   BinaryRadioButton,
   BinaryRadioGroupClearButton,
@@ -348,10 +349,8 @@ const MetricContextConfiguration: React.FC<MetricContextConfigurationProps> = ({
 
   const contextNumberValidation = (key: string, value: string) => {
     const cleanValue = removeCommaSpaceAndTrim(value);
-    const isPositiveNumber =
-      (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
 
-    if (!isPositiveNumber && cleanValue !== "") {
+    if (!isPositiveNumber(cleanValue) && cleanValue !== "") {
       setContextErrors({
         [key]: {
           message: "Please enter a valid number.",
@@ -526,25 +525,21 @@ export type MetricSettings = {
 };
 
 export const MetricsView: React.FC = observer(() => {
-  const { reportStore, userStore } = useStore();
+  const { reportStore, userStore, datapointsStore } = useStore();
   const configPanelRef = useRef<HTMLDivElement>(null);
 
   const metricFilterOptions = ["All Metrics", "Active"] as const;
   type MetricFilterOptions = typeof metricFilterOptions[number];
 
   // TODO(#13805) Temporarily hiding the data tab until it is implemented. Currently it's only visible to Recidiviz admins.
-  const configSections = userStore.permissions.includes(
-    Permission.RECIDIVIZ_ADMIN
-  )
-    ? ["Configuration", "Context", "Data"]
-    : ["Configuration", "Context"];
+  const configSections = ["Data", "Configuration", "Context"];
   type ConfigSections = typeof configSections[number];
 
   const [activeMetricFilter, setActiveMetricFilter] =
     useState<MetricFilterOptions>("All Metrics");
 
   const [activeConfigSection, setActiveConfigSection] =
-    useState<ConfigSections>("Configuration");
+    useState<ConfigSections>("Data");
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -750,34 +745,59 @@ export const MetricsView: React.FC = observer(() => {
     }
   };
 
+  const fetchAndSetReportSettings = async () => {
+    const response = (await reportStore.getReportSettings()) as
+      | Response
+      | Error;
+
+    setIsLoading(false);
+
+    if (response instanceof Error) {
+      return setLoadingError(response.message);
+    }
+
+    const reportSettings = (await response.json()) as MetricsViewMetric[];
+    const metricKeyToMetricMap: { [key: string]: MetricsViewMetric } = {};
+
+    reportSettings?.forEach((metric) => {
+      metricKeyToMetricMap[metric.key] = metric;
+    });
+
+    setMetricSettings(metricKeyToMetricMap);
+    setActiveMetricKey(Object.keys(metricKeyToMetricMap)[0]);
+  };
+
   useEffect(
     () =>
       // return when's disposer so it is cleaned up if it never runs
       when(
         () => userStore.userInfoLoaded,
         async () => {
-          const response = (await reportStore.getReportSettings()) as
-            | Response
-            | Error;
+          fetchAndSetReportSettings();
 
-          setIsLoading(false);
-
-          if (response instanceof Error) {
-            return setLoadingError(response.message);
-          }
-
-          const reportSettings = (await response.json()) as MetricsViewMetric[];
-          const metricKeyToMetricMap: { [key: string]: MetricsViewMetric } = {};
-
-          reportSettings?.forEach((metric) => {
-            metricKeyToMetricMap[metric.key] = metric;
-          });
-
-          setMetricSettings(metricKeyToMetricMap);
-          setActiveMetricKey(Object.keys(metricKeyToMetricMap)[0]);
+          datapointsStore.getDatapoints();
         }
       ),
-    [reportStore, userStore]
+    [reportStore, userStore, datapointsStore]
+  );
+
+  // reload report overviews when the current agency ID changes
+  useEffect(
+    () =>
+      // return disposer so it is cleaned up if it never runs
+      reaction(
+        () => userStore.currentAgencyId,
+        async (currentAgencyId, previousAgencyId) => {
+          // prevents us from calling getReportOverviews twice on initial load
+          if (previousAgencyId !== undefined) {
+            setIsLoading(true);
+            fetchAndSetReportSettings();
+            datapointsStore.resetState();
+            await datapointsStore.getDatapoints();
+          }
+        }
+      ),
+    [reportStore, userStore, datapointsStore]
   );
 
   useEffect(() => {
@@ -795,7 +815,6 @@ export const MetricsView: React.FC = observer(() => {
           filteredMetricKeyToMetricMap[metric.key] = metric;
         });
 
-      setActiveMetricKey(Object.keys(filteredMetricKeyToMetricMap)[0]);
       return setFilteredMetricSettings(filteredMetricKeyToMetricMap);
     }
   }, [metricSettings, activeMetricFilter]);
@@ -841,7 +860,6 @@ export const MetricsView: React.FC = observer(() => {
                         behavior: "smooth",
                       });
                     }
-                    setActiveConfigSection(configSections[0]);
                   }}
                 >
                   <MetricBox
@@ -857,7 +875,7 @@ export const MetricsView: React.FC = observer(() => {
               ))}
           </PanelContainerLeft>
 
-          {/* Configuration | Context | Data */}
+          {/* Data | Configuration | Context */}
           <PanelContainerRight ref={configPanelRef}>
             <ActiveMetricSettingHeader>
               <MetricNameBadgeWrapper>
@@ -898,30 +916,32 @@ export const MetricsView: React.FC = observer(() => {
               </TabbedBar>
             </ActiveMetricSettingHeader>
 
-            <MetricDetailsDisplay>
-              {/* Configuration */}
-              {activeConfigSection === "Configuration" && (
+            {/* Data */}
+            {activeConfigSection === "Data" && (
+              <DatapointsView metric={activeMetricKey} />
+            )}
+
+            {/* Configuration */}
+            {activeConfigSection === "Configuration" && (
+              <MetricDetailsDisplay>
                 <MetricConfiguration
                   activeMetricKey={activeMetricKey}
                   metricSettings={metricSettings}
                   saveAndUpdateMetricSettings={saveAndUpdateMetricSettings}
                 />
-              )}
+              </MetricDetailsDisplay>
+            )}
 
-              {/* Context */}
-              {activeConfigSection === "Context" && (
+            {/* Context */}
+            {activeConfigSection === "Context" && (
+              <MetricDetailsDisplay>
                 <MetricContextConfiguration
                   metricKey={activeMetricKey}
                   contexts={metricSettings[activeMetricKey]?.contexts}
                   saveAndUpdateMetricSettings={saveAndUpdateMetricSettings}
                 />
-              )}
-
-              {/* Data */}
-              {activeConfigSection === "Data" && (
-                <div>Placeholder for Data Component</div>
-              )}
-            </MetricDetailsDisplay>
+              </MetricDetailsDisplay>
+            )}
           </PanelContainerRight>
         </MetricsViewControlPanel>
       </MetricsViewContainer>

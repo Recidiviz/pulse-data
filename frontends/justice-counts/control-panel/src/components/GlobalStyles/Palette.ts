@@ -47,4 +47,16 @@ export const palette = {
     grey11: `rgba(23, 28, 43, 0.8)`,
     grey12: `rgba(23, 28, 43, 0.9)`,
   },
+  dataViz: {
+    bar1: "#133158",
+    bar2: "#5C8970",
+    bar3: "#D4A244",
+    bar4: "#6E4245",
+    bar5: "#BD484A",
+    bar6: "#353A6E",
+    bar7: "#BA845F",
+    bar8: "#64859E",
+    bar9: "#596041",
+    bar10: "#C36C3B",
+  },
 };

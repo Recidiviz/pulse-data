@@ -19,6 +19,10 @@ import { debounce, memoize } from "lodash";
 
 import { MetricContext } from "../shared/types";
 
+export const isPositiveNumber = (value: string) => {
+  return (value.trim() !== "" && Number(value) === 0) || Number(value) > 0;
+};
+
 /**
  * Separate multiple people on a list by comma - no comma for the last person on the list
  * @example ['Editor 1', 'Editor 2', 'Editor 3'] would print: `Editor 1, Editor 2, Editor 3`
