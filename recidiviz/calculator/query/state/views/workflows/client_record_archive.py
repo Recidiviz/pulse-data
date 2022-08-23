@@ -43,7 +43,8 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         WHERE _FILE_NAME NOT LIKE "%/staging/%"
     )
     , records_by_state_by_date AS (
-        SELECT
+        -- dedupes repeat uploads for the same date
+        SELECT DISTINCT
             * EXCEPT (path_parts, remaining_criteria_needed),
             CAST(remaining_criteria_needed AS INT64) AS remaining_criteria_needed,
             DATE(path_parts[OFFSET(1)]) AS export_date,
