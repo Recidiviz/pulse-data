@@ -51,6 +51,8 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
+ALLOWED_EXTENSIONS = ["xlsx", "xls"]
+
 
 def get_api_blueprint(
     auth_decorator: Callable,
@@ -394,6 +396,14 @@ def get_api_blueprint(
             session=current_session, agency_id=agency_id
         )
         file = request.files["file"]
+        if file is None:
+            raise JusticeCountsBadRequestError(
+                "no_file_on_upload", "No file was sent for upload."
+            )
+        if not allowed_file(file.filename):
+            raise JusticeCountsBadRequestError(
+                "file_type_error", "Invalid file type: All files must be of type .xlsx."
+            )
         spreadsheet = SpreadsheetInterface.upload_spreadsheet(
             session=current_session,
             file_storage=file,
@@ -480,6 +490,13 @@ def get_api_blueprint(
             )
         except Exception as e:
             raise _get_error(error=e) from e
+
+    def allowed_file(filename: Optional[str] = None) -> bool:
+        return (
+            filename is not None
+            and "." in filename
+            and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+        )
 
     return api_blueprint
 
