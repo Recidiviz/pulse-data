@@ -268,8 +268,16 @@ class ReportStore {
   }
 
   async getUploadedFilesList(): Promise<Response | Error | undefined> {
+    const { currentAgency } = this.userStore;
+
+    if (currentAgency === undefined) {
+      return new Error(
+        "Either invalid user/agency information or no user or agency information initialized."
+      );
+    }
+
     const response = (await this.api.request({
-      path: `/api/spreadsheets`,
+      path: `/api/agencies/${currentAgency.id}/spreadsheets`,
       method: "GET",
     })) as Response;
 
