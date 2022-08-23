@@ -72,7 +72,7 @@ const reportListColumnTitles = [
 ];
 
 const Reports: React.FC = () => {
-  const { reportStore, userStore } = useStore();
+  const { reportStore, userStore, datapointsStore } = useStore();
   const navigate = useNavigate();
 
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -145,6 +145,7 @@ const Reports: React.FC = () => {
           // prevents us from calling getReportOverviews twice on initial load
           if (previousAgencyId !== undefined) {
             reportStore.resetState();
+            datapointsStore.resetState();
             const result = await reportStore.getReportOverviews();
             if (result instanceof Error) {
               setLoadingError(result.message);
@@ -152,7 +153,7 @@ const Reports: React.FC = () => {
           }
         }
       ),
-    [reportStore, userStore]
+    [reportStore, userStore, datapointsStore]
   );
 
   const filteredReportsMemoized = React.useMemo(

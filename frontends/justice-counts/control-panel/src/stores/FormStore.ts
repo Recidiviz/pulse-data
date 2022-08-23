@@ -26,6 +26,7 @@ import {
   UpdatedMetricsValues,
 } from "../shared/types";
 import {
+  isPositiveNumber,
   normalizeToString,
   removeCommaSpaceAndTrim,
   sanitizeInputValue,
@@ -321,8 +322,6 @@ class FormStore {
     key2?: string
   ) => {
     const cleanValue = removeCommaSpaceAndTrim(value);
-    const isPositiveNumber =
-      (cleanValue !== "" && Number(cleanValue) === 0) || Number(cleanValue) > 0;
     const isRequiredButEmpty = required && cleanValue === "";
     const metricIsEmpty = this.isMetricEmpty(reportID, metricKey);
 
@@ -403,7 +402,7 @@ class FormStore {
 
     if (validationType === "NUMBER") {
       /** Raise Error */
-      if (!isPositiveNumber) {
+      if (!isPositiveNumber(cleanValue)) {
         updateFieldErrorMessage("ADD", {
           message: "Please enter a valid number.",
         });

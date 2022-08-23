@@ -18,6 +18,7 @@ import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
 
 import { AuthStore } from "../components/Auth";
 import API from "./API";
+import DatapointsStore from "./DatapointsStore";
 import FormStore from "./FormStore";
 import ReportStore from "./ReportStore";
 import UserStore from "./UserStore";
@@ -46,6 +47,8 @@ class RootStore {
 
   formStore: FormStore;
 
+  datapointsStore: DatapointsStore;
+
   constructor() {
     this.authStore = new AuthStore({
       authSettings: getAuthSettings(),
@@ -54,6 +57,7 @@ class RootStore {
     this.userStore = new UserStore(this.authStore, this.api);
     this.reportStore = new ReportStore(this.userStore, this.api);
     this.formStore = new FormStore(this.reportStore);
+    this.datapointsStore = new DatapointsStore(this.userStore, this.api);
   }
 }
 

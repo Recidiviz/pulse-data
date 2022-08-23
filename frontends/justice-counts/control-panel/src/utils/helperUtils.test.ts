@@ -17,6 +17,7 @@
 
 import {
   formatNumberInput,
+  isPositiveNumber,
   normalizeToString,
   sanitizeInputValue,
 } from "./helperUtils";
@@ -100,5 +101,27 @@ describe("formatNumberInput", () => {
   test("return input value if not valid", () => {
     const invalidInput = formatNumberInput("12xyz!");
     expect(invalidInput).toBe("12xyz!");
+  });
+});
+
+describe("isPositiveNumber", () => {
+  test("valid positive numbers return true", () => {
+    expect(isPositiveNumber("1")).toBe(true);
+    expect(isPositiveNumber("12")).toBe(true);
+    expect(isPositiveNumber("13")).toBe(true);
+    expect(isPositiveNumber("3.4")).toBe(true);
+    expect(isPositiveNumber("0")).toBe(true);
+  });
+  test("negative numbers return false", () => {
+    expect(isPositiveNumber("-1")).toBe(false);
+    expect(isPositiveNumber("-5")).toBe(false);
+    expect(isPositiveNumber("-5.6")).toBe(false);
+  });
+  test("invalid numbers return false", () => {
+    expect(isPositiveNumber("-1 ")).toBe(false);
+    expect(isPositiveNumber("0.0.0")).toBe(false);
+    expect(isPositiveNumber("five")).toBe(false);
+    expect(isPositiveNumber(" ")).toBe(false);
+    expect(isPositiveNumber("")).toBe(false);
   });
 });
