@@ -56,6 +56,7 @@ export const BadgeElement = styled.div<{
   margin-left: 10px;
   font-size: 0.65rem;
   font-weight: 600;
+  white-space: nowrap;
   text-transform: capitalize;
 `;
 

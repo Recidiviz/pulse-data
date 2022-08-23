@@ -19,12 +19,24 @@ import styled from "styled-components/macro";
 
 import { rem } from "../../utils";
 import { palette, typography } from "../GlobalStyles";
-import { LabelRow, Row, TabbedBar, Table } from "../Reports";
+import {
+  Cell,
+  LabelCell,
+  LabelRow,
+  PageTitle,
+  Row,
+  TabbedBar,
+  Table,
+} from "../Reports";
 
 const HEADER_HEIGHT = 170;
 const ROW_HEIGHT = 42;
 
 export type ButtonTypes = "borderless" | "blue";
+
+export const MediumPageTitle = styled(PageTitle)`
+  font-size: ${rem("50px")};
+`;
 
 export const ExtendedTabbedBar = styled(TabbedBar)`
   height: 66px;
@@ -35,6 +47,18 @@ export const ExtendedLabelRow = styled(LabelRow)`
   top: ${HEADER_HEIGHT}px;
   background: ${palette.solid.white};
   z-index: 1;
+`;
+
+export const ExtendedCell = styled(Cell)`
+  &:first-child {
+    flex: 4 1 auto;
+  }
+`;
+
+export const ExtendedLabelCell = styled(LabelCell)`
+  &:first-child {
+    flex: 4 1 auto;
+  }
 `;
 
 export const DataUploadButton = styled.div`
@@ -51,37 +75,13 @@ export const DataUploadButton = styled.div`
   }
 `;
 
-export const InstructionsContainer = styled.div`
-  height: 100%;
-  display: flex;
-`;
-
-export const InstructionsGraphicWrapper = styled.div`
-  width: 37%;
-  height: 100%;
-  background: linear-gradient(
-    217.89deg,
-    #0073e5 0%,
-    rgba(0, 115, 229, 0.5) 100%
-  );
-  overflow: hidden;
-`;
-
-export const InstructionsGraphic = styled.img`
-  width: 891px;
-  position: absolute;
-  left: -267px;
-  top: 372px;
-  opacity: 0.2;
-`;
-
 export const Instructions = styled.div`
-  width: 63%;
   height: 100%;
-  padding: 44px 70px;
+  padding: 30px;
   display: flex;
   flex-direction: column;
   overflow-y: scroll;
+
   ${typography.sizeCSS.medium}
 
   h1 {
@@ -217,6 +217,8 @@ export const Button = styled.div<{ type?: ButtonTypes }>`
   a {
     text-decoration: none;
     color: inherit;
+    display: flex;
+    align-items: center;
   }
 `;
 

@@ -19,11 +19,13 @@ import { observer } from "mobx-react-lite";
 import React from "react";
 
 import { useStore } from "../../stores";
+import { removeSnakeCase } from "../../utils";
 import { Badge, BadgeColorMapping } from "../Badge";
 import { Loading } from "../Loading";
-import { Cell, Label } from "../Reports";
 import { showToast } from "../Toast";
 import {
+  ExtendedCell,
+  ExtendedLabelCell,
   ExtendedLabelRow,
   ExtendedRow,
   ModalErrorWrapper,
@@ -32,6 +34,7 @@ import {
   UploadedFileAttempt,
   UploadedFilesContainer,
   UploadedFilesTable,
+  UploadedFileStatus,
 } from ".";
 
 export const UploadedFiles: React.FC<{
@@ -43,6 +46,7 @@ export const UploadedFiles: React.FC<{
     "Filename",
     "Date Uploaded",
     "Date Ingested",
+    "System",
     "Uploaded By",
   ];
   const { reportStore } = useStore();
@@ -84,8 +88,14 @@ export const UploadedFiles: React.FC<{
     }
   };
 
+  const translateBackendFileStatus = (status: UploadedFileStatus): string => {
+    if (status === "UPLOADED") return "PENDING";
+    if (status === "INGESTED") return "PROCESSED";
+    return status;
+  };
+
   const getFileRowDetails = (file: UploadedFile | UploadedFileAttempt) => {
-    const fileStatus = file.status === "UPLOADED" ? "PENDING" : file.status;
+    const fileStatus = file.status && translateBackendFileStatus(file.status);
 
     if (isUploadedFile(file)) {
       const formatDate = (timestamp: number) =>
@@ -106,6 +116,7 @@ export const UploadedFiles: React.FC<{
         badgeText: fileStatus?.toLowerCase() || "Uploading...",
         dateUploaded: formatDate(file.uploaded_at),
         dateIngested: file.ingested_at ? formatDate(file.ingested_at) : "--",
+        system: removeSnakeCase(file.system).toLowerCase(),
         uploadedBy: file.uploaded_by,
       };
     }
@@ -142,7 +153,7 @@ export const UploadedFiles: React.FC<{
       <UploadedFilesTable>
         <ExtendedLabelRow>
           {dataUploadColumnTitles.map((title) => (
-            <Label key={title}>{title}</Label>
+            <ExtendedLabelCell key={title}>{title}</ExtendedLabelCell>
           ))}
         </ExtendedLabelRow>
 
@@ -156,6 +167,7 @@ export const UploadedFiles: React.FC<{
             badgeText,
             dateUploaded,
             dateIngested,
+            system,
             uploadedBy,
           } = getFileRowDetails(fileDetails);
 
@@ -166,19 +178,28 @@ export const UploadedFiles: React.FC<{
               onClick={() => id && handleDownload(id, name)}
             >
               {/* Filename */}
-              <Cell>
-                {name.length > 37 ? name.substring(0, 37).concat("...") : name}
+              <ExtendedCell>
+                <span>{name}</span>
                 <Badge color={badgeColor}>{badgeText}</Badge>
-              </Cell>
+              </ExtendedCell>
 
               {/* Date Uploaded */}
-              <Cell capitalize>{dateUploaded}</Cell>
+              <ExtendedCell capitalize>
+                <span>{dateUploaded}</span>
+              </ExtendedCell>
 
               {/* Date Ingested */}
-              <Cell>{dateIngested}</Cell>
+              <ExtendedCell>
+                <span>{dateIngested}</span>
+              </ExtendedCell>
+
+              {/* System */}
+              <ExtendedCell capitalize>
+                <span>{system}</span>
+              </ExtendedCell>
 
               {/* Uploaded By */}
-              <Cell>{uploadedBy}</Cell>
+              <ExtendedCell>{uploadedBy}</ExtendedCell>
             </ExtendedRow>
           );
         })}

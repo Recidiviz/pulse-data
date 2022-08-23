@@ -19,7 +19,7 @@ import styled from "styled-components/macro";
 
 import { palette, typography } from "../GlobalStyles";
 
-const COLLAPSED_INNER_COLUMNS_WIDTH = 1376;
+const COLLAPSED_INNER_COLUMNS_WIDTH = 846;
 
 export const PageHeader = styled.div`
   width: 100%;
@@ -167,8 +167,6 @@ export const Row = styled.div<{
 `;
 
 export const LabelRow = styled(Row)`
-  ${typography.sizeCSS.normal}
-  color: ${palette.highlight.grey9};
   padding: 10px 22px;
 
   &:hover {
@@ -177,75 +175,44 @@ export const LabelRow = styled(Row)`
   }
 `;
 
-export const Label = styled.div`
-  width: 300px;
-  text-align: left;
-
-  &:nth-child(1) {
-    width: 400px;
-  }
-
-  &:nth-child(2) {
-    width: 230px;
-  }
-
-  &:nth-child(3) {
-    width: 500px;
-  }
-
-  &:nth-child(4) {
-    width: 200px;
-    text-align: right;
-  }
-
-  @media only screen and (max-width: ${COLLAPSED_INNER_COLUMNS_WIDTH}px) {
-    &:nth-child(2),
-    &:nth-child(3) {
-      display: none;
-    }
-  }
-`;
-
 export const Cell = styled.div<{ capitalize?: boolean }>`
-  width: 300px;
+  width: 100px;
   display: flex;
+  flex: 1 4 auto;
   justify-content: flex-start;
   align-items: center;
   position: relative;
   font-size: 1.2rem;
   text-transform: ${({ capitalize }) => capitalize && "capitalize"};
+  padding-right: 40px;
+  white-space: nowrap;
 
-  &:nth-child(1) {
-    width: 400px;
+  span {
+    padding-right: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &:nth-child(2) {
-    width: 230px;
+  &:first-child {
+    flex: 2 1 auto;
   }
 
-  &:nth-child(3) {
-    width: 500px;
-
-    span {
-      max-width: 400px;
-      padding-right: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  &:nth-child(4) {
-    width: 200px;
+  &:last-child {
+    flex: 2 1 auto;
     justify-content: flex-end;
+    padding-right: unset;
   }
 
   @media only screen and (max-width: ${COLLAPSED_INNER_COLUMNS_WIDTH}px) {
-    &:nth-child(2),
-    &:nth-child(3) {
+    &:not(:first-child, :last-child) {
       display: none;
     }
   }
+`;
+
+export const LabelCell = styled(Cell)`
+  ${typography.sizeCSS.normal}
+  color: ${palette.highlight.grey9};
 `;
 
 export const AdditionalEditorsTooltip = styled.div`

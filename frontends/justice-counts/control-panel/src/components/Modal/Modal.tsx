@@ -41,14 +41,14 @@ const fromTopToBottom = keyframes`
 `;
 
 const animateBottomToTop = css`
-  animation: ${fromBottomToTop} 0.3s forwards ease-in-out;
+  animation: ${fromBottomToTop} 0.5s forwards ease;
 `;
 
 const animateTopToBottom = css`
   animation: ${fromTopToBottom} 0.3s forwards ease-in-out;
 `;
 
-const MODAL_TOP_GAP = `136px`;
+const MODAL_TOP_GAP = `64px`;
 
 const ModalElement = styled.div<{ showUnmountAnimation?: boolean }>`
   height: calc(100% - ${MODAL_TOP_GAP});
