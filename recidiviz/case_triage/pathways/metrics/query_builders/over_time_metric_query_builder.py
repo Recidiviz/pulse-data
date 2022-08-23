@@ -76,18 +76,42 @@ class OverTimeMetricQueryBuilder(MetricQueryBuilder):
                 *self.build_filter_conditions(new_params),
             )
             .group_by(self.date_column)
-            .order_by(self.date_column)
             .cte("event_counts")
+        )
+
+        # Generate entries for all months in range so we include months with 0 data points in our
+        # averages.
+        all_months = Query(
+            func.generate_series(
+                earliest_date.c.date - text("INTERVAL '2 MONTHS'"),
+                func.current_date(),
+                "1 month",
+            ).label("date")
+        ).subquery()
+
+        full_counts = (
+            Query(
+                [
+                    func.date_trunc("month", all_months.c.date).label("date"),
+                    func.coalesce(event_counts.c.count, 0).label("count"),
+                ]
+            )
+            .outerjoin(
+                all_months,
+                func.date_trunc("month", all_months.c.date) == event_counts.c.date,
+                full=True,
+            )
+            .cte("full_counts")
         )
 
         # Calculate running 3-month average
         with_averages = Query(
             [
-                event_counts.c.date,
-                event_counts.c.count,
+                full_counts.c.date,
+                full_counts.c.count,
                 func.cast(
-                    func.avg(event_counts.c.count).over(
-                        order_by=event_counts.c.date, rows=(-2, 0)
+                    func.avg(full_counts.c.count).over(
+                        order_by=full_counts.c.date, rows=(-2, 0)
                     ),
                     Integer,
                 ).label("avg90day"),

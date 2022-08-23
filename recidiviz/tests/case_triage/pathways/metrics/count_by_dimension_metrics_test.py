@@ -310,18 +310,24 @@ class TestSupervisionToPrisonTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
     def test_filter_time_period(self) -> None:
-        """Tests that person 5 is not included, as the transition occurred more than 6 months ago"""
+        """Tests that person 1 and 5 are not included, as the transition occurred more than 12 months ago"""
         results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
             self.query_builder,
             CountByDimensionMetricParams(
                 group=Dimension.GENDER,
-                filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
+                filters={
+                    Dimension.TIME_PERIOD: [
+                        TimePeriod.MONTHS_0_6.value,
+                        TimePeriod.MONTHS_7_12.value,
+                    ]
+                },
             ),
         )
 
         self.test.assertEqual(
             [
-                {"gender": "MALE", "count": 1},
+                {"gender": "FEMALE", "count": 2},
+                {"gender": "NON_BINARY", "count": 1},
             ],
             results["data"],
         )

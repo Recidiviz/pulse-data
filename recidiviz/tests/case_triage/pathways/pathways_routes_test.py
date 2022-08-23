@@ -16,11 +16,12 @@
 # =============================================================================
 """This class implements tests for Pathways api routes."""
 import os
+from datetime import date
 from http import HTTPStatus
 from typing import Callable, Dict, Optional
 from unittest import mock
 from unittest.case import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fakeredis import FakeRedis
@@ -38,6 +39,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
     PrisonToSupervisionTransitions,
+    SupervisionPopulationOverTime,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -119,12 +121,15 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.person_level_metric_path = (
             "/pathways/US_TN/PrisonToSupervisionTransitionsPersonLevel"
         )
+        self.over_time_metric_path = "/pathways/US_TN/SupervisionPopulationOverTime"
 
         with SessionFactory.using_database(self.database_key) as session:
             for metric in load_metrics_fixture(LibertyToPrisonTransitions):
                 session.add(LibertyToPrisonTransitions(**metric))
             for metric in load_metrics_fixture(PrisonToSupervisionTransitions):
                 session.add(PrisonToSupervisionTransitions(**metric))
+            for metric in load_metrics_fixture(SupervisionPopulationOverTime):
+                session.add(SupervisionPopulationOverTime(**metric))
             for metadata in load_metrics_fixture(MetricMetadata):
                 session.add(MetricMetadata(**metadata))
 
@@ -366,6 +371,51 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 },
             },
             response.get_json(),
+        )
+
+    @patch(
+        "recidiviz.case_triage.pathways.metrics.query_builders.over_time_metric_query_builder.func.current_date",
+        return_value=date(2022, 3, 3),
+    )
+    def test_over_time_metrics(self, _mock_current_date: MagicMock) -> None:
+        response = self.test_client.get(
+            self.over_time_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={
+                f"filters[{Dimension.TIME_PERIOD.value}]": "months_0_6",
+            },
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
+        self.assertEqual(
+            response.get_json(),
+            {
+                "data": [
+                    {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+                    {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-07",
+                },
+            },
+        )
+
+        response = self.test_client.get(
+            self.over_time_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+        )
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
+        self.assertEqual(
+            response.get_json(),
+            {
+                "data": [
+                    {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
+                    {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+                    {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
+                ],
+                "metadata": {
+                    "lastUpdated": "2022-08-07",
+                },
+            },
         )
 
     def test_multiple_filters(self) -> None:
