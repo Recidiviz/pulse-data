@@ -98,13 +98,13 @@ class SpreadsheetInterface:
 
     @staticmethod
     def get_agency_spreadsheets(
-        agency_ids: List[int],
+        agency_id: int,
         session: Session,
     ) -> List[schema.Spreadsheet]:
         """Returns spreadsheet for an agency"""
         spreadsheets = (
             session.query(schema.Spreadsheet)
-            .filter(schema.Spreadsheet.agency_id.in_(agency_ids))
+            .filter(schema.Spreadsheet.agency_id == agency_id)
             .all()
         )
 
