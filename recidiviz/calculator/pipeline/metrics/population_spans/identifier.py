@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifier class for events related to incarceration."""
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections import defaultdict
+from datetime import date
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import attr
 
@@ -67,6 +69,8 @@ from recidiviz.common.date import (
     DateRange,
     DateRangeDiff,
     NonNegativeDateRange,
+    PotentiallyOpenDateRange,
+    convert_critical_dates_to_time_spans,
     merge_sorted_date_ranges,
     tomorrow,
 )
@@ -128,10 +132,10 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         Returns:
             A list of IncarcerationPopulationSpans for the person.
         """
-        incarceration_spans: List[Span] = []
+        incarceration_spans: List[IncarcerationPopulationSpan] = []
 
         if not incarceration_periods:
-            return incarceration_spans
+            return cast(List[Span], incarceration_spans)
 
         # Convert the list of dictionaries into one dictionary where the keys are the
         # incarceration_period_id values
@@ -173,7 +177,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 )
             )
 
-        return incarceration_spans
+        return cast(List[Span], incarceration_spans)
 
     def _find_supervision_spans(
         self,
@@ -190,10 +194,10 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         Returns:
             A list of SupervisionPopulationSpans for the person.
         """
-        supervision_spans: List[Span] = []
+        supervision_spans: List[SupervisionPopulationSpan] = []
 
         if not supervision_periods:
-            return supervision_spans
+            return cast(List[Span], supervision_spans)
 
         # Convert the list of dictionaries into one dictionary where the keys are the
         # incarceration_period_id values
@@ -339,6 +343,142 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 )
                 supervision_spans.append(span)
 
+        supervision_spans = (
+            self._convert_spans_to_dual(supervision_spans)
+            if supervision_delegate.supervision_types_mutually_exclusive()
+            else self._expand_dual_supervision_spans(supervision_spans)
+        )
+
+        return cast(List[Span], supervision_spans)
+
+    def _convert_spans_to_dual(
+        self, supervision_spans: List[SupervisionPopulationSpan]
+    ) -> List[SupervisionPopulationSpan]:
+        """For some states, we want to track DUAL supervision as distinct from both
+        PAROLE and PROBATION. For these states, if someone has two spans on the same day
+        that will contribute to the same type of metric, and these events are of different
+        supervision types (one is PAROLE and one is PROBATION, or one is DUAL and the other
+        is something other than DUAL), then we want that person to only contribute to metrics
+        with a supervision type of DUAL. All events of that type on that overlapping span
+        are then replaced with ones that have DUAL as the set supervision_type.
+
+        Returns an updated list of SupervisionPopulationSpans."""
+        if not supervision_spans:
+            return supervision_spans
+
+        revised_supervision_spans: List[SupervisionPopulationSpan] = []
+
+        # First, generate a set of critical dates from all of the spans
+        time_spans: List[PotentiallyOpenDateRange] = self._get_new_spans(
+            supervision_spans
+        )
+
+        start_dates: List[date] = sorted(
+            time_span.lower_bound_inclusive_date for time_span in time_spans
+        )
+        original_spans_overlapping_start_date: Dict[
+            date, List[SupervisionPopulationSpan]
+        ] = self._get_spans_by_critical_date(supervision_spans, start_dates)
+
+        for time_span in time_spans:
+            start_date = time_span.lower_bound_inclusive_date
+            end_date = time_span.upper_bound_exclusive_date
+            spans = original_spans_overlapping_start_date[start_date]
+
+            if not spans:
+                continue
+
+            supervision_types = {
+                span.supervision_type for span in spans if span.supervision_type
+            }
+
+            overwrite_supervision_types_with_dual = (
+                StateSupervisionPeriodSupervisionType.PAROLE in supervision_types
+                and StateSupervisionPeriodSupervisionType.PROBATION in supervision_types
+            ) or (
+                StateSupervisionPeriodSupervisionType.DUAL in supervision_types
+                and len(supervision_types) > 1
+            )
+
+            for span in spans:
+                revised_supervision_spans.append(
+                    attr.evolve(
+                        span,
+                        start_date_inclusive=start_date,
+                        end_date_exclusive=end_date,
+                        supervision_type=StateSupervisionPeriodSupervisionType.DUAL
+                        if overwrite_supervision_types_with_dual
+                        else span.supervision_type,
+                    )
+                )
+
+        return revised_supervision_spans
+
+    def _get_spans_by_critical_date(
+        self,
+        supervision_spans: List[SupervisionPopulationSpan],
+        critical_dates: List[date],
+    ) -> Dict[date, List[SupervisionPopulationSpan]]:
+        """Obtain the supervision spans that overlap with the critical date as a dictionary
+        keyed by date."""
+        result = defaultdict(list)
+        for critical_date in critical_dates:
+            for span in supervision_spans:
+                if NonNegativeDateRange.from_maybe_open_range(
+                    span.start_date_inclusive, span.end_date_exclusive
+                ).contains_day(critical_date):
+                    result[critical_date].append(span)
+        return result
+
+    def _get_new_spans(
+        self, supervision_spans: List[SupervisionPopulationSpan]
+    ) -> List[PotentiallyOpenDateRange]:
+        """Obtain all critical dates from all spans that may overlap with each other.
+        Then return all of the time spans of those critical dates."""
+        has_null_end_date = False
+        critical_date_set: Set[date] = set()
+        for span in supervision_spans:
+            critical_date_set.add(span.start_date_inclusive)
+            if span.end_date_exclusive:
+                critical_date_set.add(span.end_date_exclusive)
+            else:
+                has_null_end_date = True
+
+        return convert_critical_dates_to_time_spans(
+            critical_date_set, has_null_end_date
+        )
+
+    # TODO(#14800) Revisit this logic once downstream views don't need it.
+    def _expand_dual_supervision_spans(
+        self, supervision_spans: List[SupervisionPopulationSpan]
+    ) -> List[SupervisionPopulationSpan]:
+        """For any SupervisionPopulationSpans that are of DUAL supervision type, makes a
+        copy of the event that has a PAROLE supervision type and a copy of the event that
+        has a PROBATION supervision type. Returns all events, including the duplicated
+        events for each of the DUAL supervision events, because we want these events to
+        contribute to PAROLE, PROBATION, and DUAL breakdowns of any metric."""
+        if not supervision_spans:
+            return supervision_spans
+
+        additional_supervision_spans: List[SupervisionPopulationSpan] = []
+
+        for supervision_span in supervision_spans:
+            if (
+                supervision_span.supervision_type
+                == StateSupervisionPeriodSupervisionType.DUAL
+            ):
+                parole_copy = attr.evolve(
+                    supervision_span,
+                    supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                )
+                additional_supervision_spans.append(parole_copy)
+                probation_copy = attr.evolve(
+                    supervision_span,
+                    supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                )
+                additional_supervision_spans.append(probation_copy)
+
+        supervision_spans.extend(additional_supervision_spans)
         return supervision_spans
 
     def _get_judicial_district_code_for_period(

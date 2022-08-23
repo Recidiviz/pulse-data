@@ -19,7 +19,7 @@ import datetime
 import re
 from abc import ABCMeta, abstractmethod
 from calendar import isleap
-from typing import Iterator, List, Optional, Tuple, TypeVar
+from typing import Iterable, Iterator, List, Optional, Tuple, TypeVar
 
 import attr
 
@@ -106,10 +106,17 @@ def today_in_iso() -> str:
 
 
 @attr.s
-class DateRange:
-    """Object representing a range of dates."""
+class PotentiallyOpenDateRange:
+    """Object representing a range of dates where the end date could be null (open)."""
 
     lower_bound_inclusive_date: datetime.date = attr.ib()
+    upper_bound_exclusive_date: Optional[datetime.date] = attr.ib()
+
+
+@attr.s
+class DateRange(PotentiallyOpenDateRange):
+    """Object representing a range of dates."""
+
     upper_bound_exclusive_date: datetime.date = attr.ib()
 
     def get_months_range_overlaps_at_all(self) -> List[Tuple[int, int]]:
@@ -406,3 +413,30 @@ def merge_sorted_date_ranges(
                 continue
         merged_ranges.append(date_range)
     return merged_ranges
+
+
+def convert_critical_dates_to_time_spans(
+    critical_dates: Iterable[datetime.date], has_open_end_date: bool
+) -> List[PotentiallyOpenDateRange]:
+    """Given a list of critical dates, returns a series of date ranges that represent
+    the time spans between these dates."""
+
+    critical_dates_sorted = sorted(list(critical_dates))
+
+    time_spans: List[PotentiallyOpenDateRange] = []
+    for index, critical_date in enumerate(critical_dates_sorted):
+        if index == len(critical_dates_sorted) - 1 and has_open_end_date:
+            time_spans.append(
+                PotentiallyOpenDateRange(
+                    lower_bound_inclusive_date=critical_date,
+                    upper_bound_exclusive_date=None,
+                )
+            )
+        elif index < len(critical_dates_sorted) - 1:
+            time_spans.append(
+                DateRange(
+                    lower_bound_inclusive_date=critical_date,
+                    upper_bound_exclusive_date=critical_dates_sorted[index + 1],
+                )
+            )
+    return time_spans

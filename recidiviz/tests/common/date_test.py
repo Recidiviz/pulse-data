@@ -25,6 +25,8 @@ from recidiviz.common.date import (
     DateRange,
     DateRangeDiff,
     NonNegativeDateRange,
+    PotentiallyOpenDateRange,
+    convert_critical_dates_to_time_spans,
     is_date_str,
     merge_sorted_date_ranges,
     munge_date_string,
@@ -363,5 +365,61 @@ class TestMergeSortedDateRange(unittest.TestCase):
                     datetime.date(2002, 5, 1), datetime.date(2002, 10, 1)
                 ),
             ]
+        )
+        self.assertListEqual(expected_results, results)
+
+
+class TestConvertCriticalDatesToTimeSpans(unittest.TestCase):
+    """Tests for convert_critical_dates_to_time_spans"""
+
+    def test_convert_critical_dates_to_time_spans(self) -> None:
+        expected_results = [
+            DateRange(datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)),
+            DateRange(datetime.date(2001, 1, 1), datetime.date(2001, 3, 1)),
+            DateRange(datetime.date(2001, 3, 1), datetime.date(2001, 5, 1)),
+        ]
+        results = convert_critical_dates_to_time_spans(
+            critical_dates=[
+                datetime.date(2000, 1, 1),
+                datetime.date(2001, 1, 1),
+                datetime.date(2001, 3, 1),
+                datetime.date(2001, 5, 1),
+            ],
+            has_open_end_date=False,
+        )
+        self.assertListEqual(expected_results, results)
+
+    def test_convert_critical_dates_to_time_spans_with_open_end_date(self) -> None:
+        expected_results = [
+            DateRange(datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)),
+            DateRange(datetime.date(2001, 1, 1), datetime.date(2001, 3, 1)),
+            DateRange(datetime.date(2001, 3, 1), datetime.date(2001, 5, 1)),
+            PotentiallyOpenDateRange(datetime.date(2001, 5, 1), None),
+        ]
+        results = convert_critical_dates_to_time_spans(
+            critical_dates=[
+                datetime.date(2000, 1, 1),
+                datetime.date(2001, 1, 1),
+                datetime.date(2001, 3, 1),
+                datetime.date(2001, 5, 1),
+            ],
+            has_open_end_date=True,
+        )
+        self.assertListEqual(expected_results, results)
+
+    def test_convert_critical_dates_to_time_spans_unsorted(self) -> None:
+        expected_results = [
+            DateRange(datetime.date(2000, 1, 1), datetime.date(2001, 1, 1)),
+            DateRange(datetime.date(2001, 1, 1), datetime.date(2001, 3, 1)),
+            DateRange(datetime.date(2001, 3, 1), datetime.date(2001, 5, 1)),
+        ]
+        results = convert_critical_dates_to_time_spans(
+            critical_dates=[
+                datetime.date(2000, 1, 1),
+                datetime.date(2001, 5, 1),
+                datetime.date(2001, 1, 1),
+                datetime.date(2001, 3, 1),
+            ],
+            has_open_end_date=False,
         )
         self.assertListEqual(expected_results, results)
