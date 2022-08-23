@@ -47,6 +47,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportStatus,
     Source,
     Spreadsheet,
+    SpreadsheetStatus,
     System,
     UserAccount,
 )
@@ -869,6 +870,49 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             # Download spreadsheet
             download_response = self.client.get(f"/api/spreadsheets/{spreadsheet_id}")
             self.assertEqual(download_response.status_code, 200)
+
+    def test_update_spreadsheet(self) -> None:
+        agency = self.test_schema_objects.test_agency_E
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        self.session.refresh(agency)
+        self.session.refresh(user)
+        spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+            system=System.SUPERVISION,
+            user_id=user.auth0_user_id,
+            agency_id=agency.id,
+        )
+        self.session.add(spreadsheet)
+        self.session.commit()
+        self.session.refresh(spreadsheet)
+
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=user.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency.id],
+                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
+            )
+
+            response = self.client.put(
+                f"/api/spreadsheets/{spreadsheet.id}",
+                json={"status": SpreadsheetStatus.INGESTED.value},
+            )
+            self.assertEqual(response.status_code, 200)
+            spreadsheet_json = assert_type(response.json, dict)
+            self.assertEqual(
+                spreadsheet_json.get("status"), SpreadsheetStatus.INGESTED.value
+            )
+            db_spreadsheet = self.session.query(Spreadsheet).one()
+            self.assertEqual(db_spreadsheet.ingested_by, user.auth0_user_id)
+            self.assertEqual(
+                db_spreadsheet.ingested_at.timestamp(), self.now_time.timestamp()
+            )
 
     def test_session(self) -> None:
         # Add data

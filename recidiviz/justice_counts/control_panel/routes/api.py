@@ -448,6 +448,39 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PUT"])
+    @auth_decorator
+    def update_spreadsheet(spreadsheet_id: str) -> Response:
+        try:
+            permissions = g.user_context.permissions if "user_context" in g else []
+            request_json = assert_type(request.json, dict)
+            auth0_user_id = get_auth0_user_id(request_dict=request_json)
+            if (
+                not permissions
+                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+            ):
+                raise JusticeCountsPermissionError(
+                    code="justice_counts_create_report_permission",
+                    description=(
+                        f"User {auth0_user_id} does not have permission to "
+                        "update a spreadsheet status."
+                    ),
+                )
+            status = assert_type(request_json.get("status"), str)
+            spreadsheet = SpreadsheetInterface.update_spreadsheet(
+                session=current_session,
+                spreadsheet_id=int(spreadsheet_id),
+                status=status,
+                auth0_user_id=auth0_user_id,
+            )
+            return jsonify(
+                SpreadsheetInterface.get_spreadsheet_json(
+                    spreadsheet=spreadsheet, session=current_session
+                )
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     return api_blueprint
 
 
