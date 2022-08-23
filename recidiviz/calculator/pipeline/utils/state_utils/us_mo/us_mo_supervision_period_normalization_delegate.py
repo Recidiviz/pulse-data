@@ -18,7 +18,7 @@
 import itertools
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -40,7 +40,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.date import DurationMixinT
+from recidiviz.common.date import (
+    DurationMixinT,
+    PotentiallyOpenDateRange,
+    convert_critical_dates_to_time_spans,
+)
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
     parse_supervision_period_admission_reason,
@@ -98,11 +102,13 @@ class UsMoSupervisionNormalizationDelegate(
             for supervision_type_span in sentence.supervision_type_spans:
                 supervision_type_spans.append(supervision_type_span)
 
-        time_spans: List[Tuple[date, Optional[date]]] = self._get_new_period_time_spans(
+        time_spans: List[PotentiallyOpenDateRange] = self._get_new_period_time_spans(
             supervision_periods, supervision_type_spans
         )
 
-        start_dates: List[date] = sorted(start_date for start_date, _ in time_spans)
+        start_dates: List[date] = sorted(
+            time_span.lower_bound_inclusive_date for time_span in time_spans
+        )
         periods_by_start_date: Dict[
             date, List[StateSupervisionPeriod]
         ] = self._get_periods_by_critical_date(
@@ -116,7 +122,8 @@ class UsMoSupervisionNormalizationDelegate(
 
         new_supervision_periods: List[StateSupervisionPeriod] = []
         for time_span in time_spans:
-            start_date, end_date = time_span
+            start_date = time_span.lower_bound_inclusive_date
+            end_date = time_span.upper_bound_exclusive_date
             period_supervision_type = self._get_period_supervision_type(
                 time_span, type_spans_by_start_date
             )
@@ -197,7 +204,7 @@ class UsMoSupervisionNormalizationDelegate(
         self,
         supervision_periods: List[StateSupervisionPeriod],
         sentence_supervision_type_spans: List[SupervisionTypeSpan],
-    ) -> List[Tuple[date, Optional[date]]]:
+    ) -> List[PotentiallyOpenDateRange]:
         """From both the periods and the supervision type spans, obtains all of the
         critical dates and therefore the time spans that will form the new periods."""
         # First find all of the critical dates from all of the sentences and all of the
@@ -219,17 +226,9 @@ class UsMoSupervisionNormalizationDelegate(
             else:
                 has_null_end_date = True
 
-        critical_dates = sorted(list(critical_date_set))
-
-        # Next, generate all time spans relevant to all critical dates
-        time_spans: List[Tuple[date, Optional[date]]] = []
-        for index, critical_date in enumerate(critical_dates):
-            if index == len(critical_dates) - 1 and has_null_end_date:
-                time_spans.append((critical_date, None))
-            elif index < len(critical_dates) - 1:
-                time_spans.append((critical_date, critical_dates[index + 1]))
-
-        return time_spans
+        return convert_critical_dates_to_time_spans(
+            critical_date_set, has_null_end_date
+        )
 
     def _get_periods_by_critical_date(
         self, time_periods: List[DurationMixinT], critical_dates: List[date]
@@ -245,12 +244,13 @@ class UsMoSupervisionNormalizationDelegate(
 
     def _get_period_supervision_type(
         self,
-        new_time_span: Tuple[date, Optional[date]],
+        new_time_span: PotentiallyOpenDateRange,
         supervision_type_spans_for_start_date: Dict[date, List[SupervisionTypeSpan]],
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         """Obtain the supervision period type given the relevant type spans."""
-        start_date, _ = new_time_span
-        relevant_type_spans = supervision_type_spans_for_start_date[start_date]
+        relevant_type_spans = supervision_type_spans_for_start_date[
+            new_time_span.lower_bound_inclusive_date
+        ]
 
         # There is no set supervision type for the period if there are no relevant
         # supervision type spans associated with the start date.
