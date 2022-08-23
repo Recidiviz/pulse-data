@@ -34,6 +34,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricContextData,
     MetricInterface,
 )
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
     expunge_existing,
@@ -62,6 +63,69 @@ class DatapointInterface:
             .filter(schema.Datapoint.source_id == agency_id)
             .all()
         )
+
+    @staticmethod
+    def get_datapoints_with_report_ids(
+        session: Session, report_ids: List[int], include_contexts: bool = True
+    ) -> List[schema.Datapoint]:
+        q = session.query(schema.Datapoint)
+
+        # when fetching datapoints for data viz, no need to fetch context datapoints
+        if include_contexts is False:
+            q = q.filter(schema.Datapoint.context_key.is_(None))
+
+        return (
+            q.filter(schema.Datapoint.report_id.in_(report_ids))
+            .order_by(schema.Datapoint.start_date.asc())
+            .all()
+        )
+
+    @staticmethod
+    def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
+        if datapoint.dimension_identifier_to_member is None:
+            return None
+        if len(datapoint.dimension_identifier_to_member) != 1:
+            raise ValueError(
+                f"datapoint with id: {datapoint.id} has more than one disaggregation, which is currently not supported"
+            )
+        dimension_id, dimension_member = list(
+            datapoint.dimension_identifier_to_member.items()
+        ).pop()
+        dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]
+        dimension = dimension_class[dimension_member]
+        return dimension
+
+    @staticmethod
+    def to_json_response(
+        datapoint: schema.Datapoint,
+        is_published: bool,
+        frequency: schema.ReportingFrequency,
+    ) -> Dict[str, Any]:
+        """Serializes Datapoint object into json format for consumption in the Justice Counts Control Panel"""
+        metric_definition = METRIC_KEY_TO_METRIC[datapoint.metric_definition_key]
+        metric_display_name = metric_definition.display_name
+
+        disaggregation_display_name = None
+        dimension_display_name = None
+        dimension = DatapointInterface.get_dimension(datapoint)
+
+        if dimension is not None:
+            disaggregation_display_name = dimension.human_readable_name()
+            dimension_display_name = dimension.dimension_value
+
+        return {
+            "id": datapoint.id,
+            "report_id": datapoint.report_id,
+            "start_date": datapoint.start_date,
+            "end_date": datapoint.end_date,
+            "metric_definition_key": datapoint.metric_definition_key,
+            "metric_display_name": metric_display_name,
+            "disaggregation_display_name": disaggregation_display_name,
+            "dimension_display_name": dimension_display_name,
+            "value": datapoint.value,
+            "is_published": is_published,
+            "frequency": frequency.value,
+        }
 
     @staticmethod
     def get_metric_settings_by_agency(

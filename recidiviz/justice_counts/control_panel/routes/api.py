@@ -498,6 +498,61 @@ def get_api_blueprint(
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
 
+    @api_blueprint.route("/datapoints", methods=["GET"])
+    @auth_decorator
+    @raise_if_user_is_unauthorized
+    def get_datapoints_by_agency_id() -> Response:
+        try:
+            request_dict = assert_type(request.args.to_dict(), dict)
+
+            agency_id = request_dict.get("agency_id")
+
+            if agency_id is None:
+                # If no agency_id is specified, pick one of the agencies
+                # that the user belongs to as a default for the home page
+                if len(g.user_context.agency_ids) == 0:
+                    raise JusticeCountsPermissionError(
+                        code="justice_counts_agency_permission",
+                        description="User does not belong to any agencies.",
+                    )
+                agency_id = g.user_context.agency_ids[0]
+
+            agency_id = int(agency_id)
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=current_session,
+                agency_id=agency_id,
+                # we are only fetching reports here to get the list of report
+                # ids in an agency, so no need to fetch datapoints here
+                include_datapoints=False,
+            )
+            report_id_to_status = {report.id: report.status for report in reports}
+            report_id_to_frequency = {
+                report.id: ReportInterface.get_reporting_frequency(report)
+                for report in reports
+            }
+
+            # fetch non-context datapoints
+            datapoints = DatapointInterface.get_datapoints_with_report_ids(
+                session=current_session,
+                report_ids=list(report_id_to_status.keys()),
+                include_contexts=False,
+            )
+
+            datapoints_json = [
+                DatapointInterface.to_json_response(
+                    datapoint=d,
+                    is_published=report_id_to_status[d.report_id]
+                    == schema.ReportStatus.PUBLISHED,
+                    frequency=report_id_to_frequency[d.report_id],
+                )
+                for d in datapoints
+            ]
+
+            return jsonify(datapoints_json)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     return api_blueprint
 
 
