@@ -30,7 +30,7 @@ import {
   AdditionalEditorsTooltip,
   Cell,
   EmptySelectionCircle,
-  Label,
+  LabelCell,
   LabelRow,
   NoReportsDisplay,
   PageTitle,
@@ -209,11 +209,13 @@ const Reports: React.FC = () => {
                         )}
                       </>
                     )}
-                    {printReportTitle(
-                      report.month,
-                      report.year,
-                      report.frequency
-                    )}
+                    <span>
+                      {printReportTitle(
+                        report.month,
+                        report.year,
+                        report.frequency
+                      )}
+                    </span>
                     <Badge color={reportStatusBadgeColors[report.status]}>
                       {removeSnakeCase(report.status).toLowerCase()}
                     </Badge>
@@ -364,7 +366,7 @@ const Reports: React.FC = () => {
         {/* Labels */}
         <LabelRow>
           {reportListColumnTitles.map((title) => (
-            <Label key={title}>{title}</Label>
+            <LabelCell key={title}>{title}</LabelCell>
           ))}
         </LabelRow>
       </ReportsHeader>
