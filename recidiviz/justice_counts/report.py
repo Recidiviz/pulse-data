@@ -68,6 +68,7 @@ class ReportInterface:
         q = ReportInterface._get_report_query(
             session, include_datapoints=include_datapoints
         )
+
         return (
             q.filter(schema.Report.source_id == agency_id)
             .order_by(schema.Report.date_range_end.desc())

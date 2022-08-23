@@ -29,6 +29,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     Datapoint,
     Report,
+    ReportingFrequency,
     ReportStatus,
     UserAccount,
 )
@@ -223,3 +224,57 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     metric_definition_key=law_enforcement.annual_budget.key,
                     current_time=current_time,
                 )
+
+    def test_get_datapoints(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            monthly_report = self.test_schema_objects.test_report_monthly
+            user = self.test_schema_objects.test_user_A
+            session.add_all([monthly_report, user])
+            session.flush()
+            session.refresh(monthly_report)
+            current_time = datetime.datetime(2022, 6, 1)
+
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                value="123",
+                user_account=user,
+                metric_definition_key=law_enforcement.calls_for_service.key,
+                current_time=current_time,
+            )
+
+            report_ids = [
+                monthly_report.id,
+            ]
+
+            datapoints = DatapointInterface.get_datapoints_with_report_ids(
+                session=session,
+                report_ids=report_ids,
+                include_contexts=False,
+            )
+
+            assert len(datapoints) == 1
+            assert datapoints[0].value == "123"
+
+            datapoint_json = DatapointInterface.to_json_response(
+                datapoint=datapoints[0],
+                is_published=False,
+                frequency=ReportingFrequency.MONTHLY,
+            )
+
+            self.assertDictEqual(
+                datapoint_json,
+                {
+                    "id": monthly_report.id,
+                    "report_id": 1,
+                    "frequency": "MONTHLY",
+                    "start_date": datetime.date(2022, 6, 1),
+                    "end_date": datetime.date(2022, 7, 1),
+                    "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE_metric/law_enforcement/calls_for_service/type",
+                    "metric_display_name": "Calls for Service",
+                    "disaggregation_display_name": None,
+                    "dimension_display_name": None,
+                    "value": "123",
+                    "is_published": False,
+                },
+            )
