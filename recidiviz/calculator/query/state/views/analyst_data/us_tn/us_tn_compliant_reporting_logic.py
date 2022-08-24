@@ -257,11 +257,12 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     -- Joins together sentences and standards sheet
     sentences_join AS (
         SELECT  determine_sup_level_eligibility.*, 
-                sentence_put_together.* EXCEPT(Offender_ID),
-                CASE WHEN sentence_put_together.Offender_ID IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
+                sentence_put_together.* EXCEPT(person_id,no_lifetime_flag),
+                COALESCE(no_lifetime_flag,1) as no_lifetime_flag,
+                CASE WHEN sentence_put_together.person_id IS NULL THEN 1 ELSE 0 END AS missing_sent_info,
         FROM determine_sup_level_eligibility
         LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_sentence_logic_materialized` sentence_put_together
-            USING(Offender_ID)
+            USING(person_id)
     ),
     -- These CTEs looks at anyone who has ever received a ZTPD contact (zero tolerance contact for failing a meth test) or meth positive test 
     -- so they can be excluded from almost-eligible but for drug screen
@@ -278,22 +279,22 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
     contacts_cte AS (
-        SELECT OffenderID AS Offender_ID, 
-                CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date, 
-                ContactNoteType,
-                CASE WHEN ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 ELSE 0 END AS negative_drug_test,
-                1 AS drug_screen,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
-        /*
-         Limit to DRU% (DRUN,DRUM, etc) type contacts in the last 12 months 
-        */
-        WHERE DATE_DIFF(CURRENT_DATE,CAST(CAST(ContactNoteDateTime AS datetime) AS DATE),DAY) <= 365
-        AND ContactNoteType LIKE '%DRU%'
+        SELECT 
+            person_id,
+            drug_screen_date AS contact_date,
+            result_raw_text_primary AS ContactNoteType,
+            CASE WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') THEN 1 ELSE 0 END AS negative_drug_test,
+            is_positive_result,
+            CASE WHEN is_positive_result = true THEN drug_screen_date END AS positive_drug_test_date,
+            1 as drug_screen
+        FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
+        WHERE state_code = 'US_TN'
+        AND DATE_DIFF(CURRENT_DATE,drug_screen_date,DAY) <= 365
     ),
     -- This CTE calculates total drug screens and total negative screens in the past year
     -- TODO(#14347) - reference state-agnostic view
     dru_contacts AS (
-        SELECT Offender_ID, 
+        SELECT person_id, 
                 sum(drug_screen) AS total_screens_in_past_year,
                 sum(negative_drug_test) as sum_negative_tests_in_past_year, 
                 max(is_most_recent_test_negative) as is_most_recent_test_negative,
@@ -302,21 +303,17 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM (
             SELECT *,
                 -- Since we've already limited to just drug screen contacts, this looks at whether the latest screen was a negative one 
-                CASE WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
-                        AND ContactNoteType IN ('DRUN','DRUX','DRUM') THEN 1 
-                     WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
-                        AND ContactNoteType NOT IN ('DRUN','DRUX','DRUM') THEN 0                     
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+                        AND negative_drug_test = 1 THEN 1 
+                     WHEN ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+                        AND negative_drug_test = 0 THEN 0                     
                     END AS is_most_recent_test_negative,
                 -- Most recent test date
-                CASE WHEN ROW_NUMBER() OVER(PARTITION BY Offender_ID ORDER BY contact_date DESC) = 1
+                CASE WHEN ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
                      THEN contact_date 
                      END AS most_recent_test_date,
                 -- Most recent positive test date
-                CASE WHEN ContactNoteType NOT IN ('DRUN','DRUX','DRUM') 
-                    AND ROW_NUMBER() OVER(PARTITION BY Offender_ID
-                                            ORDER BY CASE WHEN ContactNoteType NOT IN ('DRUN','DRUX','DRUM') THEN 0 ELSE 1 END ASC, contact_date DESC) = 1
-                    THEN contact_date
-                    END AS most_recent_positive_test_date
+                FIRST_VALUE(positive_drug_test_date) OVER(PARTITION BY person_id ORDER BY positive_drug_test_date DESC) AS most_recent_positive_test_date
             FROM contacts_cte 
         )
         GROUP BY 1    
@@ -324,7 +321,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ), 
     -- This CTE keeps all negative screens in the last year as an array to be displayed
     contacts_cte_arrays AS (
-        SELECT Offender_ID, ARRAY_AGG(STRUCT(ContactNoteType,contact_date)) as DRUN_array
+        SELECT person_id, ARRAY_AGG(STRUCT(ContactNoteType,contact_date)) as DRUN_array
         FROM contacts_cte 
         WHERE ContactNoteType IN ('DRUN','DRUX','DRUM')
         GROUP BY 1
@@ -336,19 +333,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ContactNoteType_latest`
         WHERE ContactNoteType IN ('DRUN','DRUX','DRUM')
         GROUP BY 1
-    ),
-    -- This CTE excludes people who have a flag indicating Lifetime Supervision or Life Sentence - both are ineligible for CR or overdue
-    CSL AS (
-        SELECT OffenderID as Offender_ID, LifetimeSupervision, LifeDeathHabitual 
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOSentence_latest`
-        WHERE TRUE
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CASE WHEN LifetimeSupervision = 'Y' THEN 0 ELSE 1 END,
-                                                                    CASE WHEN LifeDeathHabitual IS NOT NULL THEN 0 ELSE 1 END) = 1
-    ),
-    life_sentence_ISC AS (
-        SELECT DISTINCT OffenderID AS Offender_ID,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ISCSentence_latest`
-        WHERE sentence LIKE '%LIFE%'
     ),
     -- This CTE excludes people who have been rejected from CR because of criminal record or court order
     CR_rejection_codes AS (
@@ -697,8 +681,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 -- Counties in JD 17 don't allow CR for probation cases
                 CASE WHEN judicial_district = '17' AND supervision_type LIKE '%PROBATION%' THEN 0 ELSE 1 END AS eligible_counties,
                 -- Exclude anyone on lifetime supervision or with a life sentence
-                CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL THEN 1 
-                    ELSE 0 END AS eligible_lifetime_flag,
+                no_lifetime_flag AS eligible_lifetime_flag,
                 -- fines and fees
                 CASE WHEN COALESCE(unpaid_total_latest,0) <= 500 THEN 'low_balance'
                      WHEN permanent_exemptions.AccountSAK IS NOT NULL THEN 'exempt'
@@ -729,27 +712,27 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 COALESCE(sentence_expiration_date_internal,sentence_expiration_date) AS expiration_date,
                 DATE_DIFF(COALESCE(sentence_expiration_date_internal,sentence_expiration_date), current_date('US/Eastern'), DAY) AS time_to_expiration_days,
                 CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) < current_date('US/Eastern') 
-                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND no_lifetime_flag = 1
                     AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
                     AND person_status in ("ACTV","PEND")
                     AND missing_at_least_1_exp_date = 0
                     AND latest_tepe_date IS NOT NULL
                     THEN 1 ELSE 0 END AS overdue_for_discharge_tepe,
                 CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) < current_date('US/Eastern') 
-                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND no_lifetime_flag = 1
                     AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
                     AND person_status in ("ACTV","PEND")
                     AND missing_at_least_1_exp_date = 0
                     AND latest_tepe_date IS NULL
                     THEN 1 ELSE 0 END AS overdue_for_discharge_no_case_closure,
                 CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 90 DAY) 
-                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND no_lifetime_flag = 1
                     AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
                     AND missing_at_least_1_exp_date = 0
                     AND person_status in ("ACTV","PEND")
                     THEN 1 ELSE 0 END AS overdue_for_discharge_within_90,
                 CASE WHEN COALESCE(sentence_expiration_date_internal,sentence_expiration_date) <= DATE_ADD(current_date('US/Eastern'), INTERVAL 180 DAY) 
-                    AND COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' AND life_sentence_ISC.Offender_ID IS NULL
+                    AND no_lifetime_flag = 1
                     AND (zero_tolerance_codes.Offender_ID IS NULL OR supervision_type LIKE '%PAROLE%')
                     AND missing_at_least_1_exp_date = 0
                     AND person_status in ("ACTV","PEND")
@@ -795,11 +778,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 earliest_DRUN_date,  
         FROM sentences_join
         LEFT JOIN dru_contacts 
-            USING(Offender_ID)
-        LEFT JOIN CSL
-            USING(Offender_ID)
-        LEFT JOIN life_sentence_ISC
-            USING(Offender_ID)
+            USING(person_id)
         LEFT JOIN CR_rejection_codes 
             USING(Offender_ID)
         LEFT JOIN CR_rejection_codes_dynamic 
@@ -820,7 +799,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         LEFT JOIN assessment
             USING(person_id)
         LEFT JOIN contacts_cte_arrays 
-            USING(Offender_ID)
+            USING(person_id)
         LEFT JOIN relevant_conditions
             USING(Offender_ID)
         LEFT JOIN drun_contacts
