@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dataset references."""
+import re
+
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.rematerialization_success_persister import (
     VIEW_UPDATE_METADATA_DATASET,
 )
@@ -145,3 +148,16 @@ VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     **NORMALIZED_DATASETS_TO_DESCRIPTIONS,
 }
 VIEW_SOURCE_TABLE_DATASETS = set(VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS.keys())
+
+
+def is_state_specific_address(address: BigQueryAddress) -> bool:
+    """Returns true if either of the dataset_id or table_id starts with a state code
+    prefix ('us_xx_') or ends with a state code suffix ('_us_xx').
+    """
+    is_state_specific = False
+    for s in [address.dataset_id, address.table_id]:
+        is_state_specific |= bool(re.match("^us_[a-z]{2}_.*$", s)) or bool(
+            re.match("^.*_us_[a-z]{2}$", s)
+        )
+
+    return is_state_specific

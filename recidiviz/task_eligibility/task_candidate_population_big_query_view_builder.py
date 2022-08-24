@@ -23,7 +23,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 
 
-# TODO(#14309): Write tests for this class
 class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
     SimpleBigQueryViewBuilder
 ):
@@ -42,12 +41,16 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
         **query_format_kwargs: str,
     ) -> None:
 
-        if not population_name.startswith(state_code.value):
+        if population_name.upper() != population_name:
+            raise ValueError(f"Population name [{population_name}] must be upper case.")
+
+        state_code_prefix = f"{state_code.value}_"
+        if not population_name.startswith(state_code_prefix):
             raise ValueError(
-                f"Found state-specific task criteria [{population_name}] whose name "
-                f"does not start with [{state_code.value}]."
+                f"Found state-specific task candidate population [{population_name}] "
+                f"whose name does not start with [{state_code_prefix}]."
             )
-        view_id = population_name.removeprefix(f"{state_code.value}_").lower()
+        view_id = population_name.removeprefix(state_code_prefix).lower()
         super().__init__(
             dataset_id=f"task_eligibility_candidates_{state_code.value.lower()}",
             view_id=view_id,
@@ -64,7 +67,6 @@ class StateSpecificTaskCandidatePopulationBigQueryViewBuilder(
         self.population_name = population_name
 
 
-# TODO(#14309): Write tests for this class
 class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
     SimpleBigQueryViewBuilder
 ):
@@ -82,6 +84,8 @@ class StateAgnosticTaskCandidatePopulationBigQueryViewBuilder(
         # All keyword args must have string values
         **query_format_kwargs: str,
     ) -> None:
+        if population_name.upper() != population_name:
+            raise ValueError(f"Population name [{population_name}] must be upper case.")
         super().__init__(
             dataset_id="task_eligibility_candidates_general",
             view_id=population_name.lower(),

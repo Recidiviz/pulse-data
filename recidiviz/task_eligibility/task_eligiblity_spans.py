@@ -43,7 +43,6 @@ TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
 
 
-# TODO(#14309): Write tests for this function
 def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
     """Returns a list of view builders containing
     a) one view per state, which unions task eligiblity spans for that state into

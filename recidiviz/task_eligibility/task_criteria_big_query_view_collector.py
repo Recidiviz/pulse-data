@@ -19,7 +19,10 @@ TaskCriteriaBigQueryViewBuilder.
 """
 from typing import List
 
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_collector import (
+    BigQueryViewCollector,
+    filename_matches_view_id_validator,
+)
 from recidiviz.task_eligibility.criteria import general as general_criteria_module
 from recidiviz.task_eligibility.criteria import (
     state_specific as state_specific_criteria_module,
@@ -45,7 +48,9 @@ class TaskCriteriaBigQueryViewCollector(
         which apply logic specific to a particular state.
         """
         view_builders = self.collect_view_builders_in_module(
-            StateAgnosticTaskCriteriaBigQueryViewBuilder, general_criteria_module
+            StateAgnosticTaskCriteriaBigQueryViewBuilder,
+            general_criteria_module,
+            validate_builder_fn=filename_matches_view_id_validator,
         )
 
         for state_criteria_module in self.get_submodules(
@@ -53,7 +58,9 @@ class TaskCriteriaBigQueryViewCollector(
         ):
             view_builders.extend(
                 self.collect_view_builders_in_module(
-                    StateSpecificTaskCriteriaBigQueryViewBuilder, state_criteria_module
+                    StateSpecificTaskCriteriaBigQueryViewBuilder,
+                    state_criteria_module,
+                    validate_builder_fn=filename_matches_view_id_validator,
                 )
             )
 

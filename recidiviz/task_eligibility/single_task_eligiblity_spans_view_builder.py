@@ -110,6 +110,9 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             **query_format_kwargs,
         )
         self.state_code = state_code
+        self.task_name = task_name
+        self.candidate_population_view_builder = candidate_population_view_builder
+        self.criteria_spans_view_builders = criteria_spans_view_builders
 
     @staticmethod
     def _build_query_template(

@@ -18,10 +18,13 @@
 import abc
 import os
 from types import ModuleType
-from typing import Generic, List, Optional, Type
+from typing import Callable, Generic, List, Optional, Type
 
 import recidiviz
-from recidiviz.big_query.big_query_view import BigQueryViewBuilderType
+from recidiviz.big_query.big_query_view import (
+    BigQueryViewBuilder,
+    BigQueryViewBuilderType,
+)
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
@@ -66,14 +69,24 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         builder_type: Type[BigQueryViewBuilderType],
         view_dir_module: ModuleType,
         view_file_prefix_filter: Optional[str] = None,
+        validate_builder_fn: Optional[
+            Callable[[BigQueryViewBuilderType, ModuleType], None]
+        ] = None,
     ) -> List[BigQueryViewBuilderType]:
         """Collects all view builders in a directory module and returns a list of all
         views that can be built from builders defined in files in that directory.
 
         Args:
             builder_type: The type of builder that we expect to find in this subdir
-            view_dir_module: The module for the directory that contains all the view definition files.
-            view_file_prefix_filter: When set, collection filters out any files whose name does not have this prefix.
+            view_dir_module: The module for the directory that contains all the view
+                definition files.
+            view_file_prefix_filter: When set, collection filters out any files whose
+                name does not have this prefix.
+            validate_builder_fn: When set, this function will be called with each
+                builder and the module that builder was defined in. Implementations of
+                this function should throw if the builder does not meet validation
+                conditions. This can be used to enforce agreement between builder
+                filenames and the builder view names, for example.
         """
 
         view_modules = cls.get_submodules(view_dir_module, view_file_prefix_filter)
@@ -91,6 +104,30 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
             if not isinstance(builder, builder_type):
                 raise ValueError(f"Unexpected type for builder [{type(builder)}]")
 
+            if validate_builder_fn:
+                validate_builder_fn(builder, view_module)
             builders.append(builder)
 
         return builders
+
+
+def filename_matches_view_id_validator(
+    builder: BigQueryViewBuilder,
+    view_module: ModuleType,
+) -> None:
+    """A validator function that checks that the filename of the given view module
+    matches the view_id of the view builder defined inside that file. Can be passed
+    to the validate_builder_fn argument on
+    BigQueryViewCollector.collect_view_builders_in_module when we want to enforce that
+    view filename and view_ids match.
+    """
+    if not view_module.__file__:
+        raise ValueError(f"Found no file for module [{view_module}]")
+    filename = os.path.splitext(os.path.basename(view_module.__file__))[0]
+    expected_filename = builder.address.table_id
+    if filename != expected_filename:
+        raise ValueError(
+            f"Found view builder [{builder.address}] defined in file with "
+            f"name that does not match the view_id: {filename}. Expected filename: "
+            f"{expected_filename}."
+        )
