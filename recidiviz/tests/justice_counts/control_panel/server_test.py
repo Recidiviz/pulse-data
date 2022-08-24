@@ -687,6 +687,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "/api/spreadsheets",
                 data={
                     "agency_id": agency.id,
+                    "system": System.LAW_ENFORCEMENT.value,
                     "file": (
                         self.bulk_upload_test_files
                         / "law_enforcement/law_enforcement_metrics.xlsx"
@@ -889,6 +890,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "/api/spreadsheets",
                 data={
                     "agency_id": agency.id,
+                    "system": System.LAW_ENFORCEMENT.value,
                     "file": (
                         self.bulk_upload_test_files
                         / "law_enforcement/law_enforcement_metrics.xlsx"
