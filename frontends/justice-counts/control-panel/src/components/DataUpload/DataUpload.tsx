@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Dropdown, DropdownMenu } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 
@@ -22,11 +23,13 @@ import { useStore } from "../../stores";
 import { removeSnakeCase } from "../../utils";
 import SpreadsheetIcon from "../assets/spreadsheet-icon.png";
 import UploadIcon from "../assets/upload-icon.png";
+import { ExtendedDropdownMenuItem, ExtendedDropdownToggle } from "../Menu";
 import { PageHeader, TabbedItem, TabbedOptions } from "../Reports";
 import { showToast } from "../Toast";
 import {
   Button,
   ButtonWrapper,
+  DropdownItemUploadInput,
   ExtendedTabbedBar,
   Icon,
   Instructions,
@@ -69,23 +72,16 @@ export type UploadedFile = {
 export const EXCLUDED_SYSTEMS = ["PAROLE", "PROBATION", "POST_RELEASE"];
 
 export const DataUpload: React.FC = observer(() => {
+  const { userStore, reportStore } = useStore();
   const dataUploadMenuItems = ["Instructions", "Uploaded Files"];
   const acceptableFileTypes = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.ms-excel",
   ];
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-  const [activeMenuItem, setActiveMenuItem] = useState(dataUploadMenuItems[0]);
-  const [uploadedFiles, setUploadedFiles] = useState<
-    (UploadedFile | UploadedFileAttempt)[]
-  >([]);
-  const { userStore, reportStore } = useStore();
-
-  const filteredUserSystems = userStore.currentAgency?.systems.filter(
-    (system) => !EXCLUDED_SYSTEMS.includes(system)
-  );
+  const filteredUserSystems =
+    userStore.currentAgency?.systems.filter(
+      (system) => !EXCLUDED_SYSTEMS.includes(system)
+    ) || [];
   const systemToTemplateSpreadsheetFileName: { [system: string]: string } = {
     LAW_ENFORCEMENT: "LAW_ENFORCEMENT.xlsx",
     PROSECUTION: "PROSECUTION.xlsx",
@@ -97,6 +93,16 @@ export const DataUpload: React.FC = observer(() => {
     PAROLE: "SUPERVISION.xlsx",
     PROBATION: "SUPERVISION.xlsx",
   };
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [systemForUpload, setSystemForUpload] = useState(
+    filteredUserSystems[0]
+  );
+  const [activeMenuItem, setActiveMenuItem] = useState(dataUploadMenuItems[0]);
+  const [uploadedFiles, setUploadedFiles] = useState<
+    (UploadedFile | UploadedFileAttempt)[]
+  >([]);
 
   const updateUploadedFilesList = (
     fileDetails: UploadedFile | UploadedFileAttempt
@@ -123,6 +129,10 @@ export const DataUpload: React.FC = observer(() => {
     const formData = new FormData();
 
     if (fileName && userStore.currentAgencyId) {
+      formData.append("file", file);
+      formData.append("name", fileName);
+      formData.append("system", systemForUpload);
+      formData.append("agency_id", userStore.currentAgencyId.toString());
       const newFileDetails = {
         name: fileName,
         upload_attempt_timestamp: Date.now(),
@@ -136,10 +146,6 @@ export const DataUpload: React.FC = observer(() => {
         );
         return updateUploadedFilesList({ ...newFileDetails, status: "ERROR" });
       }
-
-      formData.append("file", file);
-      formData.append("name", fileName);
-      formData.append("agency_id", userStore.currentAgencyId.toString());
 
       updateUploadedFilesList(newFileDetails);
 
@@ -204,24 +210,67 @@ export const DataUpload: React.FC = observer(() => {
           </TabbedOptions>
 
           <ButtonWrapper>
-            <UploadButtonLabel htmlFor="upload-data">
-              <Button type="blue">
-                <UploadButtonInput
-                  type="file"
-                  id="upload-data"
-                  name="upload-data"
-                  accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                  onChange={handleFileUpload}
-                  onClick={(e) => {
-                    /** reset event state to allow user to re-upload same file (re-trigger the onChange event) */
-                    e.currentTarget.value = "";
-                    setActiveMenuItem("Uploaded Files");
-                  }}
-                />
-                Upload Data
-                <Icon alt="" src={UploadIcon} />
-              </Button>
-            </UploadButtonLabel>
+            {filteredUserSystems?.length <= 1 ? (
+              <UploadButtonLabel htmlFor="upload-data">
+                <Button type="blue">
+                  <UploadButtonInput
+                    type="file"
+                    id="upload-data"
+                    name="upload-data"
+                    accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    onChange={handleFileUpload}
+                    onClick={(e) => {
+                      /** reset event state to allow user to re-upload same file (re-trigger the onChange event) */
+                      e.currentTarget.value = "";
+                      setActiveMenuItem("Uploaded Files");
+                    }}
+                  />
+                  Upload Data
+                  <Icon alt="" src={UploadIcon} />
+                </Button>
+              </UploadButtonLabel>
+            ) : (
+              <Dropdown>
+                <ExtendedDropdownToggle
+                  kind="borderless"
+                  style={{ marginBottom: 0 }}
+                >
+                  <Button
+                    type="blue"
+                    onClick={() => setActiveMenuItem("Uploaded Files")}
+                  >
+                    Upload Data
+                    <Icon alt="" src={UploadIcon} />
+                  </Button>
+                </ExtendedDropdownToggle>
+
+                <DropdownMenu alignment="right">
+                  {filteredUserSystems?.map((system) => (
+                    <ExtendedDropdownMenuItem
+                      key={system}
+                      onClick={() => setSystemForUpload(system)}
+                      noPadding
+                    >
+                      <UploadButtonLabel htmlFor="upload-data">
+                        <DropdownItemUploadInput
+                          type="file"
+                          id="upload-data"
+                          name="upload-data"
+                          accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                          onChange={handleFileUpload}
+                          onClick={(e) => {
+                            /** reset event state to allow user to re-upload same file (re-trigger the onChange event) */
+                            e.currentTarget.value = "";
+                          }}
+                        />
+                        {system.toLowerCase()}
+                        <Icon alt="" src={UploadIcon} />
+                      </UploadButtonLabel>
+                    </ExtendedDropdownMenuItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
+            )}
           </ButtonWrapper>
         </ExtendedTabbedBar>
       </PageHeader>

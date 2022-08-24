@@ -25,7 +25,7 @@ export const PageHeader = styled.div`
   width: 100%;
   background: ${palette.solid.white};
   position: fixed;
-  z-index: 1;
+  z-index: 2;
 `;
 
 export const ReportsHeader = styled(PageHeader)`

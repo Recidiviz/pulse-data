@@ -235,10 +235,21 @@ export const Button = styled.div<{ type?: ButtonTypes }>`
 `;
 
 export const UploadButtonLabel = styled.label`
+  width: 100%;
   display: block;
+  text-transform: capitalize;
+  padding: 10px 16px;
+
+  &:hover {
+    cursor: pointer;
+  }
 `;
 
 export const UploadButtonInput = styled.input`
+  display: none;
+`;
+
+export const DropdownItemUploadInput = styled.input`
   display: none;
 `;
 

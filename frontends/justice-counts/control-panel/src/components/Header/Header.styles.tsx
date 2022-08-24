@@ -27,7 +27,7 @@ export const HeaderBar = styled.header`
   align-items: center;
   position: fixed;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   background: ${palette.solid.white};
   padding: 16px 0;
 `;
