@@ -230,6 +230,15 @@ class StateSupervisionLevel(StateEntityEnum):
     UNASSIGNED = (
         state_enum_strings.state_supervision_period_supervision_level_unassigned
     )
+    WARRANT = state_enum_strings.state_supervision_period_supervision_level_warrant
+    ABSCONSION = (
+        state_enum_strings.state_supervision_period_supervision_level_absconsion
+    )
+    INTAKE = state_enum_strings.state_supervision_period_supervision_level_intake
+    RESIDENTIAL_PROGRAM = (
+        state_enum_strings.state_supervision_period_supervision_level_residential_program
+    )
+    FURLOUGH = state_enum_strings.state_supervision_period_supervision_level_furlough
 
     def __lt__(self, other: "StateSupervisionLevel") -> bool:
         self_ranking = self.get_comparable_level_rankings().get(self)
@@ -332,6 +341,27 @@ _STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "This is distinct from `UNASSIGNED` because the person has been “assigned” to be "
     "explicitly unsupervised. A person may be unsupervised if their supervision has "
     "been suspended.",
+    StateSupervisionLevel.WARRANT: "The corresponding supervision level to be mapped to"
+    "`StateSupervisionPeriodSupervisionType.BENCH_WARRANT`.",
+    StateSupervisionLevel.ABSCONSION: "The corresponding supervision level to be mapped to"
+    "`StateSupervisionPeriodSupervisionType.ABSCONSION`.",
+    StateSupervisionLevel.INTAKE: "These are usually people within the first 45 days of "
+    "supervision, they have a parole officer assigned. In some states, they are assigned"
+    " a specialized intake officer, in other’s it’s just a regular parole officer. There"
+    " may be special conditions during this period, is distinct from unassigned because "
+    "they have a parole officer.",
+    StateSupervisionLevel.RESIDENTIAL_PROGRAM: "This person is participating in some "
+    "intensive program (treatment or other) where the person is spending a lot of time "
+    "in one location so the contact standards for their PO may be reduced. This may "
+    "include a halfway house where they person may leave but returns to the halfway house"
+    " to sleep every night. This would not include Day Reporting programs where someone "
+    "spends many hours a day at a Day Reporting Center but returns home at night. This "
+    "also would not include any in-facility treatment programs (i.e. in a county jail or"
+    " state prison).",
+    StateSupervisionLevel.FURLOUGH: "Special circumstance early or temporary release from"
+    " prison/ incarceration. There may be special conditions (i.e. family, medical, "
+    "behavior, etc.) that enable a person to be eligible for this, and there’s typically"
+    " stricter terms of supervision.",
 }
 
 
@@ -506,6 +536,11 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     "LIMITED": StateSupervisionLevel.LIMITED,
     "ELECTRONIC MONITORING ONLY": StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
     "UNASSIGNED": StateSupervisionLevel.UNASSIGNED,
+    "WARRANT": StateSupervisionLevel.WARRANT,
+    "ABSCONSION": StateSupervisionLevel.ABSCONSION,
+    "INTAKE": StateSupervisionLevel.INTAKE,
+    "RESIDENTIAL PROGRAM": StateSupervisionLevel.RESIDENTIAL_PROGRAM,
+    "FURLOUGH": StateSupervisionLevel.FURLOUGH,
 }
 
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
