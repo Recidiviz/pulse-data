@@ -23,7 +23,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 
 
-# TODO(#14309): Write tests for this class
 class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
     does not) satisfy a single criteria. This should only be used for views that contain
@@ -42,6 +41,9 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
         **query_format_kwargs: str,
     ) -> None:
+        if criteria_name.upper() != criteria_name:
+            raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
+
         state_code_prefix = f"{state_code.value}_"
         if not criteria_name.startswith(state_code_prefix):
             raise ValueError(
@@ -65,7 +67,6 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.criteria_name = criteria_name
 
 
-# TODO(#14309): Write tests for this class
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """A builder for a view that defines spans of time during which someone does (or
     does not) satisfy a single criteria. This should only be used for views that contain
@@ -79,6 +80,9 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         description: str,
         **query_format_kwargs: str,
     ) -> None:
+        if criteria_name.upper() != criteria_name:
+            raise ValueError(f"Criteria name [{criteria_name}] must be upper case.")
+
         super().__init__(
             dataset_id="task_eligibility_criteria_general",
             view_id=criteria_name.lower(),

@@ -19,7 +19,10 @@ TaskCandidatePopulationBigQueryViewBuilder.
 """
 from typing import List
 
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_collector import (
+    BigQueryViewCollector,
+    filename_matches_view_id_validator,
+)
 from recidiviz.task_eligibility.candidate_populations import (
     general as general_population_module,
 )
@@ -33,7 +36,6 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 )
 
 
-# TODO(#14309): Write tests for this class
 class TaskCandidatePopulationBigQueryViewCollector(
     BigQueryViewCollector[TaskCandidatePopulationBigQueryViewBuilder]
 ):
@@ -51,6 +53,7 @@ class TaskCandidatePopulationBigQueryViewCollector(
         view_builders = self.collect_view_builders_in_module(
             StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
             general_population_module,
+            validate_builder_fn=filename_matches_view_id_validator,
         )
 
         for state_population_module in self.get_submodules(
@@ -60,6 +63,7 @@ class TaskCandidatePopulationBigQueryViewCollector(
                 self.collect_view_builders_in_module(
                     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
                     state_population_module,
+                    validate_builder_fn=filename_matches_view_id_validator,
                 )
             )
 

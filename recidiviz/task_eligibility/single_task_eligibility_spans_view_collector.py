@@ -20,7 +20,10 @@ SingleTaskEligibilitySpansBigQueryViewBuilder.
 from collections import defaultdict
 from typing import Dict, List
 
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_collector import (
+    BigQueryViewCollector,
+    filename_matches_view_id_validator,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility import eligibility_spans
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -28,7 +31,6 @@ from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import
 )
 
 
-# TODO(#14309): Write tests for this class
 class SingleTaskEligibilityBigQueryViewCollector(
     BigQueryViewCollector[SingleTaskEligibilitySpansBigQueryViewBuilder]
 ):
@@ -50,6 +52,7 @@ class SingleTaskEligibilityBigQueryViewCollector(
                 self.collect_view_builders_in_module(
                     SingleTaskEligibilitySpansBigQueryViewBuilder,
                     state_tasks_module,
+                    validate_builder_fn=filename_matches_view_id_validator,
                 )
             )
 
