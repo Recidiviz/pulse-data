@@ -14,13 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom enum parsers functions for US_MO. Can be referenced in an ingest view manifest
+"""Custom parser functions for US_MO. Can be referenced in an ingest view manifest
 like this:
 
-my_enum_field:
-  $enum_mapping:
-    $raw_text: MY_CSV_COL
-    $custom_parser: us_mo_custom_enum_parsers.<function name>
+my_flat_field:
+    $custom:
+        $function: us_mo_custom_parsers.<function name>
+        $args:
+            arg_1: <expression>
+            arg_2: <expression>
 """
 import datetime
 import logging
@@ -92,7 +94,7 @@ def set_is_draft_on_response(final_formed_create_date: str, response_date: str) 
     Updates the SupervisionViolationResponses based on whether or not a finally formed
     date is present in the raw data.
     """
-    finally_formed_date = mo_julian_date_to_iso(final_formed_create_date)
+    finally_formed_date = mo_julian_date_to_yyyymmdd(final_formed_create_date)
 
     if finally_formed_date == response_date:
         is_draft = False
@@ -104,15 +106,15 @@ def set_is_draft_on_response(final_formed_create_date: str, response_date: str) 
 JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")
 
 
-def mo_julian_date_to_iso(julian_date_str: Optional[str]) -> Optional[str]:
+def mo_julian_date_to_yyyymmdd(julian_date_str: Optional[str]) -> Optional[str]:
     """
     Parse julian-formatted date strings used by MO in a number of DB fields that encode a date using the number of
     years since 1900 concatenated with the number of days since Jan 1 of that year (1-indexed). Returns the date in
-    ISO date format.
+    YYYYMMDD date format.
 
     E.g.:
-        85001 -> 1985-01-01
-        118365 -> 2018-12-31
+        85001 -> 19850101
+        118365 -> 20181231
     """
     if not julian_date_str or int(julian_date_str) == 0:
         return None

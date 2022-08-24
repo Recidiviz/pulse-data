@@ -16,17 +16,16 @@
 # =============================================================================
 """Query containing incarceration period from supervision information."""
 
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
+    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT,
+    MOST_RECENT_STATUS_UPDATES_FRAGMENT,
+    STATUSES_BY_DATE_FRAGMENT,
+)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import (
-    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT,
-    STATUSES_BY_DATE_FRAGMENT,
-    MOST_RECENT_STATUS_UPDATES_FRAGMENT,
-)
-
 
 VIEW_QUERY_TEMPLATE = f"""
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},

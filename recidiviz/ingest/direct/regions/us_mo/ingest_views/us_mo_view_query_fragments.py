@@ -145,7 +145,7 @@ INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT = """
             SELECT * FROM subcycle_partition_status_change_dates
              UNION DISTINCT
             SELECT * FROM subcycle_close_status_change_dates
-        )
+        ) all_dates
     ),
     sub_subcycle_spans AS (
         SELECT
