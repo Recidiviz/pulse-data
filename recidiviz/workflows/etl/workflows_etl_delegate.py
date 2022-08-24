@@ -47,7 +47,7 @@ class WorkflowsETLDelegate(abc.ABC):
 
     def supports_file(self, state_code: str, filename: str) -> bool:
         """Checks if the given filename is supported by this delegate."""
-        return filename in self.EXPORT_BY_STATE[state_code]
+        return filename in self.EXPORT_BY_STATE.get(state_code, [])
 
     def get_filepath(self, state_code: str, filename: str) -> GcsfsFilePath:
         return GcsfsFilePath.from_absolute_path(

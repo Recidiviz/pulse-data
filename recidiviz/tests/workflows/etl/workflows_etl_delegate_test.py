@@ -43,6 +43,11 @@ class TestWorkflowsETLDelegate(TestCase):
         self.assertTrue(delegate.supports_file("US_XX", "export_filename.json"))
         self.assertFalse(delegate.supports_file("US_XX", "some_other_file.json"))
 
+    def test_supports_file_missing_state_code(self) -> None:
+        """Test that the supports_file returns false when delegate does not support stateCode."""
+        delegate = TestOpportunityDelegate()
+        self.assertFalse(delegate.supports_file("US_MO", "export_filename.json"))
+
     def test_supports_file_extension(self) -> None:
         """Test that the supports_file matcher does not ignore the file format."""
         delegate = TestOpportunityDelegate()
