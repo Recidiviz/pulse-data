@@ -71,3 +71,47 @@ _STATE_AGENT_TYPE_MAP = {
     "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
     "EXTERNAL UNKNOWN": StateAgentType.EXTERNAL_UNKNOWN,
 }
+
+
+@unique
+class StateAgentSubtype(StateEntityEnum):
+    SUPERVISION_OFFICER = state_enum_strings.state_agent_subtype_supervision_officer
+    SUPERVISION_OFFICER_SUPERVISOR = (
+        state_enum_strings.state_agent_subtype_supervision_officer_supervisor
+    )
+    SUPERVISION_REGIONAL_MANAGER = (
+        state_enum_strings.state_agent_subtype_supervision_regional_manager
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @staticmethod
+    def _get_default_map() -> Dict[str, "StateAgentSubtype"]:
+        return _STATE_AGENT_SUBTYPE_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "A subtype of the agent's position within the DOC."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_AGENT_SUBTYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_AGENT_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAgentSubtype.SUPERVISION_OFFICER: "A parole and/or probation officer/agent with"
+    " regular contact with clients.",
+    StateAgentSubtype.SUPERVISION_OFFICER_SUPERVISOR: "A parole and/or probation officer"
+    "/agent who serves in a manager or supervisor role and doesn't supervise a typical caseload.",
+    StateAgentSubtype.SUPERVISION_REGIONAL_MANAGER: "A district or regional manager, "
+    "usually a supervisor of supervisors, but may sometimes supervise parole "
+    "officers/agents directly and also sometimes carry a caseload when the agency is short-staffed.",
+}
+
+_STATE_AGENT_SUBTYPE_MAP = {
+    "SUPERVISION OFFICER": StateAgentSubtype.SUPERVISION_OFFICER,
+    "SUPERVISION OFFICER SUPERVISOR": StateAgentSubtype.SUPERVISION_OFFICER_SUPERVISOR,
+    "SUPERVISION REGIONAL MANAGER": StateAgentSubtype.SUPERVISION_REGIONAL_MANAGER,
+    "INTERNAL UNKNOWN": StateAgentSubtype.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateAgentSubtype.EXTERNAL_UNKNOWN,
+}

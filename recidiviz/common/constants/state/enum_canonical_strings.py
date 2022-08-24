@@ -59,6 +59,9 @@ state_agent_correctional_officer = "CORRECTIONAL_OFFICER"
 state_agent_judge = "JUDGE"
 state_agent_justice = "JUSTICE"
 state_agent_supervision_officer = "SUPERVISION_OFFICER"
+state_agent_subtype_supervision_officer = "SUPERVISION_OFFICER"
+state_agent_subtype_supervision_officer_supervisor = "SUPERVISION_OFFICER_SUPERVISOR"
+state_agent_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
 
 # state_assessment.py
 state_assessment_class_risk = "RISK"

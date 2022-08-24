@@ -236,6 +236,15 @@ state_agent_type = Enum(
     name="state_agent_type",
 )
 
+state_agent_subtype = Enum(
+    state_enum_strings.state_agent_subtype_supervision_officer,
+    state_enum_strings.state_agent_subtype_supervision_officer_supervisor,
+    state_enum_strings.state_agent_subtype_supervision_regional_manager,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_agent_subtype",
+)
+
 state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_affiliation_name,
     state_enum_strings.state_person_alias_alias_type_alias,
@@ -2439,6 +2448,13 @@ class StateAgent(StateBase):
         comment=STATE_CODE_COMMENT,
     )
     full_name = Column(String(255), comment="The state agent's full name.")
+    agent_subtype = Column(
+        state_agent_subtype,
+        comment="The subtype of the position of the agent.",
+    )
+    agent_subtype_raw_text = Column(
+        String(255), comment="The raw text of the agent subtype."
+    )
 
 
 class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):

@@ -28,7 +28,10 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_agent import (
+    StateAgentSubtype,
+    StateAgentType,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -1347,6 +1350,14 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # written this entity to the persistence layer
     agent_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Subtype
+    agent_subtype: Optional[StateAgentSubtype] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateAgentSubtype)
+    )
+    agent_subtype_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
 
