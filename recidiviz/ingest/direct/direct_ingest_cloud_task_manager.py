@@ -464,6 +464,34 @@ class DirectIngestCloudTaskManager:
         }
         return body
 
+    def get_all_ingest_related_queue_info(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> List[DirectIngestCloudTaskQueueInfo]:
+        """Returns all ingest-related queue information."""
+        ingest_queue_info: List[DirectIngestCloudTaskQueueInfo] = [
+            self.get_scheduler_queue_info(region, ingest_instance),
+            self.get_raw_data_import_queue_info(region),
+            self.get_ingest_view_materialization_queue_info(region, ingest_instance),
+            self.get_extract_and_merge_queue_info(region, ingest_instance),
+        ]
+
+        if (
+            StateCode(region.region_code.upper())
+            in get_direct_ingest_states_with_sftp_queue()
+        ):
+            ingest_queue_info.append(self.get_sftp_queue_info(region))
+
+        return ingest_queue_info
+
+    def all_ingest_related_queues_are_empty(
+        self, region: Region, ingest_instance: DirectIngestInstance
+    ) -> bool:
+        """Returns whether all ingest-related queues are empty."""
+        ingest_queue_info = self.get_all_ingest_related_queue_info(
+            region, ingest_instance
+        )
+        return all(queue_info.is_empty() for queue_info in ingest_queue_info)
+
 
 class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
