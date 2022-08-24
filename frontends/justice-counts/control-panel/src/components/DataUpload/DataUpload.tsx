@@ -38,7 +38,7 @@ import {
 } from ".";
 import {
   GeneralInstructions,
-  systemToInstructionsTemplate,
+  SystemsInstructions,
 } from "./InstructionsTemplate";
 
 export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERROR";
@@ -253,12 +253,12 @@ export const DataUpload: React.FC = observer(() => {
             </ButtonWrapper>
 
             {/* General Instructions */}
-            <GeneralInstructions />
+            <GeneralInstructions systems={filteredUserSystems ?? []} />
 
             {/* System Specific Instructions */}
             {filteredUserSystems?.map((system) => {
               const systemName = removeSnakeCase(system).toLowerCase();
-              const systemTemplate = systemToInstructionsTemplate[system];
+              const systemTemplate = <SystemsInstructions system={system} />;
 
               return (
                 <Fragment key={systemName}>
