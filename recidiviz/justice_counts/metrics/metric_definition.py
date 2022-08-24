@@ -194,3 +194,9 @@ class MetricDefinition:
             if self.specified_contexts is not None
             else additional_context
         )
+
+    @property
+    def reporting_frequency(self) -> ReportingFrequency:
+        if len(self.reporting_frequencies) > 1:
+            raise ValueError("Multiple reporting frequencies are not yet supported.")
+        return self.reporting_frequencies[0]

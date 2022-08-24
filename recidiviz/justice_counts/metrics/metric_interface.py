@@ -361,13 +361,8 @@ class MetricInterface:
         context_key_to_context_definition = {
             context.key: context for context in self.metric_definition.contexts or []
         }
-        if len(self.metric_definition.reporting_frequencies) > 1:
-            raise JusticeCountsDataError(
-                code="more_than_one_frequency",
-                description="Metric has more than one frequency associated with it",
-            )
 
-        frequency = self.metric_definition.reporting_frequencies[0].value
+        frequency = self.metric_definition.reporting_frequency.value
         return {
             "key": self.key,
             "system": self.metric_definition.system.value.replace("_", " ")
