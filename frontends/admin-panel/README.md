@@ -4,6 +4,7 @@ Install `yarn`:
 
 ```bash
 brew install yarn
+brew install node
 ```
 
 # Running the app
@@ -12,11 +13,12 @@ brew install yarn
 
 1. Navigate to the root of the repo.
 2. Make sure you have launched the `Docker` application.
-3. Run `docker pull us.gcr.io/recidiviz-staging/appengine/default:latest` to pull the
+3. If you haven't yet, run `gcloud auth configure-docker`.
+4. Run `docker pull us.gcr.io/recidiviz-staging/appengine/default:latest` to pull the
 latest Docker image for `main` if you have not done so recently.
-4. Run `./recidiviz/tools/admin_panel/initialize_development_environment.sh` (if you 
+5. Run `./recidiviz/tools/admin_panel/initialize_development_environment.sh` (if you 
 have not done so recently or the script has changed). 
-5. Run `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`.
+6. Run `docker-compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml up`.
 
 As needed:
 6. Follow the instructions in `recidiviz/tools/admin_panel/load_operations_db_fixtures.py`

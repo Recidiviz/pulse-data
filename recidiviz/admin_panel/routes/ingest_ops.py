@@ -112,6 +112,35 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         get_ingest_operations_store().trigger_task_scheduler(state_code, instance)
         return "", HTTPStatus.OK
 
+    # Start an ingest rerun
+    @bp.route(
+        "/api/ingest_operations/<state_code_str>/start_ingest_rerun",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _start_ingest_rerun(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        state_code = _get_state_code_from_str(state_code_str)
+        try:
+            request_json = assert_type(request.json, dict)
+            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
+            raw_data_source_instance = DirectIngestInstance(
+                request_json["rawDataSourceInstance"].upper()
+            )
+        except ValueError:
+            return "invalid ingest instance provided", HTTPStatus.BAD_REQUEST
+
+        logging.info(
+            "called start_ingest_rerun for project_id=%s, state_code=%s, ingest_instance=%s,"
+            " raw_data_source_instance=%s",
+            project_id,
+            state_code.value,
+            ingest_instance.value,
+            raw_data_source_instance.value,
+        )
+
+        # TODO(#13406): call `start_ingest_rerun` in `ingest_operations_store`
+        return "", HTTPStatus.OK
+
     # Update ingest queues
     @bp.route(
         "/api/ingest_operations/<state_code_str>/update_ingest_queues_state",

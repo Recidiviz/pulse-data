@@ -105,6 +105,7 @@ export {
   releaseBQExportLock,
   transferIngestViewMetadataToNewInstance,
   triggerTaskScheduler,
+  startIngestRerun,
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "./IngestOperations";
