@@ -101,7 +101,7 @@ export const getSumOfDimensionValues = (datapoint: Datapoint) => {
 
 // write my own month incrementer since Date.setMonth doesn't keep the date the same...
 export const incrementMonth = (date: Date) => {
-  const [_, day, month, year, time, timezone] = splitUtcString(
+  const [, day, month, year, time, timezone] = splitUtcString(
     date.toUTCString()
   );
   return new Date(

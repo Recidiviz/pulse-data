@@ -15,12 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { mapValues } from "lodash";
 import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 
 import {
-  Datapoint,
   DatapointsGroupedByAggregateAndDisaggregations,
   DatapointsViewSetting,
   DataVizTimeRangesMap,
@@ -34,15 +32,8 @@ import {
 } from "./DatapointsView.styles";
 import Legend from "./Legend";
 import {
-  createGMTDate,
   getDatapointDimensions,
-  getHighestTotalValue,
-  getSumOfDimensionValues,
-  incrementMonth,
-  incrementYear,
   sortDatapointDimensions,
-  thirtyOneDaysInSeconds,
-  threeHundredSixtySixDaysInSeconds,
   transformData,
 } from "./utils";
 
@@ -90,7 +81,8 @@ const DatapointsView: React.FC<{
     if (selectedDisaggregation === noDisaggregationOption) {
       setDatapointsViewSetting("Count");
     }
-  }, [metric, selectedDisaggregation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metric]);
 
   const renderChartForMetric = () => {
     return (
@@ -140,14 +132,16 @@ const DatapointsView: React.FC<{
             setSelectedTimeRange(key);
           }}
         />
-        <DatapointsViewControlsDropdown
-          title="Disaggregation"
-          selectedValue={selectedDisaggregation}
-          options={disaggregationOptions}
-          onSelect={(key) => {
-            setSelectedDisaggregation(key);
-          }}
-        />
+        {disaggregationOptions.length > 1 && (
+          <DatapointsViewControlsDropdown
+            title="Disaggregation"
+            selectedValue={selectedDisaggregation}
+            options={disaggregationOptions}
+            onSelect={(key) => {
+              setSelectedDisaggregation(key);
+            }}
+          />
+        )}
         {selectedDisaggregation !== noDisaggregationOption && (
           <DatapointsViewControlsDropdown
             title="View"
