@@ -2049,7 +2049,7 @@ describe("fillTimeGapsBetweenDatapoints", () => {
 });
 
 describe("transformData", () => {
-  test("test putting it all together in transformData", () => {
+  test("putting it all together", () => {
     expect(transformData(testDatapoints5, 60, "Percentage")).toStrictEqual(
       testDatapoints5Transformed
     );

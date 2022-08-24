@@ -778,7 +778,8 @@ export const MetricsView: React.FC = observer(() => {
           datapointsStore.getDatapoints();
         }
       ),
-    [reportStore, userStore, datapointsStore]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
   );
 
   // reload report overviews when the current agency ID changes
@@ -797,7 +798,8 @@ export const MetricsView: React.FC = observer(() => {
           }
         }
       ),
-    [reportStore, userStore, datapointsStore]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userStore]
   );
 
   useEffect(() => {

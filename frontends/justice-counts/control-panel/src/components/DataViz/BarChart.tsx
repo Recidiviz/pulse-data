@@ -224,7 +224,7 @@ const ResponsiveBarChart: React.FC<{
           <TooltipComponent
             isAnimationActive={false}
             position={{ y: 100 }}
-            cursor={<CustomCursor />}
+            cursor={data.length === 0 ? false : <CustomCursor />}
             content={
               <Tooltip percentOnly={percentageView} isAnnual={isAnnual} />
             }

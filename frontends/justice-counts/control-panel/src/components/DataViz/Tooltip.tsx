@@ -20,6 +20,7 @@ import { TooltipProps as RechartsTooltipProps } from "recharts";
 import styled from "styled-components/macro";
 
 import { Datapoint } from "../../shared/types";
+import { formatNumberInput } from "../../utils";
 import { palette, typography } from "../GlobalStyles";
 import { LegendColor } from "./Legend";
 import {
@@ -70,7 +71,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   isAnnual,
 }) => {
   if (active && payload && payload.length) {
-    const [_, __, month, year] = label ? splitUtcString(label) : [];
+    const [, , month, year] = label ? splitUtcString(label) : [];
 
     const renderText = (val: string | number | null, maxValue: number) => {
       if (typeof val !== "number") {
@@ -84,7 +85,11 @@ const Tooltip: React.FC<TooltipProps> = ({
       if (percentText === "0%" && val !== 0) {
         percentText = "<1%";
       }
-      return percentOnly ? percentText : `${val} (${percentText})`;
+      return percentOnly
+        ? percentText
+        : `${formatNumberInput(val.toString())}${
+            payload.length > 2 ? ` (${percentText})` : ""
+          }`;
     };
 
     const renderItems = () => {
