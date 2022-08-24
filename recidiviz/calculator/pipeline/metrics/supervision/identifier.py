@@ -1406,6 +1406,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionLevel.INTERSTATE_COMPACT,
             StateSupervisionLevel.LIMITED,
             StateSupervisionLevel.UNASSIGNED,
+            StateSupervisionLevel.WARRANT,
+            StateSupervisionLevel.ABSCONSION,
+            StateSupervisionLevel.INTAKE,
+            StateSupervisionLevel.RESIDENTIAL_PROGRAM,
+            StateSupervisionLevel.FURLOUGH,
         ]
 
         supervision_level_to_number: Dict[StateSupervisionLevel, int] = {
