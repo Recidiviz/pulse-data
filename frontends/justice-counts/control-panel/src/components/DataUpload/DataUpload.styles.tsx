@@ -84,6 +84,18 @@ export const Instructions = styled.div`
 
   ${typography.sizeCSS.medium}
 
+  a,
+  a:visited {
+    color: ${palette.solid.blue};
+    text-decoration: none;
+    transition: 0.2s ease;
+  }
+
+  a:hover {
+    color: ${palette.solid.darkblue};
+    cursor: pointer;
+  }
+
   h1 {
     ${typography.sizeCSS.title}
   }
