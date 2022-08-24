@@ -337,6 +337,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                     "release_date": None,
                     "release_reason": None,
                     "release_reason_raw_text": None,
+                    "custody_level": None,
+                    "custody_level_raw_text": None,
                     "specialized_purpose_for_incarceration": "PAROLE_BOARD_HOLD",
                     "specialized_purpose_for_incarceration_raw_text": None,
                     "state_code": "US_XX",

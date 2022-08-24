@@ -173,6 +173,14 @@ state_incarceration_period_admission_reason_transfer_from_other_jurisdiction = (
     "TRANSFER_FROM_OTHER_JURISDICTION"
 )
 
+state_incarceration_period_custody_level_intake = "INTAKE"
+state_incarceration_period_custody_level_minimum = "MINIMUM"
+state_incarceration_period_custody_level_restrictive_minimum = "RESTRICTIVE_MINIMUM"
+state_incarceration_period_custody_level_medium = "MEDIUM"
+state_incarceration_period_custody_level_close = "CLOSE"
+state_incarceration_period_custody_level_maximum = "MAXIMUM"
+state_incarceration_period_custody_level_solitary_confinement = "SOLITARY_CONFINEMENT"
+
 state_incarceration_period_release_reason_commuted = "COMMUTED"
 state_incarceration_period_release_reason_compassionate = "COMPASSIONATE"
 state_incarceration_period_release_reason_conditional_release = "CONDITIONAL_RELEASE"
