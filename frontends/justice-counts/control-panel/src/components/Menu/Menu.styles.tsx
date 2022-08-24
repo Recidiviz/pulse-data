@@ -86,6 +86,7 @@ export const ExtendedDropdownToggle = styled(DropdownToggle)`
 
 export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
   highlight?: boolean;
+  noPadding?: boolean;
 }>`
   min-width: 264px;
   display: flex;
@@ -93,16 +94,22 @@ export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
   ${typography.sizeCSS.normal}
   color: ${({ highlight }) =>
     highlight ? palette.solid.red : palette.solid.darkgrey};
-  padding: 16px;
   height: auto;
+  padding: 0;
 
-  &:first-child {
-    padding: 10px 16px 16px 16px;
-  }
-
-  &:last-child {
-    padding: 16px 16px 10px 16px;
-  }
+  ${({ noPadding }) =>
+    !noPadding &&
+    `  
+      padding: 16px;
+      
+      &:first-child {
+        padding: 10px 16px 16px 16px;
+      }
+      
+      &:last-child {
+        padding: 16px 16px 10px 16px;
+      }
+    `}
 
   &:not(:last-child) {
     border-bottom: 1px solid ${palette.solid.offwhite};
