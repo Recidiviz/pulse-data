@@ -1,0 +1,101 @@
+file_tag: STGOffender
+file_description: |-
+  This table contains one occurrence for an offender listing the STG to which the offender is confirmed or suspected of belonging.
+data_classification: source
+primary_key_cols:
+  - OffenderID
+columns:
+  - name: OffenderID
+    is_pii: True
+    description: |-
+      This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
+  - name: STGID
+    is_pii: True
+    description: |-
+      Unique identifier for a Security Threat Group (gang).
+  - name: AssessmentScore
+    description: |-
+      The STG Assessment score.
+  - name: AssesmentDate
+    description: |-
+      The STG Assessment Date.
+  - name: Status
+    description: |-
+      This code lists the codes for the different statuses for a security threat group.
+  - name: StatusDate
+    description: |-
+      This is the date for the STG Status.
+  - name: Rank
+    description: |-
+      The code for the rank an offender holds in a Security Threat Group
+  - name: Factions
+    is_pii: True
+    description: |-
+      Text field used for description of the STG factions an offender belongs to.
+  - name: Markings
+    is_pii: True
+    description: |-
+      Text field used for listing the STG related markings such as scars marks and tatoos an offender has.
+  - name: AssessmentFlag1
+    description: |-
+      This flag indicates an offender self admits to belong to a security threat group.
+  - name: AssessmentFlag2
+    description: |-
+      This flag indicates an offender has gang related tattoos/brands.
+  - name: AssessmentFlag3
+    description: |-
+      This flag indicates an offender uses gang symbols or logos.
+  - name: AssessmentFlag4
+    description: |-
+      This flag indicates an offender wears gang colors.
+  - name: AssessmentFlag5
+    description: |-
+      This flag indicates an offender posesses gang documents.
+  - name: AssessmentFlag6
+    description: |-
+      This flag indicates an offender posesses commercial gang related publications.
+  - name: AssessmentFlag7
+    description: |-
+      This flag indicates an offender participates in gang publications.
+  - name: AssessmentFlag8
+    description: |-
+      This flag indicates an offender has observed contact with gang members.
+  - name: AssessmentFlag9
+    description: |-
+      This flag indicates an offender has known contact with gang members.
+  - name: AssessmentFlag10
+    description: |-
+      This flag indicates an offender participated in photo with gang members.
+  - name: AssessmentFlag11
+    description: |-
+      This flag indicates an outside jurisdiction has info/documents indicating offender is gang member.
+  - name: AssessmentFlag12
+    description: |-
+      This flag indicates an offender sends/receives correspondance from gang members.
+  - name: AssessmentFlag13
+    description: |-
+      This flag indicates an offender is named a gang member in correspondence.
+  - name: AssessmentFlag14
+    description: |-
+      This flag indicates an offender is confired to be a gang member by outside agency.
+  - name: AssessmentFlag15
+    description: |-
+      This flag indicates an offender has a security threat group related disciplinary.
+  - name: PostedByStaffID
+    is_pii: True
+    description: |-
+      The Staff identifier which posted the the row on the table.
+  - name: PostedDate
+    description: |-
+      This is the date that data is actually posted to the system.
+  - name: LastStaffID
+    is_pii: True
+    description: |-
+      Staff ID of the last person to update a row on a table.
+  - name: LastUpdateUserID
+    is_pii: True
+    description: |-
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+  - name: LastUpdateDate
+    description: |-
+      This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
