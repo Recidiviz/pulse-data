@@ -391,10 +391,8 @@ def get_api_blueprint(
         """Upload spreadsheet for an agency."""
         data = assert_type(request.form, dict)
         agency_id = int(data["agency_id"])
+        system = data["system"]
         auth0_user_id = get_auth0_user_id(request_dict=data)
-        agency = AgencyInterface.get_agency_by_id(
-            session=current_session, agency_id=agency_id
-        )
         file = request.files["file"]
         if file is None:
             raise JusticeCountsBadRequestError(
@@ -409,8 +407,7 @@ def get_api_blueprint(
             file_storage=file,
             agency_id=agency_id,
             auth0_user_id=auth0_user_id,
-            # TODO(#14593) Handle agencies with more than one system.
-            system=agency.systems[0],
+            system=system,
         )
 
         return jsonify(
