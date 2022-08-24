@@ -378,6 +378,82 @@ _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_VALUE_DESCRIPTIONS: Dict[
 }
 
 
+@unique
+class StateIncarcerationPeriodCustodyLevel(StateEntityEnum):
+    """Custody levels for incarceration periods"""
+
+    INTAKE = state_enum_strings.state_incarceration_period_custody_level_intake
+    MINIMUM = state_enum_strings.state_incarceration_period_custody_level_minimum
+    RESTRICTIVE_MINIMUM = (
+        state_enum_strings.state_incarceration_period_custody_level_restrictive_minimum
+    )
+    MEDIUM = state_enum_strings.state_incarceration_period_custody_level_medium
+    CLOSE = state_enum_strings.state_incarceration_period_custody_level_close
+    MAXIMUM = state_enum_strings.state_incarceration_period_custody_level_maximum
+    SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_custody_level_solitary_confinement
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @staticmethod
+    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodCustodyLevel"]:
+        return _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The level of supervision and security employed for a person held in custody."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_MAP = {
+    "INTAKE": StateIncarcerationPeriodCustodyLevel.INTAKE,
+    "MINIMUM": StateIncarcerationPeriodCustodyLevel.MINIMUM,
+    "RESTRICTIVE MINIMUM": StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM,
+    "MEDIUM": StateIncarcerationPeriodCustodyLevel.MEDIUM,
+    "CLOSE": StateIncarcerationPeriodCustodyLevel.CLOSE,
+    "MAXIMUM": StateIncarcerationPeriodCustodyLevel.MAXIMUM,
+    "SOLITARY CONFINEMENT": StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT,
+    "INTERNAL UNKNOWN": StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN,
+}
+
+_STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationPeriodCustodyLevel.INTAKE: "Describes the level of security and "
+    "supervision employed when an individual is held at a processing/reception center "
+    "where they're going through the intake and classification process.",
+    StateIncarcerationPeriodCustodyLevel.MINIMUM: "Describes when an individual has been"
+    " determined to pose low risk to the safety of others, are not an escape risk, have "
+    "minimal medical or mental health needs, and therefore require minimum security and "
+    "supervision measures. The individual's movements may be unrestricted within the "
+    "facility and may be allowed to participate in offsite work programs.",
+    StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM: "Describes when an individual"
+    " has been determined to pose low risk to the safety of others, are a low escape "
+    "risk, have low to moderate medical or mental health needs, and therefore require "
+    "minimum supervision within a secure facility.",
+    StateIncarcerationPeriodCustodyLevel.MEDIUM: "Describes when an individual has been "
+    "determined to require a moderate level of supervision based on their offense history,"
+    " minor disciplinary issues, or medical or mental health needs.",
+    StateIncarcerationPeriodCustodyLevel.CLOSE: "Describes when an individual has been "
+    "determined to require heightened supervision based on their conduct or offense history.",
+    StateIncarcerationPeriodCustodyLevel.MAXIMUM: "Describes when an individual has been"
+    " determined to require an intense level of supervision within a general population setting.",
+    StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT: "Describes an administrative"
+    " level of solitary confinement which is mutually exclusive with other administrative"
+    " custody levels. Individuals are placed into this because they have been deemed a "
+    "risk to the safety of others and/or are extremely difficult to manage in a general "
+    "population setting. Note, in many states solitary confinement is not treated as a "
+    "custody level but only as a cell/housing type. In those states, this field should "
+    "continue to have their custody level and only their housing type should be set to "
+    "solitary confinement.",
+}
+
+
 def is_commitment_from_supervision(
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
     allow_ingest_only_enum_values: bool = False,

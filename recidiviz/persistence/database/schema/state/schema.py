@@ -317,6 +317,19 @@ state_incarceration_period_admission_reason = Enum(
     name="state_incarceration_period_admission_reason",
 )
 
+state_incarceration_period_custody_level = Enum(
+    state_enum_strings.state_incarceration_period_custody_level_close,
+    state_enum_strings.state_incarceration_period_custody_level_intake,
+    state_enum_strings.state_incarceration_period_custody_level_maximum,
+    state_enum_strings.state_incarceration_period_custody_level_medium,
+    state_enum_strings.state_incarceration_period_custody_level_minimum,
+    state_enum_strings.state_incarceration_period_custody_level_restrictive_minimum,
+    state_enum_strings.state_incarceration_period_custody_level_solitary_confinement,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_incarceration_period_custody_level",
+)
+
 state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_commuted,
     state_enum_strings.state_incarceration_period_release_reason_compassionate,
@@ -1718,6 +1731,15 @@ class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     release_reason_raw_text = Column(
         String(255),
         comment="The raw text value of the incarceration period's release reason.",
+    )
+    custody_level = Column(
+        state_incarceration_period_custody_level,
+        comment="The level of staff supervision and security employed for a person held "
+        "in custody, usually determined based on their offense history and conduct.",
+    )
+    custody_level_raw_text = Column(
+        String(255),
+        comment="The raw text value of the incarceration period custody level.",
     )
     specialized_purpose_for_incarceration = Column(
         state_specialized_purpose_for_incarceration,
