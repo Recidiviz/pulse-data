@@ -121,6 +121,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_court_case_status": state_court_case.StateCourtCaseStatus,
             "state_court_type": state_court_case.StateCourtType,
             "state_agent_type": state_agent.StateAgentType,
+            "state_agent_subtype": state_agent.StateAgentSubtype,
             "state_incarceration_period_admission_reason": state_incarceration_period.StateIncarcerationPeriodAdmissionReason,
             "state_incarceration_period_release_reason": state_incarceration_period.StateIncarcerationPeriodReleaseReason,
             "state_gender": state_person.StateGender,
