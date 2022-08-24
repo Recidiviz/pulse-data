@@ -38,6 +38,7 @@ from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
+from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -946,6 +947,47 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 db_spreadsheet.ingested_at.timestamp(), self.now_time.timestamp()
             )
+
+    def test_get_datapoints_by_agency_id(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        report = self.test_schema_objects.test_report_monthly
+        self.session.add_all([report, user_A])
+        self.session.commit()
+
+        report_metric = self.test_schema_objects.reported_residents_metric
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
+            )
+            response = self.client.get(f"/api/datapoints?agency_id={report.source_id}")
+
+        self.assertEqual(response.status_code, 200)
+        agency_datapoints = self.session.query(Datapoint).all()
+        response_list = assert_type(response.json, list)
+        self.assertEqual(len(agency_datapoints), len(response_list))
+
+        response_json = assert_type(response_list[0], dict)
+        self.assertEqual(response_json["dimension_display_name"], None)
+        self.assertEqual(response_json["disaggregation_display_name"], None)
+        self.assertEqual(response_json["end_date"], "Fri, 01 Jul 2022 00:00:00 GMT")
+        self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
+        self.assertEqual(response_json["id"], 1)
+        self.assertEqual(response_json["is_published"], False)
+        self.assertEqual(
+            response_json["metric_definition_key"],
+            "LAW_ENFORCEMENT_RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
+        )
+        self.assertEqual(response_json["metric_display_name"], "Jurisdiction Residents")
+        self.assertEqual(response_json["report_id"], 1)
+        self.assertEqual(response_json["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT")
+        self.assertEqual(response_json["value"], "5000")
 
     def test_session(self) -> None:
         # Add data
