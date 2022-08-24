@@ -279,9 +279,7 @@ class BulkUploader:
         }
 
         metric_definition = metricfile.definition
-        if len(metric_definition.reporting_frequencies) > 1:
-            raise ValueError("Multiple reporting frequencies are not yet supported.")
-        reporting_frequency = metric_definition.reporting_frequencies[0]
+        reporting_frequency = metric_definition.reporting_frequency
 
         # TODO(#13731): Make sure there are no unexpected columns in the file
 
