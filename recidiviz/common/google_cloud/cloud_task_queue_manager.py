@@ -50,6 +50,10 @@ class CloudTaskQueueInfo:
         """
         return len(self.task_names)
 
+    def is_empty(self) -> bool:
+        """Returns whether the queue is empty."""
+        return self.size() == 0
+
 
 QueueInfoType = TypeVar("QueueInfoType", bound=CloudTaskQueueInfo)
 
