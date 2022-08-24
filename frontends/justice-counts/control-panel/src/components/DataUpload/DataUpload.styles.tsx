@@ -170,6 +170,8 @@ export const UploadedFilesTable = styled(Table)`
 
 export const ExtendedRow = styled(Row)`
   color: ${({ selected }) => selected && palette.highlight.grey9};
+  position: relative;
+  transition: unset;
 `;
 
 export const ModalBody = styled.div<{ hasLabelRow?: boolean }>`
@@ -271,4 +273,31 @@ export const ModalErrorWrapper = styled.div`
   display: flex;
   justify-content: center;
   margin-top: 25px;
+`;
+
+export const DownloadIcon = styled.img`
+  width: 20px;
+  margin-right: 5px;
+`;
+
+export const ActionsContainer = styled.div`
+  ${typography.sizeCSS.normal};
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: ${palette.solid.offwhite};
+  gap: 10px;
+  padding-left: 20px;
+  position: absolute;
+  right: 22px;
+  z-index: 3;
+`;
+
+export const ActionButton = styled.div<{ red?: boolean }>`
+  color: ${({ red }) => (red ? palette.solid.red : palette.solid.blue)};
+
+  &:hover {
+    color: ${palette.solid.darkgrey};
+  }
 `;
