@@ -327,6 +327,21 @@ class ReportStore {
     }
   }
 
+  async deleteUploadedSpreadsheet(
+    spreadsheetID: number
+  ): Promise<Response | Error | undefined> {
+    const response = (await this.api.request({
+      path: `/api/spreadsheets/${spreadsheetID}`,
+      method: "DELETE",
+    })) as Response;
+
+    if (response.status !== 200) {
+      return new Error("There was an issue deleting the file.");
+    }
+
+    return response;
+  }
+
   async updateFileStatus(
     spreadsheetID: number,
     status: UploadedFileStatus
@@ -335,7 +350,7 @@ class ReportStore {
       const response = (await this.api.request({
         path: `/api/spreadsheets/${spreadsheetID}`,
         body: { status },
-        method: "POST",
+        method: "PUT",
       })) as Response;
 
       if (response.status !== 200) {

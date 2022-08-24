@@ -44,12 +44,12 @@ import {
   SystemsInstructions,
 } from "./InstructionsTemplate";
 
-export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERROR";
+export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERRORED";
 
 export type UploadedFileAttempt = {
   name: string;
   upload_attempt_timestamp: number;
-  status?: "ERROR";
+  status?: "ERRORED";
 };
 
 export type UploadedFile = {
@@ -144,7 +144,10 @@ export const DataUpload: React.FC = observer(() => {
           "red",
           3000
         );
-        return updateUploadedFilesList({ ...newFileDetails, status: "ERROR" });
+        return updateUploadedFilesList({
+          ...newFileDetails,
+          status: "ERRORED",
+        });
       }
 
       updateUploadedFilesList(newFileDetails);
@@ -153,7 +156,10 @@ export const DataUpload: React.FC = observer(() => {
 
       if (response instanceof Error) {
         showToast("Failed to upload. Please try again.", false, "red");
-        return updateUploadedFilesList({ ...newFileDetails, status: "ERROR" });
+        return updateUploadedFilesList({
+          ...newFileDetails,
+          status: "ERRORED",
+        });
       }
 
       const fullFileDetails = await response?.json();
@@ -326,6 +332,7 @@ export const DataUpload: React.FC = observer(() => {
             isLoading={isLoading}
             uploadedFiles={uploadedFiles}
             fetchError={fetchError}
+            setUploadedFiles={setUploadedFiles}
           />
         )}
       </ModalBody>

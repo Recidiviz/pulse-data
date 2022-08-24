@@ -18,6 +18,7 @@ import React from "react";
 import styled from "styled-components/macro";
 
 import { palette } from "../GlobalStyles";
+import { MiniLoader } from "../Loading/MiniLoader";
 
 export type BadgeColors = "RED" | "GREEN" | "ORANGE" | "GREY";
 
@@ -26,6 +27,7 @@ export type BadgeColorMapping = { [key: string]: BadgeColors };
 export type BadgeProps = {
   color: BadgeColors;
   disabled?: boolean;
+  loading?: boolean;
 };
 
 export const BadgeElement = styled.div<{
@@ -60,10 +62,16 @@ export const BadgeElement = styled.div<{
   text-transform: capitalize;
 `;
 
-export const Badge: React.FC<BadgeProps> = ({ color, disabled, children }) => {
+export const Badge: React.FC<BadgeProps> = ({
+  color,
+  disabled,
+  loading,
+  children,
+}) => {
   return (
     <BadgeElement color={color} disabled={disabled}>
       {children}
+      {loading && <MiniLoader />}
     </BadgeElement>
   );
 };
