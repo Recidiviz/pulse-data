@@ -14,30 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export enum IngestActions {
-  TriggerTaskScheduler = "trigger_task_scheduler",
-  PauseIngestQueues = "pause",
-  ResumeIngestQueues = "resume",
-
-  PauseIngestInstance = "pause_instance",
-  UnpauseIngestInstance = "unpause_instance",
-
-  ExportToGCS = "export",
-  ImportFromGCS = "import",
-}
-
-export const actionNames = {
-  [IngestActions.TriggerTaskScheduler]: "Trigger Task Scheduler",
-  [IngestActions.PauseIngestQueues]: "Pause Queues",
-  [IngestActions.ResumeIngestQueues]: "Resume Queues",
-
-  [IngestActions.PauseIngestInstance]: "Pause Instance",
-  [IngestActions.UnpauseIngestInstance]: "Unpause Instance",
-
-  [IngestActions.ExportToGCS]: "Export to GCS",
-  [IngestActions.ImportFromGCS]: "Import from GCS",
-};
-
 export enum QueueState {
   PAUSED = "PAUSED",
   RUNNING = "RUNNING",

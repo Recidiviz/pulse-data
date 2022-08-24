@@ -29,7 +29,10 @@ import {
 } from "antd";
 import * as React from "react";
 import { generateEmails } from "../../AdminPanelAPI/LineStaffTools";
-import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
+import ActionRegionConfirmationForm, {
+  RegionAction,
+  regionActionNames,
+} from "../Utilities/ActionRegionConfirmationForm";
 import DataFreshnessInfo from "../Utilities/DataFreshnessInfo";
 import { layout, POEmailsFormProps, tailLayout } from "./constants";
 
@@ -205,8 +208,8 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
-          action="generate"
-          actionName="Generate Emails"
+          action={RegionAction.GenerateEmails}
+          actionName={regionActionNames[RegionAction.GenerateEmails]}
           regionCode={stateInfo.code}
         />
       ) : null}

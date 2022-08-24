@@ -36,6 +36,21 @@ export const triggerTaskScheduler = async (
   );
 };
 
+//  Start Ingest Rerun
+export const startIngestRerun = async (
+  regionCode: string,
+  instance: DirectIngestInstance,
+  rawDataSourceInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/${regionCode}/start_ingest_rerun`,
+    {
+      instance,
+      rawDataSourceInstance,
+    }
+  );
+};
+
 // Update ingest queue states
 export const updateIngestQueuesState = async (
   regionCode: string,

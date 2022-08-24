@@ -20,7 +20,10 @@ import {
   getListBatchInfo,
   sendEmails,
 } from "../../AdminPanelAPI/LineStaffTools";
-import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
+import ActionRegionConfirmationForm, {
+  RegionAction,
+  regionActionNames,
+} from "../Utilities/ActionRegionConfirmationForm";
 import {
   BatchInfoType,
   layout,
@@ -214,8 +217,8 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
-          action="send"
-          actionName="Send Emails"
+          action={RegionAction.SendEmails}
+          actionName={regionActionNames[RegionAction.SendEmails]}
           regionCode={stateInfo.code}
         />
       ) : null}

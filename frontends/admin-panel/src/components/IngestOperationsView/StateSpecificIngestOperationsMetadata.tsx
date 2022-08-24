@@ -27,11 +27,15 @@ import {
   unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
+import { startIngestRerun } from "../../AdminPanelAPI/IngestOperations";
+import ActionRegionConfirmationForm, {
+  regionActionNames,
+  RegionAction,
+  RegionActionContext,
+  StartIngestRerunContext,
+} from "../Utilities/ActionRegionConfirmationForm";
 import {
-  actionNames,
   DirectIngestInstance,
-  IngestActions,
   IngestInstanceSummary,
   QueueMetadata,
   QueueState,
@@ -55,7 +59,7 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
       IngestInstanceSummary[]
     >([]);
     const [ingestAction, setIngestAction] =
-      useState<IngestActions | undefined>(undefined);
+      useState<RegionAction | undefined>(undefined);
     const [ingestInstance, setIngestInstance] =
       useState<DirectIngestInstance | undefined>(undefined);
     const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
@@ -63,8 +67,8 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
     const [actionConfirmed, setActionConfirmed] = useState<boolean>(false);
 
     const ingestQueueActions = [
-      IngestActions.PauseIngestQueues,
-      IngestActions.ResumeIngestQueues,
+      RegionAction.PauseIngestQueues,
+      RegionAction.ResumeIngestQueues,
     ];
 
     const getData = useCallback(async () => {
@@ -80,7 +84,7 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
     }, [getData, actionConfirmed]);
 
     const handleIngestActionOnClick = (
-      action: IngestActions,
+      action: RegionAction,
       instance: DirectIngestInstance | undefined = undefined
     ) => {
       setIngestAction(action);
@@ -110,46 +114,72 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
       setIngestInstanceSummaries(result);
       setIngestInstanceSummariesLoading(false);
     }
-    const onIngestActionConfirmation = async (
-      ingestActionToExecute: string | undefined
-    ) => {
+    const onIngestActionConfirmation = async (context: RegionActionContext) => {
       setIsConfirmationModalVisible(false);
 
       setQueueStatesLoading(true);
       setActionConfirmed(false);
       const unsupportedIngestAction = "Unsupported ingest action";
-      switch (ingestActionToExecute) {
-        case IngestActions.TriggerTaskScheduler:
+      switch (context.ingestAction) {
+        case RegionAction.TriggerTaskScheduler:
           if (ingestInstance) {
             await triggerTaskScheduler(stateCode, ingestInstance);
             setActionConfirmed(true);
           }
           break;
-        case IngestActions.PauseIngestQueues:
+        case RegionAction.PauseIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.PAUSED);
           await fetchQueueStates(stateCode);
           setActionConfirmed(true);
           break;
-        case IngestActions.ResumeIngestQueues:
+        case RegionAction.ResumeIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.RUNNING);
           await fetchQueueStates(stateCode);
           setActionConfirmed(true);
           break;
-        case IngestActions.PauseIngestInstance:
+        case RegionAction.StartIngestRerun:
+          if (ingestInstance === undefined) {
+            throw new Error(
+              "Must have a defined ingestInstance before starting an ingest rerun."
+            );
+          }
+          if (context.ingestAction !== RegionAction.StartIngestRerun) {
+            throw new Error(
+              "Context for ingest rerun must be of type StartIngestRerunContext."
+            );
+          }
+          if (
+            (context as StartIngestRerunContext)
+              .ingestRerunRawDataSourceInstance === undefined
+          ) {
+            throw new Error(
+              "Context for ingest rerun must have a defined ingestRerunRawDataSourceInstance."
+            );
+          }
+          await startIngestRerun(
+            stateCode,
+            ingestInstance,
+            (context as StartIngestRerunContext)
+              .ingestRerunRawDataSourceInstance
+          );
+
+          setActionConfirmed(true);
+          break;
+        case RegionAction.PauseIngestInstance:
           if (ingestInstance) {
             await pauseDirectIngestInstance(stateCode, ingestInstance);
             await fetchIngestInstanceSummaries(stateCode);
             setActionConfirmed(true);
           }
           break;
-        case IngestActions.UnpauseIngestInstance:
+        case RegionAction.UnpauseIngestInstance:
           if (ingestInstance) {
             await unpauseDirectIngestInstance(stateCode, ingestInstance);
             await fetchIngestInstanceSummaries(stateCode);
             setActionConfirmed(true);
           }
           break;
-        case IngestActions.ExportToGCS:
+        case RegionAction.ExportToGCS:
           if (ingestInstance) {
             message.info("Exporting database...");
             const r = await exportDatabaseToGCS(stateCode, ingestInstance);
@@ -208,7 +238,7 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
                 key={action}
                 style={{ display: "block", textAlign: "center", width: "auto" }}
               >
-                {actionNames[action]}
+                {regionActionNames[action]}
               </Button>
             );
           })}
@@ -221,8 +251,9 @@ const StateSpecificIngestOperationsMetadata: React.FC<StateSpecificIngestOperati
               setIsConfirmationModalVisible(false);
             }}
             action={ingestAction}
-            actionName={actionNames[ingestAction]}
+            actionName={regionActionNames[ingestAction]}
             regionCode={stateCode}
+            projectId={projectId}
             ingestInstance={ingestInstance}
           />
         ) : null}

@@ -19,11 +19,13 @@ import { useCallback, useEffect, useState } from "react";
 import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import {
-  actionNames,
+  regionActionNames,
+  RegionAction,
+} from "../Utilities/ActionRegionConfirmationForm";
+import {
   DirectIngestInstance,
-  IngestActions,
-  IngestRawFileProcessingStatus,
   IngestInstanceSummary,
+  IngestRawFileProcessingStatus,
 } from "./constants";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
@@ -35,11 +37,11 @@ interface IngestInstanceCardProps {
   data: IngestInstanceSummary | undefined;
   env: string;
   stateCode: string;
-  handleOnClick: (
-    action: IngestActions,
-    instance: DirectIngestInstance
-  ) => void;
+  handleOnClick: (action: RegionAction, instance: DirectIngestInstance) => void;
 }
+
+// TODO(#13406) Remove this gating once Start Ingest Rerun button can be displayed on the Admin Panel.
+const ingestRerunButtonEnabled = true;
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
@@ -54,8 +56,8 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
   const pauseUnpauseInstanceAction = data?.operations.isPaused
-    ? IngestActions.UnpauseIngestInstance
-    : IngestActions.PauseIngestInstance;
+    ? RegionAction.UnpauseIngestInstance
+    : RegionAction.PauseIngestInstance;
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -102,9 +104,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         <>
           <Button
             style={{ marginRight: 5 }}
-            onClick={() => handleOnClick(IngestActions.ExportToGCS, instance)}
+            onClick={() => handleOnClick(RegionAction.ExportToGCS, instance)}
           >
-            {actionNames[IngestActions.ExportToGCS]}
+            {regionActionNames[RegionAction.ExportToGCS]}
           </Button>
           <Button
             style={
@@ -113,10 +115,25 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
                 : { marginRight: 5 }
             }
             onClick={() => {
-              handleOnClick(IngestActions.TriggerTaskScheduler, instance);
+              handleOnClick(RegionAction.TriggerTaskScheduler, instance);
             }}
           >
-            {actionNames[IngestActions.TriggerTaskScheduler]}
+            {regionActionNames[RegionAction.TriggerTaskScheduler]}
+          </Button>
+          <Button
+            style={
+              // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
+              // TODO(#13406) Remove gating for ingest rerun button once backend is ready to trigger ingest reruns
+              // in secondary.
+              data.instance === "SECONDARY" && ingestRerunButtonEnabled
+                ? { marginRight: 5 }
+                : { display: "none" }
+            }
+            onClick={() => {
+              handleOnClick(RegionAction.StartIngestRerun, data.instance);
+            }}
+          >
+            {regionActionNames[RegionAction.StartIngestRerun]}
           </Button>
           <Button
             onClick={() => {
@@ -124,7 +141,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             }}
             type="primary"
           >
-            {actionNames[pauseUnpauseInstanceAction]}
+            {regionActionNames[pauseUnpauseInstanceAction]}
           </Button>
         </>
       }
