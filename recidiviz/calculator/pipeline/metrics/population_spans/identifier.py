@@ -335,10 +335,13 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     level_2_supervision_location_external_id=level_2_supervision_location,
                     included_in_state_population=included_in_state_population,
                 )
-                attr.evolve(
+                span = attr.evolve(
                     span,
-                    included_in_state_population=supervision_period_is_out_of_state(
-                        span, supervision_delegate
+                    included_in_state_population=(
+                        span.included_in_state_population
+                        and not supervision_period_is_out_of_state(
+                            span, supervision_delegate
+                        )
                     ),
                 )
                 supervision_spans.append(span)
