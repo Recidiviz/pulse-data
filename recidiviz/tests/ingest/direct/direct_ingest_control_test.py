@@ -29,8 +29,8 @@ from mock import Mock, call, create_autospec, patch
 from paramiko.hostkeys import HostKeyEntry
 
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockAlreadyExists,
     GCSPseudoLockBody,
+    GCSPseudoLockManager,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -1743,6 +1743,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(
         "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GCSPseudoLockManager._lock_body_for_path"
     )
+    @patch.object(GCSPseudoLockManager, "unlock", lambda self, name: None)
     def test_upload_from_sftp_skips_if_locks_acquired(
         self,
         mock_get_lock_body: mock.MagicMock,
@@ -1772,11 +1773,10 @@ class TestDirectIngestControl(unittest.TestCase):
             lock_time=datetime.datetime.now(), expiration_in_seconds=3600 * 3
         )
 
-        with self.assertRaises(GCSPseudoLockAlreadyExists):
-            response = self.client.post(
-                "/upload_from_sftp", query_string=request_args, headers=headers
-            )
-            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+        response = self.client.post(
+            "/upload_from_sftp", query_string=request_args, headers=headers
+        )
+        self.assertEqual(HTTPStatus.NOT_MODIFIED, response.status_code)
 
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @patch("recidiviz.utils.environment.get_gcp_environment")
