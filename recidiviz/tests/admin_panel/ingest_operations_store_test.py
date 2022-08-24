@@ -25,6 +25,7 @@ from google.cloud import tasks_v2
 from mock import create_autospec
 
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -92,6 +93,12 @@ class IngestOperationsStoreTestBase(TestCase):
         )
         self.cloud_task_patcher.start()
 
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.admin_panel.ingest_operations_store.BigQueryClientImpl",
+            return_value=create_autospec(BigQueryClientImpl),
+        )
+        self.bq_client_patcher.start()
+
         self.operations_store = IngestOperationsStore()
 
     def tearDown(self) -> None:
@@ -100,6 +107,7 @@ class IngestOperationsStoreTestBase(TestCase):
         self.fs_patcher.stop()
         self.task_manager_patcher.stop()
         self.cloud_task_patcher.stop()
+        self.bq_client_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

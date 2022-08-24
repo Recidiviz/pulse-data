@@ -67,8 +67,11 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestError
-from recidiviz.utils import metadata
+from recidiviz.ingest.direct.types.errors import (
+    DirectIngestError,
+    DirectIngestInstanceError,
+)
+from recidiviz.utils import metadata, regions
 from recidiviz.utils.regions import get_region
 
 _TASK_LOCATION = "us-east1"
@@ -87,6 +90,7 @@ class IngestOperationsStore(AdminPanelStore):
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
+        self.bq_client = BigQueryClientImpl()
 
     def recalculate_store(self) -> None:
         # This store currently does not store any internal state that can be refreshed.
@@ -101,6 +105,39 @@ class IngestOperationsStore(AdminPanelStore):
     def get_queues_for_region(state_code: StateCode) -> List[str]:
         """Returns the list of formatted direct ingest queues for given state"""
         return sorted(get_direct_ingest_queues_for_state(state_code))
+
+    def _verify_clean_ingest_view_state(
+        self, state_code: StateCode, instance: DirectIngestInstance
+    ) -> None:
+        """Confirm that all ingest view metadata / data has been invalidated."""
+
+        # Confirm that all metadata about ingest view materialization has been
+        # invalidated for this instance.
+        ingest_view_materialization_manager = (
+            DirectIngestViewMaterializationMetadataManager(state_code.value, instance)
+        )
+
+        # If instance summaries is empty, that means that all ingest view
+        # materialization metadata has been invalidated.
+        if len(ingest_view_materialization_manager.get_instance_summaries()) != 0:
+            raise DirectIngestInstanceError(
+                "Cannot kick off ingest rerun, as not all ingest view materialization"
+                "metadata has been invalidated on Postgres."
+            )
+
+        # Confirm that there aren't any materialized ingest view results in BQ.
+        ingest_view_contents = InstanceIngestViewContentsImpl(
+            self.bq_client, state_code.value, instance, dataset_prefix=None
+        )
+        dataset_id = ingest_view_contents.results_dataset()
+        if (
+            self.bq_client.dataset_exists(dataset_id)
+            and len(list(self.bq_client.list_tables(dataset_id))) > 0
+        ):
+            raise DirectIngestInstanceError(
+                f"There are ingest view results in {dataset_id} that have not been"
+                f"cleaned up. Cannot proceed with ingest rerun."
+            )
 
     def trigger_task_scheduler(self, state_code: StateCode, instance_str: str) -> None:
         """This function creates a cloud task to schedule the next job for a given state code and instance.
@@ -196,6 +233,82 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_queue_states.append(queue_state)
 
         return ingest_queue_states
+
+    def start_ingest_rerun(
+        self,
+        state_code: StateCode,
+        instance: DirectIngestInstance,
+        raw_data_source_instance: DirectIngestInstance,
+    ) -> None:
+        """Kicks off an ingest rerun in the specified instance.
+        Requires:
+        - state_code: (required) State code to start ingest for (i.e. "US_ID")
+        - instance: (required) Ingest instance to start ingest (i.e. PRIMARY)
+        - raw_data_source_instance: (required)  Raw data source instance to
+        """
+        formatted_state_code = state_code.value.lower()
+
+        # TODO(#13406): remove check once this rerun endpoint can be triggered in
+        #  PRIMARY as well.
+        if instance != DirectIngestInstance.SECONDARY:
+            raise DirectIngestInstanceError(
+                "Ingest reruns can only be kicked off for SECONDARY instances."
+            )
+
+        # TODO(#12794): remove check once raw data source can be SECONDARY as well.
+        if raw_data_source_instance != DirectIngestInstance.PRIMARY:
+            raise DirectIngestInstanceError(
+                "Ingest reruns can only have raw data source as PRIMARY."
+            )
+
+        region = regions.get_region(
+            region_code=formatted_state_code,
+            is_direct_ingest=True,
+        )
+        if not self.cloud_task_manager.all_ingest_related_queues_are_empty(
+            region, instance
+        ):
+            raise DirectIngestInstanceError(
+                "Cannot kick off ingest rerun because not all ingest related queues are "
+                "empty. Please check queues on Ingest Operations Admin Panel to see "
+                "which have remaining tasks."
+            )
+
+        # TODO(#12794): Once raw data instance can be SECONDARY, confirm that there are
+        #  no pending raw processing jobs in SECONDARY.
+
+        # Confirm that all ingest view metadata / data has been invalidated.
+        self._verify_clean_ingest_view_state(state_code, instance)
+
+        instance_pause_status_manager = DirectIngestInstancePauseStatusManager(
+            region_code=formatted_state_code,
+            ingest_instance=instance,
+        )
+
+        # Assert that the instance is currently paused.
+        if not instance_pause_status_manager.is_instance_paused():
+            raise DirectIngestInstanceError(
+                "The instance must be paused before ingest rerun can start."
+            )
+
+        # Validation that a rerun is a valid status transition is handled within the
+        # instance manager.
+        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+            region_code=formatted_state_code,
+            ingest_instance=instance,
+        )
+        current_status = instance_status_manager.get_current_status()
+        # TODO(#13406): Remove check for existence of current status until `STARTED`
+        #  statuses are set in the admin panel.
+        if current_status:
+            instance_status_manager.change_status_to(
+                DirectIngestStatus.STANDARD_RERUN_STARTED
+            )
+
+        instance_pause_status_manager.unpause_instance()
+
+        # TODO(#123123): configure raw data source instance as a part of ingest rerun.
+        self.trigger_task_scheduler(state_code, instance.value)
 
     def get_ingest_instance_summary(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
