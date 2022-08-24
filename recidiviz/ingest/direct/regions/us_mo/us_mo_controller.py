@@ -15,9 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_MO."""
-import datetime
-import logging
-import re
+
 from enum import Enum
 from typing import Callable, Dict, List, Optional, Type
 
@@ -68,10 +66,12 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     TAK291_PREFIX,
     VIOLATION_KEY_SEQ,
 )
-from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
     MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
     MID_INCARCERATION_TREATMENT_FAILURE_STATUSES,
     PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
+)
+from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     incarceration_period_admission_reason_mapper,
     supervising_officer_mapper,
 )
@@ -79,6 +79,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StateIncarcerationPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils import environment
 
 
 # TODO(#8899): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
@@ -271,20 +272,29 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
-
-        file_tags = [
-            # SQL Preprocessing View
-            "tak001_offender_identification",
-            "oras_assessments_weekly_v2",
-            "tak022_tak023_tak025_tak026_offender_sentence_institution",
-            "tak022_tak024_tak025_tak026_offender_sentence_supervision",
-            "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
-            "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
-            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
-            "tak028_tak042_tak076_tak024_violation_reports",
-            "tak291_tak292_tak024_citations",
-        ]
-        return file_tags
+        return (
+            [
+                # SQL Preprocessing View
+                "tak001_offender_identification",
+                "oras_assessments_weekly_v2",
+                "tak022_tak023_tak025_tak026_offender_sentence_institution",
+                "tak022_tak024_tak025_tak026_offender_sentence_supervision",
+            ]
+            + (
+                ["tak158_tak026_incarceration_periods"]
+                if not environment.in_gcp_production()
+                and self.ingest_instance == DirectIngestInstance.SECONDARY
+                else [
+                    "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
+                    "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
+                ]
+            )
+            + [
+                "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
+                "tak028_tak042_tak076_tak024_violation_reports",
+                "tak291_tak292_tak024_citations",
+            ]
+        )
 
     # TODO(#8899): Delete LegacyIngestViewProcessorDelegate methods when we have fully
     #  migrated this state to new ingest mappings version.
@@ -564,32 +574,3 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             return True
         except ValueError:
             return False
-
-    @classmethod
-    def mo_julian_date_to_iso(cls, julian_date_str: Optional[str]) -> Optional[str]:
-        """
-        Parse julian-formatted date strings used by MO in a number of DB fields that encode a date using the number of
-        years since 1900 concatenated with the number of days since Jan 1 of that year (1-indexed). Returns the date in
-        ISO date format.
-
-        E.g.:
-             85001 -> 1985-01-01
-            118365 -> 2018-12-31
-        """
-        if not julian_date_str or int(julian_date_str) == 0:
-            return None
-
-        match = re.match(cls.JULIAN_DATE_STR_REGEX, julian_date_str)
-        if match is None:
-            logging.warning("Could not parse MO date [%s]", julian_date_str)
-            return None
-
-        years_since_1900 = int(match.group(1))
-        days_since_jan_1 = int(match.group(2)) - 1
-
-        date = datetime.date(
-            year=(years_since_1900 + 1900), month=1, day=1
-        ) + datetime.timedelta(days=days_since_jan_1)
-        return date.isoformat()
-
-    JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")

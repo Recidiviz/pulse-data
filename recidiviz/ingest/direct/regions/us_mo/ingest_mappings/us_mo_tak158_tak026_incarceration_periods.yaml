@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak158_tak026_incarceration_periods_v2` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DOC
+  - CYC
+  - PFI
+  - START_STATUS_SEQ_NUM
+  - END_STATUS_CODE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
+  - END_STATUS_SUBTYPE # TODO(#2898): Delete this column when we can use solely TAK026 statuses to populate release reason
+  - START_DATE
+  - END_DATE
+  - FACILITY
+  - SQN
+  - START_SCD_CODES
+  - END_SCD_CODES
+unused_columns: []
+variables:
+  - incarceration_period_external_id:
+      $concat:
+        $values:
+          - DOC
+          - CYC
+          - SQN
+          - START_STATUS_SEQ_NUM
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC
+          id_type: $literal("US_MO_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id: $variable(incarceration_period_external_id)
+          admission_date: START_DATE
+          admission_reason:
+            $enum_mapping:
+              $raw_text: START_SCD_CODES
+              $custom_parser: us_mo_custom_enum_parsers.parse_incarceration_period_admission_reason
+          facility: FACILITY
+          incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          release_date: END_DATE
+          release_reason:
+            $conditional:
+              - $if:
+                  $not_null: END_DATE
+                $then:
+                  # TODO(#2898): Stop adding END_STATUS_CODE / END_STATUS_SUBTYPE to this raw text once we can determine the release reason fully from the TAK026 statuses
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - END_SCD_CODES
+                          - END_STATUS_CODE
+                          - END_STATUS_SUBTYPE
+                        $include_nulls: True
+                    $custom_parser: us_mo_custom_enum_parsers.parse_incarceration_period_termination_reason
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text: PFI
+              $mappings:
+                StateSpecializedPurposeForIncarceration.GENERAL:
+                  - "S" # Serving Sentence
+                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION:
+                  - "O" # 120-Day Shock
+                  - "R" # Regimented Disc Program
+                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                  - "A" # Assessment
+                  - "I" # Inst Treatment Center
+                  - "L" # Long Term Drug Treatment
+              $ignore:
+                - "X"
