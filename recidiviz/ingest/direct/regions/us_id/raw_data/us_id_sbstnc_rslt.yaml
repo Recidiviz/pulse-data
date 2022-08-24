@@ -12,7 +12,11 @@ columns:
     description: |-
       ID of the substance test
   - name: updt_usr_id
+    is_pii: True
+    description: ID of the user who most recently updated this record.
   - name: updt_dt
+    is_datetime: True
+    description: Date this record was most recently updated.
   - name: sbstnc_cd
   - name: use_mthd_cd
   - name: sbstnc_found_flg
@@ -23,3 +27,6 @@ columns:
   - name: admit_use_flg
   - name: sbstnc_retst_flg
   - name: med_invalidate_flg
+    #TODO(#14837) update description
+    description: |-
+      `Y` for yes. `N` for no.
