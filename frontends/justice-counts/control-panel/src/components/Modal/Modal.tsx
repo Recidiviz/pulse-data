@@ -71,7 +71,7 @@ const CloseButton = styled.div`
   position: absolute;
   top: 0;
   right: 0;
-  z-index: 2;
+  z-index: 4;
 
   &:before {
     content: "";
