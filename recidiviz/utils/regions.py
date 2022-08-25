@@ -20,12 +20,10 @@
 Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
-import importlib
 import os
 import pkgutil
 from datetime import datetime, tzinfo
 from enum import Enum, auto
-from itertools import chain
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set
 
@@ -34,7 +32,6 @@ import pytz
 import yaml
 
 from recidiviz.common.attr_validators import is_str
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.utils import environment
@@ -113,55 +110,13 @@ class Region:
         # fips.validate_county_code(region_code)
         pass
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError(f"Invalid environment: {self.environment}")
         if self.facility_id and len(self.facility_id) != 16:
             raise ValueError(
                 f"Improperly formatted FID [{self.facility_id}], should be length 16"
             )
-
-    def get_scraper_class(self):
-        """Retrieve the class for the scraper for a particular region
-
-        Returns:
-            An instance of the region's scraper (e.g., UsNyScraper)
-        """
-        if self.is_direct_ingest:
-            raise ValueError("Method not supported for direct ingest region.")
-
-        ingest_type_name = "Scraper"
-
-        module_name = (
-            f"{self.region_module.__name__}.{self.region_code}"
-            f".{self.region_code}_{ingest_type_name.lower()}"
-        )
-
-        module = importlib.import_module(module_name)
-        ingest_class = getattr(module, get_scraper_name(self.region_code))
-
-        return ingest_class
-
-    def get_scraper(self):
-        """Retrieve a scraper for a particular region
-
-        Returns:
-            An instance of the region's scraper (e.g., UsNyScraper)
-        """
-        if self.is_direct_ingest:
-            raise ValueError("Method not supported for direct ingest region.")
-        ingest_class = self.get_scraper_class()
-
-        return ingest_class()
-
-    def get_scraper_enum_overrides(self) -> EnumOverrides:
-        """Retrieves the overrides object of a scraper region."""
-        if self.is_direct_ingest:
-            raise ValueError("Method not supported for direct ingest region.")
-        obj = self.get_scraper()
-        if obj:
-            return obj.get_enum_overrides()
-        return EnumOverrides.empty()
 
     def get_queue_name(self) -> str:
         """Returns the name of the queue to be used for the region"""
@@ -238,7 +193,7 @@ def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str
 
 
 def get_supported_scrape_region_codes(
-    timezone: tzinfo = None, stripes: List[str] = None
+    timezone: Optional[tzinfo] = None, stripes: Optional[List[str]] = None
 ) -> Set[str]:
     """Retrieve a list of known scraper regions / region codes
 
@@ -266,8 +221,8 @@ def get_supported_direct_ingest_region_codes() -> Set[str]:
 def _get_supported_region_codes_for_base_region_module(
     base_region_module: ModuleType,
     is_direct_ingest: bool,
-    timezone: tzinfo = None,
-    stripes: List[str] = None,
+    timezone: Optional[tzinfo] = None,
+    stripes: Optional[List[str]] = None,
 ) -> Set[str]:
     """Returns all regions that support the given module type, e.g. direct ingest versus scraper. Will optionally
     filter on the additional arguments."""
@@ -323,7 +278,7 @@ def get_supported_direct_ingest_regions() -> List["Region"]:
     ]
 
 
-def validate_region_code(region_code):
+def validate_region_code(region_code: str) -> bool:
     """Verifies a region code is one of the Recidiviz supported regions.
 
     Args:
@@ -334,11 +289,6 @@ def validate_region_code(region_code):
         False if invalid region
     """
     return region_code in get_supported_scrape_region_codes()
-
-
-def get_scraper_name(region_code: str) -> str:
-    """Returns the class name for a given region_code and ingest_module"""
-    return "".join(s.title() for s in chain(region_code.split("_"), ["Scraper"]))
 
 
 def is_valid_region_directory(dir_path: str) -> bool:
