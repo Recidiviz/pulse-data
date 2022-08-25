@@ -13,7 +13,7 @@
 #     # or a dictionary containing:
 #     # - column: str # name of the column to filter
 #     # - operations: str # `DimensionOperation`
-#     # - alias: str # optional label for the column in the API response
+#     # - column_label: str # optional label for the column in the API response
 #     # Enables filtering functionality of Dimension.GENDER i.e. /pathways/US_XX/MyMetric?filters[gender]=MALE
 #     gender: FILTER
 #     # Enables both filtering and grouping functionality for Dimension.TIME_PERIOD
@@ -47,6 +47,7 @@ PrisonPopulationOverTime:
   database_entity: PrisonPopulationOverTime
   query_builder_class: OverTimeMetricQueryBuilder
   query_builder_options:
+    counting_column: person_id
     date_column: date_in_population
   dimension_mappings:
     admission_reason: FILTER
@@ -107,7 +108,6 @@ PrisonToSupervisionTransitionsOverTime:
   database_entity: PrisonToSupervisionTransitions
   query_builder_class: OverTimeMetricQueryBuilder
   query_builder_options:
-    counting_column: person_id
     date_column: month_timestamp
   dimension_mappings:
     age_group: FILTER
@@ -195,7 +195,6 @@ SupervisionToLibertyTransitionsOverTime:
   database_entity: SupervisionToLibertyTransitions
   query_builder_class: OverTimeMetricQueryBuilder
   query_builder_options:
-    counting_column: person_id
     date_column: month_timestamp
   dimension_mappings:
     age_group: FILTER
@@ -236,7 +235,6 @@ SupervisionToPrisonTransitionsOverTime:
   database_entity: SupervisionToPrisonTransitions
   query_builder_class: OverTimeMetricQueryBuilder
   query_builder_options:
-    counting_column: person_id
     date_column: month_timestamp
   dimension_mappings:
     age_group: FILTER
