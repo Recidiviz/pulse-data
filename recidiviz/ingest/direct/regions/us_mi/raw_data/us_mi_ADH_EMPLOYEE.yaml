@@ -70,6 +70,458 @@ columns:
   - name: service_hours
   - name: active_flag
   - name: default_location_id
+    description: Location id of the default location of the employee, as matched by location_id in the ADH_LOCATION table.
+    known_values:
+      - value: "686"
+        description: Oakland/Pontiac/Probation
+      - value: "678"
+        description: Jackson/Jackson/Probation
+      - value: "680"
+        description: Muskegon/Muskegon/Probation
+      - value: "662"
+        description: Wayne/Detroit Court Serv./Probation
+      - value: "664"
+        description: Genesee/Flint/Probation
+      - value: "635"
+        description: Montcalm/Stanton
+      - value: "2016"
+        description: FOA- Region 6
+      - value: "682"
+        description: Saginaw/Saginaw/Probation
+      - value: "656"
+        description: Wayne/Detroit Greenfield/Probation
+      - value: "667"
+        description: Washtenaw/Ann Arbor/Prob
+      - value: "636"
+        description: Sanilac/Sandusky
+      - value: "634"
+        description: Osceola/Reed City
+      - value: "632"
+        description: Presque Isle/Rogers City
+      - value: "466"
+        description: CHARLES EGELER RECEPTION AND GUIDANCE CENTER
+      - value: "480"
+        description: PARNALL CORRECTIONAL FACILITY
+      - value: "1978"
+        description: Wayne County Prosecuting Attorney
+      - value: "1227"
+        description: Wyandotte Police Department
+      - value: "926"
+        description: Oakland County Sheriff's Department
+      - value: "1820"
+        description: Michigan Senate Police Department
+      - value: "1381"
+        description: Bloomfield Township Police Department
+      - value: "2009"
+        description: Detroit Detention Center
+      - value: "2030"
+        description: FOA- 10 Region Operation Office
+      - value: "652"
+        description: Berrien/Niles/Prob/Parole
+      - value: "728"
+        description: Genesee/Flint/Parole/REP
+      - value: "708"
+        description: Tuscola/Caro
+      - value: "659"
+        description: Wayne/Detroit Lahser/Probation
+      - value: "1450"
+        description: Oscoda County
+      - value: "619"
+        description: Allegan/Allegan
+      - value: "714"
+        description: Clare/Harrison
+      - value: "676"
+        description: Hillsdale/Hillsdale/Probation
+      - value: "741"
+        description: Ottawa/Hudsonville/Prob/Par
+      - value: "650"
+        description: Calhoun/Battle Creek/Probation
+      - value: "689"
+        description: Antrim/Bellaire
+      - value: "626"
+        description: Luce/Newberry
+      - value: "1469"
+        description: Lawton Area Office
+      - value: "250"
+        description: LAKELAND CORRECTIONAL FACILITY
+      - value: "484"
+        description: CHIPPEWA CORRECTIONAL FACILITY
+      - value: "946"
+        description: Wayne County Sheriff's Department - Clinton St.
+      - value: "766"
+        description: 06th Circuit Court - Oakland County
+      - value: "1174"
+        description: Detroit Police  Department 2nd Precinct
+      - value: "1195"
+        description: Garden City Police Department
+      - value: "1720"
+        description: Hampton Twp Police Department
+      - value: "1192"
+        description: Eastpointe Police Department
+      - value: "1754"
+        description: Kalamazoo DPS
+      - value: "127"
+        description: OAKS CORRECTIONAL FACILITY
+      - value: "2026"
+        description: FOA- Region 10 NW
+      - value: "630"
+        description: Van Buren/Paw Paw
+      - value: "730"
+        description: Kent/Grand Rapids/Parole/REP
+      - value: "672"
+        description: Bay/Bay City/Prob/Par
+      - value: "1240"
+        description: Berrien/Benton Harbor/Parole/REP
+      - value: "710"
+        description: Wexford/Cadillac
+      - value: "740"
+        description: Oceana/Hart
+      - value: "627"
+        description: Ontonagon/Ontonagon
+      - value: "692"
+        description: Lake/Baldwin
+      - value: "1821"
+        description: Michigan State Police
+      - value: "649"
+        description: Leelanau/Leland
+      - value: "642"
+        description: Grand Traverse/Traverse City
+      - value: "624"
+        description: Manistee/Manistee
+      - value: "1525"
+        description: WEB OMNI
+      - value: "531"
+        description: SAGINAW CORRECTIONAL FACILITY
+      - value: "1280"
+        description: Huron Valley Complex/Women's
+      - value: "1479"
+        description: MAXEY/WOODLAND CORRECTIONAL FACILITY
+      - value: "1835"
+        description: Mt. Pleasant Police Department
+      - value: "1190"
+        description: Dearborn Police Department
+      - value: "1261"
+        description: Ferndale Police Department
+      - value: "886"
+        description: Eaton County Sheriff's Department
+      - value: "1376"
+        description: Pittsfield Township Police Department
+      - value: "1593"
+        description: Brighton Police Department
+      - value: "2012"
+        description: Department of Justice
+      - value: "1188"
+        description: Brownstown Twp Police Department
+      - value: "243"
+        description: IONIA CORRECTIONAL FACILITY
+      - value: "124"
+        description: FORENSIC CENTER
+      - value: "725"
+        description: Wayne/Detroit Metro District/Prob/Par/REP
+      - value: "1090"
+        description: Kent/Grand Rapids/Probation
+      - value: "1159"
+        description: MSI
+      - value: "731"
+        description: Ottawa/Holland
+      - value: "727"
+        description: Delta/Escanaba
+      - value: "734"
+        description: Barry/Hastings
+      - value: "651"
+        description: Berrien/St. Joseph/Probation
+      - value: "683"
+        description: Grand Traverse/Traverse City/Prob
+      - value: "645"
+        description: Iosco/Tawas
+      - value: "2033"
+        description: St. Clair Probation
+      - value: "712"
+        description: Iron/Crystal Falls
+      - value: "736"
+        description: Houghton/Houghton
+      - value: "1155"
+        description: CFA Region II
+      - value: "2037"
+        description: Department of Health & Human Services
+      - value: "125"
+        description: CARSON CITY CORRECTIONAL FACILITY
+      - value: "245"
+        description: G. ROBERT COTTON CORRECTIONAL FACILITY
+      - value: "254"
+        description: MARQUETTE BRANCH PRISON
+      - value: "1051"
+        description: COOPER STREET FACILITY
+      - value: "1377"
+        description: Ann Arbor Police Department
+      - value: "1211"
+        description: Plymouth Police Department
+      - value: "882"
+        description: Clinton County Sheriff's Department
+      - value: "1230"
+        description: SAI SPECIAL ALTERNATIVE INCARCERATION
+      - value: "1156"
+        description: CFA Region III - Southern
+      - value: "2020"
+        description: FOA- Region 9
+      - value: "854"
+        description: FOA Region III
+      - value: "679"
+        description: Macomb/Mt. Clemens/Probation
+      - value: "2029"
+        description: FOA- Nine Region Operation Office
+      - value: "677"
+        description: Ingham/Lansing/Probation
+      - value: "665"
+        description: Washtenaw/Ann Arbor/Parole/REP
+      - value: "647"
+        description: Newaygo/White Cloud
+      - value: "658"
+        description: Wayne/Detroit Eastern Dist/Probation
+      - value: "631"
+        description: Emmet/Petoskey
+      - value: "729"
+        description: Otsego/Gaylord
+      - value: "1527"
+        description: Livingston/Howell/Parole
+      - value: "746"
+        description: Jackson/Jackson/Parole/REP
+      - value: "751"
+        description: Missaukee/Lake City
+      - value: "694"
+        description: Gogebic/Bessemer
+      - value: "1100"
+        description: ARU - Region III
+      - value: "2023"
+        description: FOA- Region 3
+      - value: "1099"
+        description: ARU - Region II
+      - value: "4"
+        description: GUS HARRISON CORRECTIONAL FACILITY
+      - value: "942"
+        description: Tuscola County Sheriff's Department
+      - value: "874"
+        description: Berrien County Sheriff's Department
+      - value: "1233"
+        description: Ingham/Lansing/Electronic Monitoring Center
+      - value: "687"
+        description: Oakland/Troy/Probation
+      - value: "1105"
+        description: Calhoun/Battle Creek/Parole/REP
+      - value: "718"
+        description: Branch/Coldwater
+      - value: "758"
+        description: Midland/Midland
+      - value: "739"
+        description: Livingston/Howell/Probation
+      - value: "2034"
+        description: St. Clair Parole
+      - value: "618"
+        description: Lenawee/Adrian
+      - value: "1545"
+        description: Detroit Reentry Center
+      - value: "696"
+        description: Huron/Bad Axe
+      - value: "620"
+        description: Menominee/Menominee
+      - value: "713"
+        description: Charlevoix/Charlevoix
+      - value: "1154"
+        description: CFA Region I - Northern
+      - value: "761"
+        description: 01st Circuit Court - Hillsdale County
+      - value: "763"
+        description: 03rd Circuit Court - Wayne County
+      - value: "1945"
+        description: Sterling Heights Police Department
+      - value: "2008"
+        description: Department of Homeland Security US Border Patrol
+      - value: "1182"
+        description: Detroit Police Department 10th Precinct
+      - value: "1217"
+        description: Romulus Police Department
+      - value: "1357"
+        description: Troy Police Department
+      - value: "1584"
+        description: BIRMINGHAM POLICE DEPARTMENT
+      - value: "251"
+        description: ALGER CORRECTIONAL FACILITY
+      - value: "2021"
+        description: FOA- Region 1
+      - value: "753"
+        description: Wayne/Lincoln Park/Parole
+      - value: "685"
+        description: Mecosta/Big Rapids
+      - value: "757"
+        description: Macomb/Mt. Clemens/Par/REP
+      - value: "691"
+        description: Benzie/Beulah
+      - value: "633"
+        description: Roscommon/Roscommon
+      - value: "756"
+        description: Marquette/Marquette
+      - value: "732"
+        description: Gladwin/Gladwin
+      - value: "1098"
+        description: ARU - Region I
+      - value: "2027"
+        description: FOA- Region 10 NE
+      - value: "473"
+        description: RYAN CORRECTIONAL FACILITY
+      - value: "260"
+        description: WEST SHORELINE CORRECTIONAL FACILITY
+      - value: "241"
+        description: Huron Valley Complex/Men's
+      - value: "947"
+        description: Wayne County Sheriff's Department- Hamtramck Drive
+      - value: "2004"
+        description: US Marshal Service
+      - value: "1560"
+        description: AUBURN HILLS POLICE DEPARTMENT
+      - value: "1355"
+        description: Royal Oak Police Department
+      - value: "1468"
+        description: Central Area Office
+      - value: "1225"
+        description: Westland Police Department
+      - value: "262"
+        description: NEWBERRY CORRECTIONAL FACILITY
+      - value: "470"
+        description: MICHIGAN REFORMATORY
+      - value: "747"
+        description: Kalamazoo/Kalamazoo
+      - value: "750"
+        description: Ingham/Lansing/Par/REP
+      - value: "716"
+        description: Cass/Cassopolis
+      - value: "715"
+        description: Eaton/Charlotte
+      - value: "754"
+        description: Lapeer/Lapeer
+      - value: "668"
+        description: Ottawa/Grand Haven/Prob/Par
+      - value: "641"
+        description: Arenac/Standish
+      - value: "709"
+        description: Cheboygan/Cheboygan
+      - value: "743"
+        description: Dickinson/Iron Mountain
+      - value: "755"
+        description: Mason/Ludington
+      - value: "646"
+        description: Ogemaw/West Branch
+      - value: "852"
+        description: FOA Region I
+      - value: "654"
+        description: Wayne/Detroit Chrysler/Probation
+      - value: "252"
+        description: EARNEST C. BROOKS CORRECTIONAL FACILITY
+      - value: "256"
+        description: MUSKEGON CORRECTIONAL FACILITY
+      - value: "483"
+        description: THUMB CORRECTIONAL FACILITY
+      - value: "1818"
+        description: Michigan Attorney General's Office
+      - value: "1091"
+        description: Muskegon Area Office
+      - value: "1231"
+        description: Warren Police Department
+      - value: "1173"
+        description: Detroit Police Department 1st Precinct
+      - value: "1175"
+        description: Detroit Police Department 3rd Precinct
+      - value: "3"
+        description: BARAGA MAXIMUM FACILITY
+      - value: "248"
+        description: KINROSS CORRECTIONAL FACILITY
+      - value: "2015"
+        description: FOA- Region 4-B
+      - value: "711"
+        description: St. Joseph/Centreville Probation
+      - value: "759"
+        description: Monroe/Monroe
+      - value: "744"
+        description: Ionia/Ionia
+      - value: "657"
+        description: Wayne/Lincoln Pk Southwest Dist/Probation
+      - value: "1236"
+        description: Muskegon/Muskegon/Parole/REP
+      - value: "639"
+        description: Chippewa/Sault Ste. Marie
+      - value: "640"
+        description: Clinton/St. Johns
+      - value: "621"
+        description: Isabella/Mt. Pleasant
+      - value: "748"
+        description: Kalkaska/Kalkaska
+      - value: "638"
+        description: Mackinac/St. Ignace
+      - value: "1482"
+        description: Alger/Munising/Prob/Par
+      - value: "0"
+        description: TEMP LOCATION
+      - value: "259"
+        description: MACOMB CORRECTIONAL FACILITY
+      - value: "648"
+        description: Ingham/Lansing/Central Office
+      - value: "1239"
+        description: BELLAMY CREEK CORRECTIONAL FACILITY
+      - value: "1167"
+        description: Special Alternative Incarceration
+      - value: "843"
+        description: 51st Circuit Court - Lake County
+      - value: "742"
+        description: Washtenaw/Ypsilanti/TRV
+      - value: "1909"
+        description: Saginaw Twp Police Department
+      - value: "1176"
+        description: Detroit Police Department 4th Precinct
+      - value: "1088"
+        description: ST. LOUIS CORRECTIONAL FACILITY
+      - value: "637"
+        description: Saginaw/Saginaw/Parole/REP
+      - value: "717"
+        description: Shiawassee/Corunna
+      - value: "628"
+        description: Oakland/Pontiac/Parole
+      - value: "1526"
+        description: St. Joseph/Three Rivers Parole
+      - value: "671"
+        description: Montmorency/Atlanta
+      - value: "745"
+        description: Gratiot/Ithaca
+      - value: "733"
+        description: Crawford/Grayling
+      - value: "760"
+        description: Oscoda/Mio
+      - value: "655"
+        description: Alpena/Alpena
+      - value: "1455"
+        description: Saginaw County
+      - value: "693"
+        description: Wayne/Detroit Special Services Unit
+      - value: "1419"
+        description: Isabella County
+      - value: "996"
+        description: Duane Waters Hospital
+      - value: "2025"
+        description: FOA- Region 10 Central
+      - value: "261"
+        description: RICHARD A HANDLON CORRECTIONAL FACILITY
+      - value: "482"
+        description: CENTRAL MICHIGAN CORRECTIONAL  FACILITY
+      - value: "112"
+        description: CENTRAL OFFICE - LANSING
+      - value: "2031"
+        description: Bureau of Alcohol, Tobacco & Firearms
+      - value: "1712"
+        description: Grand Rapids Police Department
+      - value: "1955"
+        description: Three Rivers Police Department
+      - value: "1454"
+        description: Roscommon County
+      - value: "924"
+        description: Muskegon County Sheriff's Department
   - name: hearing_officer_cmis_code
   - name: security_agreement_flag
   - name: employee_type_id
