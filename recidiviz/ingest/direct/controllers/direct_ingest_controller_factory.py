@@ -67,7 +67,7 @@ class DirectIngestControllerFactory:
             is_direct_ingest=True,
             region_module_override=region_module_override,
         )
-        if not allow_unlaunched and not region.is_ingest_launched_in_env():
+        if not allow_unlaunched:
             check_is_region_launched_in_env(region)
 
         controller_class = cls.get_controller_class(region)

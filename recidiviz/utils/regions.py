@@ -268,7 +268,7 @@ def _get_supported_region_codes_for_base_region_module(
     is_direct_ingest: bool,
     timezone: tzinfo = None,
     stripes: List[str] = None,
-):
+) -> Set[str]:
     """Returns all regions that support the given module type, e.g. direct ingest versus scraper. Will optionally
     filter on the additional arguments."""
 
