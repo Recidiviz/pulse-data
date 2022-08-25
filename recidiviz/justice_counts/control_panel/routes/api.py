@@ -488,6 +488,18 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["DELETE"])
+    @auth_decorator
+    def delete_spreadsheet(spreadsheet_id: str) -> Response:
+        try:
+            SpreadsheetInterface.delete_spreadsheet(
+                session=current_session,
+                spreadsheet_id=int(spreadsheet_id),
+            )
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     def allowed_file(filename: Optional[str] = None) -> bool:
         return (
             filename is not None

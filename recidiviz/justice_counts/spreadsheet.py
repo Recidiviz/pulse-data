@@ -68,12 +68,6 @@ class SpreadsheetInterface:
         fs = GcsfsFactory.build()
         uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
         standardized_name = f"{str(agency_id)}:{system}:{uploaded_at.timestamp()}.xlsx"
-        bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
-        fs.upload_from_contents_handle_stream(
-            path=GcsfsFilePath(bucket_name=bucket_name, blob_name=standardized_name),
-            contents_handle=FlaskFileStorageContentsHandle(file_storage=file_storage),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
         spreadsheet = schema.Spreadsheet(
             original_name=os.path.basename(file_storage.filename)
             if file_storage.filename is not None
@@ -84,6 +78,11 @@ class SpreadsheetInterface:
             status=schema.SpreadsheetStatus.UPLOADED,
             uploaded_at=uploaded_at,
             uploaded_by=auth0_user_id,
+        )
+        fs.upload_from_contents_handle_stream(
+            path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
+            contents_handle=FlaskFileStorageContentsHandle(file_storage=file_storage),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         session.add(spreadsheet)
         session.commit()
@@ -158,12 +157,8 @@ class SpreadsheetInterface:
                 description="User does not have the permissions to download the spreadsheet because they do not belong to the correct agency",
             )
         fs = GcsfsFactory.build()
-        bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
         file = fs.download_to_temp_file(
-            path=GcsfsFilePath(
-                bucket_name=bucket_name,
-                blob_name=spreadsheet.standardized_name,
-            ),
+            path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
             retain_original_filename=True,
         )
         if file is None:
@@ -172,3 +167,27 @@ class SpreadsheetInterface:
                 description="The selected spreadsheet could not be downloaded",
             )
         return file
+
+    @staticmethod
+    def delete_spreadsheet(
+        session: Session,
+        spreadsheet_id: int,
+    ) -> None:
+        """Deletes a spreadsheet from GCS and its metadata from the Spreadsheet table."""
+        spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
+            session=session, spreadsheet_id=spreadsheet_id
+        )
+        fs = GcsfsFactory.build()
+        fs.delete(
+            path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
+        )
+        session.delete(spreadsheet)
+        session.commit()
+
+    @staticmethod
+    def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
+        bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
+        return GcsfsFilePath(
+            bucket_name=bucket_name,
+            blob_name=spreadsheet.standardized_name,
+        )
