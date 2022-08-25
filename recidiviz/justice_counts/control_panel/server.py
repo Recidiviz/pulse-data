@@ -20,9 +20,19 @@ import os
 from http import HTTPStatus
 from typing import List, Optional, Tuple
 
-from flask import Blueprint, Flask, Response, send_from_directory
+import pandas as pd
+from flask import (
+    Blueprint,
+    Flask,
+    Response,
+    make_response,
+    request,
+    send_from_directory,
+    url_for,
+)
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -32,6 +42,8 @@ from recidiviz.justice_counts.control_panel.error_handlers import (
 )
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
+from recidiviz.justice_counts.exceptions import JusticeCountsBadRequestError
+from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
@@ -157,6 +169,64 @@ def create_app(config: Optional[Config] = None) -> Flask:
         """This just returns 200, and is used by Docker to verify that the app is running."""
 
         return "", HTTPStatus.OK
+
+    @app.route("/feed/<agency_id>", methods=["GET"])
+    def get_feed_for_agency_id(agency_id: str) -> Response:
+        """Returns a feed for an agency, formatted according to the Technical Specification."""
+        system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
+            current_session, agency_id=int(agency_id)
+        )
+
+        metric = request.args.get("metric")
+        system: Optional[str]
+        if len(system_to_filename_to_rows) == 1:
+            # If the agency has only provided for one system,
+            # no need to specify `system` parameter
+            system = list(system_to_filename_to_rows.items())[0][0]
+        else:
+            system = request.args.get("system")
+
+        # Invalid state: metric parameter is present, but not system
+        # Since some metrics are present in multiple systems, we can't
+        # figure out which data to render
+        if metric and not system:
+            raise JusticeCountsBadRequestError(
+                code="justice_counts_bad_request",
+                description="If the `metric` parameter is specified and the agency is "
+                "multi-system, then you must also provide the `system` parameter.",
+            )
+
+        # Valid state: system parameter is present, but not metric
+        # Return plaintext list of rows, one for each <system, metric> pair
+        if system and not metric:
+            rows = []
+            for system, filename_to_rows in system_to_filename_to_rows.items():
+                for metric_name in sorted(list(filename_to_rows.keys())):
+                    metric_url = url_for(
+                        "get_feed_for_agency_id",
+                        agency_id=agency_id,
+                        system=system,
+                        metric=metric_name,
+                    )
+                    rows.append(
+                        {
+                            "system": system,
+                            "metric_name": metric_name,
+                            "metric_url": metric_url,
+                        }
+                    )
+
+        # Valid state: both metric and system parameters are present
+        # Return plaintext feed of metric rows
+        elif system and metric:
+            rows = system_to_filename_to_rows[system][metric]
+
+        df = pd.DataFrame.from_dict(rows)
+        csv = df.to_csv(index=False)
+
+        feed_response = make_response(csv)
+        feed_response.headers["Content-type"] = "text/plain"
+        return feed_response
 
     # Based on this answer re: serving React app with Flask:
     # https://stackoverflow.com/a/45634550

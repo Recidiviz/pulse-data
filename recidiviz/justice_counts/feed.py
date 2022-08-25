@@ -129,10 +129,8 @@ class FeedInterface:
                     start_date=start_date, end_date=end_date
                 )
                 for datapoint in time_range_datapoints:
-                    row = {
-                        "year": year,
-                        "value": datapoint.value,
-                    }
+                    row = {}
+                    row["year"] = year
                     if month is not None:
                         row["month"] = month
 
@@ -145,6 +143,8 @@ class FeedInterface:
                         row[
                             metricfile.disaggregation_column_name
                         ] = datapoint.get_dimension_member()
+
+                    row["value"] = datapoint.value
                     rows.append(row)
 
             system_to_filename_to_rows[system.value][
