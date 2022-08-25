@@ -660,6 +660,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "/api/spreadsheets",
                 data={
                     "agency_id": agency.id,
+                    "system": System.LAW_ENFORCEMENT.value,
                     "file": (
                         self.bulk_upload_test_files / "law_enforcement/arrests.csv"
                     ).open("rb"),
@@ -949,6 +950,50 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(db_spreadsheet.ingested_by, user.auth0_user_id)
             self.assertEqual(
                 db_spreadsheet.ingested_at.timestamp(), self.now_time.timestamp()
+            )
+
+    def test_delete_spreadsheet(self) -> None:
+        agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
+        self.session.add_all([agency, user])
+        self.session.commit()
+        self.session.refresh(agency)
+        self.session.refresh(user)
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=user.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            upload_response = self.client.post(
+                "/api/spreadsheets",
+                data={
+                    "agency_id": agency.id,
+                    "system": System.LAW_ENFORCEMENT.value,
+                    "file": (
+                        self.bulk_upload_test_files
+                        / "law_enforcement/law_enforcement_metrics.xlsx"
+                    ).open("rb"),
+                },
+            )
+            self.assertEqual(upload_response.status_code, 200)
+            upload_response_json = assert_type(upload_response.json, dict)
+            spreadsheet_id = upload_response_json.get("id")
+            response = self.client.delete(f"/api/spreadsheets/{spreadsheet_id}")
+            self.assertEqual(response.status_code, 200)
+            db_spreadsheet = self.session.query(Spreadsheet).one_or_none()
+            self.assertEqual(db_spreadsheet, None)
+            path = GcsfsFilePath(
+                bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                blob_name=f"{str(agency.id)}:{System.LAW_ENFORCEMENT.value}:{self.now_time.timestamp()}.xlsx",
+            )
+            self.assertEqual(
+                self.fs.exists(path),
+                False,
             )
 
     def test_get_datapoints_by_agency_id(self) -> None:
