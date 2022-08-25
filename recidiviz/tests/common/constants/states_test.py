@@ -38,18 +38,22 @@ class TestStates(unittest.TestCase):
     def test_hasStates_not_in_test(self) -> None:
         self.mock_in_test.return_value = False
 
-        self.assertEqual(51, len(states.StateCode))
+        # There are 52 states because we include US_DC, as well as a playground region
+        # US_OZ.
+        self.assertEqual(52, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-1].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-2].value)
+        self.assertEqual("US_OZ", list(states.StateCode)[-1].value)
 
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 54 states because we are in tests, so US_WW, US_XX, and US_YY are
-        # valid values.
-        self.assertEqual(54, len(states.StateCode))
+        # There are 55 states because we are in tests, so we add US_WW, US_XX, and US_YY
+        # as valid values.
+        self.assertEqual(55, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-4].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-5].value)
+        self.assertEqual("US_OZ", list(states.StateCode)[-4].value)
         self.assertEqual("US_WW", list(states.StateCode)[-3].value)
         self.assertEqual("US_XX", list(states.StateCode)[-2].value)
         self.assertEqual("US_YY", list(states.StateCode)[-1].value)
