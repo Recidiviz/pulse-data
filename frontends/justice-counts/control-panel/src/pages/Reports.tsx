@@ -354,12 +354,9 @@ const Reports: React.FC = () => {
               </>
             )}
 
-            {/* TODO(#14589) Currently gated to Recidiviz Admins only until we are ready to release this feature */}
-            {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
-              <DataUploadButton onClick={() => setShowDataUploadModal(true)}>
-                Data Upload
-              </DataUploadButton>
-            )}
+            <DataUploadButton onClick={() => setShowDataUploadModal(true)}>
+              Data Upload
+            </DataUploadButton>
           </TabbedActionsWrapper>
         </TabbedBar>
 
