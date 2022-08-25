@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
+import os
 from http import HTTPStatus
 from pathlib import Path
 from unittest import mock
@@ -31,6 +32,7 @@ from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
@@ -40,6 +42,7 @@ from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     Datapoint,
@@ -999,3 +1002,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         source = self.session.query(Source).one_or_none()
 
         self.assertEqual(source.name, name)
+
+    def test_feed(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+            ]
+        )
+        self.session.commit()
+        self.session.flush()
+        agency_id = self.test_schema_objects.test_agency_A.id
+
+        law_enforcement_directory = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "bulk_upload/bulk_upload_fixtures/law_enforcement",
+            )
+        )
+        BulkUploader(catch_errors=False).upload_directory(
+            session=self.session,
+            directory=law_enforcement_directory,
+            agency_id=agency_id,
+            system=schema.System.LAW_ENFORCEMENT,
+            user_account=self.test_schema_objects.test_user_A,
+        )
+
+        feed_response_no_metric = self.client.get(f"/feed/{agency_id}")
+        self.assertEqual(feed_response_no_metric.status_code, 200)
+
+        feed_response_with_metric = self.client.get(
+            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+        )
+        self.assertEqual(feed_response_with_metric.status_code, 200)
