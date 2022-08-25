@@ -223,6 +223,21 @@ output:
               $function: us_mo_custom_parsers.normalize_county_code
               $args:
                 county_code: BS_CNS
+          date_imposed:
+            # TODO(#14857) - Update mappings to use custom parser to handle dates across multiple fields
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: BU_SF
+                    $options:
+                      - $literal("0")
+                      - $literal("19000000")
+                      - $literal("20000000")
+                      - $literal("66666666")
+                      - $literal("77777777")
+                      - $literal("88888888")
+                      - $literal("99999999")
+                $then: BU_SF
           start_date:
             $conditional:
               - $if:
