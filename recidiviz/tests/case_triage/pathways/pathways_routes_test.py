@@ -299,10 +299,10 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                     },
                     {
                         "ageGroup": "60+",
-                        "age": "61",
+                        "age": "61, 61",
                         "gender": "MALE",
                         "race": "WHITE",
-                        "facility": "DEF",
+                        "facility": "ABC, DEF",
                         "fullName": "TEST, PERSON2",
                         "timePeriod": "months_0_6",
                         "stateId": "0002",

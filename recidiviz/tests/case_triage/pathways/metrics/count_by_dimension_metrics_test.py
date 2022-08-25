@@ -172,21 +172,21 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         return {
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 6},
+                {"gender": "MALE", "count": 7},
             ],
             Dimension.AGE_GROUP: [
                 {"ageGroup": "20-25", "count": 2},
-                {"ageGroup": "60+", "count": 5},
+                {"ageGroup": "60+", "count": 6},
             ],
             Dimension.FACILITY: [
-                {"facility": "ABC", "count": 3},
+                {"facility": "ABC", "count": 4},
                 {"facility": "DEF", "count": 3},
                 {"facility": "GHI", "count": 1},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 2},
-                {"race": "WHITE", "count": 4},
+                {"race": "WHITE", "count": 5},
             ],
         }
 
@@ -206,7 +206,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 2}],
+            [{"gender": "FEMALE", "count": 1}, {"gender": "MALE", "count": 3}],
             results["data"],
         )
 
@@ -221,7 +221,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"facility": "ABC", "count": 3}, {"facility": "DEF", "count": 3}],
+            [{"facility": "ABC", "count": 4}, {"facility": "DEF", "count": 3}],
             results["data"],
         )
 

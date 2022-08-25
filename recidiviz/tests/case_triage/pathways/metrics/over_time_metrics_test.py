@@ -192,7 +192,7 @@ class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCas
     ) -> List[Dict[str, int]]:
         return [
             {"avg90day": 0, "count": 1, "month": 1, "year": 2022},
-            {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
+            {"avg90day": 1, "count": 3, "month": 2, "year": 2022},
             {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
         ]
 
