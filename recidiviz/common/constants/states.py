@@ -81,6 +81,28 @@ class _SharedStateCode(enum.Enum):
             return False
 
 
+PLAYGROUND_STATE_CODE = "US_OZ"
+PLAYGROUND_STATE_INFO = {
+    PLAYGROUND_STATE_CODE: us.states.State(
+        **{
+            "fips": "00",
+            "name": "Oz",
+            "abbr": "OZ",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 1900,
+            "capital": "Emerald City",
+            "capital_tz": "Australia/Melbourne",
+            "ap_abbr": "Oz",
+            "time_zones": ["Australia/Melbourne"],
+            "name_metaphone": "OS",
+        }
+    ),
+}
+
+
 class _RealStateCode(_SharedStateCode):
     """Code for every state in the US"""
 
@@ -138,10 +160,15 @@ class _RealStateCode(_SharedStateCode):
     US_WV = "US_WV"
     US_WY = "US_WY"
 
+    # Playground
+    US_OZ = "US_OZ"
+
     @classmethod
     def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:
         state_abbrev = state_code[len("US_") :]
-        return getattr(us.states, state_abbrev, None)
+        return getattr(us.states, state_abbrev, None) or PLAYGROUND_STATE_INFO.get(
+            state_code
+        )
 
 
 TEST_STATE_CODE = "US_XX"
@@ -272,6 +299,9 @@ class _FakeStateCode(_SharedStateCode):
     US_WV = "US_WV"
     US_WY = "US_WY"
 
+    # Playground code
+    US_OZ = "US_OZ"
+
     # Test codes
     US_WW = TEST_STATE_CODE_DOCS
     US_XX = TEST_STATE_CODE
@@ -358,6 +388,9 @@ if typing.TYPE_CHECKING:
         US_WI = "US_WI"
         US_WV = "US_WV"
         US_WY = "US_WY"
+
+        # Playground code
+        US_OZ = "US_OZ"
 
         # Test codes
         US_WW = TEST_STATE_CODE_DOCS
