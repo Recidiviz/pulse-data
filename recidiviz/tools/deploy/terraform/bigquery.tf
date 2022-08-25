@@ -144,10 +144,7 @@ resource "google_bigquery_table" "workflows_client_record_archive" {
     ignore_unknown_values = true
     max_bad_records       = 0
     source_format         = "NEWLINE_DELIMITED_JSON"
-    # while archives do also exist in production, we have been using staging exports
-    # as the sole data source for Workflows in production; for consistency we are doing
-    # the same with this table
-    source_uris = ["gs://recidiviz-staging-practices-etl-data-archive/*/client_record.json"]
+    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/client_record.json"]
   }
 
   schema = <<EOF
