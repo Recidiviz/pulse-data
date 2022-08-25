@@ -17,10 +17,18 @@
 
 # States with Terraform-managed infrastructure for direct ingest
 locals {
-  direct_ingest_regions_package = "${local.recidiviz_root}/ingest/direct/regions"
+  direct_ingest_regions_package       = "${local.recidiviz_root}/ingest/direct/regions"
   direct_ingest_region_manifest_paths = fileset(local.direct_ingest_regions_package, "*/manifest.yaml")
-  direct_ingest_region_manifests = {
+  all_direct_ingest_region_manifests = {
     for f in local.direct_ingest_region_manifest_paths : upper(dirname(f)) => yamldecode(file("${local.direct_ingest_regions_package}/${f}"))
+  }
+  # Only include regions that we want to deploy to this environment.
+  # Note: We still create infrastructure in prod for regions that don't yet have ingest
+  # enabled there, but we don't create infrastructure in prod for playground regions.
+  direct_ingest_region_manifests_to_deploy = {
+    for region, manifest in local.all_direct_ingest_region_manifests : region => manifest
+    # Skip playground regions if we are in prod.
+    if !local.is_production || !lookup(manifest, "playground", false)
   }
 
   sftp_state_alpha_codes = yamldecode(file("${path.module}/config/sftp_state_alpha_codes.yaml"))

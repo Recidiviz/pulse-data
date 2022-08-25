@@ -29,7 +29,7 @@ from parameterized import parameterized
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.ingest.direct import regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -392,6 +392,15 @@ class DirectIngestRegionDirStructure(
         """Check that all existing region directories start with a valid state code."""
         for region in self.region_dir_names:
             self.test.assertTrue(StateCode.is_state_code(region[:5]))
+
+    def test_playground_regions_are_marked(self) -> None:
+        for region_code in PLAYGROUND_STATE_INFO:
+            region = get_region(
+                region_code,
+                is_direct_ingest=True,
+                region_module_override=self.region_module_override,
+            )
+            self.assertTrue(region.playground)
 
 
 class DirectIngestRegionTemplateDirStructure(
