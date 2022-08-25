@@ -294,15 +294,16 @@ export const DataUpload: React.FC = observer(() => {
                 const systemFileName =
                   systemToTemplateSpreadsheetFileName[system];
                 return (
-                  <Button key={system}>
-                    <a
-                      href={`./assets/${systemFileName}`}
-                      download={systemFileName}
-                    >
+                  <a
+                    key={system}
+                    href={`./assets/${systemFileName}`}
+                    download={systemFileName}
+                  >
+                    <Button>
                       Download {systemName} Template{" "}
                       <Icon alt="" src={SpreadsheetIcon} grayscale />
-                    </a>
-                  </Button>
+                    </Button>
+                  </a>
                 );
               })}
             </ButtonWrapper>
