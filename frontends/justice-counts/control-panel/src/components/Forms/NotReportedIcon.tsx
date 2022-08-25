@@ -115,17 +115,12 @@ export const NotReportedIcon: React.FC<{
         <NotReportedIconTooltipHoverArea size={size} onMouseLeave={hideTooltip}>
           <NotReportedIconTooltip>
             This has been disabled by an admin because the data is unavailable.{" "}
-            {(userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) ||
-              userStore.permissions.includes(Permission.CONFIGURE_METRICS)) && (
-              <>
-                If you have the data for this, consider changing the
-                configuration in the{" "}
-                <MetricsViewLink onClick={() => navigate("/metrics")}>
-                  Metrics View
-                </MetricsViewLink>
-                .
-              </>
-            )}
+            If you have the data for this, consider changing the configuration
+            in the{" "}
+            <MetricsViewLink onClick={() => navigate("/metrics")}>
+              Metrics View
+            </MetricsViewLink>
+            .
           </NotReportedIconTooltip>
         </NotReportedIconTooltipHoverArea>
       )}
