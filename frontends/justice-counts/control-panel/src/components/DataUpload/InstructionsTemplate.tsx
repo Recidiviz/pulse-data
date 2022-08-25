@@ -89,7 +89,7 @@ export const systemToDetails: { [system: string]: SystemDetails } = {
   },
   COURTS_AND_PRETRIAL: {
     name: "Courts and Pretrial",
-    url: "https://justicecounts.csgjusticecenter.org/metrics/sectors/pretrial-courts/",
+    url: "https://justicecounts.csgjusticecenter.org/metrics/sectors/courts-pretrial/",
     metric: "Pretrial Releases",
     metric_sheet_name: "pretrial_releases",
     metric_disaggregation_sheet_name: "pretrial_releases_by_type",

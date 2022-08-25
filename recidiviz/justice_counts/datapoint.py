@@ -338,8 +338,8 @@ class DatapointInterface:
             ):
                 logging.warning(
                     "`use_existing_aggregate_value` was specified, but the aggregate "
-                    "value either read or inferred from incoming data (%.2f) does not "
-                    "match the existing aggregate value (%.2f).",
+                    "value either read or inferred from incoming data (%s) does not "
+                    "match the existing aggregate value (%s).",
                     value,
                     existing_entity.value,
                 )
