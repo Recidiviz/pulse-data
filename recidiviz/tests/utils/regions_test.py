@@ -201,35 +201,6 @@ class TestRegions(TestCase):
     def test_validate_region_code_invalid(self, _mock_modules: MagicMock) -> None:
         assert not with_manifest(regions.validate_region_code, "us_az")
 
-    def test_get_scraper(self) -> None:
-        mock_package = Mock()
-        mock_scraper = Mock()
-        mock_package.UsNyScraper.return_value = mock_scraper
-
-        module_obj = {
-            "recidiviz.ingest.scrape.regions.us_ny.us_ny_scraper": mock_package
-        }
-        with patch("importlib.import_module", module_obj.get):
-            region = with_manifest(regions.get_region, "us_ny")
-            scraper = region.get_scraper()
-            assert scraper is mock_scraper
-
-    def test_get_scraper_direct_ingest(self) -> None:
-        mock_package = Mock()
-        mock_direct = Mock()
-        mock_package.UsMaMiddlesexController.return_value = mock_direct
-
-        module_obj = {
-            "recidiviz.ingest.direct.regions.us_ma_middlesex."
-            "us_ma_middlesex_controller": mock_package
-        }
-        with patch("importlib.import_module", module_obj.get):
-            region = with_manifest(
-                regions.get_region, "us_ma_middlesex", is_direct_ingest=True
-            )
-            with self.assertRaises(ValueError):
-                _ = region.get_scraper()
-
     def test_create_queue_name(self) -> None:
         region = with_manifest(regions.get_region, "us_ny")
         assert region.get_queue_name() == "us-ny-scraper-v2"
