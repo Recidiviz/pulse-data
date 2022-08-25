@@ -71,6 +71,7 @@ class Region:
         agency_name: (string) Human-readable agency name
         agency_type: (string) 'prison' or 'jail'
         environment: (string) The environment the region is allowed to run in.
+        playground: (bool) If this is a playground region and should only exist in staging.
         base_url: (string) Base URL for scraping
         should_proxy: (string) Whether or not to send requests through the proxy
         timezone: (string) Timezone in which this region resides. If the region
@@ -94,6 +95,7 @@ class Region:
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
+    playground: Optional[bool] = attr.ib(default=False)
     base_url: str = attr.ib(default=None)
     removed_from_website: RemovedFromWebsite = attr.ib(
         default=RemovedFromWebsite.RELEASED, converter=RemovedFromWebsite

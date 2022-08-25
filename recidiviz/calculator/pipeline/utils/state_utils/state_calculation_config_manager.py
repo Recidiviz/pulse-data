@@ -306,6 +306,39 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_commitment_from_supervision_utils import (
+    UsOzCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_incarceration_delegate import (
+    UsOzIncarcerationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_incarceration_metrics_producer_delegate import (
+    UsOzIncarcerationMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_incarceration_period_normalization_delegate import (
+    UsOzIncarcerationNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_program_assignment_normalization_delegate import (
+    UsOzProgramAssignmentNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_recidivism_metrics_producer_delegate import (
+    UsOzRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_supervision_delegate import (
+    UsOzSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_supervision_metrics_producer_delegate import (
+    UsOzSupervisionMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_supervision_period_normalization_delegate import (
+    UsOzSupervisionNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_violation_response_normalization_delegate import (
+    UsOzViolationResponseNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_violations_delegate import (
+    UsOzViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
 )
@@ -550,6 +583,8 @@ def _get_state_specific_incarceration_period_normalization_delegate(
         return UsPaIncarcerationNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnIncarcerationNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzIncarcerationNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -590,6 +625,8 @@ def _get_state_specific_supervision_period_normalization_delegate(
         return UsPaSupervisionNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnSupervisionNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzSupervisionNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -617,6 +654,8 @@ def _get_state_specific_program_assignment_normalization_delegate(
         return UsPaProgramAssignmentNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnProgramAssignmentNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzProgramAssignmentNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -644,6 +683,8 @@ def _get_state_specific_commitment_from_supervision_delegate(
         return UsPaCommitmentFromSupervisionDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzCommitmentFromSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -671,6 +712,8 @@ def _get_state_specific_violation_delegate(
         return UsPaViolationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnViolationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzViolationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -698,6 +741,8 @@ def _get_state_specific_violation_response_normalization_delegate(
         return UsPaViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnViolationResponseNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzViolationResponseNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -725,6 +770,8 @@ def _get_state_specific_incarceration_delegate(
         return UsPaIncarcerationDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnIncarcerationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzIncarcerationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -754,6 +801,8 @@ def get_state_specific_supervision_delegate(
         return UsPaSupervisionDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnSupervisionDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -781,7 +830,8 @@ def _get_state_specific_incarceration_metrics_producer_delegate(
         return UsPaIncarcerationMetricsProducerDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnIncarcerationMetricsProducerDelegate()
-
+    if state_code == StateCode.US_OZ.value:
+        return UsOzIncarcerationMetricsProducerDelegate()
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
@@ -808,6 +858,8 @@ def _get_state_specific_supervision_metrics_producer_delegate(
         return UsPaSupervisionMetricsProducerDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnSupervisionMetricsProducerDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzSupervisionMetricsProducerDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -835,6 +887,8 @@ def _get_state_specific_recidivism_metrics_producer_delegate(
         return UsPaRecidivismMetricsProducerDelegate()
     if state_code == StateCode.US_TN.value:
         return UsTnRecidivismMetricsProducerDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzRecidivismMetricsProducerDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
