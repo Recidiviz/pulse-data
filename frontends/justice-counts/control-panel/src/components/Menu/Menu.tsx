@@ -91,15 +91,12 @@ const Menu = () => {
       </WelcomeUser>
 
       {/* Metrics View */}
-      {(userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) ||
-        userStore.permissions.includes(Permission.CONFIGURE_METRICS)) && (
-        <MenuItem
-          onClick={() => navigate("/metrics")}
-          active={activeMenuItem === MenuItems.Metrics}
-        >
-          Metrics
-        </MenuItem>
-      )}
+      <MenuItem
+        onClick={() => navigate("/metrics")}
+        active={activeMenuItem === MenuItems.Metrics}
+      >
+        Metrics
+      </MenuItem>
 
       {/* Reports */}
       <MenuItem
