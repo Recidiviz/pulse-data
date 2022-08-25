@@ -58,6 +58,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_dir_paths,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
@@ -401,6 +402,34 @@ class DirectIngestRegionDirStructure(
                 region_module_override=self.region_module_override,
             )
             self.assertTrue(region.playground)
+
+    def test_playground_regions_do_not_run_in_production(self) -> None:
+        # The playground regions should be supported in staging
+        with patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.STAGING.value,
+        ), patch(
+            "recidiviz.utils.metadata.project_id", return_value="recidiviz-staging"
+        ):
+            for region_code in PLAYGROUND_STATE_INFO:
+                DirectIngestControllerFactory.build(
+                    region_code=region_code.lower(),
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    allow_unlaunched=False,
+                )
+
+        # But they should not be supported in production
+        with patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        ), patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-123"):
+            for region_code in PLAYGROUND_STATE_INFO:
+                with self.assertRaisesRegex(DirectIngestError, "Bad environment"):
+                    DirectIngestControllerFactory.build(
+                        region_code=region_code.lower(),
+                        ingest_instance=DirectIngestInstance.PRIMARY,
+                        allow_unlaunched=False,
+                    )
 
 
 class DirectIngestRegionTemplateDirStructure(
