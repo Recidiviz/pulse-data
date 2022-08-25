@@ -981,14 +981,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["disaggregation_display_name"], None)
         self.assertEqual(response_json["end_date"], "Fri, 01 Jul 2022 00:00:00 GMT")
         self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
-        self.assertEqual(response_json["id"], 1)
         self.assertEqual(response_json["is_published"], False)
         self.assertEqual(
             response_json["metric_definition_key"],
             "LAW_ENFORCEMENT_RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
         )
         self.assertEqual(response_json["metric_display_name"], "Jurisdiction Residents")
-        self.assertEqual(response_json["report_id"], 1)
         self.assertEqual(response_json["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT")
         self.assertEqual(response_json["value"], "5000")
 
