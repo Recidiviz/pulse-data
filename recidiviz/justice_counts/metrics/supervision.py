@@ -64,7 +64,7 @@ annual_budget = MetricDefinition(
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of your agency.",
+    description="Measures the total annual budget (in dollars) allocated to your agency's supervision functions.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     specified_contexts=[
@@ -89,7 +89,7 @@ total_staff = MetricDefinition(
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
-    description="Measures the number of full-time staff employed by your agency.",
+    description="Measures the number of full-time supervision staff employed by your agency.",
     definitions=[
         Definition(
             term="Full-time staff",
