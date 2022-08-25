@@ -31,7 +31,9 @@ POPULATION_SPAN_METRIC_TO_DAY_BY_DAY_METRIC: Dict[str, str] = {
 
 MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_TEMPLATE: str = """
     /*{description}*/
-    SELECT * EXCEPT (start_date_inclusive, end_date_exclusive)
+    SELECT * EXCEPT (start_date_inclusive, end_date_exclusive, year, month),
+    EXTRACT(YEAR FROM {metric_date_column}) AS year,
+    EXTRACT(MONTH FROM {metric_date_column}) AS month
     FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_{population_span_metrics_table}_materialized`,
     UNNEST(GENERATE_DATE_ARRAY(start_date_inclusive,
