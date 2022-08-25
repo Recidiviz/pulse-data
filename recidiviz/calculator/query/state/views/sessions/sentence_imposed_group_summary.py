@@ -108,6 +108,8 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         ANY_VALUE(IF(is_first_sentence, sentence_id, NULL)) AS parent_sentence_id,
         ANY_VALUE(IF(is_longest_in_imposed_group, offense_type_short, NULL)) AS most_severe_offense_type_short,
         ANY_VALUE(IF(is_longest_in_imposed_group, description, NULL)) AS most_severe_description,
+        ANY_VALUE(IF(is_longest_in_imposed_group, ncic_code, NULL)) AS most_severe_ncic_code,
+        ANY_VALUE(IF(is_longest_in_imposed_group, statute, NULL)) AS statute,
         --assumption here is that the felony sentence will be more severe than the misdemeanor sentence
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_type, NULL)) AS most_severe_classification_type,
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_subtype, NULL)) AS most_severe_classification_subtype,
