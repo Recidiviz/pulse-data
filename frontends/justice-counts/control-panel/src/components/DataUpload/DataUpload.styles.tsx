@@ -284,7 +284,7 @@ export const ActionsContainer = styled.div`
   ${typography.sizeCSS.normal};
   height: 100%;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   background: ${palette.solid.offwhite};
   gap: 10px;
@@ -292,11 +292,11 @@ export const ActionsContainer = styled.div`
   position: absolute;
   right: 22px;
   z-index: 3;
+  width: 25vw;
 `;
 
 export const ActionButton = styled.div<{ red?: boolean }>`
   color: ${({ red }) => (red ? palette.solid.red : palette.solid.blue)};
-
   &:hover {
     color: ${palette.solid.darkgrey};
   }

@@ -141,36 +141,39 @@ export const UploadedFileRow: React.FC<{
           <span>{system}</span>
         </ExtendedCell>
 
-        {rowHovered &&
-          id &&
-          userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
-            <ActionsContainer onClick={(e) => e.stopPropagation()}>
-              {(badgeText === "processed" || badgeText === "error") && (
-                <ActionButton
-                  onClick={() => updateUploadedFileStatus(id, "UPLOADED")}
-                >
-                  Mark as Pending
-                </ActionButton>
-              )}
-              {(badgeText === "pending" || badgeText === "error") && (
-                <ActionButton
-                  onClick={() => updateUploadedFileStatus(id, "INGESTED")}
-                >
-                  Mark as Processed
-                </ActionButton>
-              )}
-              {badgeText !== "error" && (
-                <ActionButton
-                  onClick={() => updateUploadedFileStatus(id, "ERRORED")}
-                >
-                  Mark as Error
-                </ActionButton>
-              )}
-              <ActionButton red onClick={() => deleteUploadedFile(id)}>
-                Delete
-              </ActionButton>
-            </ActionsContainer>
-          )}
+        {rowHovered && id && (
+          <ActionsContainer onClick={(e) => e.stopPropagation()}>
+            {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
+              <>
+                {(badgeText === "processed" || badgeText === "error") && (
+                  <ActionButton
+                    onClick={() => updateUploadedFileStatus(id, "UPLOADED")}
+                  >
+                    Mark as Pending
+                  </ActionButton>
+                )}
+                {(badgeText === "pending" || badgeText === "error") && (
+                  <ActionButton
+                    onClick={() => updateUploadedFileStatus(id, "INGESTED")}
+                  >
+                    Mark as Processed
+                  </ActionButton>
+                )}
+                {badgeText !== "error" && (
+                  <ActionButton
+                    onClick={() => updateUploadedFileStatus(id, "ERRORED")}
+                  >
+                    Mark as Error
+                  </ActionButton>
+                )}
+              </>
+            )}
+
+            <ActionButton red onClick={() => deleteUploadedFile(id)}>
+              Delete
+            </ActionButton>
+          </ActionsContainer>
+        )}
         {/* Uploaded By */}
         <ExtendedCell>{uploadedBy}</ExtendedCell>
       </ExtendedRow>
