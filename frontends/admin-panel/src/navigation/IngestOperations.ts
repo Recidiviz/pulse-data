@@ -16,5 +16,10 @@
 // =============================================================================
 export const INGEST_OPERATIONS_BASE = "/admin/ingest_operations";
 export const INGEST_ACTIONS_ROUTE = `${INGEST_OPERATIONS_BASE}/key_actions`;
+export const INGEST_ACTIONS_WITH_STATE_CODE_ROUTE = `${INGEST_OPERATIONS_BASE}/key_actions/:stateCode`;
+export const INGEST_ACTIONS_INGEST_QUEUES_ROUTE = `${INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}/ingest_queues`;
+export const INGEST_ACTIONS_INSTANCE_ROUTE = `${INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}/instance/:instance`;
+export const INGEST_ACTIONS_PRIMARY_ROUTE = `${INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}/instance/PRIMARY`;
+export const INGEST_ACTIONS_SECONDARY_ROUTE = `${INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}/instance/SECONDARY`;
 export const FLASH_DB_CHECKLIST_ROUTE = `${INGEST_OPERATIONS_BASE}/flash_primary_db`;
 export const DIRECT_SANDBOX_RAW_IMPORT = `${INGEST_OPERATIONS_BASE}/direct_import`;

@@ -21,17 +21,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 @import "Validation.css";
 
 .main-content {
-  padding-top: 2vw;
-  padding-bottom: 1em;
-
   height: 100%;
   width: 100%;
   margin: auto;
 
+  overflow-y: scroll;
+}
+
+.main-content-padding {
+  padding-top: 2vw;
+  padding-bottom: 1em;
+
   padding-left: 5%;
   padding-right: 5%;
-
-  overflow-y: scroll;
 }
 
 .buffer {

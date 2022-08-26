@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Card, Col, Descriptions, Spin } from "antd";
+import { Card, Col, Descriptions, Spin } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
+import {
+  getIngestInstanceSummary,
+  getIngestRawFileProcessingStatus,
+} from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import {
   regionActionNames,
@@ -27,35 +30,36 @@ import {
   IngestInstanceSummary,
   IngestRawFileProcessingStatus,
 } from "./constants";
+import IngestActionButton from "./IngestActionButton";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
 
 interface IngestInstanceCardProps {
   instance: DirectIngestInstance;
-  dataLoading: boolean;
-  data: IngestInstanceSummary | undefined;
   env: string;
   stateCode: string;
-  handleOnClick: (action: RegionAction, instance: DirectIngestInstance) => void;
 }
 
 // TODO(#13406) Remove this gating once Start Ingest Rerun button can be displayed on the Admin Panel.
-const ingestRerunButtonEnabled = true;
+const ingestRerunButtonEnabled = false;
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
-  data,
-  dataLoading,
   env,
   stateCode,
-  handleOnClick,
 }) => {
   const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
-  const pauseUnpauseInstanceAction = data?.operations.isPaused
+
+  const [ingestInstanceSummaryLoading, setIngestInstanceSummaryLoading] =
+    useState<boolean>(true);
+  const [ingestInstanceSummary, setIngestInstanceSummary] =
+    useState<IngestInstanceSummary | undefined>(undefined);
+
+  const pauseUnpauseInstanceAction = ingestInstanceSummary?.operations.isPaused
     ? RegionAction.UnpauseIngestInstance
     : RegionAction.PauseIngestInstance;
 
@@ -65,6 +69,18 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
+
+  const fetchIngestInstanceSummary = useCallback(async () => {
+    setIngestInstanceSummaryLoading(true);
+    const primaryResponse = await getIngestInstanceSummary(stateCode, instance);
+    const result: IngestInstanceSummary = await primaryResponse.json();
+    setIngestInstanceSummary(result);
+    setIngestInstanceSummaryLoading(false);
+  }, [instance, stateCode]);
+
+  useEffect(() => {
+    fetchIngestInstanceSummary();
+  }, [fetchIngestInstanceSummary]);
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
@@ -83,9 +99,14 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
 
   useEffect(() => {
     getRawFileProcessingStatusData();
-  }, [getRawFileProcessingStatusData, data, instance, stateCode]);
+  }, [
+    getRawFileProcessingStatusData,
+    ingestInstanceSummary,
+    instance,
+    stateCode,
+  ]);
 
-  if (dataLoading) {
+  if (ingestInstanceSummaryLoading) {
     return (
       <Col span={12} key={instance}>
         <Card title={instance} loading />
@@ -93,7 +114,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
     );
   }
 
-  if (data === undefined) {
+  if (ingestInstanceSummary === undefined) {
     throw new Error(`No summary data for ${instance}`);
   }
 
@@ -102,53 +123,54 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       title={instance}
       extra={
         <>
-          <Button
+          <IngestActionButton
             style={{ marginRight: 5 }}
-            onClick={() => handleOnClick(RegionAction.ExportToGCS, instance)}
-          >
-            {regionActionNames[RegionAction.ExportToGCS]}
-          </Button>
-          <Button
+            action={RegionAction.ExportToGCS}
+            buttonText={regionActionNames[RegionAction.ExportToGCS]}
+            instance={instance}
+            stateCode={stateCode}
+          />
+          <IngestActionButton
             style={
-              data.operations.isPaused
+              ingestInstanceSummary.operations.isPaused
                 ? { display: "none" }
                 : { marginRight: 5 }
             }
-            onClick={() => {
-              handleOnClick(RegionAction.TriggerTaskScheduler, instance);
-            }}
-          >
-            {regionActionNames[RegionAction.TriggerTaskScheduler]}
-          </Button>
-          <Button
+            action={RegionAction.TriggerTaskScheduler}
+            buttonText={regionActionNames[RegionAction.TriggerTaskScheduler]}
+            instance={instance}
+            stateCode={stateCode}
+          />
+          <IngestActionButton
             style={
               // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
               // TODO(#13406) Remove gating for ingest rerun button once backend is ready to trigger ingest reruns
               // in secondary.
-              data.instance === "SECONDARY" && ingestRerunButtonEnabled
+              instance === "SECONDARY" && ingestRerunButtonEnabled
                 ? { marginRight: 5 }
                 : { display: "none" }
             }
-            onClick={() => {
-              handleOnClick(RegionAction.StartIngestRerun, data.instance);
-            }}
-          >
-            {regionActionNames[RegionAction.StartIngestRerun]}
-          </Button>
-          <Button
-            onClick={() => {
-              handleOnClick(pauseUnpauseInstanceAction, instance);
+            action={RegionAction.StartIngestRerun}
+            buttonText={regionActionNames[RegionAction.StartIngestRerun]}
+            instance={instance}
+            stateCode={stateCode}
+          />
+          <IngestActionButton
+            action={pauseUnpauseInstanceAction}
+            buttonText={regionActionNames[pauseUnpauseInstanceAction]}
+            instance={instance}
+            stateCode={stateCode}
+            onActionConfirmed={() => {
+              fetchIngestInstanceSummary();
             }}
             type="primary"
-          >
-            {regionActionNames[pauseUnpauseInstanceAction]}
-          </Button>
+          />
         </>
       }
     >
       <Descriptions bordered>
         <Descriptions.Item label="Status" span={3}>
-          {data.operations.isPaused ? "PAUSED" : "UNPAUSED"}
+          {ingestInstanceSummary.operations.isPaused ? "PAUSED" : "UNPAUSED"}
         </Descriptions.Item>
       </Descriptions>
       <br />
@@ -170,22 +192,31 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       )}
       <br />
       <h1>Ingest views</h1>
-      <InstanceIngestViewMetadata stateCode={stateCode} data={data} />
+      <InstanceIngestViewMetadata
+        stateCode={stateCode}
+        data={ingestInstanceSummary}
+      />
       <br />
       <h1>Resources</h1>
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.ingestBucketPath)}>
-            {data.ingestBucketPath}
+          <NewTabLink
+            href={baseBucketUrl.concat(ingestInstanceSummary.ingestBucketPath)}
+          >
+            {ingestInstanceSummary.ingestBucketPath}
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Storage Bucket" span={3}>
-          <NewTabLink href={baseBucketUrl.concat(data.storageDirectoryPath)}>
-            {data.storageDirectoryPath}
+          <NewTabLink
+            href={baseBucketUrl.concat(
+              ingestInstanceSummary.storageDirectoryPath
+            )}
+          >
+            {ingestInstanceSummary.storageDirectoryPath}
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Postgres database" span={3}>
-          {data.dbName}
+          {ingestInstanceSummary.dbName}
         </Descriptions.Item>
       </Descriptions>
       <br />

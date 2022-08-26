@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Layout, Menu, MenuProps, Typography } from "antd";
+import classNames from "classnames";
 import {
   Redirect,
   Route,
@@ -119,6 +120,13 @@ const App = (): JSX.Element => {
     history.push(e.key);
   };
 
+  const routeClass = classNames({
+    "main-content": true,
+    "main-content-padding": !history.location.pathname.includes(
+      IngestOperations.INGEST_ACTIONS_ROUTE
+    ),
+  });
+
   return (
     <Layout style={{ height: "100%" }}>
       <Layout.Sider width={256}>
@@ -133,7 +141,7 @@ const App = (): JSX.Element => {
           items={items}
         />
       </Layout.Sider>
-      <div className="main-content">
+      <div className={routeClass}>
         <Switch>
           <Route
             path={DatasetMetadata.METADATA_COLUMN_ROUTE_TEMPLATE}
@@ -160,7 +168,6 @@ const App = (): JSX.Element => {
             component={ValidationStatusView}
           />
           <Route
-            exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
             component={IngestOperationsView}
           />

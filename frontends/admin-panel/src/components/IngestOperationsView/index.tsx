@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2021 Recidiviz, Inc.
+// Copyright (C) 2022 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,14 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, PageHeader } from "antd";
-import * as React from "react";
-import { useHistory, useLocation } from "react-router-dom";
-import { fetchIngestStateCodes } from "../../AdminPanelAPI";
-import StateSelector from "../Utilities/StateSelector";
-import { StateCodeInfo } from "./constants";
-import IngestInstaneCurrentStatusSummary from "./IngestInstanceCurrentStatusSummary";
-import StateSpecificIngestOperationsMetadata from "./StateSpecificIngestOperationsMetadata";
+import { Layout } from "antd";
+import { Route, Switch, useHistory, useLocation } from "react-router-dom";
+import {
+  INGEST_ACTIONS_PRIMARY_ROUTE,
+  INGEST_ACTIONS_ROUTE,
+  INGEST_ACTIONS_WITH_STATE_CODE_ROUTE,
+} from "../../navigation/IngestOperations";
+import IngestInstanceCurrentStatusSummary from "./IngestInstanceCurrentStatusSummary";
+import IngestStateSpecificMetadata from "./IngestStateSpecificMetadata";
 
 const IngestOperationsView = (): JSX.Element => {
   const history = useHistory();
@@ -29,48 +30,27 @@ const IngestOperationsView = (): JSX.Element => {
   const location = useLocation();
   const queryString = location.search;
   const params = new URLSearchParams(queryString);
+
   const initialStateCode = params.get("stateCode");
-
-  const [stateCode, setStateCode] =
-    React.useState<string | null>(initialStateCode);
-
-  const stateCodeChange = (value: StateCodeInfo) => {
-    setStateCode(value.code);
-    updateQueryParams(value.code);
-  };
-
-  const updateQueryParams = (stateCodeInput: string) => {
-    const locationObj = {
-      search: `?stateCode=${stateCodeInput}`,
-    };
-    history.push(locationObj);
-  };
+  if (initialStateCode) {
+    history.push(
+      INGEST_ACTIONS_PRIMARY_ROUTE.replace(":stateCode", initialStateCode)
+    );
+  }
 
   return (
-    <>
-      <PageHeader
-        title="Ingest Operations"
-        extra={[
-          <StateSelector
-            fetchStateList={fetchIngestStateCodes}
-            onChange={stateCodeChange}
-            initialValue={initialStateCode}
-          />,
-        ]}
-      />
-      {stateCode ? (
-        <StateSpecificIngestOperationsMetadata stateCode={stateCode} />
-      ) : (
-        <>
-          <Alert
-            message="Select a region to view region-specific ingest details"
-            type="warning"
-            showIcon
-          />
-          <IngestInstaneCurrentStatusSummary />
-        </>
-      )}
-    </>
+    <Layout style={{ height: "100%", width: "100%" }}>
+      <Switch>
+        <Route
+          path={INGEST_ACTIONS_WITH_STATE_CODE_ROUTE}
+          component={IngestStateSpecificMetadata}
+        />
+        <Route
+          path={INGEST_ACTIONS_ROUTE}
+          component={IngestInstanceCurrentStatusSummary}
+        />
+      </Switch>
+    </Layout>
   );
 };
 export default IngestOperationsView;
