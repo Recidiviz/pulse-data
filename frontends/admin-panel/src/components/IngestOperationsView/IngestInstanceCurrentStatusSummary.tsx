@@ -15,14 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Spin, Table } from "antd";
+import { Alert, Layout, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
+import { useHistory } from "react-router-dom";
 import { getAllIngestInstanceStatuses } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
-import { INGEST_ACTIONS_ROUTE } from "../../navigation/IngestOperations";
+import {
+  INGEST_ACTIONS_PRIMARY_ROUTE,
+  INGEST_ACTIONS_ROUTE,
+} from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
-import { IngestInstanceStatusResponse } from "./constants";
+import { IngestInstanceStatusResponse, StateCodeInfo } from "./constants";
+import IngestPageHeader from "./IngestPageHeader";
 import {
   getStatusBoxColor,
   getStatusMessage,
@@ -30,6 +35,7 @@ import {
 } from "./ingestStatusUtils";
 
 const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
+  const history = useHistory();
   const { loading, data: ingestInstanceStatuses } =
     useFetchedDataJSON<IngestInstanceStatusResponse>(
       getAllIngestInstanceStatuses
@@ -105,19 +111,34 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
         getStatusSortedOrder().indexOf(b.secondary),
     },
   ];
+
+  const stateCodeChange = (value: StateCodeInfo) => {
+    history.push(
+      INGEST_ACTIONS_PRIMARY_ROUTE.replace(":stateCode", value.code)
+    );
+  };
+
   return (
     <>
-      <Table
-        dataSource={dataSource}
-        columns={columns}
-        pagination={{
-          hideOnSinglePage: true,
-          size: "small",
-          showSizeChanger: true,
-          defaultPageSize: 25,
-          pageSizeOptions: ["25", "50", "100"],
-        }}
-      />
+      <IngestPageHeader onChange={stateCodeChange} />
+      <Layout style={{ padding: "0 24px 24px" }}>
+        <Alert
+          message="Select a region to view region-specific ingest details"
+          type="warning"
+          showIcon
+        />
+        <Table
+          dataSource={dataSource}
+          columns={columns}
+          pagination={{
+            hideOnSinglePage: true,
+            size: "small",
+            showSizeChanger: true,
+            defaultPageSize: 25,
+            pageSizeOptions: ["25", "50", "100"],
+          }}
+        />
+      </Layout>
     </>
   );
 };
