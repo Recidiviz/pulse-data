@@ -35,7 +35,8 @@ US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_DESCRIPTION = (
 
 US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
     /* {description} */
-
+    WITH cte AS 
+    (
     SELECT
         p.person_id,
         p.state_code,
@@ -64,7 +65,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
             "EXTERNAL_UNKNOWN",
             (
                 CASE h.BN_LRU
-                WHEN "GNP" THEN "GENERAL_POP"
+                WHEN "GNP" THEN "GENERAL"
                 WHEN "ADS" THEN "SOLITARY_CONFINEMENT"
                 WHEN "TAS" THEN "SOLITARY_CONFINEMENT"
                 ELSE "INTERNAL_UNKNOWN"
@@ -77,6 +78,11 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
     ON
         h.BN_DOC = p.external_id
         AND p.state_code = "US_MO"
+    )
+    SELECT
+        *
+    FROM cte
+    WHERE start_date <= COALESCE(end_date,'9999-01-01')
 """
 
 US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

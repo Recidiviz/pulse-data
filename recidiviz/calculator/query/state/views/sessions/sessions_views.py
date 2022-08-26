@@ -171,8 +171,14 @@ from recidiviz.calculator.query.state.views.sessions.us_me.us_me_supervision_pop
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_confinement_type_sessions import (
+    US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_consecutive_sentences_preprocessed import (
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_housing_stay_sessions import (
+    US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_housing_stays_preprocessed import (
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
@@ -258,6 +264,8 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
+    US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,
+    US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER,
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
