@@ -18,18 +18,10 @@
 import logging
 import os
 from http import HTTPStatus
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import pandas as pd
-from flask import (
-    Blueprint,
-    Flask,
-    Response,
-    make_response,
-    request,
-    send_from_directory,
-    url_for,
-)
+from flask import Flask, Response, make_response, request, send_from_directory, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy_session import current_session
@@ -45,27 +37,11 @@ from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprin
 from recidiviz.justice_counts.exceptions import JusticeCountsBadRequestError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
-from recidiviz.utils.auth.auth0 import passthrough_authorization_decorator
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 from recidiviz.utils.secrets import get_secret
 
 os.environ.setdefault("APP_URL", "http://localhost:3000")
-
-
-def get_blueprints_for_justice_counts_documentation() -> List[Tuple[Blueprint, str]]:
-    return [
-        (
-            get_api_blueprint(
-                auth_decorator=passthrough_authorization_decorator(), auth0_client=None
-            ),
-            "/justice_counts/api",
-        ),
-        (
-            get_auth_blueprint(auth_decorator=passthrough_authorization_decorator()),
-            "/justice_counts/auth",
-        ),
-    ]
 
 
 def create_app(config: Optional[Config] = None) -> Flask:
