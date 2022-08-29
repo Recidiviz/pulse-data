@@ -27,6 +27,7 @@ from typing import Callable, Dict, List, Optional, Type, Union
 
 from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
@@ -47,7 +48,6 @@ from recidiviz.persistence.entity.state import (
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils import environment
-from recidiviz.utils.regions import Region
 
 
 class IngestViewResultsParserDelegate:
@@ -110,7 +110,7 @@ IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
 INGEST_VIEW_RESULTS_UPDATE_DATETIME = "results_update_datetime"
 
 
-def ingest_view_manifest_dir(region: Region) -> str:
+def ingest_view_manifest_dir(region: DirectIngestRegion) -> str:
     """Returns the directory where all ingest view manifests for a given region live."""
     if region.region_module.__file__ is None:
         raise ValueError(f"No file associated with {region.region_module}.")
@@ -121,7 +121,7 @@ def ingest_view_manifest_dir(region: Region) -> str:
     )
 
 
-def yaml_mappings_filepath(region: Region, ingest_view_name: str) -> str:
+def yaml_mappings_filepath(region: DirectIngestRegion, ingest_view_name: str) -> str:
     return os.path.join(
         ingest_view_manifest_dir(region),
         f"{region.region_code.lower()}_{ingest_view_name}.yaml",
@@ -137,7 +137,7 @@ class IngestViewResultsParserDelegateImpl(
 
     def __init__(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         schema_type: SchemaType,
         ingest_instance: DirectIngestInstance,
         results_update_datetime: datetime.datetime,

@@ -43,6 +43,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -64,7 +65,6 @@ from recidiviz.ingest.flash_database_tools import (
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
-from recidiviz.utils.regions import get_region
 from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
@@ -502,7 +502,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             region_code = state_code.value.lower()
-            region = get_region(region_code, is_direct_ingest=True)
+            region = get_direct_ingest_region(region_code)
             raw_files_to_import = get_unprocessed_raw_files_in_bucket(
                 fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
                 bucket_path=source_bucket,

@@ -30,6 +30,8 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
 )
@@ -47,10 +49,8 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.utils import regions
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.regions import Region
 from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_TIMESTAMP_PARAM_NAME = "update_timestamp"
@@ -81,7 +81,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def __init__(
         self,
         *,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
@@ -513,7 +513,7 @@ if __name__ == "__main__":
     upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(2020, 12, 18)
 
     with local_project_id_override(GCP_PROJECT_STAGING):
-        region_ = regions.get_region(region_code_, is_direct_ingest=True)
+        region_ = direct_ingest_regions.get_direct_ingest_region(region_code_)
         view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
         views_by_name_ = {
             builder.ingest_view_name: builder.build()

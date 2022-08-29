@@ -48,3 +48,15 @@ def delete_files(file_paths: Iterable[str], delete_empty_dirs: bool = False) -> 
         for dir_path in reversed(sorted(dir_deletion_candidate)):
             if os.path.exists(dir_path) and not os.listdir(dir_path):
                 os.removedirs(dir_path)
+
+
+def is_non_empty_code_directory(dir_path: str) -> bool:
+    """Returns whether a directory path is valid: it points to an actual directory, the
+    directory is non-empty, and it does not only contain a __pycache__ directory. It is
+    possible to get into that situation when switching from a git branch that contains
+    a directory from one that doesn't, since __pycache__ directories are ignored by git.
+    """
+    return os.path.isdir(dir_path) and any(
+        path != "__pycache__" and not path.startswith(".")
+        for path in os.listdir(dir_path)
+    )

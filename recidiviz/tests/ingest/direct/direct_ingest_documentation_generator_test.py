@@ -59,7 +59,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         "._get_last_updated"
     )
     @patch(
-        "recidiviz.utils.regions.get_region",
+        "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
         return_value=fake_region(
             region_code=TEST_STATE_CODE_DOCS, region_module=fake_regions
         ),

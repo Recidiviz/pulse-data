@@ -42,12 +42,14 @@ import attr
 from werkzeug.routing import Rule
 
 from recidiviz.admin_panel.models import validation_pb2
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    get_supported_direct_ingest_region_codes,
+)
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
     app_rules,
 )
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 ADMIN_PANEL_DIRECTORY = "frontends/admin-panel/src"
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"

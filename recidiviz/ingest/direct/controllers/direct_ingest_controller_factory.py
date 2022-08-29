@@ -19,17 +19,21 @@ import importlib
 from types import ModuleType
 from typing import Optional, Type
 
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
     check_is_region_launched_in_env,
+)
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    get_supported_direct_ingest_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
-from recidiviz.utils import metadata, regions
-from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
+from recidiviz.utils import metadata
 
 
 class DirectIngestControllerFactory:
@@ -62,9 +66,8 @@ class DirectIngestControllerFactory:
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        region = regions.get_region(
+        region = direct_ingest_regions.get_direct_ingest_region(
             region_code=region_code.lower(),
-            is_direct_ingest=True,
             region_module_override=region_module_override,
         )
         if not allow_unlaunched:
@@ -78,7 +81,9 @@ class DirectIngestControllerFactory:
         return controller
 
     @classmethod
-    def get_controller_class(cls, region: Region) -> Type[BaseDirectIngestController]:
+    def get_controller_class(
+        cls, region: DirectIngestRegion
+    ) -> Type[BaseDirectIngestController]:
         region_code = region.region_code.lower()
         controller_module_name = (
             f"{region.region_module.__name__}.{region_code}.{region_code}_controller"

@@ -20,7 +20,7 @@ from typing import Optional
 
 from mock import create_autospec
 
-from recidiviz.utils.regions import Region
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 
 
 def fake_region(
@@ -28,17 +28,15 @@ def fake_region(
     region_code: str = "us_xx",
     environment: str = "local",
     region_module: Optional[ModuleType] = None,
-    is_direct_ingest: bool = True,
-) -> Region:
+) -> DirectIngestRegion:
     """Fake Region Object"""
-    region = create_autospec(Region)
+    region = create_autospec(DirectIngestRegion)
     region.region_code = region_code
     region.environment = environment
     region.region_module = region_module
-    region.is_direct_ingest = is_direct_ingest
 
     def fake_is_launched_in_env() -> bool:
-        return Region.is_ingest_launched_in_env(region)
+        return DirectIngestRegion.is_ingest_launched_in_env(region)
 
     region.is_ingest_launched_in_env = fake_is_launched_in_env
 

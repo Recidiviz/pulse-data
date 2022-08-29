@@ -38,6 +38,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
@@ -63,7 +64,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.regions import get_region
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 
@@ -162,10 +162,8 @@ class DirectIngestRegionDirStructureBase:
                 f"Path [{controller_path}] does not exist.",
             )
 
-            region = get_region(
-                region_code,
-                is_direct_ingest=True,
-                region_module_override=self.region_module_override,
+            region = get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
             )
             with patch(
                 "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
@@ -194,10 +192,8 @@ class DirectIngestRegionDirStructureBase:
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
-            region = get_region(
-                region_code,
-                is_direct_ingest=True,
-                region_module_override=self.region_module_override,
+            region = get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
             )
 
             with patch(
@@ -262,10 +258,8 @@ class DirectIngestRegionDirStructureBase:
         ):
             with patch("recidiviz.utils.metadata.project_id", return_value=project_id):
                 for region_code in self.region_dir_names:
-                    region = get_region(
-                        region_code,
-                        is_direct_ingest=True,
-                        region_module_override=self.region_module_override,
+                    region = get_direct_ingest_region(
+                        region_code, region_module_override=self.region_module_override
                     )
 
                     with patch(
@@ -393,10 +387,8 @@ class DirectIngestRegionDirStructure(
 
     def test_playground_regions_are_marked(self) -> None:
         for region_code in PLAYGROUND_STATE_INFO:
-            region = get_region(
-                region_code,
-                is_direct_ingest=True,
-                region_module_override=self.region_module_override,
+            region = get_direct_ingest_region(
+                region_code, region_module_override=self.region_module_override
             )
             self.assertTrue(region.playground)
 

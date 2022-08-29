@@ -26,6 +26,7 @@ import pytest
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -49,7 +50,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     direct_ingest_fixture_path,
 )
 from recidiviz.utils import csv
-from recidiviz.utils.regions import get_region
 
 DEFAULT_FILE_UPDATE_DATETIME = datetime(2021, 4, 14, 0, 0, 0)
 DEFAULT_QUERY_RUN_DATETIME = datetime(2021, 4, 15, 0, 0, 0)
@@ -72,7 +72,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         region_code: str, ingest_view_name: str
     ) -> DirectIngestPreProcessedIngestViewBuilder:
         return DirectIngestPreProcessedIngestViewCollector(
-            get_region(region_code, is_direct_ingest=True), []
+            get_direct_ingest_region(region_code), []
         ).get_view_builder_by_view_name(ingest_view_name)
 
     def run_ingest_view_test(self, fixtures_files_name: str) -> None:

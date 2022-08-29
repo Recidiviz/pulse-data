@@ -38,11 +38,13 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     STATE_RAW_DATA_FILE_HEADER_PATH,
     DirectIngestDocumentationGenerator,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    get_supported_direct_ingest_region_codes,
+)
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
 INGEST_CATALOG_ROOT = os.path.join(DOCS_ROOT_PATH, "ingest")
 

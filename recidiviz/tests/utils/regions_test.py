@@ -22,9 +22,9 @@ from unittest.mock import MagicMock, patch
 
 from mock import Mock, PropertyMock, mock_open
 
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils import regions
 
 BAD_ENV_BOOL_MANIFEST_CONTENTS = """
     agency_name: Corrections
@@ -54,14 +54,16 @@ class TestRegions(TestCase):
     """Tests for regions.py."""
 
     def setup_method(self, _test_method: Callable) -> None:
-        regions.REGIONS = {}
+        direct_ingest_regions.REGIONS = {}
 
     def teardown_method(self, _test_method: Callable) -> None:
-        regions.REGIONS = {}
+        direct_ingest_regions.REGIONS = {}
 
     def test_get_region_manifest(self) -> None:
         manifest = with_manifest(
-            regions.get_region_manifest, "us_nd", direct_ingest_regions_module
+            direct_ingest_regions.get_direct_ingest_region_manifest,
+            "us_nd",
+            direct_ingest_regions_module,
         )
         assert manifest == {
             "agency_name": "North Dakota Department of Corrections and Rehabilitation",
@@ -71,16 +73,20 @@ class TestRegions(TestCase):
     def test_get_region_manifest_not_found(self) -> None:
         with self.assertRaises(FileNotFoundError):
             with_manifest(
-                regions.get_region_manifest, "us_ab", direct_ingest_regions_module
+                direct_ingest_regions.get_direct_ingest_region_manifest,
+                "us_ab",
+                direct_ingest_regions_module,
             )
 
     def test_invalid_region_error_bool(self) -> None:
         with self.assertRaisesRegex(ValueError, "environment"):
-            with_manifest(regions.get_region, "bad_env_bool")
+            with_manifest(
+                direct_ingest_regions.get_direct_ingest_region, "bad_env_bool"
+            )
 
     def test_invalid_region_error_str(self) -> None:
         with self.assertRaisesRegex(ValueError, "environment"):
-            with_manifest(regions.get_region, "bad_env_str")
+            with_manifest(direct_ingest_regions.get_direct_ingest_region, "bad_env_str")
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     def test_is_ingest_launched_in_env_production(
@@ -137,5 +143,7 @@ def mock_manifest_open(filename: str, *args: Any, **kwargs: Any) -> Iterator[IO]
 
 
 def with_manifest(func: Callable, *args: Any, **kwargs: Any) -> Any:
-    with patch("recidiviz.utils.regions.open", new=mock_manifest_open):
+    with patch(
+        "recidiviz.ingest.direct.direct_ingest_regions.open", new=mock_manifest_open
+    ):
         return func(*args, **kwargs)

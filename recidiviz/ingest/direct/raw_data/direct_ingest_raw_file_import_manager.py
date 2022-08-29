@@ -44,6 +44,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -59,7 +60,6 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(
@@ -557,7 +557,7 @@ class DirectIngestRawFileImportManager:
     def __init__(
         self,
         *,
-        region: Region,
+        region: DirectIngestRegion,
         fs: DirectIngestGCSFileSystem,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,

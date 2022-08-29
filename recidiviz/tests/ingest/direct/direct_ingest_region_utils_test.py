@@ -33,7 +33,7 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
     @patch(
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_existing_direct_ingest_states"
     )
-    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_get_direct_ingest_states_launched_in_env_staging(
         self,
         mock_region: MagicMock,
@@ -53,7 +53,7 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
     @patch(
         "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_existing_direct_ingest_states"
     )
-    @patch("recidiviz.utils.regions.get_region")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_get_direct_ingest_states_launched_in_env_production(
         self,
         mock_region: MagicMock,

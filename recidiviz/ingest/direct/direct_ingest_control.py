@@ -35,6 +35,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
@@ -44,6 +45,10 @@ from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
+)
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    get_supported_direct_ingest_region_codes,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -69,7 +74,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestErrorType,
     DirectIngestInstanceError,
 )
-from recidiviz.utils import metadata, monitoring, regions
+from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_bool_param_value, get_str_param_value
@@ -78,7 +83,6 @@ from recidiviz.utils.pubsub_helper import (
     OBJECT_ID,
     extract_pubsub_message_from_json,
 )
-from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
 
 m_sftp_attempts = measure.MeasureInt(
     "ingest/sftp/attempts",
@@ -617,13 +621,12 @@ def kick_all_schedulers() -> None:
         region = _region_for_region_code(region_code=region_code)
         if not region.is_ingest_launched_in_env():
             continue
-        system_level = SystemLevel.for_region(region)
         for ingest_instance in DirectIngestInstance:
             with monitoring.push_region_tag(
                 region_code, ingest_instance=ingest_instance.value
             ):
                 try:
-                    ingest_instance.check_is_valid_system_level(system_level)
+                    ingest_instance.check_is_valid_system_level(SystemLevel.STATE)
                 except DirectIngestInstanceError:
                     continue
                 controller = DirectIngestControllerFactory.build(
@@ -854,9 +857,9 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def _region_for_region_code(region_code: str) -> Region:
+def _region_for_region_code(region_code: str) -> DirectIngestRegion:
     try:
-        return regions.get_region(region_code.lower(), is_direct_ingest=True)
+        return direct_ingest_regions.get_direct_ingest_region(region_code.lower())
     except FileNotFoundError as e:
         raise DirectIngestError(
             msg=f"Region [{region_code}] has no registered manifest",
