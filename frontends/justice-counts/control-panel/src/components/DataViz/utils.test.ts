@@ -1986,6 +1986,15 @@ const testDatapoints5Transformed: Datapoint[] = [
   },
 ];
 
+beforeAll(() => {
+  jest.useFakeTimers("modern");
+  jest.setSystemTime(new Date(2022, 7, 23));
+});
+
+afterAll(() => {
+  jest.useRealTimers();
+});
+
 describe("incrementMonth", () => {
   test("incrementMonth increments month correctly", () => {
     const testDate = new Date("Tue, 01 Mar 2022 00:00:00 GMT");
