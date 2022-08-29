@@ -42,6 +42,7 @@ from recidiviz.common.ingest_metadata import (
     SystemLevel,
 )
 from recidiviz.common.io.contents_handle import ContentsHandle
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -58,6 +59,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_handle_new_files_task_id,
     build_scheduler_task_id,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -117,8 +119,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment, regions, trace
-from recidiviz.utils.regions import Region
+from recidiviz.utils import environment, trace
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -132,19 +133,12 @@ class BaseDirectIngestController:
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
-        if (
-            region_system_level := SystemLevel.for_region(self.region)
-        ) != SystemLevel.STATE:
-            raise ValueError(
-                f"Direct ingest does not support system level: [{region_system_level}]"
-            )
-
         self.system_level = SystemLevel.STATE
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.ingest_instance = ingest_instance
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
             region_code=self.region.region_code,
-            schema_type=self.system_level.schema_type(),
+            schema_type=SchemaType.STATE,
             ingest_instance=self.ingest_instance,
         )
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
@@ -242,10 +236,9 @@ class BaseDirectIngestController:
         self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
     @property
-    def region(self) -> Region:
-        return regions.get_region(
+    def region(self) -> DirectIngestRegion:
+        return direct_ingest_regions.get_direct_ingest_region(
             self.region_code().lower(),
-            is_direct_ingest=True,
             region_module_override=self.region_module_override,
         )
 
@@ -263,14 +256,10 @@ class BaseDirectIngestController:
 
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
-        schema_type = self.system_level.schema_type()
-        if schema_type == SchemaType.STATE:
-            state_code = StateCode(self.region_code().upper())
-            return self.ingest_instance.database_key_for_state(
-                state_code,
-            )
-
-        return SQLAlchemyDatabaseKey.for_schema(schema_type)
+        state_code = StateCode(self.region_code().upper())
+        return self.ingest_instance.database_key_for_state(
+            state_code,
+        )
 
     # ============== #
     # JOB SCHEDULING #
@@ -684,7 +673,7 @@ class BaseDirectIngestController:
             ingest_view_file_parser=IngestViewResultsParser(
                 delegate=IngestViewResultsParserDelegateImpl(
                     region=self.region,
-                    schema_type=self.system_level.schema_type(),
+                    schema_type=SchemaType.STATE,
                     ingest_instance=self.ingest_instance,
                     results_update_datetime=args.upper_bound_datetime_inclusive,
                 )
@@ -960,7 +949,7 @@ class BaseDirectIngestController:
             )
 
 
-def check_is_region_launched_in_env(region: Region) -> None:
+def check_is_region_launched_in_env(region: DirectIngestRegion) -> None:
     """Checks if direct ingest has been launched for the provided |region| in the current GCP env and throws if it has
     not."""
     if not region.is_ingest_launched_in_env():

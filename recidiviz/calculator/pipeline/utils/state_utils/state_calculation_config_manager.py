@@ -410,6 +410,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_dele
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
@@ -417,7 +418,6 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
 )
-from recidiviz.utils.regions import is_valid_region_directory
 from recidiviz.utils.types import assert_type
 
 
@@ -900,7 +900,7 @@ def get_supported_states() -> Set[StateCode]:
     directories = [
         dir_item
         for dir_item in os.listdir(state_utils_path)
-        if is_valid_region_directory(os.path.join(state_utils_path, dir_item))
+        if is_non_empty_code_directory(os.path.join(state_utils_path, dir_item))
     ]
     supported_states: Set[StateCode] = set()
 

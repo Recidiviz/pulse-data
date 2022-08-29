@@ -290,7 +290,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         ).raw_file_tags
 
         self.region_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_operations_store.get_region",
+            "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_region",
             return_value=fake_region(
                 region_code=StateCode.US_XX.value.lower(),
                 environment="staging",

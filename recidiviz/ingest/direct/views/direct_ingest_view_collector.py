@@ -25,10 +25,10 @@ from more_itertools import one
 
 import recidiviz
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.utils.regions import Region
 
 _INGEST_VIEWS_SUBDIR_NAME = "ingest_views"
 _INGEST_VIEW_FILE_PREFIX = "view_"
@@ -41,7 +41,9 @@ class DirectIngestPreProcessedIngestViewCollector(
     preprocessing views for a given region.
     """
 
-    def __init__(self, region: Region, controller_ingest_view_rank_list: List[str]):
+    def __init__(
+        self, region: DirectIngestRegion, controller_ingest_view_rank_list: List[str]
+    ):
         self.region = region
         self.controller_ingest_view_rank_list = controller_ingest_view_rank_list
 

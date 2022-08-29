@@ -21,9 +21,10 @@ from typing import List
 import yaml
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.file_system import is_non_empty_code_directory
+from recidiviz.ingest.direct import direct_ingest_regions as regions_utils
 from recidiviz.ingest.direct import regions
 from recidiviz.tools import deploy
-from recidiviz.utils import regions as regions_utils
 
 _REGIONS_DIR = os.path.dirname(regions.__file__)
 
@@ -38,7 +39,7 @@ def get_existing_region_dir_names() -> List[str]:
     return [
         d
         for d in os.listdir(_REGIONS_DIR)
-        if regions_utils.is_valid_region_directory(os.path.join(_REGIONS_DIR, d))
+        if is_non_empty_code_directory(os.path.join(_REGIONS_DIR, d))
         and not d.startswith("__")
     ]
 
@@ -56,8 +57,8 @@ def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
     return [
         state_code
         for state_code in get_existing_direct_ingest_states()
-        if regions_utils.get_region(
-            state_code.value.lower(), is_direct_ingest=True
+        if regions_utils.get_direct_ingest_region(
+            state_code.value.lower()
         ).is_ingest_launched_in_env()
     ]
 

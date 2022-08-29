@@ -31,6 +31,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     DirectIngestQueueType,
@@ -51,13 +52,11 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import regions
 
-_REGION = regions.Region(
+_REGION = direct_ingest_regions.DirectIngestRegion(
     region_code="us_xx",
     agency_name="agency_name",
     environment="production",
-    is_direct_ingest=True,
 )
 
 _PRIMARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_state(

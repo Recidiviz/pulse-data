@@ -111,11 +111,10 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         mock_region = fake_region(
             region_code="us_xx",
             environment="staging",
-            is_direct_ingest=True,
             region_module=templates,
         )
         with patch(
-            "recidiviz.utils.regions.get_region",
+            "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
             Mock(return_value=mock_region),
         ):
             with self.assertRaisesRegex(
@@ -140,11 +139,10 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         mock_region = fake_region(
             region_code="us_xx",
             environment="production",
-            is_direct_ingest=True,
             region_module=templates,
         )
         with patch(
-            "recidiviz.utils.regions.get_region",
+            "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
             Mock(return_value=mock_region),
         ):
             controller = DirectIngestControllerFactory.build(

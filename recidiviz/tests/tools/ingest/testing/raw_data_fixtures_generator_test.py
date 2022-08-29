@@ -40,7 +40,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.get_region_patcher = mock.patch(
-            "recidiviz.tools.ingest.testing.raw_data_fixtures_generator.get_region"
+            "recidiviz.tools.ingest.testing.raw_data_fixtures_generator.get_direct_ingest_region"
         ).start()
         self.bq_patcher = mock.patch(
             "recidiviz.tools.ingest.testing.raw_data_fixtures_generator.BigQueryClientImpl"

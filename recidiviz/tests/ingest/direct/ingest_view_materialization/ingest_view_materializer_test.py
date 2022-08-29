@@ -27,6 +27,7 @@ from google.cloud.bigquery import ScalarQueryParameter
 from mock import Mock, patch
 from more_itertools import one
 
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
@@ -58,7 +59,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_single_ingest_view_collector impor
 )
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.regions import Region
 from recidiviz.utils.string import StrictStringFormatter
 
 _ID = 1
@@ -283,7 +283,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         )
 
     @staticmethod
-    def create_fake_region(environment: str = "production") -> Region:
+    def create_fake_region(environment: str = "production") -> DirectIngestRegion:
         return fake_region(
             region_code="US_XX",
             environment=environment,
@@ -291,7 +291,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
 
     def create_materializer(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
     ) -> IngestViewMaterializerImpl:

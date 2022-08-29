@@ -24,6 +24,7 @@ import sqlalchemy
 from freezegun import freeze_time
 from mock import Mock, patch
 
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
 )
@@ -48,7 +49,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_single_ingest_view_collector impor
 )
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.utils.regions import Region
 
 _ID = 1
 _DATE_1 = datetime.datetime(year=2019, month=7, day=20)
@@ -97,7 +97,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
 
     def create_args_generator(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
         ingest_view_name: Optional[str] = None,

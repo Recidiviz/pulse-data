@@ -22,12 +22,7 @@ from datetime import datetime
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.persistence.database.schema_utils import (
-    DirectIngestSchemaType,
-    SchemaType,
-)
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils.regions import Region
 
 
 # TODO(#13703) Eliminate this enum entirely
@@ -38,33 +33,6 @@ class SystemLevel(enum.Enum):
     """
 
     STATE = "STATE"
-
-    def schema_type(
-        self,
-    ) -> DirectIngestSchemaType:
-        if self == SystemLevel.STATE:
-            return SchemaType.STATE
-
-        raise ValueError(f"Unsupported SystemLevel type: {self}")
-
-    @classmethod
-    def for_region(cls, region: Region) -> "SystemLevel":
-        return cls.for_region_code(region.region_code, region.is_direct_ingest)
-
-    @classmethod
-    def for_region_code(
-        cls,
-        region_code: str,  # pylint: disable=unused-argument
-        is_direct_ingest: bool,
-    ) -> "SystemLevel":
-        if is_direct_ingest is None:
-            raise ValueError(
-                "Region flag is_direct_ingest is None, expected boolean value."
-            )
-        if not is_direct_ingest:
-            raise ValueError("Only direct ingest supported.")
-
-        return SystemLevel.STATE
 
 
 @attr.s(frozen=True, kw_only=True)

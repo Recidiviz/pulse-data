@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_scheduler_task_id,
     build_sftp_download_task_id,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
@@ -41,7 +42,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager i
     FakeDirectIngestCloudTaskManager,
 )
 from recidiviz.utils import monitoring
-from recidiviz.utils.regions import Region
 from recidiviz.utils.single_thread_task_queue import SingleThreadTaskQueue
 
 
@@ -71,7 +71,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_extract_and_merge_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: ExtractAndMergeArgs,
     ) -> None:
         if not self.controller:
@@ -90,7 +90,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_scheduler_queue_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
@@ -116,7 +116,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_handle_new_files_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
@@ -143,7 +143,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_raw_data_import_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
@@ -162,7 +162,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_view_materialization_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
         if not self.controller:
@@ -179,18 +179,23 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             task_args,
         )
 
-    def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
+    def create_direct_ingest_sftp_download_task(
+        self, region: DirectIngestRegion
+    ) -> None:
         task_id = build_sftp_download_task_id(region)
         self.sftp_queue.add_task(f"projects/path/to/{task_id}", lambda _: None)
 
     def delete_scheduler_queue_task(
-        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
+        task_name: str,
     ) -> None:
         self.scheduler_queue.delete_task(task_name)
 
     def get_extract_and_merge_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
         with self.extract_and_merge_queue.all_tasks_mutex:
@@ -201,7 +206,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SchedulerCloudTaskQueueInfo:
         with self.scheduler_queue.all_tasks_mutex:
             task_names = self.scheduler_queue.get_unfinished_task_names_unsafe()
@@ -211,7 +216,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_raw_data_import_queue_info(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> RawDataImportCloudTaskQueueInfo:
         with self.raw_data_import_queue.all_tasks_mutex:
             task_names = self.raw_data_import_queue.get_unfinished_task_names_unsafe()
@@ -222,7 +227,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def get_ingest_view_materialization_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         with self.ingest_view_materialization_queue.all_tasks_mutex:
@@ -235,7 +240,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             task_names=task_names,
         )
 
-    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
         with self.sftp_queue.all_tasks_mutex:
             has_unfinished_tasks = self.sftp_queue.get_unfinished_task_names_unsafe()
 

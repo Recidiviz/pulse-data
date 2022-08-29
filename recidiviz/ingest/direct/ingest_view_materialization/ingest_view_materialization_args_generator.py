@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Tuple
 import attr
 
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
 )
@@ -41,7 +42,6 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
     DirectIngestViewMaterializationMetadata,
 )
-from recidiviz.utils.regions import Region
 
 
 @attr.s(frozen=True)
@@ -90,7 +90,7 @@ class IngestViewMaterializationArgsGenerator:
     def __init__(
         self,
         *,
-        region: Region,
+        region: DirectIngestRegion,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         raw_file_metadata_manager: DirectIngestRawFileMetadataManager,
         view_collector: BigQueryViewCollector[

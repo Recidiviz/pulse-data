@@ -29,6 +29,7 @@ from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     yaml_mappings_filepath,
 )
@@ -50,7 +51,6 @@ from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.persistence import persistence
-from recidiviz.utils.regions import Region
 
 IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
 IngestRowPosthookCallable = Callable[
@@ -128,7 +128,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
 
     def __init__(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         delegate: LegacyIngestViewProcessorDelegate,
     ):

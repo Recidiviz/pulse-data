@@ -26,6 +26,7 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -38,7 +39,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.utils import regions
 from recidiviz.utils.string import StrictStringFormatter
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
@@ -101,7 +101,7 @@ class DirectIngestDocumentationGenerator:
             raw_file_config.file_tag for raw_file_config in raw_file_configs
         ]
 
-        region = regions.get_region(region_code=region_code, is_direct_ingest=True)
+        region = direct_ingest_regions.get_direct_ingest_region(region_code=region_code)
 
         view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
         views_by_raw_file = self.get_referencing_views(view_collector)

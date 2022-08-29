@@ -31,7 +31,7 @@ from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
 )
-from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
@@ -42,7 +42,6 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.regions import Region
 
 SCHEDULER_TASK_ID_TAG = "scheduler"
 HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
@@ -80,7 +79,9 @@ def _build_task_id(
 
 
 def build_scheduler_task_id(
-    region: Region, ingest_instance: DirectIngestInstance, prefix_only: bool = False
+    region: DirectIngestRegion,
+    ingest_instance: DirectIngestInstance,
+    prefix_only: bool = False,
 ) -> str:
     return _build_task_id(
         region.region_code,
@@ -91,7 +92,9 @@ def build_scheduler_task_id(
 
 
 def build_handle_new_files_task_id(
-    region: Region, ingest_instance: DirectIngestInstance, prefix_only: bool = False
+    region: DirectIngestRegion,
+    ingest_instance: DirectIngestInstance,
+    prefix_only: bool = False,
 ) -> str:
     return _build_task_id(
         region.region_code,
@@ -102,7 +105,7 @@ def build_handle_new_files_task_id(
 
 
 def build_raw_data_import_task_id(
-    region: Region,
+    region: DirectIngestRegion,
     data_import_args: GcsfsRawDataBQImportArgs,
 ) -> str:
     return _build_task_id(
@@ -114,7 +117,7 @@ def build_raw_data_import_task_id(
 
 
 def build_ingest_view_materialization_task_id(
-    region: Region,
+    region: DirectIngestRegion,
     materialization_args: IngestViewMaterializationArgs,
 ) -> str:
     return _build_task_id(
@@ -126,7 +129,7 @@ def build_ingest_view_materialization_task_id(
 
 
 def build_extract_and_merge_task_id(
-    region: Region, extract_and_merge_args: ExtractAndMergeArgs
+    region: DirectIngestRegion, extract_and_merge_args: ExtractAndMergeArgs
 ) -> str:
     return _build_task_id(
         region.region_code,
@@ -136,7 +139,7 @@ def build_extract_and_merge_task_id(
     )
 
 
-def build_sftp_download_task_id(region: Region) -> str:
+def build_sftp_download_task_id(region: DirectIngestRegion) -> str:
     return _build_task_id(
         region.region_code,
         ingest_instance=DirectIngestInstance.PRIMARY,
@@ -197,10 +200,6 @@ def _queue_name_for_queue_type(
     region_code: str,
     ingest_instance: DirectIngestInstance,
 ) -> str:
-    system_level = SystemLevel.for_region_code(region_code, is_direct_ingest=True)
-    if system_level != SystemLevel.STATE:
-        raise ValueError(f"Unexpected system_level: [{system_level}]")
-
     return _build_direct_ingest_queue_name(region_code, queue_type, ingest_instance)
 
 
@@ -324,7 +323,7 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def get_raw_data_import_queue_info(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> RawDataImportCloudTaskQueueInfo:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
@@ -332,7 +331,7 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def get_extract_and_merge_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
         """Returns information about tasks in the job processing queue for the
@@ -340,7 +339,7 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SchedulerCloudTaskQueueInfo:
         """Returns information about the tasks in the job scheduler queue for
         the given region."""
@@ -348,20 +347,20 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def get_ingest_view_materialization_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
 
     @abc.abstractmethod
-    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
         """Returns information about the tasks in the sftp queue for the given region."""
 
     @abc.abstractmethod
     def create_direct_ingest_extract_and_merge_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: ExtractAndMergeArgs,
     ) -> None:
         """Queues a direct ingest extract and merge task. All direct ingest data
@@ -374,7 +373,7 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_scheduler_queue_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
@@ -392,7 +391,7 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
@@ -410,7 +409,7 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_raw_data_import_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         pass
@@ -418,13 +417,15 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_view_materialization_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
+    def create_direct_ingest_sftp_download_task(
+        self, region: DirectIngestRegion
+    ) -> None:
         """Creates a sftp download task for direct ingest for a given region.
 
         Args:
@@ -433,7 +434,10 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def delete_scheduler_queue_task(
-        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
+        task_name: str,
     ) -> None:
         """Deletes a single task from the region's scheduler queue with the
         fully-qualified |task_name| which follows this format:
@@ -465,7 +469,7 @@ class DirectIngestCloudTaskManager:
         return body
 
     def get_all_ingest_related_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> List[DirectIngestCloudTaskQueueInfo]:
         """Returns all ingest-related queue information."""
         ingest_queue_info: List[DirectIngestCloudTaskQueueInfo] = [
@@ -484,7 +488,7 @@ class DirectIngestCloudTaskManager:
         return ingest_queue_info
 
     def all_ingest_related_queues_are_empty(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> bool:
         """Returns whether all ingest-related queues are empty."""
         ingest_queue_info = self.get_all_ingest_related_queue_info(
@@ -501,7 +505,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
 
     def _get_scheduler_queue_manager(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> CloudTaskQueueManager[SchedulerCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.SCHEDULER, region.region_code, ingest_instance
@@ -514,7 +518,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def _get_raw_data_import_queue_manager(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> CloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.RAW_DATA_IMPORT,
@@ -530,7 +534,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def _get_ingest_view_export_queue_manager(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> CloudTaskQueueManager[IngestViewMaterializationCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
@@ -547,7 +551,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def _get_extract_and_merge_queue_manager(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> CloudTaskQueueManager[ExtractAndMergeCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
@@ -561,7 +565,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def _get_sftp_queue_manager(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> CloudTaskQueueManager[SftpCloudTaskQueueInfo]:
         """Returns the appropriate SFTP queue for teh given region. This uses a standardized
         naming scheme based on the queue type."""
@@ -577,7 +581,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def get_extract_and_merge_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
         return self._get_extract_and_merge_queue_manager(
@@ -586,14 +590,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         ).get_queue_info(task_id_prefix=region.region_code)
 
     def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SchedulerCloudTaskQueueInfo:
         return self._get_scheduler_queue_manager(
             region, ingest_instance
         ).get_queue_info(task_id_prefix=region.region_code)
 
     def get_raw_data_import_queue_info(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> RawDataImportCloudTaskQueueInfo:
         return self._get_raw_data_import_queue_manager(region).get_queue_info(
             task_id_prefix=region.region_code
@@ -601,7 +605,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def get_ingest_view_materialization_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         return self._get_ingest_view_export_queue_manager(
@@ -609,14 +613,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             ingest_instance,
         ).get_queue_info(task_id_prefix=region.region_code)
 
-    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
         return self._get_sftp_queue_manager(region).get_queue_info(
             task_id_prefix=region.region_code
         )
 
     def create_direct_ingest_extract_and_merge_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: ExtractAndMergeArgs,
     ) -> None:
         task_id = build_extract_and_merge_task_id(region, task_args)
@@ -641,7 +645,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_scheduler_queue_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
@@ -663,7 +667,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_handle_new_files_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
@@ -684,7 +688,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_raw_data_import_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         task_id = build_raw_data_import_task_id(region, data_import_args)
@@ -705,7 +709,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_view_materialization_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
         task_id = build_ingest_view_materialization_task_id(region, task_args)
@@ -728,7 +732,9 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             body=body,
         )
 
-    def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
+    def create_direct_ingest_sftp_download_task(
+        self, region: DirectIngestRegion
+    ) -> None:
         task_id = build_sftp_download_task_id(region)
         params = {
             "region": region.region_code.lower(),
@@ -739,7 +745,10 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def delete_scheduler_queue_task(
-        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
+        task_name: str,
     ) -> None:
         self._get_scheduler_queue_manager(region, ingest_instance).delete_task(
             task_name=task_name

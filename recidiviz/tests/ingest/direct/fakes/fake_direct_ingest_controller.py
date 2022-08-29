@@ -32,6 +32,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -82,7 +83,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
 )
-from recidiviz.utils.regions import Region
 from recidiviz.utils.types import assert_type
 
 
@@ -217,7 +217,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
     def __init__(
         self,
         *,
-        region: Region,
+        region: DirectIngestRegion,
         fs: DirectIngestGCSFileSystem,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
@@ -242,7 +242,9 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
 class FakeDirectIngestPreProcessedIngestViewCollector(
     DirectIngestPreProcessedIngestViewCollector
 ):
-    def __init__(self, region: Region, controller_ingest_view_rank_list: List[str]):
+    def __init__(
+        self, region: DirectIngestRegion, controller_ingest_view_rank_list: List[str]
+    ):
         super().__init__(region, controller_ingest_view_rank_list)
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
@@ -281,7 +283,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
     def __init__(
         self,
         *,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,

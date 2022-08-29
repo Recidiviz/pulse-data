@@ -29,6 +29,7 @@ from more_itertools import first
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
@@ -43,7 +44,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
 )
-from recidiviz.utils.regions import get_region
 
 Faker.seed(0)
 FAKE = Faker(locale=["en-US"])
@@ -113,7 +113,7 @@ class RawDataFixturesGenerator:
         self.bq_client = BigQueryClientImpl(project_id=project_id)
 
         view_builder = DirectIngestPreProcessedIngestViewCollector(
-            get_region(region_code, is_direct_ingest=True), []
+            get_direct_ingest_region(region_code), []
         ).get_view_builder_by_view_name(ingest_view_tag)
 
         self.ingest_view_raw_table_configs = (

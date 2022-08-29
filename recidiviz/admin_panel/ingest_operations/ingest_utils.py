@@ -37,6 +37,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsFilePath,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -46,7 +47,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.utils.regions import get_region
 
 
 def _id_for_file(state_code: StateCode, file_name: str) -> int:
@@ -140,7 +140,7 @@ def import_raw_files_to_bq_sandbox(
     try:
         region_code = state_code.value.lower()
         import_manager = DirectIngestRawFileImportManager(
-            region=get_region(region_code, is_direct_ingest=True),
+            region=get_direct_ingest_region(region_code),
             fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
             temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
                 source_bucket, "temp_raw_data"

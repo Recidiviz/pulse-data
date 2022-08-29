@@ -25,6 +25,10 @@ from typing import List, Sequence
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    get_direct_ingest_region,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
@@ -45,7 +49,6 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     direct_ingest_fixture_path,
 )
 from recidiviz.utils.environment import in_ci
-from recidiviz.utils.regions import Region, get_region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
@@ -71,11 +74,8 @@ class StateIngestViewParserTestBase:
     def test(self) -> unittest.TestCase:
         pass
 
-    def _region(self) -> Region:
-        return get_region(
-            self.region_code(),
-            is_direct_ingest=True,
-        )
+    def _region(self) -> DirectIngestRegion:
+        return get_direct_ingest_region(self.region_code())
 
     @classmethod
     def _main_ingest_instance(cls) -> DirectIngestInstance:

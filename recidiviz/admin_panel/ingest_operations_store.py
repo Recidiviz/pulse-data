@@ -30,10 +30,12 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
     get_direct_ingest_queues_for_state,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -71,8 +73,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestInstanceError,
 )
-from recidiviz.utils import metadata, regions
-from recidiviz.utils.regions import get_region
+from recidiviz.utils import metadata
 
 _TASK_LOCATION = "us-east1"
 
@@ -156,7 +157,7 @@ class IngestOperationsStore(AdminPanelStore):
         can_start_ingest = state_code in self.state_codes_launched_in_env
 
         formatted_state_code = state_code.value.lower()
-        region = get_region(formatted_state_code, is_direct_ingest=True)
+        region = get_direct_ingest_region(formatted_state_code)
 
         logging.info(
             "Creating cloud task to schedule next job and kick ingest for %s instance in %s.",
@@ -261,9 +262,8 @@ class IngestOperationsStore(AdminPanelStore):
                 "Ingest reruns can only have raw data source as PRIMARY."
             )
 
-        region = regions.get_region(
-            region_code=formatted_state_code,
-            is_direct_ingest=True,
+        region = direct_ingest_regions.get_direct_ingest_region(
+            region_code=formatted_state_code
         )
         if not self.cloud_task_manager.all_ingest_related_queues_are_empty(
             region, instance
@@ -382,7 +382,7 @@ class IngestOperationsStore(AdminPanelStore):
         }]
         """
         formatted_state_code = state_code.value.lower()
-        region = get_region(formatted_state_code, is_direct_ingest=True)
+        region = get_direct_ingest_region(formatted_state_code)
 
         ingest_bucket_file_tag_counts = self._get_ingest_bucket_file_tag_counts(
             state_code, ingest_instance

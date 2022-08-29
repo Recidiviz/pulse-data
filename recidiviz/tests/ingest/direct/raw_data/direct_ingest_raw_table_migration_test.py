@@ -19,12 +19,12 @@ import datetime
 import os
 import unittest
 
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     RAW_TABLE_MIGRATION_FILE_PREFIX,
     DeleteFromRawTableMigration,
     UpdateRawTableMigration,
 )
-from recidiviz.utils import regions
 from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
@@ -39,7 +39,7 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
 
     def _migration_file_path_for_tag(self, raw_file_tag: str) -> str:
         return os.path.join(
-            os.path.dirname(regions.__file__),
+            os.path.dirname(direct_ingest_regions.__file__),
             self.region_code,
             "raw_data",
             "migrations",

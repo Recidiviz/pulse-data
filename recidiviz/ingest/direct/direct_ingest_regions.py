@@ -22,7 +22,6 @@ criminal justice data and calculate metrics.
 """
 import os
 import pkgutil
-from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set
 
@@ -33,23 +32,16 @@ from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.utils import environment
 from recidiviz.utils.environment import GCPEnvironment
 
-
-class RemovedFromWebsite(Enum):
-    RELEASED = "RELEASED"
-    UNKNOWN_SIGNIFICANCE = "UNKNOWN_SIGNIFICANCE"
-
-
-# Cache of the `Region` objects.
-REGIONS: Dict[str, "Region"] = {}
+# Cache of the `DirectIngestRegion` objects.
+REGIONS: Dict[str, "DirectIngestRegion"] = {}
 
 
 def _to_lower(s: str) -> str:
     return s.lower()
 
 
-# TODO(#13703): Rename to DirectIngestRegion
 @attr.s(frozen=True)
-class Region:
+class DirectIngestRegion:
     """Constructs region entity with attributes and helper functions
 
     Builds a region entity, which holds useful info about a region as properties
@@ -68,8 +60,6 @@ class Region:
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     playground: Optional[bool] = attr.ib(default=False)
-    # TODO(#13703): Remove this flag since it is now always set to true
-    is_direct_ingest: bool = attr.ib(default=True)
 
     def __attrs_post_init__(self) -> None:
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
@@ -96,23 +86,19 @@ class Region:
         )
 
 
-# TODO(#13703): Rename to `get_direct_ingest_region()`
-def get_region(
-    region_code: str,
-    is_direct_ingest: bool = True,
-    region_module_override: Optional[ModuleType] = None,
-) -> Region:
+def get_direct_ingest_region(
+    region_code: str, region_module_override: Optional[ModuleType] = None
+) -> DirectIngestRegion:
     if region_module_override:
         region_module = region_module_override
     else:
         region_module = direct_ingest_regions_module
 
     if region_code not in REGIONS:
-        REGIONS[region_code] = Region(
+        REGIONS[region_code] = DirectIngestRegion(
             region_code=region_code.lower(),
-            is_direct_ingest=is_direct_ingest,
             region_module=region_module,
-            **get_region_manifest(region_code.lower(), region_module),
+            **get_direct_ingest_region_manifest(region_code.lower(), region_module),
         )
     return REGIONS[region_code]
 
@@ -120,11 +106,15 @@ def get_region(
 MANIFEST_NAME = "manifest.yaml"
 
 
-def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str, Any]:
+def get_direct_ingest_region_manifest(
+    region_code: str, region_module: ModuleType
+) -> Dict[str, Any]:
     """Gets manifest for a specific region
 
     Args:
         region_code: (string) Region code
+        region_module: (ModuleType) The module where the ingest configuration for this
+            region resides.
 
     Returns:
         Region manifest as dictionary
@@ -157,21 +147,8 @@ def get_supported_direct_ingest_region_codes() -> Set[str]:
     }
 
 
-def get_supported_direct_ingest_regions() -> List["Region"]:
+def get_supported_direct_ingest_regions() -> List["DirectIngestRegion"]:
     return [
-        get_region(region_code, is_direct_ingest=True)
+        get_direct_ingest_region(region_code)
         for region_code in get_supported_direct_ingest_region_codes()
     ]
-
-
-# TODO(#13703): Move this to a more general location and rename to something like
-#  'is_valid_python_dir()'.
-def is_valid_region_directory(dir_path: str) -> bool:
-    """Returns whether a directory path is valid: it points to an actual directory, the directory is
-    non-empty, and it does not only contain a __pycache__ directory. It is possible to get into that
-    situation when switching from a git branch that contains a region directory from one that
-    doesn't, since __pycache__ directories are ignored by git."""
-    return os.path.isdir(dir_path) and any(
-        path != "__pycache__" and not path.startswith(".")
-        for path in os.listdir(dir_path)
-    )

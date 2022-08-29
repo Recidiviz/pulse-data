@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     build_scheduler_task_id,
     build_sftp_download_task_id,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
     GcsfsRawDataBQImportArgs,
@@ -42,7 +43,6 @@ from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager i
     FakeDirectIngestCloudTaskManager,
 )
 from recidiviz.utils import monitoring
-from recidiviz.utils.regions import Region
 
 
 class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
@@ -68,7 +68,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def get_extract_and_merge_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> ExtractAndMergeCloudTaskQueueInfo:
 
@@ -78,14 +78,14 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         )
 
     def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SchedulerCloudTaskQueueInfo:
         return SchedulerCloudTaskQueueInfo(
             queue_name="schedule", task_names=[t[0] for t in self.scheduler_tasks]
         )
 
     def get_raw_data_import_queue_info(
-        self, region: Region
+        self, region: DirectIngestRegion
     ) -> RawDataImportCloudTaskQueueInfo:
         return RawDataImportCloudTaskQueueInfo(
             queue_name="raw_data_import",
@@ -94,7 +94,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def get_ingest_view_materialization_queue_info(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
     ) -> IngestViewMaterializationCloudTaskQueueInfo:
         return IngestViewMaterializationCloudTaskQueueInfo(
@@ -102,14 +102,14 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             task_names=[t[0] for t in self.ingest_view_materialization_tasks],
         )
 
-    def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
         return SftpCloudTaskQueueInfo(
             queue_name="sftp_download", task_names=[t[0] for t in self.sftp_tasks]
         )
 
     def create_direct_ingest_extract_and_merge_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: ExtractAndMergeArgs,
     ) -> None:
         """Queues *but does not run* a process job task."""
@@ -121,7 +121,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def create_direct_ingest_scheduler_queue_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
@@ -136,7 +136,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def create_direct_ingest_handle_new_files_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
@@ -153,7 +153,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def create_direct_ingest_raw_data_import_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
@@ -165,7 +165,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
     def create_direct_ingest_view_materialization_task(
         self,
-        region: Region,
+        region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
         if not self.controller:
@@ -175,14 +175,19 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             (f"projects/path/to/{task_id}", task_args)
         )
 
-    def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
+    def create_direct_ingest_sftp_download_task(
+        self, region: DirectIngestRegion
+    ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
         task_id = build_sftp_download_task_id(region)
         self.sftp_tasks.append(task_id)
 
     def delete_scheduler_queue_task(
-        self, region: Region, ingest_instance: DirectIngestInstance, task_name: str
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
+        task_name: str,
     ) -> None:
         scheduler_tasks = []
         for task_info in self.scheduler_tasks:

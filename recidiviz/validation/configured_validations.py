@@ -20,7 +20,7 @@ import os
 from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
-from recidiviz.utils import regions
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.validation import config
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -292,7 +292,7 @@ def get_validation_region_configs() -> Dict[str, ValidationRegionConfig]:
 
     validation_region_configs = {}
     for region_code, region_module_path in _get_validation_region_module_paths():
-        region = regions.get_region(region_code.lower(), is_direct_ingest=True)
+        region = direct_ingest_regions.get_direct_ingest_region(region_code.lower())
         if region.is_ingest_launched_in_env():
             config_path = os.path.join(
                 region_module_path, f"{region_code.lower()}_validation_config.yaml"
