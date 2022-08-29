@@ -113,7 +113,7 @@ class DatapointsStore {
         return;
       }
       const response = (await this.api.request({
-        path: `/api/datapoints?agency_id=${currentAgency.id}`,
+        path: `/api/agencies/${currentAgency.id}/datapoints`,
         method: "GET",
       })) as Response;
       if (response.status === 200) {

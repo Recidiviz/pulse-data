@@ -70,7 +70,7 @@ def get_api_blueprint(
 
         return jsonify({"csrf": generate_csrf(secret_key)})
 
-    @api_blueprint.route("/users/update", methods=["POST"])
+    @api_blueprint.route("/users", methods=["PATCH"])
     @auth_decorator
     def update_user_email_and_name() -> Response:
         """
@@ -118,7 +118,7 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/users", methods=["POST"])
+    @api_blueprint.route("/users", methods=["PUT"])
     @auth_decorator
     def create_user_if_necessary() -> Response:
         """Returns user agencies and permissions"""
@@ -174,7 +174,7 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/reports/<report_id>", methods=["POST"])
+    @api_blueprint.route("/reports/<report_id>", methods=["PATCH"])
     @auth_decorator
     @raise_if_user_is_unauthorized
     def update_report(report_id: Optional[str] = None) -> Response:
@@ -227,28 +227,19 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/reports", methods=["GET"])
+    @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])
     @auth_decorator
     @raise_if_user_is_unauthorized
-    def get_reports_by_agency_id() -> Response:
+    def get_reports_by_agency_id(agency_id: str) -> Response:
         try:
-            request_dict = assert_type(request.args.to_dict(), dict)
-            agency_id = request_dict.get("agency_id")
-
-            if agency_id is None:
-                # If no agency_id is specified, pick one of the agencies
-                # that the user belongs to as a default for the home page
-                if len(g.user_context.agency_ids) == 0:
-                    raise JusticeCountsPermissionError(
-                        code="justice_counts_agency_permission",
-                        description="User does not belong to any agencies.",
-                    )
-                agency_id = g.user_context.agency_ids[0]
-
-            agency_id = int(agency_id)
-
+            agency_ids = g.user_context.agency_ids if "user_context" in g else []
+            if int(agency_id) not in agency_ids:
+                raise JusticeCountsPermissionError(
+                    code="justice_counts_agency_permission",
+                    description="User does not belong to the agency they are attempting to get agencies for.",
+                )
             reports = ReportInterface.get_reports_by_agency_id(
-                session=current_session, agency_id=agency_id
+                session=current_session, agency_id=int(agency_id)
             )
             editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
                 session=current_session, reports=reports
@@ -343,15 +334,14 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/metrics/update", methods=["POST"])
+    @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["PUT"])
     @auth_decorator
     @raise_if_user_is_unauthorized
-    def update_metric_settings() -> Response:
+    def update_metric_settings(agency_id: str) -> Response:
         try:
             request_json = assert_type(request.json, dict)
-            agency_id = assert_type(request_json.get("agency_id"), int)
             agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id
+                session=current_session, agency_id=int(agency_id)
             )
             for metric_json in request_json.get("metrics", []):
                 agency_metric = MetricInterface.from_json(
@@ -366,7 +356,7 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/metrics/update/<agency_id>", methods=["GET"])
+    @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["GET"])
     @auth_decorator
     def get_agency_metric_settings(agency_id: str) -> Response:
         try:
@@ -455,7 +445,7 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PUT"])
+    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PATCH"])
     @auth_decorator
     def update_spreadsheet(spreadsheet_id: str) -> Response:
         try:
@@ -507,15 +497,11 @@ def get_api_blueprint(
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
 
-    @api_blueprint.route("/datapoints", methods=["GET"])
+    @api_blueprint.route("agencies/<agency_id>/datapoints", methods=["GET"])
     @auth_decorator
     @raise_if_user_is_unauthorized
-    def get_datapoints_by_agency_id() -> Response:
+    def get_datapoints_by_agency_id(agency_id: str) -> Response:
         try:
-            request_dict = assert_type(request.args.to_dict(), dict)
-
-            agency_id = request_dict.get("agency_id")
-
             if agency_id is None:
                 # If no agency_id is specified, pick one of the agencies
                 # that the user belongs to as a default for the home page
@@ -526,11 +512,9 @@ def get_api_blueprint(
                     )
                 agency_id = g.user_context.agency_ids[0]
 
-            agency_id = int(agency_id)
-
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session,
-                agency_id=agency_id,
+                agency_id=int(agency_id),
                 # we are only fetching reports here to get the list of report
                 # ids in an agency, so no need to fetch datapoints here
                 include_datapoints=False,
