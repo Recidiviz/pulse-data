@@ -83,6 +83,9 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.sentence_relationship_materialized` 
     GROUP BY 1,2,3
     )
+    ,
+    sentence_group_cte AS
+    (
     SELECT
         person_id,
         state_code,
@@ -114,6 +117,8 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_type, NULL)) AS most_severe_classification_type,
         ANY_VALUE(IF(is_longest_in_imposed_group, classification_subtype, NULL)) AS most_severe_classification_subtype,
         LOGICAL_OR(is_violent) AS any_is_violent,
+        LOGICAL_OR(is_sex_offense) AS any_is_sex_offense,
+        LOGICAL_OR(life_sentence) AS any_life_sentence,
         ANY_VALUE(IF(is_longest_in_imposed_group, uccs_code_uniform, NULL)) AS most_severe_uccs_code_uniform,
         ANY_VALUE(IF(is_longest_in_imposed_group, uccs_description_uniform, NULL)) AS most_severe_uccs_description_uniform,
         ANY_VALUE(IF(is_longest_in_imposed_group, uccs_category_uniform, NULL)) AS most_severe_uccs_category_uniform,
@@ -172,6 +177,14 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
     LEFT JOIN consecutive_imposed_group_cte consec
         USING(person_id, state_code, date_imposed)
     GROUP BY 1,2,3,4,5
+    )
+    SELECT
+        ROW_NUMBER() OVER (
+            PARTITION BY person_id, state_code
+            ORDER BY date_imposed
+        ) AS sentence_imposed_group_id,
+        *
+    FROM sentence_group_cte
 """
 
 SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER = SimpleBigQueryViewBuilder(

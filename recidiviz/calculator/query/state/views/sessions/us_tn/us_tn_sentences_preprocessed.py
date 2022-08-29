@@ -159,6 +159,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         dedup.effective_date,
         dedup.date_imposed,
         dedup.completion_date,
+        FALSE AS is_completion_date_inferred,
         sen.status,
         raw.status_raw_text,
         dedup.parole_eligibility_date,
