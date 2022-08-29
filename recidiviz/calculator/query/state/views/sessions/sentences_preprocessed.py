@@ -103,6 +103,38 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND charge.charge_id = assoc.charge_id
     WHERE sss.external_id IS NOT NULL
         AND sss.state_code NOT IN ('{special_states}')
+    ),
+    /*
+    Collect all discharge/release dates to liberty as inferred sentence completion dates
+    */
+    inferred_completion_dates AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS completion_date
+        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        WHERE compartment_level_1 = "LIBERTY"
+            AND state_code NOT IN ('{special_states}')
+    ),
+    /*
+    Use the next successful supervision termination date following the effective date
+    as the sentence completion date in order to bypass sentence completion date
+    hydration issues
+    */
+    sentences_with_inferred_completion_date AS (
+        SELECT
+            sen.* EXCEPT (completion_date),
+            COALESCE(sen.completion_date, comp.completion_date) AS completion_date,
+            sen.completion_date IS NULL AND comp.completion_date IS NOT NULL AS is_completion_date_inferred,
+        FROM sentences_cte sen
+        LEFT JOIN inferred_completion_dates comp
+            ON sen.state_code = comp.state_code
+            AND sen.person_id = comp.person_id
+            AND sen.effective_date < comp.completion_date
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
+            ORDER BY comp.completion_date ASC
+        ) = 1
     )
     /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
@@ -118,6 +150,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.effective_date,
         sen.date_imposed,
         sen.completion_date,
+        sen.is_completion_date_inferred,
         sen.status,
         sen.status_raw_text,
         sen.parole_eligibility_date,
@@ -158,7 +191,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
         ses.session_id AS session_id_closest,
         DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days,
-    FROM sentences_cte sen
+    FROM sentences_with_inferred_completion_date sen
     LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
         USING (person_id, state_code, sentence_id, sentence_type)
     -- TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
