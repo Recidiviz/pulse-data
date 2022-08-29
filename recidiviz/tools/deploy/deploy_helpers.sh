@@ -187,21 +187,6 @@ function check_running_in_pipenv_shell {
     fi
 }
 
-function check_docker_running {
-    if [[ -z $(which docker) ]]; then
-        echo_error "Docker not installed. Please follow instructions in repo README to install."
-        echo_error "Also make sure you've configured gcloud docker permissions with:"
-        echo_error "    $ gcloud auth login"
-        echo_error "    $ gcloud auth configure-docker"
-        exit 1
-    fi
-
-    docker info > /dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
-        echo_error "The docker daemon doesn't seem to be running. Please start it before continuing the script."
-        exit 1
-    fi
-}
 
 function check_terraform_installed {
     if [[ -z $(which terraform) ]]; then
