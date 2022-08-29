@@ -27,7 +27,6 @@ from psycopg2.errorcodes import SERIALIZATION_FAILURE
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     LegacyStateAndJailsIngestMetadata,
-    SystemLevel,
 )
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.database.session import Session
@@ -100,13 +99,11 @@ ENUM_THRESHOLD = "enum_threshold"
 ENTITY_MATCHING_THRESHOLD = "entity_matching_threshold"
 DATABASE_INVARIANT_THRESHOLD = "database_invariant_threshold"
 
-SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
-    SystemLevel.STATE: {
-        OVERALL_THRESHOLD: 0.5,
-        ENUM_THRESHOLD: 0.0,
-        ENTITY_MATCHING_THRESHOLD: 0.0,
-        DATABASE_INVARIANT_THRESHOLD: 0.0,
-    },
+SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[str, float] = {
+    OVERALL_THRESHOLD: 0.5,
+    ENUM_THRESHOLD: 0.0,
+    ENTITY_MATCHING_THRESHOLD: 0.0,
+    DATABASE_INVARIANT_THRESHOLD: 0.0,
 }
 
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = {
@@ -125,7 +122,6 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
 
 def _should_abort(
     total_root_entities: int,
-    system_level: SystemLevel,
     conversion_result: EntityDeserializationResult,
     region_code: str,
     entity_matching_errors: int = 0,
@@ -151,7 +147,7 @@ def _should_abort(
             m.measure_int_put(m_aborts, 1)
         return True
 
-    error_thresholds = _get_thresholds_for_system_level(system_level, region_code)
+    error_thresholds = _get_thresholds_for_region(region_code)
 
     overall_error_ratio = _calculate_overall_error_ratio(
         conversion_result,
@@ -212,16 +208,9 @@ def _calculate_overall_error_ratio(
     ) / total_root_entities
 
 
-def _get_thresholds_for_system_level(
-    system_level: SystemLevel, region_code: str
-) -> Dict[str, float]:
+def _get_thresholds_for_region(region_code: str) -> Dict[str, float]:
     """Returns the dictionary of error thresholds for a given system level."""
-    error_thresholds = SYSTEM_TYPE_TO_ERROR_THRESHOLD.get(system_level)
-
-    if error_thresholds is None:
-        raise ValueError(
-            f"Found no error thresholds associated with `system_level=[{system_level}]`"
-        )
+    error_thresholds = SYSTEM_TYPE_TO_ERROR_THRESHOLD
 
     state_code: str = region_code.upper()
 
@@ -311,6 +300,8 @@ def retry_transaction(
         measurements.measure_int_put(m_retries, num_retries)
 
 
+# TODO(#8905): Once direct ingest regions have migrated to ingest mappings overhaul,
+#  delete this function.
 @trace.span
 def write_ingest_info(
     ingest_info: IngestInfo,
@@ -331,9 +322,6 @@ def write_ingest_info(
     the session.
     """
     ingest_info_validator.validate(ingest_info)
-
-    # TODO(#8905): Once direct ingest regions have migrated to ingest mappings overhaul,
-    #  assert that SystemLevel != STATE here.
 
     # Convert the people one at a time and count the errors as they happen.
     conversion_result: EntityDeserializationResult = (
@@ -395,7 +383,6 @@ def write_entities(
 
         if _should_abort(
             total_root_entities=total_people,
-            system_level=ingest_metadata.system_level,
             conversion_result=conversion_result,
             region_code=ingest_metadata.region,
             data_validation_errors=data_validation_errors,
@@ -428,7 +415,6 @@ def write_entities(
             )
             if _should_abort(
                 total_root_entities=total_root_entities,
-                system_level=ingest_metadata.system_level,
                 conversion_result=conversion_result,
                 region_code=ingest_metadata.region,
                 entity_matching_errors=entity_matching_output.error_count,
@@ -441,7 +427,6 @@ def write_entities(
             database_invariant_errors = (
                 database_invariant_validator.validate_invariants(
                     session,
-                    ingest_metadata.system_level,
                     ingest_metadata.region,
                     output_people,
                 )
@@ -449,7 +434,6 @@ def write_entities(
 
             if _should_abort(
                 total_root_entities=total_root_entities,
-                system_level=ingest_metadata.system_level,
                 conversion_result=conversion_result,
                 region_code=ingest_metadata.region,
                 database_invariant_errors=database_invariant_errors,

@@ -37,7 +37,6 @@ from typing import (
 
 import more_itertools
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.extractor.data_extractor import DataExtractor
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
@@ -102,7 +101,6 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
             AncestorChainOverridesCallable
         ] = None,
         primary_key_override_callback: Optional[PrimaryKeyOverrideCallable] = None,
-        system_level: SystemLevel = SystemLevel.STATE,
         set_with_empty_value: bool = False,
     ) -> None:
         """
@@ -116,7 +114,6 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
             for an ancestor of the object being constructed by a row in the file
             primary_key_override_callback: a callable that returns the key for
                 the primary object being constructed by a row in the file
-            system_level: whether this is a COUNTY- or STATE-level ingest
             set_with_empty_value: a flag that specifies whether rows whose
                 non-ignored columns are all empty should still instantiate a new
                 object. Defaults to False. Typically should only be True if
@@ -151,7 +148,6 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         self.primary_key_override_callback: Optional[
             PrimaryKeyOverrideCallable
         ] = primary_key_override_callback
-        self.system_level: SystemLevel = system_level
         self.set_with_empty_value: bool = set_with_empty_value
 
         self.keys.update(self.child_keys)
@@ -346,9 +342,7 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         return []
 
     def _instantiate_person(self, ingest_info: IngestInfo) -> None:
-        if self.system_level == SystemLevel.STATE:
-            ingest_info.create_state_person()
-        raise ValueError(f"Unexpected SystemLevel: {self.system_level}")
+        ingest_info.create_state_person()
 
     def _pre_process_row(self, row: Dict[str, str]) -> None:
         """Applies pre-processing on the data in the given row, before we

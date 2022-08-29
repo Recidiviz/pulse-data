@@ -34,7 +34,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     LegacyStateAndJailsIngestMetadata,
-    SystemLevel,
 )
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -53,7 +52,6 @@ class FakeLegacyStateAndJailsIngestMetadata(IngestMetadata):
             region=region,
             ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
             enum_overrides=enum_overrides or EnumOverrides.empty(),
-            system_level=SystemLevel.STATE,
             database_key=SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE),
         )
 

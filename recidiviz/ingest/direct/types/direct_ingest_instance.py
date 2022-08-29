@@ -20,8 +20,6 @@ given region.
 from enum import Enum
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -38,15 +36,6 @@ class DirectIngestInstance(Enum):
     # Ingest instance that may be used for background ingest operations, such as a full
     # rerun.
     SECONDARY = "SECONDARY"
-
-    def check_is_valid_system_level(self, system_level: SystemLevel) -> None:
-        """Throws a DirectIngestInstanceError if this is not a valid instance for the
-        given system level.
-        """
-        if system_level != SystemLevel.STATE:
-            raise DirectIngestInstanceError(
-                f"Direct ingest for [{system_level}] not supported."
-            )
 
     def database_key_for_state(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
         """Returns the key to the database corresponding to the provided state code and

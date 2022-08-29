@@ -23,7 +23,7 @@ from unittest import TestCase
 import pytest
 from mock import Mock, patch
 
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
@@ -64,7 +64,6 @@ STATE_CODE = "US_XX"
 COUNTY_CODE = "COUNTY"
 DEFAULT_METADATA = IngestMetadata(
     region="us_xx",
-    system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1),
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
@@ -81,12 +80,10 @@ INCARCERATION_PERIOD_ID_3 = "IP3"
 INCARCERATION_PERIOD_ID_4 = "IP4"
 
 STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
-    SystemLevel.STATE: {
-        OVERALL_THRESHOLD: 0.4,
-        ENUM_THRESHOLD: 0.4,
-        ENTITY_MATCHING_THRESHOLD: 0.4,
-        DATABASE_INVARIANT_THRESHOLD: 0,
-    }
+    OVERALL_THRESHOLD: 0.4,
+    ENUM_THRESHOLD: 0.4,
+    ENTITY_MATCHING_THRESHOLD: 0.4,
+    DATABASE_INVARIANT_THRESHOLD: 0,
 }
 
 FAKE_PROJECT_ID = "fake-project"
@@ -342,9 +339,7 @@ class TestStatePersistence(TestCase):
         # Set the ENTITY_MATCHING_THRESHOLD to 0, such that we can verify that the forty percent threshold for
         # ENTITY_MATCHING_THRESHOLD is dictated by the state-specific override in
         # STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT.
-        STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[SystemLevel.STATE][
-            ENTITY_MATCHING_THRESHOLD
-        ] = 0
+        STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[ENTITY_MATCHING_THRESHOLD] = 0
 
         # Arrange
         person_1 = entities.StatePerson.new_with_defaults(

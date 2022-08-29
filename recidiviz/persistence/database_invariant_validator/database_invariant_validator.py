@@ -19,7 +19,6 @@
 import logging
 from typing import Callable, List
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
@@ -32,8 +31,6 @@ ValidatorType = Callable[[Session, str, List[SchemaPersonType]], bool]
 
 def validate_invariants(
     session: Session,
-    # TODO(#13703): Delete this param entirely.
-    system_level: SystemLevel,
     region_code: str,
     output_people: List[SchemaPersonType],
 ) -> int:
@@ -41,15 +38,11 @@ def validate_invariants(
 
     Args:
         session: The database session
-        system_level: Denotes relevant schema we're ingesting for (always STATE)
         region_code: The string region code associated with this ingest job
         output_people: A list of all schema person objects touched by this session.
     """
 
-    if system_level == SystemLevel.STATE:
-        validators: List[ValidatorType] = get_state_database_invariant_validators()
-    else:
-        raise ValueError(f"Unexpected system level [{system_level}]")
+    validators: List[ValidatorType] = get_state_database_invariant_validators()
 
     errors = 0
     for validator_fn in validators:

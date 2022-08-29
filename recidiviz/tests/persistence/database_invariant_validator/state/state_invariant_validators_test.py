@@ -22,7 +22,6 @@ from typing import Optional
 import pytest
 from more_itertools import one
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -57,7 +56,6 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.system_level = SystemLevel.STATE
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
@@ -74,9 +72,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             self.database_key, autocommit=False
         ) as session:
             # Act
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, []
-            )
+            errors = validate_invariants(session, self.state_code, [])
 
             # Assert
             self.assertEqual(0, errors)
@@ -103,9 +99,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
                 SessionIsDirtyError,
                 r"^Session unexpectedly dirty - flush before querying the database\.$",
             ):
-                _ = validate_invariants(
-                    session, self.system_level, self.state_code, output_people
-                )
+                _ = validate_invariants(session, self.state_code, output_people)
 
     def test_add_person_simple(self) -> None:
         # Arrange
@@ -126,9 +120,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             output_people = [db_person]
 
             # Act
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, output_people
-            )
+            errors = validate_invariants(session, self.state_code, output_people)
 
             # Assert
             self.assertEqual(0, errors)
@@ -157,9 +149,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             output_people = [db_person]
 
             # Act
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, output_people
-            )
+            errors = validate_invariants(session, self.state_code, output_people)
 
             # Assert
             self.assertEqual(1, errors)
@@ -190,9 +180,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             output_people = [db_person]
 
             # Act
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, output_people
-            )
+            errors = validate_invariants(session, self.state_code, output_people)
 
             # Assert
             self.assertEqual(0, errors)
@@ -230,9 +218,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
             output_people = [person_to_update]
 
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, output_people
-            )
+            errors = validate_invariants(session, self.state_code, output_people)
 
             # Assert
             self.assertEqual(1, errors)
@@ -265,9 +251,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
             output_people = [db_person, db_person_2]
 
-            errors = validate_invariants(
-                session, self.system_level, self.state_code, output_people
-            )
+            errors = validate_invariants(session, self.state_code, output_people)
 
             # Assert
             self.assertEqual(0, errors)

@@ -20,13 +20,9 @@ TODO(#8905): Delete this file once all states have been migrated to v2 ingest
  mappings.
 """
 
-from recidiviz.common.ingest_metadata import (
-    LegacyStateAndJailsIngestMetadata,
-    SystemLevel,
-)
+from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.ingest_info_converter.base_converter import (
-    BaseConverter,
     EntityDeserializationResult,
 )
 from recidiviz.persistence.ingest_info_converter.state.state_converter import (
@@ -39,18 +35,5 @@ from recidiviz.utils import trace
 def convert_to_persistence_entities(
     ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
 ) -> EntityDeserializationResult:
-    converter = _get_converter(ingest_info, metadata)
+    converter = StateConverter(ingest_info, metadata)
     return converter.run_convert()
-
-
-def _get_converter(
-    ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
-) -> BaseConverter:
-    system_level = metadata.system_level
-
-    if system_level == SystemLevel.STATE:
-        return StateConverter(ingest_info, metadata)
-
-    raise ValueError(
-        f"Ingest metadata includes invalid system level of [{system_level}]"
-    )

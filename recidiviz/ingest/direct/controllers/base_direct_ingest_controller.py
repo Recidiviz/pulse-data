@@ -39,7 +39,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import (
     IngestMetadata,
     LegacyStateAndJailsIngestMetadata,
-    SystemLevel,
 )
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct import direct_ingest_regions
@@ -133,7 +132,6 @@ class BaseDirectIngestController:
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
-        self.system_level = SystemLevel.STATE
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         self.ingest_instance = ingest_instance
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
@@ -717,13 +715,11 @@ class BaseDirectIngestController:
                 region=self.region.region_code,
                 ingest_time=args.ingest_time,
                 enum_overrides=enum_overrides,
-                system_level=self.system_level,
                 database_key=self.ingest_database_key,
             )
         return IngestMetadata(
             region=self.region.region_code,
             ingest_time=args.ingest_time,
-            system_level=self.system_level,
             database_key=self.ingest_database_key,
         )
 

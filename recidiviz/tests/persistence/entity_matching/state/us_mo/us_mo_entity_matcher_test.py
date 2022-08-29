@@ -18,7 +18,7 @@
 import datetime
 from typing import List
 
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -42,7 +42,6 @@ _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
 DEFAULT_METADATA = IngestMetadata(
     region=_US_MO,
-    system_level=SystemLevel.STATE,
     ingest_time=datetime.datetime(year=1000, month=1, day=1),
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE

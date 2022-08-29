@@ -34,7 +34,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
@@ -72,7 +71,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance_factory import (
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
-    DirectIngestInstanceError,
 )
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -625,10 +623,6 @@ def kick_all_schedulers() -> None:
             with monitoring.push_region_tag(
                 region_code, ingest_instance=ingest_instance.value
             ):
-                try:
-                    ingest_instance.check_is_valid_system_level(SystemLevel.STATE)
-                except DirectIngestInstanceError:
-                    continue
                 controller = DirectIngestControllerFactory.build(
                     region_code=region_code,
                     ingest_instance=ingest_instance,
