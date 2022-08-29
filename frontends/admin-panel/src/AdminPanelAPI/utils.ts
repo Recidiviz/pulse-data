@@ -68,3 +68,38 @@ export const postAuthWithURLAndBody = async (
     },
   });
 };
+
+export const patchAuthWithURLAndBody = async (
+  url: string,
+  body: Record<string, unknown> = {}
+): Promise<Response> => {
+  return fetch(`/auth${url}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const putAuthWithURLAndBody = async (
+  url: string,
+  body: Record<string, unknown> = {}
+): Promise<Response> => {
+  return fetch(`/auth${url}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
+export const deleteResource = async (url: string): Promise<Response> => {
+  return fetch(`/auth${url}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};

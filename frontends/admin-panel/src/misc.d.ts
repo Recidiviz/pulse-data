@@ -59,9 +59,7 @@ interface StateUserPermissionsResponse {
   allowedSupervisionLocationLevel: string;
   canAccessLeadershipDashboard: boolean;
   canAccessCaseTriage: boolean;
-  routes: {
-    [route: string]: boolean;
-  };
+  routes: string; // converted into JSON after response
   shouldSeeBetaCharts: boolean;
   blocked: boolean;
   firstName: string;
@@ -69,4 +67,5 @@ interface StateUserPermissionsResponse {
   externalId: string;
   role: string;
   district: string;
+  useCustomPermissions: boolean;
 }

@@ -6,3 +6,4 @@ US_TN,nolastname@recidiviz.org,external,line_staff_user,4,Jane,
 US_MO,nodistrict@recidiviz.org,NDISTRICT,leadership_role,,First,Last
 US_CO,jane@domain.org,,leadership_role,,Jane,Doe
 US_MO,missouri@recidiviz.org,54321,level_1_access_role,"1A, 2B",Hello,World
+US_CO,bug_testing@recidiviz.org,,leadership_role,,,

@@ -24,9 +24,13 @@ from typing import Any, Dict, List, Mapping, Tuple, Union
 
 import sqlalchemy.orm.exc
 from flask import Blueprint, Response, jsonify, request
-from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
+from psycopg2.errors import (  # pylint: disable=no-name-in-module
+    NotNullViolation,
+    UniqueViolation,
+)
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
+from sqlalchemy.sql import Update
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
@@ -35,12 +39,14 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
     get_cloud_task_json_body,
 )
+from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
 )
@@ -378,7 +384,8 @@ def users() -> Union[str, Response]:
                     False,
                 ).label("should_see_beta_charts"),
                 func.coalesce(
-                    PermissionsOverride.routes, StateRolePermissions.routes
+                    PermissionsOverride.routes,
+                    StateRolePermissions.routes,
                 ).label("routes"),
             )
             .select_from(Roster)
@@ -442,17 +449,10 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         ) as session:
-            request_json = assert_type(request.json, dict)
-            state_code = assert_type(
-                request_json.get("stateCode"), str
-            )  # required field for new user, non-nullable
-            external_id = request_json.get("externalId")
-            role = assert_type(
-                request_json.get("role"), str
-            )  # required field for new user, non-nullable
-            district = request_json.get("district")
-            first_name = request_json.get("firstName")
-            last_name = request_json.get("lastName")
+            user_dict = convert_nested_dictionary_keys(
+                assert_type(request.json, dict), to_snake_case
+            )
+            user_dict["email_address"] = email
             if (
                 session.query(Roster).filter(Roster.email_address == email).first()
                 is not None
@@ -461,23 +461,9 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                     "A user with this email already exists in Roster.",
                     HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
-            user = UserOverride(
-                state_code=state_code,
-                email_address=email,
-                external_id=external_id,
-                role=role,
-                district=district,
-                first_name=first_name,
-                last_name=last_name,
-            )
+            user = UserOverride(**user_dict)
             session.add(user)
             session.commit()
-            permissions = (
-                session.query(StateRolePermissions)
-                .filter(StateRolePermissions.state_code == state_code)
-                .filter(StateRolePermissions.role == role)
-                .first()
-            )
             return (
                 jsonify(
                     {
@@ -488,25 +474,6 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                         "district": user.district,
                         "firstName": user.first_name,
                         "lastName": user.last_name,
-                        "allowedSupervisionLocationIds": user.district
-                        if user.state_code == "US_MO"
-                        else "",
-                        "allowedSupervisionLocationLevel": "level_1_supervision_location"
-                        if user.state_code == "US_MO" and user.district is not None
-                        else "",
-                        "canAccessLeadershipDashboard": permissions.can_access_leadership_dashboard
-                        if permissions is not None
-                        else False,
-                        "canAccessCaseTriage": permissions.can_access_case_triage
-                        if permissions is not None
-                        else False,
-                        "shouldSeeBetaCharts": permissions.should_see_beta_charts
-                        if permissions is not None
-                        else False,
-                        "routes": permissions.routes
-                        if permissions is not None
-                        else None,
-                        "blocked": False,
                     }
                 ),
                 HTTPStatus.OK,
@@ -517,8 +484,13 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 "A user with this email already exists in UserOverride.",
                 HTTPStatus.UNPROCESSABLE_ENTITY,
             )
+        if isinstance(e.orig, NotNullViolation):
+            return (
+                f"{e}",
+                HTTPStatus.BAD_REQUEST,
+            )
         raise e
-    except ValueError as error:
+    except ProgrammingError as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,
@@ -561,4 +533,157 @@ def state_info(state_code: str) -> Response:
                     ],
                 }
             ]
+        )
+
+
+@auth_endpoint_blueprint.route("/users/<email>", methods=["PATCH"])
+@requires_gae_auth
+def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Edits an existing user's info by adding or updating an entry for that user in UserOverride."""
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            user_dict = convert_nested_dictionary_keys(
+                assert_type(request.json, dict), to_snake_case
+            )
+            user_dict["email_address"] = email
+            if (
+                session.query(UserOverride)
+                .filter(UserOverride.email_address == email)
+                .first()
+                is None
+            ):
+                user = UserOverride(**user_dict)
+                session.add(user)
+                session.commit()
+                return (
+                    jsonify(
+                        {
+                            "stateCode": user.state_code,
+                            "emailAddress": user.email_address,
+                            "externalId": user.external_id,
+                            "role": user.role,
+                            "district": user.district,
+                            "firstName": user.first_name,
+                            "lastName": user.last_name,
+                        }
+                    ),
+                    HTTPStatus.OK,
+                )
+            session.execute(
+                Update(UserOverride)
+                .where(UserOverride.email_address == email)
+                .values(user_dict)
+            )
+            updated_user = (
+                session.query(UserOverride)
+                .filter(UserOverride.email_address == email)
+                .first()
+            )
+            return (
+                jsonify(
+                    {
+                        "stateCode": updated_user.state_code,
+                        "emailAddress": updated_user.email_address,
+                        "externalId": updated_user.external_id,
+                        "role": updated_user.role,
+                        "district": updated_user.district,
+                        "firstName": updated_user.first_name,
+                        "lastName": updated_user.last_name,
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+    except IntegrityError as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/users/<email>/permissions", methods=["PUT"])
+@requires_gae_auth
+def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Gives a state user custom permissions by adding or updating an entry for that user in Permissions Override."""
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            request_json = assert_type(request.json, dict)
+            user_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
+            user_dict["user_email"] = email
+            routes_json = request_json.get(
+                "routes"
+            )  # user_dict's value for "routes" shouldn't be in snake case
+            if routes_json is not None:
+                user_dict["routes"] = assert_type(routes_json, dict)
+            if (
+                session.query(PermissionsOverride)
+                .filter(PermissionsOverride.user_email == email)
+                .first()
+                is None
+            ):
+                new_permissions = PermissionsOverride(**user_dict)
+                session.add(new_permissions)
+                session.commit()
+                return (
+                    jsonify(
+                        {
+                            "emailAddress": new_permissions.user_email,
+                            "canAccessLeadershipDashboard": new_permissions.can_access_leadership_dashboard,
+                            "canAccessCaseTriage": new_permissions.can_access_case_triage,
+                            "shouldSeeBetaCharts": new_permissions.should_see_beta_charts,
+                            "routes": new_permissions.routes,
+                        }
+                    ),
+                    HTTPStatus.OK,
+                )
+            session.execute(
+                Update(PermissionsOverride)
+                .where(PermissionsOverride.user_email == email)
+                .values(user_dict)
+            )
+            updated_permissions = (
+                session.query(PermissionsOverride)
+                .filter(PermissionsOverride.user_email == email)
+                .first()
+            )
+            return (
+                jsonify(
+                    {
+                        "emailAddress": updated_permissions.user_email,
+                        "canAccessLeadershipDashboard": updated_permissions.can_access_leadership_dashboard,
+                        "canAccessCaseTriage": updated_permissions.can_access_case_triage,
+                        "shouldSeeBetaCharts": updated_permissions.should_see_beta_charts,
+                        "routes": updated_permissions.routes,
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+    except (StatementError, TypeError, ValueError) as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/users/<email>/permissions", methods=["DELETE"])
+@requires_gae_auth
+def delete_user_permissions(email: str) -> tuple[str, int]:
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            overrides = session.query(PermissionsOverride).filter(
+                PermissionsOverride.user_email == email
+            )
+            if overrides.first() is None:
+                raise ValueError
+            overrides.delete(synchronize_session=False)
+            return (
+                f"{email} has been deleted from PermissionsOverride.",
+                HTTPStatus.OK,
+            )
+    except ValueError:
+        return (
+            f"An entry for {email} in PermissionsOverride does not exist.",
+            HTTPStatus.BAD_REQUEST,
         )

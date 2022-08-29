@@ -111,6 +111,8 @@ export {
 } from "./IngestOperations";
 export { createAgency, getAgencies, getUsers } from "./JusticeCountsTools";
 export {
+  createNewUser,
+  deleteCustomUserPermissions,
   fetchEmailStateCodes,
   fetchETLViewIds,
   fetchRawFilesStateCodes,
@@ -118,6 +120,7 @@ export {
   generateNonETLExports,
   getPOFeedback,
   getStateUserPermissions,
-  createNewUser,
   runCloudSQLImport,
+  updateUser,
+  updateUserPermissions,
 } from "./LineStaffTools";

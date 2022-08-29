@@ -43,7 +43,7 @@ import JusticeCountsBulkUploadView from "./JusticeCountsTools/BulkUpload";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
-import StateUserPermissionsView from "./StateUserPermissionsView";
+import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import TableView from "./TableView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";

@@ -18,6 +18,8 @@
 
 from typing import List
 
+from sqlalchemy import sql
+
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseTriageBase,
     DashboardUserRestrictions,
@@ -128,7 +130,7 @@ def generate_fake_permissions_overrides(
     can_access_leadership_dashboard: bool = None,
     can_access_case_triage: bool = None,
     should_see_beta_charts: bool = None,
-    routes: dict = None,
+    routes: dict = sql.null(),
 ) -> PermissionsOverride:
     return PermissionsOverride(
         user_email=email,
