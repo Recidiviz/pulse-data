@@ -43,6 +43,6 @@ class IngestMetadata:
 # TODO(#8905): Delete this class once we have migrated all direct ingest states to
 #  ingest mappings v2.
 @attr.s(frozen=True, kw_only=True)
-class LegacyStateAndJailsIngestMetadata(IngestMetadata):
+class LegacyStateIngestMetadata(IngestMetadata):
     # Region specific mapping which takes precedence over the global mapping.
     enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)

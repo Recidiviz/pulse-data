@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecisionStatus,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateEarlyDischarge
 from recidiviz.persistence.entity.state import entities
 
@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     early_discharge_builder: entities.StateEarlyDischarge.Builder,
     proto: StateEarlyDischarge,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Converts an ingest_info proto StateEarlyDischarge to a early discharge entity."""
     new = early_discharge_builder

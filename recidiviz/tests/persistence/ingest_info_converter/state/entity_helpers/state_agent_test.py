@@ -23,10 +23,10 @@ from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import state_agent
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("us_nd")
+_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
 
 class StateAgentConverterTest(unittest.TestCase):

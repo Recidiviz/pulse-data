@@ -34,10 +34,10 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_contact,
 )
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state("us_ca")
+_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_ca")
 
 
 class StateSupervisionContactConverterTest(unittest.TestCase):

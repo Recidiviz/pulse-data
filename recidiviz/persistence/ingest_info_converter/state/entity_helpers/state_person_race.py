@@ -20,7 +20,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonRace
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -31,7 +31,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StatePersonRace, metadata: LegacyStateAndJailsIngestMetadata
+    proto: StatePersonRace, metadata: LegacyStateIngestMetadata
 ) -> entities.StatePersonRace:
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonRace.builder()

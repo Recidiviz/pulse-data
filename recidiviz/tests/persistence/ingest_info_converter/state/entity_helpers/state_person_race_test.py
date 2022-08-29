@@ -25,10 +25,10 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_person_race,
 )
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state(
+_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state(
     region="us_nd",
 )
 

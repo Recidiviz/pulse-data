@@ -20,7 +20,7 @@ TODO(#8905): Delete this file once all states have been migrated to v2 ingest
  mappings.
 """
 
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     EntityDeserializationResult,
@@ -33,7 +33,7 @@ from recidiviz.utils import trace
 
 @trace.span
 def convert_to_persistence_entities(
-    ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
+    ingest_info: IngestInfo, metadata: LegacyStateIngestMetadata
 ) -> EntityDeserializationResult:
     converter = StateConverter(ingest_info, metadata)
     return converter.run_convert()

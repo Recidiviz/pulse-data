@@ -36,10 +36,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    LegacyStateAndJailsIngestMetadata,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
@@ -711,7 +708,7 @@ class BaseDirectIngestController:
                     f"Expected LegacyIngestViewProcessorDelegate to also be a "
                     f"BaseDirectIngestController, found [{type(self)}]."
                 )
-            return LegacyStateAndJailsIngestMetadata(
+            return LegacyStateIngestMetadata(
                 region=self.region.region_code,
                 ingest_time=args.ingest_time,
                 enum_overrides=enum_overrides,
