@@ -261,11 +261,14 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_rows import (
-    CLIENT_RECORD_ARCHIVE_DUPLICATE_ROWS_VIEW_BUILDER,
+from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_person_ids import (
+    CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.workflows.client_record_archive_missing_days import (
     CLIENT_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.client_record_duplicate_person_external_ids import (
+    CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
 
 
@@ -438,10 +441,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=CLIENT_RECORD_ARCHIVE_DUPLICATE_ROWS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
@@ -762,6 +761,28 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "most_recent_etl_face_to_face_contact_date",
                 "most_recent_state_face_to_face_contact_date",
             ],
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_VIEW_BUILDER,
+            comparison_columns=[
+                "unique_person_ids",
+                "client_records",
+            ],
+            soft_max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
+            comparison_columns=[
+                "unique_person_external_ids",
+                "client_records",
+            ],
+            soft_max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
         ),
