@@ -142,7 +142,7 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
-        ii = self._parse_ingest_info(args, contents_handle, ingest_metadata)
+        ii = self._parse_ingest_info(args, contents_handle)
         if not ii:
             raise DirectIngestError(
                 error_type=DirectIngestErrorType.PARSE_ERROR,
@@ -164,7 +164,6 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
         self,
         args: ExtractAndMergeArgs,
         contents_handle: ContentsHandle,
-        ingest_metadata: IngestMetadata,
     ) -> ingest_info.IngestInfo:
         """Parses ingest view query results into an IngestInfo object."""
         ingest_view_name = args.ingest_view_name
@@ -206,7 +205,6 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
             file_post_processors,
             ancestor_chain_overrides_callback,
             primary_key_override_callback,
-            ingest_metadata.system_level,
             should_set_with_empty_values,
         )
 

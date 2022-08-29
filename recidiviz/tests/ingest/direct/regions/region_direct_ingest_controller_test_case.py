@@ -32,7 +32,6 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -168,12 +167,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.entity_matching_error_threshold_patcher = patch.dict(
             "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
             {
-                SystemLevel.STATE: {
-                    OVERALL_THRESHOLD: 0,
-                    ENUM_THRESHOLD: 0,
-                    ENTITY_MATCHING_THRESHOLD: 0,
-                    DATABASE_INVARIANT_THRESHOLD: 0,
-                }
+                OVERALL_THRESHOLD: 0,
+                ENUM_THRESHOLD: 0,
+                ENTITY_MATCHING_THRESHOLD: 0,
+                DATABASE_INVARIANT_THRESHOLD: 0,
             },
         )
 
@@ -304,9 +301,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
 
         # pylint:disable=protected-access
         final_info = processor._parse_ingest_info(
-            extract_and_merge_args,
-            fixture_contents_handle,
-            self.controller._get_ingest_metadata(extract_and_merge_args),
+            extract_and_merge_args, fixture_contents_handle
         )
 
         print_visible_header_label("FINAL")

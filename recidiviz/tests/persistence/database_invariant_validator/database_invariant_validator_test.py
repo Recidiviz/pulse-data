@@ -21,7 +21,6 @@ from typing import List
 
 from mock import MagicMock, create_autospec, patch
 
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
@@ -73,7 +72,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert
@@ -89,7 +88,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert
@@ -105,7 +104,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert
@@ -128,7 +127,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert
@@ -144,7 +143,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert
@@ -163,7 +162,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
         # Act
         with self.assertRaises(SessionIsDirtyError):
             _ = database_invariant_validator.validate_invariants(
-                self.mock_session, SystemLevel.STATE, "US_XX", []
+                self.mock_session, "US_XX", []
             )
 
         # Assert
@@ -180,7 +179,7 @@ class TestDatabaseInvariantValidator(unittest.TestCase):
 
         # Act
         errors = database_invariant_validator.validate_invariants(
-            self.mock_session, SystemLevel.STATE, "US_XX", []
+            self.mock_session, "US_XX", []
         )
 
         # Assert

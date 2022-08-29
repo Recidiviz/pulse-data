@@ -38,7 +38,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.schema.state import dao as state_dao
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -153,7 +153,6 @@ PERSON_STATE_2_ENTITY = StatePerson(
 INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     region=STATE_CODE,
     ingest_time=DATETIME,
-    system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
     ),
@@ -161,7 +160,6 @@ INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
 INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
     region=STATE_CODE,
     ingest_time=DATETIME_2,
-    system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
     ),
@@ -169,7 +167,6 @@ INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
 INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
     region=STATE_CODE_2,
     ingest_time=DATETIME,
-    system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
     ),
@@ -177,7 +174,6 @@ INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
     region=STATE_CODE_2,
     ingest_time=DATETIME_2,
-    system_level=SystemLevel.STATE,
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
     ),

@@ -38,7 +38,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -116,7 +116,6 @@ _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 DEFAULT_METADATA = IngestMetadata(
     region="us_xx",
-    system_level=SystemLevel.STATE,
     ingest_time=datetime.datetime(year=1000, month=1, day=1),
     database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
         schema_type=SchemaType.STATE
