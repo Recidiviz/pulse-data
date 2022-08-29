@@ -42,7 +42,7 @@ from recidiviz.validation.validation_manager import execute_validation
 
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
-    parser = argparse.ArgumentParser(description="Run locally-defined valications.")
+    parser = argparse.ArgumentParser(description="Run locally-defined validations.")
     parser.add_argument(
         "--project-id",
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
