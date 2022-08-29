@@ -30,7 +30,7 @@ US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_DESCRIPTION = (
 )
 
 US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_QUERY_TEMPLATE = """
-    #TODO(#10018): Create CSV and ingest as a raw data table
+    #TODO(#14932): Deprecate view when we have "ingested" table for classification codes
     SELECT
         SPLIT(TrtClassCode,'-')[OFFSET(0)] AS classification_code,
         SPLIT(TrtClassCode,'-')[OFFSET(1)] AS classification_description,
