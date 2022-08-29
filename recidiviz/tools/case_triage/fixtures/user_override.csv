@@ -2,3 +2,4 @@ US_ID,ayesha@recidiviz.org,,line_staff_user,D4,Ayesha S.,,
 US_TN,test@recidiviz.org,new,,another_district,,,TRUE
 US_CO,jane@domain.org,1234,,District 7,,,TRUE
 US_MI,not_in_roster@domain.org,XYZ,leadership_role,D5,New,User,FALSE
+US_MO,put_parameter@domain.org,,level_1_access_role,,,,

@@ -18,6 +18,9 @@ import {
   postWithURLAndBody,
   getAuthResource,
   postAuthWithURLAndBody,
+  patchAuthWithURLAndBody,
+  putAuthWithURLAndBody,
+  deleteResource,
 } from "./utils";
 
 // Cloud SQL -> GCS CSV Export
@@ -128,7 +131,6 @@ export const createNewUser = async (
   lastName: string | undefined
 ): Promise<Response> => {
   return postAuthWithURLAndBody(`/users/${email}`, {
-    email,
     stateCode,
     externalId,
     role,
@@ -136,4 +138,44 @@ export const createNewUser = async (
     firstName,
     lastName,
   });
+};
+
+export const updateUser = async (
+  email: string,
+  stateCode: string,
+  externalId: string | undefined,
+  role: string,
+  district: string | undefined,
+  firstName: string | undefined,
+  lastName: string | undefined
+): Promise<Response> => {
+  return patchAuthWithURLAndBody(`/users/${email}`, {
+    stateCode,
+    externalId,
+    role,
+    district,
+    firstName,
+    lastName,
+  });
+};
+
+export const updateUserPermissions = async (
+  email: string,
+  canAccessLeadershipDashboard: boolean | undefined,
+  canAccessCaseTriage: boolean | undefined,
+  shouldSeeBetaCharts: boolean | undefined,
+  routes: string | undefined // converted into JSON after response
+): Promise<Response> => {
+  return putAuthWithURLAndBody(`/users/${email}/permissions`, {
+    canAccessLeadershipDashboard,
+    canAccessCaseTriage,
+    shouldSeeBetaCharts,
+    routes,
+  });
+};
+
+export const deleteCustomUserPermissions = async (
+  email: string
+): Promise<Response> => {
+  return deleteResource(`/users/${email}/permissions`);
 };
