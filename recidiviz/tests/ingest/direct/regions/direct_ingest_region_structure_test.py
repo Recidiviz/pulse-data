@@ -138,10 +138,7 @@ class DirectIngestRegionDirStructureBase:
 
             manifest_yaml_required_keys = [
                 "agency_name",
-                "agency_type",
-                "timezone",
                 "environment",
-                "jurisdiction_id",
             ]
 
             for k in manifest_yaml_required_keys:

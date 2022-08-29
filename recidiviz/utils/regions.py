@@ -22,18 +22,14 @@ criminal justice data and calculate metrics.
 """
 import os
 import pkgutil
-from datetime import datetime, tzinfo
-from enum import Enum, auto
+from enum import Enum
 from types import ModuleType
 from typing import Any, Dict, List, Optional, Set
 
 import attr
-import pytz
 import yaml
 
-from recidiviz.common.attr_validators import is_str
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
-from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.utils import environment
 from recidiviz.utils.environment import GCPEnvironment
 
@@ -43,19 +39,15 @@ class RemovedFromWebsite(Enum):
     UNKNOWN_SIGNIFICANCE = "UNKNOWN_SIGNIFICANCE"
 
 
-class IngestType(Enum):
-    DIRECT_INGEST = auto()
-    SCRAPER = auto()
-
-
 # Cache of the `Region` objects.
-REGIONS: Dict[IngestType, Dict[str, "Region"]] = {}
+REGIONS: Dict[str, "Region"] = {}
 
 
 def _to_lower(s: str) -> str:
     return s.lower()
 
 
+# TODO(#13703): Rename to DirectIngestRegion
 @attr.s(frozen=True)
 class Region:
     """Constructs region entity with attributes and helper functions
@@ -66,61 +58,22 @@ class Region:
     Attributes:
         region_code: (string) Region code
         agency_name: (string) Human-readable agency name
-        agency_type: (string) 'prison' or 'jail'
+        region_module: (ModuleType) The module where the ingest configuration for this region resides.
         environment: (string) The environment the region is allowed to run in.
         playground: (bool) If this is a playground region and should only exist in staging.
-        base_url: (string) Base URL for scraping
-        should_proxy: (string) Whether or not to send requests through the proxy
-        timezone: (string) Timezone in which this region resides. If the region
-            is in multiple timezones, this is the timezone in which most of the
-            region resides, where "most" is whatever is most useful for that
-            region, e.g. population count versus land size.
-        removed_from_website: (string) Value to use when a person is removed
-            from a website (converted to `RemovedFromWebsite`).
-        names_file: (string) Optional filename of names file for this region
-        is_stoppable: (string) Whether or not this region is stoppable via the
-            cron job /scraper/stop.
-        stripe: (string) Stripe to which this region belongs to. This is used
-            further divide up a timezone
-        facility_id: (string) Default facility ID for region
     """
 
     region_code: str = attr.ib(converter=_to_lower)
-    jurisdiction_id: str = attr.ib(validator=is_str)
     agency_name: str = attr.ib()
-    agency_type: str = attr.ib()
-    timezone: tzinfo = attr.ib(converter=pytz.timezone)
     region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     playground: Optional[bool] = attr.ib(default=False)
-    base_url: str = attr.ib(default=None)
-    removed_from_website: RemovedFromWebsite = attr.ib(
-        default=RemovedFromWebsite.RELEASED, converter=RemovedFromWebsite
-    )
-    names_file: Optional[str] = attr.ib(default=None)
-    should_proxy: Optional[bool] = attr.ib(default=False)
-    is_stoppable: Optional[bool] = attr.ib(default=False)
+    # TODO(#13703): Remove this flag since it is now always set to true
     is_direct_ingest: bool = attr.ib(default=True)
-    stripe: Optional[str] = attr.ib(default="0")
-    facility_id: Optional[str] = attr.ib(default=None)
-
-    @region_code.validator
-    def validate_region_code(self, _attr: attr.Attribute, region_code: str) -> None:
-        # TODO(#6523): Re-enable this once all the regions have been fixed.
-        # fips.validate_county_code(region_code)
-        pass
 
     def __attrs_post_init__(self) -> None:
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError(f"Invalid environment: {self.environment}")
-        if self.facility_id and len(self.facility_id) != 16:
-            raise ValueError(
-                f"Improperly formatted FID [{self.facility_id}], should be length 16"
-            )
-
-    def get_queue_name(self) -> str:
-        """Returns the name of the queue to be used for the region"""
-        return f"{self.region_code.replace('_', '-')}-scraper-v2"
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current
@@ -143,30 +96,25 @@ class Region:
         )
 
 
+# TODO(#13703): Rename to `get_direct_ingest_region()`
 def get_region(
     region_code: str,
-    is_direct_ingest: bool = False,
+    is_direct_ingest: bool = True,
     region_module_override: Optional[ModuleType] = None,
 ) -> Region:
     if region_module_override:
         region_module = region_module_override
-    elif is_direct_ingest:
-        region_module = direct_ingest_regions_module
     else:
-        region_module = scraper_regions_module
+        region_module = direct_ingest_regions_module
 
-    ingest_type = IngestType.DIRECT_INGEST if is_direct_ingest else IngestType.SCRAPER
-    if ingest_type not in REGIONS:
-        REGIONS[ingest_type] = {}
-
-    if region_code not in REGIONS[ingest_type]:
-        REGIONS[ingest_type][region_code] = Region(
+    if region_code not in REGIONS:
+        REGIONS[region_code] = Region(
             region_code=region_code.lower(),
             is_direct_ingest=is_direct_ingest,
             region_module=region_module,
             **get_region_manifest(region_code.lower(), region_module),
         )
-    return REGIONS[ingest_type][region_code]
+    return REGIONS[region_code]
 
 
 MANIFEST_NAME = "manifest.yaml"
@@ -192,83 +140,21 @@ def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str
         return yaml.full_load(region_manifest)
 
 
-def get_supported_scrape_region_codes(
-    timezone: Optional[tzinfo] = None, stripes: Optional[List[str]] = None
-) -> Set[str]:
-    """Retrieve a list of known scraper regions / region codes
-
-    Args:
-        timezone: (str) If set, return only regions in the right timezone
-        stripes: (List[str]) If set, return only regions in the right stripes
-
-    Returns:
-        Set of region codes (strings)
-    """
-    return _get_supported_region_codes_for_base_region_module(
-        scraper_regions_module,
-        is_direct_ingest=False,
-        timezone=timezone,
-        stripes=stripes,
-    )
-
-
 def get_supported_direct_ingest_region_codes() -> Set[str]:
-    return _get_supported_region_codes_for_base_region_module(
-        direct_ingest_regions_module, is_direct_ingest=True
-    )
+    """Returns all direct ingest regions with defined packages in the
+    `recidiviz/ingest/direct/regions` module.
+    """
 
-
-def _get_supported_region_codes_for_base_region_module(
-    base_region_module: ModuleType,
-    is_direct_ingest: bool,
-    timezone: Optional[tzinfo] = None,
-    stripes: Optional[List[str]] = None,
-) -> Set[str]:
-    """Returns all regions that support the given module type, e.g. direct ingest versus scraper. Will optionally
-    filter on the additional arguments."""
-
+    base_region_module = direct_ingest_regions_module
     if base_region_module.__file__ is None:
         raise ValueError(f"No file associated with {base_region_module}.")
     base_region_path = os.path.dirname(base_region_module.__file__)
 
-    all_region_codes = {
+    return {
         region_module.name
         for region_module in pkgutil.iter_modules([base_region_path])
         if region_module.ispkg
     }
-    if timezone:
-        dt = datetime.now()
-        filtered_regions = {
-            region_code
-            for region_code in all_region_codes
-            if timezone.utcoffset(dt)
-            == get_region(
-                region_code, is_direct_ingest=is_direct_ingest
-            ).timezone.utcoffset(dt)
-        }
-    else:
-        filtered_regions = all_region_codes
-
-    if stripes and len(stripes) > 0:
-        return {
-            region_code
-            for region_code in filtered_regions
-            if get_region(region_code, is_direct_ingest=is_direct_ingest).stripe
-            in stripes
-        }
-
-    return filtered_regions
-
-
-def get_supported_regions() -> List["Region"]:
-    return get_supported_scrape_regions() + get_supported_direct_ingest_regions()
-
-
-def get_supported_scrape_regions() -> List["Region"]:
-    return [
-        get_region(region_code, is_direct_ingest=False)
-        for region_code in get_supported_scrape_region_codes()
-    ]
 
 
 def get_supported_direct_ingest_regions() -> List["Region"]:
@@ -278,19 +164,8 @@ def get_supported_direct_ingest_regions() -> List["Region"]:
     ]
 
 
-def validate_region_code(region_code: str) -> bool:
-    """Verifies a region code is one of the Recidiviz supported regions.
-
-    Args:
-        region_code: (string) Region code (e.g., us_ny)
-
-    Returns:
-        True if valid region
-        False if invalid region
-    """
-    return region_code in get_supported_scrape_region_codes()
-
-
+# TODO(#13703): Move this to a more general location and rename to something like
+#  'is_valid_python_dir()'.
 def is_valid_region_directory(dir_path: str) -> bool:
     """Returns whether a directory path is valid: it points to an actual directory, the directory is
     non-empty, and it does not only contain a __pycache__ directory. It is possible to get into that

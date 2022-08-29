@@ -276,7 +276,6 @@ function check_for_too_many_deployed_versions {
         echo_error "Found [$DEPLOYED_VERSIONS] already deployed versions. You must delete at least one version to proceed"
         echo_error "in order to avoid maxing out the number of allowed deployed versions."
         echo_error "Delete versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
-        echo_error "            and here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=scrapers"
         exit 1
     fi
     echo "Found [$DEPLOYED_VERSIONS] already deployed versions - proceeding"

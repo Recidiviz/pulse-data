@@ -726,7 +726,6 @@ class BaseDirectIngestController:
                 )
             return LegacyStateAndJailsIngestMetadata(
                 region=self.region.region_code,
-                jurisdiction_id=self.region.jurisdiction_id,
                 ingest_time=args.ingest_time,
                 enum_overrides=enum_overrides,
                 system_level=self.system_level,

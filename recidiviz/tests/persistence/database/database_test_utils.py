@@ -51,7 +51,6 @@ class FakeLegacyStateAndJailsIngestMetadata(IngestMetadata):
     ) -> LegacyStateAndJailsIngestMetadata:
         return LegacyStateAndJailsIngestMetadata(
             region=region,
-            jurisdiction_id="",
             ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
             enum_overrides=enum_overrides or EnumOverrides.empty(),
             system_level=SystemLevel.STATE,
