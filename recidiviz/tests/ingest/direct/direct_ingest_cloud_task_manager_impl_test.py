@@ -56,10 +56,6 @@ from recidiviz.utils import regions
 _REGION = regions.Region(
     region_code="us_xx",
     agency_name="agency_name",
-    agency_type="state",
-    base_url="base_url",
-    timezone="America/New_York",
-    jurisdiction_id="jid",
     environment="production",
     is_direct_ingest=True,
 )

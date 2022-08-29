@@ -26,22 +26,16 @@ from recidiviz.utils.regions import Region
 def fake_region(
     *,
     region_code: str = "us_xx",
-    agency_type: str = "prison",
     environment: str = "local",
-    jurisdiction_id: str = "unknown",
     region_module: Optional[ModuleType] = None,
     is_direct_ingest: bool = True,
-    is_stoppable: Optional[bool] = None,
 ) -> Region:
     """Fake Region Object"""
     region = create_autospec(Region)
     region.region_code = region_code
-    region.agency_type = agency_type
     region.environment = environment
-    region.jurisdiction_id = jurisdiction_id
     region.region_module = region_module
     region.is_direct_ingest = is_direct_ingest
-    region.is_stoppable = is_stoppable
 
     def fake_is_launched_in_env() -> bool:
         return Region.is_ingest_launched_in_env(region)
@@ -51,9 +45,4 @@ def fake_region(
     return region
 
 
-TEST_STATE_REGION = fake_region(region_code="us_xx", agency_type="prison")
-TEST_COUNTY_REGION = fake_region(
-    region_code="us_xx_yyyyy",
-    agency_type="jail",
-    environment="production",
-)
+TEST_STATE_REGION = fake_region(region_code="us_xx")

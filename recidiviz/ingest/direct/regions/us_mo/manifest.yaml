@@ -1,6 +1,2 @@
 agency_name: Missouri Department of Corrections
-agency_type: prison
-base_url: unused
-timezone: America/Chicago
 environment: production
-jurisdiction_id: unknown

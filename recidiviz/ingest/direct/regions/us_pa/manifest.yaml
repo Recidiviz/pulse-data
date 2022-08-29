@@ -1,6 +1,2 @@
 agency_name: Pennsylvania Department of Corrections
-agency_type: prison
-base_url: unused
-timezone: America/New_York
 environment: production
-jurisdiction_id: unknown

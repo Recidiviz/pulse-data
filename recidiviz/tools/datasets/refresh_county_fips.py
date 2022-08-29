@@ -16,7 +16,7 @@
 # =============================================================================
 """Generates a CSV file of FIPS codes and county names.
 
-Usage: `python -m recidiviz.ingest.aggregate.data_sets.generate_fips`
+Usage: `python -m recidiviz.tools.datasets.refresh_county_fips`
 """
 import os
 from typing import List

@@ -1,6 +1,2 @@
 agency_name: Michigan Department of Corrections
-agency_type: prison
-base_url: unknown
-timezone: America/New_York
 environment: production
-jurisdiction_id: unknown

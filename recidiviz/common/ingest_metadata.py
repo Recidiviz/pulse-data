@@ -18,7 +18,6 @@
 
 import enum
 from datetime import datetime
-from typing import Optional
 
 import attr
 
@@ -87,16 +86,9 @@ class IngestMetadata:
     database_key: SQLAlchemyDatabaseKey = attr.ib()
 
 
-# TODO(#8905): Move this to a scraper specific package once we have migrated all
-#  direct ingest states to ingest mappings v2.
+# TODO(#8905): Delete this class once we have migrated all direct ingest states to
+#  ingest mappings v2.
 @attr.s(frozen=True, kw_only=True)
 class LegacyStateAndJailsIngestMetadata(IngestMetadata):
-    # The jurisdiction id for the region that this ingest_info was ingested
-    # from.
-    jurisdiction_id: str = attr.ib()
-
     # Region specific mapping which takes precedence over the global mapping.
     enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)
-
-    # The default facility id for the region e.g. 01CNT02502506100
-    facility_id: Optional[str] = attr.ib(default=None)
