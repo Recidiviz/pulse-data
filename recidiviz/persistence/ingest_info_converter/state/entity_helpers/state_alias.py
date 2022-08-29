@@ -20,7 +20,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAlias
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -32,7 +32,7 @@ from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
 def convert(
-    proto: StateAlias, metadata: LegacyStateAndJailsIngestMetadata
+    proto: StateAlias, metadata: LegacyStateIngestMetadata
 ) -> entities.StatePersonAlias:
     """Converts an ingest_info proto StateAlias to a persistence entity."""
     new = entities.StatePersonAlias.builder()

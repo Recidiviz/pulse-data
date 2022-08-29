@@ -23,7 +23,7 @@ import locale
 from typing import Optional, Tuple
 
 from recidiviz.common import common_utils
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_date
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
@@ -92,7 +92,7 @@ def parse_birthdate(proto, birthdate_field: str, age_field: str):
 
 
 def parse_completion_date(
-    proto, metadata: LegacyStateAndJailsIngestMetadata
+    proto, metadata: LegacyStateIngestMetadata
 ) -> Tuple[Optional[datetime.date], Optional[datetime.date]]:
     """Reads completion_date and projected_completion_date from |proto|.
 
@@ -110,7 +110,7 @@ def parse_completion_date(
 
 
 def parse_region_code_with_override(
-    proto, region_field_name: str, metadata: LegacyStateAndJailsIngestMetadata
+    proto, region_field_name: str, metadata: LegacyStateIngestMetadata
 ):
     """Returns a normalized form of the region code living on the |proto|.
 

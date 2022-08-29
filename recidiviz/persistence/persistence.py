@@ -24,10 +24,7 @@ from opencensus.stats import aggregation, measure, view
 from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    LegacyStateAndJailsIngestMetadata,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -305,7 +302,7 @@ def retry_transaction(
 @trace.span
 def write_ingest_info(
     ingest_info: IngestInfo,
-    ingest_metadata: LegacyStateAndJailsIngestMetadata,
+    ingest_metadata: LegacyStateIngestMetadata,
     run_txn_fn: Callable[
         [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
     ] = retry_transaction,

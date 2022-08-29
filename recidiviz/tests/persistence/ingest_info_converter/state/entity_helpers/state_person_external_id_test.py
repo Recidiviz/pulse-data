@@ -24,10 +24,10 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_person_external_id,
 )
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateAndJailsIngestMetadata.for_state(region="us_nd")
+_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
 
 
 class StatePersonExternalIdConverterTest(unittest.TestCase):

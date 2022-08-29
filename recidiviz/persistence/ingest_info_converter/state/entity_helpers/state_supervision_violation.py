@@ -18,7 +18,7 @@
 """Converts an ingest_info proto StateSupervisionViolation to a
 persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
 
@@ -28,7 +28,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     supervision_violation_builder: entities.StateSupervisionViolation.Builder,
     proto: StateSupervisionViolation,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Converts an ingest_info proto StateSupervisionViolation to a
     persistence entity."""

@@ -24,7 +24,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationIncident
 from recidiviz.persistence.entity.state import entities
 
@@ -34,7 +34,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     state_incarceration_incident_builder: entities.StateIncarcerationIncident.Builder,
     proto: StateIncarcerationIncident,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Mutates the provided |state_incarceration_incident_builder| by converting
     an ingest_info proto StateIncarcerationIncident.

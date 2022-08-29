@@ -26,7 +26,7 @@ from recidiviz.common.constants.state.state_person import (
     StateResidencyStatus,
 )
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
@@ -37,7 +37,7 @@ from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 def copy_fields_to_builder(
     state_person_builder: entities.StatePerson.Builder,
     proto: StatePerson,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Mutates the provided |state_person_builder| by converting an
     ingest_info proto StatePerson.

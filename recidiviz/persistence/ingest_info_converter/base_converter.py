@@ -30,7 +30,7 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.entities import EntityPersonType
 
@@ -50,9 +50,7 @@ class EntityDeserializationResult:
 class BaseConverter:
     """Base class for all data converters of IngestInfo proto objects."""
 
-    def __init__(
-        self, ingest_info: IngestInfo, metadata: LegacyStateAndJailsIngestMetadata
-    ):
+    def __init__(self, ingest_info: IngestInfo, metadata: LegacyStateIngestMetadata):
         self.ingest_info = copy.deepcopy(ingest_info)
         self.metadata = metadata
 

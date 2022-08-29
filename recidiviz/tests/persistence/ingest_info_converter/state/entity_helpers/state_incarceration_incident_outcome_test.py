@@ -29,7 +29,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_incident_outcome,
 )
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
 _ENUM_OVERRIDES = (
@@ -37,7 +37,7 @@ _ENUM_OVERRIDES = (
     .add("LCP", StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS)
     .build()
 )
-_METADATA_WITH_OVERRIDES = FakeLegacyStateAndJailsIngestMetadata.for_state(
+_METADATA_WITH_OVERRIDES = FakeLegacyStateIngestMetadata.for_state(
     "us_ca", enum_overrides=_ENUM_OVERRIDES
 )
 

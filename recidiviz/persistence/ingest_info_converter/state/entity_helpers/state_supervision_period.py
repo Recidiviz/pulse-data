@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionPeriod
 from recidiviz.persistence.entity.state import entities
 
@@ -37,7 +37,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     supervision_period_builder: entities.StateSupervisionPeriod.Builder,
     proto: StateSupervisionPeriod,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Mutates the provided |supervision_period_builder| by converting an ingest_info proto StateSupervisionPeriod.
 

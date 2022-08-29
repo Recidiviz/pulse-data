@@ -23,7 +23,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCharge
 from recidiviz.persistence.entity.state import entities
 
@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     new: entities.StateCharge.Builder,
     proto: StateCharge,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Mutates the provided |charge_builder| by converting an ingest_info proto
     StateCharge.

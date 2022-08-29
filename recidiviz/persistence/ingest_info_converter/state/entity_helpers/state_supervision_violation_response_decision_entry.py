@@ -23,7 +23,7 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateSupervisionViolationResponseDecisionEntry,
 )
@@ -37,7 +37,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 #  mappings.
 def convert(
     proto: StateSupervisionViolationResponseDecisionEntry,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> entities.StateSupervisionViolationResponseDecisionEntry:
     """Converts an ingest_info proto
     StateSupervisionViolationResponseDecisionEntry to a persistence entity.

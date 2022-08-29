@@ -84,7 +84,7 @@ from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
     EntityDeserializationResult,
 )
 from recidiviz.tests.persistence.database.database_test_utils import (
-    FakeLegacyStateAndJailsIngestMetadata,
+    FakeLegacyStateIngestMetadata,
 )
 
 _INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
@@ -125,7 +125,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self) -> None:
         # Arrange
-        metadata = FakeLegacyStateAndJailsIngestMetadata.for_state(region="US_XX")
+        metadata = FakeLegacyStateIngestMetadata.for_state(region="US_XX")
 
         ingest_info = IngestInfo()
         ingest_info.state_agents.add(
@@ -651,7 +651,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     def testConvert_CannotConvertField_RaisesValueError(self) -> None:
         # Arrange
-        metadata = FakeLegacyStateAndJailsIngestMetadata.for_state(region="us_xx")
+        metadata = FakeLegacyStateIngestMetadata.for_state(region="us_xx")
 
         ingest_info = IngestInfo()
         ingest_info.state_people.add(birthdate="NOT_A_DATE")

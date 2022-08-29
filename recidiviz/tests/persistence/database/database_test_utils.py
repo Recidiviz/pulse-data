@@ -31,24 +31,21 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    LegacyStateAndJailsIngestMetadata,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @attr.s
-class FakeLegacyStateAndJailsIngestMetadata(IngestMetadata):
+class FakeLegacyStateIngestMetadata(IngestMetadata):
     @classmethod
     def for_state(
         cls,
         region: str,
         enum_overrides: Optional[EnumOverrides] = None,
-    ) -> LegacyStateAndJailsIngestMetadata:
-        return LegacyStateAndJailsIngestMetadata(
+    ) -> LegacyStateIngestMetadata:
+        return LegacyStateIngestMetadata(
             region=region,
             ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
             enum_overrides=enum_overrides or EnumOverrides.empty(),

@@ -25,7 +25,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
-from recidiviz.common.ingest_metadata import LegacyStateAndJailsIngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAssessment
 from recidiviz.persistence.entity.state import entities
 
@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.state import entities
 def copy_fields_to_builder(
     state_assessment_builder: entities.StateAssessment.Builder,
     proto: StateAssessment,
-    metadata: LegacyStateAndJailsIngestMetadata,
+    metadata: LegacyStateIngestMetadata,
 ) -> None:
     """Mutates the provided |state_assessment_builder| by converting an
     ingest_info proto StateAssessment.
