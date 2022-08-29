@@ -1,0 +1,11 @@
+file_tag: treatment_classification_codes
+file_description: |-
+  Classification Codes Mapped to Treatment Type in US_PA. Takes the TrtClassCode field and parses it to show the code and the description of that code.
+data_classification: source
+primary_key_cols:
+  - classification_code
+columns:
+  - name: classification_code
+    description: A numeric code mapped to a treatment class
+  - name: classification_description
+    description: Description of the treatement classification
