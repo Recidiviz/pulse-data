@@ -20,5 +20,3 @@ regions.
 
 TODO(#8905): Delete this package once mappings v2 migration is complete.
 """
-
-from recidiviz.ingest.models import scrape_key
