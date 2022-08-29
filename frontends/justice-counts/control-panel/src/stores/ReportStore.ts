@@ -84,7 +84,7 @@ class ReportStore {
       }
       if (currentAgency !== undefined) {
         const response = (await this.api.request({
-          path: `/api/reports?agency_id=${currentAgency.id}`,
+          path: `/api/agencies/${currentAgency.id}/reports`,
           method: "GET",
         })) as Response;
         if (response.status === 200) {
@@ -174,7 +174,7 @@ class ReportStore {
             this.reportOverviews[reportID].last_modified_at_timestamp,
           metrics: updatedMetrics,
         },
-        method: "POST",
+        method: "PATCH",
       })) as Response;
 
       if (response.status === 200) {
@@ -225,7 +225,7 @@ class ReportStore {
       }
 
       const response = (await this.api.request({
-        path: `/api/metrics/update/${currentAgency.id}`,
+        path: `/api/agencies/${currentAgency.id}/metrics`,
         method: "GET",
       })) as Response;
 
@@ -252,9 +252,9 @@ class ReportStore {
       }
 
       const response = (await this.api.request({
-        path: `/api/metrics/update`,
-        body: { agency_id: currentAgency.id, metrics: updatedMetricSettings },
-        method: "POST",
+        path: `/api/agencies/${currentAgency.id}/metrics`,
+        body: { metrics: updatedMetricSettings },
+        method: "PUT",
       })) as Response;
 
       if (response.status !== 200) {
@@ -350,7 +350,7 @@ class ReportStore {
       const response = (await this.api.request({
         path: `/api/spreadsheets/${spreadsheetID}`,
         body: { status },
-        method: "PUT",
+        method: "PATCH",
       })) as Response;
 
       if (response.status !== 200) {

@@ -145,7 +145,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
             )
-            response = self.client.get(f"/api/reports?agency_id={report.source_id}")
+            response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
         self.assertEqual(response.status_code, 200)
         response_list = assert_type(response.json, list)
@@ -203,7 +203,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
                 agency_ids=[agency.id],
             )
-            response = self.client.get(f"/api/metrics/update/{agency.id}")
+            response = self.client.get(f"/api/agencies/{agency.id}/metrics")
 
         self.assertEqual(response.status_code, 200)
         metrics = assert_type(response.json, list)
@@ -341,7 +341,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id + 1]
             )
-            response = self.client.get(f"/api/reports?agency_id={report.source_id}")
+            response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
@@ -350,16 +350,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id]
             )
-            response = self.client.get("/api/reports")
+            response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
-
-        # user makes a request with no agencies, but does not belong to an agency
-        with self.app.test_request_context():
-            g.user_context = UserContext(auth0_user_id=user_B.auth0_user_id)
-            response = self.client.get("/api/reports")
-
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     def test_create_user_if_necessary(self) -> None:
         name = self.test_schema_objects.test_user_A.name
@@ -373,7 +366,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=auth0_user_id,
                 agency_ids=[agency.id],
             )
-            user_response = self.client.post(
+            user_response = self.client.put(
                 "/api/users",
                 json={
                     "name": name,
@@ -418,8 +411,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=auth0_user["user_id"], user_account=db_user
             )
-            response = self.client.post(
-                "/api/users/update",
+            response = self.client.patch(
+                "/api/users",
                 json={
                     "name": new_name,
                     "email": new_email_address,
@@ -455,7 +448,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             value = 100
             endpoint = f"/api/reports/{report.id}"
-            response = self.client.post(
+            response = self.client.patch(
                 endpoint,
                 json={
                     "status": "DRAFT",
@@ -481,7 +474,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 report.modified_by,
                 [user_account.id],
             )
-            response = self.client.post(
+            response = self.client.patch(
                 endpoint,
                 json={
                     "status": "PUBLISHED",
@@ -564,7 +557,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 agency_ids=[report.source_id],
             )
             endpoint = f"/api/reports/{report.id}"
-            response = self.client.post(
+            response = self.client.patch(
                 endpoint,
                 json={
                     "status": "DRAFT",
@@ -591,7 +584,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user_account.auth0_user_id,
                 permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
-            user_response = self.client.post(
+            user_response = self.client.put(
                 "/api/users",
                 json={
                     "name": user_account.name,
@@ -627,8 +620,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
                 agency_ids=[agency.id],
             )
-            response = self.client.post(
-                "/api/metrics/update",
+            response = self.client.put(
+                f"/api/agencies/{agency.id}/metrics",
                 json=request_body,
             )
         self.assertEqual(response.status_code, 200)
@@ -937,7 +930,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
 
-            response = self.client.put(
+            response = self.client.patch(
                 f"/api/spreadsheets/{spreadsheet.id}",
                 json={"status": SpreadsheetStatus.INGESTED.value},
             )
@@ -1014,7 +1007,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
             )
-            response = self.client.get(f"/api/datapoints?agency_id={report.source_id}")
+            response = self.client.get(f"/api/agencies/{report.source_id}/datapoints")
 
         self.assertEqual(response.status_code, 200)
         agency_datapoints = self.session.query(Datapoint).all()

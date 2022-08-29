@@ -92,6 +92,10 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
             request_dict = request.values
         elif request.method == "POST":
             request_dict = request.json or {}
+        elif request.method == "PUT":
+            request_dict = request.json or {}
+        elif request.method == "PATCH":
+            request_dict = request.json or {}
         else:
             raise ValueError(f"Unsupported request method: {request.method}")
 

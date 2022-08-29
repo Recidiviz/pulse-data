@@ -81,8 +81,8 @@ class UserStore {
         body.email = email;
       }
       const response = await this.api.request({
-        path: "/api/users/update",
-        method: "POST",
+        path: "/api/users",
+        method: "PATCH",
         body,
       });
       runInAction(() => {
@@ -180,7 +180,7 @@ class UserStore {
     try {
       const response = (await this.api.request({
         path: "/api/users",
-        method: "POST",
+        method: "PUT",
         body: {
           name: this.name,
         },
@@ -207,8 +207,8 @@ class UserStore {
   async updateOnboardingStatus(topic: string, status: boolean) {
     try {
       const response = (await this.api.request({
-        path: "/api/users/update",
-        method: "POST",
+        path: "/api/users",
+        method: "PUT",
         body: {
           onboarding_topics_completed: {
             ...this.onboardingTopicsCompleted,

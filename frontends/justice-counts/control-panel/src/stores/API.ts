@@ -23,7 +23,7 @@ import { showToast } from "../components/Toast";
 
 export interface RequestProps {
   path: string;
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: FormData | Record<string, unknown>;
   retrying?: boolean;
 }
