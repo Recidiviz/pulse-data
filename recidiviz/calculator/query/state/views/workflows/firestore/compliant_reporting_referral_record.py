@@ -47,6 +47,15 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         court_name,
         all_dockets,
         current_offenses,
+        past_offenses,
+        lifetime_offenses_expired,
+        judicial_district,
+        drug_screens_past_year,
+        sanctions_past_year,
+        most_recent_arrest_check,
+        zero_tolerance_codes,
+        fines_fees_eligible,
+        special_conditions_flag,
         supervision_type,
         sentence_start_date,
         sentence_length_days,
@@ -64,6 +73,54 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         restitution_amt,
         restitution_monthly_payment,
         restitution_monthly_payment_to,
+        next_special_conditions_check,
+        last_special_conditions_note,
+        special_conditions_terminated_date,
+        remaining_criteria_needed,
+        eligible_level_start,
+        -- these fields should all be disregarded if remaining_criteria_needed is zero,
+        -- as there is additional override logic baked into that field
+        -- (i.e. the fields do not always agree and remaining_criteria_needed wins)
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            eligible_time_on_supervision_level_bool = 1
+        ) AS almost_eligible_time_on_supervision_level,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            date_supervision_level_eligible
+        ) AS date_supervision_level_eligible,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            drug_screen_eligibility_bool = 1
+        ) AS almost_eligible_drug_screen,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            fines_fees_eligible_bool = 1
+        ) AS almost_eligible_fines_fees,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+           cr_recent_rejection_eligible_bool = 1
+        ) AS almost_eligible_recent_rejection,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            cr_rejections_past_3_months
+        ) AS cr_rejections_past_3_months,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            eligible_serious_sanctions_bool = 1
+        ) AS almost_eligible_serious_sanctions,
+        IF (
+            remaining_criteria_needed = 0,
+            NULL,
+            date_serious_sanction_eligible
+        ) AS date_serious_sanction_eligible,
         IFNULL(special_conditions_alc_drug_screen, 0)=1 AS special_conditions_alc_drug_screen,
         special_conditions_alc_drug_screen_date,
         special_conditions_alc_drug_assessment,
@@ -98,6 +155,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         IFNULL(special_conditions_programming_fsw_current, 0)=1 AS special_conditions_programming_fsw_current,
         special_conditions_programming_fsw_completion_date
     FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_referral_materialized`
+    WHERE compliant_reporting_eligible IS NOT NULL
 """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

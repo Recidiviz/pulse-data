@@ -19,6 +19,7 @@ import json
 import logging
 from typing import Optional, Tuple
 
+from recidiviz.common.str_field_utils import parse_int
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import (
@@ -50,7 +51,21 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
             ),  # this has few enough null entries in the data that we shouldn't really treat it as optional
             "dateToday": data["date_today"],
             "tdocId": data["tdoc_id"],
+            "eligibilityCategory": data["compliant_reporting_eligible"],
+            "remainingCriteriaNeeded": parse_int(data["remaining_criteria_needed"]),
             "currentOffenses": json.loads(data["current_offenses"]),
+            "pastOffenses": data.get("past_offenses"),
+            "lifetimeOffensesExpired": data.get("lifetime_offenses_expired"),
+            "judicialDistrict": data.get("judicial_district"),
+            "drugScreensPastYear": [
+                {
+                    "result": screen["ContactNoteType"],
+                    "date": screen["contact_date"],
+                }
+                for screen in data["drug_screens_past_year"]
+            ],
+            "sanctionsPastYear": data.get("sanctions_past_year"),
+            "finesFeesEligible": data["fines_fees_eligible"],
             "supervisionType": data["supervision_type"],
             "supervisionFeeAssessed": data.get("supervision_fee_assessed", ""),
             "supervisionFeeArrearaged": data["supervision_fee_arrearaged"],
@@ -154,6 +169,75 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
                 # the start/expiration dates as well
                 new_document.pop("sentenceStartDate", None)
                 new_document.pop("expirationDate", None)
+
+        if "special_conditions_flag" in data:
+            new_document["specialConditionsFlag"] = data["special_conditions_flag"]
+
+        if "next_special_conditions_check" in data:
+            new_document["nextSpecialConditionsCheck"] = data[
+                "next_special_conditions_check"
+            ]
+
+        if "last_special_conditions_note" in data:
+            new_document["lastSpecialConditionsNote"] = data[
+                "last_special_conditions_note"
+            ]
+
+        if "special_conditions_terminated_date" in data:
+            new_document["specialConditionsTerminatedDate"] = data[
+                "special_conditions_terminated_date"
+            ]
+
+        if "eligible_level_start" in data:
+            new_document["eligibleLevelStart"] = data["eligible_level_start"]
+
+        if "most_recent_arrest_check" in data:
+            new_document["mostRecentArrestCheck"] = data["most_recent_arrest_check"]
+
+        if "zero_tolerance_codes" in data:
+            new_document["zeroToleranceCodes"] = [
+                {
+                    "contactNoteType": code["ContactNoteType"],
+                    "contactNoteDate": code["contact_date"],
+                }
+                for code in data["zero_tolerance_codes"]
+            ]
+
+        almost_eligible_criteria = {}
+
+        if data.get("almost_eligible_time_on_supervision_level") and (
+            current_level_eligibility_date := data.get(
+                "date_supervision_level_eligible"
+            )
+        ):
+            almost_eligible_criteria[
+                "currentLevelEligibilityDate"
+            ] = current_level_eligibility_date
+
+        if data.get("almost_eligible_drug_screen"):
+            almost_eligible_criteria["passedDrugScreenNeeded"] = True
+
+        if data.get("almost_eligible_fines_fees"):
+            almost_eligible_criteria["paymentNeeded"] = True
+
+        if data.get("almost_eligible_recent_rejection") and (
+            recent_rejection_codes := data.get("cr_rejections_past_3_months")
+        ):
+            almost_eligible_criteria["recentRejectionCodes"] = list(
+                set(recent_rejection_codes)
+            )
+
+        if data.get("almost_eligible_serious_sanctions") and (
+            serious_sanctions_eligibility_date := data.get(
+                "date_serious_sanction_eligible"
+            )
+        ):
+            almost_eligible_criteria[
+                "seriousSanctionsEligibilityDate"
+            ] = serious_sanctions_eligibility_date
+
+        if almost_eligible_criteria:
+            new_document["almostEligibleCriteria"] = almost_eligible_criteria
 
         if "supervision_fee_exemption_expir_date" in data:
             new_document["supervisionFeeExemptionExpirDate"] = data[
