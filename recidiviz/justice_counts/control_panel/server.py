@@ -172,21 +172,25 @@ def create_app(config: Optional[Config] = None) -> Flask:
                 "multi-system, then you must also provide the `system` parameter.",
             )
 
-        # Valid state: system parameter is present, but not metric
+        # Valid state: metric parameter is not present, system may or may not be
         # Return plaintext list of rows, one for each <system, metric> pair
-        if system and not metric:
+        if not metric:
             rows = []
-            for system, filename_to_rows in system_to_filename_to_rows.items():
+            for current_system, filename_to_rows in system_to_filename_to_rows.items():
+                if system and current_system != system:
+                    # If system parameter is present, skip over systems that don't match
+                    continue
+
                 for metric_name in sorted(list(filename_to_rows.keys())):
                     metric_url = url_for(
                         "get_feed_for_agency_id",
                         agency_id=agency_id,
-                        system=system,
+                        system=current_system,
                         metric=metric_name,
                     )
                     rows.append(
                         {
-                            "system": system,
+                            "system": current_system,
                             "metric_name": metric_name,
                             "metric_url": metric_url,
                         }
