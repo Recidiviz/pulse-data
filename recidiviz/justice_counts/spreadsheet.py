@@ -16,9 +16,11 @@
 # =============================================================================
 """Interface for working with the Spreadsheet model."""
 import datetime
+import logging
 import os
 from typing import Any, Dict, List
 
+import pandas as pd
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import FileStorage
 
@@ -28,6 +30,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.exceptions import (
     JusticeCountsBadRequestError,
     JusticeCountsServerError,
@@ -183,6 +186,52 @@ class SpreadsheetInterface:
         )
         session.delete(spreadsheet)
         session.commit()
+
+    @staticmethod
+    def ingest_spreadsheet(
+        session: Session,
+        xls: pd.ExcelFile,
+        spreadsheet: schema.Spreadsheet,
+        auth0_user_id: str,
+        agency_id: int,
+    ) -> schema.Spreadsheet:
+        """Ingests spreadsheet for an agency and logs any errors."""
+        # TODO(#14931) When infer_aggregate_value is true, don't overwrite all value if it is provided
+        uploader = BulkUploader(catch_errors=True, infer_aggregate_value=False)
+        user_account = (
+            session.query(schema.UserAccount)
+            .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
+            .one()
+        )
+        ingest_errors = uploader.upload_excel(
+            session=session,
+            xls=xls,
+            agency_id=spreadsheet.agency_id,
+            system=spreadsheet.system,
+            user_account=user_account,
+        )
+        # If there are exceptions, log errors to console and set the spreadsheet status to ERRORED
+        if len(ingest_errors) > 0:
+            logging.error(
+                "Failed to ingest without inferring aggregate values: agency_id: %i, spreadsheet_id: %i, errors: %s",
+                agency_id,
+                spreadsheet.id,
+                ingest_errors,
+            )
+            spreadsheet.status = schema.SpreadsheetStatus.ERRORED
+
+        else:
+            print(
+                "Ingest successful for agency_id %i, spreadsheet_id: %i",
+                agency_id,
+                spreadsheet.id,
+            )
+            spreadsheet.ingested_by = auth0_user_id
+            spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
+            spreadsheet.status = schema.SpreadsheetStatus.INGESTED
+
+        session.commit()
+        return spreadsheet
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
