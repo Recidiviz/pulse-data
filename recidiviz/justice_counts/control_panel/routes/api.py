@@ -19,6 +19,7 @@ import logging
 from http import HTTPStatus
 from typing import Callable, Optional
 
+import pandas as pd
 from flask import Blueprint, Response, g, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
@@ -389,6 +390,7 @@ def get_api_blueprint(
         system = data["system"]
         auth0_user_id = get_auth0_user_id(request_dict=data)
         file = request.files["file"]
+        ingest_on_upload = data.get("ingest_on_upload")
         if file is None:
             raise JusticeCountsBadRequestError(
                 "no_file_on_upload", "No file was sent for upload."
@@ -397,6 +399,7 @@ def get_api_blueprint(
             raise JusticeCountsBadRequestError(
                 "file_type_error", "Invalid file type: All files must be of type .xlsx."
             )
+        # Upload spreadsheet to GCS
         spreadsheet = SpreadsheetInterface.upload_spreadsheet(
             session=current_session,
             file_storage=file,
@@ -404,6 +407,19 @@ def get_api_blueprint(
             auth0_user_id=auth0_user_id,
             system=system,
         )
+        # Ingest if the user is a Recidiviz Admin and ingest on upload has been specified
+        permissions = g.user_context.permissions if "user_context" in g else []
+        if (
+            ingest_on_upload == "True"
+            and ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions
+        ):
+            spreadsheet = SpreadsheetInterface.ingest_spreadsheet(
+                session=current_session,
+                spreadsheet=spreadsheet,
+                auth0_user_id=auth0_user_id,
+                xls=pd.ExcelFile(file),
+                agency_id=agency_id,
+            )
 
         return jsonify(
             SpreadsheetInterface.get_spreadsheet_json(

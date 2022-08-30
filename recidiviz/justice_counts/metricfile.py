@@ -35,7 +35,7 @@ class MetricFile:
     one CSV for the aggregate value and one CSV for each disaggregation.
     """
 
-    # Filename used for the technical specifiction.
+    # Filename used for the technical specification.
     canonical_filename: str
 
     # The definition of the corresponding Justice Counts metric.
