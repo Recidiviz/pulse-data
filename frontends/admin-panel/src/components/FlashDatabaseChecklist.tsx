@@ -27,9 +27,11 @@ import * as React from "react";
 import { useHistory } from "react-router-dom";
 import {
   acquireBQExportLock,
+  changeIngestInstanceStatus,
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
+  getCurrentIngestInstanceStatus,
   importDatabaseFromGCS,
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
@@ -53,12 +55,18 @@ interface StyledStepProps extends StepProps {
   actionButtonTitle?: string;
   // Action that will be performed when the action button is clicked.
   onActionButtonClick?: () => Promise<Response>;
+
+  // Whether the buttons should be enabled.
+  buttonsEnabled?: boolean;
 }
 
 interface CodeBlockProps {
   children: React.ReactNode;
   enabled: boolean;
 }
+
+// TODO(#11309): Remove this gating once ingest instance statuses can be set from flashing checklist.
+const enableFlashInstanceStatus = false;
 
 const CodeBlock = ({ children, enabled }: CodeBlockProps): JSX.Element => (
   <code
@@ -75,17 +83,64 @@ const CodeBlock = ({ children, enabled }: CodeBlockProps): JSX.Element => (
   </code>
 );
 
+async function fetchCurrentIngestInstanceStatus(
+  stateInfo: StateCodeInfo,
+  instance: DirectIngestInstance
+): Promise<string | null> {
+  if (stateInfo) {
+    const response = await getCurrentIngestInstanceStatus(
+      stateInfo.code,
+      instance
+    );
+    const result: string = await response.text();
+    return result.length === 0 ? "NO STATUS" : result;
+  }
+  return null;
+}
+
 const FlashDatabaseChecklist = (): JSX.Element => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
   const [currentStep, setCurrentStep] = React.useState(0);
   const [stateInfo, setStateInfo] = React.useState<StateCodeInfo | null>(null);
+  const [currentPrimaryIngestInstanceStatus, setPrimaryIngestInstanceStatus] =
+    React.useState<string | null>(null);
+  const [
+    currentSecondaryIngestInstanceStatus,
+    setSecondaryIngestInstanceStatus,
+  ] = React.useState<string | null>(null);
   const [modalVisible, setModalVisible] = React.useState(true);
-
   const history = useHistory();
-
+  const isFlashInProgress =
+    currentPrimaryIngestInstanceStatus === "FLASH_IN_PROGRESS" &&
+    currentSecondaryIngestInstanceStatus === "FLASH_IN_PROGRESS";
+  const isReadyToFlash =
+    currentSecondaryIngestInstanceStatus === "READY_TO_FLASH";
+  const isFlashCompleted =
+    currentSecondaryIngestInstanceStatus === "FLASH_COMPLETED";
   const incrementCurrentStep = async () => setCurrentStep(currentStep + 1);
+
+  const getData = React.useCallback(async () => {
+    if (stateInfo) {
+      const [primaryStatus, secondaryStatus] = await Promise.all([
+        fetchCurrentIngestInstanceStatus(
+          stateInfo,
+          DirectIngestInstance.PRIMARY
+        ),
+        fetchCurrentIngestInstanceStatus(
+          stateInfo,
+          DirectIngestInstance.SECONDARY
+        ),
+      ]);
+      setPrimaryIngestInstanceStatus(primaryStatus);
+      setSecondaryIngestInstanceStatus(secondaryStatus);
+    }
+  }, [stateInfo]);
+
+  React.useEffect(() => {
+    getData();
+  }, [getData]);
 
   const runAndCheckStatus = async (
     fn: () => Promise<Response>
@@ -104,10 +159,30 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     setStateInfo(info);
   };
 
+  const setStatusInPrimaryAndSecondaryTo = async (
+    stateCode: string,
+    status: string
+  ): Promise<Response> => {
+    const [primaryResponse, secondaryResponse] = await Promise.all([
+      changeIngestInstanceStatus(
+        stateCode,
+        DirectIngestInstance.PRIMARY,
+        status
+      ),
+      changeIngestInstanceStatus(
+        stateCode,
+        DirectIngestInstance.SECONDARY,
+        status
+      ),
+    ]);
+    return primaryResponse.status !== 200 ? primaryResponse : secondaryResponse;
+  };
+
   const StyledStep = ({
     actionButtonTitle,
     onActionButtonClick,
     description,
+    buttonsEnabled,
     ...rest
   }: StyledStepProps): JSX.Element => {
     const [loading, setLoading] = React.useState(false);
@@ -118,10 +193,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         {onActionButtonClick && (
           <Button
             type="primary"
+            disabled={!buttonsEnabled && enableFlashInstanceStatus}
             onClick={async () => {
               setLoading(true);
               const succeeded = await runAndCheckStatus(onActionButtonClick);
               if (succeeded) {
+                await getData();
                 await incrementCurrentStep();
               }
               setLoading(false);
@@ -138,8 +215,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         )}
         <Button
           type={onActionButtonClick ? undefined : "primary"}
+          disabled={!buttonsEnabled && enableFlashInstanceStatus}
           onClick={async () => {
             setLoading(true);
+            await getData();
             await incrementCurrentStep();
             setLoading(false);
           }}
@@ -181,10 +260,35 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <p>Pause all of the ingest-related queues for {stateCode}.</p>
           }
           actionButtonTitle="Pause Queues"
+          buttonsEnabled={isReadyToFlash}
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.PAUSED)
           }
         />
+        {enableFlashInstanceStatus ? (
+          <StyledStep
+            title="Set status to FLASH_IN_PROGRESS"
+            description={
+              isReadyToFlash ? (
+                <p>
+                  Flash to primary can proceed. Set ingest status to
+                  FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Secondary instance status is not READY_TO_FLASH. Cannot
+                  &nbsp;proceed.
+                </p>
+              )
+            }
+            actionButtonTitle="Update Ingest Instance Status"
+            buttonsEnabled={isReadyToFlash}
+            onActionButtonClick={async () =>
+              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
+            }
+          />
+        ) : undefined}
         <StyledStep
           title="Acquire PRIMARY Ingest Lock"
           description={
@@ -194,6 +298,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               databases until the lock is released.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Acquire Lock"
           onActionButtonClick={async () =>
             acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -208,6 +313,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               databases until the lock is released.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Acquire Lock"
           onActionButtonClick={async () =>
             acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -228,6 +334,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               operation succeeds, just select &#39;Mark Done&#39;.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Export Data"
           onActionButtonClick={async () =>
             exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY)
@@ -264,6 +371,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             </>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Move to Backup"
           onActionButtonClick={async () =>
             moveIngestViewResultsToBackup(
@@ -281,6 +389,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               operations database table as invalidated.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Invalidate primary rows"
           onActionButtonClick={async () =>
             markInstanceIngestViewDataInvalidated(
@@ -305,6 +414,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               operation succeeds, just select &#39;Mark Done&#39;.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Import Data"
           onActionButtonClick={async () =>
             importDatabaseFromGCS(
@@ -324,6 +434,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               updated instance <code>SECONDARY</code>.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Move Secondary Metadata"
           onActionButtonClick={async () =>
             transferIngestViewMetadataToNewInstance(
@@ -342,6 +453,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <code>{primaryIngestViewResultsDataset}</code>
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Move Secondary Data"
           onActionButtonClick={async () =>
             moveIngestViewResultsBetweenInstances(
@@ -358,6 +470,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               Release the ingest lock for {stateCode}&#39;s primary instance.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Release Lock"
           onActionButtonClick={async () =>
             releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -370,6 +483,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               Release the ingest lock for {stateCode}&#39;s secondary instance.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Release Lock"
           onActionButtonClick={async () =>
             releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -380,6 +494,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           description={
             <p>Mark secondary ingest as paused in the operations db.</p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Mark Paused"
           onActionButtonClick={async () =>
             pauseDirectIngestInstance(stateCode, DirectIngestInstance.SECONDARY)
@@ -413,6 +528,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <code>{stateCode.toLowerCase()}_primary</code> database.
             </p>
           }
+          buttonsEnabled={isFlashInProgress}
           actionButtonTitle="Delete"
           onActionButtonClick={async () =>
             deleteDatabaseImportGCSFiles(
@@ -421,6 +537,30 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             )
           }
         />
+        {enableFlashInstanceStatus ? (
+          <StyledStep
+            title="Set status to FLASH_COMPLETED"
+            description={
+              isFlashInProgress ? (
+                <p>
+                  Flash to primary has completed. Set ingest status to
+                  FLASH_COMPLETED in PRIMARY and SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Cannot set status to FLASH_COMPLETED. Current status in both
+                  &nbsp;PRIMARY and SECONDARY is not FLASH_IN_PROGRESS.
+                </p>
+              )
+            }
+            buttonsEnabled={isFlashInProgress}
+            actionButtonTitle="Update Ingest Instance Status"
+            onActionButtonClick={async () =>
+              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
+            }
+          />
+        ) : undefined}
         <StyledStep
           title="Unpause queues"
           description={
@@ -429,6 +569,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             </p>
           }
           actionButtonTitle="Unpause Queues"
+          buttonsEnabled={isFlashCompleted}
           onActionButtonClick={async () =>
             updateIngestQueuesState(stateCode, QueueState.RUNNING)
           }
@@ -485,17 +626,31 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   };
 
-  const contents =
-    stateInfo === null ? (
+  let alert;
+  if (stateInfo === null) {
+    alert = (
       <Alert
         message="Select a state"
         description="Once you pick a state, this form will display the set of instructions required to flash a secondary database to primary."
         type="info"
         showIcon
       />
-    ) : (
-      <StateFlashingChecklist stateCode={stateInfo.code} />
     );
+  } else if (
+    enableFlashInstanceStatus &&
+    !(isReadyToFlash || isFlashInProgress)
+  ) {
+    /* If we have loaded a status but it does not indicate that we can proceed with flashing, show an alert on top of the checklist */
+    const cannotFlashDescription = `Primary: ${currentPrimaryIngestInstanceStatus}. Secondary: ${currentSecondaryIngestInstanceStatus}.`;
+    alert = (
+      <Alert
+        message="Cannot proceed with flash to primary. Secondary instance needs to have the status 'READY_TO_FLASH'."
+        description={cannotFlashDescription}
+        type="info"
+        showIcon
+      />
+    );
+  }
 
   return (
     <>
@@ -523,7 +678,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         who should be accessing this page.
       </Modal>
 
-      {contents}
+      {alert}
+      {stateInfo ? (
+        <StateFlashingChecklist stateCode={stateInfo.code} />
+      ) : undefined}
     </>
   );
 };

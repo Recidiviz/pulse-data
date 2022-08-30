@@ -294,3 +294,33 @@ export const transferIngestViewMetadataToNewInstance = async (
 export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
   return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
+
+// Get current ingest instance status
+export const getCurrentIngestInstanceStatus = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/get_current_ingest_instance_status",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Set the specified instance status
+export const changeIngestInstanceStatus = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance,
+  ingestInstanceStatus: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/change_ingest_instance_status",
+    {
+      stateCode,
+      ingestInstance,
+      ingestInstanceStatus,
+    }
+  );
+};

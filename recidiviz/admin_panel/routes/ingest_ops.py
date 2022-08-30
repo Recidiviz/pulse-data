@@ -39,6 +39,9 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
@@ -53,6 +56,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manage
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -686,3 +692,57 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             }
 
         return jsonify(all_instance_statuses_strings), HTTPStatus.OK
+
+    @bp.route(
+        "/api/ingest_operations/get_current_ingest_instance_status", methods=["POST"]
+    )
+    @requires_gae_auth
+    def _get_current_ingest_instance_status() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        status_manager = PostgresDirectIngestInstanceStatusManager(
+            state_code.value, ingest_instance
+        )
+        current_status = status_manager.get_current_status()
+        return (
+            current_status.value if current_status else "",
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/change_ingest_instance_status",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _change_ingest_instance_status() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+            ingest_instance_status = DirectIngestStatus(
+                request_json["ingestInstanceStatus"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            status_manager = PostgresDirectIngestInstanceStatusManager(
+                state_code.value, ingest_instance
+            )
+            status_manager.change_status_to(ingest_instance_status)
+        except ValueError:
+            return (
+                f"Cannot set status={ingest_instance_status.value} in {ingest_instance.value}.",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        return "", HTTPStatus.OK
