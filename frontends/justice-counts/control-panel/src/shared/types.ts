@@ -20,13 +20,25 @@ export enum Permission {
   SWITCH_AGENCIES = "switch_agencies",
 }
 
+export type AgencySystems =
+  | "LAW_ENFORCEMENT"
+  | "PROSECUTION"
+  | "DEFENSE"
+  | "COURTS_AND_PRETRIAL"
+  | "JAILS"
+  | "PRISONS"
+  | "SUPERVISION"
+  | "PAROLE"
+  | "PROBATION"
+  | "POST_RELEASE";
+
 export interface UserAgency {
   name: string;
   id: number;
   fips_county_code: string;
   state_code: string;
-  system: string;
-  systems: string[];
+  system: AgencySystems;
+  systems: AgencySystems[];
 }
 
 export type ReportFrequency = "MONTHLY" | "ANNUAL";
@@ -71,7 +83,7 @@ export type MetricDisaggregationDimensionsWithErrors =
 
 export interface Metric {
   key: string;
-  system: string;
+  system: AgencySystems;
   display_name: string;
   description: string;
   reporting_note: string;

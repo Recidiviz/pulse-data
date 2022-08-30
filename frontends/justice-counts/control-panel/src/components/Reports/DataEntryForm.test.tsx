@@ -87,7 +87,7 @@ describe("test data entry form", () => {
         "Law Enforcement": [
           {
             key: "PROSECUTION_STAFF",
-            system: "Law Enforcement",
+            system: "LAW_ENFORCEMENT",
             display_name: "Staff",
             description:
               "Measures the number of full-time staff employed by the agency.",

@@ -20,9 +20,13 @@ import { reaction, when } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useRef, useState } from "react";
 
-import { FormError, ReportFrequency } from "../../shared/types";
+import { AgencySystems, FormError, ReportFrequency } from "../../shared/types";
 import { useStore } from "../../stores";
-import { isPositiveNumber, removeCommaSpaceAndTrim } from "../../utils";
+import {
+  isPositiveNumber,
+  removeCommaSpaceAndTrim,
+  removeSnakeCase,
+} from "../../utils";
 import { Badge, BadgeColorMapping } from "../Badge";
 import DatapointsView from "../DataViz/DatapointsView";
 import {
@@ -78,6 +82,7 @@ type MetricsViewMetric = {
   description: string;
   frequency: string;
   enabled: boolean;
+  system: AgencySystems;
   contexts: {
     key: string;
     display_name: string;
@@ -528,15 +533,11 @@ export const MetricsView: React.FC = observer(() => {
   const { reportStore, userStore, datapointsStore } = useStore();
   const configPanelRef = useRef<HTMLDivElement>(null);
 
-  const metricFilterOptions = ["All Metrics", "Active"] as const;
-  type MetricFilterOptions = typeof metricFilterOptions[number];
-
   // TODO(#13805) Temporarily hiding the data tab until it is implemented. Currently it's only visible to Recidiviz admins.
   const configSections = ["Data", "Configuration", "Context"];
   type ConfigSections = typeof configSections[number];
 
-  const [activeMetricFilter, setActiveMetricFilter] =
-    useState<MetricFilterOptions>("All Metrics");
+  const [activeMetricFilter, setActiveMetricFilter] = useState<string>();
 
   const [activeConfigSection, setActiveConfigSection] =
     useState<ConfigSections>("Data");
@@ -776,6 +777,9 @@ export const MetricsView: React.FC = observer(() => {
           fetchAndSetReportSettings();
 
           datapointsStore.getDatapoints();
+          setActiveMetricFilter(
+            removeSnakeCase(userStore.currentAgency?.systems[0] as string)
+          );
         }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -795,6 +799,9 @@ export const MetricsView: React.FC = observer(() => {
             fetchAndSetReportSettings();
             datapointsStore.resetState();
             await datapointsStore.getDatapoints();
+            setActiveMetricFilter(
+              removeSnakeCase(userStore.currentAgency?.systems[0] as string)
+            );
           }
         }
       ),
@@ -803,22 +810,19 @@ export const MetricsView: React.FC = observer(() => {
   );
 
   useEffect(() => {
-    if (activeMetricFilter === "All Metrics") {
-      return setFilteredMetricSettings(metricSettings);
-    }
+    const filteredMetricKeyToMetricMap: { [key: string]: MetricsViewMetric } =
+      {};
 
-    if (activeMetricFilter === "Active") {
-      const filteredMetricKeyToMetricMap: { [key: string]: MetricsViewMetric } =
-        {};
+    Object.values(metricSettings)
+      .filter(
+        (metric) =>
+          metric.system.toLowerCase() === activeMetricFilter?.toLowerCase()
+      )
+      ?.forEach((metric) => {
+        filteredMetricKeyToMetricMap[metric.key] = metric;
+      });
 
-      Object.values(metricSettings)
-        .filter((metric) => metric.enabled)
-        ?.forEach((metric) => {
-          filteredMetricKeyToMetricMap[metric.key] = metric;
-        });
-
-      return setFilteredMetricSettings(filteredMetricKeyToMetricMap);
-    }
+    return setFilteredMetricSettings(filteredMetricKeyToMetricMap);
   }, [metricSettings, activeMetricFilter]);
 
   if (isLoading) {
@@ -836,13 +840,16 @@ export const MetricsView: React.FC = observer(() => {
 
         <TabbedBar>
           <TabbedOptions>
-            {metricFilterOptions.map((filterOption) => (
+            {userStore.currentAgency?.systems.map((filterOption) => (
               <TabbedItem
                 key={filterOption}
-                selected={activeMetricFilter === filterOption}
-                onClick={() => setActiveMetricFilter(filterOption)}
+                selected={activeMetricFilter === removeSnakeCase(filterOption)}
+                onClick={() =>
+                  setActiveMetricFilter(removeSnakeCase(filterOption))
+                }
+                capitalize
               >
-                {filterOption}
+                {removeSnakeCase(filterOption.toLowerCase())}
               </TabbedItem>
             ))}
           </TabbedOptions>

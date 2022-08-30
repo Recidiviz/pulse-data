@@ -54,7 +54,10 @@ export const TabbedOptions = styled.div`
   align-items: center;
 `;
 
-export const TabbedItem = styled.div<{ selected?: boolean }>`
+export const TabbedItem = styled.div<{
+  selected?: boolean;
+  capitalize?: boolean;
+}>`
   padding: 24px 0 16px 0;
   margin-right: 20px;
   color: ${({ selected }) =>
@@ -62,6 +65,7 @@ export const TabbedItem = styled.div<{ selected?: boolean }>`
   border-bottom: ${({ selected }) =>
     selected ? `3px solid ${palette.solid.blue}` : `3px solid transparent`};
   transition: color 0.3s ease;
+  ${({ capitalize }) => capitalize && `text-transform: capitalize;`}
 
   &:hover {
     cursor: pointer;
