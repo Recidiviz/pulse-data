@@ -1,0 +1,9 @@
+# Configuration for which validations to run for region US_IX.
+
+region_code: US_IX
+# TODO(#10703): Move the exclusions / overrides in this validation config over to the
+# US_ID validation config once US_IX is merged into US_ID
+dev_mode: True
+exclusions: []
+max_allowed_error_overrides: []
+num_allowed_rows_overrides: []
