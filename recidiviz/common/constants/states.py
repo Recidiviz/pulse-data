@@ -29,7 +29,7 @@ from recidiviz.utils import environment
 STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 
 # Maximum fips value of all states
-MAX_FIPS_CODE = 56
+MAX_FIPS_CODE = 90
 
 StateCodeT = typing.TypeVar("StateCodeT", bound="_SharedStateCode")
 
@@ -107,7 +107,7 @@ ALTERNATE_INGEST_US_ID_STATE_CODE = "US_IX"
 ALTERNATE_INGEST_US_ID_STATE_INFO = {
     ALTERNATE_INGEST_US_ID_STATE_CODE: us.states.State(
         **{
-            "fips": "16",
+            "fips": "90",
             "name": "Idaho",
             "abbr": "IX",
             "is_territory": False,
