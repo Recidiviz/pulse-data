@@ -19,6 +19,7 @@ import { Dropdown, DropdownMenu } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import React, { Fragment, useEffect, useState } from "react";
 
+import { AgencySystems } from "../../shared/types";
 import { useStore } from "../../stores";
 import { removeSnakeCase } from "../../utils";
 import SpreadsheetIcon from "../assets/spreadsheet-icon.png";
@@ -58,7 +59,7 @@ export type UploadedFile = {
   uploaded_at: number;
   ingested_at: number;
   uploaded_by: string;
-  system: string;
+  system: AgencySystems;
   status: UploadedFileStatus | null;
 };
 
