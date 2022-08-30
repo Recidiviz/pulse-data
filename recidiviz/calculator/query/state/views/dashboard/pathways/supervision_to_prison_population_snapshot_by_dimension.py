@@ -76,7 +76,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             UNNEST ([district, "ALL"]) AS district,
             UNNEST ([length_of_stay, "ALL"]) AS length_of_stay
         WHERE time_period IS NOT NULL
-        AND length_of_stay IS NOT NULL
+        AND length_of_stay != "UNKNOWN"
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
     )
 

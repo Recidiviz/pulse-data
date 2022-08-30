@@ -52,7 +52,8 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             transitions.supervision_district AS district,
             transitions.supervision_level,
             transitions.supervising_officer
-        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions
+        -- Use the raw table, which has null values instead of UNKNOWN so it can correctly join to supervision_officer_caseload
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions_raw` transitions
     )
     ,
     filtered_rows AS (

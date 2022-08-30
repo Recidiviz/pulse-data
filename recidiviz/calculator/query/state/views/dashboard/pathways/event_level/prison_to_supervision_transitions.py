@@ -34,6 +34,9 @@ from recidiviz.calculator.query.state import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -96,8 +99,23 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
             ON sessions_data.person_id = pei.person_id
             AND {state_id_type} = pei.id_type
     )
+    , transitions_without_unknowns AS (
+        SELECT
+            transition_date,
+            year,
+            month,
+            person_id,
+            age,
+            full_name,
+            time_period,
+            state_id,
+            state_code,
+            rn,
+            {dimensions_clause}
+        FROM all_rows
+    )
     SELECT {columns}
-    FROM all_rows
+    FROM transitions_without_unknowns
     WHERE {facility_filter}
     AND rn = 1
 """
@@ -121,6 +139,14 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
             "sessions_data"
         ),
         transition_time_period=get_binned_time_period_months("transition_date"),
+        dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
+            [
+                "age_group",
+                "gender",
+                "race",
+                "facility",
+            ]
+        ),
         columns=[
             "transition_date",
             "year",

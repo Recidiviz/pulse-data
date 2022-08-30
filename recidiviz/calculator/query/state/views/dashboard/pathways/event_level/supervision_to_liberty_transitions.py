@@ -36,6 +36,9 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -76,8 +79,8 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
             AND outflow_to_level_1 = 'LIBERTY'
             AND s.end_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 64 MONTH)
             -- (5 years X 12 months) + (3 for 90-day avg) + (1 to capture to beginning of first month) = 64 months
-    ),
-    transitions AS (
+    )
+    , transitions AS (
         SELECT 
             base_data.state_code,
             base_data.person_id,
@@ -101,12 +104,37 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
             ON base_data.state_code = location.state_code
             AND base_data.district_id = location.location_id
     )
-    SELECT {columns} FROM transitions
+    , transitions_without_unknowns AS (
+        SELECT
+            state_code,
+            person_id,
+            transition_date,
+            year,
+            month,
+            age,
+            supervision_start_date,
+            time_period,
+            {dimensions_clause}
+        FROM transitions
+    )
+    SELECT {columns} FROM transitions_without_unknowns
 """
 
 SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
     metadata_query=get_pathways_supervision_last_updated_date(),
     delegate=SelectedColumnsBigQueryViewBuilder(
+        dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
+            [
+                "supervision_type",
+                "supervision_level",
+                "age_group",
+                "gender",
+                "race",
+                "supervising_officer",
+                "supervision_district",
+                "length_of_stay",
+            ]
+        ),
         columns=[
             "state_code",
             "person_id",
