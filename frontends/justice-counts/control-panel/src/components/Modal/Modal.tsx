@@ -18,7 +18,7 @@
 import React, { useEffect, useState } from "react";
 import styled, { css, keyframes } from "styled-components/macro";
 
-import { palette } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette } from "../GlobalStyles";
 
 const ModalContainer = styled.div`
   width: 100vw;
@@ -48,7 +48,7 @@ const animateTopToBottom = css`
   animation: ${fromTopToBottom} 0.3s forwards ease-in-out;
 `;
 
-const MODAL_TOP_GAP = `64px`;
+const MODAL_TOP_GAP = `${HEADER_BAR_HEIGHT}px`;
 
 const ModalElement = styled.div<{ showUnmountAnimation?: boolean }>`
   height: calc(100% - ${MODAL_TOP_GAP});

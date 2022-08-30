@@ -17,7 +17,7 @@
 
 import styled from "styled-components/macro";
 
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 
 const COLLAPSED_INNER_COLUMNS_WIDTH = 846;
 
@@ -29,7 +29,7 @@ export const PageHeader = styled.div`
 `;
 
 export const ReportsHeader = styled(PageHeader)`
-  top: 64px;
+  top: ${HEADER_BAR_HEIGHT}px;
 `;
 
 export const PageTitle = styled.div`

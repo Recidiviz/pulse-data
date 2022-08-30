@@ -19,8 +19,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components/macro";
 
-import { Permission } from "../../shared/types";
-import { useStore } from "../../stores";
 import notReportedIcon from "../assets/not-reported-icon.png";
 import { palette, typography } from "../GlobalStyles";
 import { TWO_PANEL_MAX_WIDTH } from "../Reports/ReportDataEntry.styles";
@@ -95,7 +93,6 @@ export const NotReportedIcon: React.FC<{
   noTooltip?: boolean;
 }> = ({ size, lighter, noTooltip }) => {
   const [tooltipIsVisible, setTooltipIsVisible] = useState(false);
-  const { userStore } = useStore();
   const navigate = useNavigate();
 
   const hideTooltip = () => setTooltipIsVisible(false);
