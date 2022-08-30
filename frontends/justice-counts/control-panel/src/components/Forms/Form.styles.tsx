@@ -135,6 +135,20 @@ export const MetricSectionTitle = styled.div<{ notReporting?: boolean }>`
     notReporting ? palette.highlight.grey8 : palette.solid.darkgrey};
 `;
 
+export const MetricSystemTitle = styled(MetricSectionTitle)<{
+  firstTitle?: boolean;
+}>`
+  color: ${palette.highlight.grey8};
+  border-top: ${({ firstTitle }) =>
+    firstTitle ? `none` : `1px solid ${palette.highlight.grey8}`};
+  padding-top: ${({ firstTitle }) => (firstTitle ? `none` : `30px`)};
+  width: 100%;
+
+  &:first-child {
+    border-top: none;
+  }
+`;
+
 export const MetricSectionSubTitle = styled.div`
   ${typography.sizeCSS.medium}
   color: ${palette.highlight.grey8};

@@ -141,7 +141,7 @@ export const DisaggregationDimensionTextInput = observer(
             : formatNumberInput(
                 metric.disaggregations?.[disaggregationIndex]?.dimensions?.[
                   dimensionIndex
-                ].value?.toString()
+                ]?.value?.toString()
               ) || ""
         }
         persistLabel
