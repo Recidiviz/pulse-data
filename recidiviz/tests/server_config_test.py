@@ -18,6 +18,8 @@
 import unittest
 from unittest.mock import Mock, patch
 
+import mock
+
 from recidiviz import server_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -58,3 +60,21 @@ class TestServerConfig(unittest.TestCase):
         self.assertCountEqual(expected_all_keys, all_keys)
 
         state_codes_fn.assert_called()
+
+    def test_get_database_keys_for_state_schema(
+        self,
+    ) -> None:
+        self.assertEqual(
+            22, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
+        )
+
+    @patch("recidiviz.utils.environment.in_gcp_production")
+    def test_get_database_keys_for_state_schema_in_production(
+        self, mock_in_prod: mock.MagicMock
+    ) -> None:
+        mock_in_prod.return_value = True
+
+        # Should skip primary/secondary in US_IX and US_OZ
+        self.assertEqual(
+            18, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
+        )

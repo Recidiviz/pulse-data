@@ -23,12 +23,14 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils import environment
 
 
 def database_keys_for_schema_type(
@@ -45,6 +47,10 @@ def database_keys_for_schema_type(
             ingest_instance.database_key_for_state(state_code)
             for ingest_instance in DirectIngestInstance
             for state_code in get_existing_direct_ingest_states()
+            if not environment.in_gcp_production()
+            or not direct_ingest_regions.get_direct_ingest_region(
+                state_code.value.lower()
+            ).playground
         ]
 
     if schema_type == SchemaType.PATHWAYS:
