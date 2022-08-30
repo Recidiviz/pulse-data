@@ -43,7 +43,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             created_on,
             state_code,
             'INCARCERATION' AS compartment_level_1,
-            COALESCE(specialized_purpose_for_incarceration, 'GENERAL') AS compartment_level_2,
+            COALESCE(purpose_for_incarceration, 'GENERAL') AS compartment_level_2,
             COALESCE(facility, 'EXTERNAL_UNKNOWN') AS compartment_location,
             COALESCE(facility, 'EXTERNAL_UNKNOWN') AS facility,
             CAST(NULL AS STRING) AS supervision_office,
@@ -54,9 +54,9 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS case_type,
             judicial_district_code,
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
         WHERE
-            state_code='US_CO')
+            state_code='US_CO' AND included_in_state_population)
     
     SELECT
         pop.person_id,

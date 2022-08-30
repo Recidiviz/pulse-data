@@ -49,8 +49,8 @@ FROM
     (SELECT state_code, person_id, admission_date as metric_date, included_in_state_population, specialized_purpose_for_incarceration as admission_pfi
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`)
 LEFT JOIN
-    (SELECT state_code, person_id, date_of_stay as metric_date, included_in_state_population, specialized_purpose_for_incarceration as population_pfi
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`)
+    (SELECT state_code, person_id, date_of_stay as metric_date, included_in_state_population, purpose_for_incarceration as population_pfi
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`)
 USING (state_code, person_id, metric_date, included_in_state_population)
 
 UNION ALL

@@ -45,7 +45,8 @@ INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLA
             state_code,
             date_of_stay as population_date,
             COUNT(DISTINCT(person_id)) AS population_count
-        FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+        FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+        WHERE included_in_state_population
         GROUP BY state_code, population_date
     ) as internal_pop 
     JOIN 

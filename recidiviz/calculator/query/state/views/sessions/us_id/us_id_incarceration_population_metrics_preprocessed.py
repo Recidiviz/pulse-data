@@ -46,9 +46,9 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             'INCARCERATION' as compartment_level_1,
             /* TODO(#6126): Investigate ID missing reason for incarceration */
             CASE 
-                WHEN specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
-                    THEN specialized_purpose_for_incarceration 
-                ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
+                WHEN purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
+                    THEN purpose_for_incarceration 
+                ELSE COALESCE(purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
             COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
             COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
             CAST(NULL AS STRING) AS supervision_office,
@@ -59,8 +59,8 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS case_type,
             judicial_district_code,
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
-        WHERE state_code = 'US_ID'
+            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+        WHERE state_code = 'US_ID' AND included_in_state_population
     )
     SELECT
         pop.person_id,

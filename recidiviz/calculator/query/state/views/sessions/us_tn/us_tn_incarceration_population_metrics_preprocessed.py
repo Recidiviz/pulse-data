@@ -54,7 +54,7 @@ US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         population.created_on,       
         population.state_code,
         'INCARCERATION' AS compartment_level_1,
-        COALESCE(tc.compartment_level_2, population.specialized_purpose_for_incarceration) AS compartment_level_2,
+        COALESCE(tc.compartment_level_2, population.purpose_for_incarceration) AS compartment_level_2,
         COALESCE(population.facility,'EXTERNAL_UNKNOWN') AS compartment_location,
         COALESCE(population.facility,'EXTERNAL_UNKNOWN') AS facility,
         CAST(NULL AS STRING) AS supervision_office,
@@ -64,12 +64,13 @@ US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         population.judicial_district_code,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` population
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` population
     LEFT JOIN temp_custody_cte tc
         ON tc.person_id = population.person_id
         AND population.date_of_stay BETWEEN tc.admission_date AND COALESCE(tc.release_date, '9999-01-01')
-        AND population.specialized_purpose_for_incarceration = 'GENERAL'
+        AND population.purpose_for_incarceration = 'GENERAL'
     WHERE population.state_code = 'US_TN'
+    AND population.included_in_state_population
 """
 
 US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
