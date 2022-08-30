@@ -30,6 +30,7 @@ from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
+    get_agency_ids_from_session,
     get_auth0_user_id,
     get_user_account_id,
     raise_if_user_is_unauthorized,
@@ -130,11 +131,15 @@ def get_api_blueprint(
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
             )
-            agency_ids = g.user_context.agency_ids if "user_context" in g else []
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=current_session, agency_ids=agency_ids
-            )
             permissions = g.user_context.permissions if "user_context" in g else []
+            if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
+                agencies = AgencyInterface.get_agencies(session=current_session)
+            else:
+                agency_ids = g.user_context.agency_ids if "user_context" in g else []
+                agencies = AgencyInterface.get_agencies_by_id(
+                    session=current_session, agency_ids=agency_ids
+                )
+
             return jsonify(
                 {
                     "id": user_account.id,
@@ -232,7 +237,7 @@ def get_api_blueprint(
     @raise_if_user_is_unauthorized
     def get_reports_by_agency_id(agency_id: str) -> Response:
         try:
-            agency_ids = g.user_context.agency_ids if "user_context" in g else []
+            agency_ids = get_agency_ids_from_session()
             if int(agency_id) not in agency_ids:
                 raise JusticeCountsPermissionError(
                     code="justice_counts_agency_permission",
@@ -412,7 +417,7 @@ def get_api_blueprint(
         spreadsheet_id: str,
     ) -> response.Response:
         """Download a spreadsheet from GCP and return the file"""
-        agency_ids = g.user_context.agency_ids if "user_context" in g else []
+        agency_ids = get_agency_ids_from_session()
         file = SpreadsheetInterface.download_spreadsheet(
             spreadsheet_id=int(spreadsheet_id),
             agency_ids=agency_ids,
@@ -424,7 +429,7 @@ def get_api_blueprint(
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
     def get_spreadsheets(agency_id: str) -> Response:
-        agency_ids = g.user_context.agency_ids if "user_context" in g else []
+        agency_ids = get_agency_ids_from_session()
         if int(agency_id) not in agency_ids:
             raise JusticeCountsBadRequestError(
                 code="bad_user_permissions",
@@ -502,10 +507,14 @@ def get_api_blueprint(
     @raise_if_user_is_unauthorized
     def get_datapoints_by_agency_id(agency_id: str) -> Response:
         try:
+            permissions = g.user_context.permissions if "user_context" in g else []
             if agency_id is None:
                 # If no agency_id is specified, pick one of the agencies
                 # that the user belongs to as a default for the home page
-                if len(g.user_context.agency_ids) == 0:
+                if (
+                    len(g.user_context.agency_ids) == 0
+                    and ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+                ):
                     raise JusticeCountsPermissionError(
                         code="justice_counts_agency_permission",
                         description="User does not belong to any agencies.",
