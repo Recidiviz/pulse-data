@@ -49,6 +49,12 @@ class PopulationProjectionMetricQueryBuilder(MetricQueryBuilder):
             if hasattr(self.model, attribute)
         ]
 
+        # TODO(#14970): Remove and update once updated views have been exported
+        admission_reason_index = self.base_columns.index(self.model.admission_reason)
+        self.base_columns[admission_reason_index] = self.model.admission_reason.label(
+            "legal_status"
+        )
+
         if len(self.base_columns) != len(required_attributes):
             raise ValueError(
                 "ProjectionCountMetricQueryBuilder model must have required attributes"

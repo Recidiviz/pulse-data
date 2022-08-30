@@ -74,7 +74,7 @@ class TestPrisonPopulationProjectionMetric(
         return [
             {
                 "gender": "FEMALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 1,
                 "simulationTag": "HISTORICAL",
                 "totalPopulation": 1,
@@ -84,7 +84,7 @@ class TestPrisonPopulationProjectionMetric(
             },
             {
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 1,
                 "simulationTag": "HISTORICAL",
                 "totalPopulation": 1,
@@ -94,7 +94,7 @@ class TestPrisonPopulationProjectionMetric(
             },
             {
                 "gender": "FEMALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 2,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 1,
@@ -104,7 +104,7 @@ class TestPrisonPopulationProjectionMetric(
             },
             {
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 2,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 2,
@@ -114,7 +114,7 @@ class TestPrisonPopulationProjectionMetric(
             },
             {
                 "gender": "FEMALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 3,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 1,
@@ -124,7 +124,7 @@ class TestPrisonPopulationProjectionMetric(
             },
             {
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 3,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 3,
@@ -159,7 +159,7 @@ class TestSupervisionPopulationProjectionMetric(
         return [
             {
                 "gender": "FEMALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 1,
                 "simulationTag": "HISTORICAL",
                 "totalPopulation": 1,
@@ -169,7 +169,7 @@ class TestSupervisionPopulationProjectionMetric(
             },
             {
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 1,
                 "simulationTag": "HISTORICAL",
                 "totalPopulation": 1,
@@ -179,7 +179,7 @@ class TestSupervisionPopulationProjectionMetric(
             },
             {
                 "gender": "FEMALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 2,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 1,
@@ -189,7 +189,7 @@ class TestSupervisionPopulationProjectionMetric(
             },
             {
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
+                "legalStatus": "PROBATION",
                 "month": 2,
                 "simulationTag": "BASELINE",
                 "totalPopulation": 2,

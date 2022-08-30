@@ -25,6 +25,7 @@ class Dimension(enum.Enum):
     FACILITY = "facility"
     GENDER = "gender"
     JUDICIAL_DISTRICT = "judicial_district"
+    LEGAL_STATUS = "legal_status"
     LENGTH_OF_STAY = "length_of_stay"
     PRIOR_LENGTH_OF_INCARCERATION = "prior_length_of_incarceration"
     RACE = "race"
