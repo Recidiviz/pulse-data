@@ -18,6 +18,9 @@
 
 from typing import Dict, List
 
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    get_pathways_enabled_states,
+)
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_METRICS
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     MetricQueryBuilder,
@@ -27,13 +30,8 @@ from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
 # TODO(#13950): Replace with StateCode
 ENABLED_METRICS_BY_STATE: Dict[_FakeStateCode, List[MetricQueryBuilder]] = {
-    _FakeStateCode.US_ID: ALL_METRICS,
-    _FakeStateCode.US_ME: ALL_METRICS,
-    _FakeStateCode.US_ND: ALL_METRICS,
-    _FakeStateCode.US_MO: ALL_METRICS,
-    _FakeStateCode.US_TN: ALL_METRICS,
-    _FakeStateCode.US_XX: ALL_METRICS,
-    _FakeStateCode.US_YY: ALL_METRICS,
+    _FakeStateCode(state_code): ALL_METRICS
+    for state_code in get_pathways_enabled_states()
 }
 
 ENABLED_METRICS_BY_STATE_BY_NAME = {

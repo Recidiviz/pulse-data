@@ -22,14 +22,24 @@ from typing import Dict, List, Optional
 from unittest import TestCase
 
 import pytest
+from sqlalchemy.engine import Engine
 
-from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
+from recidiviz.case_triage.pathways.enabled_metrics import (
+    ENABLED_METRICS_BY_STATE_BY_NAME,
+    get_metrics_for_entity,
+)
+from recidiviz.case_triage.pathways.metric_fetcher import (
+    MetricNotEnabledError,
+    PathwaysMetricFetcher,
+)
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
+    FetchMetricParams,
     MetricQueryBuilder,
 )
+from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -108,3 +118,41 @@ class TestMetricHelpers(TestCase):
             ],
             get_metrics_for_entity(LibertyToPrisonTransitions),
         )
+
+
+@pytest.mark.uses_db
+class TestPathwaysMetricFetcher(TestCase):
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+    engine: Engine
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_co")
+        self.engine = local_postgres_helpers.use_on_disk_postgresql_database(
+            self.database_key,
+            create_tables=False,
+        )
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_enabled_metric_without_table(self) -> None:
+        metric_fetcher = PathwaysMetricFetcher(state_code=_FakeStateCode.US_CO)
+
+        with self.assertRaises(MetricNotEnabledError):
+            metric_fetcher.fetch(
+                ENABLED_METRICS_BY_STATE_BY_NAME[_FakeStateCode.US_CO][
+                    "LibertyToPrisonTransitionsOverTime"
+                ],
+                FetchMetricParams(),
+            )

@@ -19,9 +19,12 @@ from functools import cached_property
 from typing import List, Mapping, Union
 
 import attr
+from psycopg2.errors import UndefinedTable  # pylint: disable=no-name-in-module
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
+from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     FetchMetricParams,
     MetricQueryBuilder,
@@ -50,17 +53,27 @@ class PathwaysMetricFetcher:
     ) -> Mapping[
         str, Union[List[Mapping[str, Union[str, int]]], Mapping[str, Union[str, int]]]
     ]:
+        """Fetches metric data / metadata from Postgres"""
         with self.database_session() as session:
             data_query = mapper.build_query(params).with_session(session)
-            data: List[Mapping[str, Union[str, int]]] = [
-                {
-                    snake_to_camel(column): result[index]
-                    for index, column in enumerate(
-                        data_query.statement.selected_columns.keys()
-                    )
-                }
-                for result in data_query.all()
-            ]
+            try:
+                data: List[Mapping[str, Union[str, int]]] = [
+                    {
+                        snake_to_camel(column): result[index]
+                        for index, column in enumerate(
+                            data_query.statement.selected_columns.keys()
+                        )
+                    }
+                    for result in data_query.all()
+                ]
+            except ProgrammingError as e:
+                if isinstance(e.orig, UndefinedTable):
+                    raise MetricNotEnabledError(
+                        metric_name=mapper.name,
+                        state_code=self.state_code,
+                    ) from e
+
+                raise e
 
             try:
                 metadata_query = mapper.build_metadata_query().with_session(session)

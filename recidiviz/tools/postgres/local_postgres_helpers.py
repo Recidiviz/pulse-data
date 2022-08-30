@@ -23,6 +23,7 @@ import tempfile
 from typing import Dict, Optional
 
 from sqlalchemy.engine import URL, Engine
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm.session import close_all_sessions
 
 from conftest import get_pytest_worker_id
@@ -251,7 +252,9 @@ def _stop_on_disk_postgresql_database(
 
 
 @environment.local_only
-def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> Engine:
+def use_on_disk_postgresql_database(
+    database_key: SQLAlchemyDatabaseKey, create_tables: Optional[bool] = True
+) -> Engine:
     """Connects SQLAlchemy to a local test postgres server. Should be called after the test database and user have
     already been initialized.
 
@@ -266,8 +269,10 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> Engi
         database_key=database_key,
         db_url=on_disk_postgres_db_url(),
     )
-    # Auto-generate all tables that exist in our schema in this database
-    database_key.declarative_meta.metadata.create_all(engine)
+
+    if create_tables:
+        # Auto-generate all tables that exist in our schema in this database
+        database_key.declarative_meta.metadata.create_all(engine)
 
     return engine
 
@@ -319,8 +324,11 @@ def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) ->
     # Ensure all sessions are closed, otherwise the below may hang.
     close_all_sessions()
 
-    with SessionFactory.using_database(database_key) as session:
-        for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
-            session.execute(table.delete())
+    for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
+        with SessionFactory.using_database(database_key) as session:
+            try:
+                session.execute(table.delete())
+            except ProgrammingError:
+                pass
 
     SQLAlchemyEngineManager.teardown_engine_for_database_key(database_key=database_key)
