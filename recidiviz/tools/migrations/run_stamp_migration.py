@@ -15,9 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Important note: This script should be run from `prod-data-client`. It will not work
-when run anywhere else.
-
 This script stamps a migration against the specified database.
 Stamping is used to tell Alembic to apply a migration without running any of its operators.
 
@@ -29,7 +26,7 @@ Note that the stamped alembic migration must exist for it to be run properly.
 
 
 
-Example usage (run from `pipenv shell`):
+Example usage (run from `pipenv shell` on `prod-data-client`):
 
 python -m recidiviz.tools.migrations.run_stamp_migration \
     --database STATE \
@@ -38,6 +35,18 @@ python -m recidiviz.tools.migrations.run_stamp_migration \
     --target-revision [revision_id] \
     --ssl-cert-path ~/dev_state_data_certs
 
+Example usage (run from `pipenv shell` locally):
+
+./recidiviz/tools/postgres/cloudsql_proxy_control.sh -c PROJECT_ID:REGION:CLOUD_SQL_INSTANCE_NAME -p 5440
+
+python -m recidiviz.tools.migrations.run_stamp_migration \
+    --database STATE \
+    --project-id recidiviz-staging \
+    --current-revision [revision_id] \
+    --target-revision [revision_id] \
+    --using-proxy
+
+./recidiviz/tools/postgres/cloudsql_proxy_control.sh -q -p 5440
 
 """
 import argparse
@@ -49,9 +58,9 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
+    EngineIteratorDelegate,
     confirm_correct_db_instance,
     confirm_correct_git_branch,
-    iterate_and_connect_to_engines,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
@@ -103,13 +112,17 @@ def create_parser() -> argparse.ArgumentParser:
         "--ssl-cert-path",
         type=str,
         help="The path to the folder where the certs live.",
-        required=True,
     )
     parser.add_argument(
         "--dry-run",
         type=str_to_bool,
         help="Dry run? Migrates a fresh local postgres to HEAD and stamps the target revision",
         default=True,
+    )
+    parser.add_argument(
+        "--using-proxy",
+        action="store_true",
+        help="If included, SQLAlchemy will be configured to connect to the Cloud SQL Proxy.",
     )
     return parser
 
@@ -125,6 +138,7 @@ def main(
     target_revision: str,
     ssl_cert_path: str,
     dry_run: bool,
+    using_proxy: bool,
 ) -> None:
     """
     Invokes the main code path for stamping a migration. Stamping is used to tell Alembic to apply a migration without
@@ -144,8 +158,11 @@ def main(
     confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root)
 
-    for database_key, engine in iterate_and_connect_to_engines(
-        schema_type, ssl_cert_path=ssl_cert_path, dry_run=dry_run
+    for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
+        schema_type,
+        using_proxy=using_proxy,
+        ssl_cert_path=ssl_cert_path,
+        dry_run=dry_run,
     ):
         if dry_run:
             # Apply migrations to a fresh database to create the `alembic_version` table
@@ -166,8 +183,11 @@ def main(
             )
             sys.exit()
 
-    for database_key, engine in iterate_and_connect_to_engines(
-        schema_type, ssl_cert_path=ssl_cert_path, dry_run=dry_run
+    for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
+        schema_type,
+        using_proxy=using_proxy,
+        ssl_cert_path=ssl_cert_path,
+        dry_run=dry_run,
     ):
         logging.info(
             "Stamping %s with revision %s",
@@ -196,4 +216,5 @@ if __name__ == "__main__":
             args.target_revision,
             args.ssl_cert_path,
             args.dry_run,
+            args.using_proxy,
         )

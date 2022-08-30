@@ -135,13 +135,7 @@ function pre_deploy_configure_infrastructure {
     ulimit -n 1024 || exit_on_fail
     deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
 
-    echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
-    # The remote migration execution script doesn't play nice with run_cmd
-    gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
-        && git fetch --all --tags --prune --prune-tags \
-        && git checkout $COMMIT_HASH \
-        && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
-    exit_on_fail
+    deploy_migrations ${PROJECT} ${COMMIT_HASH}
 
     echo "Deploying cron.yaml"
     verify_hash $COMMIT_HASH
@@ -348,6 +342,49 @@ function deploy_terraform_infrastructure {
     done
 
     echo "Terraform deployment complete."
+}
+
+# Posts a message to the #deployment-bot slack channel
+function deployment_bot_message {
+  MESSAGE=$2
+  PROJECT_ID=$1
+
+  AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
+
+  curl -d "text=${MESSAGE}" \
+    -d "channel=C040N4DLMA4" \
+    -H "Authorization: Bearer ${AUTHORIZATION_TOKEN}" \
+    -X POST https://slack.com/api/chat.postMessage > /dev/null 2>&1
+}
+
+function deploy_migrations {
+  PROJECT=$1
+  COMMIT_HASH=$2
+
+  echo "Running migrations using Cloud SQL Proxy"
+  deployment_bot_message $PROJECT "⏳ Starting migrations using Cloud SQL Proxy"
+
+  pipenv run ./recidiviz/tools/migrations/run_all_migrations_using_proxy.sh $COMMIT_HASH $PROJECT
+  return_code=$?
+
+  if [[ $return_code -eq 0 ]]; then
+    deployment_bot_message $PROJECT "⌛️ Successfully ran migrations using Cloud SQL Proxy"
+    break
+  fi
+
+  deployment_bot_message $PROJECT "🚨 There was an error running migrations using the Cloud SQL Proxy"
+  echo "There was an error running migrations using the Cloud SQL Proxy"
+  echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
+  script_prompt "Would you like to use prod-data-client to re-run the migrations? [no exits the script]"
+
+  echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
+  # TODO(#14842): Remove this once prod-data-client is deprecated
+  # The remote migration execution script doesn't play nice with run_cmd
+  gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
+      && git fetch --all --tags --prune --prune-tags \
+      && git checkout $COMMIT_HASH \
+      && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
+  exit_on_fail
 }
 
 function post_deploy_triggers {

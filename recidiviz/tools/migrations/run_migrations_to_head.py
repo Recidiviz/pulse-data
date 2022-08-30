@@ -46,9 +46,9 @@ import alembic.config
 
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
+    EngineIteratorDelegate,
     confirm_correct_db_instance,
     confirm_correct_git_branch,
-    iterate_and_connect_to_engines,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -85,9 +85,11 @@ def create_parser() -> argparse.ArgumentParser:
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
+    # TODO(#14842): Remove this once prod-data-client is deprecated
     parser.add_argument(
         "--ssl-cert-path",
         type=str,
+        default=None,
         help="The path to the folder where the certs live. "
         "This argument is required if running against live databases.",
     )
@@ -102,16 +104,23 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help="If included, skips the manual git branch confirmation and verifies that the hash is as expected.",
     )
+    parser.add_argument(
+        "--using-proxy",
+        action="store_true",
+        help="If included, SQLAlchemy will be configured to connect to the Cloud SQL Proxy.",
+    )
+
     return parser
 
 
 def main(
     schema_type: SchemaType,
     repo_root: str,
-    ssl_cert_path: str,
     dry_run: bool,
     skip_db_name_check: bool,
-    confirm_hash: Optional[str],
+    confirm_hash: Optional[str] = None,
+    ssl_cert_path: Optional[str] = None,
+    using_proxy: bool = False,
 ) -> None:
     """
     Invokes the main code path for running migrations.
@@ -130,8 +139,11 @@ def main(
     confirm_correct_git_branch(repo_root, confirm_hash=confirm_hash)
 
     # Run migrations
-    for database_key, _engine in iterate_and_connect_to_engines(
-        schema_type, ssl_cert_path=ssl_cert_path, dry_run=dry_run
+    for database_key, _engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
+        schema_type,
+        using_proxy=using_proxy,
+        ssl_cert_path=ssl_cert_path,
+        dry_run=dry_run,
     ):
         try:
             logging.info(
@@ -154,8 +166,9 @@ if __name__ == "__main__":
         main(
             args.database,
             args.repo_root,
-            args.ssl_cert_path,
             args.dry_run,
             args.skip_db_name_check,
             args.confirm_hash,
+            args.ssl_cert_path,
+            args.using_proxy,
         )
