@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,14 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Constants for interacting with the database"""
 
-SQLALCHEMY_DB_NAME = "SQLALCHEMY_DB_NAME"
-SQLALCHEMY_DB_HOST = "SQLALCHEMY_DB_HOST"
-SQLALCHEMY_DB_PORT = "SQLALCHEMY_DB_PORT"
-SQLALCHEMY_USE_SSL = "SQLALCHEMY_USE_SSL"
-SQLALCHEMY_DB_USER = "SQLALCHEMY_DB_USER"
-SQLALCHEMY_DB_PASSWORD = "SQLALCHEMY_DB_PASSWORD"
-SQLALCHEMY_SSL_KEY_PATH = "SQLALCHEMY_SSL_KEY_PATH"
-# TODO(#14842): Remove this once prod-data-client is deprecated
-SQLALCHEMY_SSL_CERT_PATH = "SQLALCHEMY_SSL_CERT_PATH"
+CLOUDSQL_PROXY_HOST=127.0.0.1
+CLOUDSQL_PROXY_PORT=5439
+CLOUDSQL_PROXY_MIGRATION_PORT=5440
+
+function wait_for_postgres () {
+  HOST=$1
+  PORT=$2
+  DATABASE=$3
+  USER=$4
+  ATTEMPTS=0
+
+  until pg_isready -q --host=$HOST --port=$PORT --dbname=$DATABASE --username=$USER; do
+    ATTEMPTS=$(($ATTEMPTS + 1))
+
+    if [[ $ATTEMPTS -eq 10 ]]; then
+      echo "Postgres ${USER}@${HOST}:${PORT}/${DATABASE} was not ready in time"
+      exit 1
+    fi
+
+    sleep 1;
+  done
+}

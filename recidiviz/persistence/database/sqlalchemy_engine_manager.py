@@ -54,6 +54,10 @@ failed_engine_initialization_view = view.View(
 monitoring.register_views([failed_engine_initialization_view])
 
 
+CLOUDSQL_PROXY_HOST = "127.0.0.1"
+CLOUDSQL_PROXY_MIGRATION_PORT = 5440
+
+
 class SQLAlchemyEngineManager:
     """A class to manage all SQLAlchemy Engines for our database instances."""
 
@@ -345,6 +349,7 @@ class SQLAlchemyEngineManager:
         ssl_cert_path: Optional[str] = None,
         migration_user: bool = False,
         readonly_user: bool = False,
+        using_proxy: bool = False,
     ) -> Dict[str, Optional[str]]:
         """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema.
 
@@ -365,7 +370,12 @@ class SQLAlchemyEngineManager:
         }
 
         os.environ[SQLALCHEMY_DB_NAME] = database_key.db_name
-        os.environ[SQLALCHEMY_DB_HOST] = cls._get_db_host(database_key=database_key)
+
+        if using_proxy:
+            os.environ[SQLALCHEMY_DB_HOST] = CLOUDSQL_PROXY_HOST
+            os.environ[SQLALCHEMY_DB_PORT] = str(CLOUDSQL_PROXY_MIGRATION_PORT)
+        else:
+            os.environ[SQLALCHEMY_DB_HOST] = cls._get_db_host(database_key=database_key)
 
         if readonly_user:
             os.environ[SQLALCHEMY_DB_USER] = cls._get_db_readonly_user(
@@ -398,6 +408,7 @@ class SQLAlchemyEngineManager:
                 database_key=database_key
             )
 
+        # TODO(#14842): Remove this once prod-data-client is deprecated
         if ssl_cert_path is None:
             os.environ[SQLALCHEMY_USE_SSL] = "0"
         else:
@@ -445,6 +456,27 @@ class SQLAlchemyEngineManager:
         )
 
         return url
+
+    @classmethod
+    @environment.local_only
+    def get_engine_for_database_with_proxy(
+        cls, *, database_key: SQLAlchemyDatabaseKey
+    ) -> Engine:
+        """Returns an engine configured to connect to the Cloud SQL Proxy.
+        Used when running migrations via run_all_migrations_using_proxy.sh"""
+        db_user = cls._get_db_user(database_key=database_key)
+        db_password = cls._get_db_password(database_key=database_key)
+        db_name = database_key.db_name
+        url = URL.create(
+            drivername="postgresql",
+            username=db_user,
+            password=db_password,
+            host=CLOUDSQL_PROXY_HOST,
+            port=CLOUDSQL_PROXY_MIGRATION_PORT,
+            database=db_name,
+        )
+        engine = create_engine(url)
+        return engine
 
     @classmethod
     @environment.local_only

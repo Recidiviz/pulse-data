@@ -18,6 +18,7 @@
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
+source ${BASH_SOURCE_DIR}/script_helpers.sh
 
 CLOUD_SQL_PROXY_IMAGE="gcr.io/cloudsql-docker/gce-proxy:1.31.0"
 
@@ -27,17 +28,18 @@ DRY_RUN=false
 CONTROL=start
 
 function print_usage {
-    echo_error "usage: $0 -c CONNECTION_STRING -p LOCAL_PORT [-d]"
+    echo_error "usage: $0 -p LOCAL_PORT [-dq] [-c CONNECTION_STRING]"
+    echo_error "  -p: (required) Port to expose the local database server on."
     echo_error "  -c: Connection string of the Cloud SQL instance. format: PROJECT_ID:REGION:INSTANCE_NAME"
     echo_error "      The connection string can be retrieved using gcloud secrets versions access latest --project=PROJECT_ID --secret=SCHEMA_TYPE_cloudsql_instance_id"
-    echo_error "  -p: Port to expose the local database server on."
     echo_error "  -d: Dry run to check that the proxy can be started."
     echo_error "  -q: Quit any running Cloud SQL Proxy containers"
     run_cmd exit 1
 }
 
 function get_container_name {
-  docker ps --format '{{.Names}}' --filter ancestor=${CLOUD_SQL_PROXY_IMAGE}
+  PORT=$1
+  docker ps --format '{{.Names}}' --filter ancestor=${CLOUD_SQL_PROXY_IMAGE} --filter expose=${PORT}
 }
 
 while getopts "dqc:p:" flag; do
@@ -50,24 +52,33 @@ while getopts "dqc:p:" flag; do
   esac
 done
 
+if [ "$DATABASE_PORT" == "" ]; then
+  echo_error "Missing required argument -p"
+  print_usage
+fi
+
 if [ $CONTROL == "QUIT" ]; then
-  DOCKER_CONTAINER_ID=$(get_container_name)
-  echo "Killing Cloud SQL Proxy container with name: ${DOCKER_CONTAINER_ID}"
-  docker kill ${DOCKER_CONTAINER_ID} 2&> 1
+  DOCKER_CONTAINER_ID=$(get_container_name $DATABASE_PORT)
+
+  if [ "$DOCKER_CONTAINER_ID" == "" ]; then
+    echo "No Cloud SQL Proxy containers are running on port ${DATABASE_PORT}."
+  else
+    echo "Killing Cloud SQL Proxy container on :${DATABASE_PORT} with name: ${DOCKER_CONTAINER_ID}"
+    docker kill ${DOCKER_CONTAINER_ID} > /dev/null 2>&1
+  fi
+
   exit 0
 fi
+
 
 
 if [ "$DATABASE_CONNECTION_STRING" == "" ]; then
   print_usage
 fi
 
-if [ "$DATABASE_PORT" == "" ]; then
-  print_usage
-fi
 
 if [ $DRY_RUN == "true" ]; then
-  if nc -z 127.0.0.1 $DATABASE_PORT; then
+  if nc -z $CLOUDSQL_PROXY_HOST $DATABASE_PORT; then
     echo "The following processes are using port :${DATABASE_PORT}. Please quit the process bound to the port and try again."
     lsof -i :${DATABASE_PORT}
 
@@ -90,9 +101,9 @@ docker run -d \
   -v ~/.config/gcloud:/config \
   $CLOUD_SQL_PROXY_IMAGE /cloud_sql_proxy \
   -instances=${DATABASE_CONNECTION_STRING}=tcp:0.0.0.0:$DATABASE_PORT \
-  -credential_file=/config/application_default_credentials.json 2&>1
+  -credential_file=/config/application_default_credentials.json > /dev/null 2>&1
 
-CONTAINER_NAME=$(get_container_name)
+CONTAINER_NAME=$(get_container_name $DATABASE_PORT)
 if [ $CONTAINER_NAME == "" ]; then
   echo "Failed to start the Cloud SQL Proxy. Check the docker logs for the most recently started container"
 else
