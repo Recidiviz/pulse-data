@@ -346,6 +346,12 @@ resource "google_compute_ssl_policy" "modern-ssl-policy" {
   min_tls_version = "TLS_1_2"
 }
 
+resource "google_compute_ssl_policy" "restricted-ssl-policy" {
+  name            = "restricted-ssl-policy"
+  profile         = "RESTRICTED"
+  min_tls_version = "TLS_1_2"
+}
+
 module "unified-product-load-balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
   version = "~> 6.2.0"
@@ -353,7 +359,7 @@ module "unified-product-load-balancer" {
   project = var.project_id
 
   ssl                             = true
-  ssl_policy                      = google_compute_ssl_policy.modern-ssl-policy.name
+  ssl_policy = local.is_production ? google_compute_ssl_policy.modern-ssl-policy.name : google_compute_ssl_policy.restricted-ssl-policy.name
   managed_ssl_certificate_domains = local.is_production ? ["app-prod.recidiviz.org", "app.recidiviz.org"] : ["app-staging.recidiviz.org"]
   https_redirect                  = true
 
@@ -367,7 +373,12 @@ module "unified-product-load-balancer" {
       ]
       enable_cdn              = true
       security_policy         = null
-      custom_request_headers  = null
+       custom_request_headers  = [
+        "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
+        "TLS_VERSION: {tls_version}",
+        "TLS_CIPHER_SUITE: {tls_cipher_suite}",
+        "CLIENT_ENCRYPTED: {client_encrypted}"
+      ]
       custom_response_headers = null
 
       iap_config = {
