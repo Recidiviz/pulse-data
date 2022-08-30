@@ -91,7 +91,12 @@ PrisonPopulationProjection:
   database_entity: PrisonPopulationProjection
   query_builder_class: PopulationProjectionMetricQueryBuilder
   dimension_mappings:
+    # TODO(#14970): Remove and update once updated views have been exported
     admission_reason: FILTER
+    legal_status:
+      column: admission_reason
+      column_label: legal_status
+      operations: FILTER
     gender: FILTER
 
 PrisonToSupervisionTransitionsCount:
@@ -169,7 +174,12 @@ SupervisionPopulationProjection:
   database_entity: SupervisionPopulationProjection
   query_builder_class: PopulationProjectionMetricQueryBuilder
   dimension_mappings:
+    # TODO(#14970): Remove and update once updated views have been exported
     admission_reason: FILTER
+    legal_status:
+      column: admission_reason
+      column_label: legal_status
+      operations: FILTER
     gender: FILTER
 
 SupervisionToLibertyTransitionsCount:

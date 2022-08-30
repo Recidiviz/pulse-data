@@ -244,8 +244,11 @@ class PrisonPopulationProjection(PathwaysBase):
     simulation_tag = Column(String, primary_key=True, nullable=False)
     # Gender of the population
     gender = Column(String, primary_key=True, nullable=True)
+    # TODO(#14970): Remove and update once updated views have been exported
     # Legal status of the population
     admission_reason = Column(String, primary_key=True, nullable=True)
+    # Legal status of the population
+    legal_status = Column(String, primary_key=True, nullable=True)
     # Projected population
     total_population = Column(Float, nullable=False)
     # Min error
@@ -416,6 +419,8 @@ class SupervisionPopulationProjection(PathwaysBase):
     gender = Column(String, primary_key=True, nullable=True)
     # Legal status of the population
     admission_reason = Column(String, primary_key=True, nullable=True)
+    # Legal status of the population
+    legal_status = Column(String, primary_key=True, nullable=True)
     # Projected population
     total_population = Column(Float, nullable=False)
     # Min error
