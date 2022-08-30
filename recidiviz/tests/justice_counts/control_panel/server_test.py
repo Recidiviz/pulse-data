@@ -393,6 +393,51 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(db_item.name, name)
         self.assertEqual(db_item.auth0_user_id, auth0_user_id)
 
+    def test_get_all_agencies_for_recidiviz_staff(self) -> None:
+        auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
+        agency_A = self.test_schema_objects.test_agency_A
+        agency_B = self.test_schema_objects.test_agency_B
+        agency_C = self.test_schema_objects.test_agency_C
+        self.session.add_all([agency_A, agency_B, agency_C])
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=auth0_user_id,
+                agency_ids=[agency_A.id],
+                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
+            )
+            user_response = self.client.put("/api/users", json={})
+
+        self.assertEqual(user_response.status_code, 200)
+        response_json = assert_type(user_response.json, dict)
+        self.assertEqual(
+            response_json["agencies"],
+            [
+                {
+                    "fips_county_code": agency_A.fips_county_code,
+                    "id": agency_A.id,
+                    "name": agency_A.name,
+                    "systems": agency_A.systems,
+                    "state_code": agency_A.state_code,
+                },
+                {
+                    "fips_county_code": agency_B.fips_county_code,
+                    "id": agency_B.id,
+                    "name": agency_B.name,
+                    "systems": agency_B.systems,
+                    "state_code": agency_B.state_code,
+                },
+                {
+                    "fips_county_code": agency_C.fips_county_code,
+                    "id": agency_C.id,
+                    "name": agency_C.name,
+                    "systems": agency_C.systems,
+                    "state_code": agency_C.state_code,
+                },
+            ],
+        )
+
     def test_update_user_name_and_email(self) -> None:
         new_email_address = "newuser@fake.com"
         new_name = "NEW NAME"

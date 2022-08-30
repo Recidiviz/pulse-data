@@ -22,6 +22,8 @@ from typing import Any, Callable, Dict, List
 from flask import g, request, session
 from flask_sqlalchemy_session import current_session
 
+from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import (
     JusticeCountsAuthorizationError,
@@ -111,7 +113,8 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
 
         # List of agency ids in user's app_metadata will have been copied over
         # to the `g.user_context` object on successful authorization
-        if agency_id is not None and int(agency_id) not in g.user_context.agency_ids:
+        agency_ids = get_agency_ids_from_session()
+        if agency_id is not None and int(agency_id) not in agency_ids:
             raise JusticeCountsPermissionError(
                 code="justice_counts_agency_permission",
                 description=(
@@ -173,3 +176,14 @@ def get_agency_ids_from_token(claims: TokenClaims) -> Any:
     """
     app_metadata: Dict[str, Any] = claims.get(APP_METADATA_CLAIM, {})  # type: ignore[assignment]
     return app_metadata.get(AGENCY_IDS_KEY, [])
+
+
+def get_agency_ids_from_session() -> List[int]:
+    agency_ids = g.user_context.agency_ids if "user_context" in g else []
+    permissions = g.user_context.permissions if "user_context" in g else []
+    if (
+        not permissions
+        or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+    ):
+        return agency_ids
+    return [a.id for a in AgencyInterface.get_agencies(session=current_session)]
