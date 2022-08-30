@@ -179,6 +179,15 @@ class System(enum.Enum):
     COURT_PROCESSES = "COURT_PROCESSES"
     COMMUNITY_SUPERVISION_AND_REENTRY = "COMMUNITY_SUPERVISION_AND_REENTRY"
 
+    @classmethod
+    def sort(cls, systems: List["System"]) -> List["System"]:
+        # Sort a list of systems according to the order in which they are
+        # defined in the enum (rationale being mainly so that Supervision,
+        # Parole, Probation, and Post-Release are always grouped together,
+        # in that order)
+        all_systems_ordered: List["System"] = list(cls)
+        return sorted(list(systems), key=all_systems_ordered.index)
+
 
 class Project(enum.Enum):
     """Internal projects that ingest Justice Counts data."""
@@ -275,7 +284,12 @@ class Agency(Source):
         return {
             "id": self.id,
             "name": self.name,
-            "systems": self.systems or [],
+            "systems": [
+                system_enum.value
+                for system_enum in System.sort(
+                    systems=[System(system_str) for system_str in (self.systems or [])]
+                )
+            ],
             "state_code": self.state_code,
             "fips_county_code": self.fips_county_code,
         }

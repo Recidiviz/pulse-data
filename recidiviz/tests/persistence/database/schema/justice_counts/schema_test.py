@@ -147,3 +147,8 @@ class TestSchema(TestCase):
                     fips_county_code="INVALID COUNTY CODE",
                 )
                 assert_session.add(agency)
+
+    def test_system_sorting(self):
+        unordered_systems = [schema.System.SUPERVISION, schema.System.PRISONS]
+        ordered_systems = [schema.System.PRISONS, schema.System.SUPERVISION]
+        self.assertEqual(schema.System.sort(unordered_systems), ordered_systems)

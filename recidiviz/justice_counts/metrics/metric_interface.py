@@ -448,8 +448,7 @@ class MetricInterface:
         the given frequency."""
         # Sort systems so that Supervision, Parole, Probation, and Post-Release
         # are always grouped together, in that order
-        all_systems_ordered = list(schema.System)
-        systems_ordered = sorted(list(systems), key=all_systems_ordered.index)
+        systems_ordered = schema.System.sort(systems=list(systems))
 
         metrics = list(
             itertools.chain(
