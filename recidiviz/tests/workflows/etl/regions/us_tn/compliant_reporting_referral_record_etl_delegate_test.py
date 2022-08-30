@@ -64,6 +64,17 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "physicalAddress": "123 fake st., Metropolis, TN 59545",
                     "convictionCounty": "123ABC",
                     "currentOffenses": ["BURGLARY", "AGGRAVATED BURGLARY"],
+                    "finesFeesEligible": "regular_payments",
+                    "judicialDistrict": None,
+                    "lifetimeOffensesExpired": None,
+                    "pastOffenses": None,
+                    "drugScreensPastYear": [
+                        {"date": "2021-02-03", "result": "DRUN"},
+                        {"date": "2021-04-20", "result": "DRUN"},
+                    ],
+                    "eligibilityCategory": "c1",
+                    "remainingCriteriaNeeded": 3,
+                    "sanctionsPastYear": None,
                     "supervisionType": "TN PROBATIONER",
                     "sentenceStartDate": "2020-01-01",
                     "sentenceLengthDays": "1000",
@@ -112,7 +123,19 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "tdocId": "201",
                     "currentEmployer": "WAIVER",
                     "driversLicense": "12345",
+                    "drugScreensPastYear": [],
+                    "eligibilityCategory": "c2",
+                    "finesFeesEligible": "regular_payments",
+                    "judicialDistrict": None,
+                    "lifetimeOffensesExpired": None,
+                    "pastOffenses": None,
                     "currentOffenses": ["THEFT"],
+                    "remainingCriteriaNeeded": 0,
+                    "sanctionsPastYear": None,
+                    "zeroToleranceCodes": [
+                        {"contactNoteDate": "2020-02-02", "contactNoteType": "COHC"},
+                        {"contactNoteDate": "2020-03-03", "contactNoteType": "PWAR"},
+                    ],
                     "supervisionType": "TN PAROLEE",
                     "supervisionFeeAssessed": "0.0",
                     "supervisionFeeArrearaged": False,
@@ -153,6 +176,14 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "clientLastName": "THOMPSON",
                     "dateToday": "2022-03-25",
                     "tdocId": "202",
+                    "drugScreensPastYear": [],
+                    "eligibilityCategory": "c3",
+                    "finesFeesEligible": "low_balance",
+                    "judicialDistrict": None,
+                    "lifetimeOffensesExpired": None,
+                    "pastOffenses": None,
+                    "remainingCriteriaNeeded": 1,
+                    "sanctionsPastYear": None,
                     "currentOffenses": ["FAILURE TO APPEAR (FELONY)"],
                     "supervisionType": "TN PROBATIONER",
                     "supervisionFeeAssessed": "",
@@ -180,11 +211,6 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                 },
             )
 
-            fixture = fp.readline()
-            doc_id, row = delegate.transform_row(fixture)
-            self.assertIsNone(doc_id)
-            self.assertIsNone(row)
-
     @patch("google.cloud.firestore.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
@@ -194,16 +220,16 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
     @patch(
         "recidiviz.workflows.etl.workflows_etl_delegate.WorkflowsETLDelegate.get_file_stream"
     )
-    def test_run_etl_imports_old_and_new_ids(
+    def test_run_etl(
         self,
         mock_get_file_stream: MagicMock,
-        mock_delete_old_documents: MagicMock,  # pylint: disable=unused-argument
+        _mock_delete_old_documents: MagicMock,
         mock_batch_writer: MagicMock,
         mock_get_collection: MagicMock,
-        mock_firestore_client: MagicMock,  # pylint: disable=unused-argument
+        _mock_firestore_client: MagicMock,
     ) -> None:
-        """Tests that the ETL Delegate for CompliantReportingReferralRecord imports the collection with both the
-        row_id and document_id."""
+        """Tests that the ETL Delegate for CompliantReportingReferralRecord imports the collection with the
+        document_id."""
         mock_batch_set = MagicMock()
         mock_batch_writer.return_value = mock_batch_set
         mock_get_file_stream.return_value = [FakeFileStream(1)]

@@ -68,6 +68,7 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         )
 
         # add nullable fields
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "fee_exemptions" in data:
             new_document["feeExemptions"] = data["fee_exemptions"]
 
@@ -86,6 +87,7 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         if "supervision_level" in data:
             new_document["supervisionLevel"] = data["supervision_level"]
 
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "special_conditions_flag" in data:
             new_document["specialConditionsFlag"] = data["special_conditions_flag"]
 
@@ -94,16 +96,19 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         if "supervision_level_start" in data:
             new_document["supervisionLevelStart"] = data["supervision_level_start"]
 
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "next_special_conditions_check" in data:
             new_document["nextSpecialConditionsCheck"] = data[
                 "next_special_conditions_check"
             ]
 
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "last_special_conditions_note" in data:
             new_document["lastSpecialConditionsNote"] = data[
                 "last_special_conditions_note"
             ]
 
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "special_conditions_terminated_date" in data:
             new_document["specialConditionsTerminatedDate"] = data[
                 "special_conditions_terminated_date"
@@ -123,6 +128,7 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
             new_document["supervisionStartDate"] = data["supervision_start_date"]
 
         # add nullable objects
+        # TODO(#2276): Remove field once frontend and looker are migrated
         if "compliant_reporting_eligible" in data:
             new_document["compliantReportingEligible"] = {
                 "eligibilityCategory": data["compliant_reporting_eligible"],
@@ -141,16 +147,19 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
                 "finesFeesEligible": data["fines_fees_eligible"],
             }
 
+            # TODO(#2276): Remove field once frontend and looker are migrated
             if "eligible_level_start" in data:
                 new_document["compliantReportingEligible"]["eligibleLevelStart"] = data[
                     "eligible_level_start"
                 ]
 
+            # TODO(#2276): Remove field once frontend and looker are migrated
             if "most_recent_arrest_check" in data:
                 new_document["compliantReportingEligible"][
                     "mostRecentArrestCheck"
                 ] = data["most_recent_arrest_check"]
 
+            # TODO(#2276): Remove field once frontend and looker are migrated
             if data["zero_tolerance_codes"]:
                 new_document["compliantReportingEligible"]["zeroToleranceCodes"] = [
                     {
@@ -160,6 +169,7 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
                     for code in data["zero_tolerance_codes"]
                 ]
 
+            # TODO(#2276): Remove field once frontend and looker are migrated
             remaining_criteria_needed = parse_int(data["remaining_criteria_needed"])
             new_document["compliantReportingEligible"][
                 "remainingCriteriaNeeded"
@@ -167,6 +177,7 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
 
             almost_eligible_criteria = {}
 
+            # TODO(#2276): Remove field once frontend and looker are migrated
             if data.get("almost_eligible_time_on_supervision_level") and (
                 current_level_eligibility_date := data.get(
                     "date_supervision_level_eligible"
