@@ -62,7 +62,8 @@ sanitized_internal_metrics AS (
       person_external_id, 
       CAST(person_id AS STRING) AS person_id,
       {state_specific_dataflow_facility_name_transformation},
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+   WHERE included_in_state_population
 ),
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM

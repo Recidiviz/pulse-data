@@ -103,7 +103,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CASE 
             WHEN state_code = 'US_ND' AND facility = 'CPP' 
                 THEN 'COMMUNITY_CONFINEMENT'
-            ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
+            ELSE COALESCE(purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
         CAST(NULL AS STRING) AS supervision_office,
@@ -114,9 +114,10 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
     FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
     WHERE state_code in ('{supported_states}')
         AND state_code NOT IN ('US_ID','US_TN', 'US_CO')
+        AND included_in_state_population
     UNION ALL
     -- Use Idaho preprocessed dataset to deal with state-specific logic
     SELECT *

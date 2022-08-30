@@ -45,7 +45,8 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
             state_code as region_code, date_of_stay,
             {state_specific_dataflow_facility_name_transformation},
             COUNT(DISTINCT(person_id)) as internal_population_count
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+        WHERE included_in_state_population
         GROUP BY state_code, date_of_stay, facility
     ), relevant_internal_incarceration_population AS (
         SELECT * FROM

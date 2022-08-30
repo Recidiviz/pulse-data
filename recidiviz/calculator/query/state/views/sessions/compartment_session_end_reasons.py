@@ -78,9 +78,10 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         COALESCE(sup_pop.person_id,sup_oos_pop.person_id) IS NOT NULL AS in_supervision_population_on_date,
         COALESCE(admissions.person_id, sup_starts.person_id) IS NOT NULL AS same_day_start_end
     FROM release_metric_cte ends
-    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` inc_pop
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` inc_pop
         ON ends.person_id = inc_pop.person_id
         AND ends.end_date = inc_pop.date_of_stay
+        AND inc_pop.included_in_state_population
     LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` sup_pop
         ON ends.person_id = sup_pop.person_id
         AND ends.end_date = sup_pop.date_of_supervision
