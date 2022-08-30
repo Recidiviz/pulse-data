@@ -102,6 +102,28 @@ PLAYGROUND_STATE_INFO = {
     ),
 }
 
+# TODO(#10703): Remove this state_code after merging US_IX into US_ID
+ALTERNATE_INGEST_US_ID_STATE_CODE = "US_IX"
+ALTERNATE_INGEST_US_ID_STATE_INFO = {
+    ALTERNATE_INGEST_US_ID_STATE_CODE: us.states.State(
+        **{
+            "fips": "16",
+            "name": "Idaho",
+            "abbr": "IX",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": True,
+            "is_continental": True,
+            "statehood_year": 1890,
+            "capital": "Boise",
+            "capital_tz": "America/Denver",
+            "ap_abbr": "Idaho",
+            "time_zones": ["America/Denver", "America/Los_Angeles"],
+            "name_metaphone": "ITH",
+        }
+    ),
+}
+
 
 class _RealStateCode(_SharedStateCode):
     """Code for every state in the US"""
@@ -163,11 +185,17 @@ class _RealStateCode(_SharedStateCode):
     # Playground
     US_OZ = "US_OZ"
 
+    # Alternate Ingest
+    # TODO(#10703): Remove this state_code after merging US_IX into US_ID
+    US_IX = "US_IX"  # US_ID
+
     @classmethod
     def _inner_get_state(cls, state_code: str) -> Optional[us.states.State]:
         state_abbrev = state_code[len("US_") :]
-        return getattr(us.states, state_abbrev, None) or PLAYGROUND_STATE_INFO.get(
-            state_code
+        return (
+            getattr(us.states, state_abbrev, None)
+            or PLAYGROUND_STATE_INFO.get(state_code)
+            or ALTERNATE_INGEST_US_ID_STATE_INFO.get(state_code)
         )
 
 
@@ -302,6 +330,10 @@ class _FakeStateCode(_SharedStateCode):
     # Playground code
     US_OZ = "US_OZ"
 
+    # Alternate Ingest
+    # TODO(#10703): Remove this state_code after merging US_IX into US_ID
+    US_IX = "US_IX"  # US_ID
+
     # Test codes
     US_WW = TEST_STATE_CODE_DOCS
     US_XX = TEST_STATE_CODE
@@ -391,6 +423,10 @@ if typing.TYPE_CHECKING:
 
         # Playground code
         US_OZ = "US_OZ"
+
+        # Alternate Ingest
+        # TODO(#10703): Remove this state_code after merging US_IX into US_ID
+        US_IX = "US_IX"  # US_ID
 
         # Test codes
         US_WW = TEST_STATE_CODE_DOCS
