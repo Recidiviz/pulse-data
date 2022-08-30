@@ -1,3 +1,9 @@
+# Before you begin
+
+If this is your first time doing front end development, we HIGHLY recommend you download 
+[VSCode](https://code.visualstudio.com/download). Follow [these instructions](https://paper.dropbox.com/doc/Backend-Development-Environment-Setup-gobackend-eng-setup--BoLzK_1cjuAhIxON26WOOtthAg-7ykKMOKi5UwQJUybZP01v#:uid=642475582653717640401977&h2=VSCode-Setup-Instructions)
+to set up VSCode, which includes auto-formatting (it will make development much easier!).
+
 # Set up your environment
 
 Install `yarn`:
