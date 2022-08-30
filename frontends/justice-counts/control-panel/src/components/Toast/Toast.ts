@@ -16,7 +16,7 @@
 // =============================================================================
 
 import checkIconWhite from "../assets/status-check-white-icon.png";
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 
 type ToastColor = "blue" | "red" | "grey";
 
@@ -73,7 +73,7 @@ export const showToast = (
   }
   toastElement.style.cssText = `
       width: auto;
-      height: 64px;
+      height: ${HEADER_BAR_HEIGHT}px;
       display: flex;
       align-items: center;
       background: ${toastBackgroundColor};

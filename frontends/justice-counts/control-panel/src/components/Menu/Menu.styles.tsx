@@ -17,7 +17,7 @@
 import { DropdownMenuItem, DropdownToggle } from "@recidiviz/design-system";
 import styled from "styled-components/macro";
 
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 import { ONE_PANEL_MAX_WIDTH } from "../Reports/ReportDataEntry.styles";
 
 export const MenuContainer = styled.nav`
@@ -29,7 +29,7 @@ export const MenuContainer = styled.nav`
 `;
 
 export const MenuItem = styled.div<{ active?: boolean; highlight?: boolean }>`
-  height: 64px;
+  height: ${HEADER_BAR_HEIGHT}px;
   padding-top: 14px;
   margin-left: 24px;
   border-top: 6px solid

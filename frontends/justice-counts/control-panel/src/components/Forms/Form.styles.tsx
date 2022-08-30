@@ -17,7 +17,7 @@
 
 import styled from "styled-components/macro";
 
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 import {
   DATA_ENTRY_WIDTH,
   ONE_PANEL_MAX_WIDTH,
@@ -30,7 +30,7 @@ export const PageWrapper = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  padding-top: 64px;
+  padding-top: ${HEADER_BAR_HEIGHT}px;
   position: absolute;
   top: 0;
   z-index: 0;
@@ -108,7 +108,7 @@ export const Title = styled.h1<{ scrolled?: boolean; sticky?: boolean }>`
     sticky &&
     `
       position: sticky;
-      top: 64px;
+      top: ${HEADER_BAR_HEIGHT}px;
       background: ${palette.solid.white};
       z-index: 2;
       margin-right: -1px;

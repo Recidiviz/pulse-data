@@ -15,40 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import styled from "styled-components/macro";
-
-import { HEADER_BAR_HEIGHT } from "../GlobalStyles";
-import { palette } from "../GlobalStyles/Palette";
-
-export const HeaderBar = styled.header`
-  width: 100%;
-  height: ${HEADER_BAR_HEIGHT}px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  z-index: 3;
-  background: ${palette.solid.white};
-  padding: 16px 0;
-`;
-
-export const LogoContainer = styled.div`
-  height: ${HEADER_BAR_HEIGHT}px;
-  width: ${HEADER_BAR_HEIGHT}px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: ${palette.solid.green};
-  transition: 0.3s ease;
-
-  &:hover {
-    cursor: pointer;
-    opacity: 0.9;
-  }
-`;
-
-export const Logo = styled.img`
-  width: 48px;
-  height: 48px;
-`;
+export const HEADER_BAR_HEIGHT = 64;

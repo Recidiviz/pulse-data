@@ -49,7 +49,7 @@ import {
   TabbedDisaggregations,
   Title,
 } from "../Forms";
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 import { Onboarding, OnboardingDataEntrySummary } from "../Onboarding";
 import { showToast } from "../Toast";
 import {
@@ -121,51 +121,38 @@ const DataEntryForm: React.FC<{
   const isPublished =
     reportStore.reportOverviews[reportID].status === "PUBLISHED";
 
-  useEffect(() => {
-    /** Will need to debounce */
-    const updateScrolled = () =>
-      window.scrollY > 64 ? setScrolled(true) : setScrolled(false);
-
-    document.addEventListener("scroll", updateScrolled);
-
-    return () => {
-      document.removeEventListener("scroll", updateScrolled);
-    };
-  }, [scrolled]);
-
   useEffect(
     () => {
-      const metricRefsToCleanUp = metricsRef.current;
+      const handleScroll = () => {
+        /** To shrink the Report Title on scroll */
+        if (window.scrollY > HEADER_BAR_HEIGHT) {
+          setScrolled(true);
+        } else setScrolled(false);
 
-      const observerOptions: IntersectionObserverInit = {
-        root: null,
-        rootMargin: "0px",
-        threshold: 0.7,
-      };
+        /**
+         * To sync the Report Summary metrics list and right panel Helper Text
+         * to the current (mostly) visible metric.
+         */
+        const threshold = window.innerHeight / 2;
+        const scrollPosition = window.scrollY + threshold;
 
-      const observerCallback = (entries: IntersectionObserverEntry[]) => {
-        entries.forEach((entry: IntersectionObserverEntry) => {
-          if (entry.isIntersecting) {
-            updateActiveMetric(entry.target.id);
+        metricsRef.current.forEach((ref) => {
+          if (ref) {
+            const { height } = ref.getBoundingClientRect();
+            const { offsetTop } = ref;
+            const offsetBottom = offsetTop + height;
+
+            if (scrollPosition > offsetTop && scrollPosition < offsetBottom) {
+              return updateActiveMetric(ref.id);
+            }
           }
         });
       };
 
-      const intersectionObserver = new IntersectionObserver(
-        observerCallback,
-        observerOptions
-      );
-
-      metricsRef.current.forEach(
-        (metricElement) =>
-          metricElement && intersectionObserver.observe(metricElement)
-      );
-
-      return () =>
-        metricRefsToCleanUp.forEach(
-          (metricElement) =>
-            metricElement && intersectionObserver.unobserve(metricElement)
-        );
+      window.addEventListener("scroll", handleScroll);
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
