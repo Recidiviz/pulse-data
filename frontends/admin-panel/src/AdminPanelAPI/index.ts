@@ -90,10 +90,12 @@ export const fetchValidationErrorTable = async (
 
 export {
   acquireBQExportLock,
+  changeIngestInstanceStatus,
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
   getAllIngestInstanceStatuses,
+  getCurrentIngestInstanceStatus,
   getIngestInstanceSummary,
   getIngestRawFileProcessingStatus,
   getIngestQueuesState,
