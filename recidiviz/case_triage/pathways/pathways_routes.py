@@ -32,6 +32,7 @@ from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (
 from recidiviz.case_triage.pathways.enabled_metrics import (
     ENABLED_METRICS_BY_STATE_BY_NAME,
 )
+from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
@@ -40,7 +41,6 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
     build_authorization_handler,
 )
 from recidiviz.common.constants.states import _FakeStateCode
-from recidiviz.utils.flask_exception import FlaskException
 
 PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -127,10 +127,8 @@ def create_pathways_api_blueprint() -> Blueprint:
         try:
             metric_mapper = ENABLED_METRICS_BY_STATE_BY_NAME[state_code][metric_name]
         except KeyError as e:
-            raise FlaskException(
-                code="metric_not_enabled",
-                description=f"{metric_name} is not enabled for {state_code.value}",
-                status_code=HTTPStatus.BAD_REQUEST,
+            raise MetricNotEnabledError(
+                metric_name=metric_name, state_code=state_code
             ) from e
 
         source_data: Dict[str, Any] = {

@@ -18,7 +18,16 @@
 
 import attr
 
+from recidiviz.common.constants.states import _FakeStateCode
+
 
 @attr.s(auto_attribs=True)
 class MetricMappingError(ValueError):
     message: str
+
+
+@attr.s(auto_attribs=True)
+class MetricNotEnabledError(RuntimeError):
+    metric_name: str
+    # TODO(#13950): Replace with StateCode
+    state_code: _FakeStateCode

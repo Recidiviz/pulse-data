@@ -22,7 +22,10 @@ from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
 
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
-from recidiviz.case_triage.pathways.exceptions import MetricMappingError
+from recidiviz.case_triage.pathways.exceptions import (
+    MetricMappingError,
+    MetricNotEnabledError,
+)
 from recidiviz.case_triage.querier.querier import NoCaseloadException
 from recidiviz.utils.flask_exception import FlaskException
 
@@ -81,6 +84,16 @@ def handle_metric_mapping_error(error: MetricMappingError) -> Response:
     )
 
 
+def handle_metric_not_enabled_error(error: MetricNotEnabledError) -> Response:
+    return handle_auth_error(
+        FlaskException(
+            code="metric_not_enabled",
+            description=f"{error.metric_name} is not enabled for {error.state_code.value}",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+    )
+
+
 def register_error_handlers(app: Flask) -> None:
     """Registers error handlers"""
     app.errorhandler(CSRFError)(handle_csrf_error)
@@ -89,3 +102,4 @@ def register_error_handlers(app: Flask) -> None:
     app.errorhandler(MissingRequiredClaimError)(handle_missing_required_claim_error)
     app.errorhandler(FlaskException)(handle_auth_error)
     app.errorhandler(MetricMappingError)(handle_metric_mapping_error)
+    app.errorhandler(MetricNotEnabledError)(handle_metric_not_enabled_error)
