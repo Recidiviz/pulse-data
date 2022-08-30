@@ -26,6 +26,7 @@ from sqlalchemy.engine import URL
 
 from recidiviz import server_config
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -66,8 +67,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch("recidiviz.utils.environment.in_gcp_production")
     @patch("recidiviz.utils.environment.in_gcp")
     @patch("recidiviz.utils.secrets.get_secret")
+    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def testInitEngines_usesCorrectIsolationLevels(
         self,
+        mock_get_region: mock.MagicMock,
         mock_get_secret: mock.MagicMock,
         mock_in_gcp: mock.MagicMock,
         mock_in_production: mock.MagicMock,
@@ -81,6 +84,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
         self.mock_project_id.return_value = "recidiviz-123"
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f"{key}_value"
+        mock_get_region.side_effect = lambda key: DirectIngestRegion(
+            region_code=key, agency_name=key
+        )
 
         # Act
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(self._all_db_keys())
