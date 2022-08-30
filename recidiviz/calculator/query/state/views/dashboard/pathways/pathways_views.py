@@ -60,6 +60,9 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.super
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions import (
     SUPERVISION_TO_PRISON_TRANSITIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions_raw import (
+    SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_count_by_month import (
     LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 )
@@ -143,6 +146,7 @@ PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS: Set[
 
 PATHWAYS_EVENT_LEVEL_VIEW_BUILDER_HELPERS: Set[SelectedColumnsBigQueryViewBuilder] = {
     SUPERVISION_POPULATION_VIEW_BUILDER,
+    SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
 }
 
 PATHWAYS_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [

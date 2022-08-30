@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
+    PathwaysMetricBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -95,7 +98,18 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
         LEFT JOIN sum_length
             USING(state_code, person_id, transition_date)
     )
-    SELECT DISTINCT {columns} FROM all_transitions
+    , transitions_without_unknowns AS (
+        SELECT DISTINCT
+            transition_date,
+            year,
+            month,
+            time_period,
+            person_id,
+            state_code,
+            {dimensions_clause}
+        FROM all_transitions
+    )
+    SELECT {columns} FROM transitions_without_unknowns
 """
 
 LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
@@ -111,6 +125,15 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilde
         binned_time_periods=get_binned_time_period_months("sum_length.transition_date"),
         length_of_stay=create_buckets_with_cap(
             convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11
+        ),
+        dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
+            [
+                "age_group",
+                "gender",
+                "race",
+                "judicial_district",
+                "prior_length_of_incarceration",
+            ]
         ),
         columns=[
             "transition_date",
