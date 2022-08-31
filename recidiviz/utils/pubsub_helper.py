@@ -21,7 +21,6 @@ import logging
 from typing import Any
 
 from google.cloud import pubsub
-from google.protobuf import json_format
 
 from recidiviz.utils import environment, metadata
 
@@ -62,6 +61,6 @@ def extract_pubsub_message_from_json(json: Any) -> pubsub.types.PubsubMessage:
     if MESSAGE not in json:
         raise ValueError("Invalid Pub/Sub message")
 
-    message = json_format.ParseDict(json[MESSAGE], pubsub.types.PubsubMessage())
+    message = pubsub.types.PubsubMessage(json[MESSAGE])
 
     return message

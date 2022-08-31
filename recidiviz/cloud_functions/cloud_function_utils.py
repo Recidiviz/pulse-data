@@ -115,6 +115,7 @@ def make_iap_request(
         method,
         url,
         headers={"Authorization": f"Bearer {google_open_id_connect_token}"},
+        timeout=3600,
         **kwargs,
     )
     if response.status_code == 403:

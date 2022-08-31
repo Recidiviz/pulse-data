@@ -25,6 +25,7 @@ import logging
 import sys
 from datetime import datetime
 from typing import List, Tuple
+
 import requests
 
 REPO_URL = "https://api.github.com/repos/Recidiviz/pulse-data"
@@ -97,7 +98,7 @@ def publish_release_notes(release_notes: ReleaseNotes) -> None:
     }
     headers = generate_headers(release_notes)
 
-    response = requests.request("POST", url, json=payload, headers=headers)
+    response = requests.request("POST", url, json=payload, headers=headers, timeout=180)
     logging.info("Please review release notes: [%s]", response.json().get("html_url"))
 
 
@@ -114,7 +115,7 @@ def generate_release_notes_text(release_notes: ReleaseNotes) -> str:
     }
     headers = generate_headers(release_notes)
 
-    response = requests.request("POST", url, json=payload, headers=headers)
+    response = requests.request("POST", url, json=payload, headers=headers, timeout=180)
     return response.json().get("body")
 
 

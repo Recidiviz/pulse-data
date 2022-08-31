@@ -106,7 +106,7 @@ pyyaml = "*"
 # TODO(#4287): Upgrade google-cloud-* to 2.0.0 now that we have removed apache-airflow from our Pipfile
 google-cloud-datastore = "<2.0.0"
 google-cloud-tasks = "<2.0.0"
-google-cloud-pubsub = "<2.0.0"
+google-cloud-pubsub = "*"
 google-cloud-monitoring = "*"
 pyjwt = "*"
 cssselect = "*"

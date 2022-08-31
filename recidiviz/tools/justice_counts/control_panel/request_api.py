@@ -72,7 +72,7 @@ def make_request_to_api(
         "grant_type": "client_credentials",
     }
 
-    response = requests.post(f"https://{domain}/oauth/token", data=data)
+    response = requests.post(f"https://{domain}/oauth/token", data=data, timeout=10)
     token = response.json()["access_token"]
 
     s = requests.session()
