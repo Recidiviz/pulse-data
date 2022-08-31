@@ -288,6 +288,14 @@ class TestOperationsMigrations(MigrationsTestBase):
                 ('US_XX', '20XX-YY-ZZT00:00:00.000000', 'PRIMARY', 'STANDARD_RERUN_STARTED'),
                 ('US_XX', '20XX-YY-YYT00:00:00.000000', 'SECONDARY', 'NO_RERUN_IN_PROGRESS');
             """)
+
+        def downgrade() -> None:
+            op.execute(
+                f"""
+                   DELETE FROM direct_ingest_instance_status
+                   WHERE region_code = 'US_XX');
+               """
+            )
         ```
 
         Afterwards, this test should ideally pass.
