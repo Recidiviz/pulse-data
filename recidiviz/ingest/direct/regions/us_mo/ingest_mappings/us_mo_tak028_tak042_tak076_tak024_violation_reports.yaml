@@ -120,17 +120,21 @@ output:
                       - BY_VSN
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
                 decision_agents:
-                  - StateAgent:
-                      external_id: BDGNO
-                      agent_type:
-                        $enum_mapping:
-                          $raw_text: CLSTTL
-                          $custom_parser: us_mo_custom_enum_parsers.parse_supervising_officer_type
-                      full_name:
-                        $person_name:
-                          $given_names: FNAME
-                          $middle_names: MINTL
-                          $surname: LNAME
+                  - $conditional:
+                      - $if:
+                          $not_null: BDGNO
+                        $then:
+                          StateAgent:
+                            external_id: BDGNO
+                            agent_type:
+                              $enum_mapping:
+                                $raw_text: CLSTTL
+                                $custom_parser: us_mo_custom_enum_parsers.parse_supervising_officer_type
+                            full_name:
+                              $person_name:
+                                $given_names: FNAME
+                                $middle_names: MINTL
+                                $surname: LNAME
                 is_draft:
                   $custom:
                     $function: us_mo_custom_parsers.set_is_draft_on_response
