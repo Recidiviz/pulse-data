@@ -139,62 +139,7 @@ resource "google_sql_database_instance" "data" {
       location = "us"
       point_in_time_recovery_enabled = true
     }
-    
-    database_flags {
-      name  = "log_checkpoints"
-      value = "on"
-    }
 
-    database_flags {
-      name  = "log_connections"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_disconnections"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_duration"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_lock_waits"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_statement"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_hostname"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_min_messages"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_min_error_statement"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_temp_files"
-      value = "on"
-    }
-    
-    database_flags {
-      name  = "log_min_duration_statement"
-      value = "on"
-    }
-    
     ip_configuration {
       ipv4_enabled = true
       require_ssl  = var.require_ssl_connection
