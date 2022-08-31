@@ -48,11 +48,12 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         gender,
         {age_bucket},
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
       WHERE date_of_supervision = DATE(year, month, 1)
         -- 20 years worth of monthly population metrics --
         AND date_of_supervision >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 239 MONTH)
         AND {state_specific_supervision_type_inclusion_filter}
+        AND included_in_state_population
     )
     
     SELECT

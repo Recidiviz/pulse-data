@@ -173,9 +173,10 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         case_type,
         judicial_district_code,
     FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
     WHERE state_code in ('{supported_states}')
         AND state_code not in ('US_MO', 'US_TN', 'US_ME')
+        AND included_in_state_population
     UNION ALL
     -- Use MO preprocessed dataset to deal with state-specific logic
     SELECT 

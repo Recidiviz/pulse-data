@@ -82,9 +82,10 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         ON ends.person_id = inc_pop.person_id
         AND ends.end_date = inc_pop.date_of_stay
         AND inc_pop.included_in_state_population
-    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` sup_pop
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` sup_pop
         ON ends.person_id = sup_pop.person_id
         AND ends.end_date = sup_pop.date_of_supervision
+        AND sup_pop.included_in_state_population
     LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` sup_oos_pop
         ON ends.person_id = sup_oos_pop.person_id
         AND ends.end_date = sup_oos_pop.date_of_supervision
