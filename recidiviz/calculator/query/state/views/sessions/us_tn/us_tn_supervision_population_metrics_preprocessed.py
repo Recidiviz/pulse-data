@@ -58,7 +58,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` df
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` df
     LEFT JOIN (
       SELECT DISTINCT 
       state_code,
@@ -70,7 +70,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     )  ref
       ON df.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND df.state_code = ref.state_code
-    WHERE df.state_code = 'US_TN'
+    WHERE df.state_code = 'US_TN' AND df.included_in_state_population
 """
 
 US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -36,11 +36,11 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = """
       FROM
       (
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
         WHERE (
           date_of_supervision = CURRENT_DATE('US/Eastern') OR
           date_of_supervision = LAST_DAY(date_of_supervision, MONTH)
-        )
+        ) AND included_in_state_population
       )
 
       WHERE state_code = 'US_ID'

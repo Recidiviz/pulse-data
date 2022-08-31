@@ -46,7 +46,10 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
         IF(us_id_roster.supervising_officer_external_id IS NOT NULL, us_id_roster.supervising_officer_external_id, sup_pop.supervising_officer_external_id) AS supervising_officer_external_id,
         {{vitals_state_specific_district_id}},
         {{vitals_state_specific_district_name}}
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized` sup_pop
+   FROM (
+      SELECT * FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_to_single_day_metrics_materialized` 
+      WHERE included_in_state_population
+    ) sup_pop
    LEFT JOIN us_id_roster 
       ON sup_pop.state_code = us_id_roster.state_code
       AND sup_pop.supervising_officer_external_id = us_id_roster.supervising_officer_external_id 

@@ -63,12 +63,13 @@ WITH participants AS (
     FROM
         participants a
     LEFT JOIN
-        `{project_id}.{dataflow_dataset}.most_recent_supervision_population_metrics_materialized` b
+        `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` b
     ON
         a.state_code = b.state_code
         AND a.person_id = b.person_id
         AND b.date_of_supervision BETWEEN DATE_SUB(a.variant_date, INTERVAL 30 DAY) AND 
             DATE_ADD(a.variant_date, INTERVAL 30 DAY)
+        AND b.included_in_state_population
     GROUP BY 1, 2, 3, 4, 5
 )
 

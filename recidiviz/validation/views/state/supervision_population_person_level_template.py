@@ -66,7 +66,7 @@ sanitized_internal_metrics AS (
       ROW_NUMBER() OVER (PARTITION BY state_code, date_of_supervision, person_external_id
                         ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
                         AS inclusion_order
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
    WHERE CASE
      WHEN state_code = 'US_ID' 
      THEN
@@ -80,6 +80,7 @@ sanitized_internal_metrics AS (
        AND supervising_district_external_id IS NOT NULL
      ELSE TRUE
    END
+   AND included_in_state_population
 ),
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
