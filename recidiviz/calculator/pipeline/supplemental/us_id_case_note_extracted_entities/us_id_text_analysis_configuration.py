@@ -88,3 +88,40 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="treatment"),
     ]
     TREATMENT_COMPLETE = [RegexFuzzyMatcher(search_regex=".*complet.*")]
+
+    INTERLOCK = [
+        RegexFuzzyMatcher(search_regex=".*interl.*"),
+    ]
+    CASE_PLAN = [
+        ScoringFuzzyMatcher(search_term="case pl"),
+        ScoringFuzzyMatcher(search_term="cse pl"),
+        ScoringFuzzyMatcher(search_term="cs pl"),
+    ]
+    NCIC_ILETS_NCO_CHECK = [
+        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*new cri.*"))
+    ]
+    COMMUNITY_SERVICE = [
+        ScoringFuzzyMatcher(search_term="community service"),
+        ScoringFuzzyMatcher(search_term="community serv"),
+        ScoringFuzzyMatcher(search_term="community svc"),
+        ScoringFuzzyMatcher(search_term="community service hours"),
+        ScoringFuzzyMatcher(search_term="community service work"),
+        ScoringFuzzyMatcher(search_term="community service exten"),
+        ScoringFuzzyMatcher(search_term="community service done"),
+        ScoringFuzzyMatcher(search_term="community service compl"),
+        ScoringFuzzyMatcher(search_term="community service complet"),
+        ScoringFuzzyMatcher(search_term="community service complete"),
+        ScoringFuzzyMatcher(search_term="community service completed"),
+        ScoringFuzzyMatcher(search_term="completion service hours"),
+        ScoringFuzzyMatcher(search_term="completed service project"),
+        ScoringFuzzyMatcher(search_term="community service refferal"),
+        ScoringFuzzyMatcher(search_term="community service refl"),
+        ScoringFuzzyMatcher(search_term="completed service hours"),
+        ScoringFuzzyMatcher(search_term="community svc completed"),
+        RegexFuzzyMatcher(search_regex=(r".*COM[M\.]*\.*\s*(SERV|SVC).*")),
+        RegexFuzzyMatcher(search_regex=(r".*COMMUNITYSERVICE.*")),
+        RegexFuzzyMatcher(search_regex=(r".* C/S.*|.*C/S .*|.*C\.S\S*.*")),
+        RegexFuzzyMatcher(
+            search_regex=(r".*CS.*(HOURS|HRS).*|.*(HRS|HOURS).*[^R]CS[^C].*")
+        ),
+    ]
