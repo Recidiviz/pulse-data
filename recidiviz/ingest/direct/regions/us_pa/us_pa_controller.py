@@ -498,6 +498,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "board_action",
             "supervision_contacts",
             "supervision_period_v4",
+            "program_assignment",
         ]
 
         unlaunched_ingest_views: List[str] = [
