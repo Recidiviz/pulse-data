@@ -427,8 +427,10 @@ class IngestOperationsStore(AdminPanelStore):
                     **file_tag_metadata,
                     "numberUnprocessedFiles": summary.num_unprocessed_files,
                     "numberProcessedFiles": summary.num_processed_files,
-                    "latestDiscoveryTime": summary.latest_discovery_time,
-                    "latestProcessedTime": summary.latest_processed_time,
+                    "latestDiscoveryTime": summary.latest_discovery_time.isoformat(),
+                    "latestProcessedTime": summary.latest_processed_time.isoformat()
+                    if summary.latest_processed_time
+                    else None,
                 }
             all_file_tag_metadata.append(file_tag_metadata)
 
