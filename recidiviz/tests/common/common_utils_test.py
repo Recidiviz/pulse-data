@@ -18,9 +18,6 @@
 import datetime
 import unittest
 
-from google.api_core import exceptions  # pylint: disable=no-name-in-module
-from mock import MagicMock, call
-
 from recidiviz.common.common_utils import (
     convert_nested_dictionary_keys,
     create_generated_id,
@@ -30,20 +27,15 @@ from recidiviz.common.common_utils import (
     date_spans_overlap_inclusive,
     get_external_id,
     is_generated_id,
-    retry_grpc,
 )
 from recidiviz.common.str_field_utils import snake_to_camel
 
-GO_AWAY_ERROR = exceptions.InternalServerError("500 GOAWAY received")
-DEADLINE_EXCEEDED_ERROR = exceptions.DeadlineExceeded("504 Deadline Exceeded")
-OTHER_ERROR = exceptions.InternalServerError("500 received")
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
 _DATE_5 = datetime.date(year=2019, month=5, day=1)
 _DATE_6 = datetime.date(year=2019, month=6, day=1)
-_DATE_7 = datetime.date(year=2019, month=7, day=1)
 
 
 class CommonUtilsTest(unittest.TestCase):
@@ -71,46 +63,6 @@ class CommonUtilsTest(unittest.TestCase):
     def test_get_external_id(self) -> None:
         synthetic_id = "id_type:11:111"
         self.assertEqual("11:111", get_external_id(synthetic_id=synthetic_id))
-
-    def test_retry_grpc_no_raise(self) -> None:
-        fn = MagicMock()
-        # Two GOAWAY errors, 1 DEADLINE_EXCEEDED, then works
-        fn.side_effect = [GO_AWAY_ERROR] * 2 + [DEADLINE_EXCEEDED_ERROR] + [3]  # type: ignore[list-item]
-
-        result = retry_grpc(3, fn, 1, b=2)
-
-        self.assertEqual(result, 3)
-        fn.assert_has_calls([call(1, b=2)] * 3)
-
-    def test_retry_grpc_raises(self) -> None:
-        fn = MagicMock()
-        # Always a GOAWAY error
-        fn.side_effect = GO_AWAY_ERROR
-
-        with self.assertRaises(exceptions.InternalServerError):
-            retry_grpc(3, fn, 1, b=2)
-
-        fn.assert_has_calls([call(1, b=2)] * 4)
-
-    def test_retry_grpc_raises_no_goaway(self) -> None:
-        fn = MagicMock()
-        # Always a different error
-        fn.side_effect = OTHER_ERROR
-
-        with self.assertRaises(exceptions.InternalServerError):
-            retry_grpc(3, fn, 1, b=2)
-
-        fn.assert_has_calls([call(1, b=2)])
-
-    def test_retry_grpc_raises_deadline_exceeded(self) -> None:
-        fn = MagicMock()
-        # Always a DEADLINE_EXCEEDED error
-        fn.side_effect = DEADLINE_EXCEEDED_ERROR
-
-        with self.assertRaises(exceptions.DeadlineExceeded):
-            retry_grpc(3, fn, 1, b=2)
-
-        fn.assert_has_calls([call(1, b=2)] * 4)
 
     def test_dateIntersectsWithSpan(self) -> None:
         self.assertFalse(

@@ -23,9 +23,9 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
-from typing import Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
+from typing import Any, Dict, Iterator, List, Optional, TextIO, Union
 
-from google.api_core import exceptions, retry
+from google.api_core import retry
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
@@ -36,6 +36,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
+from recidiviz.common.common_utils import google_api_retry_predicate
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 
@@ -182,13 +183,6 @@ class GCSFileSystem:
         """Renames the blob on the GCS File System"""
 
 
-def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """ "A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(
-        exceptions.GatewayTimeout
-    )(exception)
-
-
 def generate_random_temp_path(filename: Optional[str] = None) -> str:
     temp_dir = os.path.join(tempfile.gettempdir(), "gcs_temp_files")
     os.makedirs(temp_dir, exist_ok=True)
@@ -202,7 +196,7 @@ class GCSFileSystemImpl(GCSFileSystem):
     def __init__(self, client: storage.Client):
         self.storage_client = client
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         bucket = self.storage_client.bucket(path.bucket_name)
         if isinstance(path, GcsfsBucketPath):
@@ -240,7 +234,7 @@ class GCSFileSystemImpl(GCSFileSystem):
 
             return blob
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
         try:
             blob = self._get_blob(path)
@@ -248,7 +242,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         except GCSBlobDoesNotExistError:
             return None
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
         try:
             blob = self._get_blob(path)
@@ -264,7 +258,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         except GCSBlobDoesNotExistError:
             return
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def update_metadata(
         self,
         path: GcsfsFilePath,
@@ -279,7 +273,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         except GCSBlobDoesNotExistError:
             return
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         src_blob = self._get_blob(src_path)
 
@@ -331,7 +325,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             self.delete(dst_path)
             raise e
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def delete(self, path: GcsfsFilePath) -> None:
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f"Unexpected path type [{type(path)}]")
@@ -346,7 +340,7 @@ class GCSFileSystemImpl(GCSFileSystem):
 
         logging.info("Finished deleting path: %s", path.uri())
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def download_to_temp_file(
         self, path: GcsfsFilePath, retain_original_filename: bool = False
     ) -> Optional[LocalFileContentsHandle]:
@@ -372,18 +366,18 @@ class GCSFileSystemImpl(GCSFileSystem):
         except GCSBlobDoesNotExistError:
             return None
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
         blob = self._get_blob(path)
 
         return blob.download_as_bytes().decode(encoding)
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def download_as_bytes(self, path: GcsfsFilePath) -> bytes:
         blob = self._get_blob(path)
         return blob.download_as_bytes()
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def upload_from_string(
         self, path: GcsfsFilePath, contents: str, content_type: str
     ) -> None:
@@ -392,7 +386,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             contents, content_type=content_type
         )
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def upload_from_contents_handle_stream(
         self,
         path: GcsfsFilePath,
@@ -406,20 +400,20 @@ class GCSFileSystemImpl(GCSFileSystem):
                 file_stream, content_type=content_type, timeout=timeout
             )
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str
     ) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
         return [GcsfsPath.from_blob(blob) for blob in blobs]
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
         blob = self._get_blob(path)
         blob.content_type = content_type
         blob.patch()
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def is_dir(self, path: str) -> bool:
         try:
             directory = GcsfsDirectoryPath.from_absolute_path(path)
@@ -432,7 +426,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         except ValueError:
             return False
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def is_file(self, path: str) -> bool:
         try:
             file = GcsfsFilePath.from_absolute_path(path)
@@ -455,7 +449,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             finally:
                 verifiable_reader.verify_crc32c(blob.crc32c)
 
-    @retry.Retry(predicate=retry_predicate)
+    @retry.Retry(predicate=google_api_retry_predicate)
     def rename_blob(self, path: GcsfsFilePath, new_path: GcsfsFilePath) -> None:
         """Renames a blob."""
         blob = self._get_blob(path)

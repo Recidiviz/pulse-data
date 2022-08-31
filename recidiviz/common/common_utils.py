@@ -18,20 +18,16 @@
 "Utils to be shared across recidiviz project"
 import datetime
 import itertools
-import logging
-import random
-import time
 import uuid
 from typing import Any, Callable, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import flask
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
+from google.api_core import retry
 
-from recidiviz.utils import environment
 from recidiviz.utils.types import T
 
 GENERATED_ID_SUFFIX = "_GENERATE"
-RETRY_SLEEP = 30
 DELIMITER = ":"
 
 
@@ -75,28 +71,11 @@ def get_trace_id_from_flask() -> Optional[str]:
 ReturnType = TypeVar("ReturnType")
 
 
-def retry_grpc(
-    num_retries: int, fn: Callable[..., ReturnType], *args: Any, **kwargs: Any
-) -> ReturnType:
-    """Retries a function call some number of times"""
-    time_to_sleep = random.uniform(5, RETRY_SLEEP)
-    for i in range(num_retries + 1):
-        try:
-            return fn(*args, **kwargs)
-        except exceptions.ServerError as e:
-            if i == num_retries:
-                raise
-            if "GOAWAY" in str(e) or "Deadline Exceeded" in str(e):
-                logging.exception("Received exception: ")
-                if environment.in_gcp():
-                    logging.warning("Sleeping %.2f seconds and retrying", time_to_sleep)
-                    time.sleep(time_to_sleep)
-                    continue
-            else:
-                raise
-    raise exceptions.ServiceUnavailable(
-        f"Function unsuccessful {num_retries + 1} times"
-    )
+def google_api_retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
+    """ "A function that will determine whether we should retry a given Google exception."""
+    return retry.if_transient_error(exception) or retry.if_exception_type(
+        exceptions.GatewayTimeout
+    )(exception)
 
 
 def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type) -> None:
