@@ -15,7 +15,7 @@ source ${BASH_SOURCE_DIR}/script_base.sh
 # - Remove any blank lines
 # - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
 # - Sort, in case the above transformations affected the sort order
-expected=$(pipenv lock -r --dev \
+expected=$(pipenv requirements --dev \
     | cut -d';' -f1 \
     | sed 's/\[.*\]//' \
     | sed '/^#/d' \

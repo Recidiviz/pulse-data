@@ -193,6 +193,7 @@ class CloudRunMetadata:
         service_metadata = requests.get(
             f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
             headers={"Authorization": f"Bearer {service_token()}"},
+            timeout=TIMEOUT,
         ).json()
 
         return cls(

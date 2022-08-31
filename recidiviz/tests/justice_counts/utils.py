@@ -351,10 +351,10 @@ class JusticeCountsSchemaTestObjects:
                     {
                         "enabled": True,
                         "key": CallType.dimension_identifier(),
-                        "dimensions": {
+                        "dimensions": [
                             {"key": CallType.UNKNOWN.value, "enabled": False},
                             {"key": CallType.EMERGENCY.value, "enabled": False},
-                        },
+                        ],
                     }
                 ],
             }

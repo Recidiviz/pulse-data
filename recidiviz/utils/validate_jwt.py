@@ -104,7 +104,7 @@ def get_iap_key(key_id: str) -> str:
     key = _key_cache.get(key_id)
     if not key:
         # Re-fetch the key file.
-        resp = requests.get("https://www.gstatic.com/iap/verify/public_key")
+        resp = requests.get("https://www.gstatic.com/iap/verify/public_key", timeout=10)
         if resp.status_code != 200:
             raise Exception(
                 f"Unable to fetch IAP keys: {resp.status_code} / {resp.headers} / {resp.text}"

@@ -18,7 +18,8 @@
 
 import io
 import os
-from typing import AnyStr, IO, Union
+from typing import IO, AnyStr, Union
+
 import pandas as pd
 import requests
 from us import states
@@ -108,6 +109,7 @@ def fetch_adult_population_csv() -> pd.DataFrame:
     """Fetchs a csv continaing populations of adults (15 to 64) per county"""
     response = requests.post(
         "https://wonder.cdc.gov/controller/datarequest/D163",
+        timeout=60,
         data=[
             ("saved_id", ""),
             ("dataset_code", "D163"),
