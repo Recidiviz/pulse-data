@@ -34,11 +34,7 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="rov"),
         ScoringFuzzyMatcher(search_term="report of violation"),
     ]
-    SANCTION = [
-        ScoringFuzzyMatcher(
-            search_term="sanction", matching_function=fuzz.partial_ratio
-        )
-    ]
+    SANCTION = [ScoringFuzzyMatcher(search_term="sanction")]
     EXTEND = [
         ScoringFuzzyMatcher(search_term="extend", matching_function=fuzz.partial_ratio)
     ]
