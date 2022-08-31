@@ -51,7 +51,7 @@ class DispositionType(DimensionBase, enum.Enum):
     CONVICTION_TRIAL = "Conviction - Trial"
     DISMISSAL = "Dismissal"
     DIVERTED_OR_DEFERRED = "Diverted or Deferred"
-    REJECTED = "Rejected"
+    REJECTED = "Declined"
     TRANSFER = "Transfer"
     OTHER = "Other"
     UNKNOWN = "Unknown"

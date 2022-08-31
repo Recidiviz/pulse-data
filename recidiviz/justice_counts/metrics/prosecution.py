@@ -95,16 +95,16 @@ total_staff = MetricDefinition(
     ],
 )
 
-cases_rejected = MetricDefinition(
+cases_declined = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.CASES_DECLINED,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
-    display_name="Cases Rejected",
-    description="Measures the number of cases referred to the prosecutor that were rejected for prosecution.",
+    display_name="Cases Declined",
+    description="Measures the number of cases referred to the prosecutor that were declined for prosecution.",
     definitions=[
         Definition(
-            term="Rejected",
-            definition="A case for which a prosecutor has declined to bring referred charges against an individual. Rejected cases are those in which the prosecutor has refused to bring/file any  of the referred charges.",
+            term="Declined",
+            definition="A case for which a prosecutor has declined to bring referred charges against an individual. Declined cases are those in which the prosecutor has refused to bring/file any of the referred charges.",
         )
     ],
     measurement_type=MeasurementType.DELTA,
@@ -120,7 +120,7 @@ cases_rejected = MetricDefinition(
         Context(
             key=ContextKey.ADDITIONAL_PROSECUTION_OUTCOMES,
             value_type=ValueType.TEXT,
-            label="Please describe any additional outcomes of case review available to attorneys in your agency, other than rejected or filed.",
+            label="Please describe any additional outcomes of case review available to attorneys in your agency, other than declined or filed.",
             required=False,
         ),
     ],
