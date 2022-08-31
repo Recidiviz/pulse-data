@@ -74,9 +74,9 @@ export const systemToDetails: { [system: string]: SystemDetails } = {
   PROSECUTION: {
     name: "Prosecution",
     url: "https://justicecounts.csgjusticecenter.org/metrics/sectors/prosecution/",
-    metric: "Cases Rejected",
-    metric_sheet_name: "cases_rejected",
-    metric_disaggregation_sheet_name: "cases_rejected_by_severity",
+    metric: "Cases Declined",
+    metric_sheet_name: "cases_declined",
+    metric_disaggregation_sheet_name: "cases_declined_by_severity",
     metric_category: "Operations and Dynamics",
     metric_disaggregation: "case severity",
     metric_disaggregation_column_name: "case_severity",
