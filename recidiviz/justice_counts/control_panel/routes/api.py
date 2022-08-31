@@ -199,6 +199,7 @@ def get_api_blueprint(
 
             _check_for_conflicts(
                 report=report,
+                user_account_id=user_account_id,
                 time_loaded_by_client=time_loaded_by_client,
             )
 
@@ -574,13 +575,26 @@ def get_api_blueprint(
     return api_blueprint
 
 
-def _check_for_conflicts(report: schema.Report, time_loaded_by_client: float) -> None:
+def _check_for_conflicts(
+    report: schema.Report, user_account_id: int, time_loaded_by_client: float
+) -> None:
     last_modified_at = (
         report.last_modified_at.timestamp()
         if report.last_modified_at is not None
         else None
     )
-    if last_modified_at is not None and last_modified_at > time_loaded_by_client:
+    last_modified_by = (
+        report.modified_by[-1]
+        if report.modified_by is not None and len(report.modified_by) > 0
+        else None
+    )
+
+    if (
+        last_modified_at is not None
+        and last_modified_by is not None
+        and last_modified_at > time_loaded_by_client
+        and last_modified_by != user_account_id
+    ):
         logging.warning(
             "Version conflict: last_modified_at: %s and time_loaded_by_client: %s",
             last_modified_at,
