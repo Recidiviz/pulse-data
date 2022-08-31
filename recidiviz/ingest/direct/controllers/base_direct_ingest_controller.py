@@ -314,7 +314,6 @@ class BaseDirectIngestController:
     def _schedule_next_ingest_task(self, just_finished_job: bool) -> None:
         """Internal helper for scheduling the next ingest task."""
         check_is_region_launched_in_env(self.region)
-        current_status = self.ingest_instance_status_manager.get_current_status()
 
         if self.ingest_instance_pause_status_manager.is_instance_paused():
             logging.info(
@@ -323,53 +322,41 @@ class BaseDirectIngestController:
             return
 
         if self._schedule_raw_data_import_tasks():
-            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
-            # admin panel.
-            if current_status:
-                self.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-                )
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+            )
             logging.info(
                 "Found pre-ingest raw data import tasks to schedule - returning."
             )
             return
 
         if self._schedule_ingest_view_materialization_tasks():
-            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
-            # admin panel.
-            if current_status:
-                self.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-                )
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+            )
             logging.info(
                 "Found ingest view materialization tasks to schedule - returning."
             )
             return
 
         if self._schedule_extract_and_merge_tasks(just_finished_job):
-            # TODO(#13406): Remove check for existence of current status until `STARTED` statuses are set in the
-            # admin panel.
-            if current_status:
-                self.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
-                )
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+            )
 
             logging.info("Found extract and merge tasks to schedule - returning.")
             return
 
-        # TODO(#13406): Remove check for existence of current status until `STARTED`
-        #  statuses are set in the admin panel.
-        if current_status:
-            # If there aren't any more tasks to schedule for the region, update to the appropriate next
-            # status, based on the ingest instance.
-            if self.ingest_instance == DirectIngestInstance.SECONDARY:
-                self.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.READY_TO_FLASH
-                )
-            else:
-                self.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.UP_TO_DATE
-                )
+        # If there aren't any more tasks to schedule for the region, update to the appropriate next
+        # status, based on the ingest instance.
+        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.READY_TO_FLASH
+            )
+        else:
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.UP_TO_DATE
+            )
 
     def _schedule_raw_data_import_tasks(self) -> bool:
         """Schedules all pending raw data import tasks for launched ingest view tags, if

@@ -65,9 +65,6 @@ interface CodeBlockProps {
   enabled: boolean;
 }
 
-// TODO(#11309): Remove this gating once ingest instance statuses can be set from flashing checklist.
-const enableFlashInstanceStatus = false;
-
 const CodeBlock = ({ children, enabled }: CodeBlockProps): JSX.Element => (
   <code
     style={{
@@ -193,7 +190,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         {onActionButtonClick && (
           <Button
             type="primary"
-            disabled={!buttonsEnabled && enableFlashInstanceStatus}
+            disabled={!buttonsEnabled}
             onClick={async () => {
               setLoading(true);
               const succeeded = await runAndCheckStatus(onActionButtonClick);
@@ -215,7 +212,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         )}
         <Button
           type={onActionButtonClick ? undefined : "primary"}
-          disabled={!buttonsEnabled && enableFlashInstanceStatus}
+          disabled={!buttonsEnabled}
           onClick={async () => {
             setLoading(true);
             await getData();
@@ -265,30 +262,28 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             updateIngestQueuesState(stateCode, QueueState.PAUSED)
           }
         />
-        {enableFlashInstanceStatus ? (
-          <StyledStep
-            title="Set status to FLASH_IN_PROGRESS"
-            description={
-              isReadyToFlash ? (
-                <p>
-                  Flash to primary can proceed. Set ingest status to
-                  FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Secondary instance status is not READY_TO_FLASH. Cannot
-                  &nbsp;proceed.
-                </p>
-              )
-            }
-            actionButtonTitle="Update Ingest Instance Status"
-            buttonsEnabled={isReadyToFlash}
-            onActionButtonClick={async () =>
-              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
-            }
-          />
-        ) : undefined}
+        <StyledStep
+          title="Set status to FLASH_IN_PROGRESS"
+          description={
+            isReadyToFlash ? (
+              <p>
+                Flash to primary can proceed. Set ingest status to
+                FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
+                {stateCode}.
+              </p>
+            ) : (
+              <p>
+                Secondary instance status is not READY_TO_FLASH. Cannot
+                &nbsp;proceed.
+              </p>
+            )
+          }
+          actionButtonTitle="Update Ingest Instance Status"
+          buttonsEnabled={isReadyToFlash}
+          onActionButtonClick={async () =>
+            setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
+          }
+        />
         <StyledStep
           title="Acquire PRIMARY Ingest Lock"
           description={
@@ -537,30 +532,28 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             )
           }
         />
-        {enableFlashInstanceStatus ? (
-          <StyledStep
-            title="Set status to FLASH_COMPLETED"
-            description={
-              isFlashInProgress ? (
-                <p>
-                  Flash to primary has completed. Set ingest status to
-                  FLASH_COMPLETED in PRIMARY and SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Cannot set status to FLASH_COMPLETED. Current status in both
-                  &nbsp;PRIMARY and SECONDARY is not FLASH_IN_PROGRESS.
-                </p>
-              )
-            }
-            buttonsEnabled={isFlashInProgress}
-            actionButtonTitle="Update Ingest Instance Status"
-            onActionButtonClick={async () =>
-              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
-            }
-          />
-        ) : undefined}
+        <StyledStep
+          title="Set status to FLASH_COMPLETED"
+          description={
+            isFlashInProgress ? (
+              <p>
+                Flash to primary has completed. Set ingest status to
+                FLASH_COMPLETED in PRIMARY and SECONDARY in &nbsp;
+                {stateCode}.
+              </p>
+            ) : (
+              <p>
+                Cannot set status to FLASH_COMPLETED. Current status in both
+                &nbsp;PRIMARY and SECONDARY is not FLASH_IN_PROGRESS.
+              </p>
+            )
+          }
+          buttonsEnabled={isFlashInProgress}
+          actionButtonTitle="Update Ingest Instance Status"
+          onActionButtonClick={async () =>
+            setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
+          }
+        />
         <StyledStep
           title="Unpause queues"
           description={
@@ -636,10 +629,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         showIcon
       />
     );
-  } else if (
-    enableFlashInstanceStatus &&
-    !(isReadyToFlash || isFlashInProgress)
-  ) {
+  } else if (!(isReadyToFlash || isFlashInProgress)) {
     /* If we have loaded a status but it does not indicate that we can proceed with flashing, show an alert on top of the checklist */
     const cannotFlashDescription = `Primary: ${currentPrimaryIngestInstanceStatus}. Secondary: ${currentSecondaryIngestInstanceStatus}.`;
     alert = (
