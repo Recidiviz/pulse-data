@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - ParoleCountID
+  - TreatmentID
+  - TrtStatusCode
+  - TrtClassCode
+  - classification_description
+  - TrtProgramDescription
+  - TrtProgramCode
+  - TrtDo
+  - TrtCounty
+  - TrtStartDateYear
+  - TrtStartDateMonth
+  - TrtStartDateDay
+  - TrtEndDateYear
+  - TrtEndDateMonth
+  - TrtEndDateDay
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id:
+            $concat:
+              $values:
+                - ParoleNumber
+                - ParoleCountID
+                - TreatmentID
+          participation_status:
+            # TODO(#15000) - Remap TrtStatusCode to enums with more context from PA
+            $conditional:
+              - $if:
+                  $not_null: TrtStatusCode
+                $then:
+                  $enum_mapping:
+                    $raw_text: TrtStatusCode
+                    $mappings:
+                      StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN:
+                        - "Q"
+                        - "U"
+                        - "N"
+                        - "K"
+                        - "X"
+                        - "*"
+                        - "S"
+                        - "A"
+          program_id:
+            $concat:
+              $values:
+                - TrtClassCode
+                - classification_description
+          program_location_id:
+            $concat:
+              $values:
+                - TrtDo
+                - TrtCounty
+          referral_date:
+            $concat:
+              $values:
+                - TrtStartDateYear
+                - TrtStartDateMonth
+                - TrtStartDateDay
+          discharge_date:
+            $concat:
+              $values:
+                - TrtEndDateYear
+                - TrtEndDateMonth
+                - TrtEndDateDay
+              $include_nulls: False
+          referral_metadata:
+            $json_dict:
+              TrtProgramCode: TrtProgramCode
+              TrtProgramDescription: TrtProgramDescription

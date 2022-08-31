@@ -1,6 +1,8 @@
 file_tag: treatment_classification_codes
 file_description: |-
-  Classification Codes Mapped to Treatment Type in US_PA. Takes the TrtClassCode field and parses it to show the code and the description of that code.
+  Classification Codes Mapped to Treatment Type in US_PA. Takes the TrtClassCode field and parses it to show the code and the description of that code. 
+  The classification_code was shortened for simplification purposes. The full list of codes to subcodes can be found here (https://drive.google.com/file/d/1-3U7-NnEclnuOuJW-0sSvi8yQ2GY-s7y/view)
+  Eventually we may decide it is worth it to manually copy all of these codes and sub-codes which would require a remapping of the columns to include both.
 data_classification: source
 primary_key_cols:
   - classification_code
