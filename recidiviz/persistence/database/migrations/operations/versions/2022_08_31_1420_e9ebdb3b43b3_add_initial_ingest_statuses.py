@@ -1,21 +1,22 @@
 # pylint: skip-file
-"""add_initial_statuses
+"""add_initial_ingest_statuses
 
-Revision ID: f94c7378d169
-Revises: a809a6b62c55
-Create Date: 2022-08-25 11:01:33.015858
+Revision ID: e9ebdb3b43b3
+Revises: 7f4b006b4530
+Create Date: 2022-08-31 14:20:18.686357
 
 """
 import datetime
 from typing import List
 
+import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
 from recidiviz.utils.string import StrictStringFormatter
 
-revision = "f94c7378d169"
-down_revision = "a809a6b62c55"
+revision = "e9ebdb3b43b3"
+down_revision = "7f4b006b4530"
 branch_labels = None
 depends_on = None
 
@@ -30,6 +31,7 @@ required_states = [
     "US_CA",
     "US_MI",
     "US_OZ",
+    "US_IX",
 ]
 
 instance_to_initial_status = {
