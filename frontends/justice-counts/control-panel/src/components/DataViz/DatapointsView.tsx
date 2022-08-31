@@ -21,6 +21,7 @@ import React, { useEffect } from "react";
 import {
   DatapointsGroupedByAggregateAndDisaggregations,
   DatapointsViewSetting,
+  DataVizAggregateName,
   DataVizTimeRangesMap,
 } from "../../shared/types";
 import { useStore } from "../../stores";
@@ -31,11 +32,7 @@ import {
   DatapointsViewControlsDropdown,
 } from "./DatapointsView.styles";
 import Legend from "./Legend";
-import {
-  getDatapointDimensions,
-  sortDatapointDimensions,
-  transformData,
-} from "./utils";
+import { sortDatapointDimensions, transformData } from "./utils";
 
 const noDisaggregationOption = "None";
 
@@ -54,19 +51,27 @@ const DatapointsView: React.FC<{
     metric
   ] as DatapointsGroupedByAggregateAndDisaggregations;
   const data =
-    (selectedDisaggregation &&
-      !!datapointsForMetric?.disaggregations[selectedDisaggregation] &&
+    (selectedDisaggregation !== noDisaggregationOption &&
       Object.values(
-        datapointsForMetric.disaggregations[selectedDisaggregation]
+        datapointsForMetric.disaggregations[selectedDisaggregation] || {}
       )) ||
     datapointsForMetric?.aggregate ||
     [];
   const isAnnual = data[0]?.frequency === "ANNUAL";
-  const disaggregationOptions =
-    (datapointsForMetric?.disaggregations &&
-      Object.keys(datapointsForMetric.disaggregations)) ||
-    [];
+  const disaggregationOptions = Object.keys(
+    datapointsStore.dimensionNamesByMetricAndDisaggregation[metric] || {}
+  );
   disaggregationOptions.unshift(noDisaggregationOption);
+  const dimensionNames =
+    selectedDisaggregation !== noDisaggregationOption
+      ? (
+          datapointsStore.dimensionNamesByMetricAndDisaggregation[metric]?.[
+            selectedDisaggregation
+          ] || []
+        )
+          .slice() // Must use slice() before sorting a MobX observableArray
+          .sort(sortDatapointDimensions)
+      : [DataVizAggregateName];
 
   const selectedTimeRangeValue = DataVizTimeRangesMap[selectedTimeRange];
 
@@ -92,6 +97,7 @@ const DatapointsView: React.FC<{
           selectedTimeRangeValue,
           datapointsViewSetting
         )}
+        dimensionNames={dimensionNames}
         percentageView={
           !!selectedDisaggregation && datapointsViewSetting === "Percentage"
         }
@@ -100,18 +106,9 @@ const DatapointsView: React.FC<{
   };
 
   const renderLegend = () => {
-    if (datapointsForMetric?.disaggregations[selectedDisaggregation]) {
-      const datapoint = Object.values(
-        datapointsForMetric.disaggregations[selectedDisaggregation]
-      )?.[0];
-      if (datapoint) {
-        const dimensionNames = Object.keys(
-          getDatapointDimensions(datapoint)
-        ).sort(sortDatapointDimensions);
-        return <Legend names={dimensionNames} />;
-      }
+    if (selectedDisaggregation !== noDisaggregationOption) {
+      return <Legend names={dimensionNames} />;
     }
-
     return <Legend />;
   };
 

@@ -23,12 +23,7 @@ import { Datapoint } from "../../shared/types";
 import { formatNumberInput } from "../../utils";
 import { palette, typography } from "../GlobalStyles";
 import { LegendColor } from "./Legend";
-import {
-  getDatapointDimensions,
-  getSumOfDimensionValues,
-  sortDatapointDimensions,
-  splitUtcString,
-} from "./utils";
+import { getSumOfDimensionValues, splitUtcString } from "./utils";
 
 const TooltipContainer = styled.div`
   padding: 16px;
@@ -61,6 +56,7 @@ const TooltipNameWithBottomMargin = styled(TooltipName)`
 interface TooltipProps extends RechartsTooltipProps<number, string> {
   percentOnly: boolean;
   isAnnual: boolean;
+  dimensionNames: string[];
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -69,6 +65,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   label,
   percentOnly,
   isAnnual,
+  dimensionNames,
 }) => {
   if (active && payload && payload.length) {
     const [, , month, year] = label ? splitUtcString(label) : [];
@@ -106,27 +103,23 @@ const Tooltip: React.FC<TooltipProps> = ({
         );
       }
 
-      const dimensions = getDatapointDimensions(datapoint);
-
       const sumOfDimensions = getSumOfDimensionValues(datapoint);
 
-      return Object.keys(dimensions)
-        .sort(sortDatapointDimensions)
-        .map((key, idx: number) => {
-          if (key === "dataVizMissingData") {
-            return null;
-          }
+      return dimensionNames.map((dimension, idx: number) => {
+        if (dimension === "dataVizMissingData") {
+          return null;
+        }
 
-          return (
-            <TooltipItemContainer key={key}>
-              <LegendColor index={idx} />
-              <TooltipName>{key}</TooltipName>
-              <TooltipValue>
-                {renderText(dimensions[key], sumOfDimensions)}
-              </TooltipValue>
-            </TooltipItemContainer>
-          );
-        });
+        return (
+          <TooltipItemContainer key={dimension}>
+            <LegendColor index={idx} />
+            <TooltipName>{dimension}</TooltipName>
+            <TooltipValue>
+              {renderText(datapoint[dimension], sumOfDimensions)}
+            </TooltipValue>
+          </TooltipItemContainer>
+        );
+      });
     };
 
     return (

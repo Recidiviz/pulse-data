@@ -1160,22 +1160,73 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(response.status_code, 200)
         agency_datapoints = self.session.query(Datapoint).all()
-        response_list = assert_type(response.json, list)
-        self.assertEqual(len(agency_datapoints), len(response_list))
+        response_json = assert_type(response.json, dict)
+        response_json_datapoints = assert_type(response_json["datapoints"], list)
+        self.assertEqual(len(agency_datapoints), len(response_json_datapoints))
 
-        response_json = assert_type(response_list[0], dict)
-        self.assertEqual(response_json["dimension_display_name"], None)
-        self.assertEqual(response_json["disaggregation_display_name"], None)
-        self.assertEqual(response_json["end_date"], "Fri, 01 Jul 2022 00:00:00 GMT")
-        self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
-        self.assertEqual(response_json["is_published"], False)
+        response_json_datapoint = assert_type(response_json_datapoints[0], dict)
+        self.assertEqual(response_json_datapoint["dimension_display_name"], None)
+        self.assertEqual(response_json_datapoint["disaggregation_display_name"], None)
         self.assertEqual(
-            response_json["metric_definition_key"],
+            response_json_datapoint["end_date"], "Fri, 01 Jul 2022 00:00:00 GMT"
+        )
+        self.assertEqual(
+            response_json_datapoint["frequency"], ReportingFrequency.MONTHLY.value
+        )
+        self.assertEqual(response_json_datapoint["is_published"], False)
+        self.assertEqual(
+            response_json_datapoint["metric_definition_key"],
             "LAW_ENFORCEMENT_RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
         )
-        self.assertEqual(response_json["metric_display_name"], "Jurisdiction Residents")
-        self.assertEqual(response_json["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT")
-        self.assertEqual(response_json["value"], "5000")
+        self.assertEqual(
+            response_json_datapoint["metric_display_name"], "Jurisdiction Residents"
+        )
+        self.assertEqual(
+            response_json_datapoint["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT"
+        )
+        self.assertEqual(response_json_datapoint["value"], "5000")
+
+        response_json_dimensions = response_json[
+            "dimension_names_by_metric_and_disaggregation"
+        ]
+
+        self.assertEqual(
+            response_json_dimensions,
+            {
+                "LAW_ENFORCEMENT_ARRESTS_global/gender/restricted,global/race_and_ethnicity,metric/law_enforcement/reported_crime/type": {
+                    "Gender": ["Male", "Female", "Other", "Non-Binary", "Unknown"],
+                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"],
+                    "Race / Ethnicity": [
+                        "American Indian / Alaskan Native",
+                        "Asian",
+                        "Black",
+                        "External / Unknown",
+                        "Hispanic",
+                        "Native Hawaiian / Pacific Islander",
+                        "Other",
+                        "White",
+                    ],
+                },
+                "LAW_ENFORCEMENT_BUDGET_": {},
+                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE_metric/law_enforcement/calls_for_service/type": {
+                    "Call Type": ["Emergency", "Non-emergency", "Unknown"]
+                },
+                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED_": {},
+                "LAW_ENFORCEMENT_REPORTED_CRIME_metric/law_enforcement/reported_crime/type": {
+                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"]
+                },
+                "LAW_ENFORCEMENT_TOTAL_STAFF_": {},
+                "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS_metric/law_enforcement/officer_use_of_force_incidents/type": {
+                    "Force Type": [
+                        "Physical",
+                        "Restraint",
+                        "Verbal",
+                        "Weapon",
+                        "Unknown",
+                    ]
+                },
+            },
+        )
 
     def test_session(self) -> None:
         # Add data
