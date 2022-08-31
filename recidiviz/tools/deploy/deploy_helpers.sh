@@ -369,7 +369,7 @@ function deploy_migrations {
 
   if [[ $return_code -eq 0 ]]; then
     deployment_bot_message $PROJECT "⌛️ Successfully ran migrations using Cloud SQL Proxy"
-    break
+    return 0
   fi
 
   deployment_bot_message $PROJECT "🚨 There was an error running migrations using the Cloud SQL Proxy"
