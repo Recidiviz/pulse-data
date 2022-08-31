@@ -25,11 +25,12 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import pytz
+from google.api_core import retry
 from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
-from recidiviz.common.common_utils import retry_grpc
+from recidiviz.common.common_utils import google_api_retry_predicate
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 from recidiviz.utils import metadata
 
@@ -48,8 +49,6 @@ class GoogleCloudTasksClientWrapper:
     """Wrapper with convenience functions on top of the
     tasks_v2.CloudTasksClient.
     """
-
-    NUM_GRPC_RETRIES = 2
 
     def __init__(
         self,
@@ -72,6 +71,7 @@ class GoogleCloudTasksClientWrapper:
         """
         return self.client.queue_path(self.project_id, self.queues_region, queue_name)
 
+    @retry.Retry(predicate=google_api_retry_predicate)
     def initialize_cloud_task_queue(self, queue_config: queue_pb2.Queue) -> None:
         """
         Initializes a task queue with the given config. If a queue with a given
@@ -79,7 +79,7 @@ class GoogleCloudTasksClientWrapper:
         not exist, it will be created by this function.
         """
         # Creates queue if it does not exist, or updates it to have the given config.
-        retry_grpc(self.NUM_GRPC_RETRIES, self.client.update_queue, queue=queue_config)
+        self.client.update_queue(queue=queue_config)
 
     def format_task_path(self, queue_name: str, task_name: str) -> str:
         """Creates a task path out of the necessary parts.
@@ -92,6 +92,7 @@ class GoogleCloudTasksClientWrapper:
             self.project_id, self.queues_region, queue_name, task_name
         )
 
+    @retry.Retry(predicate=google_api_retry_predicate)
     def list_tasks_with_prefix(
         self,
         queue_name: str,
@@ -102,14 +103,13 @@ class GoogleCloudTasksClientWrapper:
         task_name_prefix = self.format_task_path(queue_name, task_id_prefix)
         return [
             task
-            for task in retry_grpc(
-                self.NUM_GRPC_RETRIES,
-                self.client.list_tasks,
+            for task in self.client.list_tasks(
                 parent=self.format_queue_path(queue_name),
             )
             if task.name.startswith(task_name_prefix)
         ]
 
+    @retry.Retry(predicate=google_api_retry_predicate)
     def create_task(
         self,
         *,
@@ -201,20 +201,16 @@ class GoogleCloudTasksClientWrapper:
 
         logging.info("Queueing task to queue [%s]: [%s]", queue_name, task.name)
 
-        retry_grpc(
-            self.NUM_GRPC_RETRIES,
-            self.client.create_task,
-            parent=self.format_queue_path(queue_name),
-            task=task,
-        )
+        self.client.create_task(parent=self.format_queue_path(queue_name), task=task)
 
+    @retry.Retry(predicate=google_api_retry_predicate)
     def delete_task(self, task_name: str) -> None:
         """Deletes a single task with the fully-qualified |task_name| which follows
         this format:
            '/projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}'
         """
         try:
-            retry_grpc(self.NUM_GRPC_RETRIES, self.client.delete_task, name=task_name)
+            self.client.delete_task(name=task_name)
         except exceptions.NotFound as e:
             logging.warning(
                 "Task not found - can't delete: [%s]. Exception: [%s]", task_name, e

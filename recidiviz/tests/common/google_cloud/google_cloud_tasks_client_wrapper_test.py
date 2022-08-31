@@ -22,6 +22,7 @@ from typing import List, Set
 
 import pytz
 from freezegun import freeze_time
+from google.api_core import exceptions as api_exceptions
 from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.proto import queue_pb2
 from google.protobuf import timestamp_pb2
@@ -319,3 +320,27 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.mock_client.delete_task.assert_called_with(name="task_name")
 
         # Note: does not crash
+
+    def test_retry(self) -> None:
+        self.mock_client.create_task.side_effect = [
+            api_exceptions.DeadlineExceeded("Exception"),
+            None,
+        ]
+
+        self.client_wrapper.create_task(
+            queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
+        )
+
+        self.assertEqual(len(self.mock_client.create_task.mock_calls), 2)
+
+    def test_retry_with_fatal_error(self) -> None:
+        self.mock_client.create_task.side_effect = [
+            api_exceptions.DeadlineExceeded("Exception"),
+            ValueError("This will crash"),
+        ]
+
+        with self.assertRaises(ValueError):
+            self.client_wrapper.create_task(
+                queue_name=self.QUEUE_NAME, relative_uri="/my_endpoint?region=us_mo"
+            )
+        self.assertEqual(len(self.mock_client.create_task.mock_calls), 2)
