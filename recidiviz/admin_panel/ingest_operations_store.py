@@ -297,13 +297,9 @@ class IngestOperationsStore(AdminPanelStore):
             region_code=formatted_state_code,
             ingest_instance=instance,
         )
-        current_status = instance_status_manager.get_current_status()
-        # TODO(#13406): Remove check for existence of current status until `STARTED`
-        #  statuses are set in the admin panel.
-        if current_status:
-            instance_status_manager.change_status_to(
-                DirectIngestStatus.STANDARD_RERUN_STARTED
-            )
+        instance_status_manager.change_status_to(
+            DirectIngestStatus.STANDARD_RERUN_STARTED
+        )
 
         instance_pause_status_manager.unpause_instance()
 

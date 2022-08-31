@@ -41,9 +41,6 @@ interface IngestInstanceCardProps {
   stateCode: string;
 }
 
-// TODO(#13406) Remove this gating once Start Ingest Rerun button can be displayed on the Admin Panel.
-const ingestRerunButtonEnabled = false;
-
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
   env,
@@ -144,9 +141,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           <IngestActionButton
             style={
               // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
-              // TODO(#13406) Remove gating for ingest rerun button once backend is ready to trigger ingest reruns
-              // in secondary.
-              instance === "SECONDARY" && ingestRerunButtonEnabled
+              instance === "SECONDARY"
                 ? { marginRight: 5 }
                 : { display: "none" }
             }
