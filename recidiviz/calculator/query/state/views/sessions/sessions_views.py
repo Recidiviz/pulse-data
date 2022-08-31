@@ -63,6 +63,9 @@ from recidiviz.calculator.query.state.views.sessions.compartment_session_start_r
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closest_sentence_imposed_group import (
+    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_unnested import (
     COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
 )
@@ -232,6 +235,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
     COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,
     CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
