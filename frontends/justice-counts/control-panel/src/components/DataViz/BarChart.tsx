@@ -31,11 +31,7 @@ import { Datapoint } from "../../shared/types";
 import { rem } from "../../utils";
 import { palette } from "../GlobalStyles";
 import Tooltip from "./Tooltip";
-import {
-  getDatapointDimensions,
-  sortDatapointDimensions,
-  splitUtcString,
-} from "./utils";
+import { splitUtcString } from "./utils";
 
 const MAX_BAR_SIZE = 150;
 
@@ -131,26 +127,24 @@ const CustomCursor = (props: React.SVGProps<SVGRectElement>) => {
 
 const ResponsiveBarChart: React.FC<{
   data: Datapoint[];
+  dimensionNames: string[];
   percentageView?: boolean;
-}> = ({ data, percentageView = false }) => {
+}> = ({ data, dimensionNames, percentageView = false }) => {
   const isAnnual = data[0]?.frequency === "ANNUAL";
   const renderBarDefinitions = () => {
     // each Recharts Bar component defines a category type in the stacked bar chart
     const barDefinitions = [];
-    const dimensions = getDatapointDimensions(data[0]);
-    Object.keys(dimensions)
-      .sort(sortDatapointDimensions)
-      .forEach((key, index) => {
-        barDefinitions.push(
-          <Bar
-            key={key}
-            dataKey={key}
-            stackId="a"
-            fill={Object.values(palette.dataViz)[index]}
-            maxBarSize={MAX_BAR_SIZE}
-          />
-        );
-      });
+    dimensionNames.forEach((dimension, index) => {
+      barDefinitions.push(
+        <Bar
+          key={dimension}
+          dataKey={dimension}
+          stackId="a"
+          fill={Object.values(palette.dataViz)[index]}
+          maxBarSize={MAX_BAR_SIZE}
+        />
+      );
+    });
     barDefinitions.push(
       <Bar
         key="dataVizMissingData"
@@ -226,7 +220,11 @@ const ResponsiveBarChart: React.FC<{
             position={{ y: 100 }}
             cursor={data.length === 0 ? false : <CustomCursor />}
             content={
-              <Tooltip percentOnly={percentageView} isAnnual={isAnnual} />
+              <Tooltip
+                percentOnly={percentageView}
+                isAnnual={isAnnual}
+                dimensionNames={dimensionNames}
+              />
             }
           />
           {renderBarDefinitions()}

@@ -568,7 +568,35 @@ def get_api_blueprint(
                 for d in datapoints
             ]
 
-            return jsonify(datapoints_json)
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+
+            metric_definitions = MetricInterface.get_metric_definitions(
+                systems={schema.System[system] for system in agency.systems or []}
+            )
+            dimension_names_by_metric_and_disaggregation = {}
+            for metric_definition in metric_definitions:
+                disaggregations = metric_definition.aggregated_dimensions or []
+                disaggregation_name_to_dimension_names = {
+                    disaggregation.dimension.human_readable_name(): [
+                        # TODO(#14940) Have DimensionBase extend from Enum rather than having
+                        # classes that inherit it must also inherit from Enum
+                        i.value
+                        for i in disaggregation.dimension  # type: ignore[attr-defined]
+                    ]
+                    for disaggregation in disaggregations
+                }
+                dimension_names_by_metric_and_disaggregation[
+                    metric_definition.key
+                ] = disaggregation_name_to_dimension_names
+
+            return jsonify(
+                {
+                    "datapoints": datapoints_json,
+                    "dimension_names_by_metric_and_disaggregation": dimension_names_by_metric_and_disaggregation,
+                }
+            )
         except Exception as e:
             raise _get_error(error=e) from e
 

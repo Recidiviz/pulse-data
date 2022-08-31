@@ -17,7 +17,12 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 
-import { DatapointsByMetric, RawDatapoint } from "../shared/types";
+import {
+  DatapointsByMetric,
+  DataVizAggregateName,
+  DimensionNamesByMetricAndDisaggregation,
+  RawDatapoint,
+} from "../shared/types";
 import { isPositiveNumber } from "../utils";
 import API from "./API";
 import UserStore from "./UserStore";
@@ -29,6 +34,8 @@ class DatapointsStore {
 
   rawDatapoints: RawDatapoint[];
 
+  dimensionNamesByMetricAndDisaggregation: DimensionNamesByMetricAndDisaggregation;
+
   loading: boolean;
 
   constructor(userStore: UserStore, api: API) {
@@ -37,6 +44,7 @@ class DatapointsStore {
     this.api = api;
     this.userStore = userStore;
     this.rawDatapoints = [];
+    this.dimensionNamesByMetricAndDisaggregation = {};
     this.loading = true;
   }
 
@@ -68,7 +76,7 @@ class DatapointsStore {
         dp.dimension_display_name === null
       ) {
         res[dp.metric_definition_key].aggregate.push({
-          Total: sanitizedValue,
+          [DataVizAggregateName]: sanitizedValue,
           start_date: dp.start_date,
           end_date: dp.end_date,
           frequency: dp.frequency,
@@ -117,9 +125,11 @@ class DatapointsStore {
         method: "GET",
       })) as Response;
       if (response.status === 200) {
-        const datapoints = await response.json();
+        const result = await response.json();
         runInAction(() => {
-          this.rawDatapoints = datapoints;
+          this.rawDatapoints = result.datapoints;
+          this.dimensionNamesByMetricAndDisaggregation =
+            result.dimension_names_by_metric_and_disaggregation;
         });
       } else {
         const error = await response.json();
