@@ -619,8 +619,16 @@ class DirectIngestRawFileImportManager:
         )
         for migration_query in migration_queries:
             query_job = self.big_query_client.run_query_async(query_str=migration_query)
-            # Wait for the migration query to complete before running the next one
-            query_job.result()
+            try:
+                # Wait for the migration query to complete before running the next one
+                query_job.result()
+            except Exception as e:
+                logging.error(
+                    "Migration query job [%s] failed with errors: [%s]",
+                    query_job.job_id,
+                    query_job.errors,
+                )
+                raise e
 
         logging.info("Completed BigQuery import of [%s]", path.abs_path())
 
