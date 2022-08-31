@@ -219,7 +219,7 @@ class TestOperationsMigrations(MigrationsTestBase):
     def test_direct_ingest_instance_pause_status_contains_data_for_all_states(
         self,
     ) -> None:
-        '''Enforces that after all migrations the set of direct ingest instance statuses
+        '''Enforces that after all migrations the set of direct ingest instance pause statuses
         matches the list of known states.
 
         If this test fails, you will likely have to add a new migration because a new state
@@ -254,6 +254,55 @@ class TestOperationsMigrations(MigrationsTestBase):
             conn = engine.connect()
             rows = conn.execute(
                 "SELECT region_code, instance FROM direct_ingest_instance_pause_status;"
+            )
+
+            instance_to_state_codes = defaultdict(set)
+            for row in rows:
+                instance_to_state_codes[DirectIngestInstance(row[1])].add(row[0])
+
+            required_states = {name.upper() for name in get_existing_region_dir_names()}
+
+            for instance in DirectIngestInstance:
+                self.assertEqual(required_states, instance_to_state_codes[instance])
+
+    def test_direct_ingest_instance_status_contains_data_for_all_states(
+        self,
+    ) -> None:
+        '''Enforces that after all migrations the set of direct ingest instance statuses
+        matches the list of known states.
+
+        If this test fails, you will likely have to add a new migration because a new state
+        was recently created. To do so, first run:
+        ```
+        python -m recidiviz.tools.migrations.autogenerate_migration \
+            --database OPERATIONS \
+            --message add_us_xx_initial_ingest_statuses
+        ```
+
+        This will generate a blank migration. You should then modify the migration, changing
+        the `upgrade` method to look like:
+        ```
+        def upgrade() -> None:
+            op.execute("""
+                INSERT INTO direct_ingest_instance_status (region_code, timestamp, instance, status) VALUES
+                ('US_XX', '20XX-YY-ZZT00:00:00.000000', 'PRIMARY', 'STANDARD_RERUN_STARTED'),
+                ('US_XX', '20XX-YY-YYT00:00:00.000000', 'SECONDARY', 'NO_RERUN_IN_PROGRESS');
+            """)
+        ```
+
+        Afterwards, this test should ideally pass.
+        '''
+
+        with runner(self.default_config(), self.engine) as r:
+            r.migrate_up_to("head")
+
+            engine = create_engine(
+                local_postgres_helpers.postgres_db_url_from_env_vars()
+            )
+
+            conn = engine.connect()
+            rows = conn.execute(
+                "SELECT region_code, instance FROM direct_ingest_instance_status;"
             )
 
             instance_to_state_codes = defaultdict(set)
