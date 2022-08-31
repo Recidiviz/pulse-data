@@ -319,6 +319,9 @@ class TestCaseTriageAPIRoutes(TestCase):
                 0,
             )
 
+            # Deferring a second time does not raise
+            self.helpers.defer_opportunity(person_external_id, opportunity_type)
+
     def test_defer_opportunity_successful(self) -> None:
         with self.helpers.using_officer(self.officer):
             opportunity_type = self.opportunity_2.opportunity_type

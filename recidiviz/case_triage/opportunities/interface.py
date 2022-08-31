@@ -77,11 +77,13 @@ class OpportunitiesInterface:
                     "opportunity_metadata": opportunity.opportunity_metadata,
                 },
             )
+            .returning(OpportunityDeferral.deferral_id)
         )
-        result = session.execute(insert_statement)
+
+        deferral_id = session.execute(insert_statement).first()[0]
         session.commit()
 
-        return session.query(OpportunityDeferral).get(result.inserted_primary_key)
+        return session.query(OpportunityDeferral).get(deferral_id)
 
     @staticmethod
     def delete_opportunity_deferral(
