@@ -1146,3 +1146,35 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 list(budget_metric)[0].contexts[0].value,
                 "THIS IS AN AGENCY PREFILLED DATAPOINT",
             )
+
+    def test_create_reports_for_new_agency(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            with freeze_time(datetime.date(2020, 3, 1)):
+                agency = self.test_schema_objects.test_agency_A
+                user = self.test_schema_objects.test_user_A
+                session.add_all([agency, user])
+                session.flush()
+
+                ReportInterface.create_reports_for_new_agency(
+                    session=session, agency_id=agency.id, user_account_id=user.id
+                )
+
+                reports = session.query(schema.Report).all()
+                self.assertEqual(len(reports), 16)
+                annual_report = (
+                    session.query(schema.Report)
+                    .filter(
+                        schema.Report.type == schema.ReportingFrequency.ANNUAL.value,
+                    )
+                    .one()
+                )
+                self.assertIsNotNone(annual_report)
+                monthly_reports = (
+                    session.query(schema.Report)
+                    .filter(
+                        schema.Report.type == schema.ReportingFrequency.MONTHLY.value,
+                    )
+                    .all()
+                )
+                # 15 total reports: 5 for the current year (January 2020 - May 2020), 10 for the previous year (Mar 2019 - December 2019)
+                self.assertEqual(len(monthly_reports), 15)

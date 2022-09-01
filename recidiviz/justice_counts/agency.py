@@ -21,6 +21,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -34,6 +35,7 @@ class AgencyInterface:
         systems: List[schema.System],
         state_code: str,
         fips_county_code: Optional[str],
+        user_account_id: int,
     ) -> schema.Agency:
         agency = schema.Agency(
             name=name,
@@ -43,6 +45,10 @@ class AgencyInterface:
         )
         session.add(agency)
         session.commit()
+        session.refresh(agency)
+        ReportInterface.create_reports_for_new_agency(
+            session=session, agency_id=agency.id, user_account_id=user_account_id
+        )
         return agency
 
     @staticmethod
