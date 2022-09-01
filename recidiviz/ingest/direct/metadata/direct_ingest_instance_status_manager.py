@@ -170,6 +170,10 @@ class DirectIngestInstanceStatusManager:
     http://go/ingest-instance-status-flow.
     """
 
+    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
+        self.region_code = region_code.upper()
+        self.ingest_instance = ingest_instance
+
     @abc.abstractmethod
     def get_raw_data_source_instance(self) -> DirectIngestInstance:
         """Returns the current raw data source of the ingest instance associated with
@@ -184,8 +188,8 @@ class DirectIngestInstanceStatusManager:
     def get_current_status(self) -> Optional[DirectIngestStatus]:
         """Get current status."""
 
-    @staticmethod
     def validate_transition(
+        self,
         ingest_instance: DirectIngestInstance,
         current_status: Optional[DirectIngestStatus],
         new_status: DirectIngestStatus,
@@ -221,7 +225,7 @@ class DirectIngestInstanceStatusManager:
         if current_status not in valid_current_statuses:
             current_status_str = current_status.value if current_status else None
             raise ValueError(
-                f"Can only transition from the following statuses to {new_status.value}:"
-                f" {[status.value for status in valid_current_statuses]}. Current status is "
+                f"[{self.region_code}][{self.ingest_instance}] Can only transition from the following statuses to "
+                f"{new_status.value}: {[status.value for status in valid_current_statuses]}. Current status is "
                 f"{current_status_str}."
             )

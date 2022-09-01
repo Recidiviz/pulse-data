@@ -76,7 +76,7 @@ const statusFormattingInfo: {
     color: "ingest-status-cell-grey",
     sortRank: 7,
     message:
-      "Standard rerun with only ingest view materialization has beek kicked off",
+      "Standard rerun with only ingest view materialization has been kicked off",
   },
   FLASH_COMPLETED: {
     status: "FLASH_COMPLETED",

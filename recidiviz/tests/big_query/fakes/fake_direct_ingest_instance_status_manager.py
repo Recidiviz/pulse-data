@@ -32,8 +32,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
     """A fake implementation of DirectIngestInstanceStatusManager for use in tests."""
 
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
-        self.region_code = region_code.upper()
-        self.ingest_instance = ingest_instance
+        super().__init__(region_code=region_code, ingest_instance=ingest_instance)
         self.statuses: List[DirectIngestInstanceStatus] = []
 
     def get_raw_data_source_instance(self) -> DirectIngestInstance:
