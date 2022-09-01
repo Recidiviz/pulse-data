@@ -614,13 +614,14 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         try:
             results_tables = self._big_query_client.list_tables(self.results_dataset())
+
+            ingest_views_with_results = [
+                results_table.table_id for results_table in results_tables
+            ]
         except exceptions.NotFound:
             # Results dataset doesn't exist yet, just return.
             return {}
 
-        ingest_views_with_results = [
-            results_table.table_id for results_table in results_tables
-        ]
         if not ingest_views_with_results:
             return {}
 
@@ -664,13 +665,14 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         try:
             results_tables = self._big_query_client.list_tables(self.results_dataset())
+
+            ingest_views_with_results = [
+                results_table.table_id for results_table in results_tables
+            ]
         except exceptions.NotFound:
             # Results dataset doesn't exist yet, just return.
             return {}
 
-        ingest_views_with_results = [
-            results_table.table_id for results_table in results_tables
-        ]
         if not ingest_views_with_results:
             return {}
 
