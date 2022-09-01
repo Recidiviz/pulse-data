@@ -54,6 +54,7 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
     remote_commands = [
         "cd ~/pulse-data",
         "git checkout main",
+        "git pull",
         (
             "pipenv run python -m recidiviz.tools.ingest.one_offs.clear_redundant_raw_data_on_bq_remote_helper "
             f"--dry-run {dry_run} "
