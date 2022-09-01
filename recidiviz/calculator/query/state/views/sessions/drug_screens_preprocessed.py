@@ -23,13 +23,16 @@ from recidiviz.utils.metadata import local_project_id_override
 
 DRUG_SCREENS_PREPROCESSED_VIEW_NAME = "drug_screens_preprocessed"
 
-DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of drug screen tests and results, unique on person, date, and sample type"""
+DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION = """
+Preprocessed view of drug screen tests and results, unique on person, date, and sample 
+type"""
 
 DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
-    /* {description} */
-    SELECT * FROM `{project_id}.{sessions_dataset}.us_id_drug_screens_preprocessed`
-    UNION ALL
-    SELECT * FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
+/* {description} */
+
+SELECT * FROM `{project_id}.{sessions_dataset}.us_id_drug_screens_preprocessed`
+UNION ALL
+SELECT * FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
 """
 
 DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
