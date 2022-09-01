@@ -133,6 +133,7 @@ class UsIdCaseNoteExtractedEntitiesPipelineRunDelegate(
             pipeline_name=US_ID_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME,
             required_entities=[],
             required_reference_tables=[US_ID_CASE_UPDATE_INFO_VIEW_NAME],
+            required_state_based_reference_tables=[],
             state_specific_required_delegates=[],
             state_specific_required_reference_tables={},
         )

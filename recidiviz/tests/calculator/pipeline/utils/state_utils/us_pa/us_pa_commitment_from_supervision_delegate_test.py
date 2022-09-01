@@ -223,7 +223,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
         )
 

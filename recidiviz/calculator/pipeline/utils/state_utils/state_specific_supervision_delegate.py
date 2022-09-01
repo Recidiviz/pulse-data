@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    list_of_dicts_to_dict_with_keys,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -51,6 +54,16 @@ from recidiviz.persistence.entity.state.entities import (
 class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various attributes of supervision."""
 
+    def __init__(
+        self, supervision_locations_to_names_list: List[Dict[str, Any]]
+    ) -> None:
+        self.level_1_supervision_location_info: Dict[
+            str, Dict[str, Any]
+        ] = list_of_dicts_to_dict_with_keys(
+            supervision_locations_to_names_list,
+            key="level_1_supervision_location_external_id",
+        )
+
     def supervision_types_mutually_exclusive(self) -> bool:
         """For some states, we want to track people on DUAL supervision as mutually exclusive from the groups of people on
         either PAROLE and PROBATION. For others, a person can be on multiple types of supervision simultaneously
@@ -63,15 +76,29 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         return False
 
     def supervision_location_from_supervision_site(
-        self, supervision_site: Optional[str]
+        self,
+        supervision_site: Optional[str],
     ) -> Tuple[Optional[str], Optional[str]]:
         """Retrieves level 1 and level 2 location information from a supervision site.
-        By default, returns the |supervision_site| as the level 1 location, and None as the level 2 location.
+        By default, returns the |supervision_site| as the level 1 location, and uses the
+        supervision site to retrieve the level 2 information from the reference view.
+
+        !! Disclaimer !! This code makes the assumption that the value stored in
+        supervision_site is the level_1_supervision_location_external_id. If there is
+        other info packed into the supervision_site field, this function must be overridden
+        in the state-specific implementation of this delegate.
         """
         # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
         #  location distinction directly into our schema.
         level_1_supervision_location = supervision_site
-        level_2_supervision_location = None
+        level_2_supervision_location = (
+            self.level_1_supervision_location_info[supervision_site][
+                "level_2_supervision_location_external_id"
+            ]
+            if supervision_site
+            and supervision_site in self.level_1_supervision_location_info
+            else None
+        )
 
         return (
             level_1_supervision_location or None,

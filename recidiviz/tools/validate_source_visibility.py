@@ -244,6 +244,7 @@ def main() -> int:
                     # TODO(#8118): Remove this dependency once IP pre-processing no
                     #  longer relies on ingest mappings
                     "recidiviz.ingest.models",
+                    "recidiviz.datasets.static_data.config",
                 }
             )
         if "us_id_case_note" in pipeline.__name__:

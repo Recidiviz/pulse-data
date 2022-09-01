@@ -41,7 +41,8 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     """US_PA implementation of the supervision delegate"""
 
     def supervision_location_from_supervision_site(
-        self, supervision_site: Optional[str]
+        self,
+        supervision_site: Optional[str],
     ) -> Tuple[Optional[str], Optional[str]]:
         """In US_PA, supervision_site follows format
         {supervision district}|{supervision suboffice}|{supervision unit org code}"""

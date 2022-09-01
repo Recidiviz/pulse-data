@@ -74,6 +74,17 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
     DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
 )
 
+DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
+    "level 1": {
+        "state_code": _STATE_CODE,
+        "level_1_supervision_location_external_id": "level 1",
+        "level_2_supervision_location_external_id": "level 2",
+    }
+}
+DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST = list(
+    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS.values()
+)
+
 
 class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""
@@ -241,7 +252,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         assert program_assignment.program_id is not None
@@ -281,7 +294,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         self.assertListEqual([], program_referrals)
@@ -326,7 +341,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate([]),
         )
 
         assert program_assignment.program_id is not None
@@ -378,7 +393,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         assert program_assignment.program_id is not None
@@ -440,7 +457,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         assert program_assignment.program_id is not None
@@ -513,7 +532,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessments,
             supervision_periods,
             supervision_period_agent_associations,
-            UsXxSupervisionDelegate(),
+            UsXxSupervisionDelegate([]),
         )
 
         assert program_assignment.program_id is not None
@@ -713,7 +732,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=[supervision_period],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            supervision_delegate=UsXxSupervisionDelegate(),
+            supervision_delegate=UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         self.assertListEqual(
@@ -762,7 +783,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            supervision_delegate=UsXxSupervisionDelegate(),
+            supervision_delegate=UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         self.assertListEqual(
@@ -821,7 +844,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            supervision_delegate=UsXxSupervisionDelegate(),
+            supervision_delegate=UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+            ),
         )
 
         self.assertListEqual(

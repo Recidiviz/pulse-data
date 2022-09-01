@@ -220,6 +220,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             state_code="US_XX",
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MEDIUM",
+            supervision_site="level 1",
             start_date=date(2018, 1, 1),
             termination_date=date(2020, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -250,6 +251,14 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -270,6 +279,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_association,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         # Given the empty dictionaries, we ignore the overall type until we fill in data.
         data_dict.update(data_dict_overrides)  # type:ignore
@@ -390,6 +400,7 @@ class TestClassifyResults(unittest.TestCase):
         supervision_periods: List[entities.StateSupervisionPeriod] = None,
         sp_to_judicial_district_kv: List[Dict[Any, Any]] = None,
         sp_to_agent_kv: List[Dict[Any, Any]] = None,
+        supervision_locations_to_names_associations_kv: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List]:
         return {
             entities.StatePerson.__name__: [person],
@@ -404,6 +415,8 @@ class TestClassifyResults(unittest.TestCase):
             if supervision_periods
             else [],
             "supervision_period_to_agent_association": sp_to_agent_kv or [],
+            "supervision_location_ids_to_names": supervision_locations_to_names_associations_kv
+            or [],
         }
 
     def test_classify_results(self) -> None:
@@ -458,6 +471,12 @@ class TestClassifyResults(unittest.TestCase):
             "supervision_period_id": 2222,
         }
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "level 1",
+            "level_2_supervision_location_external_id": "level 2",
+        }
+
         self.assertIsNotNone(incarceration_period.admission_date)
         self.assertIsNotNone(incarceration_period.admission_reason)
         self.assertIsNotNone(incarceration_period.release_date)
@@ -510,6 +529,9 @@ class TestClassifyResults(unittest.TestCase):
                 supervision_period_judicial_district_association_result
             ],
             sp_to_agent_kv=[supervision_period_agent_association_result],
+            supervision_locations_to_names_associations_kv=[
+                supervision_location_to_name_map
+            ],
         )
 
         test_pipeline = TestPipeline()

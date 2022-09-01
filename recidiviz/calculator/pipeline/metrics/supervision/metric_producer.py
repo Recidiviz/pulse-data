@@ -63,6 +63,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervision_period_is_out_of_state,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -226,7 +229,9 @@ class SupervisionMetricProducer(
         metric_type: SupervisionMetricType,
     ) -> bool:
         """Returns whether the given event should contribute to metrics of the given metric_type."""
-        supervision_delegate = get_state_specific_supervision_delegate(event.state_code)
+        supervision_delegate = get_state_specific_supervision_delegate(
+            event.state_code, {SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME: []}
+        )
         if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return (
                 isinstance(

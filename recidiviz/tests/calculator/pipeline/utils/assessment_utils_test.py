@@ -74,7 +74,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                self.LsirOnlySupervisionDelegate(),
+                self.LsirOnlySupervisionDelegate([]),
             )
         )
 
@@ -93,7 +93,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                self.LsirOnlySupervisionDelegate(),
+                self.LsirOnlySupervisionDelegate([]),
             )
         )
 
@@ -120,7 +120,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                self.NoRiskAssessmentSupervisionDelegate(),
+                self.NoRiskAssessmentSupervisionDelegate([]),
             )
         )
 
@@ -139,7 +139,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                UsXxSupervisionDelegate(),
+                UsXxSupervisionDelegate([]),
             )
         )
 
@@ -169,7 +169,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                UsIdSupervisionDelegate(),
+                UsIdSupervisionDelegate([]),
             )
         )
 
@@ -199,7 +199,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                UsNdSupervisionDelegate(),
+                UsNdSupervisionDelegate([]),
             )
         )
 
@@ -232,7 +232,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [lsir_assessment, oras_assessment],
                 StateAssessmentClass.RISK,
-                UsMoSupervisionDelegate(),
+                UsMoSupervisionDelegate([]),
             )
 
             self.assertEqual(most_recent_assessment, oras_assessment)
@@ -259,7 +259,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment_1, assessment_2],
                 StateAssessmentClass.RISK,
-                UsXxSupervisionDelegate(),
+                UsXxSupervisionDelegate([]),
             )
         )
 
@@ -275,7 +275,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=assessment_type,
                 assessment_score=None,
                 assessment_level=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             )
 
     @parameterized.expand(
@@ -294,7 +294,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=score,
                 assessment_level=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             bucket,
         )
@@ -305,7 +305,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_level=None,
                 assessment_score=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
@@ -316,7 +316,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 assessment_score=10,
                 assessment_level=StateAssessmentLevel.MEDIUM,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             StateAssessmentLevel.MEDIUM.value,
         )
@@ -327,7 +327,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 assessment_score=10,
                 assessment_level=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
@@ -338,7 +338,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=StateAssessmentType.PSA,
                 assessment_score=10,
                 assessment_level=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )
@@ -349,7 +349,7 @@ class TestAssessmentScoreBucket(unittest.TestCase):
                 assessment_type=None,
                 assessment_score=10,
                 assessment_level=None,
-                supervision_delegate=UsXxSupervisionDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             ),
             assessment_utils.DEFAULT_ASSESSMENT_SCORE_BUCKET,
         )

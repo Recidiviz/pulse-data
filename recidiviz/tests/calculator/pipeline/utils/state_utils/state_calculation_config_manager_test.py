@@ -77,6 +77,19 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
 )
 
+_DEFAULT_LEVEL_1_SUPERVISION_LOCATION = "level_1"
+_DEFAULT_LEVEL_2_SUPERVISION_LOCATION = "level_2"
+_DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS: Dict[str, Dict[str, Any]] = {
+    _DEFAULT_LEVEL_1_SUPERVISION_LOCATION: {
+        "state_code": "US_XX",
+        "level_1_supervision_location_external_id": _DEFAULT_LEVEL_1_SUPERVISION_LOCATION,
+        "level_2_supervision_location_external_id": _DEFAULT_LEVEL_2_SUPERVISION_LOCATION,
+    }
+}
+DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST: List[Dict[str, Any]] = list(
+    _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS.values()
+)
+
 # The state-specific delegates that should be used in state-agnostic tests
 STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificIncarcerationNormalizationDelegate": UsXxIncarcerationNormalizationDelegate(),
@@ -86,7 +99,9 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificCommitmentFromSupervisionDelegate": UsXxCommitmentFromSupervisionDelegate(),
     "StateSpecificViolationDelegate": UsXxViolationDelegate(),
     "StateSpecificIncarcerationDelegate": UsXxIncarcerationDelegate(),
-    "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(),
+    "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(
+        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+    ),
 }
 
 
@@ -105,7 +120,8 @@ def test_get_required_state_specific_delegates() -> None:
             entity_kwargs={
                 StateAssessment.__name__: [
                     StateAssessment.new_with_defaults(state_code=state.value)
-                ]
+                ],
+                "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             },
         )
 
@@ -124,7 +140,12 @@ def test_get_required_state_specific_delegates() -> None:
             supervision_delegate=None,
         )
 
-        get_state_specific_supervision_delegate(state.value)
+        get_state_specific_supervision_delegate(
+            state.value,
+            entity_kwargs={
+                "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+            },
+        )
 
         for subclass in StateSpecificMetricsProducerDelegate.__subclasses__():
             get_required_state_specific_metrics_producer_delegates(

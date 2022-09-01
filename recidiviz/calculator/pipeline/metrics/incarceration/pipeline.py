@@ -54,6 +54,9 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
@@ -86,6 +89,9 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
                 INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+            ],
+            required_state_based_reference_tables=[
+                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
             ],
             state_specific_required_delegates=[
                 StateSpecificCommitmentFromSupervisionDelegate,

@@ -87,6 +87,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateAssessment,
             ],
             required_reference_tables=[],
+            required_state_based_reference_tables=[],
             state_specific_required_delegates=[
                 StateSpecificIncarcerationNormalizationDelegate,
                 StateSpecificSupervisionNormalizationDelegate,

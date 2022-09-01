@@ -143,7 +143,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         self.assertEqual(
@@ -233,7 +233,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
         self.assertEqual(
             len(expected_contacts),
@@ -290,7 +290,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face_date = (
@@ -343,7 +343,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face = (
@@ -393,7 +393,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face = (
@@ -445,7 +445,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face = (
@@ -639,7 +639,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face = (
@@ -681,7 +681,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_face_to_face_date = (
@@ -729,7 +729,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face_date = (
@@ -779,7 +779,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face_date = (
@@ -825,7 +825,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
                 )
             ],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face_date = (
@@ -862,7 +862,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_face_to_face_date = (
@@ -919,7 +919,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_home_visit_date = (
@@ -968,7 +968,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_home_visit_date = (
@@ -1068,7 +1068,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_home_visit_date = (
@@ -1116,7 +1116,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_home_visit_date = (
@@ -1151,7 +1151,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_home_visit_date = (
@@ -1188,7 +1188,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_home_visit_date = (
@@ -1238,7 +1238,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_treatment_collateral_contact_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1286,7 +1286,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1396,7 +1396,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1446,7 +1446,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1494,7 +1494,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1540,7 +1540,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
                 )
             ],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1580,7 +1580,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         next_recommended_treatment_collateral_date = us_pa_supervision_compliance._next_recommended_treatment_collateral_contact_date(
@@ -1624,7 +1624,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1658,7 +1658,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1692,7 +1692,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         applicable = us_pa_supervision_compliance._guidelines_applicable_for_case(
@@ -1744,7 +1744,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1785,7 +1785,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1827,7 +1827,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1886,7 +1886,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             ],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1930,7 +1930,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -1991,7 +1991,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             ],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2052,7 +2052,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             ],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2109,7 +2109,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2166,7 +2166,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                 ],
                 incarceration_delegate=UsPaIncarcerationDelegate(),
             ),
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2219,7 +2219,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                 )
             ],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2272,7 +2272,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
                 )
             ],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
         reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
@@ -2345,7 +2345,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
         self.assertIsNone(
             us_pa_supervision_compliance._get_recommended_supervision_downgrade_level(
@@ -2372,7 +2372,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
         self.assertIsNone(
             compliance_no_downgrade._get_recommended_supervision_downgrade_level(
@@ -2390,7 +2390,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
             violation_responses=[],
             incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
         recommended_level = (
             compliance_downgrade._get_recommended_supervision_downgrade_level(

@@ -95,8 +95,11 @@ class PipelineConfig:
         Union[Type[Entity], Type[NormalizedStateEntity]]
     ] = attr.ib()
 
-    # The list of reference tables required for the pipeline
+    # The list of reference tables required for the pipeline that are person-id based
     required_reference_tables: List[str] = attr.ib()
+
+    # The list of reference tables required for the pipeline that are state-code based
+    required_state_based_reference_tables: List[str] = attr.ib()
 
     state_specific_required_delegates: List[Type[StateSpecificDelegate]] = attr.ib()
 
@@ -286,6 +289,10 @@ class BasePipeline:
                 self.pipeline_run_delegate.pipeline_config().required_reference_tables.copy()
             )
 
+            required_state_based_reference_tables = (
+                self.pipeline_run_delegate.pipeline_config().required_state_based_reference_tables.copy()
+            )
+
             required_reference_tables.extend(
                 self.pipeline_run_delegate.pipeline_config().state_specific_required_reference_tables.get(
                     StateCode(state_code.upper()), []
@@ -301,6 +308,7 @@ class BasePipeline:
                 reference_dataset=pipeline_job_args.reference_dataset,
                 required_entity_classes=self.pipeline_run_delegate.pipeline_config().required_entities,
                 required_reference_tables=required_reference_tables,
+                required_state_based_reference_tables=required_state_based_reference_tables,
                 unifying_class=entities.StatePerson,
                 unifying_id_field_filter_set=person_id_filter_set,
             )
