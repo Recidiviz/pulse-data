@@ -22,7 +22,7 @@ import datetime
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
-from recidiviz.justice_counts.exceptions import JusticeCountsDataError
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -206,7 +206,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             except ValueError:
                 assert False
 
-            with self.assertRaises(JusticeCountsDataError):
+            with self.assertRaises(JusticeCountsServerError):
                 # When a report is Published, an errors is raised when the value is invalid
                 monthly_report = session.query(Report).one()
                 user = session.query(UserAccount).one()

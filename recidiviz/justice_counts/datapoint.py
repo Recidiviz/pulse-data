@@ -27,7 +27,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.exceptions import JusticeCountsDataError
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
@@ -301,7 +301,7 @@ class DatapointInterface:
             try:
                 float(value)
             except ValueError as e:
-                raise JusticeCountsDataError(
+                raise JusticeCountsServerError(
                     code="invalid_datapoint_value",
                     description=(
                         "Datapoint represents a float value, but is a string. "
@@ -466,7 +466,7 @@ class DatapointInterface:
                     if (
                         len(datapoint.dimension_identifier_to_member) > 1  # type: ignore[attr-defined]
                     ):
-                        raise JusticeCountsDataError(
+                        raise JusticeCountsServerError(
                             code="invalid_datapoint",
                             description=(
                                 "Datapoint represents multiple dimensions. "
@@ -632,7 +632,7 @@ class DatapointInterface:
                     # corresponding agency datapoint, then the metric is on.
                     metric_datapoints.is_metric_enabled = datapoint.enabled
             else:
-                raise JusticeCountsDataError(
+                raise JusticeCountsServerError(
                     code="invalid_datapoint",
                     description=(
                         "Datapoint does not represent a dimension, "

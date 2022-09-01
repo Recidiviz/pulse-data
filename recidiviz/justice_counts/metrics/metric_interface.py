@@ -27,10 +27,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.exceptions import (
-    JusticeCountsBadRequestError,
-    JusticeCountsDataError,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
@@ -135,7 +132,7 @@ class MetricAggregatedDimensionData:
         if dimension_dict is not None:
             return list(dimension_dict.keys())[0].__class__.dimension_identifier()
 
-        raise JusticeCountsBadRequestError(
+        raise JusticeCountsServerError(
             code="no_dimension_data",
             description="Metric has no dimension_to_enabled_status or dimension_to_value dictionary.",
         )
@@ -167,7 +164,7 @@ class MetricAggregatedDimensionData:
                     self.dimension_to_value is None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
                 ):
-                    raise JusticeCountsDataError(
+                    raise JusticeCountsServerError(
                         code="no_dimension_values",
                         description=f"Metric {dimension.to_enum().value} has no dimension values",
                     )
@@ -421,7 +418,7 @@ class MetricInterface:
             "value" not in json
             and entry_point is DatapointGetRequestEntryPoint.REPORT_PAGE
         ):
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 code="report_metric_no_value",
                 description="No value field is included in request json",
             )
@@ -482,7 +479,7 @@ class MetricInterface:
             metric_definitions.append(metric)
 
         if len(metric_definitions) == 0:
-            raise JusticeCountsDataError(
+            raise JusticeCountsServerError(
                 code="invalid_data",
                 description="No metrics found for this report or agency.",
             )

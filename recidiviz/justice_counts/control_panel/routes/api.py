@@ -37,11 +37,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     raise_if_user_is_unauthorized,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.exceptions import (
-    JusticeCountsBadRequestError,
-    JusticeCountsPermissionError,
-    JusticeCountsServerError,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
     MetricInterface,
@@ -241,7 +237,7 @@ def get_api_blueprint(
         try:
             agency_ids = get_agency_ids_from_session()
             if int(agency_id) not in agency_ids:
-                raise JusticeCountsPermissionError(
+                raise JusticeCountsServerError(
                     code="justice_counts_agency_permission",
                     description="User does not belong to the agency they are attempting to get agencies for.",
                 )
@@ -279,7 +275,7 @@ def get_api_blueprint(
                 not permissions
                 or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
             ):
-                raise JusticeCountsPermissionError(
+                raise JusticeCountsServerError(
                     code="justice_counts_create_report_permission",
                     description=(
                         f"User {user_id} does not have permission to "
@@ -298,7 +294,7 @@ def get_api_blueprint(
                 )
             except IntegrityError as e:
                 if isinstance(e.orig, UniqueViolation):
-                    raise JusticeCountsBadRequestError(
+                    raise JusticeCountsServerError(
                         code="justice_counts_create_report_uniqueness",
                         description="A report of that date range has already been created.",
                     ) from e
@@ -322,7 +318,7 @@ def get_api_blueprint(
                 not permissions
                 or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
             ):
-                raise JusticeCountsPermissionError(
+                raise JusticeCountsServerError(
                     code="justice_counts_delete_report_permission",
                     description=(
                         f"User {user_id} does not have permission to delete reports."
@@ -330,7 +326,7 @@ def get_api_blueprint(
                 )
 
             if report_ids is None or len(report_ids) == 0:
-                raise JusticeCountsBadRequestError(
+                raise JusticeCountsServerError(
                     code="justice_counts_bad_request",
                     description="Empty list of report_ids passed to delete reports endpoint.",
                 )
@@ -393,11 +389,11 @@ def get_api_blueprint(
         file = request.files["file"]
         ingest_on_upload = data.get("ingest_on_upload")
         if file is None:
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 "no_file_on_upload", "No file was sent for upload."
             )
         if not allowed_file(file.filename):
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 "file_type_error", "Invalid file type: All files must be of type .xlsx."
             )
         # Upload spreadsheet to GCS
@@ -448,7 +444,7 @@ def get_api_blueprint(
     def get_spreadsheets(agency_id: str) -> Response:
         agency_ids = get_agency_ids_from_session()
         if int(agency_id) not in agency_ids:
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 code="bad_user_permissions",
                 description="User does not have the permissions to view this list of spreadsheets because they do not belong to the correct agency.",
             )
@@ -478,7 +474,7 @@ def get_api_blueprint(
                 not permissions
                 or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
             ):
-                raise JusticeCountsPermissionError(
+                raise JusticeCountsServerError(
                     code="justice_counts_create_report_permission",
                     description=(
                         f"User {auth0_user_id} does not have permission to "
@@ -532,7 +528,7 @@ def get_api_blueprint(
                     len(g.user_context.agency_ids) == 0
                     and ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
                 ):
-                    raise JusticeCountsPermissionError(
+                    raise JusticeCountsServerError(
                         code="justice_counts_agency_permission",
                         description="User does not belong to any agencies.",
                     )
@@ -628,7 +624,7 @@ def _check_for_conflicts(
             last_modified_at,
             time_loaded_by_client,
         )
-        raise JusticeCountsBadRequestError(
+        raise JusticeCountsServerError(
             code="version_conflict",
             description="Report has been updated since client loaded the page.",
         )

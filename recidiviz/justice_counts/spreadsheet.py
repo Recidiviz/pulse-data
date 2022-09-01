@@ -31,10 +31,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
-from recidiviz.justice_counts.exceptions import (
-    JusticeCountsBadRequestError,
-    JusticeCountsServerError,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -155,7 +152,7 @@ class SpreadsheetInterface:
             session=session, spreadsheet_id=spreadsheet_id
         )
         if spreadsheet.agency_id not in agency_ids:
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 code="bad_download_permissions",
                 description="User does not have the permissions to download the spreadsheet because they do not belong to the correct agency",
             )
