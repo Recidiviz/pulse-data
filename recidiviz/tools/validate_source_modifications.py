@@ -42,8 +42,8 @@ import attr
 from werkzeug.routing import Rule
 
 from recidiviz.admin_panel.models import validation_pb2
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    get_supported_direct_ingest_region_codes,
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_region_codes,
 )
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
@@ -211,7 +211,7 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
             ),
             then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
         )
-        for region_code in get_supported_direct_ingest_region_codes()
+        for region_code in get_existing_region_codes()
     ],
     # case triage demo data
     CASE_TRIAGE_FIXTURES_KEY: [

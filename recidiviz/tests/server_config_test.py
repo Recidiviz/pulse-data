@@ -30,7 +30,7 @@ class TestServerConfig(unittest.TestCase):
     """Tests for server_config.py."""
 
     @patch(
-        f"{server_config.__name__}.get_existing_direct_ingest_states",
+        f"{server_config.__name__}.get_direct_ingest_states_existing_in_env",
         return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     @patch(

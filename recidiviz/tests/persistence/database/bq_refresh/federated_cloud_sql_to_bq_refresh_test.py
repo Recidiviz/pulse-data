@@ -193,9 +193,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             view.materialized_address,
         )
 
-    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_existing_direct_ingest_states")
+    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch(
-        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_existing_direct_ingest_states"
+        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env"
     )
     @patch(
         f"{FEDERATED_REFRESH_PACKAGE_NAME}.CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA",
@@ -295,9 +295,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         )
         self.assertEqual(stream_into_table_args[0][2][1].get("schema"), "OPERATIONS")
 
-    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_existing_direct_ingest_states")
+    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch(
-        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_existing_direct_ingest_states"
+        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env"
     )
     def test_federated_cloud_sql_to_bq_refresh_with_overrides(
         self, mock_states_fn: mock.MagicMock, mock_states_fn_other: mock.MagicMock
@@ -412,9 +412,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 SchemaType.STATE, direct_ingest_instance=DirectIngestInstance.SECONDARY
             )
 
-    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_existing_direct_ingest_states")
+    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch(
-        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_existing_direct_ingest_states"
+        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env"
     )
     @patch(
         f"{FEDERATED_REFRESH_PACKAGE_NAME}.CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA",

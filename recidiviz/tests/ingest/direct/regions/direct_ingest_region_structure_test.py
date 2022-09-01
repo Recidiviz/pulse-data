@@ -55,7 +55,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collecto
     DirectIngestRawTableMigrationCollector,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
+    get_existing_direct_ingest_states,
     get_existing_region_dir_paths,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -86,8 +86,12 @@ class DirectIngestRegionDirStructureBase:
 
     @property
     @abc.abstractmethod
-    def region_dir_names(self) -> List[str]:
+    def state_codes(self) -> List[StateCode]:
         pass
+
+    @property
+    def region_dir_names(self) -> List[str]:
+        return [state_code.value.lower() for state_code in self.state_codes]
 
     @property
     @abc.abstractmethod
@@ -246,21 +250,24 @@ class DirectIngestRegionDirStructureBase:
 
     @parameterized.expand(
         [
-            ("build_prod", "recidiviz-123", GCPEnvironment.PRODUCTION.value),
-            ("build_staging", "recidiviz-staging", GCPEnvironment.STAGING.value),
+            ("build_prod", "recidiviz-123", GCPEnvironment.PRODUCTION),
+            ("build_staging", "recidiviz-staging", GCPEnvironment.STAGING),
         ]
     )
     def test_collect_and_build_ingest_view_builders(
         self, _name: str, project_id: str, environment: GCPEnvironment
     ) -> None:
         with patch(
-            "recidiviz.utils.environment.get_gcp_environment", return_value=environment
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=environment.value,
         ):
             with patch("recidiviz.utils.metadata.project_id", return_value=project_id):
                 for region_code in self.region_dir_names:
                     region = get_direct_ingest_region(
                         region_code, region_module_override=self.region_module_override
                     )
+                    if not region.exists_in_env():
+                        continue
 
                     with patch(
                         "recidiviz.utils.metadata.project_id",
@@ -364,8 +371,8 @@ class DirectIngestRegionDirStructure(
     """Tests properties of recidiviz/ingest/direct/regions."""
 
     @property
-    def region_dir_names(self) -> List[str]:
-        return get_existing_region_dir_names()
+    def state_codes(self) -> List[StateCode]:
+        return get_existing_direct_ingest_states()
 
     @property
     def region_dir_paths(self) -> List[str]:
@@ -413,7 +420,7 @@ class DirectIngestRegionDirStructure(
             return_value=GCPEnvironment.PRODUCTION.value,
         ), patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-123"):
             for region_code in PLAYGROUND_STATE_INFO:
-                with self.assertRaisesRegex(DirectIngestError, "Bad environment"):
+                with self.assertRaisesRegex(DirectIngestError, "Unsupported"):
                     DirectIngestControllerFactory.build(
                         region_code=region_code.lower(),
                         ingest_instance=DirectIngestInstance.PRIMARY,
@@ -431,18 +438,18 @@ class DirectIngestRegionTemplateDirStructure(
 
         # Ensures StateCode.US_XX is properly loaded
         self.supported_regions_patcher = patch(
-            f"{direct_ingest_controller_factory.__name__}.get_supported_direct_ingest_region_codes"
+            f"{direct_ingest_controller_factory.__name__}.get_direct_ingest_states_existing_in_env"
         )
         self.mock_supported_regions = self.supported_regions_patcher.start()
-        self.mock_supported_regions.return_value = self.region_dir_names
+        self.mock_supported_regions.return_value = self.state_codes
 
     def tearDown(self) -> None:
         super().tearDown()
         self.supported_regions_patcher.stop()
 
     @property
-    def region_dir_names(self) -> List[str]:
-        return [StateCode.US_XX.value.lower()]
+    def state_codes(self) -> List[StateCode]:
+        return [StateCode.US_XX]
 
     @property
     def region_dir_paths(self) -> List[str]:

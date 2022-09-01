@@ -16,14 +16,13 @@
 # =============================================================================
 """Shared util functions dealing with direct ingest of regions."""
 import os
-from typing import List
+from typing import List, Set
 
 import yaml
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
-from recidiviz.ingest.direct import direct_ingest_regions as regions_utils
-from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct import direct_ingest_regions, regions
 from recidiviz.tools import deploy
 
 _REGIONS_DIR = os.path.dirname(regions.__file__)
@@ -31,24 +30,35 @@ _REGIONS_DIR = os.path.dirname(regions.__file__)
 
 def get_existing_region_dir_paths() -> List[str]:
     """Returns list of paths to all region directories in ingest/direct/regions."""
-    return [os.path.join(_REGIONS_DIR, d) for d in get_existing_region_dir_names()]
+    return [os.path.join(_REGIONS_DIR, d) for d in get_existing_region_codes()]
 
 
-def get_existing_region_dir_names() -> List[str]:
+def get_existing_region_codes() -> Set[str]:
     """Returns list of region directories existing in ingest/direct/regions."""
-    return [
+    return {
         d
         for d in os.listdir(_REGIONS_DIR)
         if is_non_empty_code_directory(os.path.join(_REGIONS_DIR, d))
         and not d.startswith("__")
-    ]
+    }
 
 
 def get_existing_direct_ingest_states() -> List[StateCode]:
     return [
         StateCode(region_code.upper())
-        for region_code in get_existing_region_dir_names()
+        for region_code in get_existing_region_codes()
         if StateCode.is_state_code(region_code)
+    ]
+
+
+def get_direct_ingest_states_existing_in_env() -> List[StateCode]:
+    """Returns list of states that have existing direct ingest infrastructure in the environment"""
+    return [
+        state_code
+        for state_code in get_existing_direct_ingest_states()
+        if direct_ingest_regions.get_direct_ingest_region(
+            state_code.value.lower()
+        ).exists_in_env()
     ]
 
 
@@ -57,7 +67,7 @@ def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
     return [
         state_code
         for state_code in get_existing_direct_ingest_states()
-        if regions_utils.get_direct_ingest_region(
+        if direct_ingest_regions.get_direct_ingest_region(
             state_code.value.lower()
         ).is_ingest_launched_in_env()
     ]

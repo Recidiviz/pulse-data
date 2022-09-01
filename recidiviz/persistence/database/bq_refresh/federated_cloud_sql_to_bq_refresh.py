@@ -34,7 +34,7 @@ from recidiviz.big_query.view_update_manager import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import (
@@ -347,7 +347,7 @@ def _hydrate_unioned_regional_dataset_for_schema(
     if not config.is_state_segmented_refresh_schema():
         raise ValueError(f"Unexpected schema_type [{config.schema_type}].")
 
-    state_codes = get_existing_direct_ingest_states()
+    state_codes = get_direct_ingest_states_existing_in_env()
 
     refreshed_source_table_datasets = {
         config.materialized_dataset_for_segment(state_code)

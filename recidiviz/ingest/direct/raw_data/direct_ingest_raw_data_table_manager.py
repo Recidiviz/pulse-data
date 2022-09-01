@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
@@ -71,7 +71,7 @@ def update_raw_data_tables_schemas_in_dataset(state_code: str) -> None:
 
 def update_raw_data_tables_schemas() -> None:
     """Update the raw data tables for all states that have support for direct ingest."""
-    for state_code in get_existing_direct_ingest_states():
+    for state_code in get_direct_ingest_states_existing_in_env():
         logging.info("Updating schemas for state %s", state_code.value)
         update_raw_data_tables_schemas_in_dataset(state_code.value)
 

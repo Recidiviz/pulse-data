@@ -20,7 +20,7 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
+    get_existing_region_codes,
 )
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
@@ -38,7 +38,7 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
             DirectIngestRawDataTableLatestViewCollector(
                 region_code=region_code, src_raw_tables_sandbox_dataset_prefix=None
             ).collect_view_builders()
-            for region_code in get_existing_region_dir_names()
+            for region_code in get_existing_region_codes()
         )
     )
 

@@ -19,14 +19,15 @@ import importlib
 from types import ModuleType
 from typing import Optional, Type
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
     check_is_region_launched_in_env,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    DirectIngestRegion,
-    get_supported_direct_ingest_region_codes,
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import (
@@ -58,7 +59,9 @@ class DirectIngestControllerFactory:
         """
         if (
             region_code is None
-            or region_code not in get_supported_direct_ingest_region_codes()
+            or not StateCode.is_state_code(region_code)
+            or StateCode.get(region_code)
+            not in get_direct_ingest_states_existing_in_env()
         ):
             raise DirectIngestError(
                 msg=f"Unsupported direct ingest region [{region_code}] in "

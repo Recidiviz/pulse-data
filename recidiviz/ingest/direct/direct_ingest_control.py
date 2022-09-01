@@ -45,12 +45,12 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    DirectIngestRegion,
-    get_supported_direct_ingest_region_codes,
-)
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
@@ -293,18 +293,18 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
         request.values,
     )
 
-    supported_regions = get_supported_direct_ingest_region_codes()
-    for region_code in supported_regions:
-        logging.info("Ensuring paths normalized for region [%s]", region_code)
+    supported_states = get_direct_ingest_states_existing_in_env()
+    for state_code in supported_states:
+        logging.info("Ensuring paths normalized for region [%s]", state_code.value)
         # The only type of file that wouldn't be normalized is a raw file, which
         # should only ever be in the PRIMARY bucket.
         ingest_instance = DirectIngestInstance.PRIMARY
         with monitoring.push_region_tag(
-            region_code, ingest_instance=ingest_instance.value
+            state_code.value, ingest_instance=ingest_instance.value
         ):
             try:
                 controller = DirectIngestControllerFactory.build(
-                    region_code=region_code,
+                    region_code=state_code.value.lower(),
                     ingest_instance=ingest_instance,
                     allow_unlaunched=True,
                 )
@@ -614,17 +614,17 @@ def heartbeat() -> Tuple[str, HTTPStatus]:
 
 def kick_all_schedulers() -> None:
     """Kicks all ingest schedulers to restart ingest"""
-    supported_regions = get_supported_direct_ingest_region_codes()
-    for region_code in supported_regions:
-        region = _region_for_region_code(region_code=region_code)
+    supported_states = get_direct_ingest_states_existing_in_env()
+    for state_code in supported_states:
+        region = _region_for_region_code(region_code=state_code.value)
         if not region.is_ingest_launched_in_env():
             continue
         for ingest_instance in DirectIngestInstance:
             with monitoring.push_region_tag(
-                region_code, ingest_instance=ingest_instance.value
+                state_code.value, ingest_instance=ingest_instance.value
             ):
                 controller = DirectIngestControllerFactory.build(
-                    region_code=region_code,
+                    region_code=state_code.value,
                     ingest_instance=ingest_instance,
                     allow_unlaunched=False,
                 )

@@ -34,6 +34,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct import direct_ingest_control
@@ -125,7 +126,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_task_manager = create_autospec(DirectIngestCloudTaskManagerImpl)
         self.task_manager_patcher.start().return_value = self.mock_task_manager
 
-        self.region_code = "us_nd"
+        self.state_code = StateCode.US_ND
+        self.region_code = self.state_code.value.lower()
         self.primary_bucket = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region_code,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -688,14 +690,14 @@ class TestDirectIngestControl(unittest.TestCase):
             current_task_id=task_id, can_start_ingest=False
         )
 
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_ensure_all_raw_file_paths_normalized(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
-        mock_supported_region_codes: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
     ) -> None:
         mock_environment.return_value = "production"
 
@@ -705,6 +707,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
+        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         mock_controllers_by_region_code = {}
@@ -732,8 +735,6 @@ class TestDirectIngestControl(unittest.TestCase):
             return fake_supported_regions[region_code]
 
         mock_get_region.side_effect = fake_get_region
-
-        mock_supported_region_codes.return_value = fake_supported_regions.keys()
 
         headers = APP_ENGINE_HEADERS
         response = self.client.get(
@@ -877,14 +878,14 @@ class TestDirectIngestControl(unittest.TestCase):
             materialization_args
         )
 
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_heartbeat(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
-        mock_supported_region_codes: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
     ) -> None:
 
         fake_supported_regions = {
@@ -893,6 +894,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
+        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         region_to_mock_controller = defaultdict(list)
@@ -915,8 +917,6 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_get_region.side_effect = fake_get_region
 
-        mock_supported_region_codes.return_value = fake_supported_regions.keys()
-
         mock_environment.return_value = "staging"
 
         headers = APP_ENGINE_HEADERS
@@ -929,20 +929,20 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
 
-        mock_supported_region_codes.assert_called()
+        mock_states_in_env.assert_called()
         for controllers in region_to_mock_controller.values():
             self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
 
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_kick_all_schedulers(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
-        mock_supported_region_codes: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
     ) -> None:
 
         fake_supported_regions = {
@@ -951,6 +951,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
+        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         region_to_mock_controller = defaultdict(list)
@@ -975,26 +976,24 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_get_region.side_effect = fake_get_region
 
-        mock_supported_region_codes.return_value = fake_supported_regions.keys()
-
         mock_environment.return_value = "staging"
 
         kick_all_schedulers()
 
-        mock_supported_region_codes.assert_called()
+        mock_states_in_env.assert_called()
         for controllers in region_to_mock_controller.values():
             self.assertEqual(len(controllers), len(DirectIngestInstance))
             for mock_controller in controllers:
                 mock_controller.kick_scheduler.assert_called_once()
 
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_kick_all_schedulers_ignores_unlaunched_environments(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
-        mock_supported_region_codes: mock.MagicMock,
+        mock_states_in_env: mock.MagicMock,
     ) -> None:
 
         fake_supported_regions = {
@@ -1003,6 +1002,7 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
+        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
         region_to_mock_controller = {}
@@ -1025,13 +1025,11 @@ class TestDirectIngestControl(unittest.TestCase):
 
         mock_get_region.side_effect = fake_get_region
 
-        mock_supported_region_codes.return_value = fake_supported_regions.keys()
-
         mock_environment.return_value = "production"
 
         kick_all_schedulers()
 
-        mock_supported_region_codes.assert_called()
+        mock_states_in_env.assert_called()
         for region_code, controller in region_to_mock_controller.items():
             if fake_supported_regions[region_code].environment == "staging":
                 controller.kick_all_scheduler.assert_not_called()

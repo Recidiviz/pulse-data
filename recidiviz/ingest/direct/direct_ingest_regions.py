@@ -21,9 +21,8 @@ Regions represent geographic areas/legal jurisdictions from which we ingest
 criminal justice data and calculate metrics.
 """
 import os
-import pkgutil
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional
 
 import attr
 import yaml
@@ -64,6 +63,14 @@ class DirectIngestRegion:
     def __attrs_post_init__(self) -> None:
         if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError(f"Invalid environment: {self.environment}")
+
+    def exists_in_env(self) -> bool:
+        """Returns true if the ingest infrastructure (queues, databases, etc.) for this
+        region exist in this environment.
+
+        We don't create infrastructure for the playground regions in prod.
+        """
+        return not environment.in_gcp_production() or not self.playground
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current
@@ -128,27 +135,3 @@ def get_direct_ingest_region_manifest(
         encoding="utf-8",
     ) as region_manifest:
         return yaml.full_load(region_manifest)
-
-
-def get_supported_direct_ingest_region_codes() -> Set[str]:
-    """Returns all direct ingest regions with defined packages in the
-    `recidiviz/ingest/direct/regions` module.
-    """
-
-    base_region_module = direct_ingest_regions_module
-    if base_region_module.__file__ is None:
-        raise ValueError(f"No file associated with {base_region_module}.")
-    base_region_path = os.path.dirname(base_region_module.__file__)
-
-    return {
-        region_module.name
-        for region_module in pkgutil.iter_modules([base_region_path])
-        if region_module.ispkg
-    }
-
-
-def get_supported_direct_ingest_regions() -> List["DirectIngestRegion"]:
-    return [
-        get_direct_ingest_region(region_code)
-        for region_code in get_supported_direct_ingest_region_codes()
-    ]
