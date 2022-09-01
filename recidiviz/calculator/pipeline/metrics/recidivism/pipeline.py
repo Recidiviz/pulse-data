@@ -55,6 +55,7 @@ class RecidivismMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 normalized_entities.NormalizedStateIncarcerationPeriod,
             ],
             required_reference_tables=[PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME],
+            required_state_based_reference_tables=[],
             state_specific_required_delegates=[
                 StateSpecificIncarcerationDelegate,
             ],

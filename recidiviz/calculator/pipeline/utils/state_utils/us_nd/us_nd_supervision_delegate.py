@@ -121,7 +121,8 @@ class UsNdSupervisionDelegate(StateSpecificSupervisionDelegate):
     # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
     #  location distinction directly into our schema and are hydrating both for ND.
     def supervision_location_from_supervision_site(
-        self, supervision_site: Optional[str]
+        self,
+        supervision_site: Optional[str],
     ) -> Tuple[Optional[str], Optional[str]]:
         """Retrieves level 1 and level 2 location information from a supervision site."""
 

@@ -172,7 +172,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             self.metric_producer_supervision_delegate_patcher.start()
         )
         self.mock_metric_producer_supervision_delegate.return_value = (
-            UsXxSupervisionDelegate()
+            UsXxSupervisionDelegate([])
         )
         self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
 
@@ -361,6 +361,14 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": state_code,
@@ -453,6 +461,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -759,6 +768,14 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -783,6 +800,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -986,6 +1004,14 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -1009,6 +1035,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -1055,6 +1082,7 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_contacts: List[entities.StateSupervisionContact] = None,
         supervision_period_judicial_district_association: List[Dict[Any, Any]] = None,
         supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
+        supervision_location_to_names_association: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List[Any]]:
         return {
             entities.StatePerson.__name__: [person],
@@ -1083,6 +1111,8 @@ class TestClassifyEvents(unittest.TestCase):
                 else []
             ),
             "supervision_period_to_agent_association": supervision_period_to_agent_association
+            or [],
+            "supervision_location_ids_to_names": supervision_location_to_names_association
             or [],
         }
 
@@ -1282,7 +1312,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ".metric_producer.get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 

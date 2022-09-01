@@ -46,7 +46,8 @@ class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
         return True
 
     def supervision_location_from_supervision_site(
-        self, supervision_site: Optional[str]
+        self,
+        supervision_site: Optional[str],
     ) -> Tuple[Optional[str], Optional[str]]:
         """In US_ID, supervision_site follows format {supervision district}|{location/office within district}"""
         # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision

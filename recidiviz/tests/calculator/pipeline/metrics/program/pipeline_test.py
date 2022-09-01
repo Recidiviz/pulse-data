@@ -215,6 +215,14 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -236,6 +244,7 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -404,6 +413,14 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
+        supervision_locations_to_names_data = [
+            {
+                "state_code": "US_XX",
+                "level_1_supervision_location_external_id": "level 1",
+                "level_2_supervision_location_external_id": "level 2",
+            }
+        ]
+
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -425,6 +442,7 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
+            "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
 
         data_dict.update(data_dict_overrides)
@@ -502,6 +520,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_id": supervision_period.supervision_period_id,
         }
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "site",
+            "level_2_supervision_location_external_id": "district",
+        }
+
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
@@ -510,6 +534,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
+            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None
@@ -608,6 +633,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_id": supervision_period.supervision_period_id,
         }
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "site",
+            "level_2_supervision_location_external_id": "district",
+        }
+
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
@@ -616,6 +647,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
+            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None
@@ -702,6 +734,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_id": supervision_period.supervision_period_id,
         }
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "site",
+            "level_2_supervision_location_external_id": "district",
+        }
+
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [],
@@ -710,6 +748,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
+            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         test_pipeline = TestPipeline()
@@ -770,6 +809,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_id": supervision_period.supervision_period_id,
         }
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "site",
+            "level_2_supervision_location_external_id": "district",
+        }
+
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
@@ -778,6 +823,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
+            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None
@@ -843,6 +889,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         supervision_period_to_agent_map = {"supervision_period_id": "fake_map"}
 
+        supervision_location_to_name_map = {
+            "state_code": "US_XX",
+            "level_1_supervision_location_external_id": "site",
+            "level_2_supervision_location_external_id": "district",
+        }
+
         person_periods = {
             entities.StatePerson.__name__: [fake_person],
             entities.StateProgramAssignment.__name__: [program_assignment],
@@ -851,6 +903,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             "supervision_period_to_agent_association": [
                 supervision_period_to_agent_map
             ],
+            "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
         assert program_assignment.program_id is not None

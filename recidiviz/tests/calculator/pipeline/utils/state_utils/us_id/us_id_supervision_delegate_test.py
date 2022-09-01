@@ -37,7 +37,7 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
     """Unit tests for UsIdSupervisionDelegate"""
 
     def setUp(self) -> None:
-        self.supervision_delegate = UsIdSupervisionDelegate()
+        self.supervision_delegate = UsIdSupervisionDelegate([])
 
     @parameterized.expand(
         [

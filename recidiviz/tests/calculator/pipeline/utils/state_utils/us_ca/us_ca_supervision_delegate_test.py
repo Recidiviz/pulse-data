@@ -29,6 +29,6 @@ class TestUsCaSupervisionDelegate(unittest.TestCase):
     """Tests functions in UsCaSupervisionDelegate."""
 
     def setUp(self) -> None:
-        self.delegate = UsCaSupervisionDelegate()
+        self.delegate = UsCaSupervisionDelegate([])
 
     # ~~ Add new tests here ~~

@@ -52,6 +52,7 @@ class ViolationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
             ],
             required_reference_tables=[],
+            required_state_based_reference_tables=[],
             state_specific_required_delegates=[
                 StateSpecificViolationDelegate,
             ],

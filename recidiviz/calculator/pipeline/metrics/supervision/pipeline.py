@@ -42,6 +42,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
@@ -83,6 +86,9 @@ class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
             required_reference_tables=[
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
                 SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+            ],
+            required_state_based_reference_tables=[
+                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
             ],
             state_specific_required_delegates=[
                 StateSpecificIncarcerationDelegate,

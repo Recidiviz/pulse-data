@@ -109,6 +109,18 @@ DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS = {
     }
 }
 
+DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID = "level 1"
+DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES = {
+    DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID: {
+        "state_code": "US_XX",
+        "level_1_supervision_location_external_id": DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID,
+        "level_2_supervision_location_external_id": "level 2",
+    }
+}
+DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST = list(
+    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES.values()
+)
+
 
 class TestGetCommitmentDetails(unittest.TestCase):
     """Tests the get_commitment_from_supervision_details function."""
@@ -121,12 +133,18 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
         ] = None,
-        supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
+        supervision_locations_to_names: Optional[Dict[str, Dict[str, Any]]] = None,
+        supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
+            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
+        ),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
         supervision_period_to_agent_associations = (
             supervision_period_to_agent_associations
             or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+        supervision_locations_to_names = (
+            supervision_locations_to_names or DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES
         )
         incarceration_period_index = (
             incarceration_period_index
@@ -453,7 +471,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
-            supervision_delegate=UsPaSupervisionDelegate(),
+            supervision_delegate=UsPaSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
+            ),
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,
         )

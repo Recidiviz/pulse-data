@@ -34,7 +34,7 @@ from typing import (
 
 import apache_beam as beam
 from apache_beam import PCollection, Pipeline
-from apache_beam.pvalue import PBegin
+from apache_beam.pvalue import AsList, PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
@@ -105,6 +105,7 @@ class ExtractDataForPipeline(beam.PTransform):
             List[Union[Type[Entity], Type[NormalizedStateEntity]]]
         ],
         required_reference_tables: Optional[List[str]],
+        required_state_based_reference_tables: Optional[List[str]],
         unifying_class: Type[Entity],
         unifying_id_field_filter_set: Optional[Set[UnifyingId]] = None,
     ):
@@ -142,6 +143,9 @@ class ExtractDataForPipeline(beam.PTransform):
             raise ValueError("No valid data reference source passed to the pipeline.")
         self._reference_dataset = reference_dataset
         self._required_reference_tables = required_reference_tables or []
+        self._required_state_based_reference_tables = (
+            required_state_based_reference_tables or []
+        )
 
         if required_entity_classes and len(set(required_entity_classes)) != len(
             required_entity_classes
@@ -446,6 +450,17 @@ class ExtractDataForPipeline(beam.PTransform):
                 unifying_id_filter_set=self._unifying_id_field_filter_set,
             )
 
+        state_based_reference_data: Dict[TableName, PCollection[TableRow]] = {}
+        for table_id in self._required_state_based_reference_tables:
+            state_based_reference_data[
+                table_id
+            ] = input_or_inputs | f"Load {table_id}" >> ImportTable(
+                project_id=self._project_id,
+                dataset_id=self._reference_dataset,
+                table_id=table_id,
+                state_code_filter=self._state_code,
+            )
+
         entities_and_associations: Dict[
             Union[EntityClassName, EntityRelationshipKey, TableName],
             PCollection[Tuple[UnifyingId, Union[EntityAssociation, Entity, TableRow]]],
@@ -484,7 +499,20 @@ class ExtractDataForPipeline(beam.PTransform):
             )
         )
 
-        return fully_connected_entities_with_converted_state_types
+        final_entities_with_state_based_reference = (
+            fully_connected_entities_with_converted_state_types
+            | "Attach state-based reference data to entities"
+            >> beam.ParDo(
+                _AttachStateBasedReferenceDataToEntities(),
+                state_based_reference_tables=self._required_state_based_reference_tables,
+                **{
+                    table_id: AsList(rows)
+                    for table_id, rows in state_based_reference_data.items()
+                },
+            )
+        )
+
+        return final_entities_with_state_based_reference
 
 
 @with_input_types(
@@ -1190,6 +1218,58 @@ class _ShallowHydrateEntity(beam.DoFn):
 
     def to_runner_api_parameter(self, unused_context):
         pass
+
+
+@with_input_types(
+    beam.typehints.Tuple[
+        UnifyingId,
+        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+    ],
+    beam.typehints.List[TableName],
+)
+@with_output_types(
+    beam.typehints.Tuple[
+        UnifyingId,
+        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
+    ]
+)
+class _AttachStateBasedReferenceDataToEntities(beam.DoFn):
+    """Attaches state-wide reference tables (no unifying ID in the table) as side inputs."""
+
+    # pylint: disable=arguments-differ
+    def process(
+        self,
+        element: Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+            ],
+        ],
+        state_based_reference_tables: List[TableName],
+        *_args,
+        **kwargs,
+    ) -> Iterable[
+        Tuple[
+            UnifyingId,
+            Dict[
+                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
+            ],
+        ]
+    ]:
+        person_id, entities_and_reference_tables = element
+        state_based_reference_data: Dict[TableName, List[TableRow]] = {}
+        for state_based_reference_table in state_based_reference_tables:
+            state_based_reference_data[state_based_reference_table] = kwargs[
+                state_based_reference_table
+            ]
+        final_entities_and_reference_tables = {
+            **entities_and_reference_tables,
+            **state_based_reference_data,
+        }
+        yield person_id, final_entities_and_reference_tables
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
 @with_input_types(

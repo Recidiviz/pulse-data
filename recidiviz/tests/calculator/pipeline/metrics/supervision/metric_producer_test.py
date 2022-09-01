@@ -103,7 +103,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ".metric_producer.get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -1931,7 +1931,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             ".metric_producer.get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
         self.metric_producer = metric_producer.SupervisionMetricProducer()
 
     def tearDown(self) -> None:
@@ -2052,7 +2052,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
     def test_include_event_in_metric_out_of_state(self) -> None:
         self._stop_state_specific_delegate_patchers()
         mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        mock_supervision_delegate.return_value = self.OutOfStateDelegate()
+        mock_supervision_delegate.return_value = self.OutOfStateDelegate([])
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -2076,7 +2076,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
     def test_include_event_in_metric_not_in_state(self) -> None:
         self._stop_state_specific_delegate_patchers()
         mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        mock_supervision_delegate.return_value = self.OutOfStateDelegate()
+        mock_supervision_delegate.return_value = self.OutOfStateDelegate([])
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",

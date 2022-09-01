@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.pipeline_type import PROGRAM_METRICS_PIPELINE
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
@@ -54,6 +57,9 @@ class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
             ],
             required_reference_tables=[
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
+            ],
+            required_state_based_reference_tables=[
+                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
             ],
             state_specific_required_delegates=[
                 StateSpecificSupervisionDelegate,
