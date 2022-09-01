@@ -144,7 +144,8 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
         # Store an array of all raw text test results for a single drug screen date
         ARRAY_AGG(COALESCE(contact_note_type, 'UNKNOWN')) OVER w AS result_raw_text,
         IF(triggered_ztpd, "METH", CAST(NULL AS STRING)) AS substance_detected,
-        is_inferred
+        NULL AS med_invalidate_flg,
+        is_inferred,
     FROM dru_with_ztpd_full_table
     WHERE contact_note_date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 20 YEAR)
     QUALIFY ROW_NUMBER() OVER w = 1
