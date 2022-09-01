@@ -1,0 +1,22 @@
+file_tag: vfds_favorite_food
+file_description: |-
+  Contains information about people's favorite food. The table is setup to be able to
+  track multiple of a person's favorite foods, identified by rank, and track how they
+  change over time.
+data_classification: source
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: A number used to uniquely identify this favorite food entry.
+  - name: PersonID
+    description: The id of the person whose favorite food is described in this row.
+  - name: Date
+    description: The date that this food took this spot in their favorite food ranking.
+  - name: Rank
+    description: |-
+      The rank of this food. For example, if this became their absolute
+      favorite food on `Date`, then this column would be `1`, if it became their second
+      favorite food, then it would be `2`, etc.
+  - name: Food
+    description: The food!

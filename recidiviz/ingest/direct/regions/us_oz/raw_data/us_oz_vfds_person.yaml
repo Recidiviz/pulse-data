@@ -1,0 +1,15 @@
+file_tag: vfds_person
+file_description: |-
+  Contains information about people tracked in VFDS.
+data_classification: source
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: A number used to uniquely identify this person in the system.
+  - name: FirstName
+    description: The person's first name.
+  - name: LastName
+    description: The person's last name.
+  - name: StartDate
+    description: The date this person started at Recidiviz.
