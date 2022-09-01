@@ -19,6 +19,7 @@
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
@@ -30,12 +31,16 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
+            user_id = UserAccountInterface.create_or_update_user(
+                session=session, auth0_user_id="test_auth0_user"
+            ).id
             AgencyInterface.create_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
+                user_account_id=user_id,
             )
             AgencyInterface.create_agency(
                 session=session,
@@ -43,6 +48,7 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
+                user_account_id=user_id,
             )
 
     def test_get_agencies(self) -> None:
@@ -83,12 +89,16 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
 
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            user_id = UserAccountInterface.create_or_update_user(
+                session=session, auth0_user_id="test_auth0_user"
+            ).id
             AgencyInterface.create_agency(
                 session=session,
                 name="Agency Gamma",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
+                user_account_id=user_id,
             )
             AgencyInterface.create_agency(
                 session=session,
@@ -96,6 +106,7 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
+                user_account_id=user_id,
             )
 
         agencies = AgencyInterface.get_agencies(session=session)
@@ -115,4 +126,5 @@ class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
+                user_account_id=user_id,
             )

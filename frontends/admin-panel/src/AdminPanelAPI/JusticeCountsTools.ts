@@ -27,11 +27,13 @@ export const createAgency = async (
   name: string,
   systems: string[],
   stateCode: string,
+  userAccountId?: string,
   fipsCountyCode?: string
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/justice_counts_tools/agencies`, {
     name,
     systems,
+    user_account_id: userAccountId,
     state_code: stateCode,
     fips_county_code: fipsCountyCode,
   });

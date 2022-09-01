@@ -419,3 +419,39 @@ class ReportInterface:
                 "from the report date range."
             )
         return inferred_frequency
+
+    @staticmethod
+    def create_reports_for_new_agency(
+        session: Session, agency_id: int, user_account_id: int
+    ) -> None:
+        date = datetime.date.today()
+        # create twelve monthly reports for the last 12 months
+        for month in range(1, min(13, date.month + 3)):
+            # create reports for the months that already passed this year, plus for the two following months
+            ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                month=month,
+                user_account_id=user_account_id,
+                year=date.year,
+                frequency=schema.ReportingFrequency.MONTHLY.value,
+            )
+        for month in range(date.month, 13):
+            # create monthly reports for the previous year
+            ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                month=month,
+                user_account_id=user_account_id,
+                year=date.year - 1,
+                frequency=schema.ReportingFrequency.MONTHLY.value,
+            )
+        # create an annual report for the agency for the previous calendar year
+        ReportInterface.create_report(
+            session=session,
+            agency_id=agency_id,
+            month=1,
+            user_account_id=user_account_id,
+            year=date.year - 1,
+            frequency=schema.ReportingFrequency.ANNUAL.value,
+        )

@@ -12,6 +12,7 @@ export type CreateAgencyRequest = {
   name: string;
   systems: string[];
   stateCode: string;
+  userDbId: string;
   fipsCountyCode?: string;
 };
 
