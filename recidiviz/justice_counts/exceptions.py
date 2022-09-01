@@ -21,36 +21,8 @@ from http import HTTPStatus
 from recidiviz.utils.flask_exception import FlaskException
 
 
-class JusticeCountsAuthorizationError(FlaskException):
-    """Exception for when the user has signed into a valid account, but has not yet been allowed access."""
-
-    def __init__(self, code: str, description: str) -> None:
-        super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
-
-
-class JusticeCountsPermissionError(FlaskException):
-    """Exception for when the user does not have the perissions to perform a certain action in the control panel."""
-
-    def __init__(self, code: str, description: str) -> None:
-        super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
-
-
-class JusticeCountsBadRequestError(FlaskException):
-    """Exception for when the user makes a bad request."""
-
-    def __init__(self, code: str, description: str) -> None:
-        super().__init__(code, description, HTTPStatus.BAD_REQUEST)
-
-
-class JusticeCountsDataError(FlaskException):
-    """Exception for when the user submits invalid data for a metric."""
-
-    def __init__(self, code: str, description: str) -> None:
-        super().__init__(code, description, HTTPStatus.NOT_ACCEPTABLE)
-
-
 class JusticeCountsServerError(FlaskException):
-    """Exception for when an uncaught error occurs in an API request."""
+    """Exception for Justice Counts server errors."""
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.INTERNAL_SERVER_ERROR)

@@ -34,7 +34,7 @@ from recidiviz.justice_counts.control_panel.error_handlers import (
 )
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
-from recidiviz.justice_counts.exceptions import JusticeCountsBadRequestError
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
@@ -166,7 +166,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         # Since some metrics are present in multiple systems, we can't
         # figure out which data to render
         if metric and not system:
-            raise JusticeCountsBadRequestError(
+            raise JusticeCountsServerError(
                 code="justice_counts_bad_request",
                 description="If the `metric` parameter is specified and the agency is "
                 "multi-system, then you must also provide the `system` parameter.",

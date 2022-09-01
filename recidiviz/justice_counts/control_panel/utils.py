@@ -25,10 +25,7 @@ from flask_sqlalchemy_session import current_session
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.user_context import UserContext
-from recidiviz.justice_counts.exceptions import (
-    JusticeCountsAuthorizationError,
-    JusticeCountsPermissionError,
-)
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
@@ -43,7 +40,7 @@ AGENCY_IDS_KEY = "agency_ids"
 
 
 def on_successful_authorization(jwt_claims: TokenClaims) -> None:
-    auth_error = JusticeCountsAuthorizationError(
+    auth_error = JusticeCountsServerError(
         code="no_justice_counts_access",
         description="You are not authorized to access this application",
     )
@@ -82,7 +79,7 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
     @wraps(route)
     def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Callable:
         if "user_context" not in g or g.user_context.user_account is None:
-            raise JusticeCountsPermissionError(
+            raise JusticeCountsServerError(
                 code="justice_counts_agency_permission",
                 description="No UserContext found on session.",
             )
@@ -115,7 +112,7 @@ def raise_if_user_is_unauthorized(route: Callable) -> Callable:
         # to the `g.user_context` object on successful authorization
         agency_ids = get_agency_ids_from_session()
         if agency_id is not None and int(agency_id) not in agency_ids:
-            raise JusticeCountsPermissionError(
+            raise JusticeCountsServerError(
                 code="justice_counts_agency_permission",
                 description=(
                     f"User {user_id} does not have permission to access "

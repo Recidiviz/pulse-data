@@ -23,7 +23,7 @@ import attr
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.control_panel.utils import on_successful_authorization
-from recidiviz.justice_counts.exceptions import JusticeCountsAuthorizationError
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -78,7 +78,7 @@ class Config:
 
         auth0_configuration = get_secret("justice_counts_auth0")
         if not auth0_configuration:
-            raise JusticeCountsAuthorizationError(
+            raise JusticeCountsServerError(
                 code="no_justice_counts_access",
                 description="You are not authorized to access this application.",
             )

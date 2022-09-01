@@ -297,7 +297,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "frequency": ReportingFrequency.MONTHLY.value,
                 },
             )
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 500)
 
     def test_create_report(self) -> None:
         user = self.test_schema_objects.test_user_A
@@ -343,7 +343,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
-        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(response.status_code, 500)
 
         # user makes a request with no agencies, but belongs to an agency
         with self.app.test_request_context():
@@ -617,7 +617,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ],
                 },
             )
-            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.status_code, 500)
 
     def test_user_permissions(self) -> None:
         user_account = self.test_schema_objects.test_user_A
@@ -704,7 +704,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ).open("rb"),
                 },
             )
-            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.status_code, 500)
 
     def test_upload_spreadsheet(self) -> None:
         self.session.add_all(
@@ -1006,7 +1006,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
 
             response = self.client.get(f"/api/spreadsheets/{spreadsheet.id}")
-            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.status_code, 500)
 
     def test_download_spreadsheet(self) -> None:
         agency = self.test_schema_objects.test_agency_A
