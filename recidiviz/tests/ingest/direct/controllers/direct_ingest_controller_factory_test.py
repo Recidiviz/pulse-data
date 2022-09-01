@@ -20,6 +20,7 @@ import unittest
 from mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -29,7 +30,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
+    get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
@@ -69,7 +70,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self.fs_patcher.stop()
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
-        for region_code in get_existing_region_dir_names():
+        for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
                 controller = DirectIngestControllerFactory.build(
                     region_code=region_code,
@@ -84,7 +85,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
     def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
         self,
     ) -> None:
-        for region_code in get_existing_region_dir_names():
+        for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
                 controller = DirectIngestControllerFactory.build(
                     region_code=region_code,
@@ -102,8 +103,8 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         Mock(return_value="production"),
     )
     @patch(
-        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_supported_direct_ingest_region_codes",
-        Mock(return_value=["us_xx"]),
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
+        Mock(return_value=[StateCode.US_XX]),
     )
     def test_build_throws_in_prod_region_only_launched_in_staging(
         self,
@@ -132,8 +133,8 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         Mock(return_value="staging"),
     )
     @patch(
-        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_supported_direct_ingest_region_codes",
-        Mock(return_value=["us_xx"]),
+        f"{CONTROLLER_FACTORY_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env",
+        Mock(return_value=[StateCode.US_XX]),
     )
     def test_build_succeeds_in_staging_region_launched_in_prod(self) -> None:
         mock_region = fake_region(

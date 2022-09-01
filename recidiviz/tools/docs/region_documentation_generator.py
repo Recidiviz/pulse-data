@@ -38,8 +38,8 @@ from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     STATE_RAW_DATA_FILE_HEADER_PATH,
     DirectIngestDocumentationGenerator,
 )
-from recidiviz.ingest.direct.direct_ingest_regions import (
-    get_supported_direct_ingest_region_codes,
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_region_codes,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH, persist_file_contents
@@ -189,7 +189,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if not args.force_all:
             touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
         else:
-            touched_raw_data_regions = get_supported_direct_ingest_region_codes()
+            touched_raw_data_regions = get_existing_region_codes()
         for region_code in touched_raw_data_regions:
             if not StateCode.is_state_code(region_code):
                 logging.info(

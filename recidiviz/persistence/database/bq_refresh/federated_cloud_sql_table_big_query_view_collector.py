@@ -20,7 +20,7 @@ from typing import List
 
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -46,12 +46,13 @@ class StateSegmentedSchemaFederatedBigQueryViewCollector(
         self.config = config
         self.state_codes_to_collect = [
             state_code
-            for state_code in get_existing_direct_ingest_states()
+            for state_code in get_direct_ingest_states_existing_in_env()
             if state_code.value not in self.config.region_codes_to_exclude
         ]
 
         direct_ingest_region_codes = {
-            state_code.value for state_code in get_existing_direct_ingest_states()
+            state_code.value
+            for state_code in get_direct_ingest_states_existing_in_env()
         }
         invalid_region_codes = (
             set(self.config.region_codes_to_exclude) - direct_ingest_region_codes

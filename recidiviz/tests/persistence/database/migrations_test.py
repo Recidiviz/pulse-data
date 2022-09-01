@@ -29,7 +29,7 @@ from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_region_dir_names,
+    get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -260,7 +260,7 @@ class TestOperationsMigrations(MigrationsTestBase):
             for row in rows:
                 instance_to_state_codes[DirectIngestInstance(row[1])].add(row[0])
 
-            required_states = {name.upper() for name in get_existing_region_dir_names()}
+            required_states = {name.upper() for name in get_existing_region_codes()}
 
             for instance in DirectIngestInstance:
                 self.assertEqual(required_states, instance_to_state_codes[instance])
@@ -317,7 +317,7 @@ class TestOperationsMigrations(MigrationsTestBase):
             for row in rows:
                 instance_to_state_codes[DirectIngestInstance(row[1])].add(row[0])
 
-            required_states = {name.upper() for name in get_existing_region_dir_names()}
+            required_states = {name.upper() for name in get_existing_region_codes()}
 
             for instance in DirectIngestInstance:
                 self.assertEqual(required_states, instance_to_state_codes[instance])

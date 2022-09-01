@@ -21,7 +21,7 @@ from unittest import mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
+    get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
@@ -199,7 +199,7 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
         collector = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
-        direct_ingest_states = get_existing_direct_ingest_states()
+        direct_ingest_states = get_direct_ingest_states_existing_in_env()
         self.assertEqual(
             len(direct_ingest_states) * len(OperationsBase.metadata.sorted_tables),
             len(builders),
@@ -262,7 +262,7 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
         collector = StateSegmentedSchemaFederatedBigQueryViewCollector(config)
         builders = collector.collect_view_builders()
-        direct_ingest_states = get_existing_direct_ingest_states()
+        direct_ingest_states = get_direct_ingest_states_existing_in_env()
         num_schema_tables = len(OperationsBase.metadata.sorted_tables)
         num_paused_regions = 1
         self.assertEqual(
