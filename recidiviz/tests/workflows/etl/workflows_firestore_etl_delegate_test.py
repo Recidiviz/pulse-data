@@ -16,7 +16,7 @@
 #  =============================================================================
 """Tests for the Workflows Firestore ETL Delegate."""
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -31,8 +31,11 @@ from recidiviz.workflows.etl.workflows_etl_delegate import (
 
 
 class TestETLDelegate(WorkflowsFirestoreETLDelegate):
-    EXPORT_BY_STATE = {"US_XX": ["test_export.json"]}
+
     COLLECTION_BY_FILENAME = {"test_export.json": "testOpportunity"}
+
+    def get_supported_files(self, state_code: str) -> List[str]:
+        return ["test_export.json"]
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         return row, {"data": row}

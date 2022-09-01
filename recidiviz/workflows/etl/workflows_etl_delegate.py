@@ -36,10 +36,9 @@ MAX_FIRESTORE_RECORDS_PER_BATCH = 499
 class WorkflowsETLDelegate(abc.ABC):
     """Abstract class containing the ETL logic for transforming and exporting Workflows records."""
 
-    @property
     @abc.abstractmethod
-    def EXPORT_BY_STATE(self) -> Dict[str, List[str]]:
-        """Mapping of state code to a list of opportunity types."""
+    def get_supported_files(self, state_code: str) -> List[str]:
+        """Provides list of source files supported for the given state."""
 
     @abc.abstractmethod
     def run_etl(self, state_code: str, filename: str) -> None:
@@ -47,7 +46,7 @@ class WorkflowsETLDelegate(abc.ABC):
 
     def supports_file(self, state_code: str, filename: str) -> bool:
         """Checks if the given filename is supported by this delegate."""
-        return filename in self.EXPORT_BY_STATE.get(state_code, [])
+        return filename in self.get_supported_files(state_code)
 
     def get_filepath(self, state_code: str, filename: str) -> GcsfsFilePath:
         return GcsfsFilePath.from_absolute_path(
@@ -171,14 +170,9 @@ class WorkflowsSingleStateETLDelegate(WorkflowsFirestoreETLDelegate):
     def _COLLECTION_NAME_BASE(self) -> str:
         """Name of the Firestore collection to use."""
 
-    @property
-    def EXPORT_BY_STATE(self) -> Dict[str, List[str]]:
-        return {self.STATE_CODE: [self.EXPORT_FILENAME]}
+    def get_supported_files(self, state_code: str) -> List[str]:
+        return [self.EXPORT_FILENAME] if state_code == self.STATE_CODE else []
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
         return {self.EXPORT_FILENAME: self._COLLECTION_NAME_BASE}
-
-    def supports_file(self, state_code: str, filename: str) -> bool:
-        """Checks if the given filename is supported by this delegate."""
-        return self.STATE_CODE == state_code and self.EXPORT_FILENAME == filename

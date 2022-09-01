@@ -33,21 +33,18 @@ from recidiviz.workflows.etl.archive import archive_etl_file
 from recidiviz.workflows.etl.regions.us_nd.client_record_etl_delegate import (
     ClientRecordETLDelegate as UsNdClientRecordETLDelegate,
 )
-from recidiviz.workflows.etl.regions.us_nd.staff_record_etl_delegate import (
-    StaffRecordETLDelegate as UsNdStaffRecordETLDelegate,
-)
 from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
     ClientRecordETLDelegate as UsTnClientRecordETLDelegate,
 )
 from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
     CompliantReportingReferralRecordETLDelegate,
 )
-from recidiviz.workflows.etl.regions.us_tn.staff_record_etl_delegate import (
-    StaffRecordETLDelegate as UsTnStaffRecordETLDelegate,
-)
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
+    WorkflowsStaffETLDelegate,
 )
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
@@ -55,12 +52,11 @@ WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
 def get_workflows_delegates() -> List[WorkflowsETLDelegate]:
     return [
-        UsTnStaffRecordETLDelegate(),
         UsTnClientRecordETLDelegate(),
         UsNdClientRecordETLDelegate(),
-        UsNdStaffRecordETLDelegate(),
         CompliantReportingReferralRecordETLDelegate(),
         WorkflowsOpportunityETLDelegate(),
+        WorkflowsStaffETLDelegate(),
     ]
 
 
