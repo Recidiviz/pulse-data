@@ -79,6 +79,10 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="file_review"),
         ScoringFuzzyMatcher(search_term="activation"),
     ]
+    NEW_CRIME = [
+        ScoringFuzzyMatcher(search_term="psi"),
+        RegexFuzzyMatcher(search_regex=".*file.*review.*"),
+    ]
     ANY_TREATMENT = [
         ScoringFuzzyMatcher(search_term="tx"),
         ScoringFuzzyMatcher(search_term="treatment"),
@@ -94,7 +98,11 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="cs pl"),
     ]
     NCIC_ILETS_NCO_CHECK = [
-        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*new cri.*"))
+        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*new cri.*|.*icourts.*"))
+    ]
+    NCO_CHECK = [
+        RegexFuzzyMatcher(search_regex=(r".*nco(\s|/|-).*|.*(-|/|\s)nco.*|^NCO")),
+        RegexFuzzyMatcher(search_regex=(r".*no contact.*")),
     ]
     COMMUNITY_SERVICE = [
         ScoringFuzzyMatcher(search_term="community service"),
