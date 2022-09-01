@@ -48,9 +48,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
     """
 
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
-        self.region_code = region_code.upper()
-        self.ingest_instance = ingest_instance
-
+        super().__init__(region_code=region_code, ingest_instance=ingest_instance)
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
     @staticmethod
@@ -192,8 +190,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             )
             if not current_rerun_status_rows:
                 raise ValueError(
-                    f"Expected rerun to be in progress for instance "
-                    f"[{self.ingest_instance}]"
+                    f"[{self.region_code}][{self.ingest_instance}] Expected rerun to be in progress."
                 )
 
             current_rerun_start_status = one(
