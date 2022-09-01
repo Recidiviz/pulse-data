@@ -42,7 +42,9 @@ US_TN_DRUG_SCREENS_DRUP_ZTPD_MAX_LAG = "21"
 
 US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_NAME = "us_tn_drug_screens_preprocessed"
 
-US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of drug screens in Tennessee over the last 20 years, unique on person, date, and sample type"""
+US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION = """
+Preprocessed view of drug screens in Tennessee over the last 20 years, unique on person,
+date, and sample type"""
 
 US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
     /* {description} */
@@ -88,10 +90,12 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
       
         --The following two qualify statements dedup so that the ZTPD to DRUP matching is 1 to 1. 
         
-        --In cases where a person has more than one DRUP contact that precede a ZTPD contact by less than {us_tn_drug_screens_drup_ztpd_max_lag} days, 
+        --In cases where a person has more than one DRUP contact that precede a ZTPD 
+        --contact by less than {us_tn_drug_screens_drup_ztpd_max_lag} days, 
         --we only want the latest DRUP contact to be associated with the ZTPD. 
         
-        --In cases where a person has more than one ZTPD contact that follow a DRUP contact by less than {us_tn_drug_screens_drup_ztpd_max_lag} days, 
+        --In cases where a person has more than one ZTPD contact that follow a DRUP 
+        --contact by less than {us_tn_drug_screens_drup_ztpd_max_lag} days, 
         --we only want the earliest ZTPD to be associated with the DRUP. 
         
         QUALIFY 
@@ -114,7 +118,8 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
     ,
     dru_with_ztpd_from_original_table AS
     (
-        SELECT d.person_id, d.state_code, d.contact_note_date, d.contact_note_type, m.ztpd_date IS NOT NULL triggered_ztpd 
+        SELECT d.person_id, d.state_code, d.contact_note_date, d.contact_note_type, 
+            m.ztpd_date IS NOT NULL AS triggered_ztpd 
         FROM tn_contacts d
         LEFT JOIN drup_ztpd_matches m
         ON 
@@ -138,13 +143,14 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
         # Assumes that if no result is reported for a test, the outcome was negative.
         COALESCE(LOGICAL_OR(contact_note_type = "DRUP") OVER w, FALSE) AS is_positive_result,
         
-        # Get the primary raw text result value, prioritizing tests with non-null results and then using alphabetical order of raw text
+        # Get the primary raw text result value, prioritizing tests with non-null results 
+        # and then using alphabetical order of raw text
         FIRST_VALUE(contact_note_type IGNORE NULLS) OVER w AS result_raw_text_primary,
         
         # Store an array of all raw text test results for a single drug screen date
         ARRAY_AGG(COALESCE(contact_note_type, 'UNKNOWN')) OVER w AS result_raw_text,
         IF(triggered_ztpd, "METH", CAST(NULL AS STRING)) AS substance_detected,
-        NULL AS med_invalidate_flg,
+        CAST(NULL AS STRING) AS med_invalidate_flg,
         is_inferred,
     FROM dru_with_ztpd_full_table
     WHERE contact_note_date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 20 YEAR)
