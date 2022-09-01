@@ -2,8 +2,8 @@ name: Docker CI
 
 on:
   schedule:
-    - cron: "0 15 3 * *"
-    # every Wednesday at 15:00 UTC (8:00 AM Pacific)
+    - cron: "15 2 * * *"
+    # everyday at 2:15
 
 jobs:
   build:
