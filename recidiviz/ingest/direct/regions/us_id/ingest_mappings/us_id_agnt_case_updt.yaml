@@ -18,6 +18,8 @@ variables:
         $function: us_id_custom_parsers.records_program_discharge
         $args:
           agnt_note_title: agnt_note_title
+  - is_in_secondary:
+      $env: is_secondary_instance
 output:
   StatePerson:
     external_ids:
@@ -61,6 +63,7 @@ output:
                 $function: us_id_custom_parsers.records_violation
                 $args:
                   agnt_note_title: agnt_note_title
+                  is_in_secondary: $variable(is_in_secondary)
             $then:
               StateSupervisionViolation:
                 external_id:
@@ -92,6 +95,7 @@ output:
                                   $function: us_id_custom_parsers.records_violation_response_decision
                                   $args:
                                     agnt_note_title: agnt_note_title
+                                    is_in_secondary: $variable(is_in_secondary)
                               $then:
                                 StateSupervisionViolationResponseDecisionEntry:
                                   decision:
@@ -105,6 +109,7 @@ output:
                             $function: us_id_custom_parsers.records_absconsion
                             $args:
                               agnt_note_title: agnt_note_title
+                              is_in_secondary: $variable(is_in_secondary)
                         $then:
                           StateSupervisionViolationTypeEntry:
                             violation_type: $literal_enum(StateSupervisionViolationType.ABSCONDED)
