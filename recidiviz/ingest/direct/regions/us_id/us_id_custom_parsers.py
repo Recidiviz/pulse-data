@@ -66,9 +66,21 @@ def records_program_discharge(agnt_note_title: str) -> bool:
 
 
 @functools.lru_cache(maxsize=128)
-def records_violation(agnt_note_title: str) -> bool:
+def records_violation(agnt_note_title: str, is_in_secondary: bool) -> bool:
     """Returns whether the agnt_note_title indicates a violation should be ingested."""
     matched_entities = _match_note_title(agnt_note_title)
+    # TODO(#14891) Replace the overall logic once reruns complete
+    if is_in_secondary:
+        return (
+            (
+                UsIdTextEntity.VIOLATION in matched_entities
+                or UsIdTextEntity.AGENTS_WARNING in matched_entities
+                or UsIdTextEntity.REVOCATION in matched_entities
+                or UsIdTextEntity.ABSCONSION_V2 in matched_entities
+            )
+            and UsIdTextEntity.REVOCATION_INCLUDE not in matched_entities
+            and UsIdTextEntity.WARRANT_QUASHED not in matched_entities
+        )
     return (
         UsIdTextEntity.VIOLATION in matched_entities
         or UsIdTextEntity.AGENTS_WARNING in matched_entities
@@ -78,10 +90,22 @@ def records_violation(agnt_note_title: str) -> bool:
 
 
 @functools.lru_cache(maxsize=128)
-def records_violation_response_decision(agnt_note_title: str) -> bool:
+def records_violation_response_decision(
+    agnt_note_title: str, is_in_secondary: bool
+) -> bool:
     """Returns whether the agnt_note_title indicates a violation response decision
     should be ingested."""
     matched_entities = _match_note_title(agnt_note_title)
+    # TODO(#14891) Replace the overall logic once reruns complete
+    if is_in_secondary:
+        return (
+            (
+                UsIdTextEntity.AGENTS_WARNING in matched_entities
+                or UsIdTextEntity.REVOCATION in matched_entities
+            )
+            and UsIdTextEntity.REVOCATION_INCLUDE not in matched_entities
+            and UsIdTextEntity.WARRANT_QUASHED not in matched_entities
+        )
     return (
         UsIdTextEntity.AGENTS_WARNING in matched_entities
         or UsIdTextEntity.REVOCATION in matched_entities
@@ -89,9 +113,12 @@ def records_violation_response_decision(agnt_note_title: str) -> bool:
 
 
 @functools.lru_cache(maxsize=128)
-def records_absconsion(agnt_note_title: str) -> bool:
+def records_absconsion(agnt_note_title: str, is_in_secondary: bool) -> bool:
     """Returns whether the agnt_note_title indicates an absconsion."""
     matched_entities = _match_note_title(agnt_note_title)
+    # TODO(#14891) Replace overall logic once reruns complete
+    if is_in_secondary:
+        return UsIdTextEntity.ABSCONSION_V2 in matched_entities
     return UsIdTextEntity.ABSCONSION in matched_entities
 
 
