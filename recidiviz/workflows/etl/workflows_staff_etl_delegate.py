@@ -14,25 +14,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Delegate class to ETL staff records for workflows into Firestore."""
+"""Delegate class to ETL staff records for Workflows into Firestore."""
 import json
-import logging
-from typing import Tuple
+from typing import Dict, List, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.workflows_etl_delegate import (
-    WorkflowsSingleStateETLDelegate,
-)
+from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 
-class StaffRecordETLDelegate(WorkflowsSingleStateETLDelegate):
+class WorkflowsStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     """Delegate class to ETL the staff_record.json file into Firestore."""
 
-    STATE_CODE = "US_TN"
-    EXPORT_FILENAME = "staff_record.json"
-    _COLLECTION_NAME_BASE = "staff"
+    @property
+    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
+        return {"staff_record.json": "staff"}
+
+    def get_supported_files(self, state_code: str) -> List[str]:
+        return ["staff_record.json"]
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)
@@ -47,9 +45,3 @@ class StaffRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         }
 
         return data["id"], new_document
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        StaffRecordETLDelegate().run_etl("US_TN", "staff_record.json")

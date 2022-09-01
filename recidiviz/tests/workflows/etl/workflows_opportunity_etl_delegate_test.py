@@ -85,6 +85,21 @@ EXPECTED_DOCUMENT = {
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
 
+    def test_supports_file(self) -> None:
+        """Test that expected state codes and files are supported"""
+        delegate = WorkflowsOpportunityETLDelegate()
+        self.assertTrue(
+            delegate.supports_file(
+                "US_ND", "us_nd_complete_discharge_early_from_supervision_record.json"
+            )
+        )
+
+        self.assertFalse(
+            delegate.supports_file(
+                "US_TN", "us_nd_complete_discharge_early_from_supervision_record.json"
+            )
+        )
+
     def test_transform_row(self) -> None:
         """Test that transform_row returns a tuple with id and document."""
         delegate = WorkflowsOpportunityETLDelegate()

@@ -17,7 +17,7 @@
 """Delegate class to ETL opportunity referral records for workflows into Firestore."""
 import json
 import re
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -33,6 +33,9 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     COLLECTION_BY_FILENAME = {
         "us_nd_complete_discharge_early_from_supervision_record.json": "earlyTerminationReferrals"
     }
+
+    def get_supported_files(self, state_code: str) -> List[str]:
+        return self.EXPORT_BY_STATE.get(state_code, [])
 
     @property
     def timestamp_key(self) -> str:
