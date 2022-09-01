@@ -183,3 +183,125 @@ resource "google_bigquery_table" "workflows_client_record_archive" {
 EOF
 
 }
+
+# This legacy table should be used to add any additional compliant reporting legacy fields from `client_record`
+# that we might need for impact tracking. Historically these fields were on client_record, and they have been moved
+# to compliant_reporting_referral_record.
+resource "google_bigquery_table" "workflows_legacy_client_record_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "workflows_legacy_client_record_archive"
+  description         = "This table contains daily archives of the client_record export for Workflows, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/client_record.json"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "person_external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "compliant_reporting_eligible",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "remaining_criteria_needed",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_time_on_supervision_level",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_drug_screen",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_fines_fees",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_recent_rejection",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_serious_sanctions",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
+}
+
+resource "google_bigquery_table" "workflows_compliant_reporting_referral_record_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "workflows_compliant_reporting_referral_record_archive"
+  description         = "This table contains daily archives of the compliant_reporting_referral_record export for Workflows, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/compliant_reporting_referral_record.json"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "tdoc_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "remaining_criteria_needed",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "compliant_reporting_eligible",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_time_on_supervision_level",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_drug_screen",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_fines_fees",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_recent_rejection",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "almost_eligible_serious_sanctions",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+}

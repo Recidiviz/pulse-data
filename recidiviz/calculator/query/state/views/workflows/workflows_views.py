@@ -36,12 +36,16 @@ from recidiviz.calculator.query.state.views.workflows.clients_referral_implement
 from recidiviz.calculator.query.state.views.workflows.clients_surfaced import (
     CLIENTS_SURFACED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.compliant_reporting_referral_record_archive import (
+    COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
 
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
+    COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,

@@ -270,6 +270,9 @@ from recidiviz.validation.views.state.workflows.client_record_archive_missing_da
 from recidiviz.validation.views.state.workflows.client_record_duplicate_person_external_ids import (
     CLIENT_RECORD_DUPLICATE_PERSON_EXTERNAL_IDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.compliant_reporting_referral_record_archive_missing_days import (
+    COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
+)
 
 
 def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
@@ -445,6 +448,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CLIENT_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(

@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
+from recidiviz.calculator.query.state.views.workflows.populate_missing_exports_template import (
+    populate_missing_export_dates,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -51,39 +54,9 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             path_parts[OFFSET(2)] AS state_code,
         FROM split_path
     )
-    , start_dates_by_state AS (
-        SELECT
-            state_code,
-            MIN(export_date) as records_start,
-        FROM records_by_state_by_date
-        GROUP BY 1
-    )
-    , all_dates_since_start AS (
-        SELECT
-            state_code,
-            date_of_supervision,
-        FROM start_dates_by_state,
-        UNNEST(
-            GENERATE_DATE_ARRAY(
-                records_start,
-                CURRENT_DATE("US/Eastern")
-            )
-        ) date_of_supervision
-    )
-    , date_to_archive_map AS (
-        SELECT
-            all_dates_since_start.state_code,
-            date_of_supervision,
-            ARRAY_AGG(export_date ORDER BY export_date DESC LIMIT 1)[OFFSET(0)] AS export_date,
-        FROM all_dates_since_start
-        LEFT JOIN records_by_state_by_date
-            ON all_dates_since_start.state_code = records_by_state_by_date.state_code
-            AND export_date <= date_of_supervision
-        GROUP BY 1, 2
-    )
-
+    {populate_missing_export_dates}
     SELECT
-        date_of_supervision,
+        generated_export_date AS date_of_supervision,
         person_id,
         records_by_state_by_date.*,
     FROM date_to_archive_map
@@ -101,6 +74,7 @@ CLIENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
+    populate_missing_export_dates=populate_missing_export_dates(),
 )
 
 if __name__ == "__main__":
