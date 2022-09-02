@@ -687,3 +687,38 @@ def delete_user_permissions(email: str) -> tuple[str, int]:
             f"An entry for {email} in PermissionsOverride does not exist.",
             HTTPStatus.BAD_REQUEST,
         )
+
+
+@auth_endpoint_blueprint.route("/users/<email>", methods=["DELETE"])
+@requires_gae_auth
+def delete_user(email: str) -> tuple[str, int]:
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            existing_override = session.query(UserOverride).filter(
+                UserOverride.email_address == email
+            )
+            if existing_override.first():
+                existing_override.update({"blocked": True}, synchronize_session=False)
+            else:
+                roster_user = (
+                    session.query(Roster).filter(Roster.email_address == email).first()
+                )
+                if roster_user is None:
+                    raise ValueError
+                user_override = UserOverride(
+                    state_code=roster_user.state_code,
+                    email_address=email,
+                    blocked=True,
+                )
+                session.add(user_override)
+                session.commit()
+            return (
+                f"{email} has been blocked.",
+                HTTPStatus.OK,
+            )
+    except ValueError:
+        return (
+            f"An entry for {email} does not exist.",
+            HTTPStatus.BAD_REQUEST,
+        )

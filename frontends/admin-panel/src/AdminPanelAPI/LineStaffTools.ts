@@ -179,3 +179,7 @@ export const deleteCustomUserPermissions = async (
 ): Promise<Response> => {
   return deleteResource(`/users/${email}/permissions`);
 };
+
+export const blockUser = async (email: string): Promise<Response> => {
+  return deleteResource(`/users/${email}`);
+};
