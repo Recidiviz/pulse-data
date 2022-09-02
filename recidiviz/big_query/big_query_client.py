@@ -28,7 +28,9 @@ from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
 import pytz
+from google.api_core.client_options import ClientOptions
 from google.api_core.future.polling import PollingFuture
+from google.auth.credentials import AnonymousCredentials
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
     CheckValidCredsRequest,
@@ -43,7 +45,7 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
-from recidiviz.utils import metadata
+from recidiviz.utils import environment, metadata
 from recidiviz.utils.string import StrictStringFormatter
 
 _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaultdict(
@@ -56,9 +58,19 @@ def client(project_id: str, region: str) -> bigquery.Client:
         project_id not in _clients_by_project_id_by_region
         or region not in _clients_by_project_id_by_region[project_id]
     ):
-        _clients_by_project_id_by_region[project_id][region] = bigquery.Client(
-            project=project_id, location=region
-        )
+        if environment.in_test():
+            # If we are running from inside a test, the BQ Client should talk to the
+            # local BQ emulator.
+            client_options = ClientOptions(api_endpoint="http://0.0.0.0:9050")
+            new_client = bigquery.Client(
+                project_id,
+                client_options=client_options,
+                credentials=AnonymousCredentials(),
+            )
+        else:
+            new_client = bigquery.Client(project=project_id, location=region)
+
+        _clients_by_project_id_by_region[project_id][region] = new_client
     return _clients_by_project_id_by_region[project_id][region]
 
 

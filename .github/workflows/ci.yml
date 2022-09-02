@@ -189,7 +189,7 @@ jobs:
         run: |
           pipenv run pytest recidiviz/tests \
             -n auto \
-            -m 'not uses_db and not isolated' \
+            -m 'not uses_db and not isolated and not uses_bq_emulator' \
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
@@ -257,3 +257,32 @@ jobs:
             --suite-count ${{matrix.suite-count}} \
             --suite=${{ matrix.suite }} \
             --durations=25
+
+  big-query-emulator-tests:
+    name: BigQuery Emulator Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Python Setup
+        uses: ./.github/actions/python-setup
+      - name: Pull emulator Docker image
+        run: pipenv run pull-bq-emulator
+      - name: Start emulator
+        run: |
+          docker run -d -p 9050:9050 \
+            --name=recidiviz-bq-emulator \
+            ghcr.io/goccy/bigquery-emulator:latest \
+            /bin/bigquery-emulator \
+            --project=recidiviz-bq-emulator-project \
+            --log-level=info
+      - name: Run unittests
+        run: |
+          pipenv run pytest recidiviz/tests \
+            -m 'uses_bq_emulator' \
+            --durations=25
+      - name: Show logs
+        if: ${{ failure() }}
+        run: docker logs recidiviz-bq-emulator
+      - name: Stop the container
+        if: ${{ always() }}
+        run: docker stop recidiviz-bq-emulator && docker rm recidiviz-bq-emulator
