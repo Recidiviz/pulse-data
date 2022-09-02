@@ -189,6 +189,7 @@ ratelimit-stubs = "*"
 # version of Flask-SQLAlchemy-Session stops relying on __ident_func__ from Locals
 werkzeug = "<2.1.0"
 pysftp = "*"
+nbconvert = ">=6.5.1"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
