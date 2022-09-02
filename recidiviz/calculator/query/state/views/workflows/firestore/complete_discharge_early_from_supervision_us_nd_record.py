@@ -28,7 +28,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
-from recidiviz.task_eligibility.task_eligiblity_spans import TASK_ELIGIBILITY_DATASET_ID
+from recidiviz.task_eligibility.task_eligiblity_spans import (
+    task_eligibility_spans_state_specific_dataset,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -178,14 +180,14 @@ individual_sentence AS (
     te.reasons, 
    COUNT(*) OVER(PARTITION BY person_external_id) AS number_of_sentences
   FROM dataflow_metrics dm
-  INNER JOIN `{project_id}.{task_eligibility_dataset}.all_tasks_materialized` te
+  INNER JOIN `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized` te
     ON te.state_code = dm.state_code
     AND te.person_id = dm.person_id
     AND te.start_date <= CURRENT_DATE('US/Pacific')
     AND te.end_date IS NULL
     --only individuals that are currently eligible for early discharge
     AND te.is_eligible
-    AND te.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
+   --AND te.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
  INNER JOIN individual_sentence inds
     ON te.state_code = inds.state_code
     AND te.person_id = inds.person_id
@@ -230,7 +232,7 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER = SimpleBigQ
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
+    task_eligibility_dataset=task_eligibility_spans_state_specific_dataset("us_nd"),
     should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
 )
