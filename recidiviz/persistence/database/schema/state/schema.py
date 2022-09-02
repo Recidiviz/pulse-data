@@ -1289,6 +1289,21 @@ class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
         "charges. A controlling charge is the one which is responsible for the "
         "longest possible sentence duration in the set.",
     )
+    judge_full_name = Column(
+        String(255),
+        comment="The full name of the judge presiding over the court case associated with"
+        " this charge.",
+    )
+    judge_external_id = Column(
+        String(255),
+        comment="The unique identifier for the presiding judge, unique within the scope "
+        "of the source data system.",
+    )
+    judicial_district_code = Column(
+        String(255),
+        comment="The code of the judicial district under whose jurisdiction the case was"
+        " tried.",
+    )
 
     @declared_attr
     def court_case_id(self) -> Column:

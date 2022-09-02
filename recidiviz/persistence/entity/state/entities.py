@@ -483,6 +483,16 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    judge_full_name: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    judge_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    judicial_district_code: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     charge_id: Optional[int] = attr.ib(
