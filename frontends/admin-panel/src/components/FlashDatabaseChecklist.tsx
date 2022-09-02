@@ -31,7 +31,6 @@ import {
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
-  getCurrentIngestInstanceStatus,
   importDatabaseFromGCS,
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
@@ -41,6 +40,7 @@ import {
   transferIngestViewMetadataToNewInstance,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
+import { fetchCurrentIngestInstanceStatus } from "./Utilities/IngestInstanceUtilities";
 import {
   DirectIngestInstance,
   QueueState,
@@ -80,21 +80,6 @@ const CodeBlock = ({ children, enabled }: CodeBlockProps): JSX.Element => (
   </code>
 );
 
-async function fetchCurrentIngestInstanceStatus(
-  stateInfo: StateCodeInfo,
-  instance: DirectIngestInstance
-): Promise<string | null> {
-  if (stateInfo) {
-    const response = await getCurrentIngestInstanceStatus(
-      stateInfo.code,
-      instance
-    );
-    const result: string = await response.text();
-    return result.length === 0 ? "NO STATUS" : result;
-  }
-  return null;
-}
-
 const FlashDatabaseChecklist = (): JSX.Element => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
@@ -122,11 +107,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     if (stateInfo) {
       const [primaryStatus, secondaryStatus] = await Promise.all([
         fetchCurrentIngestInstanceStatus(
-          stateInfo,
+          stateInfo.code,
           DirectIngestInstance.PRIMARY
         ),
         fetchCurrentIngestInstanceStatus(
-          stateInfo,
+          stateInfo.code,
           DirectIngestInstance.SECONDARY
         ),
       ]);
