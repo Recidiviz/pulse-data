@@ -25,6 +25,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    HUMAN_INTERVENTION_STATUSES,
     INVALID_STATUSES,
     VALID_CURRENT_STATUS_TRANSITIONS,
     VALID_INITIAL_STATUSES,
@@ -174,6 +175,15 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                     set(self.all_status_enum_values)
                     - set(valid_status_transitions[new_status])
                 )
+
+                if (
+                    new_status in invalid_previous_statuses
+                    and new_status not in HUMAN_INTERVENTION_STATUSES[instance]
+                ):
+                    # Remove from invalid previous statuses any status that is expected to be able to transition to
+                    # itself
+                    invalid_previous_statuses.remove(new_status)
+
                 for invalid_previous_status in invalid_previous_statuses:
                     us_yy_manager.add_instance_status(invalid_previous_status)
                     with self.assertRaisesRegex(
@@ -194,8 +204,23 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                     f"The status={invalid_status.value} is an invalid status to transition to in "
                     f"instance={instance.value}",
                 ):
-
                     us_yy_manager.change_status_to(invalid_status)
+
+    def test_validate_statuses_transition_to_themselves(self) -> None:
+        for instance in DirectIngestInstance:
+            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+                StateCode.US_YY.value, instance
+            )
+
+            # Statuses that can transition to themselves
+            valid_statuses = list(
+                set(self.all_status_enum_values)
+                - set(INVALID_STATUSES[instance])
+                - set(HUMAN_INTERVENTION_STATUSES[instance])
+            )
+
+            for status in valid_statuses:
+                us_yy_manager.validate_transition(instance, status, status)
 
     def test_change_status_to_invalid_initial_statuses(self) -> None:
         """Ensure that all invalid initial statuses raise the correct error."""
