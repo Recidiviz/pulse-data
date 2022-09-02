@@ -88,7 +88,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       );
       setIngestRawFileProcessingStatus(await primaryResponse.json());
     } else {
-      // TODO(#12387): Update this also pull from endpoint if the current secondary rerun is using raw data in secondary.
+      // TODO(#12387): Update this to also pull from endpoint if the current secondary rerun is using raw data in secondary.
       setIngestRawFileProcessingStatus([]);
     }
     setIngestRawFileProcessingStatusLoading(false);

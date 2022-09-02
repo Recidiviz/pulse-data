@@ -18,6 +18,17 @@ export function booleanSort(a: boolean, b: boolean): number {
   return aNumber - bNumber;
 }
 
+export function optionalBooleanSort(
+  a: boolean | null | undefined,
+  b: boolean | null | undefined
+): number {
+  const aIsBoolean = typeof a === "boolean";
+  const bIsBoolean = typeof b === "boolean";
+  return aIsBoolean && bIsBoolean
+    ? booleanSort(a as boolean, b as boolean)
+    : booleanSort(aIsBoolean, bIsBoolean);
+}
+
 export function getUniqueValues<T>(values: T[]): T[] {
   return Array.from(new Set(values));
 }
