@@ -6,31 +6,69 @@ primary_key_cols:
   - offender_sentence_id
 columns:
   - name: offender_sentence_id
+    description: The OMNI-database generated ID for each sentence record
   - name: offender_charge_id
+    description: The OMNI-database generated ID for each charge record
   - name: legal_order_id
+    description: The OMNI-database generated ID for each legal order record
   - name: offender_id
     is_pii: True
+    description: The OMNI-database generated ID for the justice-involved individual.
   - name: offender_booking_id
     is_pii: True
+    description: The OMNI-database generated ID for a specific booking for a specific individual
   - name: sentence_record_no
   - name: monetary_only
   - name: sentence_type_id
+    description: Reference code for the type of sentence
+    known_values:
+      - value: "2164"
+        description: FIA (DSS)
+      - value: "2163"
+        description: Community Service Only
+      - value: "430"
+        description: Prison
+      - value: "439"
+        description: Fines/Costs/Restitution Only
+      - value: "692"
+        description: Jail Only
+      - value: "431"
+        description: Probation
+      - value: "2165"
+        description: Parole
   - name: sentence_subtype_id
   - name: sentence_calc_type_id
   - name: sentence_status_id
+    description: status of the sentence
+    known_values:
+      - value: "1661"
+        description: Closed
+      - value: "1662"
+        description: Active
   - name: sentencing_status_id
   - name: judge_id
     is_pii: True
   - name: counts
   - name: review_flag_id
   - name: effective_date
+    description: effective date of sentence
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sentenced_date
+    description: date of sentencing
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: corrected_date
   - name: probation_jail_months
   - name: probation_jail_days
   - name: min_length_years
+    description: minimum sentence length - years component
   - name: min_length_months
+    description: minimum sentence length - months component
   - name: min_length_days
+    description: minimum sentence length - days component
   - name: min_abs_flag
   - name: min_life_flag
   - name: min_credits_begin_date
@@ -39,8 +77,11 @@ columns:
   - name: ami_rgt_min_date
   - name: calendar_min_date
   - name: max_length_years
+    description: maximum sentence length - years component
   - name: max_length_months
+    description: maximum sentence length - months component
   - name: max_length_days
+    description: maximum sentence length - days component
   - name: max_abs_flag
   - name: max_life_flag
   - name: max_credits_begin_date
@@ -57,13 +98,68 @@ columns:
   - name: next_maximum_sentence_id
   - name: parole_to_min_max_id
   - name: expiration_date
+    description: expiration date of sentence
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_reason_code
+    description: reference code for closing reason
+    known_values:
+      - value: "7201"
+        description: Parole Term Extended
+      - value: "5285"
+        description: Reversal on Appeal
+      - value: "5279"
+        description: Probation Violation Technical Violation
+      - value: "11789"
+        description: HYTA Probation Revoked
+      - value: "5289"
+        description: Early Discharge
+      - value: "5284"
+        description: Resentenced on Appeal
+      - value: "5288"
+        description: Death
+      - value: "5282"
+        description: Parole Violation New Sentence
+      - value: "5286"
+        description: Discharged Without Improvement
+      - value: "5283"
+        description: Sentence Extended
+      - value: "5278"
+        description: Pardoned
+      - value: "7473"
+        description: Sentenced From Delay To Probation
+      - value: "5287"
+        description: Sentence Term Modified
+      - value: "5277"
+        description: Commuted
+      - value: "5276"
+        description: Other
+      - value: "5281"
+        description: Probation Violation New Sentence
+      - value: "11790"
+        description: 7411 Probation Revoked
+      - value: "5290"
+        description: Completed Satisfactorily
+      - value: "5467"
+        description: Closed Offender Charge
+      - value: "7297"
+        description: Vacated
+      - value: "12021"
+        description: Sentence Suspended
+      - value: "5280"
+        description: Parole Violation Technical Violation
   - name: closing_authority_id
     is_pii: True
   - name: closing_date
+    description: closing date of sentence
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: notes
   - name: last_update_user
   - name: last_update_date
+    is_datetime: True
   - name: last_update_node
   - name: lifetime_gps_flag
