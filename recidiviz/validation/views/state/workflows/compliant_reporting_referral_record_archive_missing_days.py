@@ -37,6 +37,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_QUERY_TEMPLATE = """
             state_code AS region_code,
             MIN(export_date) AS records_start,
         FROM `{project_id}.{workflows_dataset}.compliant_reporting_referral_record_archive_materialized`
+        GROUP BY 1
     )
     , all_expected_dates AS (
         SELECT
