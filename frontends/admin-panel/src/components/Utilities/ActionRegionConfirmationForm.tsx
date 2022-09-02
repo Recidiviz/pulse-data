@@ -19,6 +19,7 @@ import { Button, Form, Input, Modal } from "antd";
 import * as React from "react";
 import { useState } from "react";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
+import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
 // TODO(#13406): Remove flag once raw data can be processed in secondary.
 const disabledSecondaryIngestRerunRawDataSource = true;
@@ -97,6 +98,27 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       setIngestRerunRawDataSourceInstance,
     ] = useState<DirectIngestInstance | undefined>(undefined);
 
+    const [
+      currentSecondaryIngestInstanceStatus,
+      setSecondaryIngestInstanceStatus,
+    ] = React.useState<string | null>(null);
+
+    const canStartRerun =
+      currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
+    const getData = React.useCallback(async () => {
+      if (regionCode) {
+        const secondaryStatus = await fetchCurrentIngestInstanceStatus(
+          regionCode,
+          DirectIngestInstance.SECONDARY
+        );
+        setSecondaryIngestInstanceStatus(secondaryStatus);
+      }
+    }, [regionCode]);
+
+    React.useEffect(() => {
+      getData();
+    }, [getData]);
+
     const GenericIngestActionConfirmationModal = (
       <>
         <Modal
@@ -149,6 +171,103 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       </>
     );
 
+    const ingestRerunForm = (
+      <div>
+        <b> Please select the source of the raw data for this rerun: </b>
+        <ul>
+          <li>
+            If PRIMARY, then the rerun will just regenerate ingest view results
+            using raw data already processed in PRIMARY.
+          </li>
+          <li>
+            If SECONDARY, then the rerun will first import/process raw data in
+            SECONDARY, then regenerate ingest view results.
+          </li>
+        </ul>
+        <i>
+          For now, the raw data source for secondary reruns can only be PRIMARY.
+        </i>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-evenly",
+          }}
+        >
+          <Button
+            style={{ marginRight: 5 }}
+            onClick={async () => {
+              setIngestRerunRawDataSourceInstance(DirectIngestInstance.PRIMARY);
+            }}
+          >
+            PRIMARY
+          </Button>
+          <Button
+            // TODO(#13406): Remove 'disabled' setting once raw data can be processed in secondary.
+            disabled={disabledSecondaryIngestRerunRawDataSource}
+            style={{ marginRight: 5 }}
+            onClick={async () => {
+              setIngestRerunRawDataSourceInstance(
+                DirectIngestInstance.SECONDARY
+              );
+            }}
+          >
+            SECONDARY
+          </Button>
+        </div>
+        <br />
+        <br />
+        <b> Ingest Rerun Summary </b>
+        <br />
+        The rerun will have the following configurations:
+        <ul>
+          <li>
+            <b>Project ID: </b>
+            {projectId ? projectId.toLowerCase() : ""}
+          </li>
+          <li>
+            <b>State Code: </b>
+            {regionCode.toUpperCase()}
+          </li>
+          <li>
+            <b>Rerun Instance: </b>
+            {ingestInstance ? ` ${ingestInstance}` : ""}
+          </li>
+          <li>
+            <b
+              style={{
+                color:
+                  ingestRerunRawDataSourceInstance === undefined
+                    ? "red"
+                    : "green",
+                justifyContent: "space-between",
+              }}
+            >
+              Raw Data Source Instance:&nbsp;
+            </b>
+            {ingestRerunRawDataSourceInstance}
+          </li>
+        </ul>
+        <p>
+          Type <b>{confirmationRegEx}</b> below to confirm.
+        </p>
+        <Form form={form} layout="vertical" name="form_in_modal">
+          <Form.Item
+            name="confirmation_code"
+            rules={[
+              {
+                required: true,
+                message: "Please input the confirmation code",
+                pattern: RegExp(confirmationRegEx),
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </div>
+    );
+
     const StartIngestRerunConfirmationModal = (
       <>
         <Modal
@@ -184,101 +303,25 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
               });
           }}
         >
-          <b> Please select the source of the raw data for this rerun: </b>
-          <ul>
-            <li>
-              If PRIMARY, then the rerun will just regenerate ingest view
-              results using raw data already processed in PRIMARY.
-            </li>
-            <li>
-              If SECONDARY, then the rerun will first import/process raw data in
-              SECONDARY, then regenerate ingest view results.
-            </li>
-          </ul>
-          <i>
-            For now, the raw data source for secondary reruns can only be
-            PRIMARY.
-          </i>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-evenly",
-            }}
-          >
-            <Button
-              style={{ marginRight: 5 }}
-              onClick={async () => {
-                setIngestRerunRawDataSourceInstance(
-                  DirectIngestInstance.PRIMARY
-                );
-              }}
-            >
-              PRIMARY
-            </Button>
-            <Button
-              // TODO(#13406): Remove 'disabled' setting once raw data can be processed in secondary.
-              disabled={disabledSecondaryIngestRerunRawDataSource}
-              style={{ marginRight: 5 }}
-              onClick={async () => {
-                setIngestRerunRawDataSourceInstance(
-                  DirectIngestInstance.SECONDARY
-                );
-              }}
-            >
-              SECONDARY
-            </Button>
+          <div>
+            <b>
+              Current Ingest Instance Statuses <br />
+            </b>
+            <i>
+              In order to start a new ingest rerun, the SECONDARY instance
+              status needs to be NO_RERUN_IN_PROGRESS.
+            </i>
+            <br />
+            <br />
+            <p style={{ color: canStartRerun ? "green" : "red" }}>
+              The SECONDARY instance status is&nbsp;
+              {currentSecondaryIngestInstanceStatus}.&nbsp;
+              {canStartRerun
+                ? "Can proceed with rerun!"
+                : "Cannot proceed with rerun."}
+            </p>
           </div>
-          <br />
-          <br />
-          <b> Ingest Rerun Summary </b>
-          <br />
-          The rerun will have the following configurations:
-          <ul>
-            <li>
-              <b>Project ID: </b>
-              {projectId ? projectId.toLowerCase() : ""}
-            </li>
-            <li>
-              <b>State Code: </b>
-              {regionCode.toUpperCase()}
-            </li>
-            <li>
-              <b>Rerun Instance: </b>
-              {ingestInstance ? ` ${ingestInstance}` : ""}
-            </li>
-            <li>
-              <b
-                style={{
-                  color:
-                    ingestRerunRawDataSourceInstance === undefined
-                      ? "red"
-                      : "green",
-                  justifyContent: "space-between",
-                }}
-              >
-                Raw Data Source Instance:&nbsp;
-              </b>
-              {ingestRerunRawDataSourceInstance}
-            </li>
-          </ul>
-          <p>
-            Type <b>{confirmationRegEx}</b> below to confirm.
-          </p>
-          <Form form={form} layout="vertical" name="form_in_modal">
-            <Form.Item
-              name="confirmation_code"
-              rules={[
-                {
-                  required: true,
-                  message: "Please input the confirmation code",
-                  pattern: RegExp(confirmationRegEx),
-                },
-              ]}
-            >
-              <Input />
-            </Form.Item>
-          </Form>
+          {canStartRerun ? ingestRerunForm : undefined}
         </Modal>
       </>
     );
