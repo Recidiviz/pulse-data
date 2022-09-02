@@ -17,6 +17,7 @@
 """Helpers to use pubsub
 """
 
+import json
 import logging
 from typing import Any
 
@@ -55,12 +56,18 @@ def publish_message_to_topic(message: str, topic: str) -> None:
     publisher.publish(topic_path, data=message.encode("utf-8"))
 
 
-def extract_pubsub_message_from_json(json: Any) -> pubsub.types.PubsubMessage:
-    if not isinstance(json, dict):
+def extract_pubsub_message_from_json(json_request: Any) -> pubsub.types.PubsubMessage:
+    if not isinstance(json_request, dict):
         raise TypeError("Invalid Pub/Sub message")
-    if MESSAGE not in json:
+    if MESSAGE not in json_request:
         raise ValueError("Invalid Pub/Sub message")
 
-    message = pubsub.types.PubsubMessage(json[MESSAGE])
+    try:
+        message = pubsub.types.PubsubMessage.from_json(
+            json.dumps(json_request[MESSAGE])
+        )
+    except Exception as e:
+        logging.info("Exception parsing pubsub message: %s", str(e))
+        raise e
 
     return message
