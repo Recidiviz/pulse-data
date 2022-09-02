@@ -124,8 +124,14 @@ ALL_TASKS_ALL_STATES_DESCRIPTION = """
 This view contains all task eligiblity spans for tasks across states. It unions the 
 results of all single-state `all_tasks` views (e.g. `task_eligibility_us_xx.all_tasks`).
 """
+
 TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
+
+
+def task_eligibility_spans_state_specific_dataset(region_code: str) -> str:
+    """Returns the dataset containing task eligibility spans for this region."""
+    return f"task_eligibility_spans_{region_code.lower()}"
 
 
 def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
