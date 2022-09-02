@@ -28,7 +28,23 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
         builders = get_unioned_view_builders()
 
         expected_all_tasks_view_addresses = [
+            BigQueryAddress(dataset_id="task_eligibility", table_id="all_criteria"),
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_general",
+                table_id="all_general_criteria",
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility", table_id="all_candidate_populations"
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_candidates_general",
+                table_id="all_general_candidate_populations",
+            ),
             BigQueryAddress(dataset_id="task_eligibility", table_id="all_tasks"),
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_nd",
+                table_id="all_state_specific_criteria",
+            ),
             BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_nd", table_id="all_tasks"
             ),
