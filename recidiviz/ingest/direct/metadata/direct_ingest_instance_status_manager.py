@@ -36,6 +36,19 @@ INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.SECONDARY: [DirectIngestStatus.UP_TO_DATE],
 }
 
+# Statuses that an instance can only transition to via some human intervention.
+HUMAN_INTERVENTION_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
+    DirectIngestInstance.PRIMARY: [
+        # Note: `STANDARD_RERUN_STARTED` is automatically added an initial status via a migration
+        DirectIngestStatus.FLASH_IN_PROGRESS,
+    ],
+    DirectIngestInstance.SECONDARY: [
+        DirectIngestStatus.FLASH_IN_PROGRESS,
+        DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+        DirectIngestStatus.STANDARD_RERUN_STARTED,
+    ],
+}
+
 # Valid initial statuses, by instance.
 VALID_INITIAL_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.PRIMARY: [
@@ -58,20 +71,17 @@ SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS: Dict[
     DirectIngestStatus, List[DirectIngestStatus]
 ] = {
     DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
         DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
         DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
     ],
     DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: [
-        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
         DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
         DirectIngestStatus.UP_TO_DATE,
     ],
     DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
-        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
     ],
@@ -216,6 +226,13 @@ class DirectIngestInstanceStatusManager:
 
         if current_status is None:
             # The new_status is a valid start of rerun status.
+            return
+
+        if (
+            current_status == new_status
+            and new_status not in HUMAN_INTERVENTION_STATUSES[ingest_instance]
+        ):
+            # You can always transition to the same status for statuses that do not involve human intervention
             return
 
         valid_current_statuses = VALID_CURRENT_STATUS_TRANSITIONS[ingest_instance][
