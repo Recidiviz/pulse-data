@@ -76,7 +76,7 @@ export type IngestRawFileProcessingStatus = {
   numberFilesInBucket: number;
   numberUnprocessedFiles: number;
   numberProcessedFiles: number;
-  latestDiscoveryTime: string;
+  latestDiscoveryTime: string | null;
   latestProcessedTime: string | null;
 };
 

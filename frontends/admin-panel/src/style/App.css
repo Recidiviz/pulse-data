@@ -97,27 +97,34 @@ tr.metadata-table-row > td.ant-table-cell > div {
   }
 }
 /* Actions and Summaries*/
+
+.ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow {
+  height: 60px;
+  width: 450px;
+  padding: 10px;
+}
+
 .ingest-status-cell-green {
   color: #ffffff;
   background-color: #389e0d;
-  height: 60px;
-  width: 450px;
-  padding: 10px;
-
-
 }
+
 .ingest-status-cell-grey {
   color: #ffffff;
   background-color: #a9a9a9;
-  height: 60px;
-  width: 450px;
-  padding: 10px;
 }
+
 .ingest-status-cell-yellow {
   color: #000000;
   background-color: #ffff00;
-  height: 60px;
-  width: 450px;
-  padding: 10px;
+}
 
+.ingest-caution {
+  color: #000000;
+  background-color: #ffff00;
+}
+
+.ingest-danger {
+  color: #ffffff;
+  background-color: #f5222d;
 }
