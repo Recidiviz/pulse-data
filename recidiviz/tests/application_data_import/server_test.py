@@ -99,6 +99,7 @@ class TestApplicationDataImportRoutes(TestCase):
                             "bucketId": self.bucket,
                             "objectId": f"{self.state_code}/test-file.csv",
                         },
+                        "messageId": "12345",
                     }
                 },
             )
@@ -130,6 +131,7 @@ class TestApplicationDataImportRoutes(TestCase):
                             "bucketId": "invalid-bucket",
                             "objectId": f"{self.state_code}/test-file.csv",
                         },
+                        "messageId": "12345",
                     },
                     "subscription": "test-subscription",
                 },
@@ -150,6 +152,7 @@ class TestApplicationDataImportRoutes(TestCase):
                             "bucketId": self.bucket,
                             "objectId": f"staging/{self.state_code}/test-file.csv",
                         },
+                        "messageId": "12345",
                     },
                     "subscription": "test-subscription",
                 },
