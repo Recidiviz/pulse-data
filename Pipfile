@@ -205,3 +205,8 @@ docker-admin = "docker-compose -f docker-compose.yaml -f docker-compose.admin-pa
 docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
 fixtures-jc = "docker exec pulse-data_control_panel_backend_1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
+# Scripts for working with the BigQuery emulator
+# Run this script once to download the emulator and again if you want to update the version.
+pull-bq-emulator="docker pull ghcr.io/goccy/bigquery-emulator:latest"
+# Run this script to launch the BQ emulator locally
+start-bq-emulator="docker run -p 9050:9050 --rm ghcr.io/goccy/bigquery-emulator:latest /bin/bigquery-emulator --project=recidiviz-bq-emulator-project --log-level=info"

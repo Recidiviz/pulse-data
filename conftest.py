@@ -35,6 +35,9 @@ def pytest_configure(config: Config) -> None:
     config.addinivalue_line(
         "markers", "uses_db: for tests that spin up a new database."
     )
+    config.addinivalue_line(
+        "markers", "uses_bq_emulator: for tests that use the BigQuery emulator"
+    )
 
 
 def pytest_unconfigure() -> None:
