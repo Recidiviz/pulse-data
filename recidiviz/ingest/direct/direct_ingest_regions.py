@@ -28,8 +28,8 @@ import attr
 import yaml
 
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
-from recidiviz.utils import environment
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
 
 # Cache of the `DirectIngestRegion` objects.
 REGIONS: Dict[str, "DirectIngestRegion"] = {}
@@ -70,7 +70,18 @@ class DirectIngestRegion:
 
         We don't create infrastructure for the playground regions in prod.
         """
-        return not environment.in_gcp_production() or not self.playground
+        return (
+            not (
+                # TODO(#15073): This checks both the RECIDIVIZ_ENV environment variable
+                # and the project id because the environment variable won't be set in
+                # local scripts, like when we are running migrations. We should consider
+                # getting rid of the environment variable entirely and just always
+                # using project id throughout the codebase.
+                environment.in_gcp_production()
+                or metadata.project_id() == GCP_PROJECT_PRODUCTION
+            )
+            or not self.playground
+        )
 
     def is_ingest_launched_in_env(self) -> bool:
         """Returns true if ingest can be launched for this region in the current

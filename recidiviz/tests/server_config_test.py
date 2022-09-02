@@ -19,6 +19,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import mock
+from mock import MagicMock
 
 from recidiviz import server_config
 from recidiviz.common.constants.states import StateCode
@@ -26,6 +27,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 class TestServerConfig(unittest.TestCase):
     """Tests for server_config.py."""
 
