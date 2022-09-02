@@ -117,6 +117,10 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.delete_user_permissions",
                 email="user@domain.org",
             )
+            self.delete_user = flask.url_for(
+                "auth_endpoint_blueprint.delete_user",
+                email="parameter@domain.org",
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -1321,3 +1325,87 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, delete_permissions.status_code)
+
+    def test_delete_user_roster(self) -> None:
+        user = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_ID",
+            role="leadership_role",
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context():
+            delete = self.client.delete(
+                self.delete_user,
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, delete.status_code)
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": False,
+                    "district": None,
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "routes": None,
+                    "shouldSeeBetaCharts": False,
+                    "stateCode": "US_ID",
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_user_user_override(self) -> None:
+        with self.app.test_request_context():
+            self.client.post(
+                self.add_user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "role": "line_staff_user",
+                },
+            )
+            delete = self.client.delete(
+                self.delete_user,
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, delete.status_code)
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": True,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": False,
+                    "district": None,
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "line_staff_user",
+                    "routes": None,
+                    "shouldSeeBetaCharts": False,
+                    "stateCode": "US_TN",
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_delete_nonexistent_user(self) -> None:
+        with self.app.test_request_context():
+            delete = self.client.delete(
+                self.delete_user,
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, delete.status_code)

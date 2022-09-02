@@ -113,6 +113,7 @@ export {
 } from "./IngestOperations";
 export { createAgency, getAgencies, getUsers } from "./JusticeCountsTools";
 export {
+  blockUser,
   createNewUser,
   deleteCustomUserPermissions,
   fetchEmailStateCodes,

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Modal, Select, Alert } from "antd";
+import { Button, Form, Input, Modal, Select, Alert } from "antd";
 import * as React from "react";
 import { useState } from "react";
 import Draggable from "react-draggable";
@@ -24,11 +24,13 @@ export const CreateEditUserForm = ({
   editVisible,
   editOnCreate,
   editOnCancel,
+  onRevokeAccess,
   selectedEmails,
 }: {
   editVisible: boolean;
   editOnCreate: (arg0: StateUserPermissionsResponse) => Promise<void>;
   editOnCancel: () => void;
+  onRevokeAccess: () => Promise<void>;
   selectedEmails: React.Key[];
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -40,6 +42,26 @@ export const CreateEditUserForm = ({
   function showPermissions(shouldShow: boolean) {
     setHidePermissions(!shouldShow);
   }
+
+  const handleCancel = () => {
+    form.resetFields();
+    showPermissions(false);
+    editOnCancel();
+  };
+
+  const handleEdit = () => {
+    form.validateFields().then((values) => {
+      form.resetFields();
+      showPermissions(false);
+      editOnCreate(values);
+    });
+  };
+
+  const handleRevokeAccess = () => {
+    form.resetFields();
+    showPermissions(false);
+    onRevokeAccess();
+  };
 
   return (
     <Modal
@@ -64,20 +86,16 @@ export const CreateEditUserForm = ({
           Edit Selected User(s)
         </div>
       }
-      okText="Edit"
-      cancelText="Cancel"
-      onCancel={() => {
-        form.resetFields();
-        showPermissions(false);
-        editOnCancel();
-      }}
-      onOk={() => {
-        form.validateFields().then((values) => {
-          form.resetFields();
-          showPermissions(false);
-          editOnCreate(values);
-        });
-      }}
+      onCancel={handleCancel}
+      footer={[
+        <Button onClick={handleCancel}>Cancel</Button>,
+        <Button type="primary" danger onClick={handleRevokeAccess}>
+          Revoke access
+        </Button>,
+        <Button type="primary" onClick={handleEdit}>
+          Edit
+        </Button>,
+      ]}
       modalRender={(modal) => (
         <Draggable
           disabled={draggableModal.disabled}

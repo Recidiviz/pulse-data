@@ -14,12 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Input, message, PageHeader, Space, Spin, Table } from "antd";
+import {
+  Button,
+  Input,
+  message,
+  PageHeader,
+  Space,
+  Spin,
+  Table,
+  Typography,
+} from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { SearchOutlined } from "@ant-design/icons";
 import * as React from "react";
 import { useState } from "react";
 import {
+  blockUser,
   createNewUser,
   deleteCustomUserPermissions,
   getStateUserPermissions,
@@ -54,6 +64,9 @@ const StateUserPermissionsView = (): JSX.Element => {
   const rowSelection = {
     selectedRowKeys,
     onChange: onSelectChange,
+    getCheckboxProps: (record: StateUserPermissionsResponse) => ({
+      disabled: record.blocked === true,
+    }),
   };
 
   if (loading || !data) {
@@ -74,6 +87,28 @@ const StateUserPermissionsView = (): JSX.Element => {
     if (!response.ok) {
       const error = await response.text();
       throw error;
+    }
+  };
+
+  const finishPromises = async (
+    promises: Array<Promise<unknown>>,
+    verb: string
+  ) => {
+    if (promises.length !== 0) {
+      Promise.all(promises)
+        .then(() => {
+          setEditVisible(false);
+          message.success(
+            `${verb} ${selectedRowKeys.join(", ")} successfully!`
+          );
+          setSelectedRowKeys([]); // clear selected rows once all changes are successful
+        })
+        .catch((error) => {
+          message.error(`${error}`);
+        })
+        .finally(() => {
+          updateTable();
+        });
     }
   };
 
@@ -166,17 +201,15 @@ const StateUserPermissionsView = (): JSX.Element => {
       };
       results.push(editRow());
     }
-    Promise.all(results)
-      .then(() => {
-        setEditVisible(false);
-        message.success(`${selectedRowKeys.join(", ")} updated successfully!`);
-      })
-      .catch((error) => {
-        message.error(`${error}`);
-      })
-      .finally(() => {
-        updateTable();
-      });
+    finishPromises(results, `Updated`);
+  };
+
+  const onRevokeAccess = async () => {
+    const results: Array<Promise<Response>> = [];
+    selectedRows.forEach((row) => {
+      results.push(blockUser(row.emailAddress));
+    });
+    finishPromises(results, `Blocked`);
   };
 
   const getColumnSearchProps = (dataIndex: string) => ({
@@ -236,6 +269,18 @@ const StateUserPermissionsView = (): JSX.Element => {
         .includes(value.toString().toLowerCase()),
   });
 
+  const { Text } = Typography;
+  const formatText = (text: string, record: StateUserPermissionsResponse) => {
+    if (record.blocked === true) {
+      return (
+        <Text type="secondary" italic>
+          {text}
+        </Text>
+      );
+    }
+    return text;
+  };
+
   const columns = [
     {
       title: "Email",
@@ -247,6 +292,9 @@ const StateUserPermissionsView = (): JSX.Element => {
         b: StateUserPermissionsResponse
       ) => a.emailAddress.localeCompare(b.emailAddress),
       ...getColumnSearchProps("emailAddress"),
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "State",
@@ -293,39 +341,48 @@ const StateUserPermissionsView = (): JSX.Element => {
         a: StateUserPermissionsResponse,
         b: StateUserPermissionsResponse
       ) => a.stateCode.localeCompare(b.stateCode),
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "First Name",
       dataIndex: "firstName",
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "Last Name",
       dataIndex: "lastName",
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "Can Access Leadership Dashboard",
       dataIndex: "canAccessLeadershipDashboard",
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.canAccessLeadershipDashboard != null) {
-          return record.canAccessLeadershipDashboard.toString();
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
         }
       },
     },
     {
       title: "Can Access Case Triage",
       dataIndex: "canAccessCaseTriage",
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.canAccessCaseTriage != null) {
-          return record.canAccessCaseTriage.toString();
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
         }
       },
     },
     {
       title: "Should See Beta Charts",
       dataIndex: "shouldSeeBetaCharts",
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.shouldSeeBetaCharts != null) {
-          return record.shouldSeeBetaCharts.toString();
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
         }
       },
     },
@@ -333,27 +390,39 @@ const StateUserPermissionsView = (): JSX.Element => {
       title: "Routes",
       dataIndex: "routes",
       width: 300,
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.routes) {
-          return JSON.stringify(record.routes, null, "\t").slice(2, -2);
+      render: (
+        text: Record<string, unknown>,
+        record: StateUserPermissionsResponse
+      ) => {
+        if (text) {
+          return formatText(
+            JSON.stringify(text, null, "\t").slice(2, -2),
+            record
+          );
         }
       },
     },
     {
       title: "Allowed Supervision Location IDs",
       dataIndex: "allowedSupervisionLocationIds",
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "Allowed Supervision Location Level",
       dataIndex: "allowedSupervisionLocationLevel",
       width: 220,
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
     },
     {
       title: "Blocked",
       dataIndex: "blocked",
-      render: (_: string, record: StateUserPermissionsResponse) => {
-        if (record.blocked != null) {
-          return record.blocked.toString();
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
         }
       },
     },
@@ -390,6 +459,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           editOnCancel={() => {
             setEditVisible(false);
           }}
+          onRevokeAccess={onRevokeAccess}
           selectedEmails={selectedRowKeys}
         />
       </Space>
