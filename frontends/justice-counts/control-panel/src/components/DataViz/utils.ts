@@ -20,8 +20,10 @@ import { mapValues, pickBy } from "lodash";
 import {
   Datapoint,
   DatapointsViewSetting,
+  DataVizAggregateName,
   DataVizTimeRange,
 } from "../../shared/types";
+import { formatNumberInput } from "../../utils";
 
 export const thirtyOneDaysInSeconds = 2678400000;
 export const threeHundredSixtySixDaysInSeconds = 31622400000;
@@ -146,6 +148,9 @@ export const filterByTimeRange = (
   data: Datapoint[],
   monthsAgo: DataVizTimeRange
 ) => {
+  if (monthsAgo === 0) {
+    return data;
+  }
   const earliestDate = new Date();
   earliestDate.setMonth(earliestDate.getMonth() - monthsAgo);
   earliestDate.setHours(
@@ -261,10 +266,8 @@ export const transformData = (
     return transformedData;
   }
 
-  if (monthsAgo > 0) {
-    // filter by time range
-    transformedData = filterByTimeRange(transformedData, monthsAgo);
-  }
+  // filter by time range
+  transformedData = filterByTimeRange(transformedData, monthsAgo);
 
   transformedData = filterNullDatapoints(transformedData);
 
@@ -274,4 +277,59 @@ export const transformData = (
   }
 
   return fillTimeGapsBetweenDatapoints(transformedData, monthsAgo);
+};
+
+// get insights from data
+
+export const getPercentChangeOverTime = (data: Datapoint[]) => {
+  if (data.length > 0) {
+    const start = data[0][DataVizAggregateName] as number | undefined;
+    const end = data[data.length - 1][DataVizAggregateName] as
+      | number
+      | undefined;
+    if (start !== undefined && end !== undefined) {
+      const formattedPercentChange = formatNumberInput(
+        Math.round(((end - start) / start) * 100).toString()
+      );
+      if (formattedPercentChange) {
+        return `${formattedPercentChange}%`;
+      }
+    }
+  }
+  return "N/A";
+};
+
+export const getAverageTotalValue = (data: Datapoint[], isAnnual: boolean) => {
+  if (data.length > 0) {
+    let totalValueFound = false;
+    const avgTotalValue =
+      data.reduce((res, dp) => {
+        if (dp[DataVizAggregateName] !== undefined) {
+          totalValueFound = true;
+          return res + (dp[DataVizAggregateName] as number);
+        }
+        return res;
+      }, 0) / data.length;
+    if (totalValueFound && avgTotalValue !== undefined) {
+      const formattedAvgTotalValue = formatNumberInput(
+        Math.round(avgTotalValue).toString()
+      );
+      if (formattedAvgTotalValue !== undefined) {
+        return `${formattedAvgTotalValue}/${isAnnual ? "yr" : "mo"}`;
+      }
+    }
+  }
+  return "N/A";
+};
+
+export const getLatestDateFormatted = (
+  data: Datapoint[],
+  isAnnual: boolean
+) => {
+  const mostRecentDate = data[data.length - 1]?.start_date;
+  if (mostRecentDate) {
+    const [, , month, year] = splitUtcString(mostRecentDate);
+    return `${!isAnnual ? `${month} ` : ""}${year}`;
+  }
+  return "N/A";
 };

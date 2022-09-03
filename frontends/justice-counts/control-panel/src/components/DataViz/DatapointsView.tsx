@@ -30,9 +30,19 @@ import {
   DatapointsViewContainer,
   DatapointsViewControlsContainer,
   DatapointsViewControlsDropdown,
+  MetricInsight,
+  MetricInsightsRow,
 } from "./DatapointsView.styles";
 import Legend from "./Legend";
-import { sortDatapointDimensions, transformData } from "./utils";
+import {
+  filterByTimeRange,
+  filterNullDatapoints,
+  getAverageTotalValue,
+  getLatestDateFormatted,
+  getPercentChangeOverTime,
+  sortDatapointDimensions,
+  transformData,
+} from "./utils";
 
 const noDisaggregationOption = "None";
 
@@ -153,9 +163,32 @@ const DatapointsView: React.FC<{
     );
   };
 
+  const renderMetricInsightsRow = () => {
+    const dataSelectedInTimeRange = filterNullDatapoints(
+      filterByTimeRange(
+        datapointsForMetric?.aggregate || [],
+        selectedTimeRangeValue
+      )
+    );
+    const percentChange = getPercentChangeOverTime(dataSelectedInTimeRange);
+    const avgValue = getAverageTotalValue(dataSelectedInTimeRange, isAnnual);
+
+    return (
+      <MetricInsightsRow>
+        <MetricInsight title="% Total Change" value={percentChange} />
+        <MetricInsight title="Avg. Total Value" value={avgValue} />
+        <MetricInsight
+          title="Most Recent"
+          value={getLatestDateFormatted(dataSelectedInTimeRange, isAnnual)}
+        />
+      </MetricInsightsRow>
+    );
+  };
+
   return (
     <DatapointsViewContainer>
       {renderDataVizControls()}
+      {renderMetricInsightsRow()}
       {renderChartForMetric()}
       {renderLegend()}
     </DatapointsViewContainer>

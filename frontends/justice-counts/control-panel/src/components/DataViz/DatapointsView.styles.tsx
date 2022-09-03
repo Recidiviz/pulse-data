@@ -160,3 +160,44 @@ export const DatapointsViewControlsDropdown: React.FC<
     </DropdownMenu>
   </DatapointsViewDropdown>
 );
+
+export const MetricInsightsRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  margin-top: 16px;
+  margin-bottom: 16px;
+`;
+
+const MetricInsightContainer = styled.div`
+  margin-right: 32px;
+
+  &:last-child {
+    margin-right: 0;
+    text-align: right;
+    margin-left: auto;
+  }
+`;
+
+const MetricInsightTitle = styled.div`
+  ${typography.sizeCSS.small}
+  margin-bottom: 8px;
+`;
+
+const MetricInsightValue = styled.div`
+  ${typography.sizeCSS.large}
+`;
+
+interface MetricInsightProps {
+  title: string;
+  value: string;
+}
+
+export const MetricInsight: React.FC<MetricInsightProps> = ({
+  title,
+  value,
+}) => (
+  <MetricInsightContainer>
+    <MetricInsightTitle>{title}</MetricInsightTitle>
+    <MetricInsightValue>{value}</MetricInsightValue>
+  </MetricInsightContainer>
+);
