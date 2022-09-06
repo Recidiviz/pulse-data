@@ -24,18 +24,26 @@ import {
   optionalNumberSort,
   optionalStringSort,
 } from "../Utilities/GeneralUtilities";
-import { IngestRawFileProcessingStatus } from "./constants";
+import {
+  FILE_TAG_IGNORED_IN_SUBDIRECTORY,
+  FILE_TAG_UNNORMALIZED,
+  IngestRawFileProcessingStatus,
+} from "./constants";
+import RawDataFileTagContents from "./IngestOperationsComponents/RawDataFileTagContents";
+import RawDataHasConfigFileCellContents from "./IngestOperationsComponents/RawDataHasConfigFileCellContents";
 
 interface IngestRawFileProcessingStatusTableProps {
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
+  ingestBucketPath: string;
+  storageDirectoryPath: string;
 }
 
-const FILE_TAG_IGNORED_IN_SUBDIRECTORY = "IGNORED_IN_SUBDIRECTORY"; // special tag for files that are not in the base directory
-const FILE_TAG_UNNORMALIZED = "UNNORMALIZED"; // special tag for files that don't follow normalized format
-const SPECIAL_TAGS = [FILE_TAG_UNNORMALIZED, FILE_TAG_IGNORED_IN_SUBDIRECTORY];
-
 const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatusTableProps> =
-  ({ ingestRawFileProcessingStatus }) => {
+  ({
+    ingestRawFileProcessingStatus,
+    ingestBucketPath,
+    storageDirectoryPath,
+  }) => {
     const allFilesLatestDiscoveryTime: Date | undefined =
       ingestRawFileProcessingStatus
         .filter((a) => a.latestDiscoveryTime !== null)
@@ -63,7 +71,12 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         title: "Raw Data File Tag",
         dataIndex: "fileTag",
         key: "fileTag",
-        render: (_, record) => renderRawDataFileTag(record),
+        render: (_, record) => (
+          <RawDataHasConfigFileCellContents
+            status={record}
+            storageDirectoryPath={storageDirectoryPath}
+          />
+        ),
         sorter: {
           compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
           multiple: 1,
@@ -137,20 +150,11 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         title: "Has Config",
         dataIndex: "hasConfig",
         key: "hasConfig",
-        render: (value, record) => (
-          <>
-            {SPECIAL_TAGS.includes(record.fileTag) ? (
-              <div>N/A</div>
-            ) : (
-              <div
-                className={classNames({
-                  "ingest-danger": !value,
-                })}
-              >
-                {value ? "Yes" : "No"}
-              </div>
-            )}
-          </>
+        render: (_, record) => (
+          <RawDataFileTagContents
+            status={record}
+            ingestBucketPath={ingestBucketPath}
+          />
         ),
         sorter: {
           compare: (a, b) => booleanSort(a.hasConfig, b.hasConfig),
@@ -177,23 +181,6 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
   };
 
 export default IngestRawFileProcessingStatusTable;
-
-function renderRawDataFileTag(status: IngestRawFileProcessingStatus) {
-  const { fileTag, hasConfig } = status;
-  const isSpecialTag = SPECIAL_TAGS.includes(fileTag);
-
-  return (
-    <div>
-      {hasConfig || isSpecialTag ? (
-        fileTag
-      ) : (
-        <>
-          {fileTag} <em>(unrecognized)</em>
-        </>
-      )}
-    </div>
-  );
-}
 
 function renderLatestDiscoveryTime(
   status: IngestRawFileProcessingStatus,
