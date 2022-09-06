@@ -1,103 +1,36 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_tak022_tak023_tak025_tak026_offender_sentence_institution` to
+# This file associates the columns outputted from the query in `view_offender_sentence_institution` to
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
   - BS_DOC
   - BS_CYC
   - BS_SEO
-  - BS_LEO
   - BS_SCF
-  - BS_CRT
-  - BS_NRN
   - BS_ASO
   - BS_NCI
-  - BS_OCN
   - BS_CLT
   - BS_CNT
   - BS_CLA
-  - BS_POF
-  - BS_ACL
   - BS_CCI
   - BS_CRQ
   - BS_CNS
-  - BS_CRC
-  - BS_CRD
   - BS_PD
   - BS_DO
-  - BS_PLE
   - BS_COD
-  - BS_AR
-  - BS_UID
-  - BS_DCR
-  - BS_TCR
-  - BS_UIU
-  - BS_DLU
-  - BS_TLU
-  - BT_DOC
-  - BT_CYC
-  - BT_SEO
   - BT_SD
   - BT_SLY
   - BT_SLM
   - BT_SLD
   - BT_CRR
   - BT_PC
-  - BT_ABS
-  - BT_ABU
-  - BT_ABT
   - BT_PIE
-  - BT_SRC
-  - BT_SRF
-  - BT_PCR
   - BT_EM
-  - BT_OTD
-  - BT_OH
-  - BT_SCT
-  - BT_RE
   - BT_SDI
-  - BT_DCR
-  - BT_TCR
-  - BT_DLU
-  - BT_TLU
-  - MOST_RECENT_SENTENCE_STATUS_SSO
   - MOST_RECENT_SENTENCE_STATUS_SCD
   - MOST_RECENT_SENTENCE_STATUS_DATE
-unused_columns:
-  - BS_LEO # Unused - Sentence Sequence Number
-  - BS_CRT # TODO(#2604) - Sentence Cause Number (court docket # a la docstars COURT_NUMBER)
-  - BS_NRN # Unused - Offender Name Reference Number
-  - BS_OCN # Sentence Offense Cycle Number - tracks activity between law enforcement, courts, etc: This does not appear to be unique and thus is not suitable as an id
-  - BS_POF # TODO(#2604) - What is this? - not in TAK table index
-  - BS_ACL # TODO(#2604) - What is this? - not in TAK table index
-  - BS_CRC # Unused - Court Circuit
-  - BS_CRD # Unused - Court Division
-  - BS_PLE # TODO(#2607) - Sentence Plea - Add a plea_type enum on the state_charge
-  - BS_AR # TODO(#2331) - Sentence Arrest Date
-  - BS_UID # Unused - User ID
-  - BS_DCR # Unused - Date Created (BS_* cols)
-  - BS_TCR # Unused - Time Created (BS_* cols)
-  - BS_UIU # Unused - Unknown field
-  - BS_DLU # Unused - Date Last Updated (BS_* cols)
-  - BS_TLU # Unused - Time Last Updated (BS_* cols)
-  - BT_DOC # Unused - Duplicate of BS_DOC
-  - BT_CYC # Unused - Duplicate of BS_CYC
-  - BT_SEO # Unused - Duplicate of BS_SEO
-  - BT_ABS # TODO(#2604) - Non-credit Time Institutional
-  - BT_ABU # TODO(#2604) - Non-credit Time Parole
-  - BT_ABT # TODO(#2604) - Non-credit Time Probation
-  - BT_SRC # TODO(#2604) - Sentence Count
-  - BT_SRF # TODO(#2604) - Sentence Count Type
-  - BT_PCR # TODO(#2604) - Sentence Percent Required
-  - BT_OTD # TODO(#2604) - Sentence 120 Day Flag
-  - BT_OH # TODO(#2604) - Sentence 120 Day Date
-  - BT_SCT # TODO(#2604) - Sentence Credit Time
-  - BT_RE # TODO(#2604) - P&P Court Report Due Date
-  - BT_DCR # Unused - Date Created (BT_* cols)
-  - BT_TCR # Unused - Time Created (BT_* cols)
-  - BT_DLU # Unused - Date Last Updated (BT_* cols)
-  - BT_TLU # Unused - Time Last Updated (BT_* cols)
-  - MOST_RECENT_SENTENCE_STATUS_SSO
+  - SENT_FLAG
+unused_columns: []
 variables:
   - sentence_external_id:
       $concat:
@@ -143,14 +76,10 @@ output:
           external_id: $variable(sentence_external_id)
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
           sentence_metadata:
-            $conditional:
-              - $if:
-                  $not_null: BS_CCI
-                $then:
-                  $concat:
-                    $values:
-                      - BS_CCI # Sentence Concurrent/Consecutive Ind
-                      - BS_CRQ # Sentence Concurrent/Consecutive Xref
+            $json_dict:
+              bs_cci: BS_CCI # Sentence Concurrent/Consecutive Ind
+              bs_crq: BS_CRQ # Sentence Concurrent/Consecutive Xref
+              sentence_flag: SENT_FLAG # 120 Day Sentence Flag
           status:
             $conditional:
               - $if: $variable(is_suspended_sentence)

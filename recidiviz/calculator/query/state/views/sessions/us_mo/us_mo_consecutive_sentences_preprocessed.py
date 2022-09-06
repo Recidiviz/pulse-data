@@ -42,7 +42,7 @@ US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         incarceration_sentence_id AS sentence_id,
         'INCARCERATION' AS sentence_type,
         SPLIT(external_id, '-')[SAFE_OFFSET(2)] AS seq_num,
-        IF(SPLIT(sentence_metadata,'-')[SAFE_OFFSET(0)] = 'CS', SPLIT(sentence_metadata,'-')[SAFE_OFFSET(1)], NULL) AS consec_seq_num,
+        IFNULL(IF(SPLIT(sentence_metadata,'-')[SAFE_OFFSET(0)] = 'CS',SPLIT(sentence_metadata,'-')[SAFE_OFFSET(1)],NULL),IF(JSON_EXTRACT_SCALAR(sentence_metadata,'$.BS_CCI') = 'CS',JSON_EXTRACT_SCALAR(sentence_metadata,'$.BS_CRQ'),NULL)) AS consec_seq_num,
         SPLIT(external_id, '-')[SAFE_OFFSET(1)] AS cycle_num,
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence`
     WHERE state_code = 'US_MO'
@@ -55,7 +55,7 @@ US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         supervision_sentence_id AS sentence_id,
         'SUPERVISION' AS sentence_type,
         SPLIT(external_id, '-')[SAFE_OFFSET(2)] AS seq_num,
-        IF(SPLIT(sentence_metadata,'-')[SAFE_OFFSET(0)] = 'CS', SPLIT(sentence_metadata,'-')[SAFE_OFFSET(1)], NULL) AS consec_seq_num,
+        IFNULL(IF(SPLIT(sentence_metadata,'-')[SAFE_OFFSET(0)] = 'CS',SPLIT(sentence_metadata,'-')[SAFE_OFFSET(1)],NULL),IF(JSON_EXTRACT_SCALAR(sentence_metadata,'$.BS_CCI') = 'CS',JSON_EXTRACT_SCALAR(sentence_metadata,'$.BS_CRQ'),NULL)) AS consec_seq_num,
         SPLIT(external_id, '-')[SAFE_OFFSET(1)] AS cycle_num,
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence`
     WHERE state_code = 'US_MO'
