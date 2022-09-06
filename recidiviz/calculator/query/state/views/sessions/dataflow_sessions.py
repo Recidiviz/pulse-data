@@ -175,7 +175,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-        AND state_code not in ('US_MO', 'US_TN', 'US_ME')
+        AND state_code not in ('US_MO', 'US_TN', 'US_ME', 'US_PA')
         AND included_in_state_population
     UNION ALL
     -- Use MO preprocessed dataset to deal with state-specific logic
@@ -194,6 +194,11 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     SELECT 
         *
     FROM `{project_id}.{sessions_dataset}.us_tn_supervision_population_metrics_preprocessed_materialized`
+    UNION ALL
+     -- Use PA preprocessed dataset to handle COMMUNITY_CONFINEMENT recategorization
+    SELECT 
+        *
+    FROM `{project_id}.{sessions_dataset}.us_pa_supervision_population_metrics_preprocessed_materialized`
     UNION ALL
     SELECT 
         DISTINCT
