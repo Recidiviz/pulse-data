@@ -90,8 +90,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = "F1"
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
-        "tak022_tak023_tak025_tak026_offender_sentence_institution": "BS",
-        "tak022_tak024_tak025_tak026_offender_sentence_supervision": "BS",
+        "offender_sentence_institution": "BS",
+        "offender_sentence_supervision": "BS",
         "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence": "BT",
         "tak158_tak024_tak026_incarceration_period_from_supervision_sentence": "BU",
         "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods": "",
@@ -277,8 +277,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 # SQL Preprocessing View
                 "tak001_offender_identification",
                 "oras_assessments_weekly_v2",
-                "tak022_tak023_tak025_tak026_offender_sentence_institution",
-                "tak022_tak024_tak025_tak026_offender_sentence_supervision",
+                "offender_sentence_institution",
+                "offender_sentence_supervision",
             ]
             + (
                 ["tak158_tak026_incarceration_periods"]
@@ -345,8 +345,8 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         if file_tag in [
             # SQL Preprocessing View
             "oras_assessments_weekly_v2",
-            "tak022_tak023_tak025_tak026_offender_sentence_institution",
-            "tak022_tak024_tak025_tak026_offender_sentence_supervision",
+            "offender_sentence_institution",
+            "offender_sentence_supervision",
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",

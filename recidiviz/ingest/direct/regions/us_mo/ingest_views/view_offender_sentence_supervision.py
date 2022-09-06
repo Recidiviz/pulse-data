@@ -303,11 +303,38 @@ VIEW_QUERY_TEMPLATE = f"""
         FROM
             ranked_supervision_sentence_status_xref
         WHERE SUPERVISION_SENTENCE_STATUS_RECENCY_RANK = 1
+    ), 
+    shock_sentence AS (
+        /* Codes given indicating possible 120 day shock incarceration  */
+        SELECT DISTINCT 
+            BW_DOC, BW_CYC, BW_SSO, 'SENTENCE: 120 DAY' AS SENT_FLAG
+        FROM {{LBAKRDTA_TAK026}}
+        WHERE 
+            BW_SCD IN ('10I1010','10I1020','10I1030','10I1040','10I1050','10I1060','20I1010','20I1020','20I1040','20I1050','20I1060','30I1000','30I1010','30I1020',     '30I1030','30I1040','30I1050','30I1060','40I1060','40I2050','40I2055','40I2060','40I2065','40I2070','40I2105','40I2110','40I2115','40I2120','40I2130','40I2135','40I2145','40I2150','40I2160','40I2350','40I2355','40I2365','40I2370','40I2400','40I2405', '40I2410','40I2415','40I2420', '40I2100','40I7020','40I7030','40I7060','40I1060','40I3060','40I8060','40N1060','40N3060','40N8060','50N1060')
     )
     SELECT
-        full_supervision_sentence_info.*,
+        full_supervision_sentence_info.BS_DOC,
+        full_supervision_sentence_info.BS_CYC, 
+        full_supervision_sentence_info.BS_SEO, 
+        full_supervision_sentence_info.BS_SCF, 
+        full_supervision_sentence_info.BS_ASO, 
+        full_supervision_sentence_info.BS_NCI,
+        full_supervision_sentence_info.BS_CLT, 
+        full_supervision_sentence_info.BS_CNT, 
+        full_supervision_sentence_info.BS_CLA,
+        full_supervision_sentence_info.BS_CCI, 
+        full_supervision_sentence_info.BS_CRQ,
+        full_supervision_sentence_info.BS_CNS,
+        full_supervision_sentence_info.BS_PD,
+        full_supervision_sentence_info.BS_DO, 
+        full_supervision_sentence_info.BS_COD, 
+        full_supervision_sentence_info.BU_SF,
+        full_supervision_sentence_info.BU_SBY,
+        full_supervision_sentence_info.BU_SBM,
+        full_supervision_sentence_info.BU_SBD,
+
         most_recent_fso_and_status_for_sentence.SENTENCE_TYPE,
-        most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SSO,
+        shock_sentence.SENT_FLAG, 
         most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
         most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_DATE
     FROM
@@ -319,11 +346,17 @@ VIEW_QUERY_TEMPLATE = f"""
        full_supervision_sentence_info.BS_CYC = most_recent_fso_and_status_for_sentence.BU_CYC AND
        full_supervision_sentence_info.BS_SEO = most_recent_fso_and_status_for_sentence.BU_SEO AND
        full_supervision_sentence_info.BU_FSO = most_recent_fso_and_status_for_sentence.MOST_RECENT_SUPERVISION_FSO
+    LEFT JOIN 
+        shock_sentence
+    ON 
+        full_supervision_sentence_info.BS_DOC = shock_sentence.BW_DOC AND
+        full_supervision_sentence_info.BS_CYC = shock_sentence.BW_CYC AND
+        most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SSO = shock_sentence.BW_SSO
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_mo",
-    ingest_view_name="tak022_tak024_tak025_tak026_offender_sentence_supervision",
+    ingest_view_name="offender_sentence_supervision",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="BS_DOC, BS_CYC, BS_SEO",
 )
