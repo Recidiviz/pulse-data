@@ -79,6 +79,110 @@ columns:
   - name: suspended_date
   - name: suspended_parole_id
   - name: closing_reason_code
+    description: reference code for legal order closing reason
+    known_values:
+      - value: "11813"
+        description: Sentenced to Family Independence Agency (DSS)
+      - value: "5238"
+        description: Client Number Reassignment
+      - value: "5235"
+        description: Administrative Discharge from Parole
+      - value: "5245"
+        description: Parole Violator Technical Violation
+      - value: "7580"
+        description: Plea Withdrawn
+      - value: "12260"
+        description: Resentenced on Appeal
+      - value: "5251"
+        description: Completed Satisfactorily
+      - value: "7470"
+        description: Sentenced From Delay To A Jail Only Sentence
+      - value: "5242"
+        description: Pardoned
+      - value: "5693"
+        description: Out of State Parolee Receiving Sentence In Michigan
+      - value: "5252"
+        description: Vacated
+      - value: "7472"
+        description: Sentenced From Delay To A Monetary Only Sentence
+      - value: "5237"
+        description: Discharged by Court, Nollo Prosequi
+      - value: "20148"
+        description: Sentenced to MDHHS - Juvenile
+      - value: "8000"
+        description: HYTA Probation Revoked
+      - value: "19488"
+        description: Court Discharged with Time Served
+      - value: "7210"
+        description: Release from SAI - Complete
+      - value: "7296"
+        description: Sentenced to Jail Only
+      - value: "7624"
+        description: Suspended Sentence
+      - value: "7137"
+        description: New Commitment While Under Sentence
+      - value: "9941"
+        description: Administrative Discharge from Probation
+      - value: "5689"
+        description: Order Entered in Error
+      - value: "5239"
+        description: Discharged While Escapee or Absconder
+      - value: "7915"
+        description: Failure To Appear For Sentencing
+      - value: "11675"
+        description: Resentenced on Appeal to Jail Only
+      - value: "19461"
+        description: Conviction Reversed by Court
+      - value: "12254"
+        description: Drug Court Probation Revoked
+      - value: "5463"
+        description: Offender Discharge
+      - value: "5249"
+        description: Death
+      - value: "9670"
+        description: Dismissed by Court
+      - value: "7136"
+        description: Technical Violation Sustained
+      - value: "5236"
+        description: Discharged by Transfer to Foreign Country
+      - value: "5691"
+        description: Sentence Reduced to Misdemeanor
+      - value: "12276"
+        description: Supervision Transferred to District Court
+      - value: "5248"
+        description: Discharged Without Improvement
+      - value: "5690"
+        description: Court Resentenced to Probation
+      - value: "5240"
+        description: Out of State Case Transferred out of Michigan
+      - value: "5244"
+        description: Probation Violator New Sentence
+      - value: "7211"
+        description: Release from SAI - Incomplete
+      - value: "5246"
+        description: Parole Violator New Sentence
+      - value: "12558"
+        description: Sentenced From Delay No Further Sentence Imposed
+      - value: "9869"
+        description: Sentenced to Prison under HYTA
+      - value: "5241"
+        description: Commuted
+      - value: "5247"
+        description: Reversal on Appeal
+      - value: "5243"
+        description: Probation Violator Technical Violation
+      - value: "8001"
+        description: 7411 Probation Revoked
+      - value: "19489"
+        description: Termination for Classification
+      - value: "5692"
+        description: Out of State Parolee Receiving Sentence Out of State
+      - value: "11812"
+        description: Sentenced to Prison While in Custody of Outside Jurisdiction
+      - value: "10003"
+        description: Sentenced to Community Service Only
+      - value: "7603"
+        description: Sentenced to a Monetary Sentence Only
   - name: closing_authority_id
   - name: closing_date
     description: closing date of the legal order
