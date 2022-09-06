@@ -88,6 +88,7 @@ export type IngestRawFileProcessingStatus = {
   numberProcessedFiles: number;
   latestDiscoveryTime: string | null;
   latestProcessedTime: string | null;
+  latestContainedDateUpperBoundInclusive: string | null;
 };
 
 export type StateCodeInfo = {

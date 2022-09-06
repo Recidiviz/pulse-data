@@ -187,6 +187,9 @@ def get_all_raw_file_metadata_rows_for_region(
             func.max(schema.DirectIngestRawFileMetadata.discovery_time).label(
                 "latest_discovery_time"
             ),
+            func.max(
+                schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive
+            ).label("latest_datetimes_contained_upper_bound_inclusive"),
         )
         .filter_by(
             region_code=region_code.upper(),
@@ -203,6 +206,7 @@ def get_all_raw_file_metadata_rows_for_region(
             num_unprocessed_files=result.num_unprocessed_files,
             latest_processed_time=result.latest_processed_time,
             latest_discovery_time=result.latest_discovery_time,
+            latest_datetimes_contained_upper_bound_inclusive=result.latest_datetimes_contained_upper_bound_inclusive,
         )
         for result in results
     ]
