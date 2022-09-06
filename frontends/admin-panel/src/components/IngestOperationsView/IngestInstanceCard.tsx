@@ -26,6 +26,7 @@ import {
   RegionAction,
 } from "../Utilities/ActionRegionConfirmationForm";
 import {
+  GCP_STORAGE_BASE_URL,
   DirectIngestInstance,
   IngestInstanceSummary,
   IngestRawFileProcessingStatus,
@@ -46,7 +47,6 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   env,
   stateCode,
 }) => {
-  const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
@@ -182,6 +182,8 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           <br />
           <IngestRawFileProcessingStatusTable
             ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+            ingestBucketPath={ingestInstanceSummary.ingestBucketPath}
+            storageDirectoryPath={ingestInstanceSummary.storageDirectoryPath}
           />
         </>
       )}
@@ -196,14 +198,16 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
           <NewTabLink
-            href={baseBucketUrl.concat(ingestInstanceSummary.ingestBucketPath)}
+            href={GCP_STORAGE_BASE_URL.concat(
+              ingestInstanceSummary.ingestBucketPath
+            )}
           >
             {ingestInstanceSummary.ingestBucketPath}
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Storage Bucket" span={3}>
           <NewTabLink
-            href={baseBucketUrl.concat(
+            href={GCP_STORAGE_BASE_URL.concat(
               ingestInstanceSummary.storageDirectoryPath
             )}
           >

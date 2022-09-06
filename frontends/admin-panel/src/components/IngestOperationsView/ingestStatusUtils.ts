@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { GCP_STORAGE_BASE_URL } from "./constants";
+
 export interface DirectIngestStatusFormattingInfo {
   status: string;
   color: string;
@@ -117,3 +119,12 @@ export const getStatusSortedOrder = (): string[] => {
     .sort((info) => info.sortRank)
     .map((info) => info.status);
 };
+
+export function getGCPBucketURL(
+  fileDirectoryPath: string,
+  fileTag: string
+): string {
+  return `${GCP_STORAGE_BASE_URL.concat(
+    fileDirectoryPath
+  )}?prefix=&forceOnObjectsSortingFiltering=true&pageState=(%22StorageObjectListTable%22:(%22f%22:%22%255B%257B_22k_22_3A_22_22_2C_22t_22_3A10_2C_22v_22_3A_22_5C_22${fileTag}_5C_22_22%257D%255D%22))`;
+}

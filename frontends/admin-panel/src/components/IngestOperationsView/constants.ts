@@ -14,6 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
+export const GCP_STORAGE_BASE_URL = `https://console.cloud.google.com/storage/browser/`;
+
+export const FILE_TAG_IGNORED_IN_SUBDIRECTORY = "IGNORED_IN_SUBDIRECTORY"; // special tag for files that are not in the base directory
+export const FILE_TAG_UNNORMALIZED = "UNNORMALIZED"; // special tag for files that don't follow normalized format
+export const SPECIAL_FILE_TAGS = [
+  FILE_TAG_UNNORMALIZED,
+  FILE_TAG_IGNORED_IN_SUBDIRECTORY,
+];
+
 export enum QueueState {
   PAUSED = "PAUSED",
   RUNNING = "RUNNING",
