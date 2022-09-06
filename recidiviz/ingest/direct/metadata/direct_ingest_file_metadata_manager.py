@@ -35,6 +35,7 @@ class DirectIngestRawFileMetadataSummary:
     num_processed_files: int
     latest_discovery_time: datetime.datetime
     latest_processed_time: Optional[datetime.datetime]
+    latest_datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime]
 
 
 class DirectIngestSftpFileMetadataManager:
