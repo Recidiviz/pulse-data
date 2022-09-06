@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_vfds_person` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - FirstName
+  - LastName
+  - StartDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ID
+          id_type: $literal("US_OZ_VFDS")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $surname: LastName
+    # Well it's the start of your Recidiviz life anyway
+    birthdate: StartDate
