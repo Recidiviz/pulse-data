@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_vfds_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - PersonID
+  - StartDate
+  - EndDate
+  - Rank
+  - Food
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: PersonID
+          id_type: $literal("US_OZ_VFDS")
+    incarceration_periods:
+      # Note: Here we are mapping unrelated data into fields in our schema as a way to
+      # explore how the mapping system works. This is not meant to trivialize the
+      # context that we are working in but merely help you to understand the inner
+      # workings of the infrastructure before we dive into the complexities of the
+      # criminal justice system and how its concepts are represented in our schema.
+      - StateIncarcerationPeriod:
+          external_id: ID
+          admission_date: StartDate
+          release_date: EndDate
+          facility: Food
+          custody_level:
+            $enum_mapping:
+              $raw_text: Rank
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM: "1"
+                StateIncarcerationPeriodCustodyLevel.CLOSE: "2"
+                StateIncarcerationPeriodCustodyLevel.MEDIUM: "3"
+                StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM: "4"
+                StateIncarcerationPeriodCustodyLevel.MINIMUM: "5"
