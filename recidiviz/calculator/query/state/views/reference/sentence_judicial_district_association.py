@@ -43,7 +43,7 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.date_charged,
         charge.offense_date,
         court_case.date_convicted,
-        judicial_district_code,
+        court_case.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
         `{project_id}.{base_dataset}.state_supervision_sentence` ss
@@ -69,7 +69,7 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.date_charged,
         charge.offense_date,
         court_case.date_convicted,
-        judicial_district_code,
+        court_case.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
         `{project_id}.{base_dataset}.state_incarceration_sentence` inc
