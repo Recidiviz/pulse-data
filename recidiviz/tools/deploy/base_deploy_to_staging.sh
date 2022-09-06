@@ -124,7 +124,7 @@ else
         fi
         if [[ "${FOUND_REMOTE_BUILD}" == "false" ]]; then
             echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
-            sleep 30s
+            sleep 30
             ((timeout -= 30))
         fi
     done
