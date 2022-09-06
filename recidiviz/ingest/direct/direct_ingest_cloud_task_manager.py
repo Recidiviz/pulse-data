@@ -159,7 +159,6 @@ class DirectIngestQueueType(Enum):
         return ingest_instance is DirectIngestInstance.PRIMARY or self not in (
             # Primary-instance-only queues
             DirectIngestQueueType.SFTP_QUEUE,
-            DirectIngestQueueType.RAW_DATA_IMPORT,
         )
 
 

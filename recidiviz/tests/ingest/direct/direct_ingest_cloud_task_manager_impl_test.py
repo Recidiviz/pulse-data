@@ -75,7 +75,6 @@ class TestDirectIngestQueueType(TestCase):
     def test_exists_for_instance(self) -> None:
         primary_only_queue_types = {
             DirectIngestQueueType.SFTP_QUEUE,
-            DirectIngestQueueType.RAW_DATA_IMPORT,
         }
         for queue_type in primary_only_queue_types:
             self.assertTrue(
