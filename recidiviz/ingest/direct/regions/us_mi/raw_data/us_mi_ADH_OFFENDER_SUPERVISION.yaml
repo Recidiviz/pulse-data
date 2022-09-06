@@ -529,6 +529,6 @@ columns:
     description: date offender supervision level record was last updated
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
   - name: mdoc_paid_phone_rpt
