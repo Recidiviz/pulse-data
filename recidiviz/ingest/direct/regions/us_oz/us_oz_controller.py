@@ -40,6 +40,4 @@ class UsOzController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return [
-            "vfds_person",
-        ]
+        return ["vfds_person", "vfds_periods"]
