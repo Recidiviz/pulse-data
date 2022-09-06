@@ -19,7 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -44,10 +43,10 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         'SUPERVISION' AS compartment_level_1,
         supervision_type AS compartment_level_2,
         # TODO(#12756): Remove when US_TN level_2 location information is ingested
-        CONCAT(COALESCE(df.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(df.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        CONCAT(COALESCE(df.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(df.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
         COALESCE(df.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
-        COALESCE(df.level_2_supervision_location_external_id,ref.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
+        COALESCE(df.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
         CASE
             WHEN COALESCE(supervision_level, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN" THEN supervision_level
             WHEN supervision_level_raw_text IN ("9WR",  "ZWS") THEN "WARRANT"
@@ -59,17 +58,6 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         case_type,
         judicial_district_code,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` df
-    LEFT JOIN (
-      SELECT DISTINCT 
-      state_code,
-      level_2_supervision_location_external_id,
-      level_2_supervision_location_name,
-      level_1_supervision_location_external_id,
-      level_1_supervision_location_name
-      FROM `{reference_views_dataset}.supervision_location_ids_to_names`
-    )  ref
-      ON df.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
-      AND df.state_code = ref.state_code
     WHERE df.state_code = 'US_TN' AND df.included_in_state_population
 """
 
@@ -79,7 +67,6 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
     description=US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     should_materialize=True,
 )
 
