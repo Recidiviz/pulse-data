@@ -50,8 +50,8 @@ class SingleTaskEligibilityBigQueryViewCollector(
         ):
             view_builders.extend(
                 self.collect_view_builders_in_module(
-                    SingleTaskEligibilitySpansBigQueryViewBuilder,
-                    state_tasks_module,
+                    builder_type=SingleTaskEligibilitySpansBigQueryViewBuilder,
+                    view_dir_module=state_tasks_module,
                     validate_builder_fn=filename_matches_view_id_validator,
                 )
             )

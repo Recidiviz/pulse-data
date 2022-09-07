@@ -17,6 +17,7 @@
 """A class that collects top-level BigQueryViewBuilder instances in a directory and uses them to build BigQueryViews."""
 import abc
 import os
+import re
 from types import ModuleType
 from typing import Callable, Generic, List, Optional, Type
 
@@ -26,6 +27,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilderType,
 )
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.utils.types import assert_type
 
 VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 
@@ -43,9 +45,13 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
     @classmethod
     def collect_view_builders_in_dir(
         cls,
+        *,
         builder_type: Type[BigQueryViewBuilderType],
         relative_dir_path: str,
+        recurse: bool = False,
         view_file_prefix_filter: Optional[str] = None,
+        view_builder_attribute_name_regex: str = VIEW_BUILDER_EXPECTED_NAME,
+        expect_builders_in_all_files: bool = True,
     ) -> List[BigQueryViewBuilderType]:
         """Collects all view builders in a directory relative to the recidiviz base directory and returns a list of all
         views that can be built from builders defined in files in that directory.
@@ -53,25 +59,38 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         Args:
             builder_type: The type of builder that we expect to find in this subdir
             relative_dir_path: The relative path to search in (e.g. 'calculator/query/state/views/admissions').
+            recurse: If true, look inside subdirectories of relative_dir_path for view files.
             view_file_prefix_filter: When set, collection filters out any files whose name does not have this prefix.
+            view_builder_attribute_name_regex: Regex that matches the name of view
+                builder top-level variables in the module. Must be an exact match.
+            expect_builders_in_all_files: If True, throws if a view builder does not
+                exist in all discovered python files. Otherwise, just skips files with
+                no matching builder.
         """
         sub_module_parts = os.path.normpath(relative_dir_path).split("/")
         view_dir_module = cls.get_relative_module(recidiviz, sub_module_parts)
         return cls.collect_view_builders_in_module(
             builder_type=builder_type,
             view_dir_module=view_dir_module,
+            recurse=recurse,
             view_file_prefix_filter=view_file_prefix_filter,
+            view_builder_attribute_name_regex=view_builder_attribute_name_regex,
+            expect_builders_in_all_files=expect_builders_in_all_files,
         )
 
     @classmethod
     def collect_view_builders_in_module(
         cls,
+        *,
         builder_type: Type[BigQueryViewBuilderType],
         view_dir_module: ModuleType,
+        recurse: bool = False,
         view_file_prefix_filter: Optional[str] = None,
+        view_builder_attribute_name_regex: str = VIEW_BUILDER_EXPECTED_NAME,
         validate_builder_fn: Optional[
             Callable[[BigQueryViewBuilderType, ModuleType], None]
         ] = None,
+        expect_builders_in_all_files: bool = True,
     ) -> List[BigQueryViewBuilderType]:
         """Collects all view builders in a directory module and returns a list of all
         views that can be built from builders defined in files in that directory.
@@ -80,6 +99,7 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
             builder_type: The type of builder that we expect to find in this subdir
             view_dir_module: The module for the directory that contains all the view
                 definition files.
+            recurse: If true, look inside submodules of view_dir_module for view files.
             view_file_prefix_filter: When set, collection filters out any files whose
                 name does not have this prefix.
             validate_builder_fn: When set, this function will be called with each
@@ -87,28 +107,60 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
                 this function should throw if the builder does not meet validation
                 conditions. This can be used to enforce agreement between builder
                 filenames and the builder view names, for example.
+            view_builder_attribute_name_regex: Regex that matches the name of view
+                builder top-level variables in the module. Must be an exact match.
+            expect_builders_in_all_files: If True, throws if a view builder does not
+                exist in all discovered python files. Otherwise, just skips files with
+                no matching builder.
         """
 
-        view_modules = cls.get_submodules(view_dir_module, view_file_prefix_filter)
+        view_dir_modules = [view_dir_module]
+        builders = set()
+        while view_dir_modules:
+            view_dir_module = view_dir_modules.pop(0)
+            child_modules = cls.get_submodules(
+                view_dir_module, submodule_name_prefix_filter=None
+            )
+            for child_module in child_modules:
+                if cls.is_module_package(child_module):
+                    if recurse:
+                        view_dir_modules.append(child_module)
+                    continue
 
-        builders = []
-        for view_module in view_modules:
-            if not hasattr(view_module, VIEW_BUILDER_EXPECTED_NAME):
-                raise ValueError(
-                    f"File [{view_module.__file__}] has no top-level attribute called "
-                    f"[{VIEW_BUILDER_EXPECTED_NAME}]"
+                view_file_name = os.path.basename(
+                    assert_type(child_module.__file__, str)
                 )
+                if view_file_prefix_filter and not view_file_name.startswith(
+                    view_file_prefix_filter
+                ):
+                    continue
 
-            builder = getattr(view_module, VIEW_BUILDER_EXPECTED_NAME)
+                builder_variable_names = [
+                    attribute
+                    for attribute in dir(child_module)
+                    if re.fullmatch(view_builder_attribute_name_regex, attribute)
+                ]
 
-            if not isinstance(builder, builder_type):
-                raise ValueError(f"Unexpected type for builder [{type(builder)}]")
+                if expect_builders_in_all_files and not builder_variable_names:
+                    raise ValueError(
+                        f"File [{child_module.__file__}] has no top-level attribute matching "
+                        f"[{view_builder_attribute_name_regex}]"
+                    )
 
-            if validate_builder_fn:
-                validate_builder_fn(builder, view_module)
-            builders.append(builder)
+                for builder_name in builder_variable_names:
+                    builder = getattr(child_module, builder_name)
+                    if not isinstance(builder, builder_type):
+                        raise ValueError(
+                            f"Unexpected type [{builder.__class__.__name__}] for attribute "
+                            f"[{builder_name}] in file [{child_module.__file__}]. Expected "
+                            f"type [{builder_type.__name__}]."
+                        )
 
-        return builders
+                    if validate_builder_fn:
+                        validate_builder_fn(builder, child_module)
+                    builders.add(builder)
+
+        return list(builders)
 
 
 def filename_matches_view_id_validator(

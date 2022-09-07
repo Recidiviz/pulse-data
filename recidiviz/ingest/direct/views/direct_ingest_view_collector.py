@@ -59,9 +59,9 @@ class DirectIngestPreProcessedIngestViewCollector(
         )
 
         ingest_view_builders = self.collect_view_builders_in_dir(
-            DirectIngestPreProcessedIngestViewBuilder,
-            relative_dir_path,
-            _INGEST_VIEW_FILE_PREFIX,
+            builder_type=DirectIngestPreProcessedIngestViewBuilder,
+            relative_dir_path=relative_dir_path,
+            view_file_prefix_filter=_INGEST_VIEW_FILE_PREFIX,
         )
 
         self._validate_ingest_views(ingest_view_builders)

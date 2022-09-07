@@ -22,6 +22,8 @@ import pkgutil
 from types import ModuleType
 from typing import List, Optional
 
+from recidiviz.utils.types import assert_type
+
 
 class ModuleCollectorMixin:
     """A mixin class that helps with traversing Python modules / directory trees."""
@@ -60,3 +62,8 @@ class ModuleCollectorMixin:
             submodules.append(cls.get_relative_module(base_module, [submodule_name]))
 
         return submodules
+
+    @classmethod
+    def is_module_package(cls, module: ModuleType) -> bool:
+        file = assert_type(module.__file__, str)
+        return file.endswith("__init__.py")

@@ -48,8 +48,8 @@ class TaskCriteriaBigQueryViewCollector(
         which apply logic specific to a particular state.
         """
         view_builders = self.collect_view_builders_in_module(
-            StateAgnosticTaskCriteriaBigQueryViewBuilder,
-            general_criteria_module,
+            builder_type=StateAgnosticTaskCriteriaBigQueryViewBuilder,
+            view_dir_module=general_criteria_module,
             validate_builder_fn=filename_matches_view_id_validator,
         )
 
@@ -58,8 +58,8 @@ class TaskCriteriaBigQueryViewCollector(
         ):
             view_builders.extend(
                 self.collect_view_builders_in_module(
-                    StateSpecificTaskCriteriaBigQueryViewBuilder,
-                    state_criteria_module,
+                    builder_type=StateSpecificTaskCriteriaBigQueryViewBuilder,
+                    view_dir_module=state_criteria_module,
                     validate_builder_fn=filename_matches_view_id_validator,
                 )
             )

@@ -34,6 +34,12 @@ from recidiviz.tests.big_query.fake_big_query_view_builder import (
 )
 from recidiviz.tests.big_query.test_views.good_view_1 import GOOD_VIEW_1
 from recidiviz.tests.big_query.test_views.good_view_2 import GOOD_VIEW_2
+from recidiviz.tests.big_query.test_views.view_builder_alternate_name import (
+    VIEW_ALTERNATE_NAME,
+)
+from recidiviz.tests.big_query.test_views.views_subdirectory.good_view_3 import (
+    GOOD_VIEW_3,
+)
 
 VIEWS_DIR_RELATIVE_PATH = os.path.relpath(
     os.path.dirname(test_views.__file__), os.path.dirname(recidiviz.__file__)
@@ -53,51 +59,125 @@ class BigQueryViewCollectorTest(unittest.TestCase):
 
     def test_collect_view_builders(self) -> None:
         builders = BigQueryViewCollector.collect_view_builders_in_dir(
-            FakeBigQueryViewBuilder,
-            VIEWS_DIR_RELATIVE_PATH,
+            builder_type=FakeBigQueryViewBuilder,
+            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
             view_file_prefix_filter="good_",
         )
         views: List[BigQueryView] = [builder.build() for builder in builders]
         self.assertCountEqual([GOOD_VIEW_1, GOOD_VIEW_2], views)
 
+    def test_collect_view_builders_recursive(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+            builder_type=FakeBigQueryViewBuilder,
+            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            recurse=True,
+            view_file_prefix_filter="good_",
+        )
+        views: List[BigQueryView] = [builder.build() for builder in builders]
+        self.assertCountEqual([GOOD_VIEW_1, GOOD_VIEW_2, GOOD_VIEW_3], views)
+
     def test_collect_views_too_narrow_view_type(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected type \[FakeBigQueryViewBuilder\] for attribute \[VIEW_BUILDER\] "
+            r"in file \[.*good_view_1.py\]. Expected type "
+            r"\[DirectIngestPreProcessedIngestViewBuilder\].",
+        ):
             # One of the views is only a BigQueryView, not a DirectIngestPreProcessedIngestView
             _ = BigQueryViewCollector.collect_view_builders_in_dir(
-                DirectIngestPreProcessedIngestViewBuilder,
-                VIEWS_DIR_RELATIVE_PATH,
+                builder_type=DirectIngestPreProcessedIngestViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
                 view_file_prefix_filter="good_",
             )
 
     def test_collect_views_narrow_view_type_ok(self) -> None:
         builders = BigQueryViewCollector.collect_view_builders_in_dir(
-            FakeBigQueryViewBuilder,
-            VIEWS_DIR_RELATIVE_PATH,
+            builder_type=FakeBigQueryViewBuilder,
+            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
             view_file_prefix_filter="good_view_2",
         )
 
         self.assertCountEqual([GOOD_VIEW_2], [b.build() for b in builders])
 
     def test_file_no_builder_raises(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"File \[.*bad_view_no_builder.py\] has no top-level attribute matching "
+            r"\[VIEW_BUILDER\]",
+        ):
             _ = BigQueryViewCollector.collect_view_builders_in_dir(
-                FakeBigQueryViewBuilder,
-                VIEWS_DIR_RELATIVE_PATH,
+                builder_type=FakeBigQueryViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
                 view_file_prefix_filter="bad_view_no_builder",
             )
 
     def test_file_builder_wrong_name_raises(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"File \[.*view_builder_alternate_name.py\] has no top-level attribute "
+            r"matching \[VIEW_BUILDER\]",
+        ):
             _ = BigQueryViewCollector.collect_view_builders_in_dir(
-                FakeBigQueryViewBuilder,
-                VIEWS_DIR_RELATIVE_PATH,
-                view_file_prefix_filter="bad_view_builder_wrong_name",
+                builder_type=FakeBigQueryViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_file_prefix_filter="view_builder_alternate_name",
             )
 
-    def test_file_builder_wrong_type_raises(self) -> None:
-        with self.assertRaises(ValueError):
+    def test_collect_views_regex_name_match(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+            builder_type=FakeBigQueryViewBuilder,
+            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_file_prefix_filter="view_builder_alternate_name",
+            view_builder_attribute_name_regex="[A-Z]{2}_VIEW_BUILDER",
+        )
+
+        self.assertCountEqual([VIEW_ALTERNATE_NAME], [b.build() for b in builders])
+
+    def test_file_builder_wrong_name_raises_regex(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"File \[.*good_view_1.py\] has no top-level attribute "
+            r"matching \[VIEW_BUILDER_\.\*\]",
+        ):
             _ = BigQueryViewCollector.collect_view_builders_in_dir(
-                FakeBigQueryViewBuilder,
-                VIEWS_DIR_RELATIVE_PATH,
+                builder_type=FakeBigQueryViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_file_prefix_filter="good_view_1",
+                view_builder_attribute_name_regex=r"VIEW_BUILDER_.*",
+            )
+
+    def test_file_builder_wrong_name_raises_regex_strict(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"File \[.*good_view_1.py\] has no top-level attribute "
+            r"matching \[VIEW]",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                builder_type=FakeBigQueryViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_file_prefix_filter="good_view_1",
+                view_builder_attribute_name_regex=r"VIEW",
+            )
+
+    def test_file_builder_wrong_name_do_not_expect(self) -> None:
+        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+            builder_type=FakeBigQueryViewBuilder,
+            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_file_prefix_filter="good_view_1",
+            view_builder_attribute_name_regex=r"VIEW",
+            expect_builders_in_all_files=False,
+        )
+        self.assertCountEqual([], [b.build() for b in builders])
+
+    def test_file_builder_wrong_type_raises(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected type \[str\] for attribute \[VIEW_BUILDER\] "
+            r"in file \[.*bad_view_builder_wrong_type.py\]. Expected type "
+            r"\[FakeBigQueryViewBuilder\].",
+        ):
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                builder_type=FakeBigQueryViewBuilder,
+                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
                 view_file_prefix_filter="bad_view_builder_wrong_type",
             )
