@@ -31,7 +31,6 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
     legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
-from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -144,8 +143,6 @@ def generate_enum_overrides() -> EnumOverrides:
         StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["HAW"],
         StateRace.OTHER: ["MUL"],
         StateSentenceStatus.SERVING: ["O"],
-        StateChargeClassificationType.FELONY: ["IF"],
-        StateChargeClassificationType.MISDEMEANOR: ["IM"],
         StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
             "DAMAGE",
             "DISCON",

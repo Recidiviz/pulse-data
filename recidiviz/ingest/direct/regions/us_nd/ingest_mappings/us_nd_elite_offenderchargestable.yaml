@@ -1,25 +1,83 @@
-key_mappings:
-  OFFENSE_DATE: state_charge.offense_date
-  OFFENCE_CODE: state_charge.statute
-  SEVERITY_RANKING: state_charge.offense_type
-  CODE_DESCRIPTION: state_charge.description
-  INITIAL_COUNTS: state_charge.counts
-  COMMENT_TEXT: state_charge.charge_notes
-
-child_key_mappings:
-  ORDER_ID: state_court_case.state_court_case_id
-
-ancestor_keys:
-  OFFENDER_BOOK_ID: state_person.state_person_id
-
-# There is a primary key override for state_charge in us_nd_controller for this file
-
-keys_to_ignore:
-  - OFFENCE_TYPE # Handled manually within us_nd_scraper
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENSE_DATE
+  - OFFENCE_CODE
+  - SEVERITY_RANKING
+  - CODE_DESCRIPTION
+  - INITIAL_COUNTS
+  - COMMENT_TEXT
+  - ORDER_ID
+  - OFFENDER_BOOK_ID
+  - OFFENCE_TYPE
+  - OFFENCE_DATE_RANGE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+  - CHARGE_SEQ
+  - CHARGE_STATUS
+  - DESCRIPTION
+  - ModifyDate
+unused_columns:
   - OFFENCE_DATE_RANGE # No apparent use for these at the moment, very sparse
   - CREATE_DATETIME # No apparent use for these at the moment
   - MODIFY_DATETIME # No apparent use for these at the moment
-  - ModifyDate # No apparent use for these at the moment
-  - CHARGE_SEQ # Handled manually within us_nd_scraper
-  - CHARGE_STATUS # No apparent use for these at the moment
   - DESCRIPTION # A sparsely populated, fully redundant version of CODE_DESCRIPTION
+  - ModifyDate # No apparent use for these at the moment
+variables:
+  - charge_sentence_id:
+      $concat:
+        $values:
+          - $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: OFFENDER_BOOK_ID
+          - CHARGE_SEQ
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id:
+            $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id: $variable(charge_sentence_id)
+          charges:
+            - StateCharge:
+                external_id: $variable(charge_sentence_id)
+                offense_date: OFFENSE_DATE
+                statute: OFFENCE_CODE
+                offense_type: SEVERITY_RANKING
+                description: CODE_DESCRIPTION
+                counts: INITIAL_COUNTS
+                charge_notes: COMMENT_TEXT
+                court_case:
+                  StateCourtCase:
+                    external_id: ORDER_ID
+                classification_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $custom:
+                        $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                        $args:
+                          raw_charge_text: OFFENCE_TYPE
+                    $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: OFFENCE_TYPE
+                status: $literal_enum(StateChargeStatus.CONVICTED)
+                is_controlling:
+                  $in:
+                    $value: CHARGE_STATUS
+                    $options:
+                      - $literal("C")
+                      - $literal("CT")
+                is_violent:
+                  $equal:
+                    - SEVERITY_RANKING
+                    - $literal("VIOLENT")

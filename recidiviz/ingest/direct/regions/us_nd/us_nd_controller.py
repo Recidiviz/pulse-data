@@ -30,7 +30,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
@@ -71,16 +70,12 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     generate_enum_overrides,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.extractor.csv_data_extractor import (
-    AncestorChainOverridesCallable,
-    IngestFieldCoordinates,
-)
+from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     IngestObject,
     StateAgent,
     StateAssessment,
-    StateCharge,
     StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
@@ -111,7 +106,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.row_pre_processors_by_file: Dict[str, List[IngestRowPrehookCallable]] = {
             "elite_offenderidentifier": [self._normalize_id_fields],
             "elite_offendersentences": [self._normalize_id_fields],
-            "elite_offenderchargestable": [self._normalize_id_fields],
             "elite_orderstable": [self._normalize_id_fields],
         }
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
@@ -119,12 +113,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offenderbookingstable": [self._add_person_external_id],
             "elite_offendersentences": [
                 gen_set_is_life_sentence_hook("SENTENCE_CALC_TYPE", "LIFE")
-            ],
-            "elite_offenderchargestable": [
-                self._parse_elite_charge_classification,
-                self._set_elite_charge_status,
-                self._rationalize_controlling_charge,
-                self._rationalize_violent_charge,
             ],
             "elite_orderstable": [
                 gen_set_agent_type(StateAgentType.JUDGE),
@@ -156,14 +144,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "elite_offendersentences": _generate_sentence_primary_key,
-            "elite_offenderchargestable": _generate_charge_primary_key,
             "elite_offense_in_custody_and_pos_report_data": _generate_incident_primary_key,
-        }
-
-        self.ancestor_chain_overrides_callback_by_file: Dict[
-            str, AncestorChainOverridesCallable
-        ] = {
-            "elite_offenderchargestable": _state_charge_ancestor_chain_overrides,
         }
 
     def get_ingest_view_rank_list(self) -> List[str]:
@@ -245,11 +226,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]
         return post_processors
 
-    def get_ancestor_chain_overrides_callback_for_file(
-        self, file: str
-    ) -> Optional[IngestAncestorChainOverridesCallable]:
-        return self.ancestor_chain_overrides_callback_by_file.get(file, None)
-
     def get_primary_key_override_for_file(
         self, file: str
     ) -> Optional[IngestPrimaryKeyOverrideCallable]:
@@ -257,6 +233,11 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     def get_files_to_set_with_empty_values(self) -> List[str]:
         return []
+
+    def get_ancestor_chain_overrides_callback_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
+        return None
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
@@ -567,56 +548,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 )
 
     @staticmethod
-    def _set_elite_charge_status(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCharge):
-                # Note: If we hear about a charge in Elite, the person has already been sentenced.
-                extracted_object.status = StateChargeStatus.CONVICTED.value
-
-    @staticmethod
-    def _rationalize_controlling_charge(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        status = row.get("CHARGE_STATUS", None)
-        is_controlling = status and status.upper() in ["C", "CT"]
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCharge):
-                extracted_object.is_controlling = str(is_controlling)
-
-    @staticmethod
-    def _rationalize_violent_charge(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        offense_type = row.get("SEVERITY_RANKING", None)
-        is_violent = offense_type and offense_type.upper() == "VIOLENT"
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCharge):
-                extracted_object.is_violent = str(is_violent)
-
-    @staticmethod
-    def _parse_elite_charge_classification(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        classification_str = row["OFFENCE_TYPE"]
-        _parse_charge_classification(classification_str, extracted_objects)
-
-    @staticmethod
     def _normalize_judicial_district_code(
         _gating_context: IngestGatingContext,
         _row: Dict[str, str],
@@ -684,58 +615,8 @@ def _recover_movement_sequence(period_id: str) -> str:
     return period_id_components[1]
 
 
-def _generate_charge_primary_key(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> IngestFieldCoordinates:
-    return IngestFieldCoordinates(
-        "state_charge", "state_charge_id", _generate_charge_id(row)
-    )
-
-
-def _generate_charge_id(row: Dict[str, str]) -> str:
-    booking_id = row["OFFENDER_BOOK_ID"]
-    charge_seq = row["CHARGE_SEQ"]
-
-    return "-".join([booking_id, charge_seq])
-
-
 def _generate_person_book_id(row: Dict[str, str]) -> str:
     return row["OFFENDER_BOOK_ID"]
-
-
-def _state_charge_ancestor_chain_overrides(
-    _gating_context: IngestGatingContext, row: Dict[str, str]
-) -> Dict[str, str]:
-    # The charge id can be used interchangeably in ND with the sentence id because there is a 1:1 mapping between
-    # charges and sentences, so the CHARGE_SEQ and SENTENCE_SEQ numbers can be used interchangeably.
-    return {
-        "state_incarceration_sentence": _generate_charge_id(row),
-    }
-
-
-def _parse_charge_classification(
-    classification_str: Optional[str], extracted_objects: List[IngestObject]
-) -> None:
-    if not classification_str:
-        return
-
-    upper_classification_str = classification_str.upper()
-
-    classification_subtype = None
-    if upper_classification_str[0] in {"F", "M"}:
-        classification_type = upper_classification_str[0]
-
-        if upper_classification_str[1:]:
-            classification_subtype = upper_classification_str[1:]
-    elif upper_classification_str in {"IF", "IM"}:
-        classification_type = upper_classification_str[1]
-    else:
-        raise ValueError(f"Cannot parse classification string: [{classification_str}]")
-
-    for extracted_object in extracted_objects:
-        if isinstance(extracted_object, StateCharge):
-            extracted_object.classification_type = classification_type
-            extracted_object.classification_subtype = classification_subtype
 
 
 _LSIR_DOMAINS: Dict[str, str] = {
