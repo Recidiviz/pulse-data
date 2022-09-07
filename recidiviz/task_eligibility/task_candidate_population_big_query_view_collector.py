@@ -51,8 +51,8 @@ class TaskCandidatePopulationBigQueryViewCollector(
         specific to a particular state.
         """
         view_builders = self.collect_view_builders_in_module(
-            StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
-            general_population_module,
+            builder_type=StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
+            view_dir_module=general_population_module,
             validate_builder_fn=filename_matches_view_id_validator,
         )
 
@@ -61,8 +61,8 @@ class TaskCandidatePopulationBigQueryViewCollector(
         ):
             view_builders.extend(
                 self.collect_view_builders_in_module(
-                    StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
-                    state_population_module,
+                    builder_type=StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
+                    view_dir_module=state_population_module,
                     validate_builder_fn=filename_matches_view_id_validator,
                 )
             )
