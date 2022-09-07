@@ -19,7 +19,6 @@
 import json
 from typing import Dict, List, Optional, Tuple, cast
 
-from recidiviz.common import ncic
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.external_id_types import (
     US_ND_ELITE,
@@ -143,16 +142,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._set_punishment_length_days,
                 self._set_location_within_facility,
                 self._set_incident_outcome_id,
-            ],
-            "docstars_offensestable": [
-                self._parse_docstars_charge_classification,
-                self._parse_docstars_charge_offense,
-                gen_normalize_county_codes_posthook(
-                    self.region.region_code,
-                    "COUNTY",
-                    StateCharge,
-                    normalized_county_code,
-                ),
             ],
             "docstars_lsi_chronology": [self._process_lsir_assessments],
             "docstars_ftr_episode": [self._process_ftr_episode],
@@ -626,36 +615,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     ) -> None:
         classification_str = row["OFFENCE_TYPE"]
         _parse_charge_classification(classification_str, extracted_objects)
-
-    @staticmethod
-    def _parse_docstars_charge_classification(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        classification_str = row["LEVEL"]
-        _parse_charge_classification(classification_str, extracted_objects)
-
-    @staticmethod
-    def _parse_docstars_charge_offense(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        ncic_code = row.get("CODE", None)
-        if not ncic_code:
-            return
-
-        description = ncic.get_description(ncic_code)
-        is_violent = ncic.get_is_violent(ncic_code)
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCharge):
-                extracted_object.description = description
-                if is_violent is not None:
-                    extracted_object.is_violent = str(is_violent)
 
     @staticmethod
     def _normalize_judicial_district_code(

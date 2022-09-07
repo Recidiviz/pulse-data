@@ -26,6 +26,7 @@ my_flat_field:
 """
 import re
 from re import Pattern
+from typing import Optional
 
 from recidiviz.common import ncic
 from recidiviz.common.str_field_utils import (
@@ -117,3 +118,29 @@ def max_length_days_from_ymd(years: str, months: str, days: str) -> str:
     )
 
     return str(safe_parse_days_from_duration_str(normalized_ymd_str))
+
+
+def classification_type_raw_text_from_raw_text(raw_charge_text: str) -> Optional[str]:
+    classification_str = raw_charge_text.upper()
+    if classification_str.startswith("F") or classification_str.startswith("M"):
+        return classification_str[0]
+    if classification_str in ("IM", "IF"):
+        return classification_str[1]
+    return None
+
+
+def classification_subtype_from_raw_text(raw_charge_text: str) -> Optional[str]:
+    classification_str = raw_charge_text.upper()
+    if (
+        classification_str.startswith("F") or classification_str.startswith("M")
+    ) and len(classification_str) > 1:
+        return classification_str[1:]
+    return None
+
+
+def extract_description_from_ncic_code(ncic_code: str) -> Optional[str]:
+    return ncic.get_description(ncic_code)
+
+
+def extract_is_violent_from_ncic_code(ncic_code: str) -> Optional[bool]:
+    return ncic.get_is_violent(ncic_code)
