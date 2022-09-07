@@ -26,6 +26,7 @@ import datetime
 from typing import Dict, List, Type
 
 from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -214,3 +215,13 @@ def parse_residency_status_from_address(
     if "HOMELESS" in raw_text.upper():
         return StateResidencyStatus.HOMELESS
     return StateResidencyStatus.PERMANENT
+
+
+def parse_classification_type_from_raw_text(
+    raw_text: str,
+) -> StateChargeClassificationType:
+    if raw_text.startswith("F"):
+        return StateChargeClassificationType.FELONY
+    if raw_text.startswith("M"):
+        return StateChargeClassificationType.MISDEMEANOR
+    return StateChargeClassificationType.INTERNAL_UNKNOWN

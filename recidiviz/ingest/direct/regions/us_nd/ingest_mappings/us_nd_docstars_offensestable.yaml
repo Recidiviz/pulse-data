@@ -1,21 +1,23 @@
-key_mappings:
-  CODE: state_charge.ncic_code
-  LEVEL: state_charge.classification_type
-  COUNTS: state_charge.counts
-  OFFENSEDATE: state_charge.offense_date
-  COUNTY: state_charge.county_code
-
-ancestor_keys:
-  SID: state_person.state_person_id
-  CASE_NUMBER: state_supervision_sentence.state_supervision_sentence_id
-
-enforced_ancestor_types:
-  state_sentence: state_supervision_sentence
-
-primary_key:
-  RecID: state_charge.state_charge_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - CODE
+  - LEVEL
+  - COUNTS
+  - OFFENSEDATE
+  - COUNTY
+  - SID
+  - CASE_NUMBER
+  - RecID
+  - COUNT
+  - COURT_NUMBER
+  - INACTIVEDATE
+  - RecDate
+  - YEAR
+  - LAST_UPDATE
+  - CREATED_BY
+  - MASTER_OFFENSE_IND
+unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
   - INACTIVEDATE # No longer in use within source
@@ -24,6 +26,46 @@ keys_to_ignore:
   - LAST_UPDATE # No apparent use for these
   - CREATED_BY # No apparent use for these
   - MASTER_OFFENSE_IND # Not in consistent use within source
-  - Common_Statute_Number
-  - Common_Statute_NCIC_Code
-  - REQUIRES_REGISTRATION
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id: CASE_NUMBER
+          charges:
+            - StateCharge:
+                external_id: RecID
+                offense_date: OFFENSEDATE
+                counts: COUNTS
+                classification_type:
+                  $enum_mapping:
+                    $raw_text:
+                      $custom:
+                        $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                        $args:
+                          raw_charge_text: LEVEL
+                    $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: LEVEL
+                ncic_code: CODE
+                description:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_description_from_ncic_code
+                    $args:
+                      ncic_code: CODE
+                is_violent:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                    $args:
+                      ncic_code: CODE
+                county_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: COUNTY
