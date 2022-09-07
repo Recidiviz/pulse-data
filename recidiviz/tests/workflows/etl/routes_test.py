@@ -84,6 +84,28 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             )
 
     @patch("recidiviz.workflows.etl.routes.CloudTaskQueueManager")
+    def test_handle_workflows_firestore_etl_skips_staged_files(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        test_filename = "staging/US_XX/test_file.json"
+
+        with self.test_app.test_client() as client:
+            response = client.post(
+                "/practices-etl/handle_workflows_firestore_etl",
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": "recidiviz-test-practices-etl-data",
+                            "objectId": test_filename,
+                        },
+                    }
+                },
+            )
+            mock_task_manager.return_value.create_task.assert_not_called()
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @patch("recidiviz.workflows.etl.routes.CloudTaskQueueManager")
     def test_handle_workflows_firestore_etl_missing_region_code(
         self, mock_task_manager: MagicMock
     ) -> None:
