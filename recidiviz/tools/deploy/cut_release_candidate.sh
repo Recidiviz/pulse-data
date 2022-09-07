@@ -3,13 +3,13 @@
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
+PROJECT="recidiviz-staging"
 
 # Used to track total time required to cut release candidate.
 # See how this works at https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script.
 SECONDS=0
 
 FORCE_PROMOTE=''
-
 function print_usage {
     echo_error "usage: $0 [-p] BRANCH"
     echo_error "  -p: Force the candidate to be promoted."
@@ -80,8 +80,12 @@ if [[ ! -z ${FORCE_PROMOTE} ]]; then
 fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
-script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH:0:7}] which is \
+COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
+
+script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH_SHORT}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
+
+deployment_bot_message $PROJECT "⛴ \`[${RELEASE_VERSION_TAG}]\` Deploying \`${COMMIT_HASH_SHORT}\` to \`$PROJECT\`"
 
 ${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} -c ${COMMIT_HASH} -b ${RELEASE_CANDIDATE_BASE_BRANCH} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
 
@@ -109,4 +113,6 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" ]]; then
 fi
 
 duration=$SECONDS
-echo "Release candidate staging deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
+MINUTES=$(($duration / 60))
+echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
+deployment_bot_message $PROJECT "⚓️ \`[${RELEASE_VERSION_TAG}]\` Succeeded in ${MINUTES} minutes. "

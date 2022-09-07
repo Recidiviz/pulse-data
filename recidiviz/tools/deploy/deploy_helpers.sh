@@ -181,6 +181,36 @@ function check_running_in_pipenv_shell {
     fi
 }
 
+function check_python_version {
+  PYTHON_VERSION=$(python -V | grep "Python " | cut -d ' ' -f 2)
+  # Fetch the required Python version from the Pipfile
+  PYTHON_SCRIPT=$(cat <<- EOM
+import toml
+with open("Pipfile", "r", encoding="utf-8") as f:
+  config = toml.loads(f.read())
+  print(config['requires']['python_version'])
+EOM)
+  MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python)
+  PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}
+
+  if [[ $MIN_REQUIRED_PYTHON_VERSION != $PYTHON_MAJOR_MINOR_VERSION ]]; then
+    echo_error "Installed Python version [v${PYTHON_VERSION}] must be at least [v${MIN_REQUIRED_PYTHON_VERSION}]."
+    echo_error "Please install [v$MIN_REQUIRED_PYTHON_VERSION]. "
+    echo_error "See instructions at go/backend-eng-setup for how to upgrade to [$MIN_REQUIRED_PYTHON_VERSION]."
+    exit 1
+  fi
+}
+
+function check_psycopg2 {
+  PYTHON_SCRIPT="import psycopg2"
+  PSYCOPG_DEBUG=1 python -c "${PYTHON_SCRIPT}" > /dev/null 2>&1
+  PSYCOPG_CONFIGURED=$?
+  if [[ $PSYCOPG_CONFIGURED -eq 1 ]]; then
+    echo_error "The \`psycopg2\` package is not installed correctly. It likely has misconfigured C bindings"
+    echo_error "Run \`PSYCOPG_DEBUG=1 python -c '${PYTHON_SCRIPT}'\` for more information "
+    exit 1
+  fi
+}
 
 function check_terraform_installed {
     if [[ -z $(which terraform) ]]; then
@@ -266,6 +296,12 @@ function verify_can_deploy {
     echo "Checking script is executing in a pipenv shell"
     run_cmd check_running_in_pipenv_shell
 
+    echo "Checking Python is correct version"
+    run_cmd check_python_version
+
+    echo "Checking psycopg2 is installed correctly"
+    run_cmd check_psycopg2
+
     echo "Checking Docker is installed and running"
     run_cmd check_docker_running
 
@@ -346,8 +382,8 @@ function deploy_terraform_infrastructure {
 
 # Posts a message to the #deployment-bot slack channel
 function deployment_bot_message {
-  MESSAGE=$2
   PROJECT_ID=$1
+  MESSAGE=$2
 
   AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
 
