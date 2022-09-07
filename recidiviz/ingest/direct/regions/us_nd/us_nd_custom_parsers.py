@@ -24,6 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+import logging
 import re
 from re import Pattern
 from typing import Optional
@@ -144,3 +145,34 @@ def extract_description_from_ncic_code(ncic_code: str) -> Optional[str]:
 
 def extract_is_violent_from_ncic_code(ncic_code: str) -> Optional[bool]:
     return ncic.get_is_violent(ncic_code)
+
+
+_JUDICIAL_DISTRICT_CODE_MAPPINGS = {
+    # ND Jurisdictions
+    "SE": "SOUTHEAST",
+    "EAST": "EAST_CENTRAL",
+    "SC": "SOUTH_CENTRAL",
+    "NW": "NORTHWEST",
+    "NE": "NORTHEAST",
+    "SW": "SOUTHWEST",
+    "NEC": "NORTHEAST_CENTRAL",
+    "NC": "NORTH_CENTRAL",
+    # Non-ND Jurisidctions
+    "OOS": "OUT_OF_STATE",
+    "OS": "OUT_OF_STATE",
+    "FD": "FEDERAL",
+}
+
+
+def normalize_judicial_district_code(judicial_district_code_text: str) -> Optional[str]:
+    if not judicial_district_code_text:
+        return None
+
+    if judicial_district_code_text not in _JUDICIAL_DISTRICT_CODE_MAPPINGS:
+        logging.warning(
+            "Found new judicial district code not in reference cache: [%s]",
+            judicial_district_code_text,
+        )
+        return judicial_district_code_text
+
+    return _JUDICIAL_DISTRICT_CODE_MAPPINGS[judicial_district_code_text]

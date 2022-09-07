@@ -1,26 +1,69 @@
-key_mappings:
-  ORDER_ID: state_court_case.state_court_case_id
-  ORDER_STATUS: state_court_case.status
-  CONVICTION_DATE: state_court_case.date_convicted
-  COURT_DATE: state_court_case.next_court_date
-  COUNTY_CODE: state_court_case.county_code
-  ISSUING_AGY_LOC_ID: state_court_case.judicial_district_code
-
-ancestor_keys:
-  OFFENDER_BOOK_ID: state_person.state_person_id
-
-child_key_mappings:
-  JUDGE_NAME: state_agent.full_name
-
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
-
-primary_key:
-  ORDER_ID: state_court_case.state_court_case_id
-
-keys_to_ignore:
-  - COURT_INFO_ID # TODO(#2311) Use this to do better entity matching between incarceration and supervision
-  - EFFECTIVE_DATE # No longer in use by source
-  - SENTENCE_START_DATE # No longer in use by source
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ORDER_ID
+  - ORDER_STATUS
+  - CONVICTION_DATE
+  - COURT_DATE
+  - COUNTY_CODE
+  - ISSUING_AGY_LOC_ID
+  - OFFENDER_BOOK_ID
+  - JUDGE_NAME
+  - COURT_INFO_ID
+  - EFFECTIVE_DATE
+  - SENTENCE_START_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+unused_columns:
+  - COURT_INFO_ID
+  - EFFECTIVE_DATE
+  - SENTENCE_START_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id:
+            $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          charges:
+            - StateCharge:
+                court_case:
+                  StateCourtCase:
+                    external_id:
+                      $custom:
+                        $function: us_nd_custom_parsers.decimal_str_as_int_str
+                        $args:
+                          dec_str: ORDER_ID
+                    status:
+                      $enum_mapping:
+                        $raw_text: ORDER_STATUS
+                        $mappings:
+                          StateCourtCaseStatus.PRESENT_WITHOUT_INFO:
+                            - "A"
+                            - "ACC"
+                            - "STEP"
+                    date_convicted: CONVICTION_DATE
+                    next_court_date: COURT_DATE
+                    county_code:
+                      $custom:
+                        $function: us_nd_custom_parsers.normalize_county_code
+                        $args:
+                          county_code: COUNTY_CODE
+                    judicial_district_code:
+                      $custom:
+                        $function: us_nd_custom_parsers.normalize_judicial_district_code
+                        $args:
+                          judicial_district_code_text: ISSUING_AGY_LOC_ID
+                    judge:
+                      StateAgent:
+                        agent_type: $literal_enum(StateAgentType.JUDGE)
+                        full_name:
+                          $json_dict:
+                            full_name: JUDGE_NAME
