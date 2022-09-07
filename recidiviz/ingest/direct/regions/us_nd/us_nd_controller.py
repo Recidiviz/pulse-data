@@ -53,18 +53,11 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
     gen_convert_person_ids_to_external_id_objects,
-    gen_normalize_county_codes_posthook,
     gen_set_agent_type,
     gen_set_is_life_sentence_hook,
 )
-from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
-    normalized_county_code,
-)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_custom_parsers import (
     decimal_str_as_int_str,
-)
-from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import (
-    normalized_judicial_district_code,
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_legacy_enum_helpers import (
     generate_enum_overrides,
@@ -76,7 +69,6 @@ from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
     StateAssessment,
-    StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StatePerson,
@@ -106,23 +98,12 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.row_pre_processors_by_file: Dict[str, List[IngestRowPrehookCallable]] = {
             "elite_offenderidentifier": [self._normalize_id_fields],
             "elite_offendersentences": [self._normalize_id_fields],
-            "elite_orderstable": [self._normalize_id_fields],
         }
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "elite_offenderidentifier": [self._normalize_external_id_type],
             "elite_offenderbookingstable": [self._add_person_external_id],
             "elite_offendersentences": [
                 gen_set_is_life_sentence_hook("SENTENCE_CALC_TYPE", "LIFE")
-            ],
-            "elite_orderstable": [
-                gen_set_agent_type(StateAgentType.JUDGE),
-                gen_normalize_county_codes_posthook(
-                    self.region.region_code,
-                    "COUNTY_CODE",
-                    StateCourtCase,
-                    normalized_county_code,
-                ),
-                self._normalize_judicial_district_code,
             ],
             "elite_offense_in_custody_and_pos_report_data": [
                 self._rationalize_incident_type,
@@ -547,20 +528,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     [incident_id, sanction_seq]
                 )
 
-    @staticmethod
-    def _normalize_judicial_district_code(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateCourtCase):
-                normalized_code = normalized_judicial_district_code(
-                    extracted_object.judicial_district_code
-                )
-                extracted_object.judicial_district_code = normalized_code
-
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
@@ -597,22 +564,6 @@ def _generate_incident_id(row: Dict[str, str]) -> str:
     person_incident_id = row["OIC_INCIDENT_ID"]
 
     return "-".join([overall_incident_id, person_incident_id])
-
-
-def _generate_period_id(row: Dict[str, str]) -> str:
-    booking_id = row["OFFENDER_BOOK_ID"]
-    movement_seq = row["MOVEMENT_SEQ"]
-
-    return "-".join([booking_id, movement_seq])
-
-
-def _recover_movement_sequence(period_id: str) -> str:
-    period_id_components = period_id.split(".")
-    if len(period_id_components) < 2:
-        raise ValueError(
-            f"Expected period id [{period_id}] to have multiple components separated by a period"
-        )
-    return period_id_components[1]
 
 
 def _generate_person_book_id(row: Dict[str, str]) -> str:
