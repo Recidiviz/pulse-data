@@ -25,8 +25,12 @@ my_flat_field:
             arg_2: <expression>
 """
 import functools
-from typing import Set
+from typing import Optional, Set
 
+from recidiviz.common.str_field_utils import (
+    parse_date,
+    safe_parse_days_from_duration_pieces,
+)
 from recidiviz.common.text_analysis import (
     TextAnalyzer,
     TextEntity,
@@ -142,3 +146,23 @@ def records_new_investigation_period(agnt_note_title: str) -> bool:
 def _match_note_title(agnt_note_title: str) -> Set[TextEntity]:
     """Returns the entities that the agnt_note_title matches to."""
     return TEXT_ANALYZER.extract_entities(agnt_note_title)
+
+
+def parse_valid_offense_date(raw_date: str) -> Optional[str]:
+    try:
+        offense_date = parse_date(raw_date)
+        if offense_date and 1900 <= offense_date.year <= 2100:
+            return offense_date.isoformat()
+        return None
+    except ValueError:
+        return None
+
+
+def parse_duration_from_date_part_strings(
+    years_str: str, months_str: str, days_str: str, start_dt_str: str
+) -> Optional[str]:
+    return str(
+        safe_parse_days_from_duration_pieces(
+            years_str, months_str, days_str, start_dt_str
+        )
+    )
