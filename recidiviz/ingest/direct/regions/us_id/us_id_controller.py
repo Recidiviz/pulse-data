@@ -53,10 +53,6 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
-from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactReason,
-    StateSupervisionContactStatus,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
@@ -194,15 +190,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 gen_label_single_external_id_hook(US_ID_DOC),
             ],
             "mittimus_judge_sentence_offense_sentprob_incarceration_sentences": [
-                gen_label_single_external_id_hook(US_ID_DOC),
-                self._add_statute_to_charge,
-                self._set_is_violent,
-                self._set_is_sex_offense,
-                self._attempt_to_set_offense_date,
-                self._set_extra_sentence_fields,
-                self._set_generated_ids,
-            ],
-            "mittimus_judge_sentence_offense_sentprob_supervision_sentences": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_statute_to_charge,
                 self._set_is_violent,
@@ -403,27 +390,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateActingBodyType.SENTENCED_PERSON: [
             "SPECIAL PROGRESS REPORT MOTION FOR PROBATION DISCHARGE BY DEFENDANT",
             "SPECIAL PROGRESS REPORT OFFENDER INITIATED PAROLE DISCHARGE REQUEST",
-        ],
-        StateSupervisionContactReason.INITIAL_CONTACT: ["72 HOUR INITIAL"],
-        StateSupervisionContactReason.EMERGENCY_CONTACT: ["CRITICAL"],
-        StateSupervisionContactReason.GENERAL_CONTACT: ["GENERAL"],
-        StateSupervisionContactReason.INTERNAL_UNKNOWN: [
-            # No longer valid codes
-            "CONVERSION",
-            "GENERAL REINFORCEMENT",
-            "GENERAL DISAPPROVAL",
-        ],
-        StateSupervisionContactStatus.COMPLETED: [
-            "SUCCESSFUL",
-            "PROGRESS REVIEW",
-            "FACE TO FACE",
-            "ARREST",  # TODO(#3506): Is there another place to ingest arrest entities or should we take it from
-            #  sprvsn_cntc?
-        ],
-        StateSupervisionContactStatus.ATTEMPTED: [
-            "ATTEMPTED",
-            "INQUIRY",
-            "FAILED TO REPORT",
         ],
         StateSupervisionLevel.UNSUPERVISED: [
             "UNSUPV COURT PROB",

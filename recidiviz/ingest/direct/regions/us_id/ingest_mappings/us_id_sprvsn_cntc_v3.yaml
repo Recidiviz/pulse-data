@@ -168,7 +168,8 @@ output:
                   - "SUCCESSFUL"
                   - "PROGRESS REVIEW"
                   - "FACE TO FACE"
-                  - "ARREST"
+                  - "ARREST" # TODO(#3506): Is there another place to ingest arrest
+                  # entities or should we take it from sprvsn_cntc?
                 StateSupervisionContactStatus.ATTEMPTED:
                   - "ATTEMPTED"
                   - "INQUIRY"
