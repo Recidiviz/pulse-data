@@ -26,7 +26,11 @@ import {
   INGEST_ACTIONS_ROUTE,
 } from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
-import { IngestInstanceStatusResponse, StateCodeInfo } from "./constants";
+import {
+  IngestInstanceStatusInfo,
+  IngestInstanceStatusResponse,
+  StateCodeInfo,
+} from "./constants";
 import IngestPageHeader from "./IngestPageHeader";
 import {
   getStatusBoxColor,
@@ -56,13 +60,25 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   }
 
   const dataSource = Object.keys(ingestInstanceStatuses).map((key) => {
-    const stateCode = ingestInstanceStatuses[key];
-    const statuses = Object.values(stateCode);
+    const stateInstanceStatuses = ingestInstanceStatuses[key];
+    const primaryInstanceInfo: IngestInstanceStatusInfo | undefined =
+      stateInstanceStatuses.primary;
+
+    const primaryStatus: string = !primaryInstanceInfo?.status
+      ? "No recorded statuses"
+      : primaryInstanceInfo?.status;
+
+    const secondaryInstanceInfo: IngestInstanceStatusInfo | undefined =
+      stateInstanceStatuses.secondary;
+
+    const secondaryStatus: string = !secondaryInstanceInfo?.status
+      ? "No recorded statuses"
+      : secondaryInstanceInfo?.status;
 
     return {
       stateCode: key,
-      primary: statuses[0] == null ? "No recorded statuses" : statuses[0],
-      secondary: statuses[1] == null ? "No recorded statuses" : statuses[1],
+      primary: primaryStatus,
+      secondary: secondaryStatus,
     };
   });
 
@@ -96,6 +112,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Primary Instance Status",
       dataIndex: "primary",
       key: "primary",
+
       render: (primary: string) => <span>{renderStatusCell(primary)}</span>,
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.primary) -

@@ -17,9 +17,11 @@
 """Tests for return all the ingest statuses to the frontend"""
 
 
+from datetime import datetime
 from unittest import TestCase, mock
 
 from flask import Flask
+from freezegun import freeze_time
 from mock import Mock
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
@@ -71,17 +73,31 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.json, {})
         self.assertEqual(200, response.status_code)
 
+    @freeze_time("2022-08-29")
     def test_all_different_statuses(self) -> None:
         # Arrange
+        timestamp = datetime(2022, 8, 29)
 
         self.mock_current_ingest_statuses.return_value = {
             StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: DirectIngestStatus.READY_TO_FLASH,
-                DirectIngestInstance.SECONDARY: DirectIngestStatus.UP_TO_DATE,
+                DirectIngestInstance.PRIMARY: (
+                    DirectIngestStatus.READY_TO_FLASH,
+                    timestamp,
+                ),
+                DirectIngestInstance.SECONDARY: (
+                    DirectIngestStatus.UP_TO_DATE,
+                    timestamp,
+                ),
             },
             StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: DirectIngestStatus.STANDARD_RERUN_STARTED,
-                DirectIngestInstance.SECONDARY: DirectIngestStatus.FLASH_IN_PROGRESS,
+                DirectIngestInstance.PRIMARY: (
+                    DirectIngestStatus.STANDARD_RERUN_STARTED,
+                    timestamp,
+                ),
+                DirectIngestInstance.SECONDARY: (
+                    DirectIngestStatus.FLASH_IN_PROGRESS,
+                    timestamp,
+                ),
             },
         }
 
@@ -96,10 +112,25 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(
             response.json,
             {
-                "US_XX": {"PRIMARY": "READY_TO_FLASH", "SECONDARY": "UP_TO_DATE"},
+                "US_XX": {
+                    "primary": {
+                        "status": "READY_TO_FLASH",
+                        "timestamp": timestamp.isoformat(),
+                    },
+                    "secondary": {
+                        "status": "UP_TO_DATE",
+                        "timestamp": timestamp.isoformat(),
+                    },
+                },
                 "US_YY": {
-                    "PRIMARY": "STANDARD_RERUN_STARTED",
-                    "SECONDARY": "FLASH_IN_PROGRESS",
+                    "primary": {
+                        "status": "STANDARD_RERUN_STARTED",
+                        "timestamp": timestamp.isoformat(),
+                    },
+                    "secondary": {
+                        "status": "FLASH_IN_PROGRESS",
+                        "timestamp": timestamp.isoformat(),
+                    },
                 },
             },
         )
@@ -126,8 +157,8 @@ class IngestOpsEndpointTests(TestCase):
             response.json,
             {
                 "US_YY": {
-                    "PRIMARY": None,
-                    "SECONDARY": None,
+                    "primary": None,
+                    "secondary": None,
                 }
             },
         )

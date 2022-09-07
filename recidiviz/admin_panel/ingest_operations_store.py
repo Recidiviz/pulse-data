@@ -18,7 +18,7 @@
 import logging
 from collections import Counter
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from google.cloud import tasks_v2
 
@@ -597,27 +597,36 @@ class IngestOperationsStore(AdminPanelStore):
             ],
         }
 
-    # TODO(#13791): Update here to change Optional[DirectIngestStatus] ->
-    #  Optional[Tuple[DirectIngestStatus, datetime.datetime]].
     def get_all_current_ingest_instance_statuses(
         self,
-    ) -> Dict[StateCode, Dict[DirectIngestInstance, Optional[DirectIngestStatus]]]:
+    ) -> Dict[
+        StateCode,
+        Dict[
+            DirectIngestInstance,
+            Optional[Tuple[DirectIngestStatus, datetime]],
+        ],
+    ]:
         """Returns the current status of each ingest instance for states in the given project."""
 
         ingest_statuses = {}
         for state_code in get_direct_ingest_states_launched_in_env():
-            instance_to_status_dict = {}
+            instance_to_status_dict: Dict[
+                DirectIngestInstance,
+                Optional[Tuple[DirectIngestStatus, datetime]],
+            ] = {}
             for i_instance in DirectIngestInstance:  # new direct ingest instance
                 status_manager = PostgresDirectIngestInstanceStatusManager(
                     region_code=state_code.value, ingest_instance=i_instance
                 )
 
                 curr_status_info = status_manager.get_current_status_info()
-                curr_status = curr_status_info.status if curr_status_info else None
-
-                # TODO(#13791): Update here to store both status and timestamp in the
-                #  dictionary.
-                instance_to_status_dict[i_instance] = curr_status
+                if not curr_status_info:
+                    instance_to_status_dict[i_instance] = None
+                else:
+                    instance_to_status_dict[i_instance] = (
+                        curr_status_info.status,
+                        curr_status_info.timestamp,
+                    )
 
             ingest_statuses[state_code] = instance_to_status_dict
 

@@ -683,12 +683,20 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             get_ingest_operations_store().get_all_current_ingest_instance_statuses()
         )
 
-        all_instance_statuses_strings: Dict[str, Dict[str, Optional[str]]] = {}
+        all_instance_statuses_strings: Dict[
+            str, Dict[str, Optional[Dict[str, str]]]
+        ] = {}
 
         for instance_state_code, instances in all_instance_statuses.items():
+
             all_instance_statuses_strings[instance_state_code.value] = {
-                instance.value: curr_status.value if curr_status is not None else None
-                for instance, curr_status in instances.items()
+                instance.value.lower(): {
+                    "status": curr_status_info[0].value,
+                    "timestamp": curr_status_info[1].isoformat(),
+                }
+                if curr_status_info is not None
+                else None
+                for instance, curr_status_info in instances.items()
             }
 
         return jsonify(all_instance_statuses_strings), HTTPStatus.OK
