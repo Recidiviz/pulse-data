@@ -34,10 +34,15 @@ export type QueueMetadata = {
   state: QueueState;
 };
 
+export type IngestInstanceStatusInfo = {
+  status: string;
+  timestamp: string;
+};
+
 export type IngestInstanceStatusResponse = {
   [stateCode: string]: {
-    primary?: string;
-    secondary?: string;
+    primary: IngestInstanceStatusInfo | undefined;
+    secondary: IngestInstanceStatusInfo | undefined;
   };
 };
 
