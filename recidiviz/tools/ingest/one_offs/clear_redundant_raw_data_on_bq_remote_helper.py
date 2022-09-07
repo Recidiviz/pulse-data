@@ -38,7 +38,6 @@ Example Usage:
 
 import argparse
 import logging
-import os
 import sys
 from typing import Dict, List, Tuple
 
@@ -55,8 +54,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema.operations import dao
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tools.migrations.migration_helpers import EngineIteratorDelegate
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -206,16 +204,12 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
         str, DirectIngestRawFileConfig
     ] = get_raw_file_configs_for_state(state_code)
 
-    is_prod = project_id == GCP_PROJECT_PRODUCTION
-    ssl_cert_path = os.path.expanduser(
-        f"~/{'prod' if is_prod else 'dev'}_operations_data_certs"
-    )
-
     bq_client: BigQueryClient = BigQueryClientImpl()
-    with SessionFactory.for_prod_data_client(
-        SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS),
-        os.path.abspath(ssl_cert_path),
-    ) as session:
+    for _, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
+        SchemaType.OPERATIONS,
+        using_proxy=True,
+    ):
+        session = Session(bind=engine)
         file_tag_to_min_and_max_contained_datetimes: Dict[
             str, Tuple[str, str]
         ] = get_postgres_min_and_max_datetimes_contained_by_file_tag(

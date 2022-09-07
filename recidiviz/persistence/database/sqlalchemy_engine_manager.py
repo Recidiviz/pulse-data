@@ -275,7 +275,7 @@ class SQLAlchemyEngineManager:
         return f"{secret_manager_prefix}_cloudsql_instance_id"
 
     @classmethod
-    def _get_full_cloudsql_instance_id(cls, schema_type: SchemaType) -> str:
+    def get_full_cloudsql_instance_id(cls, schema_type: SchemaType) -> str:
         """Rerturns the full instance id stored in secrets with the form
         project_id:region:instance_id.
 
@@ -300,7 +300,7 @@ class SQLAlchemyEngineManager:
         This returns just the region, for example, 'us-east1' or
         'us-central1'.
         """
-        instance_id_full = cls._get_full_cloudsql_instance_id(schema_type)
+        instance_id_full = cls.get_full_cloudsql_instance_id(schema_type)
 
         # Expected format "project_id:region:instance_id"
         _, region, _ = instance_id_full.split(":")
@@ -317,7 +317,7 @@ class SQLAlchemyEngineManager:
 
         Should be used when using the sqladmin_client().
         """
-        instance_id_full = cls._get_full_cloudsql_instance_id(schema_type)
+        instance_id_full = cls.get_full_cloudsql_instance_id(schema_type)
 
         # Expected format "project_id:region:instance_id"
         _, _, instance_id = instance_id_full.split(":")

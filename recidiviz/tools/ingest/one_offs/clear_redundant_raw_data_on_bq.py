@@ -26,6 +26,10 @@ import logging
 import sys
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
     run_command_streaming,
@@ -51,24 +55,24 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
             f"Are you sure this state receives frequent historical uploads {state_code.value}?"
         )
 
-    remote_commands = [
-        "cd ~/pulse-data",
-        "git checkout main",
-        "git pull",
+    connection_str = SQLAlchemyEngineManager.get_full_cloudsql_instance_id(
+        schema_type=SchemaType.OPERATIONS
+    )
+    kill_proxies = "./recidiviz/tools/postgres/cloudsql_proxy_control.sh -q -p 5440"
+    script_commands = [
+        # Before starting proxy, kill any existing ones.
+        kill_proxies,
+        f"./recidiviz/tools/postgres/cloudsql_proxy_control.sh -c {connection_str} -p 5440",
         (
-            "pipenv run python -m recidiviz.tools.ingest.one_offs.clear_redundant_raw_data_on_bq_remote_helper "
+            "python -m recidiviz.tools.ingest.one_offs.clear_redundant_raw_data_on_bq_remote_helper "
             f"--dry-run {dry_run} "
             f"--state-code {state_code.value} "
             f"--project-id {project_id} "
         ),
+        kill_proxies,
     ]
-    remote_command = " && ".join(remote_commands)
-    local_command = (
-        f"gcloud compute ssh prod-data-client --project recidiviz-123 --zone=us-east4-c "
-        f'--command "{remote_command}"'
-    )
 
-    for stdout_line in run_command_streaming(local_command):
+    for stdout_line in run_command_streaming(" && ".join(script_commands)):
         print(stdout_line.rstrip())
 
     if not dry_run:
