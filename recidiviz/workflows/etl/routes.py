@@ -84,6 +84,10 @@ def get_workflows_etl_blueprint() -> Blueprint:
             logging.info("Missing region, ignoring")
             return "Missing region, ignoring", HTTPStatus.OK
 
+        # Ignore staged files
+        if "staging" in region_code:
+            return "", HTTPStatus.OK
+
         cloud_task_manager = CloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=WORKFLOWS_ETL_OPERATIONS_QUEUE
         )
