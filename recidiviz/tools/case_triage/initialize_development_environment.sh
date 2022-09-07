@@ -11,15 +11,15 @@ read -p "Enter your email: " USER_EMAIL
 run_cmd mkdir -p recidiviz/case_triage/local/gcs/case-triage-data/ recidiviz/local/gsm/
 
 # Load staging Case Triage Auth0 configuration. Uses subshell to remove additional output from gcloud util
-CASE_TRIAGE_AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging))
+CASE_TRIAGE_AUTH0_CONFIGURATION=$(get_secret recidiviz-staging case_triage_auth0)
 write_to_file "$CASE_TRIAGE_AUTH0_CONFIGURATION" recidiviz/local/gsm/case_triage_auth0
 
 # Load staging Dashboard Auth0 configuration. Uses subshell to remove additional output from gcloud util
-DASHBOARD_AUTH0_CONFIGURATION=$(echo $(gcloud secrets versions access latest --secret=dashboard_auth0 --project recidiviz-staging))
+DASHBOARD_AUTH0_CONFIGURATION=$(get_secret recidiviz-staging dashboard_auth0)
 write_to_file "$DASHBOARD_AUTH0_CONFIGURATION" recidiviz/local/gsm/dashboard_auth0
 
 # Load staging INTERCOM_APP_KEY. Uses subshell to remove additional output from gcloud util
-INTERCOM_APP_KEY=$(echo $(gcloud secrets versions access latest --secret=case_triage_intercom_app_key --project recidiviz-staging))
+INTERCOM_APP_KEY=$(get_secret recidiviz-staging case_triage_intercom_app_key))
 write_to_file "$INTERCOM_APP_KEY" recidiviz/local/gsm/case_triage_intercom_app_key
 
 write_to_file $(python -c 'import uuid; print(uuid.uuid4().hex)') recidiviz/local/gsm/case_triage_secret_key

@@ -4,7 +4,7 @@ deploy_build_agent () {
   VERSION=$(curl --request GET --url https://api.github.com/repos/actions/runner/releases/latest | jq .tag_name --raw-output | cut -c 2- | xargs)
 
   # Pull a Github PAT for Helper Bot
-  GITHUB_DEPLOY_BOT_TOKEN=$(echo $(gcloud secrets versions access latest --secret=github_deploy_script_pat --project recidiviz-123))
+  GITHUB_DEPLOY_BOT_TOKEN=$(get_secret recidiviz-123 github_deploy_script_pat))
 
   IMAGE_VERSION_NAME=gh-agent-$1:$VERSION
   # Build the image locally

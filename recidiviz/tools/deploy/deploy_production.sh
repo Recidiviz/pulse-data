@@ -7,6 +7,8 @@
 # See how this works at https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script.
 SECONDS=0
 
+PROJECT="recidiviz-123"
+
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 source ${BASH_SOURCE_DIR}/deploy_helpers.sh
@@ -56,6 +58,10 @@ then
 fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
+COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
+
+deployment_bot_message $PROJECT "🛳 \`[${GIT_VERSION_TAG}]\` Deploying \`${COMMIT_HASH_SHORT}\` to \`$PROJECT\`"
+
 
 # Use rev-list to get the hash of the commit that the tag points to, rev-parse parse
 # returns the hash of the tag itself.
@@ -83,7 +89,7 @@ echo "Starting deploy of main app - default"
 }
 
 
-run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id recidiviz-123
+run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id ${PROJECT}
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
@@ -93,10 +99,14 @@ echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
 
 duration=$SECONDS
-echo "Production deploy completed in $(($duration / 60)) minutes. Add to go/deploy-duration-tracker."
+MINUTES=$(($duration / 60))
+echo "Production deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
+echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
 
 echo "Generating release notes."
-GITHUB_DEPLOY_BOT_TOKEN=$(echo $(gcloud secrets versions access latest --secret=github_deploy_script_pat --project recidiviz-123))
+GITHUB_DEPLOY_BOT_TOKEN=$(get_secret $PROJECT github_deploy_script_pat))
 run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes --previous_tag $LAST_DEPLOYED_GIT_VERSION_TAG --new_tag $GIT_VERSION_TAG --github_token $GITHUB_DEPLOY_BOT_TOKEN
+
+deployment_bot_message $PROJECT "⚓️ \`[${GIT_VERSION_TAG}]\` <https://github.com/Recidiviz/pulse-data/releases/tag/${GIT_VERSION_TAG}|Release Notes>. Succeeded in ${MINUTES} minutes."
 
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"
