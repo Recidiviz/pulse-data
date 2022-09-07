@@ -87,28 +87,28 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             COALESCE(cr.compliant_reporting_eligible, client.compliant_reporting_eligible) AS compliant_reporting_eligible,
             -- These fields were migrated from the client_record to the compliant_reporting_referral_record
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.remaining_criteria_needed AS INT64)
-                ELSE SAFE_CAST(client.remaining_criteria_needed AS INT64)
+                THEN cr.remaining_criteria_needed
+                ELSE client.remaining_criteria_needed
             END AS remaining_criteria_needed,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.almost_eligible_time_on_supervision_level AS INT64)
-                ELSE SAFE_CAST(client.almost_eligible_time_on_supervision_level AS INT64)
+                THEN cr.almost_eligible_time_on_supervision_level
+                ELSE client.almost_eligible_time_on_supervision_level
             END AS almost_eligible_time_on_supervision_level,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.almost_eligible_drug_screen AS INT64)
-                ELSE SAFE_CAST(client.almost_eligible_drug_screen AS INT64)
+                THEN cr.almost_eligible_drug_screen
+                ELSE client.almost_eligible_drug_screen
             END AS almost_eligible_drug_screen,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.almost_eligible_fines_fees AS INT64)
-                ELSE SAFE_CAST(client.almost_eligible_fines_fees AS INT64)
+                THEN cr.almost_eligible_fines_fees
+                ELSE client.almost_eligible_fines_fees
             END AS almost_eligible_fines_fees,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.almost_eligible_recent_rejection AS INT64)
-                ELSE SAFE_CAST(client.almost_eligible_recent_rejection AS INT64)
+                THEN cr.almost_eligible_recent_rejection
+                ELSE client.almost_eligible_recent_rejection
             END AS almost_eligible_recent_rejection,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN SAFE_CAST(cr.almost_eligible_serious_sanctions AS INT64)
-                ELSE SAFE_CAST(client.almost_eligible_serious_sanctions AS INT64)
+                THEN cr.almost_eligible_serious_sanctions
+                ELSE client.almost_eligible_serious_sanctions
             END AS almost_eligible_serious_sanctions,
         FROM compliant_reporting_split_path cr
         LEFT JOIN client_record_split_path client
