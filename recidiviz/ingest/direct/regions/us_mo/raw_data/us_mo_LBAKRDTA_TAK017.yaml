@@ -8,6 +8,14 @@ primary_key_cols:
   - BN_HS
   - BN_DCR
   - BN_TCR
+  - BN_LOC
+  - BN_PLN
+  - BN_HPT
+  - BN_LRU
+  - BN_COM
+  - BN_LRM
+  - BN_LBD
+  - BN_HDS
 columns:
   - name: BN_DOC
     is_pii: True
