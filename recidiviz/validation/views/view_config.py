@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.validation.configured_validations import get_all_validations
 from recidiviz.validation.views.external_data.county_jail_population_person_level import (
     COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
@@ -133,9 +134,6 @@ from recidiviz.validation.views.state.sessions_validation.session_supervision_st
 from recidiviz.validation.views.state.sessions_validation.session_supervision_terminations_to_dataflow_disaggregated import (
     SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
 )
-from recidiviz.validation.views.validation_views import (
-    get_generated_validation_view_builders,
-)
 
 _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
@@ -167,6 +165,18 @@ EXTERNAL_VALIDATION_DATA_VIEW_BUILDERS = [
 ]
 
 
+def get_view_builders_from_configured_validations() -> List[SimpleBigQueryViewBuilder]:
+    # Creating set to remove possibility of duplicate view builders from validation checks list,
+    # since some validation checks reuse the same view builder.
+    return list(
+        {
+            view_builder
+            for validation_check in get_all_validations()
+            for view_builder in validation_check.managed_view_builders
+        }
+    )
+
+
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     return (
         [
@@ -185,7 +195,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         ]
         + _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
         + EXTERNAL_VALIDATION_DATA_VIEW_BUILDERS
-        + get_generated_validation_view_builders()
+        + get_view_builders_from_configured_validations()
     )
 
 
