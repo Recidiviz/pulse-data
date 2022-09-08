@@ -60,7 +60,8 @@ class _FakeDirectIngestViewBuilder(
             [] if not self.is_detect_row_deletion_view else ["tagFullHistoricalExport"]
         )
         return DirectIngestPreProcessedIngestView(
-            ingest_view_name=self.ingest_view_name,
+            dataset_id="NO DATASET",
+            view_id=self.ingest_view_name,
             view_query_template=query,
             region_raw_table_config=region_config,
             order_by_cols="colA, colC",

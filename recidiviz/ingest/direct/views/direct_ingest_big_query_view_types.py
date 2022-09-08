@@ -551,7 +551,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def __init__(
         self,
         *,
-        ingest_view_name: str,
+        dataset_id: str,
+        view_id: str,
         view_query_template: str,
         region_raw_table_config: DirectIngestRegionRawFileConfig,
         order_by_cols: str,
@@ -581,7 +582,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 (bigquery.QueryJobConfig#destination is not None).
         """
         DirectIngestPreProcessedIngestView._validate_order_by(
-            ingest_view_name=ingest_view_name, view_query_template=view_query_template
+            ingest_view_name=view_id, view_query_template=view_query_template
         )
 
         self._region_code = region_raw_table_config.region_code
@@ -601,12 +602,10 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         )
 
         # This view is never saved to BQ because it has query params
-        dataset_id = "NO_DATASET"
-        description = f"{ingest_view_name} ingest view"
         super().__init__(
             dataset_id=dataset_id,
-            view_id=ingest_view_name,
-            description=description,
+            view_id=view_id,
+            description=f"{view_id} ingest view",
             view_query_template=latest_view_query,
         )
 
@@ -617,7 +616,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         if self._is_detect_row_deletion_view:
             self._validate_can_detect_row_deletion(
                 raw_configs=self._raw_table_dependency_configs,
-                ingest_view_name=ingest_view_name,
+                ingest_view_name=view_id,
                 primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
             )
 
@@ -1075,13 +1074,17 @@ class DirectIngestPreProcessedIngestViewBuilder(
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
         self.materialized_address = None
 
+        self.dataset_id = "NO DATASET"
+        self.view_id = ingest_view_name
+
     # pylint: disable=unused-argument
     def _build(
         self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
-            ingest_view_name=self.ingest_view_name,
+            dataset_id=self.dataset_id,
+            view_id=self.view_id,
             view_query_template=self.view_query_template,
             region_raw_table_config=get_region_raw_file_config(self.region),
             order_by_cols=self.order_by_cols,

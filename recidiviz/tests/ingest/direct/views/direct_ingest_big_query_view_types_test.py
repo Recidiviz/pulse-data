@@ -354,7 +354,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -463,7 +464,8 @@ USING (col1);"""
             "being exported as historically.",
         ):
             DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="col1, col2",
@@ -487,7 +489,8 @@ USING (col1);"""
             r" in region \[us_ww\].$",
         ):
             DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="any_col",
@@ -513,7 +516,8 @@ USING (col1);"""
             "`primary_key_tables_for_entity_deletion` were defined.",
         ):
             DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="col1, col2",
@@ -540,7 +544,8 @@ USING (col1);"""
             "raw file tag was not found as a dependency.",
         ):
             DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="col1, col2",
@@ -562,7 +567,8 @@ LEFT OUTER JOIN {tagFullHistoricalExport}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -679,7 +685,8 @@ LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -754,7 +761,8 @@ LEFT OUTER JOIN {file_tag_first}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -793,7 +801,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -884,7 +893,8 @@ ORDER BY col1, col2;"""
         view_query_template = "\n " + view_query_template
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -920,7 +930,8 @@ USING (col1);"""
             ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
         ):
             DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="any_col",
@@ -941,7 +952,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1050,7 +1062,8 @@ SELECT * FROM my_subquery;"""
             "^Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.$",
         ):
             _ = DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
+                dataset_id="NO DATASET",
+                view_id="ingest_view_tag",
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="col1, col2",
@@ -1071,7 +1084,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1163,7 +1177,8 @@ ORDER BY col1, col2;"""
         view_query_template = "\n " + view_query_template
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1201,7 +1216,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1321,7 +1337,8 @@ LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1447,7 +1464,8 @@ ORDER BY col1, col2
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
 
         view = DirectIngestPreProcessedIngestView(
-            ingest_view_name="ingest_view_tag",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_tag",
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
@@ -1525,7 +1543,8 @@ ORDER BY col1, col2;"""
                 "CURRENT_DATE functions. Consider using @update_timestamp instead.",
             ):
                 DirectIngestPreProcessedIngestView(
-                    ingest_view_name="ingest_view_tag",
+                    dataset_id="NO DATASET",
+                    view_id="ingest_view_tag",
                     view_query_template=view_query_template,
                     region_raw_table_config=region_config,
                     order_by_cols="col1, col2",

@@ -19,9 +19,10 @@ import abc
 import os
 import re
 from types import ModuleType
-from typing import Callable, Generic, List, Optional, Type
+from typing import Callable, Generic, List, Optional, Set, Type
 
 import recidiviz
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilder,
     BigQueryViewBuilderType,
@@ -115,7 +116,7 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
         """
 
         view_dir_modules = [view_dir_module]
-        builders = set()
+        builders: Set[BigQueryViewBuilderType] = set()
         while view_dir_modules:
             view_dir_module = view_dir_modules.pop(0)
             child_modules = cls.get_submodules(
@@ -160,7 +161,10 @@ class BigQueryViewCollector(Generic[BigQueryViewBuilderType], ModuleCollectorMix
                         validate_builder_fn(builder, child_module)
                     builders.add(builder)
 
-        return list(builders)
+        def get_address(builder: BigQueryViewBuilderType) -> BigQueryAddress:
+            return builder.address
+
+        return sorted(builders, key=get_address)
 
 
 def filename_matches_view_id_validator(
