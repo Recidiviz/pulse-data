@@ -42,18 +42,25 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
             ),
             BigQueryAddress(dataset_id="task_eligibility", table_id="all_tasks"),
             BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_id",
+                table_id="all_state_specific_criteria",
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_criteria_us_nd",
                 table_id="all_state_specific_criteria",
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_criteria_us_tn",
+                table_id="all_state_specific_criteria",
+            ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_spans_us_id", table_id="all_tasks"
             ),
             BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_nd", table_id="all_tasks"
             ),
             BigQueryAddress(
                 dataset_id="task_eligibility_spans_us_tn", table_id="all_tasks"
-            ),
-            BigQueryAddress(
-                dataset_id="task_eligibility_criteria_us_tn",
-                table_id="all_state_specific_criteria",
             ),
             # ... add addresses here as tasks for new states are added ...
         ]
