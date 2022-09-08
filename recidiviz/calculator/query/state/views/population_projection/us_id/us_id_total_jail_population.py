@@ -51,7 +51,7 @@ US_ID_TOTAL_JAIL_POPULATION_QUERY_TEMPLATE = """
       time_step,
       COUNT(*) AS total_population
     FROM incarceration_population pop
-    LEFT JOIN `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population` paid_inc_pop
+    LEFT JOIN `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized` paid_inc_pop
       ON pop.state_code = paid_inc_pop.state_code
       AND pop.person_id = paid_inc_pop.person_id
       AND pop.time_step = paid_inc_pop.report_month
