@@ -161,8 +161,9 @@ def parse_valid_offense_date(raw_date: str) -> Optional[str]:
 def parse_duration_from_date_part_strings(
     years_str: str, months_str: str, days_str: str, start_dt_str: str
 ) -> Optional[str]:
-    return str(
-        safe_parse_days_from_duration_pieces(
-            years_str, months_str, days_str, start_dt_str
-        )
+    result = safe_parse_days_from_duration_pieces(
+        years_str, months_str, days_str, start_dt_str
     )
+    if not result or result == 0:
+        return None
+    return str(result)

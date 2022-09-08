@@ -48,7 +48,6 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -59,9 +58,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.constants.state.state_supervision_sentence import (
-    StateSupervisionSentenceSupervisionType,
-)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -70,11 +66,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import (
-    parse_date,
-    safe_parse_days_from_duration_pieces,
-    sorted_list_from_str,
-)
+from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -189,15 +181,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._add_lsir_to_assessments,
                 gen_label_single_external_id_hook(US_ID_DOC),
             ],
-            "mittimus_judge_sentence_offense_sentprob_incarceration_sentences": [
-                gen_label_single_external_id_hook(US_ID_DOC),
-                self._add_statute_to_charge,
-                self._set_is_violent,
-                self._set_is_sex_offense,
-                self._attempt_to_set_offense_date,
-                self._set_extra_sentence_fields,
-                self._set_generated_ids,
-            ],
             "early_discharge_incarceration_sentence": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
@@ -280,46 +263,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateAssessmentLevel.LOW_MEDIUM: ["Low-Medium"],
         StateAssessmentLevel.MEDIUM_HIGH: ["High-Medium"],
         StateAssessmentLevel.HIGH: ["Maximum"],
-        StateSentenceStatus.COMMUTED: [
-            "M",  # Commuted
-        ],
-        StateSentenceStatus.VACATED: [
-            "V",  # Vacated Sentence
-            "Q",  # Vacated conviction
-        ],
-        # TODO(#3517): Consider breaking out these sentence status enums in our schema (
-        #  sealed, early_discharge, expired, etc)
-        StateSentenceStatus.COMPLETED: [
-            "C",  # Completed
-            "D",  # Discharged
-            "E",  # Expired
-            "F",  # Parole Early Discharge
-            "G",  # Dismissed
-            "H",  # Post conviction relief.
-            "L",  # Sealed
-            "S",  # Satisfied
-            "X",  # Rule 35 - Reduction of illegal or overly harsh sentence.
-            "Z",  # Reduced to misdemeanor - person should not be in prison and no longer tracked by IDOC.
-        ],
-        StateSentenceStatus.REVOKED: [
-            "K",  # Revoked
-        ],
-        StateSentenceStatus.SERVING: [
-            "I",  # Imposed
-            "J",  # RJ To Court - Used for probation after treatment
-            "N",  # Interstate Parole
-            "O",  # Correctional Compact - TODO(#3506): Get more info from ID.
-            "P",  # Bond Appeal - unused, but present in ID status table.
-            "R",  # Court Retains Jurisdiction - used when a person on a rider. TODO(#3506): Whats the difference
-            # between this and 'W'?
-            "T",  # Interstate probation - unused, but present in ID status table.
-            "U",  # Unsupervised - probation
-            "W",  # Witheld judgement - used when a person is on a rider.
-            "Y",  # Drug Court
-        ],
-        StateSentenceStatus.SUSPENDED: [
-            "B",  # Suspended sentence - probation
-        ],
         StateSupervisionViolationType.ABSCONDED: [
             "Absconding",  # From violation report 210
             "Absconder",  # From violation report 204
@@ -604,130 +547,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
                 obj.assessment_type = StateAssessmentType.LSIR.value
-
-    @staticmethod
-    def _add_statute_to_charge(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        statute_title = row.get("off_stat_title", "")
-        statute_section = row.get("off_stat_sect", "")
-
-        if not statute_title or not statute_section:
-            return
-        statute = f"{statute_title}-{statute_section}"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                obj.statute = statute
-
-    @staticmethod
-    def _set_is_violent(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        violent_code = row.get("off_viol")
-        is_violent = violent_code and violent_code.upper() == "V"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                obj.is_violent = str(is_violent)
-
-    @staticmethod
-    def _set_is_sex_offense(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        sex_offense_code = row.get("off_sxo_flg")
-        is_sex_offense = sex_offense_code and sex_offense_code.upper() == "X"
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                obj.is_sex_offense = str(is_sex_offense)
-
-    @staticmethod
-    def _attempt_to_set_offense_date(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets the charge date, if possible.
-
-        The sentence.off_dtd field from ID has various formats, most of which are
-        parseable by our parse_date logic. Some of these are not parseable, however,
-        and we are content to simply not set this field in those cases.
-
-        It's also possible that a small number of attempts will parse the date incorrectly,
-        e.g. "083094" does not parse to August 30, 1994 as expected, but rather to
-        September 4, 830.
-
-        As an precaution against this, we drop any dates that are parsed without error
-        but produce years that are not in the 20th or 21st centuries, which we assume to
-        be incorrect and unintended. This is imperfect, but we accept this small number
-        of errors in order to have a significant coverage of dates."""
-        offense_date_unparsed = row.get("off_dtd")
-        if not offense_date_unparsed:
-            return
-
-        try:
-            offense_date = parse_date(offense_date_unparsed)
-        except ValueError:
-            return
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                if offense_date and 1900 <= offense_date.year <= 2100:
-                    obj.offense_date = str(offense_date)
-
-    @staticmethod
-    def _set_extra_sentence_fields(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets additional fields on sentence objects ingested from the given row of data."""
-        is_life = bool(row.get("lifer"))
-        max_years = row.get("sent_max_yr")
-        max_months = row.get("sent_max_mo")
-        max_days = row.get("sent_max_da")
-        min_years = row.get("sent_min_yr")
-        min_months = row.get("sent_min_mo")
-        min_days = row.get("sent_min_da")
-
-        for obj in extracted_objects:
-            if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
-                start_date = obj.start_date
-                max_time = safe_parse_days_from_duration_pieces(
-                    years_str=max_years,
-                    months_str=max_months,
-                    days_str=max_days,
-                    start_dt_str=start_date,
-                )
-                min_time = safe_parse_days_from_duration_pieces(
-                    years_str=min_years,
-                    months_str=min_months,
-                    days_str=min_days,
-                    start_dt_str=start_date,
-                )
-
-                if max_time:
-                    obj.max_length = str(max_time)
-                if min_time:
-                    obj.min_length = str(min_time)
-            if isinstance(obj, StateIncarcerationSentence):
-                obj.is_life = str(is_life)
-            if isinstance(obj, StateSupervisionSentence):
-                obj.supervision_type = (
-                    StateSupervisionSentenceSupervisionType.PROBATION.value
-                )
 
     @staticmethod
     def _override_facilities(

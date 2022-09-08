@@ -198,6 +198,8 @@ output:
                   - "Y" # Drug Court
                 StateSentenceStatus.SUSPENDED:
                   - "B" # Suspended sentence - probation
+              $ignore:
+                - "A"
           date_imposed: sentence_dtd
           completion_date: sent_sat_dtd
           supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
