@@ -33,6 +33,7 @@ direct_ingest_status_extract_and_merge_in_progress = "EXTRACT_AND_MERGE_IN_PROGR
 direct_ingest_status_ready_to_flash = "READY_TO_FLASH"
 direct_ingest_status_flash_in_progress = "FLASH_IN_PROGRESS"
 direct_ingest_status_flash_completed = "FLASH_COMPLETED"
+direct_ingest_status_flash_canceled = "FLASH_CANCELED"
 direct_ingest_status_up_to_date = "UP_TO_DATE"
 direct_ingest_status_stale_raw_data = "STALE_RAW_DATA"
 direct_ingest_status_no_rerun_in_progress = "NO_RERUN_IN_PROGRESS"
