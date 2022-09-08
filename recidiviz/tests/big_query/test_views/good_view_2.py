@@ -29,7 +29,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 with local_project_id_override("my-project-id"):
     GOOD_VIEW_2 = DirectIngestPreProcessedIngestView(
-        ingest_view_name="ingest_view_name",
+        dataset_id="NO DATASET",
+        view_id="ingest_view_name",
         view_query_template="SELECT * FROM table1",
         region_raw_table_config=DirectIngestRegionRawFileConfig(
             region_code="us_xx",
