@@ -53,7 +53,8 @@ def publish_message_to_topic(message: str, topic: str) -> None:
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
-    publisher.publish(topic_path, data=message.encode("utf-8"))
+    future = publisher.publish(topic_path, data=message.encode("utf-8"))
+    logging.info("Pubsub publish response: %s", future.result())
 
 
 def extract_pubsub_message_from_json(json_request: Any) -> pubsub.types.PubsubMessage:

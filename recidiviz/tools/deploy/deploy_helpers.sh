@@ -429,5 +429,5 @@ function post_deploy_triggers {
 
     echo "Triggering post-deploy tasks"
 
-    pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id ${PROJECT} --trigger-historical-dag ${CALC_CHANGES_SINCE_LAST_DEPLOY}
+    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id ${PROJECT} --trigger-historical-dag ${CALC_CHANGES_SINCE_LAST_DEPLOY}
 }
