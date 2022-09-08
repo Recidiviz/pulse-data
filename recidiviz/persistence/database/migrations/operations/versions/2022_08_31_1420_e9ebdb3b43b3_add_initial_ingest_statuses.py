@@ -30,6 +30,7 @@ required_states = [
     "US_PA",
     "US_CA",
     "US_MI",
+    "US_OR",
     "US_OZ",
     "US_IX",
 ]
