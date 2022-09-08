@@ -36,6 +36,7 @@ US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS = [
     "JEFFERSON COUNTY SHERIFF DEPARTMENT",
 ]
 
+# TODO(#15150): refactor this query to use the span collapse template
 US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
     WITH parsed_movements AS (
         SELECT
@@ -158,7 +159,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBui
         US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS
     ),
     us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

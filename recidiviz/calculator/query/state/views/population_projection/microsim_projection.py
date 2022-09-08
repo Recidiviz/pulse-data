@@ -84,7 +84,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         legal_status,
         simulation_group,
         COUNT(DISTINCT person_id) AS total_population
-      FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population` inc_pop
+      FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized` inc_pop
       INNER JOIN historical_dates
         ON historical_dates.date = inc_pop.report_month,
       UNNEST(['ALL', compartment_level_2]) AS legal_status,

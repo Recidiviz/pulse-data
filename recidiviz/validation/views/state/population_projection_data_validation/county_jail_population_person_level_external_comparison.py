@@ -59,7 +59,7 @@ internal_metrics AS (
     external_id AS person_external_id,
     facility,
     compartment_level_2 AS legal_status,
-  FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population`
+  FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized`
   LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id`
   USING (state_code, person_id)
   WHERE report_month = '{comparison_date}'
