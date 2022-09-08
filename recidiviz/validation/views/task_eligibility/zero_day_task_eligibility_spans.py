@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view revealing when criteria spans have the same start and end date.
+"""A view revealing when task eligibility spans have the same start and end date.
 
 To build, run:
-    python -m recidiviz.validation.views.state.zero_day_task_eligibility_spans
+    python -m recidiviz.validation.views.task_eligibility.zero_day_task_eligibility_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

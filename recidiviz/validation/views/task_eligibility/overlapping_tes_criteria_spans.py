@@ -17,7 +17,7 @@
 """A view revealing when criteria spans that overlap for the same person.
 
 To build, run:
-    python -m recidiviz.validation.views.state.overlapping_tes_criteria_spans
+    python -m recidiviz.validation.views.task_eligibility.overlapping_tes_criteria_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

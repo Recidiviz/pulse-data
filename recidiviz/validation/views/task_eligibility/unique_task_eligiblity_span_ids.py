@@ -17,7 +17,7 @@
 """A view revealing when a task_eligibility_span_id is reused within the same task/person.
 
 To build, run:
-    python -m recidiviz.validation.views.state.unique_task_eligibility_span_ids
+    python -m recidiviz.validation.views.task_eligibility.unique_task_eligibility_span_ids
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

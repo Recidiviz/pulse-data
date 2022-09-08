@@ -22,6 +22,15 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
+from recidiviz.validation.views.task_eligibility.magic_end_date_task_eligibility_spans import (
+    MAGIC_END_DATE_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.magic_end_date_tes_candidate_population_spans import (
+    MAGIC_END_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.magic_end_date_tes_criteria_spans import (
+    MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.null_start_date_task_eligibility_spans import (
     NULL_START_DATE_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -83,6 +92,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
+            view_builder=MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
             view_builder=OVERLAPPING_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
@@ -96,6 +109,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=START_AFTER_END_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=MAGIC_END_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
@@ -116,6 +133,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=MAGIC_END_DATE_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]

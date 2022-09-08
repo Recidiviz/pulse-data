@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view revealing when criteria spans have the same start and end date.
+"""A view revealing when criteria spans have magic end dates that should be null.
 
 To build, run:
-    python -m recidiviz.validation.views.task_eligibility.zero_day_tes_criteria_spans
+    python -m recidiviz.validation.views.task_eligibility.magic_end_date_tes_criteria_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -26,14 +26,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-ZERO_DAY_TES_CRITERIA_SPANS_VIEW_NAME = "zero_day_tes_criteria_spans"
+MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_NAME = "magic_end_date_tes_criteria_spans"
 
-ZERO_DAY_TES_CRITERIA_SPANS_DESCRIPTION = """
-Identifies zero-day criteria spans, i.e. spans with start_date equal to end_date.
-All zero-day spans should be filtered out of criteria views.
+MAGIC_END_DATE_TES_CRITERIA_SPANS_DESCRIPTION = """
+Identifies criteria spans with end dates equal to the magic "null" end date: 9999-12-31.
+All magic end date values should be converted back to NULL before the end of the query. 
 """
 
-ZERO_DAY_TES_CRITERIA_SPANS_QUERY_TEMPLATE = """
+MAGIC_END_DATE_TES_CRITERIA_SPANS_QUERY_TEMPLATE = """
 SELECT
   state_code AS region_code,
   criteria_name,
@@ -41,17 +41,17 @@ SELECT
   start_date,
   end_date
 FROM `{project_id}.{task_eligibility_dataset}.all_criteria_materialized`
-WHERE start_date = end_date;
+WHERE end_date = "9999-12-31";
 """
 
-ZERO_DAY_TES_CRITERIA_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=ZERO_DAY_TES_CRITERIA_SPANS_VIEW_NAME,
-    view_query_template=ZERO_DAY_TES_CRITERIA_SPANS_QUERY_TEMPLATE,
-    description=ZERO_DAY_TES_CRITERIA_SPANS_DESCRIPTION,
+    view_id=MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_NAME,
+    view_query_template=MAGIC_END_DATE_TES_CRITERIA_SPANS_QUERY_TEMPLATE,
+    description=MAGIC_END_DATE_TES_CRITERIA_SPANS_DESCRIPTION,
     task_eligibility_dataset=tes_dataset_config.TASK_ELIGIBILITY_DATASET_ID,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        ZERO_DAY_TES_CRITERIA_SPANS_VIEW_BUILDER.build_and_print()
+        MAGIC_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER.build_and_print()

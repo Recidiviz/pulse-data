@@ -17,7 +17,7 @@
 """A view revealing when task eligibility spans that overlap for the same person.
 
 To build, run:
-    python -m recidiviz.validation.views.state.overlapping_task_eligibility_spans
+    python -m recidiviz.validation.views.task_eligibility.overlapping_task_eligibility_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

@@ -17,7 +17,7 @@
 """A view revealing when criteria spans have the same start and end date.
 
 To build, run:
-    python -m recidiviz.validation.views.state.zero_day_tes_candidate_population_spans
+    python -m recidiviz.validation.views.task_eligibility.zero_day_tes_candidate_population_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
