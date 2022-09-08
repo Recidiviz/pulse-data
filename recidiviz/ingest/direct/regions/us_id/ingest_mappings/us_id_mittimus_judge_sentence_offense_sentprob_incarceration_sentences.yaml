@@ -1,101 +1,244 @@
-key_mappings:
-  docno: state_person.state_person_id
-
-child_key_mappings:
-  docno: state_person_external_id.state_person_external_id_id
-
-  cnty_sdesc: state_incarceration_sentence.county_code
-  lifer: state_incarceration_sentence.is_life
-  sent_beg_dtd: state_incarceration_sentence.start_date
-  sent_disp: state_incarceration_sentence.status
-  sentence_dtd: state_incarceration_sentence.date_imposed
-  sent_ft_dtd: state_incarceration_sentence.projected_max_release_date
-  sent_ind_dtd: state_incarceration_sentence.projected_min_release_date
-  sent_par_dtd: state_incarceration_sentence.parole_eligibility_date
-  sent_sat_dtd: state_incarceration_sentence.completion_date
-
-  off_cnt: state_charge.counts
-  off_ldesc: state_charge.description
-  crm_grp_desc: state_charge.offense_type
-
-primary_key:
-  docno: state_person.state_person_id
-
-enforced_ancestor_types:
-  state_sentence: state_incarceration_sentence
-
-keys_to_ignore:
-  - judge_cd # Judge id - handled manually in the controller
-  - judge_name # Judge name - handled manually in the controller
-  - off_stat_sect # Statute Section - Handled manually in controller
-  - off_stat_title # Statute Title - Handled manually in controller
-  - sent_min_da # Minimum days in sentence - Handled manually in the controller
-  - sent_min_mo # Minimum months in sentence - Handled manually in the controller
-  - sent_min_yr # Minimum years in sentence - Handled manually in the controller
-  - sent_max_da # Maximum days in sentence - Handled manually in the controller
-  - sent_max_mo # Maximum months in sentence - Handled manually in the controller
-  - sent_max_yr # Maximum years in sentence - Handled manually in the controller
-  - sent_no # Sentence number - Handled manually in controller
-  - off_sxo_flg # Offense sex offender - Handled manually in the controller
-  - off_viol # Whether or not the offense was violent - Handled manually in the controller
-  - off_dtd # Offense date - Handled manually in the controller
-
-  - am_sent_no # Unused - Amended sentence number.
-  - caseno # Unused - Case number, removed as part of #6564
-  - caseno_seq # Unused - Case sequence number within a single docket.
-  - co_defend # Unused - Co-defendants
-  - consec_sent_no # Unused - Sequence number indicating rank in the chain of consecutive sentences
-  - consec_typ # Unused - Sentence timing type (Consecutive vs Concurrent)
-  - court_cred # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
-  - cnty_cd # Unused - County code, instead we use cnty_desc for the actual county name
-  - cnty_ldesc # Unused - County long description. We use cnty_sdesc instead (short description).
-  - def_atty # Unused - Defense attorney code
-  - description # Unused - Offense description
-  - dist_atty # Unused - DA code
-  - enhanced # Unused - Whether or not the sentence is enhanced. TODO(#3513): Consider adding to schema.
-  - govn_sent # Unused - Whether this is the governing sentence or not.
-  - interstate_mitt # Unused - Y/N flag to indicate if this is an interstate mittimus
-  - incrno # Unused - Incarceration number
-  - jail_cred # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
-  - jud_cd # Unused - Judge code.
-  - law_cd # Unused - Law code. TODO(#3506): Get more info from ID on this.
-  - lgl_fnam # Unused - Legal first name of sentenced person (name information gathered from
-    #          offender_ofndr_dob.csv)
-  - lgl_mnam # Unused - Legal middle name of sentenced person (name information gathered from
-    #          offender_ofndr_dob.csv)
-  - lgl_lnam # Unused - Legal last name of sentenced person (name information gathered from
-    #          offender_ofndr_dob.csv)
-  - lgl_title # Unused - Legal title of sentenced person (name information gathered from
-    #          offender_ofndr_dob.csv)
-  - mitt_disp # Unused - Mittimus disposition (Probation, Incarceration, or Interstate)
-  - mitt_srl # Unused - Mittimus id
-  - mitt_time_typ # Unused - Original mittimus disposition
-  - off_actv_flg # Unused - Whether or not the specific offense is currently a valid offense in ID.
-  - off_cat # Unused - Offense category - Used to find off_ldesc
-  - off_cd # Unused - Offense code - Used to find off_ldesc
-  - off_deg # Unused - Offense degree - Usedtofind off_ldesc
-  - off_rank1 # Unused - TODO(#3506): Get more info from ID.
-  - off_rank2 # Unused - TODO(#3506): Get more info from ID.
-  - off_rank3 # Unused - TODO(#3506): Get more info from ID.
-  - off_rpt_flg # Unused - TODO(#3506): Get more info from ID
-  - off_sdesc # Unused - Offense short description. We use off_ldesc instead (long description).
-  - off_stat_eff_dtd # Unused - Date the statue become effective
-  - off_stat_subsec # Unused - Statute Subsection
-  - off_stat_term_dtd # Unused - TODO(#3506): Get more info from ID
-  - off_typ # Unused - Offense type - Always null
-  - offvisxo_flg # Unused - Always null
-  - off_visxo_flg # Unused - Always null
-  - crm_grp_cd # Unused - Crime group code - only used in the ingest view for joins
-  - ofnse_crm_grp_id # Unused - Offense crime group id - unnecessary
-  - ucr # Unused - Uniform Crime Reporting code TODO(#3506): Get more info from ID on this
-  - plea # Unused - Plea TODO(#2607): Add plea to StateCharge.
-  - sent_eff_dtd # Unused - Usually the same as sentence_dtd/sent_beg_dtd.
-    #          TODO(#3506): Understand when these differ.
-  - sent_exp_dtd # Unused - Date the mittimus expires. Usually the same as sent_ft_dtd unless there has been a
-    #          manual process to update the expiration date.
-    #          TODO(#3506): Should we use this instead of sent_ft_dtd
-  - sent_gtr_dtd # Unused - Mostly null. TODO(#3506): Get more info from ID on this.
-  - state # Unused - State where sentenced.
-  - string_no # Unused - TODO(#3506): Get more info from ID
-  - vio_doc # Unused - TODO(#3506): Get more info from ID on this.
-  - vio_1311 # Unused - TODO(#3506): Get more info from ID on this
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - cnty_sdesc
+  - lifer
+  - sent_beg_dtd
+  - sent_disp
+  - sentence_dtd
+  - sent_ft_dtd
+  - sent_ind_dtd
+  - sent_par_dtd
+  - sent_sat_dtd
+  - off_cnt
+  - off_ldesc
+  - crm_grp_desc
+  - docno
+  - judge_cd
+  - judge_name
+  - off_stat_sect
+  - off_stat_title
+  - sent_min_da
+  - sent_min_mo
+  - sent_min_yr
+  - sent_max_da
+  - sent_max_mo
+  - sent_max_yr
+  - sent_no
+  - off_sxo_flg
+  - off_viol
+  - off_dtd
+  - am_sent_no
+  - caseno
+  - caseno_seq
+  - co_defend
+  - consec_sent_no
+  - consec_typ
+  - court_cred
+  - cnty_cd
+  - cnty_ldesc
+  - def_atty
+  - dist_atty
+  - enhanced
+  - govn_sent
+  - interstate_mitt
+  - incrno
+  - jail_cred
+  - jud_cd
+  - law_cd
+  - lgl_fnam
+  - lgl_mnam
+  - lgl_lnam
+  - lgl_title
+  - mitt_disp
+  - mitt_srl
+  - mitt_time_typ
+  - off_actv_flg
+  - off_cat
+  - off_cd
+  - off_deg
+  - off_rank1
+  - off_rank2
+  - off_rank3
+  - off_rpt_flg
+  - off_sdesc
+  - off_stat_eff_dtd
+  - off_stat_subsec
+  - off_stat_term_dtd
+  - off_typ
+  - offvisxo_flg
+  - crm_grp_cd
+  - ofnse_crm_grp_id
+  - ucr
+  - plea
+  - sent_eff_dtd
+  - sent_exp_dtd
+  - sent_gtr_dtd
+  - state
+  - string_no
+  - vio_doc
+  - vio_1311
+unused_columns:
+  - cnty_ldesc
+  - vio_1311
+  - incrno
+  - co_defend
+  - mitt_time_typ
+  - string_no
+  - sent_gtr_dtd
+  - lgl_fnam
+  - cnty_cd
+  - plea
+  - off_rank2
+  - judge_name
+  - off_rank1
+  - ofnse_crm_grp_id
+  - lgl_mnam
+  - off_stat_eff_dtd
+  - caseno_seq
+  - off_rank3
+  - crm_grp_cd
+  - sent_eff_dtd
+  - def_atty
+  - off_typ
+  - off_deg
+  - off_cat
+  - court_cred
+  - state
+  - off_actv_flg
+  - lgl_title
+  - off_cd
+  - law_cd
+  - dist_atty
+  - am_sent_no
+  - ucr
+  - judge_cd
+  - govn_sent
+  - off_rpt_flg
+  - jail_cred
+  - sent_exp_dtd
+  - off_sdesc
+  - off_stat_subsec
+  - off_stat_term_dtd
+  - lgl_lnam
+  - offvisxo_flg
+  - enhanced
+  - mitt_disp
+  - caseno
+  - consec_typ
+  - jud_cd
+  - vio_doc
+  - interstate_mitt
+  - consec_sent_no
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: docno
+          id_type: $literal("US_ID_DOC")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - docno
+                - mitt_srl
+                - sent_no
+              $include_nulls: true
+          county_code: cnty_sdesc
+          is_life:
+            $equal:
+              - lifer
+              - $literal("L")
+          start_date: sent_beg_dtd
+          status:
+            $enum_mapping:
+              $raw_text: sent_disp
+              $mappings:
+                StateSentenceStatus.COMMUTED:
+                  - "M" # Commuted
+                StateSentenceStatus.VACATED:
+                  - "V" # Vacated Sentence
+                  - "Q" # Vacated conviction
+                # TODO(#3517): Consider breaking out these sentence status enums in our schema (
+                #  sealed, early_discharge, expired, etc)
+                StateSentenceStatus.COMPLETED:
+                  - "C" # Completed
+                  - "D" # Discharged
+                  - "E" # Expired
+                  - "F" # Parole Early Discharge
+                  - "G" # Dismissed
+                  - "H" # Post conviction relief.
+                  - "L" # Sealed
+                  - "S" # Satisfied
+                  - "X" # Rule 35 - Reduction of illegal or overly harsh sentence.
+                  - "Z" # Reduced to misdemeanor - person should not be in prison and no longer tracked by IDOC.
+                StateSentenceStatus.REVOKED:
+                  - "K" # Revoked
+                StateSentenceStatus.SERVING:
+                  - "I" # Imposed
+                  - "J" # RJ To Court - Used for probation after treatment
+                  - "N" # Interstate Parole
+                  - "O" # Correctional Compact - TODO(#3506): Get more info from ID.
+                  - "P" # Bond Appeal - unused, but present in ID status table.
+                  - "R" # Court Retains Jurisdiction - used when a person on a rider. TODO(#3506): Whats the difference between this and 'W'?
+                  - "T" # Interstate probation - unused, but present in ID status table.
+                  - "U" # Unsupervised - probation
+                  - "W" # Witheld judgement - used when a person is on a rider.
+                  - "Y" # Drug Court
+                StateSentenceStatus.SUSPENDED:
+                  - "B" # Suspended sentence - probation
+              $ignore:
+                - "A"
+          date_imposed: sentence_dtd
+          projected_max_release_date: sent_ft_dtd
+          projected_min_release_date: sent_ind_dtd
+          parole_eligibility_date: sent_par_dtd
+          completion_date: sent_sat_dtd
+          max_length_days:
+            $custom:
+              $function: us_id_custom_parsers.parse_duration_from_date_part_strings
+              $args:
+                years_str: sent_max_yr
+                months_str: sent_max_mo
+                days_str: sent_max_da
+                start_dt_str: sent_beg_dtd
+          min_length_days:
+            $custom:
+              $function: us_id_custom_parsers.parse_duration_from_date_part_strings
+              $args:
+                years_str: sent_min_yr
+                months_str: sent_min_mo
+                days_str: sent_min_da
+                start_dt_str: sent_beg_dtd
+          charges:
+            - StateCharge:
+                external_id:
+                  $concat:
+                    $values:
+                      - docno
+                      - mitt_srl
+                      - sent_no
+                    $include_nulls: true
+                counts: off_cnt
+                description: off_ldesc
+                offense_type: crm_grp_desc
+                statute:
+                  $concat:
+                    $values:
+                      - off_stat_title
+                      - off_stat_sect
+                    $include_nulls: false
+                is_violent:
+                  $equal:
+                    - off_viol
+                    - $literal("V")
+                is_sex_offense:
+                  $equal:
+                    - off_sxo_flg
+                    - $literal("X")
+                offense_date:
+                  $custom:
+                    $function: us_id_custom_parsers.parse_valid_offense_date
+                    $args:
+                      raw_date: off_dtd
