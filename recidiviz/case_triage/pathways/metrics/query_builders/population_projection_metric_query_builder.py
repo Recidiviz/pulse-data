@@ -37,7 +37,7 @@ class PopulationProjectionMetricQueryBuilder(MetricQueryBuilder):
             "month",
             "simulation_tag",
             "gender",
-            "admission_reason",
+            "legal_status",
             "total_population",
             "total_population_min",
             "total_population_max",
@@ -48,12 +48,6 @@ class PopulationProjectionMetricQueryBuilder(MetricQueryBuilder):
             for attribute in required_attributes
             if hasattr(self.model, attribute)
         ]
-
-        # TODO(#14970): Remove and update once updated views have been exported
-        admission_reason_index = self.base_columns.index(self.model.admission_reason)
-        self.base_columns[admission_reason_index] = self.model.admission_reason.label(
-            "legal_status"
-        )
 
         if len(self.base_columns) != len(required_attributes):
             raise ValueError(
