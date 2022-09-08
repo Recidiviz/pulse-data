@@ -139,33 +139,6 @@ def get_metadata_for_raw_files_discovered_after_datetime(
     return query.all()
 
 
-def get_raw_file_rows_count_for_region(
-    session: Session,
-    region_code: str,
-    is_processed: bool,
-    raw_data_instance: DirectIngestInstance,
-) -> int:
-    """Counts all operations DB raw file metadata rows for the given region.
-    If is_processed is True, returns the count of processed files. If it is False,
-    returns the count of unprocessed files.
-    """
-    query = session.query(schema.DirectIngestRawFileMetadata.file_id).filter_by(
-        region_code=region_code.upper(),
-        is_invalidated=False,
-        raw_data_instance=raw_data_instance.value,
-    )
-    if is_processed:
-        query = query.filter(
-            schema.DirectIngestRawFileMetadata.processed_time.isnot(None),
-        )
-    else:
-        query = query.filter(
-            schema.DirectIngestRawFileMetadata.processed_time.is_(None),
-        )
-
-    return query.count()
-
-
 def get_all_raw_file_metadata_rows_for_region(
     session: Session,
     region_code: str,

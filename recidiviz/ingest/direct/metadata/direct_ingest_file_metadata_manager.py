@@ -117,7 +117,3 @@ class DirectIngestRawFileMetadataManager:
         self,
     ) -> List[DirectIngestRawFileMetadataSummary]:
         """Returns metadata for all raw files in the operations table for this region."""
-
-    @abc.abstractmethod
-    def get_num_unprocessed_raw_files(self) -> int:
-        """Returns the number of unprocessed raw files in the operations table for this region"""

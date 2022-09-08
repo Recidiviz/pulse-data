@@ -55,7 +55,6 @@ export type IngestInstanceSummary = {
   instance: DirectIngestInstance;
   storageDirectoryPath: string;
   ingestBucketPath: string;
-  ingestBucketNumFiles: number;
   dbName: string;
   operations: OperationsDbInfo;
 };

@@ -315,7 +315,6 @@ class IngestOperationsStore(AdminPanelStore):
             dbName: database name for this instance,
             storageDirectoryPath: storage directory absolute path,
             ingestBucketPath: ingest bucket path,
-            ingestBucketNumFiles: number of files of any kind in the ingest bucket,
             operations: dictionary with metadata from the operations DB
         }
         """
@@ -327,15 +326,6 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_instance=ingest_instance,
             project_id=metadata.project_id(),
         )
-
-        files_in_bucket = [
-            p
-            for p in self.fs.ls_with_blob_prefix(
-                bucket_name=ingest_bucket_path.bucket_name, blob_prefix=""
-            )
-            if isinstance(p, GcsfsFilePath)
-        ]
-        num_files_in_bucket = len(files_in_bucket)
 
         # Get the storage bucket for this instance
         storage_bucket_path = gcsfs_direct_ingest_storage_directory_path_for_state(
@@ -357,7 +347,6 @@ class IngestOperationsStore(AdminPanelStore):
             "instance": ingest_instance.value,
             "storageDirectoryPath": storage_bucket_path.abs_path(),
             "ingestBucketPath": ingest_bucket_path.abs_path(),
-            "ingestBucketNumFiles": num_files_in_bucket,
             "dbName": ingest_db_name,
             "operations": operations_db_metadata,
         }
@@ -498,13 +487,10 @@ class IngestOperationsStore(AdminPanelStore):
             List[Dict[str, Union[Optional[str], int]]],
         ],
     ]:
-        # TODO(#14041) Remove unprocessedFiles and processedFiles from this function when frontend migration complete
         """Returns the following dictionary with information about the operations
         database for the state:
         {
             isPaused: <bool>
-            unprocessedFilesRaw: <int>
-            processedFilesRaw: <int>
             dateOfEarliestUnprocessedIngestView: <datetime>
             ingestViewMaterializationSummaries: [
                 {
@@ -520,34 +506,6 @@ class IngestOperationsStore(AdminPanelStore):
         logging.info(
             "Getting operations DB metadata for instance [%s]", ingest_instance.value
         )
-        raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code=state_code.value,
-            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
-            # multiple instances.
-            raw_data_instance=DirectIngestInstance.PRIMARY,
-        )
-
-        if ingest_instance == DirectIngestInstance.PRIMARY:
-            logging.info(
-                "Getting unprocessed raw files for instance [%s]", ingest_instance.value
-            )
-            num_unprocessed_raw_files = (
-                raw_file_metadata_manager.get_num_unprocessed_raw_files()
-            )
-            logging.info(
-                "Getting processed raw files for instance [%s]", ingest_instance.value
-            )
-            num_processed_raw_files = (
-                raw_file_metadata_manager.get_num_processed_raw_files()
-            )
-        elif ingest_instance == DirectIngestInstance.SECONDARY:
-            # TODO(##12387): Raw files are currently processed in the primary instance
-            #  only, not secondary. This logic will need to change once we enable
-            #  raw data imports in secondary.
-            num_unprocessed_raw_files = 0
-            num_processed_raw_files = 0
-        else:
-            raise ValueError(f"Unexpected ingest instance: [{ingest_instance}]")
 
         ingest_instance_status_manager = DirectIngestInstancePauseStatusManager(
             state_code.value, ingest_instance
@@ -584,8 +542,6 @@ class IngestOperationsStore(AdminPanelStore):
         )
         return {
             "isPaused": is_paused,
-            "unprocessedFilesRaw": num_unprocessed_raw_files,
-            "processedFilesRaw": num_processed_raw_files,
             "ingestViewMaterializationSummaries": [
                 summary.as_api_dict()
                 for summary in materialization_job_summaries.values()
