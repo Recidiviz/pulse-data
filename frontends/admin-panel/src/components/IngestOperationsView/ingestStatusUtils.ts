@@ -86,22 +86,28 @@ const statusFormattingInfo: {
     message:
       "Standard rerun with only ingest view materialization has been kicked off",
   },
+  FLASH_CANCELED: {
+    status: "FLASH_CANCELED",
+    color: "ingest-status-cell-grey",
+    sortRank: 9,
+    message: "Flash from SECONDARY to PRIMARY has been canceled",
+  },
   FLASH_COMPLETED: {
     status: "FLASH_COMPLETED",
     color: "ingest-status-cell-green",
-    sortRank: 9,
+    sortRank: 10,
     message: "Flash of data from SECONDARY to PRIMARY is completed",
   },
   NO_RERUN_IN_PROGRESS: {
     status: "NO_RERUN_IN_PROGRESS",
     color: "ingest-status-cell-green",
-    sortRank: 10,
+    sortRank: 11,
     message: "No rerun is currently in progress in SECONDARY",
   },
   UP_TO_DATE: {
     status: "UP_TO_DATE",
     color: "ingest-status-cell-green",
-    sortRank: 11,
+    sortRank: 12,
     message: "Scheduler in PRIMARY found no more work to do and is up to date",
   },
 };

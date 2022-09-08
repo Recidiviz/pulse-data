@@ -308,6 +308,21 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
         )
 
+    def test_happy_path_secondary_rerun_flow_flash_canceled(self) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+                DirectIngestStatus.READY_TO_FLASH,
+                DirectIngestStatus.FLASH_CANCELED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            ],
+            expected_raw_data_source=DirectIngestInstance.SECONDARY,
+        )
+
     def test_primary_started_no_data(self) -> None:
         self._run_test_for_status_transitions(
             self.us_xx_primary_manager,
