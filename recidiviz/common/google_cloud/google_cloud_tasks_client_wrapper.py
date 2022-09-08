@@ -30,7 +30,10 @@ from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
-from recidiviz.common.common_utils import google_api_retry_predicate
+from recidiviz.common.common_utils import (
+    google_api_retry_predicate,
+    log_retried_google_api_error,
+)
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 from recidiviz.utils import metadata
 
@@ -109,7 +112,11 @@ class GoogleCloudTasksClientWrapper:
             if task.name.startswith(task_name_prefix)
         ]
 
-    @retry.Retry(predicate=google_api_retry_predicate)
+    @retry.Retry(
+        predicate=google_api_retry_predicate,
+        deadline=600,  # Saw DEADLINE_EXCEEDED errors with the default of 120
+        on_error=log_retried_google_api_error,
+    )
     def create_task(
         self,
         *,
