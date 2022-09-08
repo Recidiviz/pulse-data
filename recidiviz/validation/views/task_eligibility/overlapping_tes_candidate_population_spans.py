@@ -17,7 +17,7 @@
 """A view revealing when candidate population spans that overlap for the same person.
 
 To build, run:
-    python -m recidiviz.validation.views.state.overlapping_tes_candidate_population_spans
+    python -m recidiviz.validation.views.task_eligibility.overlapping_tes_candidate_population_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

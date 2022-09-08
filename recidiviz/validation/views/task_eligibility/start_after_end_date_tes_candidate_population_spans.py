@@ -18,7 +18,7 @@
 the end date.
 
 To build, run:
-    python -m recidiviz.validation.views.state.start_after_end_date_tes_candidate_population_spans
+    python -m recidiviz.validation.views.task_eligibility.start_after_end_date_tes_candidate_population_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder

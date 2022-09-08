@@ -17,7 +17,7 @@
 """A view revealing when task eligibility spans have a null start date.
 
 To build, run:
-    python -m recidiviz.validation.views.state.null_start_date_task_eligibility_spans
+    python -m recidiviz.validation.views.task_eligibility.null_start_date_task_eligibility_spans
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
