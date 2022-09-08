@@ -132,4 +132,5 @@ def start_chart_generation(report_context: ReportContext) -> None:
     )  # no error checking here since we already validated the JSON previously
     # TODO(#3260): Generalize this with report context
     topic = utils.get_chart_topic()
-    publisher.publish(topic, payload.encode("utf-8"))
+    future = publisher.publish(topic, payload.encode("utf-8"))
+    logging.info("Pubsub publish response: %s", future.result())
