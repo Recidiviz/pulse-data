@@ -273,6 +273,9 @@ from recidiviz.validation.views.state.workflows.client_record_duplicate_person_e
 from recidiviz.validation.views.state.workflows.compliant_reporting_referral_record_archive_missing_days import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.task_eligibility.configured_validations import (
+    get_all_task_eligibility_validations,
+)
 
 
 def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
@@ -324,6 +327,7 @@ def get_all_validations() -> List[DataValidationCheck]:
     region_configs = get_validation_region_configs()
 
     all_data_validations: List[DataValidationCheck] = [
+        *get_all_task_eligibility_validations(),
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,

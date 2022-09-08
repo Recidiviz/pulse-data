@@ -25,10 +25,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
-from recidiviz.task_eligibility.task_eligiblity_spans import (
+from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -232,7 +233,9 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER = SimpleBigQ
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    task_eligibility_dataset=task_eligibility_spans_state_specific_dataset("us_nd"),
+    task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
+        StateCode.US_ND
+    ),
     should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
 )

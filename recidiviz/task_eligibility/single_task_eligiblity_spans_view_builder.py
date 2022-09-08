@@ -25,6 +25,9 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_spans_state_specific_dataset,
+)
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     TaskCandidatePopulationBigQueryViewBuilder,
@@ -98,7 +101,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             candidate_population_view_builder, criteria_spans_view_builders
         )
         super().__init__(
-            dataset_id=f"task_eligibility_spans_{state_code.value.lower()}",
+            dataset_id=task_eligibility_spans_state_specific_dataset(state_code),
             view_id=task_name.lower(),
             description=description,
             view_query_template=view_query_template,
