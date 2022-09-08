@@ -18,6 +18,7 @@
 "Utils to be shared across recidiviz project"
 import datetime
 import itertools
+import logging
 import uuid
 from typing import Any, Callable, Iterable, Optional, Set, Tuple, Type, TypeVar
 
@@ -76,6 +77,10 @@ def google_api_retry_predicate(exception: Exception) -> Callable[[Exception], bo
     return retry.if_transient_error(exception) or retry.if_exception_type(
         exceptions.GatewayTimeout
     )(exception)
+
+
+def log_retried_google_api_error(exception: Exception) -> None:
+    logging.warning("Retrying failed Google API request. Exception: %s", exception)
 
 
 def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type) -> None:
