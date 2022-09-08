@@ -22,6 +22,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     probation_supervision_population,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    negative_ua_within_90_days,
     supervision_past_minimum_sentence_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -39,7 +40,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_supervision_population.VIEW_BUILDER,
-    criteria_spans_view_builders=[supervision_past_minimum_sentence_date.VIEW_BUILDER],
+    criteria_spans_view_builders=[
+        supervision_past_minimum_sentence_date.VIEW_BUILDER,
+        negative_ua_within_90_days.VIEW_BUILDER,
+    ],
 )
 
 if __name__ == "__main__":

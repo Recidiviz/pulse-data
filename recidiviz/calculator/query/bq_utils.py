@@ -22,6 +22,7 @@
 from typing import List, Optional, Set
 
 MAGIC_END_DATE = "9999-12-31"
+MAGIC_START_DATE = "1000-01-01"
 
 
 def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
@@ -260,3 +261,13 @@ def nonnull_end_date_clause(column_name: str) -> str:
 def revert_nonnull_end_date_clause(column_name: str) -> str:
     """Convert end dates far in the future to NULL"""
     return f'IF({column_name} = "{MAGIC_END_DATE}", NULL, {column_name})'
+
+
+def nonnull_start_date_clause(column_name: str) -> str:
+    """Convert NULL start dates to dates far in the future to help with the date logic"""
+    return f'COALESCE({column_name}, "{MAGIC_START_DATE}")'
+
+
+def revert_nonnull_start_date_clause(column_name: str) -> str:
+    """Convert start dates far in the future to NULL"""
+    return f'IF({column_name} = "{MAGIC_START_DATE}", NULL, {column_name})'
