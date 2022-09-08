@@ -22,11 +22,23 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
+from recidiviz.validation.views.task_eligibility.null_start_date_tes_candidate_population_spans import (
+    NULL_START_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.null_start_date_tes_criteria_spans import (
+    NULL_START_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.overlapping_tes_candidate_population_spans import (
     OVERLAPPING_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.task_eligibility.overlapping_tes_criteria_spans import (
     OVERLAPPING_TES_CRITERIA_SPANS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.start_after_end_date_tes_candidate_population_spans import (
+    START_AFTER_END_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.task_eligibility.start_after_end_date_tes_criteria_spans import (
+    START_AFTER_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
 )
 from recidiviz.validation.views.task_eligibility.zero_day_tes_candidate_population_spans import (
     ZERO_DAY_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
@@ -48,11 +60,27 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
+            view_builder=NULL_START_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=START_AFTER_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
             view_builder=OVERLAPPING_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
             view_builder=ZERO_DAY_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=NULL_START_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=START_AFTER_END_DATE_TES_CANDIDATE_POPULATION_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]
