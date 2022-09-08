@@ -25,6 +25,10 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilderType,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.dataset_config import (
+    TASK_ELIGIBILITY_DATASET_ID,
+    task_eligibility_spans_state_specific_dataset,
+)
 from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
     SingleTaskEligibilityBigQueryViewCollector,
 )
@@ -125,13 +129,7 @@ This view contains all task eligiblity spans for tasks across states. It unions 
 results of all single-state `all_tasks` views (e.g. `task_eligibility_us_xx.all_tasks`).
 """
 
-TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
-
-
-def task_eligibility_spans_state_specific_dataset(region_code: str) -> str:
-    """Returns the dataset containing task eligibility spans for this region."""
-    return f"task_eligibility_spans_{region_code.lower()}"
 
 
 def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
@@ -153,7 +151,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
                 f"[{state_code}] - is there an empty module for this state?"
             )
 
-        dataset_id = f"task_eligibility_spans_{state_code.value.lower()}"
+        dataset_id = task_eligibility_spans_state_specific_dataset(state_code)
         state_specific_unioned_view_builders.append(
             _build_union_all_view_builder(
                 dataset_id=dataset_id,
