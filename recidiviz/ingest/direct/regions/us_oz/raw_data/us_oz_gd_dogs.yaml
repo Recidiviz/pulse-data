@@ -1,0 +1,20 @@
+file_tag: gd_dogs
+file_description: |-
+  People love dogs. It's been proven so many times. But sometimes they can't manage the
+  dogs, and the dogs have to be given away, and new dogs must be obtained. This table
+  helps track that information.
+data_classification: source
+primary_key_cols: [dog_id]
+columns:
+  - name: name
+    description: The name of the good dog
+    is_pii: true
+  - name: acquired
+    description: The date the very good dog was acquired, yes, you are very good!
+    is_datetime: true
+  - name: owner_id
+    description: Misnomer. Human friend would be a better name. May change this later.
+    is_pii: true
+  - name: dog_id
+    description: An ID internal to the system identifying the good dog.
+    is_pii: true

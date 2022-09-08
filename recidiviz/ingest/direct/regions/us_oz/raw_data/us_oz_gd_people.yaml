@@ -1,0 +1,12 @@
+file_tag: gd_people
+file_description: |-
+  All the fine people in Aaron's Oz (no jokers).
+data_classification: source
+primary_key_cols: [id]
+columns:
+  - name: name
+    description: The list of phonetic symbols that represents a specific Ozian.
+    is_pii: true
+  - name: id
+    description: An internal ID identifying this person within Oz.
+    is_pii: true
