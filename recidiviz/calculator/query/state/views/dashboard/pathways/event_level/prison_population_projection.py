@@ -42,15 +42,10 @@ PRISON_POPULATION_PROJECTION_DESCRIPTION = (
 PRISON_POPULATION_PROJECTION_QUERY_TEMPLATE = f"""
     WITH projection AS (
         {population_projection_query(compartment='INCARCERATION')}
-    ),
-    # TODO(#14970): Remove and update once updated views have been exported
-    remapped_admission_reason AS (
-        SELECT legal_status AS admission_reason, *
-        FROM projection
     )
     SELECT
     {{columns}}
-    FROM remapped_admission_reason
+    FROM projection
 """
 
 PRISON_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
@@ -66,7 +61,6 @@ PRISON_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder
             "month",
             "simulation_tag",
             "gender",
-            "admission_reason",
             "legal_status",
             "total_population",
             "total_population_min",

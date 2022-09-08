@@ -40,15 +40,10 @@ SUPERVISION_POPULATION_PROJECTION_DESCRIPTION = "Projected supervised population
 SUPERVISION_POPULATION_PROJECTION_QUERY_TEMPLATE = f"""
     WITH projection AS (
         {population_projection_query(compartment='SUPERVISION')}
-    ),
-    # TODO(#14970): Remove and update once updated views have been exported
-    remapped_admission_reason AS (
-        SELECT legal_status AS admission_reason, *
-        FROM projection
     )
     SELECT
     {{columns}}
-    FROM remapped_admission_reason
+    FROM projection
 """
 
 SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
@@ -64,7 +59,6 @@ SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
             "month",
             "simulation_tag",
             "gender",
-            "admission_reason",
             "legal_status",
             "total_population",
             "total_population_min",
