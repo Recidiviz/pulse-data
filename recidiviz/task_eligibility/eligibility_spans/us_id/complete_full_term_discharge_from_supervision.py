@@ -14,30 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are actively
-supervised at any point in time.
+"""Builder for a task eligiblity spans view that shows the spans of time during which
+someone in ID is eligible for full term discharge from supervision.
 """
-from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
-    StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.candidate_populations.general import (
+    active_supervision_population,
 )
-from recidiviz.task_eligibility.utils.candidate_population_builders import (
-    state_agnostic_supervision_candidate_population_view_builder,
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_past_full_term_completion_date,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION"
-
-_DESCRIPTION = """Selects all spans of time in which a person is actively supervised,
-as tracked by data in our `sessions` dataset. "Actively supervised" indicates the client
-has a supervision type that requires a supervision officer.
+_DESCRIPTION = """Shows the spans of time during which someone in ID is eligible
+for full term discharge from supervision.
 """
 
-VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_agnostic_supervision_candidate_population_view_builder(
-    population_name=_POPULATION_NAME,
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
+    state_code=StateCode.US_ID,
+    task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
     description=_DESCRIPTION,
-    additional_filters=[
-        'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")'
+    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
+    criteria_spans_view_builders=[
+        supervision_past_full_term_completion_date.VIEW_BUILDER
     ],
 )
 

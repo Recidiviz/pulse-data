@@ -14,31 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are actively
-supervised at any point in time.
+"""Defines a criteria span view that shows spans of time during which someone is past
+their supervision full term completion date (projected max completion date).
 """
-from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
-    StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.candidate_population_builders import (
-    state_agnostic_supervision_candidate_population_view_builder,
+from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
+    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION"
+_CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE"
 
-_DESCRIPTION = """Selects all spans of time in which a person is actively supervised,
-as tracked by data in our `sessions` dataset. "Actively supervised" indicates the client
-has a supervision type that requires a supervision officer.
-"""
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
+someone is past their supervision full term completion date (projected max completion
+date)"""
 
-VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_agnostic_supervision_candidate_population_view_builder(
-    population_name=_POPULATION_NAME,
-    description=_DESCRIPTION,
-    additional_filters=[
-        'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")'
-    ],
+_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
+
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    state_agnostic_placeholder_criteria_view_builder(
+        criteria_name=_CRITERIA_NAME,
+        description=_DESCRIPTION,
+        reason_query=_REASON_QUERY,
+    )
 )
 
 if __name__ == "__main__":
