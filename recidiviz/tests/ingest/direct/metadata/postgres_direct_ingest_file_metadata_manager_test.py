@@ -426,113 +426,8 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     @freeze_time("2015-01-02T03:04:06")
-    def test_get_unprocessed_raw_files(self) -> None:
-        # Arrange
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag.csv",
-        )
-
-        raw_unprocessed_path_2 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag2.csv",
-        )
-
-        # Act
-        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
-        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_2)
-
-        unprocessed_paths = [raw_unprocessed_path_1, raw_unprocessed_path_2]
-
-        # Assert
-        self.assertEqual(
-            len(unprocessed_paths),
-            self.raw_metadata_manager.get_num_unprocessed_raw_files(),
-        )
-
-        metadata_1 = DirectIngestRawFileMetadata.new_with_defaults(
-            region_code=self.raw_metadata_manager.region_code,
-            file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
-            normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 3, 3, 3
-            ),
-        )
-        metadata_2 = DirectIngestRawFileMetadata.new_with_defaults(
-            region_code=self.raw_metadata_manager.region_code,
-            file_tag="file_tag2",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
-            normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag2.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 3, 3, 3
-            ),
-        )
-        self.assertEqual(
-            [metadata_1, metadata_2],
-            self.raw_metadata_manager.get_unprocessed_raw_files(),
-        )
-        self.assertEqual(0, self.raw_metadata_manager.get_num_processed_raw_files())
-
-        # Act
-        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
-
-        # Assert
-        self.assertEqual(1, self.raw_metadata_manager.get_num_unprocessed_raw_files())
-        self.assertEqual(
-            [metadata_2], self.raw_metadata_manager.get_unprocessed_raw_files()
-        )
-        self.assertEqual(1, self.raw_metadata_manager.get_num_processed_raw_files())
-
-    @freeze_time("2015-01-02T03:04:06")
-    def test_get_unprocessed_raw_files_multi_region(self) -> None:
-        # Arrange
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag.csv",
-        )
-
-        raw_unprocessed_path_2 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag2.csv",
-        )
-
-        # Act
-        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
-        self.raw_metadata_manager_other_region.mark_raw_file_as_discovered(
-            raw_unprocessed_path_2
-        )
-
-        # Assert
-        self.assertEqual(
-            1,
-            self.raw_metadata_manager.get_num_unprocessed_raw_files(),
-        )
-        metadata_1 = DirectIngestRawFileMetadata.new_with_defaults(
-            region_code=self.raw_metadata_manager.region_code,
-            file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
-            normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 3, 3, 3
-            ),
-        )
-        self.assertEqual(
-            [metadata_1], self.raw_metadata_manager.get_unprocessed_raw_files()
-        )
-        self.assertEqual(0, self.raw_metadata_manager.get_num_processed_raw_files())
-
-        # Act
-        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
-
-        # Assert
-        self.assertEqual(0, self.raw_metadata_manager.get_num_unprocessed_raw_files())
-        self.assertEqual([], self.raw_metadata_manager.get_unprocessed_raw_files())
-        self.assertEqual(1, self.raw_metadata_manager.get_num_processed_raw_files())
-
-    @freeze_time("2015-01-02T03:04:06")
     def test_get_unprocessed_raw_files_when_no_files(self) -> None:
         # Assert
-        self.assertEqual(0, self.raw_metadata_manager.get_num_unprocessed_raw_files())
         self.assertEqual([], self.raw_metadata_manager.get_unprocessed_raw_files())
 
     def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
@@ -547,9 +442,6 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Assert
-        with self.assertRaises(DirectIngestInstanceError):
-            self.raw_metadata_manager_secondary.get_num_unprocessed_raw_files()
-
         with self.assertRaises(DirectIngestInstanceError):
             self.raw_metadata_manager_secondary.get_unprocessed_raw_files()
 
