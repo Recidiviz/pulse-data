@@ -1,0 +1,17 @@
+file_tag: internDS_initialtable
+file_description: |-
+  Contains information about people tracked in internDS.
+data_classification: source
+primary_key_cols:
+  - ID
+columns:
+  - name: ID
+    description: A number used to uniquely identify this person in the system.
+  - name: FirstName
+    description: The person's first name.
+  - name: LastName
+    description: The person's last name.
+  - name: Birthday
+    description: The date this person was born.
+  - name: Estimated_Conception
+    description: The date that this person is estimated to be conceived on.
