@@ -137,6 +137,7 @@ class ValidationResultForStorage:
         # serializing so they don't scale linearly.
         if details := unstructured["result_details"]:
             unstructured["result_details"] = json.dumps(details)
+
         # BigQuery doesn't store timezone information so we have to strip it off,
         # ensuring that we are passing it UTC.
         run_datetime = cast(str, unstructured["run_datetime"])
@@ -144,6 +145,10 @@ class ValidationResultForStorage:
             unstructured["run_datetime"] = run_datetime[: -len("+00:00")]
         else:
             raise ValueError(f"Datetime {run_datetime=} is not UTC.")
+
+        # Exceptions are not serializable.
+        if exception_log := unstructured["exception_log"]:
+            unstructured["exception_log"] = repr(exception_log)
 
         return unstructured
 
