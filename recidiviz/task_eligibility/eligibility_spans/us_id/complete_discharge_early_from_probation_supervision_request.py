@@ -25,6 +25,9 @@ from recidiviz.task_eligibility.criteria.general import (
     negative_ua_within_90_days,
     supervision_past_minimum_sentence_date,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_id import (
+    lsir_level_low_moderate_for_x_days,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -43,6 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_past_minimum_sentence_date.VIEW_BUILDER,
         negative_ua_within_90_days.VIEW_BUILDER,
+        lsir_level_low_moderate_for_x_days.VIEW_BUILDER,
     ],
 )
 
