@@ -569,7 +569,8 @@ select
     name_suffix,
     employee_county
 from spans_all_combos
-where movement_reason_id is not null;
+where movement_reason_id is not null
+and offender_number is not null;
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
