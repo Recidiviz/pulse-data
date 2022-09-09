@@ -133,13 +133,6 @@ COPY --from=justice-counts-build /usr/justice-counts/control-panel/build /app/fr
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
 
-# Uninstall vulnerable and unneeded packages
-RUN apt-get -y remove --auto-remove sqlite3 libsqlite3-0
-RUN rm -rf /app/recidiviz/tools/deploy/terraform/.terraform
-
-# Install security patches
-RUN apt-get update && apt-get -y upgrade
-
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
 
