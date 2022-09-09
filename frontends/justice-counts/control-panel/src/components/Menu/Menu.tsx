@@ -21,6 +21,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { Permission } from "../../shared/types";
 import { useStore } from "../../stores";
+import { Button } from "../DataUpload";
 import {
   ExtendedDropdownMenuItem,
   ExtendedDropdownToggle,
@@ -156,26 +157,11 @@ const Menu = () => {
         Log Out
       </MenuItem>
 
-      {/* Settings Dropdown */}
-      {/* TODO(#13341) Commenting out until we finalize the settings page implementation */}
-      {/* <MenuItem active={activeMenuItem === MenuItems.Settings}>
-        <Dropdown>
-          <ExtendedDropdownToggle kind="borderless">
-            Settings
-          </ExtendedDropdownToggle>
-
-          <DropdownMenu alignment="right">
-            {userStore.permissions.includes(Permission.RECIDIVIZ_ADMIN) && (
-              <ExtendedDropdownMenuItem onClick={() => navigate("/settings")}>
-                Account Settings
-              </ExtendedDropdownMenuItem>
-            )}
-            <ExtendedDropdownMenuItem onClick={logout} highlight>
-              Log Out
-            </ExtendedDropdownMenuItem>
-          </DropdownMenu>
-        </Dropdown>
-      </MenuItem> */}
+      <MenuItem buttonPadding>
+        <Button type="blue" onClick={() => navigate("/upload")}>
+          Add Data
+        </Button>
+      </MenuItem>
     </MenuContainer>
   );
 };

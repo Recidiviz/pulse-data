@@ -17,6 +17,14 @@
 
 import React from "react";
 
+import { removeSnakeCase } from "../../utils";
+import { ReactComponent as SpreadsheetIcon } from "../assets/microsoft-excel-icon.svg";
+import {
+  ButtonWrapper,
+  DownloadTemplateBox,
+  systemToTemplateSpreadsheetFileName,
+} from ".";
+
 export type GeneralInstructionsTemplateParams = {
   systems: string[];
 };
@@ -159,6 +167,7 @@ export const GeneralInstructions: React.FC<
 > = ({ systems }) => {
   return (
     <>
+      <h1>How to Upload Data to Justice Counts</h1>
       <p>
         Agencies participating in Justice Counts have two options for reporting
         their assigned metrics:
@@ -178,6 +187,32 @@ export const GeneralInstructions: React.FC<
         spreadsheet <b>in a particular format</b>, so we can build automation on
         our end to easily upload this data into our platform.
       </p>
+
+      <h3>Templates</h3>
+
+      <ButtonWrapper>
+        {systems.map((system) => {
+          const systemName = removeSnakeCase(system).toLowerCase();
+          const systemFileName = systemToTemplateSpreadsheetFileName[system];
+
+          return (
+            <DownloadTemplateBox key={system}>
+              <SpreadsheetIcon />
+
+              <span>
+                {systemName}
+                <a
+                  href={`./assets/${systemFileName}`}
+                  download={systemFileName}
+                >
+                  Download
+                </a>
+              </span>
+            </DownloadTemplateBox>
+          );
+        })}
+      </ButtonWrapper>
+
       <p>
         Complete, downloadable spreadsheet templates can be found above. We
         suggest that you download the template and review it, and then read the
