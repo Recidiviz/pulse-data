@@ -22,22 +22,19 @@ This can be run on-demand whenever locally with the following command:
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         --dataflow_dataset_override [DATAFLOW_DATASET_OVERRIDE] \
-        --refresh_materialized_tables_only [True,False]
-        --view_ids_to_load [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...]
-        --dataset_ids_to_load [DATASET_ID_1,DATASET_ID_2,...]
-        --update_ancestors [True,False]
+        --view_ids_to_load [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...] \
+        --dataset_ids_to_load [DATASET_ID_1,DATASET_ID_2,...] \
+        --update_ancestors [True,False] \
         --update_descendants [True,False]
 """
 import argparse
 import logging
-import sys
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
-    rematerialize_views_for_view_builders,
     view_builder_sub_graph_for_view_builders_to_load,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -114,7 +111,6 @@ def _get_root_view_builders_to_load(
 def load_views_to_sandbox(
     sandbox_dataset_prefix: str,
     dataflow_dataset_override: Optional[str] = None,
-    refresh_materialized_tables_only: bool = False,
     view_ids_to_load: Optional[List[str]] = None,
     dataset_ids_to_load: Optional[List[str]] = None,
     update_ancestors: bool = False,
@@ -130,10 +126,6 @@ def load_views_to_sandbox(
 
     dataflow_dataset_override : Optional[str]
         If True, updates views in the DATAFLOW_METRICS_MATERIALIZED_DATASET
-
-    refresh_materialized_tables_only : bool, default False
-        If True, re-materializes any materialized views and doesn't change underlying
-        queries.
 
     view_ids_to_load : Optional[List[str]]
         If specified, only loads views whose view_id matches one of the listed view_ids.
@@ -208,26 +200,16 @@ def load_views_to_sandbox(
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
-    if refresh_materialized_tables_only:
-        rematerialize_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            views_to_update_builders=builders_to_update,
-            all_view_builders=view_builders,
-            address_overrides=sandbox_address_overrides,
-            # If a given view hasn't been loaded to the sandbox, skip it
-            skip_missing_views=True,
-        )
-    else:
-        create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            view_builders_to_update=builders_to_update,
-            address_overrides=sandbox_address_overrides,
-            # Don't clean up datasets when running a sandbox script
-            historically_managed_datasets_to_clean=None,
-        )
+    create_managed_dataset_and_deploy_views_for_view_builders(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_builders_to_update=builders_to_update,
+        address_overrides=sandbox_address_overrides,
+        # Don't clean up datasets when running a sandbox script
+        historically_managed_datasets_to_clean=None,
+    )
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
@@ -254,16 +236,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         help="An override of the dataset containing Dataflow metric output that the "
         "updated views should reference.",
         type=str,
-        required=False,
-    )
-
-    parser.add_argument(
-        "--refresh_materialized_tables_only",
-        dest="refresh_materialized_tables_only",
-        help="If True, will only re-materialize views that have already been loaded to "
-        "the sandbox.",
-        type=str_to_bool,
-        default=False,
         required=False,
     )
 
@@ -309,7 +281,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         required=False,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 def str_to_list(list_str: str) -> List[str]:
@@ -321,19 +293,18 @@ def str_to_list(list_str: str) -> List[str]:
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
-    with local_project_id_override(known_args.project_id):
+    with local_project_id_override(args.project_id):
         logging.info(
-            "Prefixing all view datasets with [%s_].", known_args.sandbox_dataset_prefix
+            "Prefixing all view datasets with [%s_].", args.sandbox_dataset_prefix
         )
 
         load_views_to_sandbox(
-            known_args.sandbox_dataset_prefix,
-            known_args.dataflow_dataset_override,
-            known_args.refresh_materialized_tables_only,
-            known_args.view_ids_to_load,
-            known_args.dataset_ids_to_load,
-            known_args.update_ancestors,
-            known_args.update_descendants,
+            args.sandbox_dataset_prefix,
+            args.dataflow_dataset_override,
+            args.view_ids_to_load,
+            args.dataset_ids_to_load,
+            args.update_ancestors,
+            args.update_descendants,
         )
