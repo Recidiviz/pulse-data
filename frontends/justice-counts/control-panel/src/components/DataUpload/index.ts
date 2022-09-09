@@ -18,4 +18,6 @@
 export * from "./DataUpload";
 export * from "./DataUpload.styles";
 export * from "./InstructionsTemplate";
+export * from "./SystemSelection";
 export * from "./UploadedFiles";
+export * from "./UploadFile";

@@ -20,6 +20,7 @@ import React, { ReactElement, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 
 import { trackNavigation } from "./analytics";
+import { DataUpload } from "./components/DataUpload";
 import { PageWrapper } from "./components/Forms";
 import Header from "./components/Header";
 import { MetricsView } from "./components/MetricsView";
@@ -45,6 +46,7 @@ const App: React.FC = (): ReactElement => {
           <Route path="/reports/:id" element={<ReportDataEntry />} />
           <Route path="/settings" element={<AccountSettings />} />
           <Route path="/metrics" element={<MetricsView />} />
+          <Route path="/upload" element={<DataUpload />} />
         </Routes>
       </PageWrapper>
     </>

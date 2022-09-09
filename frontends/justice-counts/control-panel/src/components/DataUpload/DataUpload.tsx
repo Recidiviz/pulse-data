@@ -15,35 +15,40 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Dropdown, DropdownMenu } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { AgencySystems } from "../../shared/types";
 import { useStore } from "../../stores";
 import { removeSnakeCase } from "../../utils";
-import SpreadsheetIcon from "../assets/spreadsheet-icon.png";
-import UploadIcon from "../assets/upload-icon.png";
-import { ExtendedDropdownMenuItem, ExtendedDropdownToggle } from "../Menu";
-import { PageHeader, TabbedItem, TabbedOptions } from "../Reports";
+import { ReactComponent as ErrorIcon } from "../assets/error-icon.svg";
+import logoImg from "../assets/jc-logo-vector.png";
+import { ReactComponent as WarningIcon } from "../assets/warning-icon.svg";
+import { Logo, LogoContainer } from "../Header";
+import { Loading } from "../Loading";
 import { showToast } from "../Toast";
 import {
   Button,
   ButtonWrapper,
-  DropdownItemUploadInput,
-  ExtendedTabbedBar,
-  Icon,
-  Instructions,
-  MediumPageTitle,
-  ModalBody,
-  UploadButtonInput,
-  UploadButtonLabel,
-  UploadedFiles,
+  DataUploadContainer,
+  DataUploadHeader,
+  ErrorAdditionalInfo,
+  ErrorIconWrapper,
+  ErrorMessageDescription,
+  ErrorMessageTitle,
+  ErrorMessageWrapper,
+  FileName,
+  MetricTitle,
+  SystemSelection,
+  UploadFile,
+  UserPromptContainer,
+  UserPromptDescription,
+  UserPromptError,
+  UserPromptErrorContainer,
+  UserPromptTitle,
+  UserPromptWrapper,
 } from ".";
-import {
-  GeneralInstructions,
-  SystemsInstructions,
-} from "./InstructionsTemplate";
 
 export type UploadedFileStatus = "UPLOADED" | "INGESTED" | "ERRORED";
 
@@ -72,18 +77,8 @@ export type UploadedFile = {
  */
 export const EXCLUDED_SYSTEMS = ["PAROLE", "PROBATION", "POST_RELEASE"];
 
-export const DataUpload: React.FC = observer(() => {
-  const { userStore, reportStore } = useStore();
-  const dataUploadMenuItems = ["Instructions", "Uploaded Files"];
-  const acceptableFileTypes = [
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
-  ];
-  const filteredUserSystems =
-    userStore.currentAgency?.systems.filter(
-      (system) => !EXCLUDED_SYSTEMS.includes(system)
-    ) || [];
-  const systemToTemplateSpreadsheetFileName: { [system: string]: string } = {
+export const systemToTemplateSpreadsheetFileName: { [system: string]: string } =
+  {
     LAW_ENFORCEMENT: "LAW_ENFORCEMENT.xlsx",
     PROSECUTION: "PROSECUTION.xlsx",
     DEFENSE: "DEFENSE.xlsx",
@@ -95,249 +90,234 @@ export const DataUpload: React.FC = observer(() => {
     PROBATION: "SUPERVISION.xlsx",
   };
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
-  const [systemForUpload, setSystemForUpload] = useState(
-    filteredUserSystems[0]
-  );
-  const [activeMenuItem, setActiveMenuItem] = useState(dataUploadMenuItems[0]);
-  const [uploadedFiles, setUploadedFiles] = useState<
-    (UploadedFile | UploadedFileAttempt)[]
-  >([]);
+export const DataUpload: React.FC = observer(() => {
+  const { userStore, reportStore } = useStore();
+  const navigate = useNavigate();
+  const userSystems =
+    userStore.currentAgency?.systems.filter(
+      (system) => !EXCLUDED_SYSTEMS.includes(system)
+    ) || [];
 
-  const updateUploadedFilesList = (
-    fileDetails: UploadedFile | UploadedFileAttempt
-  ) => {
-    setUploadedFiles((prev) => {
-      let matchFound = false;
-      const updatedFilesList = prev.map((file) => {
-        if (file.name === fileDetails.name && !file.status) {
-          matchFound = true;
-          return fileDetails;
-        }
-        return file;
-      });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<boolean>(false);
+  const [selectedFile, setSelectedFile] = useState<File>();
+  const [selectedSystem, setSelectedSystem] = useState<
+    AgencySystems | undefined
+  >(userSystems.length === 1 ? userSystems[0] : undefined);
 
-      return matchFound ? updatedFilesList : [fileDetails, ...prev];
-    });
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const fileName = file?.name;
-    const formData = new FormData();
-
-    if (fileName && userStore.currentAgencyId) {
+  const handleFileUpload = async (
+    file: File,
+    system: AgencySystems
+  ): Promise<void> => {
+    if (file && system && userStore.currentAgencyId) {
+      const formData = new FormData();
       formData.append("file", file);
-      formData.append("name", fileName);
-      formData.append("system", systemForUpload);
+      formData.append("name", file.name);
+      formData.append("system", system);
+      formData.append("ingest_on_upload", "True");
       formData.append("agency_id", userStore.currentAgencyId.toString());
-      const newFileDetails = {
-        name: fileName,
-        upload_attempt_timestamp: Date.now(),
-      };
-      if (!acceptableFileTypes.includes(file.type)) {
-        showToast(
-          "Invalid file type. Please only upload Excel files.",
-          false,
-          "red",
-          3000
-        );
-        return updateUploadedFilesList({
-          ...newFileDetails,
-          status: "ERRORED",
-        });
-      }
-
-      updateUploadedFilesList(newFileDetails);
 
       const response = await reportStore.uploadExcelSpreadsheet(formData);
+      setIsLoading(false);
 
       if (response instanceof Error) {
-        showToast("Failed to upload. Please try again.", false, "red");
-        return updateUploadedFilesList({
-          ...newFileDetails,
-          status: "ERRORED",
-        });
+        setUploadError(true);
+        return showToast("Failed to upload. Please try again.", false, "red");
       }
 
-      const fullFileDetails = await response?.json();
-
+      setUploadError(false);
       showToast(
         "File uploaded successfully and is pending processing by a Justice Counts administrator.",
         true,
         undefined,
         3500
       );
-      updateUploadedFilesList(fullFileDetails);
+      /** Placeholder - this should navigate to the confirmation component */
+      navigate("/");
     }
   };
 
-  useEffect(() => {
-    const fetchFilesList = async () => {
-      const response = (await reportStore.getUploadedFilesList()) as
-        | Response
-        | Error;
+  const handleSystemSelection = (file: File, system: AgencySystems) => {
+    setIsLoading(true);
+    setSelectedSystem(system);
+    handleFileUpload(file, system);
+    setSelectedFile(undefined);
+  };
 
-      setIsLoading(false);
+  if (isLoading) {
+    return (
+      <DataUploadContainer>
+        <Loading />
+      </DataUploadContainer>
+    );
+  }
 
-      if (response instanceof Error) {
-        return setFetchError(true);
-      }
+  const renderCurrentUploadStep = (): JSX.Element => {
+    if (selectedFile) {
+      /** System Selection Step (for multi-system users) */
+      return (
+        <SystemSelection
+          selectedFile={selectedFile}
+          userSystems={userSystems}
+          handleSystemSelection={handleSystemSelection}
+        />
+      );
+    }
 
-      setFetchError(false);
+    /** Upload Error/Warnings Step */
+    if (uploadError) {
+      /** This object is temporary for the purpose of displaying each UI state */
+      const mockErrors = [
+        {
+          metricTitle: "Releases",
+          errorsAndWarnings: [
+            {
+              type: "error",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+            {
+              type: "error",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+            {
+              type: "error",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+            {
+              type: "warning",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+          ],
+        },
+        {
+          metricTitle: "Admissions",
+          errorsAndWarnings: [
+            {
+              type: "error",
+              errorTitle: "Missing value",
+              errorDescription: "August 2022: Total",
+              additionalInfo:
+                "The total value for Admissions will be shown as the sum of the breakdowns.",
+            },
+            {
+              type: "error",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+            {
+              type: "error",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+            {
+              type: "warning",
+              errorTitle: "Breakdown not recognized",
+              errorDescription: "Label Not Recognized",
+            },
+          ],
+        },
+      ];
 
-      const listOfFiles = (await response.json()) as UploadedFile[];
-      setUploadedFiles(listOfFiles);
-    };
+      const systemFileName =
+        selectedSystem && systemToTemplateSpreadsheetFileName[selectedSystem];
 
-    fetchFilesList();
-  }, [reportStore]);
-
-  return (
-    <>
-      <PageHeader>
-        <MediumPageTitle>Data Upload</MediumPageTitle>
-
-        {/* Data Upload Menu */}
-        <ExtendedTabbedBar>
-          <TabbedOptions>
-            {dataUploadMenuItems.map((item) => (
-              <TabbedItem
-                key={item}
-                id={item}
-                selected={item === activeMenuItem}
-                onClick={() => setActiveMenuItem(item)}
-              >
-                {item}
-              </TabbedItem>
-            ))}
-          </TabbedOptions>
-
-          <ButtonWrapper>
-            {filteredUserSystems?.length <= 1 ? (
-              <UploadButtonLabel htmlFor="upload-data">
-                <Button type="blue">
-                  <UploadButtonInput
-                    type="file"
-                    id="upload-data"
-                    name="upload-data"
-                    accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                    onChange={handleFileUpload}
-                    onClick={(e) => {
-                      /** reset event state to allow user to re-upload same file (re-trigger the onChange event) */
-                      e.currentTarget.value = "";
-                      setActiveMenuItem("Uploaded Files");
-                    }}
-                  />
-                  Upload Data
-                  <Icon alt="" src={UploadIcon} />
-                </Button>
-              </UploadButtonLabel>
-            ) : (
-              <Dropdown>
-                <ExtendedDropdownToggle
-                  kind="borderless"
-                  style={{ marginBottom: 0 }}
+      return (
+        <UserPromptContainer>
+          <UserPromptWrapper>
+            <FileName error>
+              <ErrorIcon />
+              File Name.xls
+            </FileName>
+            <UserPromptTitle>Uh oh, we found 4 errors.</UserPromptTitle>
+            <UserPromptDescription>
+              We ran into a few discrepancies between the uploaded data and the
+              Justice Counts format for the{" "}
+              <span>
+                <a
+                  href={`./assets/${systemFileName}`}
+                  download={systemFileName}
                 >
-                  <Button
-                    type="blue"
-                    onClick={() => setActiveMenuItem("Uploaded Files")}
-                  >
-                    Upload Data
-                    <Icon alt="" src={UploadIcon} />
-                  </Button>
-                </ExtendedDropdownToggle>
+                  {selectedSystem &&
+                    removeSnakeCase(selectedSystem).toLowerCase()}
+                </a>
+              </span>{" "}
+              system. To continue, please resolve the errors in your file and
+              reupload.
+            </UserPromptDescription>
 
-                <DropdownMenu alignment="right">
-                  {filteredUserSystems?.map((system) => (
-                    <ExtendedDropdownMenuItem
-                      key={system}
-                      onClick={() => setSystemForUpload(system)}
-                      noPadding
-                    >
-                      <UploadButtonLabel htmlFor="upload-data">
-                        <DropdownItemUploadInput
-                          type="file"
-                          id="upload-data"
-                          name="upload-data"
-                          accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                          onChange={handleFileUpload}
-                          onClick={(e) => {
-                            /** reset event state to allow user to re-upload same file (re-trigger the onChange event) */
-                            e.currentTarget.value = "";
-                          }}
-                        />
-                        {system.toLowerCase()}
-                        <Icon alt="" src={UploadIcon} />
-                      </UploadButtonLabel>
-                    </ExtendedDropdownMenuItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            )}
-          </ButtonWrapper>
-        </ExtendedTabbedBar>
-      </PageHeader>
-
-      <ModalBody hasLabelRow={activeMenuItem === "Uploaded Files"}>
-        {/* Instructions */}
-        {activeMenuItem === "Instructions" && (
-          <Instructions>
-            <h1>How to Upload Data to Justice Counts</h1>
-
-            {/* Download Templates */}
             <ButtonWrapper>
-              {filteredUserSystems?.map((system) => {
-                const systemName = removeSnakeCase(system).toLowerCase();
-                const systemFileName =
-                  systemToTemplateSpreadsheetFileName[system];
-                return (
-                  <a
-                    key={system}
-                    href={`./assets/${systemFileName}`}
-                    download={systemFileName}
-                  >
-                    <Button>
-                      Download {systemName} Template{" "}
-                      <Icon alt="" src={SpreadsheetIcon} grayscale />
-                    </Button>
-                  </a>
-                );
-              })}
+              <Button type="blue" onClick={() => setUploadError(false)}>
+                New Upload
+              </Button>
             </ButtonWrapper>
 
-            {/* General Instructions */}
-            <GeneralInstructions systems={filteredUserSystems ?? []} />
+            <UserPromptErrorContainer>
+              {mockErrors.map((item) => (
+                <UserPromptError key={item.metricTitle}>
+                  <MetricTitle>{item.metricTitle}</MetricTitle>
 
-            {/* System Specific Instructions */}
-            {filteredUserSystems?.map((system) => {
-              const systemName = removeSnakeCase(system).toLowerCase();
-              const systemTemplate = <SystemsInstructions system={system} />;
+                  {item.errorsAndWarnings?.map((errorItem) => (
+                    <Fragment key={errorItem.errorDescription}>
+                      <ErrorIconWrapper>
+                        {errorItem.type === "error" ? (
+                          <ErrorIcon />
+                        ) : (
+                          <WarningIcon />
+                        )}
 
-              return (
-                <Fragment key={systemName}>
-                  <h2>{systemName}</h2>
-                  {systemTemplate}
-                </Fragment>
-              );
-            })}
-          </Instructions>
-        )}
+                        <ErrorMessageWrapper>
+                          <ErrorMessageTitle>
+                            {errorItem.errorTitle}
+                          </ErrorMessageTitle>
+                          <ErrorMessageDescription>
+                            {errorItem.errorDescription}
+                          </ErrorMessageDescription>
+                        </ErrorMessageWrapper>
+                      </ErrorIconWrapper>
+                      <ErrorAdditionalInfo>
+                        {errorItem.additionalInfo}
+                      </ErrorAdditionalInfo>
+                    </Fragment>
+                  ))}
+                </UserPromptError>
+              ))}
+            </UserPromptErrorContainer>
+          </UserPromptWrapper>
+        </UserPromptContainer>
+      );
+    }
 
-        {/* Uploaded Files */}
+    /** Upload File Step */
+    return (
+      <UploadFile
+        userSystems={userSystems}
+        setIsLoading={setIsLoading}
+        setSelectedFile={setSelectedFile}
+        handleFileUpload={handleFileUpload}
+      />
+    );
+  };
 
-        {activeMenuItem === "Uploaded Files" && (
-          <UploadedFiles
-            isLoading={isLoading}
-            uploadedFiles={uploadedFiles}
-            fetchError={fetchError}
-            setUploadedFiles={setUploadedFiles}
-          />
-        )}
-      </ModalBody>
-    </>
+  return (
+    <DataUploadContainer>
+      <DataUploadHeader transparent={!selectedFile}>
+        <LogoContainer onClick={() => navigate("/")}>
+          <Logo src={logoImg} alt="" />
+        </LogoContainer>
+
+        <Button
+          type={selectedFile ? "red" : "light-border"}
+          onClick={() => navigate(-1)}
+        >
+          Cancel
+        </Button>
+      </DataUploadHeader>
+
+      {renderCurrentUploadStep()}
+    </DataUploadContainer>
   );
 });

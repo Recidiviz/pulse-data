@@ -22,9 +22,7 @@ import { useNavigate } from "react-router-dom";
 
 import checkmarkIcon from "../components/assets/status-check-icon.png";
 import { Badge, BadgeColorMapping } from "../components/Badge";
-import { DataUpload, DataUploadButton } from "../components/DataUpload";
 import { Loading } from "../components/Loading";
-import { Modal } from "../components/Modal";
 import { Onboarding } from "../components/Onboarding";
 import {
   AdditionalEditorsTooltip,
@@ -84,7 +82,6 @@ const Reports: React.FC = () => {
   const [reportsFilter, setReportsFilter] = useState<string>("allreports");
   const [selectionMode, setSelectionMode] = useState(false);
   const [reportsToDelete, setReportsToDelete] = useState<number[]>([]);
-  const [showDataUploadModal, setShowDataUploadModal] = useState(false);
 
   const enterSelectionMode = () => setSelectionMode(true);
   const exitSelectionMode = () => setSelectionMode(false);
@@ -353,10 +350,6 @@ const Reports: React.FC = () => {
                 </ReportActions>
               </>
             )}
-
-            <DataUploadButton onClick={() => setShowDataUploadModal(true)}>
-              Data Upload
-            </DataUploadButton>
           </TabbedActionsWrapper>
         </TabbedBar>
 
@@ -379,13 +372,6 @@ const Reports: React.FC = () => {
             topic="reportsview"
           />
         )}
-
-      <Modal
-        isOpen={showDataUploadModal}
-        handleClose={() => setShowDataUploadModal(false)}
-      >
-        <DataUpload />
-      </Modal>
     </>
   );
 };

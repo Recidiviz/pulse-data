@@ -25,13 +25,17 @@ export const MenuContainer = styled.nav`
   ${typography.sizeCSS.normal}
   display: flex;
   align-items: center;
-  padding: 20px 24px;
+  padding: 0 24px;
+  gap: 24px;
 `;
 
-export const MenuItem = styled.div<{ active?: boolean; highlight?: boolean }>`
+export const MenuItem = styled.div<{
+  active?: boolean;
+  highlight?: boolean;
+  buttonPadding?: boolean;
+}>`
   height: ${HEADER_BAR_HEIGHT}px;
-  padding-top: 14px;
-  margin-left: 24px;
+  padding-top: ${({ buttonPadding }) => (buttonPadding ? `5px` : `14px`)};
   border-top: 6px solid
     ${({ active }) => (active ? palette.solid.blue : "transparent")};
   transition: 0.2s ease;
@@ -62,13 +66,15 @@ export const WelcomeUser = styled.div`
   }
 `;
 
-export const ExtendedDropdownToggle = styled(DropdownToggle)`
+export const ExtendedDropdownToggle = styled(DropdownToggle)<{
+  noMargin?: boolean;
+}>`
   font-family: ${typography.family};
   ${typography.sizeCSS.normal}
   padding: 0;
   min-height: unset;
   line-height: 0;
-  margin-bottom: 22px;
+  margin-bottom: ${({ noMargin }) => (noMargin ? "0" : "22px")};
   color: ${palette.solid.darkgrey};
 
   &[aria-expanded="true"] {
@@ -90,12 +96,14 @@ export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
 }>`
   min-width: 264px;
   display: flex;
+  align-items: center;
   font-family: ${typography.family};
   ${typography.sizeCSS.normal}
   color: ${({ highlight }) =>
     highlight ? palette.solid.red : palette.solid.darkgrey};
   height: auto;
   padding: 0;
+  gap: 8px;
 
   ${({ noPadding }) =>
     !noPadding &&
@@ -124,5 +132,9 @@ export const ExtendedDropdownMenuItem = styled(DropdownMenuItem)<{
   &:hover {
     color: ${palette.solid.blue};
     background-color: transparent;
+
+    svg path {
+      stroke: ${palette.solid.blue};
+    }
   }
 `;

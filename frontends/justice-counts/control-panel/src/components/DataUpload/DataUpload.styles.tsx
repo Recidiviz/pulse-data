@@ -18,7 +18,7 @@
 import styled from "styled-components/macro";
 
 import { rem } from "../../utils";
-import { palette, typography } from "../GlobalStyles";
+import { HEADER_BAR_HEIGHT, palette, typography } from "../GlobalStyles";
 import {
   Cell,
   LabelCell,
@@ -29,60 +29,15 @@ import {
   Table,
 } from "../Reports";
 
-const HEADER_HEIGHT = 170;
 const ROW_HEIGHT = 42;
 
-export type ButtonTypes = "borderless" | "blue";
-
-export const MediumPageTitle = styled(PageTitle)`
-  font-size: ${rem("50px")};
-`;
-
-export const ExtendedTabbedBar = styled(TabbedBar)`
-  height: 66px;
-`;
-
-export const ExtendedLabelRow = styled(LabelRow)`
-  position: fixed;
-  top: ${HEADER_HEIGHT}px;
-  background: ${palette.solid.white};
-  z-index: 1;
-`;
-
-export const ExtendedCell = styled(Cell)`
-  &:first-child {
-    flex: 4 1 auto;
-  }
-`;
-
-export const ExtendedLabelCell = styled(LabelCell)`
-  &:first-child {
-    flex: 4 1 auto;
-  }
-`;
-
-export const DataUploadButton = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: ${palette.highlight.blue};
-  padding: 10px 15px;
-  color: ${palette.solid.blue};
-
-  &:hover {
-    cursor: pointer;
-    opacity: 0.9;
-  }
-`;
-
-export const Instructions = styled.div`
+export const DataUploadContainer = styled.div`
+  width: 100%;
   height: 100%;
-  padding: 30px;
-  display: flex;
-  flex-direction: column;
-  overflow-y: scroll;
-
-  ${typography.sizeCSS.medium}
+  position: absolute;
+  top: 0;
+  z-index: 5;
+  background: ${palette.solid.white};
 
   a,
   a:visited {
@@ -95,6 +50,37 @@ export const Instructions = styled.div`
     color: ${palette.solid.darkblue};
     cursor: pointer;
   }
+`;
+
+export const DataUploadHeader = styled.div<{ transparent?: boolean }>`
+  width: 100%;
+  height: ${HEADER_BAR_HEIGHT}px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  padding-right: 24px;
+  ${({ transparent }) =>
+    !transparent &&
+    `
+      background: ${palette.solid.white};
+      border-bottom: 1px solid ${palette.highlight.grey3};
+    `}
+`;
+
+export const MediumPageTitle = styled(PageTitle)`
+  font-size: ${rem("50px")};
+`;
+
+export const Instructions = styled.div`
+  height: 100%;
+  flex: 1 1 50%;
+  padding: 103px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+  ${typography.sizeCSS.medium}
 
   h1 {
     ${typography.sizeCSS.title}
@@ -158,29 +144,6 @@ export const Instructions = styled.div`
   }
 `;
 
-export const UploadedFilesContainer = styled.div`
-  height: 100%;
-  padding: ${ROW_HEIGHT}px 0;
-  overflow-y: scroll;
-`;
-
-export const UploadedFilesTable = styled(Table)`
-  padding: unset;
-`;
-
-export const ExtendedRow = styled(Row)`
-  color: ${({ selected }) => selected && palette.highlight.grey9};
-  position: relative;
-  transition: unset;
-`;
-
-export const ModalBody = styled.div<{ hasLabelRow?: boolean }>`
-  width: 100%;
-  height: calc(100% - ${HEADER_HEIGHT}px);
-  position: absolute;
-  top: ${HEADER_HEIGHT}px;
-`;
-
 export const ButtonWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -188,15 +151,37 @@ export const ButtonWrapper = styled.div`
   margin: 13px 0;
 `;
 
+export type ButtonTypes =
+  | "light-border"
+  | "border"
+  | "borderless"
+  | "blue"
+  | "red";
+
 export const Button = styled.div<{ type?: ButtonTypes }>`
   ${typography.sizeCSS.normal};
   display: flex;
   align-items: center;
   padding: 10px 15px;
   border-radius: 3px;
+  gap: 16px;
   text-transform: capitalize;
 
   ${({ type }) => {
+    if (type === "light-border") {
+      return `
+        background: none;
+        border: 1px solid ${palette.solid.white};
+        color: ${palette.solid.white};
+        border-radius: 4px;
+      `;
+    }
+    if (type === "border") {
+      return `
+        border: 1px solid ${palette.highlight.grey4};
+        border-radius: 4px;
+      `;
+    }
     if (type === "borderless") {
       return `
         background: none;
@@ -209,6 +194,12 @@ export const Button = styled.div<{ type?: ButtonTypes }>`
         color: ${palette.solid.white};
       `;
     }
+    if (type === "red") {
+      return `
+        background: ${palette.solid.red};
+        color: ${palette.solid.white};
+      `;
+    }
     return `
       background: ${palette.highlight.grey1};
       color: ${palette.highlight.grey10};
@@ -218,10 +209,13 @@ export const Button = styled.div<{ type?: ButtonTypes }>`
   &:hover {
     cursor: pointer;
     ${({ type }) => {
+      if (type === "border") {
+        return `background: ${palette.highlight.grey1};`;
+      }
       if (type === "borderless") {
         return `opacity: 0.8;`;
       }
-      if (type === "blue") {
+      if (type === "blue" || type === "red") {
         return `opacity: 0.9;`;
       }
       return `background: ${palette.highlight.grey2};`;
@@ -229,18 +223,39 @@ export const Button = styled.div<{ type?: ButtonTypes }>`
   }
 
   a {
+    ${typography.sizeCSS.small};
+    width: fit-content;
     text-decoration: none;
-    color: inherit;
+    color: ${palette.solid.blue};
     display: flex;
     align-items: center;
   }
 `;
 
-export const UploadButtonLabel = styled.label`
-  width: 100%;
-  display: block;
+export const DownloadTemplateBox = styled.div`
+  ${typography.sizeCSS.normal};
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-radius: 3px;
+  gap: 16px;
   text-transform: capitalize;
-  padding: 10px 16px;
+  background: none;
+  border: 1px solid ${palette.highlight.grey4};
+  border-radius: 4px;
+
+  a {
+    ${typography.sizeCSS.small};
+    display: block;
+    width: fit-content;
+    text-decoration: none;
+    color: ${palette.solid.blue};
+  }
+`;
+
+export const UploadButtonLabel = styled.label`
+  display: inline-block;
+  border-bottom: 1px solid ${palette.solid.white};
 
   &:hover {
     cursor: pointer;
@@ -299,5 +314,170 @@ export const ActionButton = styled.div<{ red?: boolean }>`
   color: ${({ red }) => (red ? palette.solid.red : palette.solid.blue)};
   &:hover {
     color: ${palette.solid.darkgrey};
+  }
+`;
+
+export const UploadFileContainer = styled.div`
+  height: 100%;
+  display: flex;
+`;
+
+export const DragDropContainer = styled.div<{ dragging?: boolean }>`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 50%;
+  align-items: center;
+  justify-content: center;
+  background: ${({ dragging }) =>
+    dragging ? palette.solid.darkblue : palette.solid.blue};
+  color: ${palette.solid.white};
+`;
+
+export const UserPromptContainer = styled.div`
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: ${HEADER_BAR_HEIGHT + 80}px;
+  padding-bottom: 80px;
+`;
+
+export const UserPromptWrapper = styled.div`
+  width: 100%;
+  max-width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+`;
+
+export const UserPromptTitle = styled.div`
+  ${typography.sizeCSS.title};
+`;
+
+export const UserPromptDescription = styled.div`
+  ${typography.sizeCSS.medium};
+  margin: 8px 0;
+
+  span {
+    text-transform: capitalize;
+  }
+`;
+
+export const UserPromptErrorContainer = styled.div`
+  width: 100%;
+  margin-top: 19px;
+`;
+
+export const UserPromptError = styled.div`
+  margin-bottom: 40px;
+`;
+
+export const MetricTitle = styled.div`
+  ${typography.sizeCSS.large};
+  border-top: 1px solid ${palette.highlight.grey4};
+  padding: 16px 0;
+`;
+
+export const ErrorIconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
+export const ErrorMessageWrapper = styled.div`
+  ${typography.sizeCSS.medium};
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+export const ErrorMessageTitle = styled.div`
+  display: block;
+`;
+
+export const ErrorMessageDescription = styled.div`
+  display: block;
+`;
+
+export const ErrorAdditionalInfo = styled.div`
+  ${typography.sizeCSS.normal};
+  margin: 8px 0 13px 0;
+`;
+
+export const SelectSystemOptions = styled.div`
+  width: 100%;
+  margin-top: 32px;
+`;
+
+export const SystemName = styled.div`
+  ${typography.sizeCSS.large};
+  padding: 20px 0;
+  border-top: 1px solid ${palette.highlight.grey4};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+
+  &:hover {
+    cursor: pointer;
+    color: ${palette.solid.blue};
+  }
+`;
+
+export const FileName = styled.div<{ error?: boolean }>`
+  ${typography.sizeCSS.medium};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: ${({ error }) => (error ? palette.solid.red : palette.solid.green)};
+`;
+
+export const ConfirmationPageContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const UploadedFilesContainer = styled.div`
+  height: 100%;
+  padding: ${ROW_HEIGHT}px 0;
+  overflow-y: scroll;
+`;
+
+export const UploadedFilesTable = styled(Table)`
+  padding: unset;
+`;
+
+export const ExtendedTabbedBar = styled(TabbedBar)`
+  height: 66px;
+`;
+
+export const ExtendedRow = styled(Row)`
+  color: ${({ selected }) => selected && palette.highlight.grey9};
+  position: relative;
+  transition: unset;
+`;
+
+export const ExtendedLabelRow = styled(LabelRow)`
+  position: fixed;
+  background: ${palette.solid.white};
+  z-index: 1;
+`;
+
+export const ExtendedCell = styled(Cell)`
+  &:first-child {
+    flex: 4 1 auto;
+  }
+`;
+
+export const ExtendedLabelCell = styled(LabelCell)`
+  &:first-child {
+    flex: 4 1 auto;
   }
 `;
