@@ -129,7 +129,7 @@ final_spans AS (
         state_code,
         person_id,
         start_date,
-        DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date,
+        IF(end_date != "9999-12-31", DATE_SUB(end_date, INTERVAL 1 DAY), "9999-12-31") AS end_date,
         TRUE as meets_criteria,
         TO_JSON(STRUCT(needs_ua_check AS history_of_drug_alcohol, NULL AS ua_result, NULL AS ua_date)) AS reason
     FROM drug_screen_spans_next
