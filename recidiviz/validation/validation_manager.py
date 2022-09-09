@@ -176,7 +176,7 @@ def execute_validation(
                 )
             except Exception as e:
                 logging.error(
-                    "Failed to execute asynchronous query for validation job [%s] due to error: %s",
+                    "Failed to execute asynchronous query for validation job [%s] due to error: %r",
                     job,
                     e,
                 )

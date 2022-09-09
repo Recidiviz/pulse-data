@@ -1407,7 +1407,11 @@ class BigQueryClientImpl(BigQueryClient):
 
         # Warn on any large rows
         for row in rows:
-            json_row = json.dumps(row)
+            try:
+                json_row = json.dumps(row)
+            except TypeError as e:
+                raise TypeError(f"Failed to serialize: {repr(row)}") from e
+
             estimated_size = len(row)
             if estimated_size > (100 * 2**10):  # 100 KiB
                 logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
