@@ -99,7 +99,7 @@ if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
     echo "Building docker image"
     verify_hash $COMMIT_HASH
     export DOCKER_BUILDKIT=1
-    run_cmd docker build --pull -t recidiviz-image --platform=linux/amd64 . --build-arg=CURRENT_GIT_SHA=$COMMIT_HASH
+    run_cmd docker build -t recidiviz-image --platform=linux/amd64 . --build-arg=CURRENT_GIT_SHA=$COMMIT_HASH
 
     echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
     verify_hash $COMMIT_HASH
