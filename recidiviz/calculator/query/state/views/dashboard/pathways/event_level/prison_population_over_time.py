@@ -83,12 +83,6 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
         AND {facility_filter}
         AND date_in_population <= CURRENT_DATE('US/Eastern')
         AND time_period IS NOT NULL
-        # TODO(#13850) Remove age_group filter for US_MI when Pathways is on the new backend
-        AND CASE
-            WHEN state_code IN ("US_MI", "US_CO") THEN
-                age_group = "ALL"
-            ELSE true
-        END
     )
     SELECT DISTINCT
         {columns}
