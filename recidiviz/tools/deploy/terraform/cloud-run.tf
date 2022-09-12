@@ -104,6 +104,13 @@ data "google_service_account" "justice_counts_cloud_run" {
   account_id = var.project_id == "recidiviz-123" ? "justice-counts-spotlights-prod" : "jstc-counts-spotlights-staging"
 }
 
+# Give JC service account permission to write logs
+resource "google_project_iam_member" "justice_counts_cloud_run_log_writer" {
+  project  = var.project_id
+  role     = "roles/logging.logWriter"
+  member   = "serviceAccount:${data.google_service_account.justice_counts_cloud_run.email}"
+}
+
 # Grab existing Justice Counts Cloud Run service to determine current revision
 data "google_cloud_run_service" "existing_justice_counts_cloud_run" {
   name     = "justice-counts-web"
