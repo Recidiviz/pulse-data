@@ -1313,21 +1313,26 @@ class PersonNameManifest(ManifestNode[str]):
 
     name_json_manifest: SerializedJSONDictFieldManifest = attr.ib()
 
-    # Function argument key for the person's given names. Required. Will populate the
-    # 'given_names' JSON key.
+    # Function argument key for the person's given names. Required only if full_name is
+    # not present. Will populate the 'given_names' JSON key.
     GIVEN_NAMES_MANIFEST_KEY = "$given_names"
 
     # Function argument key for the person's middle names. Optional. Will populate the
     # 'middle_names' JSON key.
     MIDDLE_NAMES_MANIFEST_KEY = "$middle_names"
 
-    # Function argument key for the person's last name. Required. Will populate the
-    # 'surname' JSON key.
+    # Function argument key for the person's last name. Required only if full_name is
+    # not present. Will populate the 'surname' JSON key.
     SURNAME_MANIFEST_KEY = "$surname"
 
     # Function argument key for the person's name suffix (e.g. Jr, III, etc). Optional.
     # Will populate the 'name_suffix' JSON key.
     NAME_SUFFIX_MANIFEST_KEY = "$name_suffix"
+
+    # Function argument key for the person's full name. Required only if given_names,
+    # middle_names, surname, names_suffix are all not present. Will populate the 'full_name'
+    # JSON key.
+    FULL_NAME_MANIFEST_KEY = "$full_name"
 
     # Map of manifest keys to whether they are required arguments
     NAME_MANIFEST_KEYS = {
@@ -1358,29 +1363,75 @@ class PersonNameManifest(ManifestNode[str]):
         delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "PersonNameManifest":
+        "Builds a valid PersonNameManifest from the raw manifest given."
         name_parts_to_manifest: Dict[str, ManifestNode[str]] = {}
-        for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
-            json_key = manifest_key.lstrip("$")
 
-            raw_manifest = pop_raw_flat_field_manifest_optional(
-                manifest_key, raw_function_manifest
+        contains_full_name = (
+            raw_function_manifest.peek_optional(cls.FULL_NAME_MANIFEST_KEY, object)
+            is not None
+        )
+        contains_name_parts = False
+        for manifest_key in list(cls.NAME_MANIFEST_KEYS.keys()):
+            contains_name_parts = contains_name_parts or (
+                raw_function_manifest.peek_optional(manifest_key, object) is not None
             )
 
-            if not raw_manifest and is_required:
-                raise ValueError(f"Missing manifest for required key: {manifest_key}.")
+        if contains_full_name and contains_name_parts:
+            raise ValueError(
+                "Invalid configuration for $person_name. It can only contain $full_name "
+                f"or the parts {list(cls.NAME_MANIFEST_KEYS.keys())}."
+            )
 
-            name_parts_to_manifest[json_key] = (
-                build_str_manifest_from_raw(
-                    raw_manifest, delegate, variable_manifests=variable_manifests
+        if contains_full_name:
+            name_parts_to_manifest[
+                cls.FULL_NAME_MANIFEST_KEY.lstrip("$")
+            ] = cls._build_str_manifest_for_manifest_key(
+                raw_function_manifest,
+                delegate,
+                variable_manifests,
+                cls.FULL_NAME_MANIFEST_KEY,
+                is_required=True,
+            )
+        else:
+            for manifest_key, is_required in cls.NAME_MANIFEST_KEYS.items():
+                name_parts_to_manifest[
+                    manifest_key.lstrip("$")
+                ] = cls._build_str_manifest_for_manifest_key(
+                    raw_function_manifest,
+                    delegate,
+                    variable_manifests,
+                    manifest_key,
+                    is_required,
                 )
-                if raw_manifest
-                else StringLiteralFieldManifest(literal_value="")
-            )
 
         return PersonNameManifest(
             name_json_manifest=SerializedJSONDictFieldManifest(
                 key_to_manifest_map=name_parts_to_manifest, drop_all_empty=True
             )
+        )
+
+    @staticmethod
+    def _build_str_manifest_for_manifest_key(
+        raw_function_manifest: YAMLDict,
+        delegate: IngestViewResultsParserDelegate,
+        variable_manifests: Dict[str, VariableManifestNode],
+        manifest_key: str,
+        is_required: bool,
+    ) -> ManifestNode[str]:
+        """Builds a string manifest for a portion of the personname."""
+        raw_manifest = pop_raw_flat_field_manifest_optional(
+            manifest_key, raw_function_manifest
+        )
+
+        if not raw_manifest and is_required:
+            raise ValueError(f"Missing manifest for required key: {manifest_key}.")
+
+        return (
+            build_str_manifest_from_raw(
+                raw_manifest, delegate, variable_manifests=variable_manifests
+            )
+            if raw_manifest
+            else StringLiteralFieldManifest(literal_value="")
         )
 
 
