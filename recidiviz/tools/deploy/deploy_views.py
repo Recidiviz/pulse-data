@@ -35,7 +35,7 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     copy_dataset_schemas_to_sandbox,
     create_managed_dataset_and_deploy_views_for_view_builders,
-    view_builder_sub_graph_for_view_builders_to_load,
+    get_dag_walker_for_views_sub_dag,
 )
 from recidiviz.tools.load_views_to_sandbox import str_to_list
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -115,12 +115,14 @@ def deploy_views(
             for view in all_view_builders_in_dag
             if view.dataset_id in dataset_ids_to_load
         ]
-        view_builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
-            view_builders_to_load=view_builders_in_datasets,
-            all_view_builders_in_dag=all_view_builders_in_dag,
-            get_ancestors=True,
-            get_descendants=False,
-        )
+
+        view_builders_to_update = get_dag_walker_for_views_sub_dag(
+            view_builders_in_sub_dag=view_builders_in_datasets,
+            view_builders_in_full_dag=all_view_builders_in_dag,
+            include_ancestors=True,
+            include_descendants=False,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        ).view_builders()
 
     test_address_overrides = None
     table_expiration = None
