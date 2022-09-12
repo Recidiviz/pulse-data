@@ -22,3 +22,4 @@ columns:
         description: Life sentence
       - value: D
         description: Death sentence
+always_historical_export: True
