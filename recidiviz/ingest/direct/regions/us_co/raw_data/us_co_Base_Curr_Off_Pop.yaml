@@ -82,6 +82,8 @@ columns:
   - name: HSDORGED
   - name: EMPL_CD
   - name: CASE_MANAGER
+    description: |-
+      Case manager assigned to each incarcerated person.
   - name: PED
   - name: MRD
   - name: SDD
@@ -133,7 +135,11 @@ columns:
   - name: LIFE_TYP_CD
   - name: STAT_LAW_CD
   - name: SENT_MIN
+    description: |-
+      Minimum sentence length.
   - name: SENT_MAX
+    description: |-
+      Maximum sentence length.
   - name: GOVN_MIN_SENT
   - name: GOVN_MAX_SENT
   - name: MAX_GANG_SRL
