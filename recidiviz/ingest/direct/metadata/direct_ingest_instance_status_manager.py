@@ -24,6 +24,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
+from recidiviz.utils import environment
 
 # Invalid statuses, by instance.
 INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
@@ -51,20 +53,14 @@ HUMAN_INTERVENTION_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]
     ],
 }
 
-# Valid initial statuses, by instance.
-VALID_INITIAL_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
+# Valid instance statuses that are associated with the start of a rerun.
+VALID_START_OF_RERUN_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.PRIMARY: [
-        # UP_TO_DATE can be a default initial state for PRIMARY, when the primary instance
-        # has no work done and no work to do yet.
-        DirectIngestStatus.UP_TO_DATE,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
     ],
     DirectIngestInstance.SECONDARY: [
-        DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
-        # NO_RERUN_IN_PROGRESS can be a default initial state for SECONDARY, when the secondary instance
-        # has no work done and no work to do yet.
-        DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+        DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
     ],
 }
 
@@ -203,8 +199,18 @@ class DirectIngestInstanceStatusManager:
         """Change status to the passed in status."""
 
     @abc.abstractmethod
-    def get_current_status(self) -> Optional[DirectIngestStatus]:
+    def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""
+
+    @environment.test_only
+    @abc.abstractmethod
+    def add_instance_status(self, status: DirectIngestStatus) -> None:
+        """Add a status (without any validations). Used for testing purposes."""
+
+    @environment.test_only
+    @abc.abstractmethod
+    def get_all_statuses(self) -> List[DirectIngestInstanceStatus]:
+        """Returns all statuses. Used for testing purposes."""
 
     def validate_transition(
         self,
@@ -221,20 +227,11 @@ class DirectIngestInstanceStatusManager:
                 f"in instance={ingest_instance.value}"
             )
 
-        if (
-            current_status is None
-            and new_status not in VALID_INITIAL_STATUSES[ingest_instance]
-        ):
-            raise ValueError(
-                f"Invalid initial status [{new_status}] for instance "
-                f"[{ingest_instance}]. Initial statuses can only be one of "
-                f"the following: "
-                f"{VALID_INITIAL_STATUSES[ingest_instance]}"
-            )
-
         if current_status is None:
-            # The new_status is a valid start of rerun status.
-            return
+            raise ValueError(
+                "Initial statuses for a state must be set via a migration. There should always be a current row for "
+                "ingest instance statuses."
+            )
 
         if (
             current_status == new_status

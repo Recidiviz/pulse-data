@@ -559,7 +559,7 @@ class IngestOperationsStore(AdminPanelStore):
         StateCode,
         Dict[
             DirectIngestInstance,
-            Optional[Tuple[DirectIngestStatus, datetime]],
+            Tuple[DirectIngestStatus, datetime],
         ],
     ]:
         """Returns the current status of each ingest instance for states in the given project."""
@@ -568,7 +568,7 @@ class IngestOperationsStore(AdminPanelStore):
         for state_code in get_direct_ingest_states_launched_in_env():
             instance_to_status_dict: Dict[
                 DirectIngestInstance,
-                Optional[Tuple[DirectIngestStatus, datetime]],
+                Tuple[DirectIngestStatus, datetime],
             ] = {}
             for i_instance in DirectIngestInstance:  # new direct ingest instance
                 status_manager = PostgresDirectIngestInstanceStatusManager(
@@ -576,13 +576,10 @@ class IngestOperationsStore(AdminPanelStore):
                 )
 
                 curr_status_info = status_manager.get_current_status_info()
-                if not curr_status_info:
-                    instance_to_status_dict[i_instance] = None
-                else:
-                    instance_to_status_dict[i_instance] = (
-                        curr_status_info.status,
-                        curr_status_info.timestamp,
-                    )
+                instance_to_status_dict[i_instance] = (
+                    curr_status_info.status,
+                    curr_status_info.timestamp,
+                )
 
             ingest_statuses[state_code] = instance_to_status_dict
 

@@ -135,31 +135,3 @@ class IngestOpsEndpointTests(TestCase):
             },
         )
         self.assertEqual(200, response.status_code)
-
-    def test_status_none(self) -> None:
-        # Arrange
-        self.mock_current_ingest_statuses.return_value = {
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: None,
-            }
-        }
-
-        # Act
-
-        response = self.client.get(
-            "/api/ingest_operations/all_ingest_instance_statuses",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertEqual(
-            response.json,
-            {
-                "US_YY": {
-                    "primary": None,
-                    "secondary": None,
-                }
-            },
-        )
-        self.assertEqual(200, response.status_code)

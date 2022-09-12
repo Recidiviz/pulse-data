@@ -145,26 +145,11 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
             DirectIngestInstance.SECONDARY,
         )
 
-    # Arrange
-    # ... set up state so that you can test what you want to test ...
-    # Act
-    # Assert
-    def test_no_statuses(self) -> None:
-        """
-        Assert that when there are no statuses, a dictionary is created with None values
-        """
-
-        result = self.operations_store.get_all_current_ingest_instance_statuses()
-
-        for _, status_info in result.items():
-            for instance in DirectIngestInstance:
-                self.assertIsNone(status_info[instance])
-
     @freeze_time("2022-08-29")
     def test_all_different_statuses(self) -> None:
         """
         Assert that the correct dictionary exists when all primary and secondary statuses
-        are differnt
+        are different
         """
         timestamp = datetime(2022, 8, 29)
         self.us_xx_primary_status_manager.add_instance_status(
@@ -205,109 +190,6 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
             },
         }
         self.assertEqual(expected, dif_statuses)
-
-    @freeze_time("2022-08-29")
-    def test_primary_status_set_no_secondary(self) -> None:
-        """
-        Assert that no secondary status exists when only primary is set
-        """
-        timestamp = datetime(2022, 8, 29)
-        self.us_xx_primary_status_manager.add_instance_status(
-            DirectIngestStatus.STANDARD_RERUN_STARTED
-        )
-        self.us_yy_primary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_IN_PROGRESS
-        )
-
-        primary_statuses = (
-            self.operations_store.get_all_current_ingest_instance_statuses()
-        )
-
-        expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: None,
-            },
-        }
-        self.assertEqual(expected, primary_statuses)
-
-    @freeze_time("2022-08-29")
-    def test_secondary_status_set_no_primary(self) -> None:
-        """
-        Assert that no secondary status exists when only primary is set
-        """
-        timestamp = datetime(2022, 8, 29)
-        self.us_xx_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.STANDARD_RERUN_STARTED
-        )
-        self.us_yy_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.FLASH_IN_PROGRESS
-        )
-
-        secondary_statuses = (
-            self.operations_store.get_all_current_ingest_instance_statuses()
-        )
-
-        expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp,
-                ),
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp,
-                ),
-            },
-        }
-        self.assertEqual(expected, secondary_statuses)
-
-    @freeze_time("2022-08-29")
-    def test_one_state(self) -> None:
-        """
-        Assert that when one state is set no other state is set
-        """
-        timestamp = datetime(2022, 8, 29)
-        self.us_yy_primary_status_manager.add_instance_status(
-            DirectIngestStatus.READY_TO_FLASH
-        )
-        self.us_yy_secondary_status_manager.add_instance_status(
-            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
-        )
-
-        one_state = self.operations_store.get_all_current_ingest_instance_statuses()
-
-        expected = {
-            StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: None,
-                DirectIngestInstance.SECONDARY: None,
-            },
-            StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.READY_TO_FLASH,
-                    timestamp,
-                ),
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
-                    timestamp,
-                ),
-            },
-        }
-        self.assertEqual(expected, one_state)
 
 
 class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTestBase):

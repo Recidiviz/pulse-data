@@ -16,7 +16,7 @@
 # =============================================================================
 """A fake implementation of DirectIngestInstanceStatusManager for use in tests."""
 import datetime
-from typing import List, Optional
+from typing import List
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
@@ -33,7 +33,19 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
 
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
         super().__init__(region_code=region_code, ingest_instance=ingest_instance)
-        self.statuses: List[DirectIngestInstanceStatus] = []
+        self.statuses: List[DirectIngestInstanceStatus] = [
+            DirectIngestInstanceStatus(
+                region_code=self.region_code,
+                instance=self.ingest_instance,
+                timestamp=datetime.datetime.now(),
+                # Set the appropriate initial status based on the ingest instance.
+                status=(
+                    DirectIngestStatus.UP_TO_DATE
+                    if ingest_instance == DirectIngestInstance.PRIMARY
+                    else DirectIngestStatus.NO_RERUN_IN_PROGRESS
+                ),
+            )
+        ]
 
     def get_raw_data_source_instance(self) -> DirectIngestInstance:
         """Returns the current raw data source of the ingest instance associated with
@@ -45,7 +57,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
         """Change status to the passed in status."""
         self.validate_transition(
             self.ingest_instance,
-            current_status=(self.statuses[-1].status if self.statuses else None),
+            current_status=self.statuses[-1].status,
             new_status=new_status,
         )
 
@@ -57,10 +69,20 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
         )
         self.statuses.append(new_ingest_instance_status)
 
-    def get_current_status(self) -> Optional[DirectIngestStatus]:
+    def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""
-        return self.statuses[-1].status if self.statuses else None
+        return self.statuses[-1].status
 
     def get_all_statuses(self) -> List[DirectIngestInstanceStatus]:
         """Return all statuses."""
         return self.statuses
+
+    def add_instance_status(self, status: DirectIngestStatus) -> None:
+        """Add a status (without any validations)."""
+        new_ingest_instance_status = DirectIngestInstanceStatus(
+            region_code=self.region_code,
+            instance=self.ingest_instance,
+            timestamp=datetime.datetime.now(),
+            status=status,
+        )
+        self.statuses.append(new_ingest_instance_status)
