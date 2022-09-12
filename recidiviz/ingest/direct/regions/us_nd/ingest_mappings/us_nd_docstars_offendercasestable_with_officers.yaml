@@ -275,10 +275,10 @@ output:
                   - "6" # 6 is Drug Court which is max with specific rules
                 StateSupervisionLevel.DIVERSION: "7"
                 StateSupervisionLevel.INTERSTATE_COMPACT: "9"
-                # 4 and 8 are no longer used now, 5 means not classified yet
-                StateSupervisionLevel.EXTERNAL_UNKNOWN:
+                StateSupervisionLevel.UNASSIGNED: "5"
+                # 4 and 8 are no longer used now
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
                   - "4" # No longer in use
-                  - "5" # Not classified yet
                   - "8" # No longer in use
           county_code:
             $custom:
