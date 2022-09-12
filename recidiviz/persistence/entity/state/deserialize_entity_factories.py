@@ -128,7 +128,9 @@ class StateChargeFactory(EntityFactory):
     def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateCharge:
         return entity_deserialize(
             cls=entities.StateCharge,
-            converter_overrides={},
+            converter_overrides={
+                "judge_full_name": EntityFieldConverter(str, normalize_flat_json)
+            },
             defaults={"status": StateChargeStatus.PRESENT_WITHOUT_INFO},
             **kwargs,
         )
