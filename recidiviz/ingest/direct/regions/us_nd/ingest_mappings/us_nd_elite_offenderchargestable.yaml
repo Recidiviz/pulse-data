@@ -56,7 +56,11 @@ output:
                 charge_notes: COMMENT_TEXT
                 court_case:
                   StateCourtCase:
-                    external_id: ORDER_ID
+                    external_id:
+                      $custom:
+                        $function: us_nd_custom_parsers.decimal_str_as_int_str
+                        $args:
+                          dec_str: ORDER_ID
                 classification_type:
                   $enum_mapping:
                     $raw_text:
