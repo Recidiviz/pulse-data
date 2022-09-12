@@ -158,6 +158,16 @@ output:
                         - Z # Migration - class invalid in source
                 is_sex_offense: $variable(is_sex_offense)
                 charge_notes: Comments_Tx
+                judicial_district_code: Jurisdiction_County_Cd
+                judge_external_id: Judge_Professional_Id
+                judge_full_name:
+                  $conditional:
+                    - $if:
+                        $not_null: Judge_Professional_Id
+                      $then:
+                        $person_name:
+                          $given_names: First_Name
+                          $surname: Last_Name
                 court_case:
                   StateCourtCase:
                     external_id:
