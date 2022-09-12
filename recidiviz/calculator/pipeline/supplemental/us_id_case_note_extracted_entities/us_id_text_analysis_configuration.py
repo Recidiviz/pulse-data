@@ -129,3 +129,27 @@ class UsIdTextEntity(TextEntity):
             search_regex=(r".*CS.*(HOURS|HRS).*|.*(HRS|HOURS).*[^R]CS[^C].*")
         ),
     ]
+    DUI = [RegexFuzzyMatcher(search_regex=(r".*DUI.*"))]
+    NOT_M_DUI = [
+        RegexFuzzyMatcher(
+            search_regex=(
+                r".*DUIN.*|.*FELONY.*|.*COURT.*|.*PANEL.*|.*VICTIM.*|.*ADUIT.*"
+            )
+        )
+    ]
+    SSDI_SSI = [
+        RegexFuzzyMatcher(
+            search_regex=(
+                r".*SSDI[^G].*|.*[^A]SSDI.*|^SSDI|^SSI$|^SSI(\s|/|-)|.*[^APO]SSI(\s|/|-)|.*(\s|/|-)SSI[^G].*|.*(\s|/|-)SSI$"
+            )
+        )
+    ]
+    PENDING = [
+        ScoringFuzzyMatcher(search_term="applying"),
+        ScoringFuzzyMatcher(search_term="reconsideration"),
+        ScoringFuzzyMatcher(search_term="applied"),
+        ScoringFuzzyMatcher(search_term="eligibility"),
+        ScoringFuzzyMatcher(search_term="awaiting"),
+        ScoringFuzzyMatcher(search_term="denied"),
+        ScoringFuzzyMatcher(search_term="pending"),
+    ]
