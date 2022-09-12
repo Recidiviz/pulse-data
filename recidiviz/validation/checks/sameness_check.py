@@ -349,9 +349,7 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
 
     @property
     def highest_error(self) -> float:
-        return (
-            round(max(row[1] for row in self.failed_rows), 4) if self.failed_rows else 0
-        )
+        return max(row[1] for row in self.failed_rows) if self.failed_rows else 0
 
     @property
     def rows_soft_failure(self) -> Optional[List[Tuple[ResultRow, float]]]:
@@ -400,7 +398,7 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
             return (
                 f"{len(self.failed_rows)} row(s) exceeded the soft_max_allowed_error threshold. The "
                 f"acceptable margin of error is {self.soft_max_allowed_error} (soft), but the "
-                f"validation returned rows with errors as high as {self.highest_error}."
+                f"validation returned rows with errors as high as {round(self.highest_error, 4)}."
             )
         if validation_result_status == ValidationResultStatus.FAIL_HARD:
             return (
@@ -409,7 +407,7 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
                 f"{len(self.rows_soft_failure or [])} row(s) exceeded the soft threshold. The "
                 f"acceptable margin of error is only {self.hard_max_allowed_error} (hard) "
                 f"and {self.soft_max_allowed_error} (soft), but the "
-                f"validation returned rows with errors as high as {self.highest_error}."
+                f"validation returned rows with errors as high as {round(self.highest_error, 4)}."
             )
         raise AttributeError(
             f"failure_description for validation_result_status {validation_result_status} not set"
