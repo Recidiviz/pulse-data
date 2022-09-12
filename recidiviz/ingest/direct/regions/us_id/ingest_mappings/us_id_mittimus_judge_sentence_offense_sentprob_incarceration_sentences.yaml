@@ -90,7 +90,6 @@ unused_columns:
   - cnty_cd
   - plea
   - off_rank2
-  - judge_name
   - off_rank1
   - ofnse_crm_grp_id
   - lgl_mnam
@@ -112,7 +111,6 @@ unused_columns:
   - dist_atty
   - am_sent_no
   - ucr
-  - judge_cd
   - govn_sent
   - off_rpt_flg
   - jail_cred
@@ -242,3 +240,8 @@ output:
                     $function: us_id_custom_parsers.parse_valid_offense_date
                     $args:
                       raw_date: off_dtd
+                judge_external_id: judge_cd
+                judge_full_name:
+                  $person_name:
+                    $full_name: judge_name
+                judicial_district_code: cnty_sdesc

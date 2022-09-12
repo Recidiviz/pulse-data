@@ -86,8 +86,6 @@ input_columns:
   - vio_1311
 unused_columns:
   - lifer
-  - judge_cd
-  - judge_name
   - am_sent_no
   - caseno
   - caseno_seq
@@ -249,3 +247,8 @@ output:
                     $function: us_id_custom_parsers.parse_valid_offense_date
                     $args:
                       raw_date: off_dtd
+                judge_external_id: judge_cd
+                judge_full_name:
+                  $person_name:
+                    $full_name: judge_name
+                judicial_district_code: cnty_sdesc
