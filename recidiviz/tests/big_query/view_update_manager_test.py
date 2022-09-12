@@ -32,7 +32,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
-    view_builder_sub_graph_for_view_builders_to_load,
+    get_dag_walker_for_views_sub_dag,
     view_update_manager_blueprint,
 )
 from recidiviz.utils.environment import (
@@ -933,7 +933,7 @@ class ViewManagerTest(unittest.TestCase):
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
 
-    def test_view_builder_sub_graph_for_view_builders_to_load(self) -> None:
+    def test_get_dag_walker_for_views_sub_dag(self) -> None:
         table_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -982,16 +982,17 @@ class ViewManagerTest(unittest.TestCase):
         #  4     5
         x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
 
-        sub_graph = view_builder_sub_graph_for_view_builders_to_load(
-            view_builders_to_load=[table_4],
-            all_view_builders_in_dag=x_shaped_dag_view_builders_list,
-            get_ancestors=True,
-            get_descendants=False,
-        )
+        sub_graph_builders = get_dag_walker_for_views_sub_dag(
+            view_builders_in_sub_dag=[table_4],
+            view_builders_in_full_dag=x_shaped_dag_view_builders_list,
+            include_ancestors=True,
+            include_descendants=False,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        ).view_builders()
 
-        self.assertCountEqual([table_4, table_3, table_2, table_1], sub_graph)
+        self.assertCountEqual([table_4, table_3, table_2, table_1], sub_graph_builders)
 
-    def test_view_builder_sub_graph_for_view_builders_to_load_descendants(self) -> None:
+    def test_get_dag_walker_for_views_sub_dag_descendants(self) -> None:
         table_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
@@ -1040,14 +1041,15 @@ class ViewManagerTest(unittest.TestCase):
         #  4     5
         x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
 
-        sub_graph = view_builder_sub_graph_for_view_builders_to_load(
-            view_builders_to_load=[table_3],
-            all_view_builders_in_dag=x_shaped_dag_view_builders_list,
-            get_ancestors=False,
-            get_descendants=True,
-        )
+        sub_graph_builders = get_dag_walker_for_views_sub_dag(
+            view_builders_in_sub_dag=[table_3],
+            view_builders_in_full_dag=x_shaped_dag_view_builders_list,
+            include_ancestors=False,
+            include_descendants=True,
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        ).view_builders()
 
-        self.assertCountEqual([table_4, table_5, table_3], sub_graph)
+        self.assertCountEqual([table_4, table_5, table_3], sub_graph_builders)
 
     def test_valid_view_query_templates(self) -> None:
         """Validates that the view_query_template does not contain any raw GCP

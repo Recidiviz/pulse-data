@@ -40,6 +40,9 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.tests.big_query.fake_big_query_view_builder import (
+    FakeBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
@@ -1201,6 +1204,56 @@ The following views have less restrictive projects_to_deploy than their parents:
         )
 
         self.assertCountEqual([view], unioned_dag.views)
+
+    def test_set_view_builders(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        input_views = [
+            self.diamond_shaped_dag_views_list[3],
+            self.diamond_shaped_dag_views_list[4],
+        ]
+
+        candidate_builders = [
+            FakeBigQueryViewBuilder(v) for v in self.diamond_shaped_dag_views_list
+        ]
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(input_views)
+
+        sub_dag.populate_node_view_builders(candidate_builders)
+
+        expected_views = [
+            self.diamond_shaped_dag_views_list[3],
+            self.diamond_shaped_dag_views_list[4],
+            self.diamond_shaped_dag_views_list[5],
+        ]
+        self.assertCountEqual(sub_dag.views, expected_views)
+
+        expected_builders = [b for b in candidate_builders if b.view in expected_views]
+        self.assertCountEqual(expected_builders, sub_dag.view_builders())
+
+    def test_set_view_builders_missing_builder_throws(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        input_views = [
+            self.diamond_shaped_dag_views_list[3],
+            self.diamond_shaped_dag_views_list[4],
+        ]
+
+        candidate_builders = [
+            FakeBigQueryViewBuilder(v)
+            for v in self.diamond_shaped_dag_views_list
+            if v != self.diamond_shaped_dag_views_list[4]
+        ]
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(input_views)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Builder not found for view "
+            r"\[BigQueryAddress\(dataset_id='dataset_5', table_id='table_5'\)\]",
+        ):
+            sub_dag.populate_node_view_builders(candidate_builders)
 
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         """Fails the test if a view that has no parents is an expected view with no

@@ -18,12 +18,12 @@
 and perform actions on each of them in some order."""
 import logging
 from concurrent import futures
-from typing import Callable, Dict, List, Optional, Set, Tuple, TypeVar
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TypeVar
 
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.utils import structured_logging
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
@@ -79,6 +79,8 @@ class BigQueryViewDagNode:
         # Note: Must call populate_node_family_for_node() on a node before using this member variable.
         self._node_family: Optional[BigQueryViewDagNodeFamily] = None
 
+        self._view_builder: Optional[BigQueryViewBuilder] = None
+
     @property
     def node_family(self) -> "BigQueryViewDagNodeFamily":
         if not self._node_family:
@@ -126,6 +128,16 @@ class BigQueryViewDagNode:
     @property
     def child_keys(self) -> Set[DagKey]:
         return self.child_node_keys
+
+    @property
+    def view_builder(self) -> BigQueryViewBuilder:
+        """The view builder associated with this view."""
+        if self._view_builder is None:
+            raise ValueError("Must set view_builder via set_view_builder().")
+        return self._view_builder
+
+    def set_view_builder(self, view_builder: BigQueryViewBuilder) -> None:
+        self._view_builder = view_builder
 
 
 @attr.s
@@ -469,3 +481,25 @@ class BigQueryViewDagWalker:
                 child_dfs_tree_str=child_tree,
             )
         )
+
+    def populate_node_view_builders(
+        self, all_candidate_view_builders: Sequence[BigQueryViewBuilder]
+    ) -> None:
+        """Populates all view nodes on the DAG with their associated view builder.
+        The provided list of view builders must be a superset of all builders for views
+        in this DAG.
+        """
+        builders_by_key = {
+            DagKey(view_address=b.address): b for b in all_candidate_view_builders
+        }
+        for key, node in self.nodes_by_key.items():
+            if key not in builders_by_key:
+                raise ValueError(f"Builder not found for view [{key.view_address}]")
+            builder = builders_by_key[key]
+            node.set_view_builder(builder)
+
+    def view_builders(self) -> Sequence[BigQueryViewBuilder]:
+        """Returns all view builders for the nodes in this views DAG. Can only be
+        called after populate_node_view_builders() is called on this BigQueryDagWalker.
+        """
+        return [node.view_builder for node in self.nodes_by_key.values()]

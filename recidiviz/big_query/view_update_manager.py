@@ -163,8 +163,8 @@ def rematerialize_views_for_view_builders(
         views_to_rematerialize_dag = get_dag_walker_for_views_sub_dag(
             view_builders_in_sub_dag=views_to_update_builders,
             view_builders_in_full_dag=all_view_builders,
-            get_ancestors=True,
-            get_descendants=True,
+            include_ancestors=True,
+            include_descendants=True,
             view_source_table_datasets=view_source_table_datasets,
         )
 
@@ -473,8 +473,8 @@ def get_dag_walker_for_views_sub_dag(
     *,
     view_builders_in_sub_dag: Sequence[BigQueryViewBuilder],
     view_builders_in_full_dag: Sequence[BigQueryViewBuilder],
-    get_ancestors: bool,
-    get_descendants: bool,
+    include_ancestors: bool,
+    include_descendants: bool,
     view_source_table_datasets: Set[str],
 ) -> BigQueryViewDagWalker:
     """Returns a BigQueryDagWalker that represents the sub-portion of the view graph
@@ -503,17 +503,20 @@ def get_dag_walker_for_views_sub_dag(
     sub_dag_walker = BigQueryViewDagWalker(views_in_sub_dag)
 
     # If necessary, get descendants of views_in_sub_dag
-    if get_descendants:
+    if include_descendants:
         sub_dag_walker = BigQueryViewDagWalker.union_dags(
             sub_dag_walker, full_dag_walker.get_descendants_sub_dag(views_in_sub_dag)
         )
 
     # If necessary, get ancestor views of views_in_sub_dag
-    if get_ancestors:
+    if include_ancestors:
         sub_dag_walker = BigQueryViewDagWalker.union_dags(
             sub_dag_walker, full_dag_walker.get_ancestors_sub_dag(views_in_sub_dag)
         )
 
+    sub_dag_walker.populate_node_view_builders(
+        all_candidate_view_builders=view_builders_in_full_dag
+    )
     return sub_dag_walker
 
 
@@ -537,8 +540,8 @@ def view_builder_sub_graph_for_view_builders_to_load(
     sub_graph_dag_walker = get_dag_walker_for_views_sub_dag(
         view_builders_in_sub_dag=view_builders_to_load,
         view_builders_in_full_dag=all_view_builders_in_dag,
-        get_ancestors=get_ancestors,
-        get_descendants=get_descendants,
+        include_ancestors=get_ancestors,
+        include_descendants=get_descendants,
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
     )
 
