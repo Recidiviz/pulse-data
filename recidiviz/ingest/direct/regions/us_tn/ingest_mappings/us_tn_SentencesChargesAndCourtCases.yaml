@@ -191,6 +191,10 @@ output:
                       is_violent: $variable(is_violent)
                       is_sex_offense: $variable(is_sex_offense)
                       charging_entity: Verdict
+                      judicial_district_code: JudicialDistrict
+                      judge_full_name:
+                        $person_name:
+                          $full_name: JudgeName
                       court_case:
                         StateCourtCase:
                           external_id: $variable(sentence_external_id)
@@ -252,6 +256,10 @@ output:
                       is_violent: $variable(is_violent)
                       is_sex_offense: $variable(is_sex_offense)
                       charging_entity: Verdict
+                      judicial_district_code: JudicialDistrict
+                      judge_full_name:
+                        $person_name:
+                          $full_name: JudgeName
                       court_case:
                         StateCourtCase:
                           external_id: $variable(sentence_external_id)
