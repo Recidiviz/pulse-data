@@ -8,7 +8,7 @@
     "$person_name": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["$given_names", "$surname"],
+      "required": [],
       "properties": {
         "$given_names": {
           "description": "The person's given (first) names. Will populate the \"given_names\" JSON key.",
@@ -25,8 +25,20 @@
         "$name_suffix": {
           "description": "The person's name suffix (e.g. Jr, III, etc). Will populate the \"name_suffix\" JSON key",
           "$ref": "index.json"
+        },
+        "$full_name": {
+          "description": "The person's full name. Will populate the \"full_name\" JSON key. Can only be used if none of the name parts (\"given_names\", \"surname\") are present.",
+          "$ref": "index.json"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": ["$given_names", "$surname"]
+        },
+        {
+          "required": ["$full_name"]
+        }
+      ]
     }
   },
   "examples": [
@@ -36,6 +48,11 @@
         "$middle_names": "Mid_Nm",
         "$surname": "Lst_Nm",
         "$name_suffix": "Nm_Suff"
+      }
+    },
+    {
+      "$person_name": {
+        "full_name": "FullName"
       }
     }
   ],
@@ -48,6 +65,15 @@
             "$middle_names": "Mid_Nm",
             "$surname": "Lst_Nm",
             "$name_suffix": "Nm_Suff"
+          }
+        }
+      }
+    },
+    {
+      "StateCharge": {
+        "judge_full_name": {
+          "$person_name": {
+            "$full_name": "JudgeName"
           }
         }
       }

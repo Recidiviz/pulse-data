@@ -1407,6 +1407,26 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_person_name_full(self) -> None:
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name='{"FULL_NAME": "LAST, FIRST"}'),
+            FakePerson(
+                fake_state_code="US_XX", name='{"FULL_NAME": "LAST, FIRST MIDDLE"}'
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"FULL_NAME": "LAST SUFFIX, FIRST MIDDLE"}',
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name='{"FULL_NAME": "LAST SUFFIX SUFFIX, FIRST MIDDLE MIDDLE"}',
+            ),
+        ]
+
+        parsed_output = self._run_parse_for_ingest_view("person_name_full")
+
+        self.assertEqual(expected_output, parsed_output)
+
     def test_person_name_complex(self) -> None:
         # Arrange
         expected_output = [
@@ -1432,6 +1452,14 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_person_name_mixed_throws_error(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Invalid configuration for \$person_name. It can only contain \$full_name "
+            r"or the parts.*.",
+        ):
+            _ = self._run_parse_for_ingest_view("person_name_mixed")
 
     def test_physical_address(self) -> None:
         # Arrange
