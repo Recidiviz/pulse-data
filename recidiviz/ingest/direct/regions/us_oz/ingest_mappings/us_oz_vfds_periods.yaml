@@ -23,7 +23,12 @@ output:
       # workings of the infrastructure before we dive into the complexities of the
       # criminal justice system and how its concepts are represented in our schema.
       - StateIncarcerationPeriod:
-          external_id: ID
+          external_id:
+            # Prefix the IDs with vfds so they don't clash with other data systems.
+            $concat:
+              $values:
+                - $literal("VFDS")
+                - ID
           admission_date: StartDate
           release_date: EndDate
           facility: Food
