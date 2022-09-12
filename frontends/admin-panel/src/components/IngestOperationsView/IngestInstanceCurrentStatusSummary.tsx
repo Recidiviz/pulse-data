@@ -61,19 +61,15 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
 
   const dataSource = Object.keys(ingestInstanceStatuses).map((key) => {
     const stateInstanceStatuses = ingestInstanceStatuses[key];
-    const primaryInstanceInfo: IngestInstanceStatusInfo | undefined =
+    const primaryInstanceInfo: IngestInstanceStatusInfo =
       stateInstanceStatuses.primary;
 
-    const primaryStatus: string = !primaryInstanceInfo?.status
-      ? "No recorded statuses"
-      : primaryInstanceInfo?.status;
+    const primaryStatus: string = primaryInstanceInfo.status;
 
-    const secondaryInstanceInfo: IngestInstanceStatusInfo | undefined =
+    const secondaryInstanceInfo: IngestInstanceStatusInfo =
       stateInstanceStatuses.secondary;
 
-    const secondaryStatus: string = !secondaryInstanceInfo?.status
-      ? "No recorded statuses"
-      : secondaryInstanceInfo?.status;
+    const secondaryStatus: string = secondaryInstanceInfo.status;
 
     return {
       stateCode: key,

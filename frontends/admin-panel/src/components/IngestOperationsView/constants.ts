@@ -41,8 +41,8 @@ export type IngestInstanceStatusInfo = {
 
 export type IngestInstanceStatusResponse = {
   [stateCode: string]: {
-    primary: IngestInstanceStatusInfo | undefined;
-    secondary: IngestInstanceStatusInfo | undefined;
+    primary: IngestInstanceStatusInfo;
+    secondary: IngestInstanceStatusInfo;
   };
 };
 

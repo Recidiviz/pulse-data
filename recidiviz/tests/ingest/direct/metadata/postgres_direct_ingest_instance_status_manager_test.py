@@ -28,7 +28,6 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
     HUMAN_INTERVENTION_STATUSES,
     INVALID_STATUSES,
     VALID_CURRENT_STATUS_TRANSITIONS,
-    VALID_INITIAL_STATUSES,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -61,10 +60,16 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
         )
-
         self.us_xx_secondary_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.SECONDARY,
+        )
+        # Set initial statuses for PRIMARY and SECONDARY.
+        self.us_xx_primary_manager.add_instance_status(
+            DirectIngestStatus.STANDARD_RERUN_STARTED
+        )
+        self.us_xx_secondary_manager.add_instance_status(
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS
         )
 
     def tearDown(self) -> None:
@@ -75,6 +80,16 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
+
+    def test_do_not_allow_empty_status(self) -> None:
+        us_ww_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_WW.value,
+            DirectIngestInstance.PRIMARY,
+        )
+        with self.assertRaisesRegex(
+            ValueError, "Initial statuses for a state must be set via a migration."
+        ):
+            us_ww_manager.change_status_to(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
     def test_coverage_of_status_transition_validations(self) -> None:
         """Confirm that the status transition validations cover all possible statuses that are applicable and
@@ -197,6 +212,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
             us_yy_manager = PostgresDirectIngestInstanceStatusManager(
                 StateCode.US_YY.value, instance
             )
+            us_yy_manager.add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
             for invalid_status in invalid_statuses:
                 with self.assertRaisesRegex(
@@ -221,24 +237,6 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
 
             for status in valid_statuses:
                 us_yy_manager.validate_transition(instance, status, status)
-
-    def test_change_status_to_invalid_initial_statuses(self) -> None:
-        """Ensure that all invalid initial statuses raise the correct error."""
-        for instance, valid_initial_statuses in VALID_INITIAL_STATUSES.items():
-            us_yy_manager = PostgresDirectIngestInstanceStatusManager(
-                StateCode.US_YY.value, instance
-            )
-
-            # Valid initial statuses validated after invalid statuses.
-            invalid_initial_statuses = list(
-                set(self.all_status_enum_values)
-                - set(INVALID_STATUSES[instance])
-                - set(valid_initial_statuses)
-            )
-            for invalid_initial_status in invalid_initial_statuses:
-                with self.assertRaisesRegex(ValueError, "Invalid initial status."):
-
-                    us_yy_manager.change_status_to(invalid_initial_status)
 
     def _run_test_for_status_transitions(
         self,
@@ -510,18 +508,20 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
     def test_duplicate_statuses_are_not_added_twice(
         self,
     ) -> None:
-        self.us_xx_secondary_manager.change_status_to(
-            new_status=DirectIngestStatus.STANDARD_RERUN_STARTED
+        us_yy_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value,
+            DirectIngestInstance.PRIMARY,
         )
-        reused_status = DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-        self.us_xx_secondary_manager.change_status_to(new_status=reused_status)
-        self.us_xx_secondary_manager.change_status_to(new_status=reused_status)
+        us_yy_manager.add_instance_status(
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+        )
+        reused_status = DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+        us_yy_manager.change_status_to(new_status=reused_status)
+        us_yy_manager.change_status_to(new_status=reused_status)
 
-        added_statuses = [
-            status.status for status in self.us_xx_secondary_manager.get_all_statuses()
-        ]
+        added_statuses = [status.status for status in us_yy_manager.get_all_statuses()]
         expected_statuses = [
-            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
             reused_status,
         ]
         self.assertCountEqual(added_statuses, expected_statuses)

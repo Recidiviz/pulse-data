@@ -25,7 +25,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    VALID_INITIAL_STATUSES,
+    VALID_START_OF_RERUN_STATUSES,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -64,10 +64,8 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
 
         return entity_metadata
 
-    def _get_current_status_row(
-        self, session: Session
-    ) -> Optional[DirectIngestInstanceStatus]:
-        """Returns the most recent status row for this instance (if present)."""
+    def _get_current_status_row(self, session: Session) -> DirectIngestInstanceStatus:
+        """Returns the most recent status row for this instance."""
         results = (
             session.query(schema.DirectIngestInstanceStatus)
             .filter_by(
@@ -78,11 +76,13 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             .limit(1)
             .one_or_none()
         )
+        if not results:
+            raise ValueError(
+                "Initial statuses for a state must be set via a migration. There should always be a current row for "
+                "ingest instance statuses."
+            )
 
-        if results:
-            return self._direct_ingest_instance_status_as_entity(results)
-
-        return None
+        return self._direct_ingest_instance_status_as_entity(results)
 
     def _get_most_recent_row_with_status(
         self, session: Session, status: DirectIngestStatus
@@ -131,7 +131,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         """Add new row with the passed in status."""
         with SessionFactory.using_database(self.db_key) as session:
             current_status = self._get_current_status_row(session)
-            if not current_status or current_status.status != status:
+            if current_status.status != status:
                 new_row = schema.DirectIngestInstanceStatus(
                     region_code=self.region_code,
                     instance=self.ingest_instance.value,
@@ -196,7 +196,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             current_rerun_start_status = one(
                 row.status
                 for row in current_rerun_status_rows
-                if row.status in VALID_INITIAL_STATUSES[self.ingest_instance]
+                if row.status in VALID_START_OF_RERUN_STATUSES[self.ingest_instance]
             )
 
             # If the rerun only involves regenerating and running ingest views, then the
@@ -212,29 +212,34 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         self._validate_status_transition_from_current_status(new_status=new_status)
         self._add_new_status_row(status=new_status)
 
-    # This one specifically for test setup!
-    @environment.test_only
     def add_instance_status(
         self,
         status: DirectIngestStatus,
     ) -> None:
         """Add a status (without any validations). Used for testing purposes."""
-        self._add_new_status_row(status)
+        with SessionFactory.using_database(self.db_key) as session:
+            new_row = schema.DirectIngestInstanceStatus(
+                region_code=self.region_code,
+                instance=self.ingest_instance.value,
+                timestamp=datetime.now(),
+                status=status.value,
+            )
+            session.add(new_row)
 
     @environment.test_only
     def get_all_statuses(self) -> List[DirectIngestInstanceStatus]:
         with SessionFactory.using_database(self.db_key) as session:
             return self._get_rows_after_timestamp(session, datetime.min)
 
-    def get_current_status(self) -> Optional[DirectIngestStatus]:
+    def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""
         with SessionFactory.using_database(self.db_key) as session:
-            status_row: Optional[
-                DirectIngestInstanceStatus
-            ] = self._get_current_status_row(session)
-            return status_row.status if status_row is not None else None
+            status_row: DirectIngestInstanceStatus = self._get_current_status_row(
+                session
+            )
+            return status_row.status
 
-    def get_current_status_info(self) -> Optional[DirectIngestInstanceStatus]:
+    def get_current_status_info(self) -> DirectIngestInstanceStatus:
         """Get current status and associated information."""
         with SessionFactory.using_database(self.db_key) as session:
             return self._get_current_status_row(session)
