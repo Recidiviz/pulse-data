@@ -117,6 +117,9 @@ from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summ
 from recidiviz.calculator.query.state.views.sessions.sentence_relationship import (
     SENTENCE_RELATIONSHIP_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.sentence_spans import (
+    SENTENCE_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed import (
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -280,4 +283,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+    SENTENCE_SPANS_VIEW_BUILDER,
 ]

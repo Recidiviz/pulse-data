@@ -135,92 +135,101 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
             ORDER BY comp.completion_date ASC
         ) = 1
-    )
+    ),
     /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
     sentence internal id.
     */
+    sentences_with_session_id_imposed AS (
+        SELECT
+            sen.person_id,
+            sen.state_code,
+            sen.sentence_id,
+            sen.external_id AS external_id,
+            sen.sentence_type,
+            sen.judicial_district,
+            sen.effective_date,
+            sen.date_imposed,
+            sen.completion_date,
+            sen.is_completion_date_inferred,
+            sen.status,
+            sen.status_raw_text,
+            sen.parole_eligibility_date,
+            sen.projected_completion_date_min,
+            sen.projected_completion_date_max,
+            sen.initial_time_served_days,
+            sen.life_sentence,
+            sen.min_length_days AS min_sentence_length_days_calculated,
+            sen.max_length_days AS max_sentence_length_days_calculated,
+            sen.charge_id,
+            sen.offense_date,
+            sen.is_violent,
+            sen.is_sex_offense,
+            COALESCE(sen.classification_type, 'EXTERNAL_UNKNOWN') AS classification_type,
+            COALESCE(sen.classification_subtype, 'EXTERNAL_UNKNOWN') AS classification_subtype,
+            sen.description,
+            sen.offense_type,
+            sen.ncic_code,
+            sen.statute,
+            COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
+            sen.uccs_code_uniform,
+            sen.uccs_description_uniform,
+            sen.uccs_category_uniform,
+            sen.ncic_code_uniform,
+            sen.ncic_description_uniform,
+            sen.ncic_category_uniform,
+            sen.nbirs_code_uniform,
+            sen.nbirs_description_uniform,
+            sen.nbirs_category_uniform,
+            sen.crime_against_uniform,
+            sen.is_drug_uniform,
+            sen.is_violent_uniform,
+            sen.offense_completed_uniform,
+            sen.offense_attempted_uniform,
+            sen.offense_conspired_uniform,
+            cs.consecutive_sentence_id,
+            -- Set the session_id_imposed if the sentence date imposed matches the session start date
+            IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
+            ses.session_id AS session_id_closest,
+            DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days
+        FROM sentences_with_inferred_completion_date sen
+        LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
+            USING (person_id, state_code, sentence_id, sentence_type)
+        -- TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
+            ON ses.person_id = sen.person_id
+            AND ses.state_code = sen.state_code
+            -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
+            AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
+            AND sen.date_imposed < COALESCE(ses.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
+            ON sen.state_code = offense_type_ref.state_code
+            AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, external_id, charge_id, sentence_type
+            ORDER BY ABS(sentence_to_session_offset_days) ASC) = 1
+    
+        UNION ALL
+    
+        SELECT
+            *
+            EXCEPT(
+                total_program_credits,
+                total_behavior_credits,
+                total_ppsc_credits,
+                total_ged_credits,
+                total_literary_credits,
+                total_drug_alcohol_credits,
+                total_education_attendance_credits,
+                total_treatment_credits)
+        FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
+    )
     SELECT
-        sen.person_id,
-        sen.state_code,
-        sen.sentence_id,
-        sen.external_id AS external_id,
-        sen.sentence_type,
-        sen.judicial_district,
-        sen.effective_date,
-        sen.date_imposed,
-        sen.completion_date,
-        sen.is_completion_date_inferred,
-        sen.status,
-        sen.status_raw_text,
-        sen.parole_eligibility_date,
-        sen.projected_completion_date_min,
-        sen.projected_completion_date_max,
-        sen.initial_time_served_days,
-        sen.life_sentence,
-        sen.min_length_days AS min_sentence_length_days_calculated,
-        sen.max_length_days AS max_sentence_length_days_calculated,
-        sen.charge_id,
-        sen.offense_date,
-        sen.is_violent,
-        sen.is_sex_offense,
-        COALESCE(sen.classification_type, 'EXTERNAL_UNKNOWN') AS classification_type,
-        COALESCE(sen.classification_subtype, 'EXTERNAL_UNKNOWN') AS classification_subtype,
-        sen.description,
-        sen.offense_type,
-        sen.ncic_code,
-        sen.statute,
-        COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
-        sen.uccs_code_uniform,
-        sen.uccs_description_uniform,
-        sen.uccs_category_uniform,
-        sen.ncic_code_uniform,
-        sen.ncic_description_uniform,
-        sen.ncic_category_uniform,
-        sen.nbirs_code_uniform,
-        sen.nbirs_description_uniform,
-        sen.nbirs_category_uniform,
-        sen.crime_against_uniform,
-        sen.is_drug_uniform,
-        sen.is_violent_uniform,
-        sen.offense_completed_uniform,
-        sen.offense_attempted_uniform,
-        sen.offense_conspired_uniform, 
-        cs.consecutive_sentence_id,
-        -- Set the session_id_imposed if the sentence date imposed matches the session start date
-        IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
-        ses.session_id AS session_id_closest,
-        DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days,
-    FROM sentences_with_inferred_completion_date sen
-    LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
-        USING (person_id, state_code, sentence_id, sentence_type)
-    -- TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
-    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
-        ON ses.person_id = sen.person_id
-        AND ses.state_code = sen.state_code
-        -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
-        AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
-        AND sen.date_imposed < COALESCE(ses.end_date, CURRENT_DATE('US/Eastern'))
-    LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
-        ON sen.state_code = offense_type_ref.state_code
-        AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, external_id, charge_id, sentence_type
-        ORDER BY ABS(sentence_to_session_offset_days) ASC) = 1
-
-    UNION ALL
-
-    SELECT
-        *
-        EXCEPT(
-            total_program_credits,
-            total_behavior_credits,
-            total_ppsc_credits,
-            total_ged_credits,
-            total_literary_credits,
-            total_drug_alcohol_credits,
-            total_education_attendance_credits,
-            total_treatment_credits)
-    FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
+        ROW_NUMBER() OVER (
+            PARTITION BY state_code, person_id
+            ORDER BY date_imposed, effective_date, external_id, charge_id
+        ) AS sentences_preprocessed_id,
+        *,
+    FROM sentences_with_session_id_imposed
 """
 
 SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

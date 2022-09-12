@@ -17,9 +17,9 @@
 """Sessionization and deduplication of MO housing stays"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    revert_nonnull_end_date_clause,
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -65,8 +65,7 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
     */
     (
     SELECT 
-        c.* EXCEPT(end_date),
-        {nonnull_end_date_clause('end_date')} AS end_date,
+        c.*,
         COALESCE(confinement_type_priority,999) AS confinement_type_priority,
         COALESCE(stay_type_priority,999) AS stay_type_priority,
     FROM `{{project_id}}.{{sessions_dataset}}.us_mo_housing_stays_preprocessed` c
@@ -74,128 +73,11 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
         USING(confinement_type)
     LEFT JOIN stay_type_priority_cte
         USING(stay_type)
+    -- Remove data from before 2000 to reduce data quality issues
+    WHERE start_date > "2000-01-01"
     )
     ,
-    start_dates AS
-    /*
-    Start creating the new smaller sub-sessions with boundaries for every attribute session date. Generate the full 
-    list of the new sub-session start dates including all unique attribute start dates and any end dates that overlap
-    another session.
-    */
-    (
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        start_date,
-    FROM periods_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_start_dates.end_date AS start_date,
-    FROM periods_cte orig
-    INNER JOIN periods_cte new_start_dates
-        ON orig.state_code = new_start_dates.state_code
-        AND orig.person_id = new_start_dates.person_id
-        AND new_start_dates.end_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
-    )
-    ,
-    end_dates AS 
-    /*
-    Generate the full list of the new sub-session end dates including all unique attribute end dates and any start 
-    dates that overlap another session.
-    */
-    (
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        end_date,
-    FROM periods_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_end_dates.start_date AS end_date,
-    FROM periods_cte orig
-    INNER JOIN periods_cte new_end_dates
-        ON orig.state_code = new_end_dates.state_code
-        AND orig.person_id = new_end_dates.person_id
-        AND new_end_dates.start_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
-    ),
-    sub_sessions AS
-    /*
-    Join start and end dates together to create smaller sub-sessions. Each start date gets matched to the closest
-    following end date for each person. Note that this does not associate zero-day (same day start and end sessions).
-    These sessions are added in separately in a subsequent CTE.
-    */
-    (
-    SELECT
-        start_dates.state_code,
-        start_dates.person_id,
-        start_dates.start_date,
-        MIN(end_dates.end_date) AS end_date,
-    FROM start_dates
-    INNER JOIN end_dates
-        ON start_dates.state_code = end_dates.state_code
-        AND start_dates.person_id = end_dates.person_id
-        AND start_dates.start_date < end_dates.end_date
-    GROUP BY state_code, person_id, start_date
-    )
-    ,
-    sub_sessions_with_attributes AS
-    /*
-    Takes the newly created sub-sessions and joins back to the original periods cte (based on date overlap) to get the 
-    attributes that apply for that date-span. This CTE also unions in zero-day sessions (same-day start and end), which 
-    get pulled in separately from the original periods CTE. 
-    */
-    (
-    SELECT 
-        se.person_id,
-        se.state_code,
-        se.start_date,
-        se.end_date,
-        c.facility_code,
-        c.stay_type,
-        c.confinement_type,
-        c.confinement_type_priority,
-        c.stay_type_priority,
-    FROM sub_sessions se
-    INNER JOIN periods_cte c
-        ON c.person_id = se.person_id
-        AND c.state_code = se.state_code
-        AND se.start_date BETWEEN c.start_date AND DATE_SUB(c.end_date, INTERVAL 1 DAY)
-
-    UNION ALL 
-    
-    /* 
-    This is the separate logic for bringing in zero-day sessions. These zero-day sessions are never divided into new
-    sub-sessions. However, in order to deduplicate zero-day sessions correctly, we do need to pull *all* the attributes
-    from the periods CTE, which includes not only the attributes of the zero-day session, but also the attributes of 
-    the session that the zero-day period overlaps with. This means that when a zero-day session falls within another 
-    session, we create a duplicate for that day that contains both the attributes of the zero-day session itself as well
-    as the overlapping session. The deduplication then happens in the following CTE.
-    */
-    SELECT
-        single_day.person_id,
-        single_day.state_code,
-        single_day.start_date,
-        single_day.end_date,
-        all_periods.facility_code,
-        all_periods.stay_type,
-        all_periods.confinement_type,
-        all_periods.confinement_type_priority,
-        all_periods.stay_type_priority,
-    FROM periods_cte single_day
-    INNER JOIN periods_cte all_periods
-        ON single_day.person_id = all_periods.person_id
-        AND single_day.state_code = all_periods.state_code
-        --This condition pulls in the attributes of the zero-day session itself as well as the session that it falls
-        --within.
-        AND single_day.start_date BETWEEN all_periods.start_date AND all_periods.end_date
-    WHERE single_day.start_date = single_day.end_date
-    )
+    {create_sub_sessions_with_attributes(table_name='periods_with_priority_cte', use_magic_date_end_dates=True)}
     ,
     sessions_with_attributes_dedup AS
     /*
