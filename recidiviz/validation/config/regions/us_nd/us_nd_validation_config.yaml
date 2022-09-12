@@ -37,15 +37,15 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
   - validation_name: client_record_archive_duplicate_person_ids
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.001
     override_reason:
-      TODO(#14693) - Known issue where additional deduping is required. Threshold of concern
-      was determined to be 5% (initially observed error rate was <1%)
+      TODO(#15057) - Known issue where additional deduping is required. It affects
+      literally one person so even this threshold is pretty generous
   - validation_name: client_record_duplicate_person_external_ids
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.001
     override_reason:
-      TODO(#14693) - Known issue where additional deduping is required. Threshold of concern
-      was determined to be 5% (initially observed error rate was <1%)
+      TODO(#15057) - Known issue where additional deduping is required. It affects
+      literally one person so even this threshold is pretty generous
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550

@@ -19,7 +19,6 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     EXPORT_ARCHIVES_DATASET,
-    STATE_BASE_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.populate_missing_exports_template import (
@@ -147,9 +146,8 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         almost_eligible_serious_sanctions,
     FROM date_to_archive_map
     LEFT JOIN records_by_state_by_date USING (state_code, export_date)
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
-        ON records_by_state_by_date.state_code = pei.state_code
-        AND records_by_state_by_date.person_external_id = pei.external_id
+    LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id` 
+        USING (state_code, person_external_id)
 """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -159,7 +157,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBui
     view_query_template=COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE,
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    workflows_dataset=WORKFLOWS_VIEWS_DATASET,
     populate_missing_export_dates=populate_missing_export_dates(),
 )
 

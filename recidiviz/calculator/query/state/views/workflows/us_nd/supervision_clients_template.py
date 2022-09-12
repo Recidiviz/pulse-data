@@ -18,15 +18,6 @@
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
-    supervision_types AS (
-        # This CTE determines whether the supervision_type should be set to DUAL (parole and probation)
-        SELECT
-            person_id,
-            STRING_AGG(DISTINCT supervision_type, "-" ORDER BY supervision_type) AS supervision_types,
-        FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
-        WHERE state_code = 'US_ND'
-        GROUP BY 1
-    ),
     supervision_cases AS (
         # This CTE returns a row for each person and supervision sentence, so will return multiple rows if someone
         # is on dual supervision (parole and probation)
@@ -89,7 +80,10 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
-          sc.expiration_date,
+          FIRST_VALUE(sc.expiration_date IGNORE NULLS) OVER (
+            PARTITION BY sc.person_id
+            ORDER BY sc.expiration_date DESC
+          ) AS expiration_date,
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)

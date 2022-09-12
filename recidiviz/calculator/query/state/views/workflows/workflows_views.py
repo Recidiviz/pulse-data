@@ -42,9 +42,13 @@ from recidiviz.calculator.query.state.views.workflows.compliant_reporting_referr
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.workflows.person_id_to_external_id import (
+    PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
+)
 
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
+    PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,
