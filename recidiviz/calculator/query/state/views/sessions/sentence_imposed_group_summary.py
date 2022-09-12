@@ -145,6 +145,9 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         ARRAY_AGG(
             STRUCT
                 (
+                sentences_preprocessed_id,
+                date_imposed,
+                completion_date,
                 offense_date,
                 charge_id,
                 is_violent,

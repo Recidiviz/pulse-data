@@ -24,6 +24,9 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
@@ -49,8 +52,7 @@ from recidiviz.utils.string import StrictStringFormatter
 #     )
 STATE_SPECIFIC_CRITERIA_FRAGMENT = """
     SELECT
-        * EXCEPT(end_date),
-        {nonnull_end_date} AS end_date,
+        *,
         '{criteria_name}' AS criteria_name
     FROM `{{project_id}}.{{{criteria_dataset_id}_dataset}}.{criteria_view_id}`
     WHERE state_code = '{state_code}'
@@ -67,8 +69,7 @@ STATE_SPECIFIC_CRITERIA_FRAGMENT = """
 #     )
 STATE_SPECIFIC_POPULATION_CTE = """candidate_population AS (
     SELECT
-        * EXCEPT(end_date),
-        {nonnull_end_date} AS end_date,
+        *
     FROM `{{project_id}}.{{{population_dataset_id}_dataset}}.{population_view_id}`
     WHERE state_code = '{state_code}'
 )"""
@@ -136,7 +137,6 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             state_code=state_code.value,
             population_dataset_id=candidate_population_view_builder.materialized_address.dataset_id,
             population_view_id=candidate_population_view_builder.materialized_address.table_id,
-            nonnull_end_date=nonnull_end_date_clause("end_date"),
         )
         criteria_span_ctes = []
         for criteria_view_builder in criteria_spans_view_builders:
@@ -151,89 +151,30 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                     criteria_name=criteria_view_builder.criteria_name,
                     criteria_dataset_id=criteria_view_builder.materialized_address.dataset_id,
                     criteria_view_id=criteria_view_builder.materialized_address.table_id,
-                    nonnull_end_date=nonnull_end_date_clause("end_date"),
                 )
             )
         all_criteria_spans_cte_str = (
             f"criteria_spans AS ({'UNION ALL'.join(criteria_span_ctes)})"
         )
         return f"""
-WITH {all_criteria_spans_cte_str},
+WITH
+{all_criteria_spans_cte_str},
 {population_span_cte},
 combined_cte AS (
-    SELECT * EXCEPT(meets_criteria, reason, criteria_name) FROM criteria_spans
+    SELECT * EXCEPT(meets_criteria, reason) FROM criteria_spans
     UNION ALL
-    SELECT * FROM candidate_population
+    -- Add an indicator for the population spans so the population sub-sessions can be
+    -- used as the base spans in the span collapsing logic below
+    SELECT *, "POPULATION" AS criteria_name FROM candidate_population
 ),
-start_dates AS
 /*
-Start creating the new smaller sub-spans with boundaries for every criteria span
-date. Generate the full list of the new sub-span start dates including all unique
-criteria span start dates and any end dates that overlap another span.
+Split the candidate population spans into sub-spans separated on every criteria boundary
 */
-(
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        start_date,
-    FROM combined_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_start_dates.end_date AS start_date,
-    FROM combined_cte orig
-    INNER JOIN combined_cte new_start_dates
-        ON orig.state_code = new_start_dates.state_code
-        AND orig.person_id = new_start_dates.person_id
-        AND new_start_dates.end_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
-),
-end_dates AS
-/*
-Generate the full list of the new sub-span end dates including all unique criteria
-span end dates and any start dates that overlap another span.
-*/
-(
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        end_date,
-    FROM combined_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_end_dates.start_date AS end_date,
-    FROM combined_cte orig
-    INNER JOIN combined_cte new_end_dates
-        ON orig.state_code = new_end_dates.state_code
-        AND orig.person_id = new_end_dates.person_id
-        AND new_end_dates.start_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
-),
-sub_spans AS
-/*
-Join start and end dates together to create smaller sub-spans. Each start date gets
-matched to the closest following end date for each person.
-*/
-(
-    SELECT
-        start_dates.state_code,
-        start_dates.person_id,
-        start_dates.start_date,
-        MIN(end_dates.end_date) AS end_date,
-    FROM start_dates
-    INNER JOIN end_dates
-        ON start_dates.state_code = end_dates.state_code
-        AND start_dates.person_id = end_dates.person_id
-        AND start_dates.start_date < end_dates.end_date
-    GROUP BY state_code, person_id, start_date
-),
+{create_sub_sessions_with_attributes(table_name="combined_cte", use_magic_date_end_dates=True)},
 eligibility_sub_spans AS
 /*
-Combine all overlapping criteria for each sub-span to determine if the sub-span
-represents an eligible or ineligible period for each individual.
+Combine all overlapping criteria for each population sub-span to determine if the
+sub-span represents an eligible or ineligible period for each individual.
 */
 (
     SELECT
@@ -254,12 +195,11 @@ represents an eligible or ineligible period for each individual.
             IF(NOT COALESCE(criteria.meets_criteria, FALSE), all_criteria.criteria_name, NULL)
             IGNORE NULLS
         ) AS ineligible_criteria,
-    FROM sub_spans spans
-    -- Limit to spans that overlap with the candidate population
-    INNER JOIN candidate_population pop
-        ON spans.state_code = pop.state_code
-        AND spans.person_id = pop.person_id
-        AND spans.start_date BETWEEN pop.start_date AND DATE_SUB(pop.end_date, INTERVAL 1 DAY)
+    FROM (
+        -- Form the eligibility spans around all of the population sub-spans
+        SELECT * FROM sub_sessions_with_attributes
+        WHERE criteria_name = "POPULATION"
+    ) spans
     -- Add 1 row per criteria type to ensure all are included in the results
     INNER JOIN (
         SELECT DISTINCT state_code, criteria_name
@@ -270,8 +210,8 @@ represents an eligible or ineligible period for each individual.
     LEFT JOIN criteria_spans criteria
         ON spans.state_code = criteria.state_code
         AND spans.person_id = criteria.person_id
-        AND spans.start_date
-            BETWEEN criteria.start_date AND DATE_SUB(criteria.end_date, INTERVAL 1 DAY)
+        AND spans.start_date BETWEEN criteria.start_date
+            AND DATE_SUB({nonnull_end_date_clause('criteria.end_date')}, INTERVAL 1 DAY)
         AND all_criteria.criteria_name = criteria.criteria_name
     GROUP BY 1,2,3,4
 ),
