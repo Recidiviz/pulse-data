@@ -1437,6 +1437,26 @@ class TestSamenessPerRowValidationResultDetails(TestCase):
             result.failure_description(),
         )
 
+    def test_failure_very_small_error(self) -> None:
+        result = SamenessPerRowValidationResultDetails(
+            failed_rows=[
+                (ResultRow(label_values=(), comparison_values=(100000, 99999)), 0.00001)
+            ],
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
+            "1 row(s) had unacceptable margins of error. Of those rows, 1 row(s) exceeded the "
+            "hard threshold and 0 row(s) exceeded the soft threshold. "
+            "The acceptable margin of error is only 0.0 (hard) and 0.0 (soft), "
+            "but the validation returned rows with errors as high as 0.0.",
+            result.failure_description(),
+        )
+
     def test_failure_multiple_rows(self) -> None:
         result = SamenessPerRowValidationResultDetails(
             failed_rows=[
