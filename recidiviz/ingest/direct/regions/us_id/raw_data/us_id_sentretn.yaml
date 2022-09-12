@@ -41,3 +41,4 @@ columns:
     description: |-
       If present, the date the rider was deemed unsuccessful. At this point in time the underlying sentence dates take
       over.
+always_historical_export: True

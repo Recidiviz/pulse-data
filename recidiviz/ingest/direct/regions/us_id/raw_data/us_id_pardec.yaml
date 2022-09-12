@@ -12,3 +12,4 @@ columns:
     description: |-
       Description of parole hearing decision
   - name: tpd_lost
+always_historical_export: True

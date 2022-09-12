@@ -26,3 +26,4 @@ columns:
   - name: fac_cd
     description: |-
       Code for the facility that the employee works from.
+always_historical_export: True

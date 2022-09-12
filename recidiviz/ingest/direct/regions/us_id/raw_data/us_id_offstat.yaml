@@ -117,3 +117,4 @@ columns:
   - name: law_cd
     description: |-
       Unknown
+always_historical_export: True
