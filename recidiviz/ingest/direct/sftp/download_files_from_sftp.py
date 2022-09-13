@@ -225,17 +225,21 @@ class DownloadFilesFromSftpController:
                     content_type=BYTES_CONTENT_TYPE,
                 )
                 logging.info("Post processing %s", path.uri())
-                self.downloaded_items.extend(
-                    [
-                        (
-                            downloaded_file,
-                            file_timestamp,
-                        )
-                        for downloaded_file in self.delegate.post_process_downloads(
-                            path, self.gcsfs
-                        )
-                    ]
+                downloaded_files = self.delegate.post_process_downloads(
+                    path, self.gcsfs
                 )
+                if not downloaded_files:
+                    self.unable_to_download_items.append(file_path)
+                else:
+                    self.downloaded_items.extend(
+                        [
+                            (
+                                downloaded_file,
+                                file_timestamp,
+                            )
+                            for downloaded_file in downloaded_files
+                        ]
+                    )
             except IOError as e:
                 logging.info(
                     "Could not download %s into %s: %s",

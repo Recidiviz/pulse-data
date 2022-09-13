@@ -776,7 +776,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                             f"{unable_to_download_text}"
                             f" {unable_to_upload_text}"
                             f"{skipped_text}",
-                            HTTPStatus.MULTI_STATUS,
+                            HTTPStatus.BAD_REQUEST,
                         )
 
                     if not upload_result.successes and upload_result.skipped:
