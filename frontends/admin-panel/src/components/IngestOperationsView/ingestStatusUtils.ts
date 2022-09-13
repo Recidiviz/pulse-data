@@ -24,6 +24,11 @@ export interface DirectIngestStatusFormattingInfo {
   message: string;
 }
 
+export interface IngestQueuesCellFormattingInfo {
+  color: string;
+  sortRank: number;
+}
+
 const statusFormattingInfo: {
   [status: string]: DirectIngestStatusFormattingInfo;
 } = {
@@ -118,6 +123,41 @@ export const getStatusSortedOrder = (): string[] => {
   return Object.values(statusFormattingInfo)
     .sort((info) => info.sortRank)
     .map((info) => info.status);
+};
+
+const queueStatusColorDict: {
+  [color: string]: IngestQueuesCellFormattingInfo;
+} = {
+  PAUSED: {
+    color: "queue-status-not-running",
+    sortRank: 1,
+  },
+  MIXED_STATUS: {
+    color: "queue-status-not-running",
+    sortRank: 2,
+  },
+  UNKNOWN: {
+    color: "queue-status-not-running",
+    sortRank: 3,
+  },
+  RUNNING: {
+    color: "queue-status-running",
+    sortRank: 4,
+  },
+};
+
+export const getQueueColor = (queueInfo: string): string => {
+  return queueStatusColorDict[queueInfo].color;
+};
+
+export const getQueueStatusSortedOrder = (
+  queueInfo: string | undefined
+): number => {
+  if (!queueInfo) {
+    return 0;
+  }
+
+  return queueStatusColorDict[queueInfo].sortRank;
 };
 
 export function getGCPBucketURL(

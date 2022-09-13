@@ -18,8 +18,12 @@
 import { Alert, Layout, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
+import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
-import { getAllIngestInstanceStatuses } from "../../AdminPanelAPI";
+import {
+  getAllIngestInstanceStatuses,
+  getIngestQueuesState,
+} from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
 import {
   INGEST_ACTIONS_PRIMARY_ROUTE,
@@ -29,10 +33,15 @@ import NewTabLink from "../NewTabLink";
 import {
   IngestInstanceStatusInfo,
   IngestInstanceStatusResponse,
+  QueueMetadata,
+  QueueState,
   StateCodeInfo,
+  StateIngestQueuesStatuses,
 } from "./constants";
 import IngestPageHeader from "./IngestPageHeader";
 import {
+  getQueueColor,
+  getQueueStatusSortedOrder,
   getStatusBoxColor,
   getStatusMessage,
   getStatusSortedOrder,
@@ -45,6 +54,53 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       getAllIngestInstanceStatuses
     );
 
+  const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
+    useState<StateIngestQueuesStatuses | undefined>(undefined);
+  useEffect(() => {
+    if (ingestInstanceStatuses === undefined) {
+      return;
+    }
+    const loadAllStatesQueueStatuses = async (): Promise<void> => {
+      const stateCodes = Object.keys(ingestInstanceStatuses);
+      // For each state code, request info about all ingest queues for that state
+      const queueStatusResponses = await Promise.all(
+        stateCodes.map(async (stateCode) => getIngestQueuesState(stateCode))
+      );
+      // Extract JSON data from each of those responses
+      const queueStatusResponsesJson = await Promise.all(
+        queueStatusResponses.map(
+          async (queueStatusResponse): Promise<QueueMetadata[]> =>
+            queueStatusResponse.json()
+        )
+      );
+      // For each list of queue info objects, collapse into a single summary
+      // QueueState for that state.
+      const queueStatusSummaries: QueueState[] = queueStatusResponsesJson.map(
+        (queueInfos): QueueState => {
+          return queueInfos
+            .map((queueInfo) => queueInfo.state)
+            .reduce((acc: QueueState, state: QueueState) => {
+              if (acc === QueueState.UNKNOWN) {
+                return state;
+              }
+              if (acc === state) {
+                return acc;
+              }
+              return QueueState.MIXED_STATUS;
+            }, QueueState.UNKNOWN);
+        }
+      );
+      // Turn lists back into map of stateCode -> QueueStatus
+      const stateCodeToQueueStatus = Object.fromEntries(
+        stateCodes.map((stateCode, index) => {
+          return [stateCode, queueStatusSummaries[index]];
+        })
+      );
+      setStateIngestQueueStatuses(stateCodeToQueueStatus);
+    };
+    loadAllStatesQueueStatuses();
+  }, [ingestInstanceStatuses]);
+
   if (loading) {
     return (
       <div className="center">
@@ -54,8 +110,13 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
   }
 
   if (ingestInstanceStatuses === undefined) {
-    throw new Error(
-      "Expected ingestInstanceStatuses to be defined once loading is complete."
+    return (
+      <>
+        <Alert
+          message="Failed to load ingest instance summary info."
+          type="error"
+        />
+      </>
     );
   }
 
@@ -75,6 +136,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       stateCode: key,
       primary: primaryStatus,
       secondary: secondaryStatus,
+      queueInfo: stateIngestQueueStatuses
+        ? stateIngestQueueStatuses[key]
+        : undefined,
     };
   });
 
@@ -87,10 +151,20 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     );
   };
 
+  const renderIngestQueuesCell = (queueInfo: string | undefined) => {
+    if (queueInfo === undefined) {
+      return <Spin />;
+    }
+    const queueColor = getQueueColor(queueInfo);
+
+    return <div className={classNames(queueColor)}>{queueInfo}</div>;
+  };
+
   const columns: ColumnsType<{
     stateCode: string;
     primary: string;
     secondary: string;
+    queueInfo: string | undefined;
   }> = [
     {
       title: "State Code",
@@ -122,6 +196,17 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.secondary) -
         getStatusSortedOrder().indexOf(b.secondary),
+    },
+    {
+      title: "Queue Status",
+      dataIndex: "queueInfo",
+      key: "queueInfo",
+      render: (queueInfo: string) => (
+        <span>{renderIngestQueuesCell(queueInfo)}</span>
+      ),
+      sorter: (a, b) =>
+        getQueueStatusSortedOrder(a.queueInfo) -
+        getQueueStatusSortedOrder(b.queueInfo),
     },
   ];
 
