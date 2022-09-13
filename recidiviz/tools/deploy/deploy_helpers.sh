@@ -411,10 +411,11 @@ function deploy_migrations {
   deployment_bot_message $PROJECT "🚨 There was an error running migrations using the Cloud SQL Proxy"
   echo "There was an error running migrations using the Cloud SQL Proxy"
   echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
+
+  # TODO(#14842): Remove this once prod-data-client is deprecated
   script_prompt "Would you like to use prod-data-client to re-run the migrations? [no exits the script]"
 
   echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
-  # TODO(#14842): Remove this once prod-data-client is deprecated
   # The remote migration execution script doesn't play nice with run_cmd
   gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
       && git fetch --all --tags --prune --prune-tags \

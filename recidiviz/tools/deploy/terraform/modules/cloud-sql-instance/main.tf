@@ -84,6 +84,7 @@ variable "insights_config" {
   default = null
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 # Used for allowing access from `prod-data-client` to the CloudSQL instance
 data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "prod_data_client_cidr" }
 
@@ -186,6 +187,7 @@ resource "google_sql_database_instance" "data" {
       ipv4_enabled = true
       require_ssl  = var.require_ssl_connection
 
+      # TODO(#14874): Remove when prod-data-client has been deprecated
       authorized_networks {
         name  = "prod-data-client"
         value = data.google_secret_manager_secret_version.prod_data_client_cidr.secret_data
@@ -240,40 +242,46 @@ resource "google_sql_user" "readonly" {
 }
 
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 # Create a client certificate for the `prod-data-client`
 resource "google_sql_ssl_cert" "client_cert" {
   instance    = google_sql_database_instance.data.name
   common_name = "prod-data-client-${local.stripped_cloudsql_instance_id}"
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 # Store client key in a secret
 resource "google_secret_manager_secret" "secret_client_key" {
   secret_id = "${var.base_secret_name}_db_client_key"
   replication { automatic = true }
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 resource "google_secret_manager_secret_version" "secret_version_client_key" {
   secret      = google_secret_manager_secret.secret_client_key.name
   secret_data = google_sql_ssl_cert.client_cert.private_key
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 # Store client certificate in a secret
 resource "google_secret_manager_secret" "secret_client_cert" {
   secret_id = "${var.base_secret_name}_db_client_cert"
   replication { automatic = true }
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 resource "google_secret_manager_secret_version" "secret_version_client_cert" {
   secret      = google_secret_manager_secret.secret_client_cert.name
   secret_data = google_sql_ssl_cert.client_cert.cert
 }
 
+# TODO(#14874): Remove when prod-data-client has been deprecated
 # Store server certificate in a secret
 resource "google_secret_manager_secret" "secret_server_cert" {
   secret_id = "${var.base_secret_name}_db_server_cert"
   replication { automatic = true }
 }
-
+# TODO(#14874): Remove when prod-data-client has been deprecated
 resource "google_secret_manager_secret_version" "secret_version_server_cert" {
   secret      = google_secret_manager_secret.secret_server_cert.name
   secret_data = google_sql_database_instance.data.server_ca_cert[0].cert

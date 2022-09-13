@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TODO(#14842): Remove this once prod-data-client is deprecated
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
