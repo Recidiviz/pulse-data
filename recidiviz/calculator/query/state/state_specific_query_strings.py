@@ -18,7 +18,7 @@
 # pylint: disable=anomalous-backslash-in-string
 
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
@@ -713,7 +713,7 @@ def pathways_state_specific_supervision_level(
     """
 
 
-def get_all_primary_supervision_external_id_types() -> tuple:
+def get_all_primary_supervision_external_id_types() -> Tuple[str, ...]:
     """Returns a tuple of strings that indicate all of the state external id types for queries."""
     supervision_id_types = []
     for state in get_supported_states():
@@ -721,8 +721,8 @@ def get_all_primary_supervision_external_id_types() -> tuple:
             state_code=state.value,
             required_delegates={StateSpecificSupervisionMetricsProducerDelegate},
         ).get(StateSpecificSupervisionMetricsProducerDelegate.__name__)
-        if delegate and delegate.primary_person_external_id_to_include():
-            supervision_id_types.append(
-                delegate.primary_person_external_id_to_include()
-            )
-    return tuple(supervision_id_types)
+        if delegate and (
+            external_id := delegate.primary_person_external_id_to_include()
+        ):
+            supervision_id_types.append(external_id)
+    return tuple(sorted(supervision_id_types))

@@ -28,7 +28,7 @@ MAGIC_START_DATE = "1000-01-01"
 def exclude_rows_with_missing_fields(required_columns: Set[str]) -> str:
     """Returns a WHERE clause to filter out rows that are missing values for any of the
     given columns"""
-    conditions = [f"{column} IS NOT NULL" for column in required_columns]
+    conditions = [f"{column} IS NOT NULL" for column in sorted(required_columns)]
     return f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
 

@@ -321,10 +321,11 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
             keep_original: If true, keeps the unaggregated values around as their own
                 rows in addition to the aggregated rows. Defaults to False.
         """
-        all_columns: List[str] = list(partition_columns)
+        all_columns: List[str] = sorted(partition_columns)
 
         select_clauses: List[str] = []
-        for column, aggregation in context_columns.items():
+        for column in sorted(context_columns.keys()):
+            aggregation = context_columns[column]
             if aggregation is self.ContextAggregation.ANY:
                 column_clause = f"ANY_VALUE({column})"
             elif aggregation is self.ContextAggregation.ARRAY:
@@ -338,16 +339,18 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
             else:
                 raise ValueError(f"Unsupported context aggregation: {aggregation}")
             select_clauses.append(f"{column_clause} AS {column}")
-        all_columns.extend(context_columns)
+        all_columns.extend(sorted(context_columns))
 
         value_columns_clause = ", ".join(
-            f"SUM({column}) AS {column}" for column in value_columns
+            f"SUM({column}) AS {column}" for column in sorted(value_columns)
         )
-        all_columns.extend(value_columns)
+        all_columns.extend(sorted(value_columns))
 
         dimensions_to_keep_clause = ", ".join(
-            f"'{dimension.dimension_identifier()}'"
-            for dimension in partition_dimensions
+            sorted(
+                f"'{dimension.dimension_identifier()}'"
+                for dimension in partition_dimensions
+            )
         )
 
         should_group_values = "TRUE"
@@ -364,9 +367,11 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
             input_table=input_view.view_id,
             all_columns_clause="".join(f"{column}, " for column in all_columns),
             partition_columns_clause="".join(
-                f"{column}, " for column in partition_columns
+                f"{column}, " for column in sorted(partition_columns)
             ),
-            select_columns_clause="".join(f"{clause}, " for clause in select_clauses),
+            select_columns_clause="".join(
+                f"{clause}, " for clause in sorted(select_clauses)
+            ),
             value_columns_clause=value_columns_clause,
             dimensions_to_keep_clause=dimensions_to_keep_clause,
             collapse_dimensions_filter=collapse_dimensions_filter,
