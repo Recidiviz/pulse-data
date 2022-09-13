@@ -229,8 +229,8 @@ class DirectIngestInstanceStatusManager:
 
         if current_status is None:
             raise ValueError(
-                "Initial statuses for a state must be set via a migration. There should always be a current row for "
-                "ingest instance statuses."
+                f"[{self.region_code}][{self.ingest_instance.value}] Initial statuses for a state must be set via a "
+                "migration. There should always be a current row for ingest instance statuses."
             )
 
         if (

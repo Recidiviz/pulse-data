@@ -78,8 +78,8 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         )
         if not results:
             raise ValueError(
-                "Initial statuses for a state must be set via a migration. There should always be a current row for "
-                "ingest instance statuses."
+                f"[{self.region_code}][{self.ingest_instance.value}] Initial statuses for a state must be set via a "
+                "migration. There should always be a current row for ingest instance statuses."
             )
 
         return self._direct_ingest_instance_status_as_entity(results)
