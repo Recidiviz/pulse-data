@@ -58,7 +58,7 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
     WITH offset AS stay_type_priority
     )
     ,
-    periods_cte AS
+    periods_with_priority_cte AS
     /*
     This CTE is the overlapping input periods, but with non-null end dates and with the deduplication priority columns
     added
