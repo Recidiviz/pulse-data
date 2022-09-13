@@ -45,6 +45,7 @@ def get_sqlalchemy_url() -> str:
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
+    # TODO(#14842): Remove this once prod-data-client is deprecated
     use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, "0"))
 
     if use_ssl not in {0, 1}:
@@ -119,6 +120,8 @@ def _get_sqlalchemy_url(use_ssl: bool = True) -> str:
         host=host,
         port=port,
     )
+
+    # TODO(#14842): Remove this once prod-data-client is deprecated
     if use_ssl:
         ssl_key_path = os.getenv(SQLALCHEMY_SSL_KEY_PATH)
         ssl_cert_path = os.getenv(SQLALCHEMY_SSL_CERT_PATH)

@@ -346,6 +346,7 @@ class SQLAlchemyEngineManager:
     def update_sqlalchemy_env_vars(
         cls,
         database_key: SQLAlchemyDatabaseKey,
+        # TODO(#14842): Remove this once prod-data-client is deprecated
         ssl_cert_path: Optional[str] = None,
         migration_user: bool = False,
         readonly_user: bool = False,
@@ -478,6 +479,7 @@ class SQLAlchemyEngineManager:
         engine = create_engine(url)
         return engine
 
+    # TODO(#14842): Remove this once prod-data-client is deprecated
     @classmethod
     @environment.local_only
     def get_engine_for_database_with_ssl_certs(

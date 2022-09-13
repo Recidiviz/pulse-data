@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
+# TODO(#14874): Remove this script when prod-data-client has been deprecated
 set -e
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
