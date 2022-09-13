@@ -219,16 +219,22 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
             min_datetimes_contained,
             max_datetimes_contained,
         ) in file_tag_to_min_and_max_contained_datetimes.items():
-            if (
-                file_tag in raw_file_configs.keys()
-                and raw_file_configs[file_tag].always_historical_export is False
-            ):
+            if file_tag not in raw_file_configs.keys():
                 logging.info(
-                    "Skipping data clearing for %s since it has `always_historical_export` set to False.",
+                    "[%s][Skipping] File tag found in Postgres but not in raw YAML files.",
                     file_tag,
                 )
                 continue
-
+            if raw_file_configs[file_tag].always_historical_export is False:
+                logging.info(
+                    "[%s][Skipping] `always_historical_export` set to False.",
+                    file_tag,
+                )
+                continue
+            logging.info(
+                "[%s] `always_historical_export` set to True. Moving forward with raw data pruning.",
+                file_tag,
+            )
             file_ids_to_delete: List[int] = get_redundant_raw_file_ids(
                 session,
                 state_code,
