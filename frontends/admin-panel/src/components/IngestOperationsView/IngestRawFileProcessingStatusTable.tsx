@@ -24,13 +24,10 @@ import {
   optionalNumberSort,
   optionalStringSort,
 } from "../Utilities/GeneralUtilities";
-import {
-  FILE_TAG_IGNORED_IN_SUBDIRECTORY,
-  FILE_TAG_UNNORMALIZED,
-  IngestRawFileProcessingStatus,
-} from "./constants";
+import { IngestRawFileProcessingStatus } from "./constants";
 import RawDataFileTagContents from "./IngestOperationsComponents/RawDataFileTagContents";
 import RawDataHasConfigFileCellContents from "./IngestOperationsComponents/RawDataHasConfigFileCellContents";
+import RawDataLatestProcessedDateCellContents from "./IngestOperationsComponents/RawDataLatestProcessedDateCellContents";
 
 interface IngestRawFileProcessingStatusTableProps {
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
@@ -72,10 +69,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         dataIndex: "fileTag",
         key: "fileTag",
         render: (_, record) => (
-          <RawDataHasConfigFileCellContents
-            status={record}
-            storageDirectoryPath={storageDirectoryPath}
-          />
+          <RawDataHasConfigFileCellContents status={record} />
         ),
         sorter: {
           compare: (a, b) => a.fileTag.localeCompare(b.fileTag),
@@ -121,7 +115,12 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         title: "Last Processed",
         dataIndex: "latestProcessedTime",
         key: "latestProcessedTime",
-        render: (_, record) => renderLatestProcessedTime(record),
+        render: (_, record) => (
+          <RawDataLatestProcessedDateCellContents
+            status={record}
+            storageDirectoryPath={storageDirectoryPath}
+          />
+        ),
         sorter: (a, b) =>
           optionalStringSort(a.latestProcessedTime, b.latestProcessedTime),
       },
@@ -218,22 +217,4 @@ function calculateIsTooFarBeforeLatestDiscoveryTime(
     allFilesLatestDiscoveryTime.getTime() - discoveryTime.getTime() >
     1000 * 60 * 60 * 24; // over 24 hours past latest discovery time
   return tooFarPastLatestDiscoveryTime;
-}
-
-function renderLatestProcessedTime(status: IngestRawFileProcessingStatus) {
-  const { fileTag, hasConfig, latestProcessedTime } = status;
-
-  if (fileTag === FILE_TAG_IGNORED_IN_SUBDIRECTORY) {
-    return <div className="ingest-caution">N/A - Ignored</div>;
-  }
-
-  if (fileTag === FILE_TAG_UNNORMALIZED) {
-    <div className="ingest-danger">N/A - Unknown file tag</div>;
-  }
-
-  return (
-    <div>
-      {hasConfig ? latestProcessedTime : "N/A - No Raw Config File Available"}
-    </div>
-  );
 }
