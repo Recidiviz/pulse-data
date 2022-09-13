@@ -98,7 +98,7 @@ tr.metadata-table-row > td.ant-table-cell > div {
 }
 /* Actions and Summaries*/
 
-.ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow {
+.ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow, .queue-status-running, .queue-status-not-running {
   height: 60px;
   width: 450px;
   padding: 10px;
@@ -117,6 +117,16 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .ingest-status-cell-yellow {
   color: #000000;
   background-color: #ffff00;
+}
+
+.queue-status-running {
+  color: #ffffff;
+  background-color: #389e0d;
+}
+
+.queue-status-not-running {
+  color: #ffffff;
+  background-color: #f5222d;
 }
 
 .ingest-caution {

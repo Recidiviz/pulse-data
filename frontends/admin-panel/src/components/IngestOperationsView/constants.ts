@@ -27,6 +27,8 @@ export const SPECIAL_FILE_TAGS = [
 export enum QueueState {
   PAUSED = "PAUSED",
   RUNNING = "RUNNING",
+  MIXED_STATUS = "MIXED_STATUS",
+  UNKNOWN = "UNKNOWN",
 }
 
 export type QueueMetadata = {
@@ -98,4 +100,8 @@ export type IngestRawFileProcessingStatus = {
 export type StateCodeInfo = {
   code: string;
   name: string;
+};
+
+export type StateIngestQueuesStatuses = {
+  [stateCode: string]: QueueState;
 };
