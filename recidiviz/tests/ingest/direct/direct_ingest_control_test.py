@@ -1188,7 +1188,7 @@ class TestDirectIngestControl(unittest.TestCase):
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
-        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
         target=RecidivizSftpConnection,
@@ -1259,7 +1259,7 @@ class TestDirectIngestControl(unittest.TestCase):
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
-        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
         target=RecidivizSftpConnection,
@@ -1329,7 +1329,7 @@ class TestDirectIngestControl(unittest.TestCase):
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
-        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     @patch.object(
         target=RecidivizSftpConnection,
