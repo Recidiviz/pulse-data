@@ -404,8 +404,8 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 num_processed_files=1,
                 latest_processed_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
                 latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
-                latest_datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2015, 1, 2, 3, 7, 7
+                latest_processed_datetimes_contained_upper_bound_inclusive=datetime.datetime(
+                    2015, 1, 2, 3, 5, 5
                 ),
             ),
             DirectIngestRawFileMetadataSummary(
@@ -414,9 +414,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 num_processed_files=0,
                 latest_processed_time=None,
                 latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 6, 6),
-                latest_datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2015, 1, 2, 3, 6, 6
-                ),
+                latest_processed_datetimes_contained_upper_bound_inclusive=None,
             ),
         ]
 

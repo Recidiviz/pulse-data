@@ -396,7 +396,7 @@ class IngestOperationsStore(AdminPanelStore):
                 "numberProcessedFiles": 0,
                 "latestDiscoveryTime": None,
                 "latestProcessedTime": None,
-                "latestContainedDateUpperBoundInclusive": None,
+                "latestProcessedDatetimeContainedUpperBoundInclusive": None,
             }
 
             if file_tag in tags_with_configs:
@@ -417,8 +417,8 @@ class IngestOperationsStore(AdminPanelStore):
                     "latestProcessedTime": summary.latest_processed_time.isoformat()
                     if summary.latest_processed_time
                     else None,
-                    "latestContainedDateUpperBoundInclusive": summary.latest_datetimes_contained_upper_bound_inclusive
-                    if summary.latest_datetimes_contained_upper_bound_inclusive
+                    "latestProcessedDatetimeContainedUpperBoundInclusive": summary.latest_processed_datetimes_contained_upper_bound_inclusive.isoformat()
+                    if summary.latest_processed_datetimes_contained_upper_bound_inclusive
                     else None,
                 }
             all_file_tag_metadata.append(file_tag_metadata)

@@ -19,7 +19,6 @@ import { IngestRawFileProcessingStatus, SPECIAL_FILE_TAGS } from "../constants";
 
 interface RenderRawDataFileTagProps {
   status: IngestRawFileProcessingStatus;
-  storageDirectoryPath: string; // TODO(#15070) Add storage bucket link to file tag when datetimes_contained_upper_bound_inclusive available
 }
 
 const RawDataHasConfigFileCellContents: React.FC<RenderRawDataFileTagProps> = ({

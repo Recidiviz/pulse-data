@@ -19,7 +19,7 @@ import datetime
 from typing import List, Optional
 
 from more_itertools import one
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
@@ -161,8 +161,16 @@ def get_all_raw_file_metadata_rows_for_region(
                 "latest_discovery_time"
             ),
             func.max(
-                schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive
-            ).label("latest_datetimes_contained_upper_bound_inclusive"),
+                case(
+                    [
+                        (
+                            schema.DirectIngestRawFileMetadata.processed_time.is_(None),
+                            None,
+                        )
+                    ],
+                    else_=schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive,
+                )
+            ).label("latest_processed_datetimes_contained_upper_bound_inclusive"),
         )
         .filter_by(
             region_code=region_code.upper(),
@@ -179,7 +187,13 @@ def get_all_raw_file_metadata_rows_for_region(
             num_unprocessed_files=result.num_unprocessed_files,
             latest_processed_time=result.latest_processed_time,
             latest_discovery_time=result.latest_discovery_time,
-            latest_datetimes_contained_upper_bound_inclusive=result.latest_datetimes_contained_upper_bound_inclusive,
+            latest_processed_datetimes_contained_upper_bound_inclusive=result.latest_processed_datetimes_contained_upper_bound_inclusive
+            if not isinstance(
+                result.latest_processed_datetimes_contained_upper_bound_inclusive, str
+            )
+            else datetime.datetime.fromisoformat(
+                result.latest_processed_datetimes_contained_upper_bound_inclusive
+            ),
         )
         for result in results
     ]
