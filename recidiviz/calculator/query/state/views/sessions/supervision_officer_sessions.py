@@ -66,7 +66,7 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
                 session.end_date,
                 session.dataflow_session_id,
                 -- Only count an officer toward an officer change once if officer was not present at all in preceding session
-                MIN(IF(session_lag.supervising_officer_external_id = session.supervising_officer_external_id, 0, 1)) AS officer_changed
+                MIN(IF(COALESCE(session_lag.supervising_officer_external_id, "UNKNOWN") = COALESCE(session.supervising_officer_external_id, "UNKNOWN"), 0, 1)) AS officer_changed
             FROM sub_sessions_attributes_unnested session
             LEFT JOIN sub_sessions_attributes_unnested as session_lag
                 ON session.state_code = session_lag.state_code
