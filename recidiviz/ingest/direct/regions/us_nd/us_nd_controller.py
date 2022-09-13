@@ -143,8 +143,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "elite_offendersentenceaggs",
             "elite_offendersentences",
             "elite_offendersentenceterms",
-            "elite_offenderchargestable",
-            "elite_orderstable",
+            "elite_state_charges",
             "elite_externalmovements_incarceration_periods",
         ]
 
