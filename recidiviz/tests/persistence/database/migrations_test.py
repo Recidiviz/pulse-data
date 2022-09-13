@@ -293,7 +293,7 @@ class TestOperationsMigrations(MigrationsTestBase):
             op.execute(
                 f"""
                    DELETE FROM direct_ingest_instance_status
-                   WHERE region_code = 'US_XX');
+                   WHERE region_code = 'US_XX';
                """
             )
         ```
