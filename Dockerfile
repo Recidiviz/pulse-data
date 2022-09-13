@@ -31,17 +31,14 @@ RUN yarn build
 
 FROM node:14-alpine as justice-counts-build
 
-WORKDIR /usr/justice-counts/control-panel
-COPY ./frontends/justice-counts/control-panel/package.json /usr/justice-counts/control-panel
-COPY ./frontends/justice-counts/control-panel/yarn.lock /usr/justice-counts/control-panel
-COPY ./frontends/justice-counts/control-panel/tsconfig.json /usr/justice-counts/control-panel
+ARG JC_FRONTEND_BRANCH="main"
+ADD https://github.com/Recidiviz/justice-counts/archive/${JC_FRONTEND_BRANCH}.tar.gz .
+RUN tar xvfz ${JC_FRONTEND_BRANCH}.tar.gz 
+RUN mv /justice-counts-${JC_FRONTEND_BRANCH} /justice-counts
 
+WORKDIR /justice-counts/publisher
 RUN yarn config set network-timeout 300000
 RUN yarn
-
-COPY ./frontends/justice-counts/control-panel/src /usr/justice-counts/control-panel/src
-COPY ./frontends/justice-counts/control-panel/public /usr/justice-counts/control-panel/public
-
 RUN yarn build
 
 FROM ubuntu:focal
@@ -127,7 +124,7 @@ COPY . /app
 # Add the built Admin Panel, Case Triage, and Justice Counts frontends to the image
 COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
 COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/build
-COPY --from=justice-counts-build /usr/justice-counts/control-panel/build /app/frontends/justice-counts/control-panel/build
+COPY --from=justice-counts-build /justice-counts/publisher/build /app/frontends/justice-counts/publisher/build
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
