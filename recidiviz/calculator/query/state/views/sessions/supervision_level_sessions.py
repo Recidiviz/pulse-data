@@ -88,7 +88,7 @@ SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
                     session.start_date,
                     session.end_date,
                     session.dataflow_session_id,
-                    MIN(IF(session_lag.supervision_level = session.supervision_level, 0, 1)) AS level_changed,
+                    MIN(IF(COALESCE(session_lag.supervision_level, "UNKNOWN") = COALESCE(session.supervision_level, "UNKNOWN"), 0, 1)) AS level_changed,
                     MAX(session_lag.start_date) IS NULL AS date_gap
                 FROM deduped_cte session
                 LEFT JOIN deduped_cte as session_lag
