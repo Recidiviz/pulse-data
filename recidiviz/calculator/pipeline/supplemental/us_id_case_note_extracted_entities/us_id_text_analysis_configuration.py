@@ -104,6 +104,7 @@ class UsIdTextEntity(TextEntity):
         RegexFuzzyMatcher(search_regex=(r".*nco(\s|/|-).*|.*(-|/|\s)nco.*|^NCO")),
         RegexFuzzyMatcher(search_regex=(r".*no contact.*")),
     ]
+    # TODO(#15276) fix c/s, c.s.
     COMMUNITY_SERVICE = [
         ScoringFuzzyMatcher(search_term="community service"),
         ScoringFuzzyMatcher(search_term="community serv"),
@@ -122,25 +123,25 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="community service refl"),
         ScoringFuzzyMatcher(search_term="completed service hours"),
         ScoringFuzzyMatcher(search_term="community svc completed"),
-        RegexFuzzyMatcher(search_regex=(r".*COM[M\.]*\.*\s*(SERV|SVC).*")),
-        RegexFuzzyMatcher(search_regex=(r".*COMMUNITYSERVICE.*")),
-        RegexFuzzyMatcher(search_regex=(r".* C/S.*|.*C/S .*|.*C\.S\S*.*")),
+        RegexFuzzyMatcher(search_regex=(r".*com[m\.]*\.*\s*(serv|svc).*")),
+        RegexFuzzyMatcher(search_regex=(r".*communityservice.*")),
+        RegexFuzzyMatcher(search_regex=(r".* c/s.*|.*c/s .*|.*c\.s\s*.*")),
         RegexFuzzyMatcher(
-            search_regex=(r".*CS.*(HOURS|HRS).*|.*(HRS|HOURS).*[^R]CS[^C].*")
+            search_regex=(r".*cs.*(hours|hrs).*|.*(hrs|hours).*[^R]cs[^C].*")
         ),
     ]
-    DUI = [RegexFuzzyMatcher(search_regex=(r".*DUI.*"))]
+    DUI = [RegexFuzzyMatcher(search_regex=(r".*dui.*"))]
     NOT_M_DUI = [
         RegexFuzzyMatcher(
             search_regex=(
-                r".*DUIN.*|.*FELONY.*|.*COURT.*|.*PANEL.*|.*VICTIM.*|.*ADUIT.*"
+                r".*duin.*|.*felony.*|.*court.*|.*panel.*|.*victim.*|.*aduit.*"
             )
         )
     ]
     SSDI_SSI = [
         RegexFuzzyMatcher(
             search_regex=(
-                r".*SSDI[^G].*|.*[^A]SSDI.*|^SSDI|^SSI$|^SSI(\s|/|-)|.*[^APO]SSI(\s|/|-)|.*(\s|/|-)SSI[^G].*|.*(\s|/|-)SSI$"
+                r".*ssdi[^g].*|.*[^a]ssdi.*|^ssdi|^ssi$|^ssi(\s|/|-)|.*[^apo]ssi(\s|/|-)|.*(\s|/|-)ssi[^g].*|.*(\s|/|-)ssi$"
             )
         )
     ]
