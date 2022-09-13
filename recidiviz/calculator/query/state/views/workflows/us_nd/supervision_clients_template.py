@@ -15,9 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ND Workflows supervision clients."""
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
-US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
+US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     supervision_cases AS (
         # This CTE returns a row for each person and supervision sentence, so will return multiple rows if someone
         # is on dual supervision (parole and probation)
@@ -26,13 +27,19 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
           person_external_id,
           compartment_level_2 AS supervision_type,
           supervising_officer_external_id AS officer_id,
-          projected_end_date AS expiration_date 
-        FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` dataflow
-        INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+          projected_end.projected_completion_date_max AS expiration_date
+        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_single_day_supervision_population_metrics_materialized` dataflow
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
           ON dataflow.state_code = sessions.state_code
           AND dataflow.person_id = sessions.person_id
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
+            ON dataflow.state_code = projected_end.state_code
+            AND dataflow.person_id = projected_end.person_id
+            AND dataflow.date_of_supervision
+                BETWEEN projected_end.start_date
+                    AND {nonnull_end_date_clause('projected_end.end_date')}
         WHERE dataflow.state_code = 'US_ND'
         AND supervising_officer_external_id IS NOT NULL
     ),
@@ -43,7 +50,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
           person_id,
           most_recent_active_supervision_level AS supervision_level,
           start_date as supervision_level_start,  
-        FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
         WHERE state_code = "US_ND"
         AND end_date IS NULL
     ),
@@ -53,7 +60,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
       SELECT
         person_id,
         start_date
-      FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
+      FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
       WHERE state_code = "US_ND"
       AND end_date IS NULL
     ),
@@ -63,8 +70,8 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
             state_code, 
             external_id AS person_external_id, 
             PHONE AS phone_number
-        FROM `{project_id}.{us_nd_raw_data}.docstars_offenders_latest` doc
-        INNER JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
+        FROM `{{project_id}}.{{us_nd_raw_data}}.docstars_offenders_latest` doc
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
     ),
@@ -87,14 +94,14 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
-        INNER JOIN `{project_id}.{state_dataset}.state_person` sp USING(person_id)
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
         LEFT JOIN phone_numbers ph USING(person_external_id)
     ),
     eligibility AS (
         SELECT
             external_id AS person_external_id,
             TRUE AS early_termination_eligible
-        FROM `{project_id}.{workflows_dataset}.us_nd_complete_discharge_early_from_supervision_record_materialized`
+        FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
     ),
     nd_clients AS (
         SELECT 

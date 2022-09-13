@@ -111,9 +111,9 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         SELECT
             state_code,
             person_id,
-            start_date AS completion_date
+            DATE_ADD(end_date, INTERVAL 1 DAY) AS completion_date
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-        WHERE compartment_level_1 = "LIBERTY"
+        WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
             AND state_code NOT IN ('{special_states}')
     ),
     /*

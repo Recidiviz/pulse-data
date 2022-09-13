@@ -141,6 +141,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_level_sessions 
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
+    SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -284,4 +287,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     SENTENCE_SPANS_VIEW_BUILDER,
+    SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
 ]
