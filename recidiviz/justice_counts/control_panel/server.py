@@ -62,7 +62,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     static_folder = os.path.abspath(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            "../../../frontends/justice-counts/control-panel/build/",
+            "../../../frontends/justice-counts/publisher/build/",
         )
     )
     if in_development():
