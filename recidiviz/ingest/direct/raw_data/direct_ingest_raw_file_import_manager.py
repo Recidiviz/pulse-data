@@ -43,7 +43,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
-from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct import raw_data, regions
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -60,6 +60,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
+from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 DATETIME_SQL_REGEX = re.compile(
@@ -535,6 +536,21 @@ class DirectIngestRegionRawFileConfig:
                     yaml_contents,
                     filename,
                 )
+
+                # Validates the original configuration file against our JSON schema. We
+                # do this last because these errors are very cryptic and its much easier
+                # to debug errors from failures above.However, we still want to do this
+                # validation so that we don't forget to add JSON schema (and therefore
+                # IDE) support for new features in the language.
+                if not environment.in_gcp():
+                    # Run schema validation in tests / CI
+                    YAMLDict.from_path(yaml_file_path).validate(
+                        json_schema_path=os.path.join(
+                            os.path.dirname(raw_data.__file__),
+                            "yaml_schema",
+                            "schema.json",
+                        )
+                    )
         else:
             raise ValueError(
                 f"Missing raw data configs for region: {self.region_code}. "
