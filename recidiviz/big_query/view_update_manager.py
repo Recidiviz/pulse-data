@@ -273,6 +273,7 @@ def build_views_to_update(
 ) -> List[BigQueryView]:
     """Returns the list of views that should be updated, built from builders in the |candidate_view_builders| list."""
 
+    logging.info("Building [%s] views...", len(candidate_view_builders))
     views_to_update = []
     for view_builder in candidate_view_builders:
         if view_builder.dataset_id in view_source_table_datasets:

@@ -24,7 +24,7 @@ from google.cloud import bigquery
 from recidiviz.common import attr_validators
 
 
-@attr.s(frozen=True, kw_only=True)
+@attr.s(frozen=True, kw_only=True, order=True)
 class BigQueryAddress:
     """Represents the (dataset_id, table_id) address of a BigQuery view or table."""
 

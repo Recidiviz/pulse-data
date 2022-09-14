@@ -170,6 +170,16 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # ignored by the mappings, the entire enum entity will be filtered out.
     filter_predicate: Optional[Callable[[EntityT], bool]] = attr.ib(default=None)
 
+    def __attrs_post_init__(self) -> None:
+        common_args_defined_in_manifest = set(self.common_args).intersection(
+            set(self.field_manifests)
+        )
+        if common_args_defined_in_manifest:
+            raise ValueError(
+                f"Found fields defined in the manifest which are set automatically by "
+                f"the parse: {common_args_defined_in_manifest}"
+            )
+
     @property
     def result_type(self) -> Type[EntityT]:
         return self.entity_cls

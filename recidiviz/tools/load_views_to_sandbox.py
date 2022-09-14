@@ -14,34 +14,75 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A script for writing all regularly updated views in BigQuery to a set of temporary
+"""A script for writing regularly updated views in BigQuery to a set of temporary
 datasets. Used during development to test updates to views.
 
-This can be run on-demand whenever locally with the following command:
+To load all views that have changed since the last view deploy, run:
     python -m recidiviz.tools.load_views_to_sandbox \
-        --project_id [PROJECT_ID] \
-        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
-        --dataflow_dataset_override [DATAFLOW_DATASET_OVERRIDE] \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto
+
+
+To load all views that have changed since the last view deploy, but exclude some
+datasets when considering which views have changed, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --changed_datasets_to_ignore [DATASET_ID_1,DATASET_ID_2,...]
+
+To manually choose which views to load, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] manual \
         --view_ids_to_load [DATASET_ID_1.VIEW_ID_1,DATASET_ID_2.VIEW_ID_2,...] \
         --dataset_ids_to_load [DATASET_ID_1,DATASET_ID_2,...] \
         --update_ancestors [True,False] \
         --update_descendants [True,False]
+
+To load ALL views to a sandbox (this should be used only in rare circumstances), run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] all
+
+
+To view more info on arguments that can be used with any of the sub-commands (i.e. auto,
+manual, all), run:
+   python -m recidiviz.tools.load_views_to_sandbox --help
+
+
+To view more info on arguments that can be used with any particular sub-command, run:
+   python -m recidiviz.tools.load_views_to_sandbox auto --help
+
+   OR
+
+   python -m recidiviz.tools.load_views_to_sandbox all --help
+
+   OR
+
+   python -m recidiviz.tools.load_views_to_sandbox manual --help
 """
 import argparse
 import logging
-from typing import List, Optional, Set
+import sys
+from enum import Enum
+from typing import Dict, Iterable, List, Optional, Set
+
+from google.api_core import exceptions
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
 from recidiviz.big_query.view_update_manager import (
+    build_views_to_update,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
+from recidiviz.common.git import (
+    get_hash_of_deployed_commit,
+    is_commit_in_current_branch,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -156,7 +197,6 @@ def _load_manually_filtered_views_to_sandbox(
         else None
     )
 
-    logging.info("Gathering all deployed views...")
     view_builders = deployed_view_builders(project_id())
 
     collector = BigQueryViewSubDagCollector(
@@ -179,6 +219,157 @@ def _load_manually_filtered_views_to_sandbox(
     )
 
 
+class ViewChangeType(Enum):
+    ADDED = "ADDED"
+    UPDATED = "UPDATED"
+
+
+def _get_all_views_changed_on_branch(
+    full_dag_walker: BigQueryViewDagWalker,
+) -> Dict[BigQueryAddress, ViewChangeType]:
+    bq_client = BigQueryClientImpl()
+
+    def check_for_change(
+        v: BigQueryView, _parent_results: Dict[BigQueryView, Optional[ViewChangeType]]
+    ) -> Optional[ViewChangeType]:
+        try:
+            t = bq_client.get_table(
+                bq_client.dataset_ref_for_id(v.address.dataset_id),
+                v.address.table_id,
+            )
+        except exceptions.NotFound:
+            if not v.should_deploy():
+                return None
+
+            return ViewChangeType.ADDED
+
+        if t.view_query != v.view_query:
+            return ViewChangeType.UPDATED
+
+        return None
+
+    results = full_dag_walker.process_dag(check_for_change)
+    return {
+        view.address: change_type
+        for view, change_type in results.items()
+        if change_type
+    }
+
+
+def _get_changed_views_to_load_to_sandbox(
+    view_builders_in_full_dag: List[BigQueryViewBuilder],
+    changed_datasets_to_ignore: Optional[List[str]],
+) -> Set[BigQueryAddress]:
+    """Returns addresses for all views that have been added / updated since the last
+    deploy and whose dataset is not in |changed_datasets_to_ignore|.
+    """
+    all_views = build_views_to_update(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        candidate_view_builders=view_builders_in_full_dag,
+        address_overrides=None,
+    )
+    logging.info("Constructing DAG with all known views...")
+    full_dag_walker = BigQueryViewDagWalker(all_views)
+    logging.info("Checking for changes against [%s] BigQuery...", project_id())
+    changed_view_addresses = _get_all_views_changed_on_branch(full_dag_walker)
+
+    added_view_addresses = set()
+    updated_view_addresses = set()
+    ignored_changed_addresses = set()
+    for address, change_type in changed_view_addresses.items():
+        if (
+            changed_datasets_to_ignore
+            and address.dataset_id in changed_datasets_to_ignore
+        ):
+            ignored_changed_addresses.add(address)
+
+        if change_type == ViewChangeType.ADDED:
+            added_view_addresses.add(address)
+        elif change_type == ViewChangeType.UPDATED:
+            updated_view_addresses.add(address)
+        else:
+            raise ValueError(
+                f"Unexpected change_type [{change_type}] for view [{address}]"
+            )
+
+    if added_view_addresses:
+        logging.info(
+            "Found the following view(s) which have been ADDED \n%s",
+            _sorted_address_list_str(added_view_addresses),
+        )
+    if updated_view_addresses:
+        logging.info(
+            "Found the following view(s) which have been UPDATED \n%s",
+            _sorted_address_list_str(updated_view_addresses),
+        )
+    if ignored_changed_addresses:
+        logging.info(
+            "IGNORING changes to the following view(s) \n%s",
+            _sorted_address_list_str(ignored_changed_addresses),
+        )
+
+    for ignored_address in ignored_changed_addresses:
+        change_type = changed_view_addresses[ignored_address]
+        if change_type == ViewChangeType.ADDED:
+            logging.error(
+                "Cannot exclude dataset [%s] from sandbox - found new view [%s] which "
+                "has not yet been deployed.",
+                ignored_address.dataset_id,
+                ignored_address,
+            )
+            sys.exit(1)
+
+    return set(changed_view_addresses) - ignored_changed_addresses
+
+
+def _confirm_rebased_on_latest_deploy() -> None:
+    last_deployed_commit = get_hash_of_deployed_commit(project_id())
+
+    if is_commit_in_current_branch(last_deployed_commit):
+        logging.error(
+            "Cannot find commit [%s] in the current branch, which is the commit last "
+            "deployed to [%s]. You must rebase this branch before using `auto` mode.",
+            last_deployed_commit,
+            project_id(),
+        )
+
+
+def _load_views_changed_on_branch_to_sandbox(
+    *,
+    sandbox_dataset_prefix: str,
+    dataflow_dataset_override: Optional[str],
+    changed_datasets_to_ignore: Optional[List[str]],
+) -> None:
+    _confirm_rebased_on_latest_deploy()
+
+    view_builders_in_full_dag = deployed_view_builders(project_id())
+
+    changed_views_to_load = _get_changed_views_to_load_to_sandbox(
+        view_builders_in_full_dag, changed_datasets_to_ignore
+    )
+
+    sub_dag_collector = BigQueryViewSubDagCollector(
+        view_builders_in_full_dag=view_builders_in_full_dag,
+        view_addresses_in_sub_dag=changed_views_to_load,
+        dataset_ids_in_sub_dag=None,
+        include_ancestors=False,
+        include_descendants=True,
+        datasets_to_exclude=_datasets_to_exclude_from_sandbox(
+            dataflow_dataset_override
+        ),
+    )
+
+    _load_collected_views_to_sandbox(
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        dataflow_dataset_override=dataflow_dataset_override,
+        sandbox_view_builder_collector=sub_dag_collector,
+    )
+
+
+def _sorted_address_list_str(addresses: Iterable[BigQueryAddress]) -> str:
+    return "\n".join([f"- {a.dataset_id}.{a.table_id}" for a in sorted(addresses)])
+
+
 def _load_collected_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
@@ -189,6 +380,10 @@ def _load_collected_views_to_sandbox(
     logging.info("Gathering views to load to sandbox...")
 
     collected_builders = sandbox_view_builder_collector.collect_view_builders()
+    logging.info(
+        "Will load the following views to the sandbox: \n%s",
+        _sorted_address_list_str({b.address for b in collected_builders}),
+    )
 
     logging.info("Updating %s views...", len(collected_builders))
 
@@ -216,7 +411,8 @@ def parse_arguments() -> argparse.Namespace:
         dest="project_id",
         type=str,
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
+        default=GCP_PROJECT_STAGING,
+        required=False,
     )
 
     parser.add_argument(
@@ -237,7 +433,15 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    parser.add_argument(
+    subparsers = parser.add_subparsers(
+        title="Load to sandbox modes",
+        description="Valid load_views_to_sandbox subcommands",
+        help="additional help",
+        dest="chosen_mode",
+    )
+    parser_manual = subparsers.add_parser("manual")
+
+    parser_manual.add_argument(
         "--view_ids_to_load",
         dest="view_ids_to_load",
         help="A list of view_ids to load separated by commas. If provided, only loads "
@@ -248,7 +452,7 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    parser.add_argument(
+    parser_manual.add_argument(
         "--dataset_ids_to_load",
         dest="dataset_ids_to_load",
         help="A list of dataset_ids to load separated by commas. If provided, only "
@@ -257,7 +461,7 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    parser.add_argument(
+    parser_manual.add_argument(
         "--update_ancestors",
         dest="update_ancestors",
         help="If True, will load views that are ancestors of those provided in "
@@ -267,7 +471,7 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    parser.add_argument(
+    parser_manual.add_argument(
         "--update_descendants",
         dest="update_descendants",
         help="If True, will load views that are descendants of those provided in "
@@ -276,6 +480,20 @@ def parse_arguments() -> argparse.Namespace:
         default=True,
         required=False,
     )
+
+    parser_auto = subparsers.add_parser("auto")
+    parser_auto.add_argument(
+        "--changed_datasets_to_ignore",
+        dest="changed_datasets_to_ignore",
+        help="A list of dataset ids (comma-separated) for datasets we should skip when "
+        "detecting which views have changed. Views in these datasets will still "
+        "be loaded to the sandbox if they are downstream of other views not in these "
+        "datasets which have been changed.",
+        type=str_to_list,
+        required=False,
+    )
+
+    subparsers.add_parser("all")
 
     return parser.parse_args()
 
@@ -292,12 +510,12 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     with local_project_id_override(args.project_id):
-        if not args.view_ids_to_load and not args.dataset_ids_to_load:
+        if args.chosen_mode == "all":
             load_all_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 dataflow_dataset_override=args.dataflow_dataset_override,
             )
-        else:
+        elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 dataflow_dataset_override=args.dataflow_dataset_override,
@@ -306,3 +524,11 @@ if __name__ == "__main__":
                 update_ancestors=args.update_ancestors,
                 update_descendants=args.update_descendants,
             )
+        elif args.chosen_mode == "auto":
+            _load_views_changed_on_branch_to_sandbox(
+                sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                dataflow_dataset_override=args.dataflow_dataset_override,
+                changed_datasets_to_ignore=args.changed_datasets_to_ignore,
+            )
+        else:
+            raise ValueError(f"Unexpected load to sandbox mode: [{args.chosen_mode}]")

@@ -16,6 +16,7 @@
 # =============================================================================
 """Views that are regularly updated with the deploy and rematerialized with metric exports.."""
 import itertools
+import logging
 from typing import Dict, List, Set
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -57,6 +58,7 @@ from recidiviz.validation.views.view_config import (
 
 
 def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
+    logging.info("Gathering all deployed view builders...")
     return list(
         itertools.chain(
             CASE_TRIAGE_VIEW_BUILDERS,
