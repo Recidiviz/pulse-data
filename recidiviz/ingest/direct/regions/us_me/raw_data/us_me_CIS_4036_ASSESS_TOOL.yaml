@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4036_ASSESS_TOOL
 file_description: |-
   The code table for the assessment tool that was used.

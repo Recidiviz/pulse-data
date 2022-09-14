@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offenderidentifier
 file_description: |-
   Each row represents some unique external identifier provided by DOCR data systems for a particular person. In effect,

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_BdActionProcessed
 file_description: |-
   A table describing when board actions were processed. NOT REFRESHED REGULARLY.

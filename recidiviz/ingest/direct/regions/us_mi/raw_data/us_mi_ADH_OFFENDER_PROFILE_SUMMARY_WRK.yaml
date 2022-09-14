@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_PROFILE_SUMMARY_WRK
 file_description: |-
   This table holds profile information about a person involved in MDOC that is linked

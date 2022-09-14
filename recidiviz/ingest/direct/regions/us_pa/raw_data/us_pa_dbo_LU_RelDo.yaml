@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LU_RelDo
 file_description: |-
   A lookup table mapping district office codes to human-readable district office names.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LSIHistory
 file_description: |-
   A table containing LSIR assessments which have been conducted for people under supervision by PADOC.

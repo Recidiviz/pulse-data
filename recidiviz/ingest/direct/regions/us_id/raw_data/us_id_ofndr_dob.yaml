@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_dob
 file_description: |-
   Has a single row for every person that has ever been under IDOC authority for whom we have birthdate information.

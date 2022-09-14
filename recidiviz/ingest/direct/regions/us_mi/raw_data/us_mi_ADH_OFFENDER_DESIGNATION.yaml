@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_DESIGNATION
 file_description: |-
   This table contains data for each individual's designation (such as administrative segregation) in the MDOC system

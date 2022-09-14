@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_309_MOVEMENT
 file_description: |-
   This table records movements to/from and between DOC facilities. It includes information about the movement type,

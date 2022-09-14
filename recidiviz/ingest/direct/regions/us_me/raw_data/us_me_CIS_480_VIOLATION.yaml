@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_480_VIOLATION
 file_description: |-
   This table lists violations that occurred while someone was on community supervision. If a client was on SCCP

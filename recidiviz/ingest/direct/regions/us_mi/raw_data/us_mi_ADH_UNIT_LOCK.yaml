@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_UNIT_LOCK
 file_description: |-
   This table contains all of the units within facilities that accompany a person's movement 

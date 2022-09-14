@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4012_CRT_ORDER_TYPE
 file_description: |-
   This is a code table that lists court order types.

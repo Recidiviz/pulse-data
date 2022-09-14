@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: bci_caution_cd
 file_description: |-
   Code table with descriptions for types of caution notes for incarcerated persons or

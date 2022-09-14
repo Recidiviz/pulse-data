@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SAIUFinding
 file_description: |-
   This table contains one occurrence for the results of an SAIU (Sentence Alternative Incarceration Unit) findings request for a specified TOMIS ID.

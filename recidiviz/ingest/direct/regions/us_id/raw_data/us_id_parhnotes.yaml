@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: parhnotes
 file_description: |-
   Contains notes on parole hearings.

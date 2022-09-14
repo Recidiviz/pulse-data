@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LU_PBPP_Organization
 file_description: |-
   A lookup table mapping organization unit codes to the context of that organizational unit within the broader PBPP.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_900_EMPLOYEE
 file_description: |-
   This table includes all of the DOC employees and their type, location, and supervisor.

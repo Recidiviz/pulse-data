@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sentprob
 file_description: |-
   Contains a new row for every probation sentence ever tracked by IDOC.

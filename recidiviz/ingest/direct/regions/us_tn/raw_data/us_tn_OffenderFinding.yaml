@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OffenderFinding
 file_description: |-
   This table contains one occurrence for each finding that is discovered about the person. These findings include counselling, drug treatment, AA, etc.

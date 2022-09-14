@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_grievances
 file_description: |-
   Each row represents a grievance filed by an incarcerated person within the facility they are incarcerated, e.g. a

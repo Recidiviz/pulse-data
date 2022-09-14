@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_3142_TRAN_TYP_RSN
 file_description: |-
   This table lists transfer type reasons. These values are not required by the form and not often selected.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK142
 file_description: |-
   Finally Formed Documents. Column prefix: E6.

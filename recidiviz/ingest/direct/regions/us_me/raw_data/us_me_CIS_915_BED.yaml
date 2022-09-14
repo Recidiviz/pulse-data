@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_915_BED
 file_description: |-
   This is a bed code table that has a relationship to the CIS_914_CELL table and lists a bed and the cell it is located in.

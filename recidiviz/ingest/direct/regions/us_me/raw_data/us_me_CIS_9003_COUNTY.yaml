@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9003_COUNTY
 file_description: |-
   This table lists all of the counties in Maine and the codes associated with them.

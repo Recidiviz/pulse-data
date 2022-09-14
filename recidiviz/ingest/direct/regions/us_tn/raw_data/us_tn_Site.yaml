@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Site
 file_description: |-
   This entity describes any organizational or physical unit to which a person  or staff person can be assigned. These types include adult institutions, agencies, parole, probation, or community serivice offices, local jails, or institution jails. Staff here represents the warden, office supervisor, etc.

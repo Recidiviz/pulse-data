@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AssignedStaff
 file_description: |-
   This table contains at least one occurrence of each staff member assigned to a person, whether in custody, on parole or on probation.

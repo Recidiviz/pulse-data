@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
 file_description: |-
   Supervision Enhancements.

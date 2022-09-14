@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1800_DISCIPLINARY_DECISION
 file_description: |-
   This lists the descriptions for disciplinary decisions related to violations or incidents.

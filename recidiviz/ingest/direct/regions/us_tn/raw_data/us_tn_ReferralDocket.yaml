@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ReferralDocket
 file_description: |-
   This table contains 1 row for each docket number for a referral for a person.

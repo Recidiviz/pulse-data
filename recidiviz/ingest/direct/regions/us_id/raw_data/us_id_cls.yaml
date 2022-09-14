@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cls
 file_description: |-
   List of aftercare courses provided by IDOC.

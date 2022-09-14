@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_OffenderDetails
 file_description: |-
   A table containing demographic information for people who have been supervised by PADOC.

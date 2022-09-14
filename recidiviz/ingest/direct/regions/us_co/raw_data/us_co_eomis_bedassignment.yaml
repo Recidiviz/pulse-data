@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_bedassignment
 file_description: |-
   This file contains information on a person's bed assignment within a facility.

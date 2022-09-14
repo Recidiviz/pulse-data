@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Base_Curr_Off_Pop
 file_description: |-
   Contains information about all of the people who are incarcerated as of the current

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_ofnrelatedaddress
 file_description: |-
   This file contains address information and details for a person.

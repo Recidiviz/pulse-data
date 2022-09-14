@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: treatment_classification_codes
 file_description: |-
   Classification Codes Mapped to Treatment Type in US_PA. Takes the TrtClassCode field and parses it to show the code and the description of that code. 

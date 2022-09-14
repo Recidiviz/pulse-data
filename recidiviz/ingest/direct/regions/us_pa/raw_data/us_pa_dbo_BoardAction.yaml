@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_BoardAction
 file_description: |-
   A table describing actions taken by the Pennsylvania Board of Parole and Probation in response to some action taken by

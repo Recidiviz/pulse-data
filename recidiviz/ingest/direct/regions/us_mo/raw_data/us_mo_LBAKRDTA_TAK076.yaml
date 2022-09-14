@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK076
 file_description: |-
   Sentence / Violation Xref. Column prefix: CZ.

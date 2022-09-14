@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_plannedmovement
 file_description: |-
   This file documents planned upcoming movements for incarcerated individuals.

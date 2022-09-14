@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Interview
 file_description: |-
   A table listing interviews that have been conducted for people under supervision as part of some board action to be

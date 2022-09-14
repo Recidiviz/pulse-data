@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_908_CCS_LOCATION
 file_description: |-
   This table maps a location ID (Ccs_Location_Id) to details about that location. The location types include

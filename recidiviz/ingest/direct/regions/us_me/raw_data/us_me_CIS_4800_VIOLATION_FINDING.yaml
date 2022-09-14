@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4800_VIOLATION_FINDING
 file_description: |-
   This lists the violation finding codes and their descriptions.

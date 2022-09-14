@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: county
 file_description: |-
   A code table that has details for every county in Idaho.

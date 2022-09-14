@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_Offender_Address
 file_description: |-
   This table contains information on periods of residence for each individual and address. 

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: early_discharge_sent
 file_description: |-
   Contains a single row for each early discharge and sentence combination. When a decision about early discharge is

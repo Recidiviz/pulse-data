@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: applc_usr
 file_description: |-
   Code table that has a single row for all past and present IDOC employees. This table does NOT include

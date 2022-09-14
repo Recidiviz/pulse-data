@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_914_CELL
 file_description: |-
   This is the pod cell code table that has a relationship to the CIS_913_POD table and lists a cell and the pod it is located in.

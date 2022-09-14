@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_2042_PERSON_CONTACTED
 file_description: |-
   This code table lists the type of person that was contacted for the contact note.

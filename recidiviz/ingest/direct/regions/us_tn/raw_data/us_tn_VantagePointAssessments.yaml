@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: VantagePointAssessments
 file_description: |-
   This table contains the results of assessments given to people in the jurisdiction of TDOC.

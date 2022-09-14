@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_409_CRT_ORDER_CNDTION_HDR
 file_description: |-
   This is a join table between CIS_401_CRT_ORDER_HDR and CIS_403_CONDITION using the Cis_408_Condition_Hdr_Id column.

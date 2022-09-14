@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DoPro_Participant
 file_description: |-
   A list of all participants in the dosage probation pilot program, including their start date and treatment group. Contains one row for each participant.

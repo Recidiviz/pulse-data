@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sbstnc_tst
 file_description: |-
   Contains a row for every substance test requested.

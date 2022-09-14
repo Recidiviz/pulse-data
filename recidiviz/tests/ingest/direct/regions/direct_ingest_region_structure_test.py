@@ -66,6 +66,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 from recidiviz.utils.environment import GCPEnvironment
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
+YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
+    r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
+)
 
 
 class DirectIngestRegionDirStructureBase:
@@ -247,6 +250,31 @@ class DirectIngestRegionDirStructureBase:
                             column.name
                         )
                         self.test.assertEqual(column.name, normalized_column_name)
+
+    def test_raw_files_yaml_define_schema_pragma(self) -> None:
+        for region_code in self.region_dir_names:
+            raw_file_manager = DirectIngestRegionRawFileConfig(
+                region_code=region_code,
+                region_module=self.region_module_override,
+            )
+
+            for config_path in raw_file_manager.get_raw_data_file_config_paths():
+                with open(config_path, encoding="utf-8") as f:
+                    line = f.readline()
+                    match = re.match(YAML_LANGUAGE_SERVER_PRAGMA, line.strip())
+                    if not match:
+                        raise ValueError(
+                            f"First line of raw data config file [{config_path}] does "
+                            "not match expected pattern."
+                        )
+                    relative_schema_path = match.group("schema_path")
+                    abs_schema_path = os.path.normpath(
+                        os.path.join(os.path.dirname(config_path), relative_schema_path)
+                    )
+                    if not os.path.exists(abs_schema_path):
+                        raise ValueError(
+                            f"Schema path [{abs_schema_path}] does not exist."
+                        )
 
     @parameterized.expand(
         [

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: behavior_evaluation_action_dates
 file_description: |-
   Date associated with review/modification of evaluation form.

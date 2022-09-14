@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Sentence
 file_description: |-
   This entity stores information about each sentence which applies to a certain offense.  This includes suspendedsentences, probation, SAIU, etc.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Offender
 file_description: |-
   This table contains one occurrence for each person in the TOMIS system. It contains location information used throughout the system. It is the "parent" table for associated person tables.

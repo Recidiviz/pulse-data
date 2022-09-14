@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_401_CRT_ORDER_HDR
 file_description: |-
   This table includes information related to the client's sentence and is related to the CIS_319_TERM table.

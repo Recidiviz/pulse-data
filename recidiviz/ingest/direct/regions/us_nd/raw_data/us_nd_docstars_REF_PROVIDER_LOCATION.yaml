@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_REF_PROVIDER_LOCATION
 file_description: |-
   Each row represents a Free Through Recovery (FTR) provider location. These are actual

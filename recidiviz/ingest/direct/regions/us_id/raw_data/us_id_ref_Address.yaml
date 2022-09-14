@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Address
 file_description: |-
   This table contains information about recorded addresses for each person.  A person may have one, none, or multiple address records in this table.

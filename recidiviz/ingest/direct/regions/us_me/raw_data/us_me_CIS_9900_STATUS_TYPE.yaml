@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9900_STATUS_TYPE
 file_description: |-
   This is a code table mapping the status type code to values for program enrollment statuses.

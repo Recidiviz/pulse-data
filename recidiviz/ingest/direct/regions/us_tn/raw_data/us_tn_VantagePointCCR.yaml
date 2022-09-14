@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: VantagePointCCR
 file_description: |-
   This table is used to store STRONG-R CCR Details from Vant4gePoint.

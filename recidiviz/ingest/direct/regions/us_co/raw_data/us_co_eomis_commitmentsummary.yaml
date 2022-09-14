@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_commitmentsummary
 file_description: |-
   This file contains text sumarizing the commitment.

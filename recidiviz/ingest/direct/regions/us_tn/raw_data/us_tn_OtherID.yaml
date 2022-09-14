@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OtherID
 file_description: |-
   This entity stores a record for each person identification number no longer used by the Department of Correction to track the person.  This identification number may be an OBSCIS ID or a TOMIS ID that has been deleted because the person hadanother TOMIS ID.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_CHARGE
 file_description: |-
   This table contains all information about the charges against a person.

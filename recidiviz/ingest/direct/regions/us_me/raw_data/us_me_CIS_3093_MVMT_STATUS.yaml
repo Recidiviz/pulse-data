@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_3093_MVMT_STATUS
 file_description: |-
   This is a code table with one row per code and description. The movement status code is used in the

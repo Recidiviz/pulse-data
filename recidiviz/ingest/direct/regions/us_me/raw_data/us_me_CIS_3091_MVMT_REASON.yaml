@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_3091_MVMT_REASON
 file_description: |-
   This table lists movement reasons. These values are not required by the form and not often selected.

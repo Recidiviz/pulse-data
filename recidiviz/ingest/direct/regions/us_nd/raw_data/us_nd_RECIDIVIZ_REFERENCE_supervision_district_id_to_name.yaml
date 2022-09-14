@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RECIDIVIZ_REFERENCE_supervision_district_id_to_name
 file_description: |-
   Recidiviz-generated mapping of ND supervision district ids to their human-readable name.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: judge
 file_description: |-
   A code table that details extra information about all judges in Idaho.

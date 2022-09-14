@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: MO_CASEPLAN_GOALS_DB2
 file_description: |-
   Supervision Case Plan Goals. This table contains the goals, known as the long-term outcomes, connected to a person's target in their Case Plans. 

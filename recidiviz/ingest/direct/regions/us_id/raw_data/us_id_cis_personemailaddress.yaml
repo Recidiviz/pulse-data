@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cis_personemailaddress
 file_description: |-
   Used to fetch the known email addresses of people on supervision.

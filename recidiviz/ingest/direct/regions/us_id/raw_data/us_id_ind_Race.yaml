@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_Race
 file_description: |-
   This table is a reference table for the race type reference codes used in the table ind_Offender

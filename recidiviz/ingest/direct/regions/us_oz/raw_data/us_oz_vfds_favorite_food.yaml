@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: vfds_favorite_food
 file_description: |-
   Contains information about people's favorite food. The table is setup to be able to

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_425_MAIN_PROG
 file_description: |-
   This table lists the programs that a client is enrolled in.

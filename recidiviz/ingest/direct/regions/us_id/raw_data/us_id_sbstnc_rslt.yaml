@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sbstnc_rslt
 file_description: |-
   It appears to be the case that if no row is present for a given `tst_id`, the assumption is that it is a negative (based off an example walked through with IDOC IT).

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_codevaluedesc
 file_description: |-
   This file contains datanames for codevalues and their descriptions to inform other tables known values.

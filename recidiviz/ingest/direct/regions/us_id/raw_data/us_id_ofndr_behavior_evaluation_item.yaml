@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_behavior_evaluation_item
 file_description: |-
   Contains a record for each behavior identified by a PO on the behavior response matrix form

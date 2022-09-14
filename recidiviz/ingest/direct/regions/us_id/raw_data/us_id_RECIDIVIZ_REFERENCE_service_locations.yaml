@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RECIDIVIZ_REFERENCE_service_locations
 file_description: |-
   Recidiviz-generated list of service providers in Idaho, including address and lat/lon location.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4004_CHARGE_MODE
 file_description: |-
   This table lists code values for charge modes.

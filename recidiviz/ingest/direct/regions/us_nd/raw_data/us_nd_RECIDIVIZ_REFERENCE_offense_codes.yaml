@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RECIDIVIZ_REFERENCE_offense_codes
 file_description: |-
   A static list of offense codes specific to North Dakota's Elite system. These represent basic metadata about the

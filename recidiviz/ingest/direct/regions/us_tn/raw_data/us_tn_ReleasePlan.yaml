@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ReleasePlan
 file_description: |-
   This table contains one occurrence of each employment plan submitted by the person for parole consideration.

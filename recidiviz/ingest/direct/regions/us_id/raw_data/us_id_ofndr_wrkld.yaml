@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_wrkld
 file_description: |-
   Contains a new row for every supervision level span that a person on IDOC supervision has ever had.

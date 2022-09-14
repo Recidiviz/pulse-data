@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Miscon
 file_description: |-
   A table describing conduct events that have taken place in a carceral setting involving an incarcerated person. This

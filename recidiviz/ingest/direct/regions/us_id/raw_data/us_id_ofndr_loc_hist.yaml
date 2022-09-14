@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_loc_hist
 file_description: |-
   Contains a mapping between people and the reason they were assigned to their current facility.

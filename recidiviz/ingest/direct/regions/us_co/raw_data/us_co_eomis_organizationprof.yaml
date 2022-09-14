@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_organizationprof
 file_description: |-
   This provides details on all of the organizations and locations in the state. The

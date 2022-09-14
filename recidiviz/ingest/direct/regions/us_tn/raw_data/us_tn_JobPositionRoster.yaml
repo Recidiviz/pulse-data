@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: JobPositionRoster
 file_description: |-
   This table contains one occurrence for every position available within a job code at the specified site.

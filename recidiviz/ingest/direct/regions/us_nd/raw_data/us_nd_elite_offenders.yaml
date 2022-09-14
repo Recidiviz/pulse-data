@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offenders
 file_description: |-
   Each row represents a single person who has been or is currently incarcerated. This contains basic demographic

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_livingunits
 file_description: |-
   Each row represents a particular living unit which is available for people to be incarcerated in within a particular

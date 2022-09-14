@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_cls_sctn
 file_description: |-
   This table matches persons in IDOC custody with classes they have enrolled in.

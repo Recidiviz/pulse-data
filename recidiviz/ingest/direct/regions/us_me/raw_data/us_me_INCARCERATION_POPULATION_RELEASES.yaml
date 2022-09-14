@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: INCARCERATION_POPULATION_RELEASES
 file_description: |-
   This is an external validation report that lists all the releases from both incarceration and supervision. Contrary to its name it actually has data for all types of releases:

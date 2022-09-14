@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1163_LSI_OVERRIDE_TYPE
 file_description: |-
   This is a code table for the reasons associated with overriding an LSI rating for a client's supervision level.

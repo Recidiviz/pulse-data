@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OffenderSentenceSummary
 file_description: |-
   This table contains one occurrence for each person. It summarizes all dates for all sentences pertaining to the person.

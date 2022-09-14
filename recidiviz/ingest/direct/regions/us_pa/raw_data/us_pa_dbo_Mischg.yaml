@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Mischg
 file_description: |-
   A table with additional charge information about "misconduct" events involving incarcerated people. This provides

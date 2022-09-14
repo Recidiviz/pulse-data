@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_ftr_episode
 file_description: |-
   Each row represents a particular instance of a referral of a particular person to a particular program within

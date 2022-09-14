@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_caution
 file_description: |-
   Contains one record for each caution note entered for incarcerated persons or

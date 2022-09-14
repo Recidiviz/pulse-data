@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: gd_dogs
 file_description: |-
   People love dogs. It's been proven so many times. But sometimes they can't manage the

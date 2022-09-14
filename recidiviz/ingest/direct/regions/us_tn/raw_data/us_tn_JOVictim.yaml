@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: JOVictim
 file_description: |-
   This table contains one occurrence for each victim of a count of a judgment order. There can be only one victim per count.

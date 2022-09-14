@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_EMPLOYEE_BOOKING_ASSIGNMENT
 file_description: |-
   Table containing employees assigned to oversee people under a given jurisdiction in MIDOC.

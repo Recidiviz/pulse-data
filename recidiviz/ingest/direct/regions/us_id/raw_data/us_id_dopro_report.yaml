@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dopro_report
 file_description: |-
   A list of participant contacts in the dosage probation pilot program. Contains one row for contact all participants have had.

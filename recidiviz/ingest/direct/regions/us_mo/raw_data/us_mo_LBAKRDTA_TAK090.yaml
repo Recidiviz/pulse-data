@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK090
 file_description: |-
   Fines and Fees for Presumptive Release Dates. Column prefix: DD. # TODO(#13474) Fill in definition with more details.

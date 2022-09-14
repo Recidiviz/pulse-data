@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cis_personaddress
 file_description: |-
   Contains a new row for each address that a person under IDOC custody ever had.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9012_GENDER
 file_description: |-
   This table maps the gender code to the description.

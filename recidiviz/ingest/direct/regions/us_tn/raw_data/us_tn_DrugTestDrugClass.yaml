@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DrugTestDrugClass
 file_description: |-
   This is the drug test drug class table used to record drug test drug class test results.

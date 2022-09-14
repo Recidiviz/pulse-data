@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_FACILITY_COUNT_SHEET
 file_description: |-
   Table containing the most recent facility count sheet

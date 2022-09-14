@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Senrec
 file_description: |-
   A table containing sentences to incarceration to be served under the authority of PADOC. This includes information

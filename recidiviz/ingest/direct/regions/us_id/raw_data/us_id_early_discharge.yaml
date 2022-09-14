@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: early_discharge
 file_description: |-
   Contains a single row for every early discharge request form that is filled out, either by a PO or by the person

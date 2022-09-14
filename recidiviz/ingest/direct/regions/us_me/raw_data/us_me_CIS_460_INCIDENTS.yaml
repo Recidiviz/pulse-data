@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_460_INCIDENTS
 file_description: |-
   This table has incidents reported for a client that is either incarcerated or on Supervised Community Confinement.

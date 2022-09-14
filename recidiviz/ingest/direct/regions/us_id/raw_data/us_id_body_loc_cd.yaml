@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: body_loc_cd
 file_description: |-
   A code table that gives extra information about specific locations. These locations often refer to employee

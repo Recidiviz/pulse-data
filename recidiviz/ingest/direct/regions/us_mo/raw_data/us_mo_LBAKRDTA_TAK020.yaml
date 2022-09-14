@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK020
 file_description: |-
   Parole Board Actions. Column prefix: BQ # TODO(#13474) Fill in definition with more details.

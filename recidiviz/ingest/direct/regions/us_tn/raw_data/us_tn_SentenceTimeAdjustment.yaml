@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SentenceTimeAdjustment
 file_description: |-
   This table contains information about dead, delinquent, or street time a person  has received for a particular time period for a particular sentence. There is one occurrence for each debit to the offender's sentence.

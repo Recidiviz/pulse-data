@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: pardec
 file_description: |-
   Code table that provides descriptions for parole hearing decisions.

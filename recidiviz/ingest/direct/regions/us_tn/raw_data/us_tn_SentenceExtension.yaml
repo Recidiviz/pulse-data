@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SentenceExtension
 file_description: |-
   This table contains one occurrence for each extension posted for the person's sentence.

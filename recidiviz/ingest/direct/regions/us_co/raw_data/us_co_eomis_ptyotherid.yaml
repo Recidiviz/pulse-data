@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_ptyotherid
 file_description: |-
   This file contains additional information around incarceration and movements.

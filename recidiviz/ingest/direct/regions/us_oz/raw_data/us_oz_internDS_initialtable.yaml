@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: internDS_initialtable
 file_description: |-
   Contains information about people tracked in internDS.

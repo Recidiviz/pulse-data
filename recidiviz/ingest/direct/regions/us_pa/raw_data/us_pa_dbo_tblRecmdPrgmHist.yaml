@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_tblRecmdPrgmHist
 file_description: |-
   A table containing referrals to programming for people previously incarcerated.

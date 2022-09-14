@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LU_BoardActionClass
 file_description: |-
   A lookup table with codes describing possible board action classifications.

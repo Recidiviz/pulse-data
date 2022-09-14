@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1016_CLIENT_CODE
 file_description: |-
   This table includes codes that are referenced in other raw tables in the system. The Cis_1015_Client_Sub_Type_Cd can

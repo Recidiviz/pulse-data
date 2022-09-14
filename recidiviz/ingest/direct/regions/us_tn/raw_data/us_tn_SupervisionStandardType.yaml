@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SupervisionStandardType
 file_description: |-
   This table contains one occurrance for each Supervision Standard Type associated with a particular Supervision Std.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK025
 file_description: |-
   Sentence / Status Xref. Column prefix: BV.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_lgl_stat
 file_description: |-
   Contains a single row for current legal status as it exists in the Idaho CIS system.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CodesDescription
 file_description: |-
   This table contains definitions for codes present in the tables sent by STS.

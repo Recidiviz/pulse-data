@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_2150_SEX_OFF_ASSESS_TYPE
 file_description: |-
   The code table mapping the type of assessment for non-LSI assessments. See the description for

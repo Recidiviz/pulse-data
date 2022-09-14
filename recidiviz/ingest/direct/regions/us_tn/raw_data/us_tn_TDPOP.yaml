@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: TDPOP
 file_description: |-
   This table contains incarceration population validation data sent by TN DOC and TN STS to Recidiviz via data-updates emails.

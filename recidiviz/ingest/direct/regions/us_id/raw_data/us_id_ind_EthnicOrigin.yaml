@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_EthnicOrigin
 file_description: |-
   This table is a reference table for the ethnicity type reference codes used in the table ind_Offender

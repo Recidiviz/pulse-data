@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: observed_behavior_enhance_values
 file_description: |-
   Contains a record for each enhancement applied to a specific behavior observed during an Idaho Response Matrix behavior evaluation.

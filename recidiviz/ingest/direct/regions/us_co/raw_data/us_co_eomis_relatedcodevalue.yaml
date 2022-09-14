@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_relatedcodevalue
 file_description: |-
   This file contains additional codevalue information for possible related values to potentially add more detail to those in the codevaluedesc table.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_3092_TRANSPORT_TYPE
 file_description: |-
   This code table lists the transport types for transport transfers.

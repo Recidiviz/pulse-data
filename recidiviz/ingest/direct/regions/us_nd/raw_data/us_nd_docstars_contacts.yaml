@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_contacts
 file_description: |-
   Each row represents a contact between a supervision officer and person under supervision. This includes the kinds of

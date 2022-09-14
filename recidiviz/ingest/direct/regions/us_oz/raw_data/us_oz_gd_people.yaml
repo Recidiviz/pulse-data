@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: gd_people
 file_description: |-
   All the fine people in Aaron's Oz (no jokers).

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr
 file_description: |-
   Contains information on all people who have every been tracked by IDOC.

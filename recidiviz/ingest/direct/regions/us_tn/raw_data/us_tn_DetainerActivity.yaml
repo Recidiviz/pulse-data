@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DetainerActivity
 file_description: |-
   This table contains one occurrence for each receipt or disbursement of any form or letter pertaining to a person's detainer(s).

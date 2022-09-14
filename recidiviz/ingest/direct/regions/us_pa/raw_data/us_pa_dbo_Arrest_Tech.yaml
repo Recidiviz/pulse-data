@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Arrest_Tech
 file_description: |-
   A table containing arrests for technical violations. NOT REFRESHED REGULARLY.

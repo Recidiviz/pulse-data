@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_orderstable
 file_description: |-
   Each row represents a single court order, and the court case it comes from, that has been or is going to be handed down

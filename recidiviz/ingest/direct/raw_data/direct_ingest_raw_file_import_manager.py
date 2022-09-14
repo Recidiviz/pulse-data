@@ -446,9 +446,14 @@ class DirectIngestRegionRawFileConfig:
     yaml_config_file_dir: str = attr.ib()
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
+    @property
+    def default_config_filename(self) -> str:
+        return f"{self.region_code.lower()}_default.yaml"
+
     def default_config(self) -> DirectIngestRawFileDefaultConfig:
-        default_filename = f"{self.region_code.lower()}_default.yaml"
-        default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
+        default_file_path = os.path.join(
+            self.yaml_config_file_dir, self.default_config_filename
+        )
         if not os.path.exists(default_file_path):
             raise ValueError(
                 f"Missing default raw data configs for region: {self.region_code}. "
@@ -469,7 +474,7 @@ class DirectIngestRegionRawFileConfig:
         )
 
         return DirectIngestRawFileDefaultConfig(
-            filename=default_filename,
+            filename=self.default_config_filename,
             default_encoding=default_encoding,
             default_separator=default_separator,
             default_line_terminator=default_line_terminator,
@@ -493,69 +498,74 @@ class DirectIngestRegionRawFileConfig:
     def _raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         return self._get_raw_data_file_configs()
 
-    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
-        """Returns list of file tags we expect to see on raw files for this region."""
-        if os.path.isdir(self.yaml_config_file_dir):
-            default_config = self.default_config()
-
-            raw_data_configs = {}
-            for filename in os.listdir(self.yaml_config_file_dir):
-                if filename == default_config.filename or not filename.endswith(
-                    ".yaml"
-                ):
-                    continue
-                yaml_file_path = os.path.join(self.yaml_config_file_dir, filename)
-                if os.path.isdir(yaml_file_path):
-                    continue
-
-                yaml_contents = YAMLDict.from_path(yaml_file_path)
-
-                file_tag = yaml_contents.pop("file_tag", str)
-                if not file_tag:
-                    raise ValueError(f"Missing file_tag in [{yaml_file_path}]")
-                if filename != f"{self.region_code.lower()}_{file_tag}.yaml":
-                    raise ValueError(
-                        f"Mismatched file_tag [{file_tag}] and filename [{filename}]"
-                        f" in [{yaml_file_path}]"
-                    )
-                if file_tag in raw_data_configs:
-                    raise ValueError(
-                        f"Found file tag [{file_tag}] in [{yaml_file_path}]"
-                        f" that is already defined in another yaml file."
-                    )
-
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
-                    file_tag,
-                    yaml_file_path,
-                    default_config.default_encoding,
-                    default_config.default_separator,
-                    default_config.default_line_terminator,
-                    default_config.default_ignore_quotes,
-                    default_config.default_always_historical_export,
-                    default_config.default_infer_columns_from_config,
-                    yaml_contents,
-                    filename,
-                )
-
-                # Validates the original configuration file against our JSON schema. We
-                # do this last because these errors are very cryptic and its much easier
-                # to debug errors from failures above.However, we still want to do this
-                # validation so that we don't forget to add JSON schema (and therefore
-                # IDE) support for new features in the language.
-                if not environment.in_gcp():
-                    # Run schema validation in tests / CI
-                    YAMLDict.from_path(yaml_file_path).validate(
-                        json_schema_path=os.path.join(
-                            os.path.dirname(raw_data.__file__),
-                            "yaml_schema",
-                            "schema.json",
-                        )
-                    )
-        else:
+    def get_raw_data_file_config_paths(self) -> List[str]:
+        if not os.path.isdir(self.yaml_config_file_dir):
             raise ValueError(
                 f"Missing raw data configs for region: {self.region_code}. "
                 f"None found at path [{self.yaml_config_file_dir}]."
             )
+
+        paths = []
+        for filename in os.listdir(self.yaml_config_file_dir):
+            if filename == self.default_config_filename or not filename.endswith(
+                ".yaml"
+            ):
+                continue
+            yaml_file_path = os.path.join(self.yaml_config_file_dir, filename)
+            if os.path.isdir(yaml_file_path):
+                continue
+
+            paths.append(yaml_file_path)
+        return paths
+
+    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
+        """Returns list of file tags we expect to see on raw files for this region."""
+        raw_data_yaml_paths = self.get_raw_data_file_config_paths()
+        default_config = self.default_config()
+        raw_data_configs = {}
+        for yaml_file_path in raw_data_yaml_paths:
+            yaml_contents = YAMLDict.from_path(yaml_file_path)
+            filename = os.path.basename(yaml_file_path)
+
+            file_tag = yaml_contents.pop("file_tag", str)
+            if not file_tag:
+                raise ValueError(f"Missing file_tag in [{yaml_file_path}]")
+            if filename != f"{self.region_code.lower()}_{file_tag}.yaml":
+                raise ValueError(
+                    f"Mismatched file_tag [{file_tag}] and filename [{filename}]"
+                    f" in [{yaml_file_path}]"
+                )
+            if file_tag in raw_data_configs:
+                raise ValueError(
+                    f"Found file tag [{file_tag}] in [{yaml_file_path}]"
+                    f" that is already defined in another yaml file."
+                )
+
+            raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(
+                file_tag,
+                yaml_file_path,
+                default_config.default_encoding,
+                default_config.default_separator,
+                default_config.default_line_terminator,
+                default_config.default_ignore_quotes,
+                default_config.default_always_historical_export,
+                default_config.default_infer_columns_from_config,
+                yaml_contents,
+                filename,
+            )
+
+            # Validates the original configuration file against our JSON schema. We
+            # do this last because these errors are very cryptic and its much easier
+            # to debug errors from failures above.However, we still want to do this
+            # validation so that we don't forget to add JSON schema (and therefore
+            # IDE) support for new features in the language.
+            if not environment.in_gcp():
+                # Run schema validation in tests / CI
+                YAMLDict.from_path(yaml_file_path).validate(
+                    json_schema_path=os.path.join(
+                        os.path.dirname(raw_data.__file__), "yaml_schema", "schema.json"
+                    )
+                )
         return raw_data_configs
 
     raw_file_tags: Set[str] = attr.ib()

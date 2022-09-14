@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_SUPERVISION_CONDITION
 file_description: |-
   This table contains information about a person's supervision conditions.

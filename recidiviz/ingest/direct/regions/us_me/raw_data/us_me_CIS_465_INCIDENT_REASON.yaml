@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_465_INCIDENT_REASON
 file_description: |-
   This table lists the type of incident for incidents in the CIS_460_INCIDENTS table.

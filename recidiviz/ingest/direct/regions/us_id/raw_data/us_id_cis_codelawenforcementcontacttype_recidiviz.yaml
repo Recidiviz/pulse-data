@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cis_codelawenforcementcontacttype_recidiviz
 file_description: |-
   Code table describing types of law enforcement contacts

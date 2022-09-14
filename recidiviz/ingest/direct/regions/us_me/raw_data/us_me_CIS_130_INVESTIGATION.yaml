@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_130_INVESTIGATION
 file_description: |-
   This table lists details about investigations, each row is unique to a client and investigation ID.

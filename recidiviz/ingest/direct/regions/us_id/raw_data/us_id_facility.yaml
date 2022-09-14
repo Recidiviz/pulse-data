@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: facility
 file_description: |-
   A code table that gives extra details about a given facility.

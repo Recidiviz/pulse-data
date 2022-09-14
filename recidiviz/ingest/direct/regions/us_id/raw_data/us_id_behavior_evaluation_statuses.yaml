@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: behavior_evaluation_statuses
 file_description: |-
   #TODO(#9180)

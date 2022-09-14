@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_InvestigationRequest
 file_description: |-
   A table containing detailed information about investigations conducted in response to a development in some

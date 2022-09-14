@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9904_PROFESSIONAL
 file_description: |-
   This table contains a list of known "professional" agents referenced in other tables. At present, this appears to

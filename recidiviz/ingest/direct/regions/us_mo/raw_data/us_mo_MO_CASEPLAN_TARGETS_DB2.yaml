@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: MO_CASEPLAN_TARGETS_DB2
 file_description: |-
   Supervision Case Plan Targets. This table contains the targets identified in a person's Case Plan. 
