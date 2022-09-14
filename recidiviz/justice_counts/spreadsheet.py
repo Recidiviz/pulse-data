@@ -193,7 +193,7 @@ class SpreadsheetInterface:
         agency_id: int,
     ) -> schema.Spreadsheet:
         """Ingests spreadsheet for an agency and logs any errors."""
-        uploader = BulkUploader(catch_errors=True, infer_aggregate_value=True)
+        uploader = BulkUploader(catch_errors=True)
         user_account = (
             session.query(schema.UserAccount)
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)

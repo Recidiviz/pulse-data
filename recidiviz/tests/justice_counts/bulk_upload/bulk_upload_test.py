@@ -64,10 +64,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         super().setUp()
 
         self.uploader = BulkUploader(catch_errors=False)
-        self.uploader_infer = BulkUploader(
-            catch_errors=False, infer_aggregate_value=True
-        )
-        self.uploader_infer_catch_errors = BulkUploader(infer_aggregate_value=True)
+        self.uploader_catch_errors = BulkUploader()
 
         self.prisons_directory = os.path.join(
             os.path.dirname(__file__),
@@ -136,7 +133,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            filename_to_error = self.uploader_infer_catch_errors.upload_directory(
+            filename_to_error = self.uploader_catch_errors.upload_directory(
                 session=session,
                 directory=self.invalid_directory,
                 agency_id=self.prosecution_agency_id,
@@ -369,7 +366,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, user_account_id=self.user_account_id
             )
 
-            self.uploader_infer.upload_directory(
+            self.uploader.upload_directory(
                 session=session,
                 directory=self.supervision_directory,
                 agency_id=self.supervision_agency_id,
@@ -393,7 +390,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session, user_account_id=self.user_account_id
             )
 
-            self.uploader_infer.upload_excel(
+            self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.supervision_excel),
                 agency_id=self.supervision_agency_id,
@@ -583,8 +580,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def test_infer_aggregate_value_with_total(
         self,
     ) -> None:
-        """Check that, when the infer_aggregate_value flag is on, bulk upload will still defer
-        to a aggregate total if it was exported explicitly."""
+        """Check that bulk upload defers to a aggregate total if it was exported explicitly."""
         with SessionFactory.using_database(self.database_key) as session:
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
@@ -593,7 +589,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # 1) an arrest metric with an aggregate value that is reported and breakdowns
             # that do not match the total and 2) a reported_crime_by_type sheet where no
             # totals are reported.
-            self.uploader_infer.upload_excel(
+            self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.law_enforcement_excel_mismatched_totals),
                 agency_id=self.law_enforcement_agency_id,
