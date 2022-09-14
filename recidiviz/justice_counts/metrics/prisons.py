@@ -21,7 +21,7 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
     CorrectionalFacilityStaffType,
     PrisonPopulationType,
-    PrisonReleaseTypes,
+    PrisonReleaseType,
     ReadmissionType,
 )
 from recidiviz.justice_counts.dimensions.person import (
@@ -198,7 +198,7 @@ releases = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PrisonReleaseTypes, required=False)
+        AggregatedDimension(dimension=PrisonReleaseType, required=False)
     ],
 )
 
