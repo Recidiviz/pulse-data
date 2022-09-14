@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_116_LSI_HISTORY
 file_description: |-
   This table has LSI assessments results for a client and includes information about when the LSI assessment was 

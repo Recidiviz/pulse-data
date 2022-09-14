@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Docket
 file_description: |-
   A table containing the docket of new board actions that may be taken in the future.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_215_SEX_OFFENDER_ASSESS
 file_description: |-
   This table lists non-LSIR assessment results for a client. LSI assessments are found in CIS_116_LSI_HISTORY. The

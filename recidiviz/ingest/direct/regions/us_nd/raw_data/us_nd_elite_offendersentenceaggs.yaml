@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offendersentenceaggs
 file_description: |-
   Each row represents aggregated ("rolled up") information about the collection of sentences associated with a single

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4035_ASSESS_PROG_TYPE
 file_description: |-
   The code table mapping the code to the description of the type of program it is.

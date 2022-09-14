@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: employee
 file_description: |-
   Code table that has one row per employee and details the most up to date information about their job role / work

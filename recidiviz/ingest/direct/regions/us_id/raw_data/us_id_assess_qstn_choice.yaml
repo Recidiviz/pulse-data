@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: assess_qstn_choice
 file_description: |-
   Contains a single row for all potential responses to questions for a specific IDOC “test”, section, and question

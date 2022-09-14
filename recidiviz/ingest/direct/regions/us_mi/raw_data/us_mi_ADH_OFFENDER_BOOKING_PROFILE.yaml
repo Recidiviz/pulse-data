@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_BOOKING_PROFILE
 file_description: |-
   This table indicates the profile associated with a person and their booking within MDOC,

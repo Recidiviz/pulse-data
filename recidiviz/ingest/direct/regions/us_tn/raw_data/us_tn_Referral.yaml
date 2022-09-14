@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Referral
 file_description: |-
   This table contains one occurrence for each Referral for each person.

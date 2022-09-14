@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_offendercasestable
 file_description: |-
   Each row represents a distinct "case" for a particular person under supervision, i.e. a period of supervision served by

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_ref_lsi_need
 file_description: |-
   Reference file where each row maps to a specific LSI need area

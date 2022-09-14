@@ -126,6 +126,7 @@ def write_skeleton_config(
         return
 
     config = [
+        "# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json",
         f"file_tag: {table_name}",
         "file_description: |-",
         f"  {PLACEHOLDER_TO_DO_STRING}(): Fill in the file description",

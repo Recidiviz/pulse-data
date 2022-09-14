@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DisciplinaryAppeal
 file_description: |-
   This table contains one occurrence for each appeal made by a person for a disciplinary. Unlimited appeals may be filed.

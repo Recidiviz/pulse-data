@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Release
 file_description: |-
   A table describing specific periods of supervision currently being served by a particular person under the authority

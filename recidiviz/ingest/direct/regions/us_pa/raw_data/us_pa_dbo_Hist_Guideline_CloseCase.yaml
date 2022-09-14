@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Hist_Guideline_CloseCase
 file_description: |-
   A table with detailed case information, such as assessments, program referrals, and various case notes, for

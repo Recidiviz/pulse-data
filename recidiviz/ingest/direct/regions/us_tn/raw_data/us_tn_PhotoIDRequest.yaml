@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PhotoIDRequest
 file_description: |-
   This table contains one occurrence for each photo id eligibility that is sent to the TN Dept. of Safety.  The response code and date and subsequent staff action are stored.

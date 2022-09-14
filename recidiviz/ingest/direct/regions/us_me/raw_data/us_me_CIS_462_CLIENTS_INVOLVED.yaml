@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_462_CLIENTS_INVOLVED
 file_description: |-
   This table lists the clients involved in an incident and has additional notes about the incident and the client.

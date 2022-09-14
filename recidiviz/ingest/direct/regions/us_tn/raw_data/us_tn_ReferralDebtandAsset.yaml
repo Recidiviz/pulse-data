@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ReferralDebtandAsset
 file_description: |-
   This table contains one row for each debt or asset for a referral for an offender.

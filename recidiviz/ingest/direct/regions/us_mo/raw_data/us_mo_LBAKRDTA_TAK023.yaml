@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK023
 file_description: |-
   Sentence Inst. Column prefix: BT.

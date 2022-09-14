@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: IncarcerationParole
 file_description: |-
   TODO(#14099): Fill in the file description

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_FACILITY_COUNT_SHEET_HIST
 file_description: |-
   Table containing all historical facility counts in MIDOC.

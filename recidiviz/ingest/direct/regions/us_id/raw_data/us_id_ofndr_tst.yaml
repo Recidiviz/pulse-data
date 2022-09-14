@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_tst
 file_description: |-
   Has a single row for each “test” that has been administered for a given person in custody.  Here a “test” is a broad

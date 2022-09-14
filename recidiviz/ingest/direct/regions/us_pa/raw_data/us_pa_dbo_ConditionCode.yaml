@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_ConditionCode
 file_description: |-
   A table describing specific conditions of supervision that must be abided by for a particular stint under supervision.

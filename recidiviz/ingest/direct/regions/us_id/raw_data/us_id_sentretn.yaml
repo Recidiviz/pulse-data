@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sentretn
 file_description: |-
   Contains a new row for every retained jurisdiction sentence (aka Rider) ever tracked by IDOC. When someone is on a

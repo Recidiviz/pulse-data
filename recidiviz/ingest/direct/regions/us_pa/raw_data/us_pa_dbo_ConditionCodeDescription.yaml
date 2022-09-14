@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_ConditionCodeDescription
 file_description: |-
   An addendum to dbo_ConditionCode which adds free text descriptions of what exactly the supervision condition entails

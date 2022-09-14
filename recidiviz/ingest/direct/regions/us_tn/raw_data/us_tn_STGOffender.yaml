@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: STGOffender
 file_description: |-
   This table contains one occurrence for an offender listing the STG to which the offender is confirmed or suspected of belonging.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_204_GEN_NOTE
 file_description: |-
   This table lists contact notes and details recorded for supervision clients by supervising officers.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_sentencecompute
 file_description: |-
   This file contains information used to compute people's sentence length.

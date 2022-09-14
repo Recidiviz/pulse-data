@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: observed_behavior_response_cd
 file_description: |-
   Code table describing the types of responses POs have to specific behaviors. Cooresponds to Response Chart of Idaho response matrix.

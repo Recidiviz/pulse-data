@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_alias
 file_description: |-
   Each row represents some alias that has been recorded for a particular person who has been incarcerated.

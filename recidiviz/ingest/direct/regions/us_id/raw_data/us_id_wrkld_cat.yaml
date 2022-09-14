@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: wrkld_cat
 file_description: |-
   A code table that gives details about given workload categories (supervision levels)

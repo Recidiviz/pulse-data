@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Crossref_Hist
 file_description: |-
   A table that provides a "cross-walk" to be able to tie together IDs for people who have an ID change in their history. NOT REFRESHED REGULARLY.

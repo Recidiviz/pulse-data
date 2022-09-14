@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Infraction
 file_description: |-
   This table contains information about infractions. Infractions are the result of a disciplinary.

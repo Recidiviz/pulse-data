@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_offenders
 file_description: |-
   Each row represents a single person who has been or is currently under supervision. This contains basic demographic

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_externalmovements
 file_description: |-
   Each row represents a single movement of an incarcerated person from one incarceration facility to another, or in some

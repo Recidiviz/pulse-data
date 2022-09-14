@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_LEGAL_ORDER
 file_description: |-
   This table contains all legal orders for anyone who is called to court within MIDOC.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_EMPLOYEE_CASE_LOAD
 file_description: |-
   This table contains data for each MDOC employee's caseload

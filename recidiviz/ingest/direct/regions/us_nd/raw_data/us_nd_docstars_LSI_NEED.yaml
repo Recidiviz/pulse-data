@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_LSI_NEED
 file_description: |-
   Each row is a need that is being addressed by an LSI supervision plan

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9910_ATTORNEY
 file_description: |-
   This table lists attornies and the IDs associated with them.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_430_ASSESSMENT
 file_description: |-
   This table includes all of the assessments that a client has completed.

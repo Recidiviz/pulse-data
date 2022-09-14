@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Hist_Release
 file_description: |-
   A table describing specific periods of supervision that were served in the past by a particular person under the

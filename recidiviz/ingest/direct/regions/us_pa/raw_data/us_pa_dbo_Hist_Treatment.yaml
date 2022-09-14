@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Hist_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision in the

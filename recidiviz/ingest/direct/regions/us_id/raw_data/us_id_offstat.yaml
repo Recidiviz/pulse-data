@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: offstat
 file_description: |-
   Contains a single row for every legal status span that a person under IDOC authority has ever had. It is possible for

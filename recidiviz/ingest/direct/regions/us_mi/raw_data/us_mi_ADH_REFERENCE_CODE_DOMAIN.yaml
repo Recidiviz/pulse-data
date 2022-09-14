@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_REFERENCE_CODE_DOMAIN
 file_description: |-
   This table contains the various domains that the REFERENCE_CODE table refers to.

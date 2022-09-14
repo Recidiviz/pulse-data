@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_behavior_evaluation
 file_description: |-
   Primary record table for behavior evaluation form (Idaho response matrix). Contains one row for each behavior evaluation, which can be associated with multiple observed behaviors and responses (rewards/sanctions).

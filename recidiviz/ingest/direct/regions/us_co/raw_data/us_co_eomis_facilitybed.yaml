@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_facilitybed
 file_description: |-
   This file contains detail about the beds available in a facility.

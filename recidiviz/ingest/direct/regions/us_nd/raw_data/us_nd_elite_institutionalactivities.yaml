@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_institutionalactivities
 file_description: |-
   Each row represents some activity (e.g. work assignment) or program (e.g. mental health treatment, educational program)

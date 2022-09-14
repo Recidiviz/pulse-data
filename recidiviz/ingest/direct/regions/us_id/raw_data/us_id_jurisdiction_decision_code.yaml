@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: jurisdiction_decision_code
 file_description: |-
   A code table that gives more information about the ultimate decisions for an early discharge request.

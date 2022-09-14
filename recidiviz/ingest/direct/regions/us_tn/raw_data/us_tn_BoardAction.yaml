@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: BoardAction
 file_description: |-
   This table contains one occurrence for each board member's voting for each person for each hearing type. These votes will be collected and become a single board decision for this person and hearing.

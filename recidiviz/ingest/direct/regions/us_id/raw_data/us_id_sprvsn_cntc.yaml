@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sprvsn_cntc
 file_description: |-
   Contains a new row for:

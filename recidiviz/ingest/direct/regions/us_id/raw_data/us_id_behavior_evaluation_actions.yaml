@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: behavior_evaluation_actions
 file_description: |-
   Code table describing actions taken by POs and supervisors on behavior evaluation form

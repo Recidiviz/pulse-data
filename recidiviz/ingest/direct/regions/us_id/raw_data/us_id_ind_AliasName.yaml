@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_AliasName
 file_description: |-
   This table contains information about recorded names/aliases for each person.  A person may have one or multiple alias records in this table.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRCOD_TAK146
 file_description: |-
   Status Descriptions. Column prefix: FH.

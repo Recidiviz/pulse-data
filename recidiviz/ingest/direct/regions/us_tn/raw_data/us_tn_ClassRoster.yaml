@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ClassRoster
 file_description: |-
   This table contains one occurrence per class and is a list of all offenders who have been approved for the class.

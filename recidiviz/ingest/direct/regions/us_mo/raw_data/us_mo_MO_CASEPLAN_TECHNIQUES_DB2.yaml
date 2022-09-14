@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: MO_CASEPLAN_TECHNIQUES_DB2
 file_description: |-
   Supervision Case Plan Techniques. This table lists the techniques connected to objectives in a persons's Case Plan. 

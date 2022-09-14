@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: DailyCommunitySupervisionForRecidiviz
 file_description: |-
   This table contains one occurence for each person on supervision on each ReportingDate

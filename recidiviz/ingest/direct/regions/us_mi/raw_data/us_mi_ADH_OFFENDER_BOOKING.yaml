@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_BOOKING
 file_description: |-
   This table stores information about jurisdictions - periods of time when a justice-involved

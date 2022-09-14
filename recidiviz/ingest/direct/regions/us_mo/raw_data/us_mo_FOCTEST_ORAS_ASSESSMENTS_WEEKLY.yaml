@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
 file_description: |-
   ORAS assessment scores (Snapshot of scores through 2021)

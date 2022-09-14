@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: observed_behavior_cd
 file_description: |-
   Code table to describe the behavior observed by POs. Corresponds to items listed in the "Desired Behaviors" (for rewards) and "Event" (for sanctions) columns of the Idaho Response Matrix.

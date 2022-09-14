@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9009_REGION
 file_description: |-
   This table has all of the region codes and their names.

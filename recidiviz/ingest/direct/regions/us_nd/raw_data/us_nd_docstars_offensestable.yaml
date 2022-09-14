@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_offensestable
 file_description: |-
   Each row represents a particular offense that a person is being charged with, leading to a sentence to supervision.

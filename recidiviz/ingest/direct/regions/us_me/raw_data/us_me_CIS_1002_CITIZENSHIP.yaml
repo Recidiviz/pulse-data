@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1002_CITIZENSHIP
 file_description: |-
   This is a code table for the types of citizenships that can be associated with a client.

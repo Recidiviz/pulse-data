@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9001_EMPLOYEE_TYPE
 file_description: |-
   This table maps the type of employee to the code used in the CIS_900_EMPLOYEE table.

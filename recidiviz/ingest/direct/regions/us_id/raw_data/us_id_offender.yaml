@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: offender
 file_description: |-
   Contains a single row for everyone who has ever been tracked by IDOC (usually means under investigation, on

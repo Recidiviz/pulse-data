@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_112_CUSTODY_LEVEL
 file_description: |-
   This table lists the history of custody levels for persons under MEDOC jurisdiction.

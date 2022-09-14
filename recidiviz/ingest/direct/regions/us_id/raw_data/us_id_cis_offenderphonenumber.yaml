@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cis_offenderphonenumber
 file_description: |-
   Contains useful metadata about phone number information for people on supervision.

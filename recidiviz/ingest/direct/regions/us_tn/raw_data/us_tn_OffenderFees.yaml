@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OffenderFees
 file_description: |-
   TODO(#11524) - Add in descriptions.

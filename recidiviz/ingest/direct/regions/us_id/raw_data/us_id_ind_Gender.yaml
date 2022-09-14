@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_Gender
 file_description: |-
   This table is a reference table for the gender type reference codes used in the table ind_Offender

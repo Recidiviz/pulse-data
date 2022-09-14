@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_vwCCISAllProgDtls
 file_description: |-
   A table from the Community Corrections Information System (CCIS) which associates

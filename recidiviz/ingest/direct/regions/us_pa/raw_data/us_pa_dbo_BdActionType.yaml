@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_BdActionType
 file_description: |-
   A table describing type of board actions that have been taken.

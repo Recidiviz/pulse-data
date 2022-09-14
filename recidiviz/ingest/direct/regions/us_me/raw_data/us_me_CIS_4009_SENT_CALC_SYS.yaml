@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4009_SENT_CALC_SYS
 file_description: |-
   This is a code table that has sentencing related values that are used in several tables, including CIS_401_CRT_ORDER_HDR.

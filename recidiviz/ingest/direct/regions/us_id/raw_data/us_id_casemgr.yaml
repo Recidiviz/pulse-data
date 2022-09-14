@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: casemgr
 file_description: |-
   Contains a new row every time a person either a) has a new movement (see `movement` table) or b) has their assigned

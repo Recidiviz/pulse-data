@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: VantagePointRecommendations
 file_description: |-
   This table is used to store STRONG-R Case Plan recommendations from Vant4gePoint.

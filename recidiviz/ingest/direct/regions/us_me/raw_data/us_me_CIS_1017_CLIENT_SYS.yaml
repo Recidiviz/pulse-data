@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1017_CLIENT_SYS
 file_description: |-
   This is a code table that is used in many different tables so the values could be associated with various topics.

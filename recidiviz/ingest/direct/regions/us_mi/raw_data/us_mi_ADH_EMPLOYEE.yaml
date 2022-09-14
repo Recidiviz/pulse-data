@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_EMPLOYEE
 file_description: |-
   Table containing metadata regarding MIDOC employees

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Class
 file_description: |-
   This table contains all the information about a vocational class at any institution. This table can be considered the "class catalog" listing all classes available across the state.

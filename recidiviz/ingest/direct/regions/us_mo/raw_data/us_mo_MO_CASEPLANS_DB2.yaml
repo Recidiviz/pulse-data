@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: MO_CASEPLANS_DB2
 file_description: |-
   MO Supervision Case Plans - Main Table. This tables lists all case plans for people who have been assessed with ORAS assessment tool.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Movrec
 file_description: |-
   A table describing physical movements of an incarcerated person from one carceral setting to another, e.g. transfers

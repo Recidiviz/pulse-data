@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: OffenderStatute
 file_description: |-
   This table contains one occurrence for each offense type. It contains information about the offense for sentencing and for statistical analysis.

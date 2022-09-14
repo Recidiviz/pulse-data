@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offender_trust_details
 file_description: |-
   Each row represents a financial transaction into an incarcerated person's trust account. This includes metadata about

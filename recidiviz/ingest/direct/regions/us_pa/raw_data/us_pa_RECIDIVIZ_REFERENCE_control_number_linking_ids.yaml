@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RECIDIVIZ_REFERENCE_control_number_linking_ids
 file_description: |-
   A table containing a Recidiviz-generated pseudo-id that links PADOC control numbers

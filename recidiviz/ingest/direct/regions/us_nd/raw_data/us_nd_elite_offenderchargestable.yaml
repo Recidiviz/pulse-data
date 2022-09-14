@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offenderchargestable
 file_description: |-
   Each row represents a different offense that a person was charged with prior to being sentenced under DOCR jurisdiction.

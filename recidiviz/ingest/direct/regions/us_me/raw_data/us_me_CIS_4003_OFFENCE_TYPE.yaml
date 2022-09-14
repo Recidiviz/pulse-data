@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4003_OFFENCE_TYPE
 file_description: |-
   This table lists all of the offense types that are applicable within MDOC.

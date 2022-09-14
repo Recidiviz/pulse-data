@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_OFFENDER_SUPERVISION
 file_description: |-
   This table contains information about a person on supervision within MIDOC.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9013_LANGUAGE
 file_description: |-
   This is a code table that lists the languages that could be associated with a client's profile.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_NameSuffixType
 file_description: |-
   Reference table for the NameSuffixType codes

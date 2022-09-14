@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PretrialJailCredits
 file_description: |-
   This table contains one occurrence for each pre-trial credit recieved by the person for the sentence.

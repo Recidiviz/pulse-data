@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_Offender
 file_description: |-
   This table contains demographic information for each individual.  

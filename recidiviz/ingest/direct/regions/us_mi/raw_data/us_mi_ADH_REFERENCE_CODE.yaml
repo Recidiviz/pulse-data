@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_REFERENCE_CODE
 file_description: |-
   The reference code table used for everything except locations and offense types.

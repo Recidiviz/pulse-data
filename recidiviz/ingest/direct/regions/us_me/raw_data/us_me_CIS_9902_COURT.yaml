@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9902_COURT
 file_description: |-
   This table lists all of the courts and their associated IDs.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1006_RACE
 file_description: |-
   The code table that maps the race CD value to a text description.

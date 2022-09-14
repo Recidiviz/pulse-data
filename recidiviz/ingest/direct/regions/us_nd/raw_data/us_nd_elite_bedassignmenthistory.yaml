@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_bedassignmenthistory
 file_description: |-
   Each row represents a particular stay of a particular person in a particular bed in a particular incarceration facility.

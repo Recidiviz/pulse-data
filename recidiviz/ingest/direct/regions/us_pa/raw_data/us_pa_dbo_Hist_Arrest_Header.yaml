@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Hist_Arrest_Header
 file_description: |-
   A table containing general metadata about historical arrests and bookings thereof.

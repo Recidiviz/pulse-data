@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_tblEval
 file_description: |-
   A table containing assignments to programming for people currently incarcerated.

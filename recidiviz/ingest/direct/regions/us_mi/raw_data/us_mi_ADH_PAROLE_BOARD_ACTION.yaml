@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_PAROLE_BOARD_ACTION
 file_description: |-
   This is the main table that stores all of the parole board actions from parole board

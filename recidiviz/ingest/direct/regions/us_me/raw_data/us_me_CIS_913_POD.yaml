@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_913_POD
 file_description: |-
   This is the housing pod code table that has a relationship to the CIS_912_UNIT table and lists a pod's custody level.

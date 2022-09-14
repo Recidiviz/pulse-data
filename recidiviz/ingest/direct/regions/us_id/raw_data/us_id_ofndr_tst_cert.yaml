@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_tst_cert
 file_description: |-
   Has a single row for every LSIR assessment performed for someone under IDOC jurisdiction and “certified” by the

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_ICMA_CasesSeen_NotSeen
 file_description: |-
   A table containing an index of supervision cases that have been undertaken by specific officers.

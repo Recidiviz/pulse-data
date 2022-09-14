@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_LU_ReleaseEntryCodesAddCase
 file_description: |-
   A lookup table mapping "Release table" entry codes to additional contextual information.

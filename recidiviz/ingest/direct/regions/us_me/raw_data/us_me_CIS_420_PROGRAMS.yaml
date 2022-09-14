@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_420_PROGRAMS
 file_description: |-
   This table is a list of programs available.

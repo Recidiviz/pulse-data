@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK223
 file_description: |-
   Parole Board Violation Decisions. Column prefix: IE # TODO(#13474) Fill in definition with more details.

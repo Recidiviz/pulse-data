@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: JOSentence
 file_description: |-
   TODO(#7424) - Update once received from TN.

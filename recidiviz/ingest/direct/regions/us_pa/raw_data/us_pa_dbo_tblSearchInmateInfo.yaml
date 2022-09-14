@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_tblSearchInmateInfo
 file_description: |-
   A table that acts as a "roll-up" for various bits of information about a person who is currently or was previously

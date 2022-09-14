@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: movement
 file_description: |-
   Contains a new row for every movement that happens for a person under IDOC authority (either on supervision or

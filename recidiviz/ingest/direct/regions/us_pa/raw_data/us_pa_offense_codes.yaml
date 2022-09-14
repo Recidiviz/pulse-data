@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: offense_codes
 file_description: |-
   A PADOC-provided table containing a list of all offenses that a person can be convicted

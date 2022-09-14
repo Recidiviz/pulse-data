@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_9901_POLICE_DEPARTMENT
 file_description: |-
   This code table maps an ID to the name of the associate police department.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SentenceAction
 file_description: |-
   This table contains one occurrence for sentence action that is posted for the specified sentence.

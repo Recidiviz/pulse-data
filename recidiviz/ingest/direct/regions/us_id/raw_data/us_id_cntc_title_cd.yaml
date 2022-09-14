@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cntc_title_cd
 file_description: |-
   A code table that details the “title” of a supervision contact. Titles are broader categories than types and include

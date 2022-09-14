@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: JOIdentification
 file_description: |-
   This table contains one occurrence for each judgment order received by a person. This table contains information that serves to identify the judgment order.

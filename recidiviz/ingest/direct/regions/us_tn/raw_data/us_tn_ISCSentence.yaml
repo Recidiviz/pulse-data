@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ISCSentence
 file_description: |-
   This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the person.

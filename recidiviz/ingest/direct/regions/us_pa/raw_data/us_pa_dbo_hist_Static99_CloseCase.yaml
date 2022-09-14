@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_hist_Static99_CloseCase
 file_description: |-
   A table with Static-99 assessment data for historical supervision cases.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4305_RECOMMENDATION_ACTION
 file_description: |-
   The code table that maps to the recommended actions for assessment results.

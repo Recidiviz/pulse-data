@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: StaffAction
 file_description: |-
   This table contains one occurrence for every staff action logged within the parole subsystem.

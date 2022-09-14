@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ofndr_agnt
 file_description: |-
   Contains a single row for every person on supervision and has their associated Parole/Probation officer (if known).

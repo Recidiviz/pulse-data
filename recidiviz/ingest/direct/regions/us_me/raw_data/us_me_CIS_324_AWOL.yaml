@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_324_AWOL
 file_description: |-
   This table lists all escapes from DOC Facilities. It also includes escapes from community confinement (SCCP) and Parole.

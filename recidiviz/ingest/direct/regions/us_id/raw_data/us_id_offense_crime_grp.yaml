@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: offense_crime_grp
 file_description: |-
   A code table that matches offenses to crime categories

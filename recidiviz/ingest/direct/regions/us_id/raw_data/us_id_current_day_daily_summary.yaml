@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: current_day_daily_summary
 file_description: |-
   A validation view containing one record for all incarcerated and supervised

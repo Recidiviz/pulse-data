@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_RelAgentHistory
 file_description: |-
   A table describing transfers between supervising agents for specific periods of supervision presently or previously

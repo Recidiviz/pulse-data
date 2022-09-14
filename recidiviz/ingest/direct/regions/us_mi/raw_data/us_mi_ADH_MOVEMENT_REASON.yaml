@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ADH_MOVEMENT_REASON
 file_description: |-
   This table contains the reference for all of the movement reasons that are used in the

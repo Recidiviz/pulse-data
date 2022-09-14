@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: docstars_ftr_discharges
 file_description: |-
   Each row represents a discharge from a particular FTR episode, i.e. the end of a particular instance of a referral of a

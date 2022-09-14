@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_1009_LSI_TYPE
 file_description: |-
   This is a code table that maps the plain text description of the type of LSI questionnaire used to its code.

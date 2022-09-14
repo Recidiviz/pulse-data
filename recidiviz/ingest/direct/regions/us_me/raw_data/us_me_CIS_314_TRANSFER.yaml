@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_314_TRANSFER
 file_description: |-
   This table records transfers in and out of of DOC facilities and supervision locations. Transfers related to DOC Facilities

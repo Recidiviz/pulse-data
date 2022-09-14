@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ClassSection
 file_description: |-
   This table conatins one occurrence for every section present in a class.

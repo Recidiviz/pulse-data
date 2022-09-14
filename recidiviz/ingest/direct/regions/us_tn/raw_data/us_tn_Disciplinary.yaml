@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Disciplinary
 file_description: |-
   This table contains all information relating to disciplinaries. Disciplinaries may result from an incident, or a job/class related action.

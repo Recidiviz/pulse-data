@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_4030_CONDITION_TYPE
 file_description: |-
   This table has descriptions of different condition types that are imposed on supervision sentences.

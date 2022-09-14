@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_Perrec
 file_description: |-
   A table containing demographic and identifier information for people who have been incarcerated by PADOC.

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dbo_SentenceGroup
 file_description: |-
   A table containing "roll-up" information about all sentences in a group of sentences to incarceration or supervision

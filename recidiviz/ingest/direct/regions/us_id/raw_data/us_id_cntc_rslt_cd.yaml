@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: cntc_rslt_cd
 file_description: |-
   A code table that gives details about what the end result of a supervision contact was (success, failure, arrest,
