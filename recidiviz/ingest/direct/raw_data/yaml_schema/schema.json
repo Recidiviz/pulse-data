@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://recidiviz.org/raw_data/yaml_schema/schema.json",
+  "title": "Recidiviz Raw Data Manifest",
+  "description": "Raw data configuration schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "file_tag": {
+      "description": "The file tag / table name that this file will get written to",
+      "type": "string"
+    },
+    "file_description": {
+      "description": "Description of the raw data file contents",
+      "type": "string"
+    },
+    "data_classification": {
+      "description": "The file tag / table name that this file will get written to",
+      "type": "string",
+      "enum": ["source", "validation"]
+    },
+    "primary_key_cols": {
+      "description": "A list of columns that constitute the primary key for this file. If empty, this table cannot be used in an ingest view query and a '*_latest' view will not be generated for this table. May be left empty for the purposes of allowing us to quickly upload a new file into BQ and then determine the primary keys by querying BQ.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "columns": {
+      "description": "A list of names and descriptions for each column in a file.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "description": "The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)",
+            "type": "string"
+          },
+          "description": {
+            "description": "Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a raw data migration involving this column",
+            "type": "string"
+          },
+          "known_values": {
+            "description": "Describes possible enum values for this column if known",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["value"],
+              "properties": {
+                "value": {
+                  "description": "The literal enum value",
+                  "type": ["string", "integer", "boolean", "null"]
+                },
+                "description": {
+                  "description": "The description that value maps to",
+                  "type": ["string", "null"]
+                }
+              }
+            }
+          },
+          "is_datetime": {
+            "description": "True if a column is a date/time",
+            "type": "boolean"
+          },
+          "is_pii": {
+            "description": "True if a column contains Personal Identifiable Information (PII)",
+            "type": "boolean"
+          },
+          "datetime_sql_parsers": {
+            "description": "Describes the SQL parsers needed to parse the datetime string appropriately. It should contain the string literal {col_name} and follow the format with the SAFE.PARSE_TIMESTAMP('[insert your time format st]', [some expression w/ {col_name}]). SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used. See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE",
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "uniqueItems": true
+    },
+    "supplemental_order_by_clause": {
+      "description": "An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date row to pick among all rows that have the same primary key. NOTE: Right now this clause does not have access to the date-normalized version of the columns in datetime_cols,  so must handle its own date parsing logic - if this becomes too cumbersome, we can restructure the query to do  date normalization in a subquery before ordering.",
+      "type": "string"
+    },
+    "encoding": {
+      "description": "Most likely string encoding for this file (e.g. UTF-8)",
+      "type": "string"
+    },
+    "separator": {
+      "description": "The separator character used to denote columns (e.g. ',' or '|').",
+      "type": "string"
+    },
+    "ignore_quotes": {
+      "description": "If true, quoted strings are ignored and separators inside of quotes are treated as column separators. This should be used on any file that has free text fields where the quotes are not escaped and the separator is not common to free text. For example, to handle this row from a pipe separated file that has an open quotation with no close quote: `123|456789|2|He said, \"I will be there.|ASDF`",
+      "type": "boolean"
+    },
+    "custom_line_terminator": {
+      "description": "The line terminator character(s) used to denote CSV rows. If None, will default to the Pandas default (any combination of \n and \r).",
+      "type": "string"
+    },
+    "always_historical_export": {
+      "description": "If true, means that we **always** will get a historical version of this raw data file from the state and will never change to incremental uploads (for example, because we need to detect row deletions).",
+      "type": "boolean"
+    },
+    "import_chunk_size_rows": {
+      "description": "Defines the number of rows in each chunk we will read one at a time from the original raw data file and write back to GCS files before loading into BQ. Increasing this value may increase import speed, but should only be done carefully - if the table has too much data in a row, increasing the number of rows per chunk may push us over VM memory limits. Defaults to 250,000 rows per chunk.",
+      "type": "integer"
+    },
+    "infer_columns_from_config": {
+      "description": "If true, means that we likely will receive a CSV that does not have a header row and therefore, we will use the columns defined in the config, in the order they are defined in, as the column names. By default, False.",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "file_tag",
+    "file_description",
+    "data_classification",
+    "primary_key_cols",
+    "columns"
+  ],
+  "examples": [
+    {
+      "file_tag": "data_table",
+      "file_description": "This file contains data from `data` system about `table`.",
+      "data_classification": "source",
+      "primary_key_cols": ["ID"],
+      "columns": [
+        {
+          "name": "ID",
+          "description": "Primary key for table",
+          "is_pii": true
+        },
+        {
+          "name": "Description",
+          "description": "Long description for record"
+        },
+        {
+          "name": "Type",
+          "description": "Type of record",
+          "known_values": [
+            {
+              "value": "ADD",
+              "description": "This record represents an addition"
+            },
+            {
+              "value": "DEL",
+              "description": "This record represents a deletion"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

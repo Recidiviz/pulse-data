@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: eomis_inmateprofile
 file_description: |-
   This file contains a lot of person and some incarceration details.
