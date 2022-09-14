@@ -29,13 +29,16 @@ This can be run on-demand whenever locally with the following command:
 """
 import argparse
 import logging
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.big_query.big_query_view_sub_dag_collector import (
+    BigQueryViewSubDagCollector,
+)
 from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
-    view_builder_sub_graph_for_view_builders_to_load,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -51,70 +54,59 @@ from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
-def _get_root_view_builders_to_load(
-    all_view_builders: List[BigQueryViewBuilder],
-    view_ids_to_load: Optional[List[str]] = None,
-    dataset_ids_to_load: Optional[List[str]] = None,
-) -> List[BigQueryViewBuilder]:
-    """Returns the list of view builders that match either the addresses in
-    view_ids_to_load or dataset_ids in dataset_ids_to_load.
-    """
-    if view_ids_to_load:
-        if dataset_ids_to_load:
-            raise ValueError(
-                f"Expected dataset_ids_to_load to be null but found: {dataset_ids_to_load}."
-            )
+class _AllButSomeBigQueryViewsCollector(BigQueryViewCollector[BigQueryViewBuilder]):
+    def __init__(self, datasets_to_exclude: Set[str]):
+        self.datasets_to_exclude = datasets_to_exclude
 
-        view_addresses_to_load = [
-            BigQueryAddress(
-                dataset_id=view_id_str.split(".")[0],
-                table_id=view_id_str.split(".")[1],
-            )
-            for view_id_str in view_ids_to_load
+    def collect_view_builders(self) -> List[BigQueryViewBuilder]:
+        all_deployed_builders = deployed_view_builders(project_id())
+        return [
+            builder
+            for builder in all_deployed_builders
+            if builder.dataset_id not in self.datasets_to_exclude
         ]
 
-        if len(set(view_addresses_to_load)) != len(view_addresses_to_load):
-            raise ValueError(
-                f"Found duplicates in list of input views to load: {view_addresses_to_load}"
-            )
-        view_builders_to_load = [
-            view for view in all_view_builders if view.address in view_addresses_to_load
-        ]
-        if len(view_builders_to_load) != len(view_addresses_to_load):
-            found_builders_set = {vb.address for vb in view_builders_to_load}
-            expected_builders_set = set(view_addresses_to_load)
-            missing = expected_builders_set - found_builders_set
-            raise ValueError(
-                f"Expected to find [{len(view_addresses_to_load)}], but only "
-                f"found [{len(view_builders_to_load)}] that matched managed views. "
-                f"Did not find views that matched the following expected "
-                f"addresses: {missing}."
-            )
-        return view_builders_to_load
 
-    if dataset_ids_to_load:
-        view_builders_to_load = [
-            view for view in all_view_builders if view.dataset_id in dataset_ids_to_load
-        ]
-
-        found_datasets = {view.dataset_id for view in view_builders_to_load}
-        if found_datasets != set(dataset_ids_to_load):
-            missing_datasets = set(dataset_ids_to_load) - found_datasets
-            raise ValueError(
-                f"Did not find any views in the following datasets: {missing_datasets}"
-            )
-        return view_builders_to_load
-
-    raise ValueError("view_ids_to_load and dataset_ids_to_load not defined.")
-
-
-def load_views_to_sandbox(
+def load_all_views_to_sandbox(
     sandbox_dataset_prefix: str,
     dataflow_dataset_override: Optional[str] = None,
-    view_ids_to_load: Optional[List[str]] = None,
-    dataset_ids_to_load: Optional[List[str]] = None,
-    update_ancestors: bool = False,
-    update_descendants: bool = False,
+) -> None:
+    """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|. If
+    |dataflow_dataset_override| is not set, excludes views in
+    DATAFLOW_METRICS_MATERIALIZED_DATASET, which is very expensive to materialize.
+    """
+    prompt_for_confirmation("This will load all sandbox views, continue?")
+
+    _load_collected_views_to_sandbox(
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        sandbox_view_builder_collector=_AllButSomeBigQueryViewsCollector(
+            datasets_to_exclude=_datasets_to_exclude_from_sandbox(
+                dataflow_dataset_override
+            )
+        ),
+        dataflow_dataset_override=dataflow_dataset_override,
+    )
+
+
+def _datasets_to_exclude_from_sandbox(
+    dataflow_dataset_override: Optional[str] = None,
+) -> Set[str]:
+    datasets_to_exclude = set()
+    # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
+    # dataflow_dataset_override is set
+    if not dataflow_dataset_override:
+        datasets_to_exclude.add(DATAFLOW_METRICS_MATERIALIZED_DATASET)
+    return datasets_to_exclude
+
+
+def _load_manually_filtered_views_to_sandbox(
+    *,
+    sandbox_dataset_prefix: str,
+    dataflow_dataset_override: Optional[str],
+    view_ids_to_load: Optional[List[str]],
+    dataset_ids_to_load: Optional[List[str]],
+    update_ancestors: bool,
+    update_descendants: bool,
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix.
 
@@ -144,65 +136,71 @@ def load_views_to_sandbox(
         To be used with `view_ids_to_load` or `dataset_ids_to_load`. If True, loads
         ancestor/parent views of views found in the two aforementioned parameters.
     """
-    # throw error if update_ancestors and not view_ids_to_load or dataset_ids_to_load
-    if (update_ancestors or update_descendants) and not (
-        view_ids_to_load or dataset_ids_to_load
-    ):
+
+    if not view_ids_to_load and not dataset_ids_to_load:
         raise ValueError(
-            "Cannot update_ancestors or update descendants without supplying "
-            "view_ids_to_load or dataset_ids_to_load."
+            "Must define at least one of view_ids_to_load or dataset_ids_to_load"
         )
 
-    # throw error if both view_ids_to_load and dataset_ids_to_load supplied
-    if view_ids_to_load and dataset_ids_to_load:
-        raise ValueError(
-            "Only supply view_ids_to_load OR dataset_ids_to_load, not both."
-        )
+    logging.info("Prefixing all view datasets with [%s_].", sandbox_dataset_prefix)
+
+    addresses_from_view_ids = (
+        {
+            BigQueryAddress(
+                dataset_id=view_id_str.split(".")[0],
+                table_id=view_id_str.split(".")[1],
+            )
+            for view_id_str in view_ids_to_load
+        }
+        if view_ids_to_load
+        else None
+    )
 
     logging.info("Gathering all deployed views...")
     view_builders = deployed_view_builders(project_id())
 
-    # If view_ids_to_load or dataset_ids_to_load, use dag walker to get ancestor views
-    # and potentially descendant views, which will be updated, too.
-    if view_ids_to_load or dataset_ids_to_load:
-        root_view_builders_to_load = _get_root_view_builders_to_load(
-            all_view_builders=view_builders,
-            dataset_ids_to_load=dataset_ids_to_load,
-            view_ids_to_load=view_ids_to_load,
-        )
+    collector = BigQueryViewSubDagCollector(
+        view_builders_in_full_dag=view_builders,
+        view_addresses_in_sub_dag=addresses_from_view_ids,
+        dataset_ids_in_sub_dag=(
+            set(dataset_ids_to_load) if dataset_ids_to_load else None
+        ),
+        include_ancestors=update_ancestors,
+        include_descendants=update_descendants,
+        datasets_to_exclude=_datasets_to_exclude_from_sandbox(
+            dataflow_dataset_override
+        ),
+    )
 
-        logging.info("Gathering views to load to sandbox...")
-        builders_to_update = view_builder_sub_graph_for_view_builders_to_load(
-            view_builders_to_load=root_view_builders_to_load,
-            all_view_builders_in_dag=view_builders,
-            get_ancestors=update_ancestors,
-            get_descendants=update_descendants,
-            include_dataflow_views=(dataflow_dataset_override is not None),
-        )
+    _load_collected_views_to_sandbox(
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        dataflow_dataset_override=dataflow_dataset_override,
+        sandbox_view_builder_collector=collector,
+    )
 
-    # Update all view builders if view_ids_to_load or dataset_ids_to_load not specified
-    else:
-        prompt_for_confirmation("This will load all sandbox views, continue?")
-        builders_to_update = [
-            builder
-            for builder in view_builders
-            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the
-            # dataflow_dataset_override is set
-            if dataflow_dataset_override is not None
-            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
-        ]
 
-    logging.info("Updating %s views.", len(builders_to_update))
+def _load_collected_views_to_sandbox(
+    *,
+    sandbox_dataset_prefix: str,
+    sandbox_view_builder_collector: BigQueryViewCollector,
+    dataflow_dataset_override: Optional[str] = None,
+) -> None:
+
+    logging.info("Gathering views to load to sandbox...")
+
+    collected_builders = sandbox_view_builder_collector.collect_view_builders()
+
+    logging.info("Updating %s views...", len(collected_builders))
 
     sandbox_address_overrides = address_overrides_for_view_builders(
         view_dataset_override_prefix=sandbox_dataset_prefix,
-        view_builders=builders_to_update,
+        view_builders=collected_builders,
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        view_builders_to_update=builders_to_update,
+        view_builders_to_update=collected_builders,
         address_overrides=sandbox_address_overrides,
         # Don't clean up datasets when running a sandbox script
         historically_managed_datasets_to_clean=None,
@@ -239,24 +237,22 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
-    # make view_ids_to_load and dataset_ids_to_load mutually exclusive
-    group = parser.add_mutually_exclusive_group()
-
-    group.add_argument(
+    parser.add_argument(
         "--view_ids_to_load",
         dest="view_ids_to_load",
         help="A list of view_ids to load separated by commas. If provided, only loads "
-        "views in this list plus dependencies. View_ids must take the form "
-        "dataset_id.view_id",
+        "views in this list (plus dependencies, if applicable). View_ids must take the "
+        "form dataset_id.view_id. Can be called together with the "
+        "--dataset_ids_to_load argument as long as none of the datasets overlap.",
         type=str_to_list,
         required=False,
     )
 
-    group.add_argument(
+    parser.add_argument(
         "--dataset_ids_to_load",
         dest="dataset_ids_to_load",
         help="A list of dataset_ids to load separated by commas. If provided, only "
-        "loads datasets in this list plus dependencies.",
+        "loads datasets in this list (plus dependencies, if applicable).",
         type=str_to_list,
         required=False,
     )
@@ -296,15 +292,17 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     with local_project_id_override(args.project_id):
-        logging.info(
-            "Prefixing all view datasets with [%s_].", args.sandbox_dataset_prefix
-        )
-
-        load_views_to_sandbox(
-            args.sandbox_dataset_prefix,
-            args.dataflow_dataset_override,
-            args.view_ids_to_load,
-            args.dataset_ids_to_load,
-            args.update_ancestors,
-            args.update_descendants,
-        )
+        if not args.view_ids_to_load and not args.dataset_ids_to_load:
+            load_all_views_to_sandbox(
+                sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                dataflow_dataset_override=args.dataflow_dataset_override,
+            )
+        else:
+            _load_manually_filtered_views_to_sandbox(
+                sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                dataflow_dataset_override=args.dataflow_dataset_override,
+                view_ids_to_load=args.view_ids_to_load,
+                dataset_ids_to_load=args.dataset_ids_to_load,
+                update_ancestors=args.update_ancestors,
+                update_descendants=args.update_descendants,
+            )
