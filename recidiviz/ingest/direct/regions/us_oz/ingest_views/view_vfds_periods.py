@@ -34,7 +34,7 @@ FROM (
   SELECT
     ID,
     PersonID,
-    EXTRACT(DATE FROM Date) as Date,
+    SAFE_CAST(Date AS DATE) as Date,
     Rank,
     Food
   FROM {vfds_favorite_food}

@@ -23,7 +23,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT ID, FirstName, LastName, EXTRACT(DATE FROM StartDate) AS StartDate
+SELECT ID, FirstName, LastName, SAFE_CAST(StartDate as Date) AS StartDate
 FROM {vfds_person}
 """
 
