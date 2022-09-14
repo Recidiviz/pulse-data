@@ -42,7 +42,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.county_code,
         charge.date_charged,
         charge.offense_date,
-        court_case.date_convicted,
         court_case.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
@@ -68,7 +67,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.county_code,
         charge.date_charged,
         charge.offense_date,
-        court_case.date_convicted,
         court_case.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
@@ -98,7 +96,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
       completion_date,
       offense_date,
       date_charged,
-      date_convicted,
       -- Trims the leading and trailing whitespaces from the judicial_district_code --
       TRIM(COALESCE(sentences.judicial_district_code, county_judicial_district.judicial_district_code)) as judicial_district_code,
       is_controlling
