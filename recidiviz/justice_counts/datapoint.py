@@ -339,11 +339,12 @@ class DatapointInterface:
                 logging.warning(
                     "`use_existing_aggregate_value` was specified, but the aggregate "
                     "value either read or inferred from incoming data (%s) does not "
-                    "match the existing aggregate value (%s).",
+                    "match the existing aggregate value (%s). The datapoint will keep the "
+                    "existing aggregate value",
                     value,
                     existing_entity.value,
                 )
-                ingested_entity.value = None
+                ingested_entity.value = existing_entity.value
 
         datapoint, existing_datapoint = update_existing_or_create(
             ingested_entity,

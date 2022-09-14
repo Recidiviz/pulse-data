@@ -119,24 +119,28 @@ class BulkUploader:
         to the Justice Counts database using the `upload_rows` method defined below.
         If an error is encountered on a particular tab, log it and continue.
         """
-        sheet_to_error = {}
-
-        # TODO(#13731): Save raw Excel file in GCS
+        sheet_to_error: Dict[str, Exception] = {}
 
         # Sort so that we process e.g. caseloads before caseloads_by_gender.
         # This is important because it allows us to remove the requirement
         # that caseloads_by_gender includes the aggregate metric value too,
         # which would be redundant.
-        for sheet_name in sorted(xls.sheet_names):
+        filename_to_metricfiles = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+        aggregate_sheet_names = {
+            filename
+            for filename, metricfile in filename_to_metricfiles.items()
+            if metricfile.disaggregation is None
+        }
+        for sheet_name in sorted(
+            xls.sheet_names, key=lambda x: 0 if x in aggregate_sheet_names else 1
+        ):
             logging.info("Uploading %s", sheet_name)
-
             try:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
                 # Drop any rows that contain any NaN values
                 df = df.dropna(axis=0, how="any", subset="value")
                 # Convert dataframe to a list of dictionaries
                 rows = df.to_dict("records")
-
                 self._upload_rows(
                     session=session,
                     system=system,
@@ -150,7 +154,6 @@ class BulkUploader:
                     sheet_to_error[sheet_name] = e
                 else:
                     raise e
-
         return sheet_to_error
 
     def upload_csv(
@@ -289,9 +292,9 @@ class BulkUploader:
         )
 
         # Step 3: For each time range represented in the file, convert the
-        # reported data into a ReportMetric object. If a report already
-        # exists for this time range, update it with the ReportMetric.
-        # Else, create a new report and add the ReportMetric.
+        # reported data into a MetricInterface object. If a report already
+        # exists for this time range, update it with the MetricInterface.
+        # Else, create a new report and add the MetricInterface.
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
             existing_report = reports_by_time_range.get(time_range)
             if existing_report is not None:

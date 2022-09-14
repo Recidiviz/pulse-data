@@ -38,6 +38,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     ProsecutionAndDefenseStaffType,
 )
 from recidiviz.justice_counts.dimensions.supervision import SupervisionStaffType
+from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -83,6 +84,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         self.law_enforcement_excel = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
+        )
+        self.law_enforcement_excel_mismatched_totals = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/law_enforcement/law_enforcement_mismatched_totals.xlsx",
         )
         self.supervision_directory = os.path.join(
             os.path.dirname(__file__),
@@ -574,3 +579,67 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     OffenseType.UNKNOWN: None,
                 },
             )
+
+    def test_infer_aggregate_value_with_total(
+        self,
+    ) -> None:
+        """Check that, when the infer_aggregate_value flag is on, bulk upload will still defer
+        to a aggregate total if it was exported explicitly."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            # This test uploads spreadsheet that will create one report with two metrics:
+            # 1) an arrest metric with an aggregate value that is reported and breakdowns
+            # that do not match the total and 2) a reported_crime_by_type sheet where no
+            # totals are reported.
+            self.uploader_infer.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(self.law_enforcement_excel_mismatched_totals),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user_account,
+            )
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.law_enforcement_agency_id,
+                include_datapoints=True,
+            )
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    report=reports[0], session=session
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(len(metrics), 3)
+            # the arrest metric should have the aggregate value that is reported, not any of the infered
+            # values from the breakdown
+            arrest_metric = list(
+                filter(lambda m: m.key == law_enforcement.total_arrests.key, metrics)
+            )[0]
+            self.assertEqual(arrest_metric.value, 200)
+            for aggregated_dimension in arrest_metric.aggregated_dimensions:
+                if aggregated_dimension.dimension_to_value is not None:
+                    inferred_value = list(
+                        filter(
+                            lambda item: item is not None,
+                            aggregated_dimension.dimension_to_value.values(),
+                        )
+                    )
+                    self.assertNotEqual(sum(inferred_value), 200)
+            # the reported_crime metric should have the aggregate value that is inferred, since no
+            # aggregate value was reported explicitly.
+            reported_crime_metric = list(
+                filter(lambda m: m.key == law_enforcement.reported_crime.key, metrics)
+            )[0]
+            self.assertEqual(reported_crime_metric.value, 1000)
+            for aggregated_dimension in reported_crime_metric.aggregated_dimensions:
+                if aggregated_dimension.dimension_to_value is not None:
+                    inferred_value = list(
+                        filter(
+                            lambda item: item is not None,
+                            aggregated_dimension.dimension_to_value.values(),
+                        )
+                    )
+                    self.assertEqual(sum(inferred_value), 1000)

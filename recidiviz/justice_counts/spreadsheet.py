@@ -193,8 +193,7 @@ class SpreadsheetInterface:
         agency_id: int,
     ) -> schema.Spreadsheet:
         """Ingests spreadsheet for an agency and logs any errors."""
-        # TODO(#14931) When infer_aggregate_value is true, don't overwrite all value if it is provided
-        uploader = BulkUploader(catch_errors=True, infer_aggregate_value=False)
+        uploader = BulkUploader(catch_errors=True, infer_aggregate_value=True)
         user_account = (
             session.query(schema.UserAccount)
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
