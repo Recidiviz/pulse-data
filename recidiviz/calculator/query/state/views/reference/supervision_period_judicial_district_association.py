@@ -44,7 +44,6 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         sent.external_id as sentence_external_id,
         offense_date,
         date_charged,
-        date_convicted,
         judicial_district_code,
         is_controlling
       FROM 
