@@ -30,7 +30,15 @@ SELECT
   LEAD(Date) OVER (PARTITION BY PersonID, Rank ORDER BY Date) as EndDate,
   Rank,
   Food
-FROM {vfds_favorite_food}
+FROM (
+  SELECT
+    ID,
+    PersonID,
+    EXTRACT(DATE FROM Date) as Date,
+    Rank,
+    Food
+  FROM {vfds_favorite_food}
+) f
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
