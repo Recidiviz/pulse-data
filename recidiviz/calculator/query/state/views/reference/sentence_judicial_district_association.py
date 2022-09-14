@@ -42,7 +42,7 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.county_code,
         charge.date_charged,
         charge.offense_date,
-        court_case.judicial_district_code,
+        charge.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
         `{project_id}.{base_dataset}.state_supervision_sentence` ss
@@ -52,9 +52,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
       LEFT JOIN
         `{project_id}.{base_dataset}.state_charge` charge
       USING (charge_id)
-      LEFT JOIN
-        `{project_id}.{base_dataset}.state_court_case` court_case
-      USING (court_case_id)
     ), incarceration AS (
       SELECT
         inc.state_code,
@@ -67,7 +64,7 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.county_code,
         charge.date_charged,
         charge.offense_date,
-        court_case.judicial_district_code,
+        charge.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
         `{project_id}.{base_dataset}.state_incarceration_sentence` inc
@@ -77,9 +74,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
       LEFT JOIN
         `{project_id}.{base_dataset}.state_charge` charge
       USING (charge_id)
-      LEFT JOIN
-        `{project_id}.{base_dataset}.state_court_case` court_case
-      USING (court_case_id)
     ), sentences AS (
       SELECT * FROM supervision
       UNION ALL
