@@ -55,11 +55,8 @@ MONTH_NAMES = list(calendar.month_name)
 class BulkUploader:
     """Functionality for bulk upload of data into the Justice Counts database."""
 
-    def __init__(
-        self, infer_aggregate_value: bool = False, catch_errors: bool = True
-    ) -> None:
+    def __init__(self, catch_errors: bool = True) -> None:
         self.catch_errors = catch_errors
-        self.infer_aggregate_value = infer_aggregate_value
         self.text_analyzer = TextAnalyzer(
             configuration=TextMatchingConfiguration(
                 # We don't want to treat "other" as a stop word,
@@ -459,13 +456,11 @@ class BulkUploader:
                     )  # type: ignore[call-arg]
                 dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
-            if self.infer_aggregate_value:
-                # If this is True, we calculate the aggregate value by summing up all breakdowns.
-                aggregate_value = sum(
-                    val  # type: ignore[misc]
-                    for val in dimension_to_value.values()  # type: ignore[union-attr]
-                    if val is not None
-                )
+            aggregate_value = sum(
+                val  # type: ignore[misc]
+                for val in dimension_to_value.values()  # type: ignore[union-attr]
+                if val is not None
+            )
 
         return MetricInterface(
             key=metricfile.definition.key,

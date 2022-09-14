@@ -210,11 +210,8 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         agency_id = int(data["agency_id"])
         user_id = int(data["user_id"])
         system = data["system"]
-        infer_aggregate_value = data["infer_aggregate_value"] == "true"
 
-        uploader = BulkUploader(
-            catch_errors=False, infer_aggregate_value=infer_aggregate_value
-        )
+        uploader = BulkUploader(catch_errors=False)
 
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
