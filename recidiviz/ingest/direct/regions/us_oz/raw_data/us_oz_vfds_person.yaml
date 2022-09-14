@@ -8,9 +8,13 @@ primary_key_cols:
 columns:
   - name: ID
     description: A number used to uniquely identify this person in the system.
+    is_pii: True
   - name: FirstName
     description: The person's first name.
+    is_pii: True
   - name: LastName
     description: The person's last name.
+    is_pii: True
   - name: StartDate
     description: The date this person started at Recidiviz.
+    is_datetime: True

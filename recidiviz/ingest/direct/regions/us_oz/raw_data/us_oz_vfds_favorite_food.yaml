@@ -12,8 +12,10 @@ columns:
     description: A number used to uniquely identify this favorite food entry.
   - name: PersonID
     description: The id of the person whose favorite food is described in this row.
+    is_pii: True
   - name: Date
     description: The date that this food took this spot in their favorite food ranking.
+    is_datetime: True
   - name: Rank
     description: |-
       The rank of this food. For example, if this became their absolute
