@@ -58,7 +58,7 @@ DIMENSIONS = [
     jails_and_prisons.CorrectionalFacilityStaffType,
     jails_and_prisons.JailReleaseType,
     jails_and_prisons.PrisonPopulationType,
-    jails_and_prisons.PrisonReleaseTypes,
+    jails_and_prisons.PrisonReleaseType,
     prosecution.CaseSeverityType,
     prosecution.DispositionType,
     prosecution.ProsecutionAndDefenseStaffType,

@@ -20,7 +20,7 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
     CorrectionalFacilityStaffType,
     PrisonPopulationType,
-    PrisonReleaseTypes,
+    PrisonReleaseType,
     ReadmissionType,
 )
 from recidiviz.justice_counts.dimensions.person import (
@@ -94,7 +94,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="releases_by_type",
         definition=prisons.releases,
-        disaggregation=PrisonReleaseTypes,
+        disaggregation=PrisonReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(

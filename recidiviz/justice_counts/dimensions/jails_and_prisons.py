@@ -68,7 +68,7 @@ class JailReleaseType(DimensionBase, enum.Enum):
         return "metric/jails/release/type"
 
 
-class PrisonReleaseTypes(DimensionBase, enum.Enum):
+class PrisonReleaseType(DimensionBase, enum.Enum):
     SENTENCE_COMPLETION = "Sentence Completion"
     TO_SUPERVISION = "To Supervision"
     TRANSFER = "Transfer"
