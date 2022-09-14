@@ -46,6 +46,9 @@ class DirectIngestStatus(OperationsEnum):
     FLASH_IN_PROGRESS = operations_enum_strings.direct_ingest_status_flash_in_progress
     FLASH_COMPLETED = operations_enum_strings.direct_ingest_status_flash_completed
     FLASH_CANCELED = operations_enum_strings.direct_ingest_status_flash_canceled
+    FLASH_CANCELLATION_IN_PROGRESS = (
+        operations_enum_strings.direct_ingest_status_flash_cancellation_in_progress
+    )
     UP_TO_DATE = operations_enum_strings.direct_ingest_status_up_to_date
     STALE_RAW_DATA = operations_enum_strings.direct_ingest_status_stale_raw_data
     NO_RERUN_IN_PROGRESS = (
@@ -86,6 +89,8 @@ _DIRECT_INGEST_INSTANCE_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
     "SECONDARY to PRIMARY is completed. In SECONDARY, no statuses will be added after this status until a new "
     "rerun is started. In PRIMARY, the scheduler will transition this status to the next appropriate status "
     "(usually UP_TO_DATE).",
+    DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS: "Rows are added with this status in SECONDARY instances when a "
+    "cancellation of a flash is in progress.",
     DirectIngestStatus.FLASH_CANCELED: "Rows are added with this status (for the SECONDARY instance only) when a "
     "flash is canceled before results are flashed from SECONDARY to PRIMARY (this can be due to validations "
     "indicating issues with a rerun, for example).",
