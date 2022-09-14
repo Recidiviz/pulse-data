@@ -624,10 +624,6 @@ def _check_for_conflicts(
             last_modified_at,
             time_loaded_by_client,
         )
-        raise JusticeCountsServerError(
-            code="version_conflict",
-            description="Report has been updated since client loaded the page.",
-        )
 
 
 def _get_error(error: Exception) -> FlaskException:
