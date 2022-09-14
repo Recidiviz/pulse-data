@@ -281,7 +281,15 @@ def _get_changed_views_to_load_to_sandbox(
             changed_datasets_to_ignore
             and address.dataset_id in changed_datasets_to_ignore
         ):
-            ignored_changed_addresses.add(address)
+            if change_type == ViewChangeType.ADDED:
+                logging.warning(
+                    "Cannot exclude newly added view [%s] from sandbox - including "
+                    "even though dataset [%s] is ignored.",
+                    address,
+                    address.dataset_id,
+                )
+            else:
+                ignored_changed_addresses.add(address)
 
         if change_type == ViewChangeType.ADDED:
             added_view_addresses.add(address)
@@ -308,30 +316,20 @@ def _get_changed_views_to_load_to_sandbox(
             _sorted_address_list_str(ignored_changed_addresses),
         )
 
-    for ignored_address in ignored_changed_addresses:
-        change_type = changed_view_addresses[ignored_address]
-        if change_type == ViewChangeType.ADDED:
-            logging.error(
-                "Cannot exclude dataset [%s] from sandbox - found new view [%s] which "
-                "has not yet been deployed.",
-                ignored_address.dataset_id,
-                ignored_address,
-            )
-            sys.exit(1)
-
     return set(changed_view_addresses) - ignored_changed_addresses
 
 
 def _confirm_rebased_on_latest_deploy() -> None:
     last_deployed_commit = get_hash_of_deployed_commit(project_id())
 
-    if is_commit_in_current_branch(last_deployed_commit):
+    if not is_commit_in_current_branch(last_deployed_commit):
         logging.error(
             "Cannot find commit [%s] in the current branch, which is the commit last "
             "deployed to [%s]. You must rebase this branch before using `auto` mode.",
             last_deployed_commit,
             project_id(),
         )
+        sys.exit(1)
 
 
 def _load_views_changed_on_branch_to_sandbox(
