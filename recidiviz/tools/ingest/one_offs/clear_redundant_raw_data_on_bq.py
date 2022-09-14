@@ -49,7 +49,7 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
         )
         prompt_for_confirmation(
             "Pause queues: "
-            f"https://{project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions?stateCode={state_code.value}?"
+            f"https://{project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions/{state_code.value}/ingest_queues?"
         )
         prompt_for_confirmation(
             f"Are you sure this state receives frequent historical uploads {state_code.value}?"
@@ -78,7 +78,7 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
     if not dry_run:
         prompt_for_confirmation(
             f"Unpause queues: "
-            f"https://{project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions?stateCode={state_code.value}?"
+            f"https://{project_id}.ue.r.appspot.com/admin/ingest_operations/key_actions/{state_code.value}/ingest_queues?"
         )
 
 
