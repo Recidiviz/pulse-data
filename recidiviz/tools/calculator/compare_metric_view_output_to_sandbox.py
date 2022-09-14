@@ -90,7 +90,7 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.tools.load_views_to_sandbox import load_views_to_sandbox
+from recidiviz.tools.load_views_to_sandbox import load_all_views_to_sandbox
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.string import StrictStringFormatter
@@ -156,7 +156,7 @@ def compare_metric_view_output_to_sandbox(
             "Loading views into sandbox datasets prefixed with %s",
             sandbox_dataset_prefix,
         )
-        load_views_to_sandbox(sandbox_dataset_prefix)
+        load_all_views_to_sandbox(sandbox_dataset_prefix=sandbox_dataset_prefix)
 
     bq_client = BigQueryClientImpl()
     sandbox_comparison_output_dataset_id = (

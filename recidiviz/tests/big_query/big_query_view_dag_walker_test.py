@@ -51,6 +51,72 @@ LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
 
 
+# View builders for views forming a DAG shaped like an X:
+#  1     2
+#   \   /
+#     3
+#   /   \
+#  4     5
+X_SHAPED_DAG_VIEW_BUILDERS_LIST = [
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_1",
+        view_id="table_1",
+        description="table_1 description",
+        view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+    ),
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_2",
+        view_id="table_2",
+        description="table_2 description",
+        view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+    ),
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_3",
+        view_id="table_3",
+        description="table_3 description",
+        view_query_template="""
+            SELECT * FROM `{project_id}.dataset_1.table_1`
+            JOIN `{project_id}.dataset_2.table_2`
+            USING (col)""",
+    ),
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_4",
+        view_id="table_4",
+        description="table_4 description",
+        view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+    ),
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_5",
+        view_id="table_5",
+        description="table_5 description",
+        view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+    ),
+]
+
+# View builders for views forming a DAG with a diamond in it:
+#  1     2
+#   \   /
+#     3
+#   /   \
+#  4     5
+#   \   /
+#     6
+DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST = [
+    *X_SHAPED_DAG_VIEW_BUILDERS_LIST.copy(),
+    SimpleBigQueryViewBuilder(
+        dataset_id="dataset_6",
+        view_id="table_6",
+        description="table_6 description",
+        view_query_template="""
+            SELECT * FROM `{project_id}.dataset_4.table_4`
+            JOIN `{project_id}.dataset_5.table_5`
+            USING (col)""",
+    ),
+]
+
+
 class TestBigQueryViewDagWalker(unittest.TestCase):
     """Tests for BigQueryViewDagWalker"""
 
@@ -70,70 +136,13 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 view_builder.build() for view_builder in all_deployed_view_builders()
             ]
 
-        # Views forming a DAG shaped like an X:
-        #  1     2
-        #   \   /
-        #     3
-        #   /   \
-        #  4     5
         self.x_shaped_dag_views_list = [
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_1",
-                view_id="table_1",
-                description="table_1 description",
-                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_2",
-                view_id="table_2",
-                description="table_2 description",
-                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_3",
-                view_id="table_3",
-                description="table_3 description",
-                view_query_template="""
-            SELECT * FROM `{project_id}.dataset_1.table_1`
-            JOIN `{project_id}.dataset_2.table_2`
-            USING (col)""",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_4",
-                view_id="table_4",
-                description="table_4 description",
-                view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-            ).build(),
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_5",
-                view_id="table_5",
-                description="table_5 description",
-                view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-            ).build(),
+            b.build() for b in X_SHAPED_DAG_VIEW_BUILDERS_LIST
         ]
 
-        # Views forming a DAG with a diamond in it:
-        #  1     2
-        #   \   /
-        #     3
-        #   /   \
-        #  4     5
-        #   \   /
-        #     6
-        self.diamond_shaped_dag_views_list = self.x_shaped_dag_views_list.copy()
-        self.diamond_shaped_dag_views_list.append(
-            SimpleBigQueryViewBuilder(
-                dataset_id="dataset_6",
-                view_id="table_6",
-                description="table_6 description",
-                view_query_template="""
-            SELECT * FROM `{project_id}.dataset_4.table_4`
-            JOIN `{project_id}.dataset_5.table_5`
-            USING (col)""",
-            ).build()
-        )
+        self.diamond_shaped_dag_views_list = [
+            b.build() for b in DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        ]
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
