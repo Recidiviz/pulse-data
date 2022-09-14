@@ -34,10 +34,10 @@ import argparse
 import logging
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.git import get_hash_of_deployed_commit
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import (
     prompt_for_confirmation,
-    run_command,
     run_command_streaming,
 )
 from recidiviz.utils import metadata
@@ -77,24 +77,6 @@ def create_parser() -> argparse.ArgumentParser:
         default=False,
     )
     return parser
-
-
-def get_hash_of_deployed_commit(project_id: str) -> str:
-    """Returns the commit hash of the currently deployed version in the provided
-    project.
-    """
-
-    # First make sure all tags are current locally
-    run_command("git fetch --all --tags --prune --prune-tags", timeout_sec=30)
-
-    get_tag_cmd = (
-        f"gcloud app versions list --project={project_id} --hide-no-traffic "
-        f"--service=default --format=yaml | yq .id | tr -d \\\" | tr '-' '.'"
-        ' | sed "s/.alpha/-alpha/"'
-    )
-
-    get_commit_cmd = f"git rev-list -n 1 $({get_tag_cmd})"
-    return run_command(get_commit_cmd, timeout_sec=30).strip()
 
 
 def main(
