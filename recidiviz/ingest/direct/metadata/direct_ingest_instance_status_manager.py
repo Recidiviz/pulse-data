@@ -31,6 +31,7 @@ from recidiviz.utils import environment
 INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.PRIMARY: [
         DirectIngestStatus.READY_TO_FLASH,
+        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
         DirectIngestStatus.FLASH_CANCELED,
         DirectIngestStatus.STALE_RAW_DATA,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
@@ -46,6 +47,7 @@ HUMAN_INTERVENTION_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]
         DirectIngestStatus.FLASH_IN_PROGRESS,
     ],
     DirectIngestInstance.SECONDARY: [
+        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
         DirectIngestStatus.FLASH_CANCELED,
         DirectIngestStatus.FLASH_IN_PROGRESS,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
@@ -156,6 +158,9 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         ],
         DirectIngestStatus.FLASH_CANCELED: [
+            DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
+        ],
+        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS: [
             DirectIngestStatus.READY_TO_FLASH,
         ],
         DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[

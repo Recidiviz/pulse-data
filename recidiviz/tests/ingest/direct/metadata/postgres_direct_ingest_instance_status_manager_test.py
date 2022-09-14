@@ -315,6 +315,7 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
+                DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
                 DirectIngestStatus.FLASH_CANCELED,
                 DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             ],
