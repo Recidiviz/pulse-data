@@ -15,6 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a number of git-related helper functions."""
+import re
+
+import yaml
+
 from recidiviz.tools.utils.script_helpers import run_command
 
 
@@ -26,13 +30,18 @@ def get_hash_of_deployed_commit(project_id: str) -> str:
     # First make sure all tags are current locally
     run_command("git fetch --all --tags --prune --prune-tags", timeout_sec=30)
 
-    get_tag_cmd = (
-        f"gcloud app versions list --project={project_id} --hide-no-traffic "
-        f"--service=default --format=yaml | yq .id | tr -d \\\" | tr '-' '.'"
-        ' | sed "s/.alpha/-alpha/"'
-    )
+    get_versions_command = f"gcloud app versions list --project={project_id} --hide-no-traffic --service=default --format=yaml"
+    versions_yaml = run_command(get_versions_command, timeout_sec=30).strip()
+    version_tags = []
+    for version_info in yaml.full_load_all(versions_yaml):
+        version_id = version_info["id"]
+        if not re.match(r"^v[0-9]+-[0-9]+-[0-9]+(-alpha-[0-9]+)?$", version_id):
+            # filter out debug versions that look like v1-378-0-alpha-0-test
+            continue
+        version_tags.append(version_id.replace("-", ".").replace(".alpha", "-alpha"))
 
-    get_commit_cmd = f"git rev-list -n 1 $({get_tag_cmd})"
+    version_tags_str = " ".join(version_tags)
+    get_commit_cmd = f"git rev-list -n 1 {version_tags_str}"
     return run_command(get_commit_cmd, timeout_sec=30).strip()
 
 
