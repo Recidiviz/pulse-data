@@ -69,17 +69,22 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
         SELECT 
             metrics.state_code,
             gender,
-            admission_reason AS legal_status,
+            sess.start_reason AS legal_status,
             IFNULL(aggregating_location_id, metrics.facility) AS facility,
             {add_age_groups}
             length_of_stay,
             prioritized_race_or_ethnicity as race,
-            COUNT(DISTINCT person_id) as person_count
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` metrics
+            COUNT(DISTINCT metrics.person_id) as person_count
+        FROM (
+            SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` 
+            WHERE included_in_state_population) metrics
         LEFT JOIN length_of_stay_bins USING (person_id)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.facility = name_map.location_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess
+            ON metrics.date_of_stay BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+            AND metrics.person_id = sess.person_id
         group by 1, 2, 3, 4, 5, 6, 7
     ),
     filtered_rows AS (

@@ -49,18 +49,23 @@ PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE = """
         SELECT DISTINCT
             pop.state_code,
             pop.gender,
-            admission_reason,
+            sess.start_reason AS admission_reason,
             IFNULL(aggregating_location_id, pop.facility) AS facility,
             {add_age_groups}
             pop.age,
             person_external_id AS state_id,
             {formatted_name} AS full_name,
             prioritized_race_or_ethnicity as race,
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
+        FROM (
+            SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` 
+            WHERE included_in_state_population) pop
         LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
                 ON pop.state_code = name_map.state_code
                 AND pop.facility = name_map.location_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess
+                ON pop.date_of_stay BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+                AND pop.person_id = sess.person_id
         {filter_to_enabled_states}
     ), filtered_rows AS (
         SELECT
@@ -107,6 +112,7 @@ PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
         materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
         state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
         add_age_groups=add_age_groups(),
         filter_to_enabled_states=filter_to_enabled_states(
             state_code_column="pop.state_code",
