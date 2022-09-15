@@ -28,6 +28,7 @@ from recidiviz.calculator.query.bq_utils import (
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
+    pathways_state_specific_supervision_district_filter,
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
@@ -113,6 +114,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_RAW_QUERY_TEMPLATE = """
             AND base_data.level_1_location_external_id = location.location_id
     )
     SELECT {columns} FROM transitions
+    WHERE {state_specific_district_filter}
 """
 
 SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -154,6 +156,9 @@ SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER = SelectedColumnsBigQueryView
     transition_time_period=get_binned_time_period_months("transition_date"),
     length_of_stay_months_grouped=length_of_stay_month_groups(
         "DATE_DIFF(base_data.transition_date, base_data.supervision_start_date, MONTH)"
+    ),
+    state_specific_district_filter=pathways_state_specific_supervision_district_filter(
+        district_column_name="supervision_district"
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
 )
