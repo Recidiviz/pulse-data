@@ -1,16 +1,24 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SupervisionSentence
 file_description: |-
-  TODO(#14099): Fill in the file description
+  Historical information about supervision sentences for people currently on parole.
 data_classification: source
 primary_key_cols: []
 columns:
   - name: OffenderId
+    is_pii: True
+    description: |-
+      An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: Cdcno
+    is_pii: True
+    description: |-
+      This has the latest CDCNO for each person. See CDCNOInCustody for more.
   - name: SupervisionType
   - name: SupervisionLevel
   - name: SupvLevelChangeDate
+    is_datetime: True
   - name: ParoleAgentName
+    is_pii: True
   - name: ParoleRegion
   - name: ParoleDistrict
   - name: ParoleUnit

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: AssessmentParole
+file_tag: AssessmentInCustody
 file_description: |-
-  CSRA, Mental Health, FSORA, DDP, DPP, COMPAS Assessment scores and subscores for individuals on parole.
+  CSRA, Mental Health, FSORA, DDP, DPP, COMPAS Assessment scores and subscores for individuals in custody who are eligible for parole within the next 90 days.
 data_classification: source
 primary_key_cols: []
 columns:
@@ -11,7 +11,7 @@ columns:
       An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: Cdcno
     description: |-
-      This has the latest CDCNO for each person in custody. Use CDCNOInCustody to find this person's offender ID
+      This has the latest CDCNO for each person in custody. Use CDCNOInCustody to find this person's offender ID.
     is_pii: True
   - name: LatestClassifScore
     description: |-

@@ -1,12 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: AgentParole
 file_description: |-
-  TODO(#14099): Fill in the file description
+  This table contains general details about parole agents in California
 data_classification: source
 primary_key_cols: []
 columns:
   - name: ParoleAgentName
+    description: |-
+      The name of the parole agent
+    is_pii: True
   - name: AgentClassification
+    description: |-
+      Classification of a parole agent. Refer to DAPO Agent Classifications on the CalHR website.
   - name: ParoleRegion
   - name: ParoleDistrict
+    description: |-
+      The district that a parole agent works under. Parole Agents may work in multiple districts.
   - name: ParoleUnit
+    description: |-
+      The unit that a parole agent works in. Parole Agents may work in multiple units.
