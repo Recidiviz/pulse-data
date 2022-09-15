@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_OFFENDER_ERD
+file_description: |-
+  This table contains ERD (early release date) information for people under MIDOC jurisdiction.
+data_classification: source
+primary_key_cols:
+  - offender_erd_id
+columns:
+  - name: offender_erd_id
+    description: The OMNI-database generated ID for the ERD record for a justice-involved individual
+  - name: offender_id
+    description: The OMNI-database generated ID for the justice-involved individual
+    is_pii: True
+  - name: offender_erd_date
+    description: Early release date (ERD)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
