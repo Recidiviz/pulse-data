@@ -84,7 +84,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
         df.*,
         sessions_supervision.start_date AS latest_supervision_start_date,
         sessions_incarceration.start_date AS latest_incarceration_start_date,
-      FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` df
+      FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` df
       -- The next two subqueries use compartment_level_0 sessions to get the latest supervision and latest incarceration start dates
       LEFT JOIN (
         SELECT *
@@ -102,7 +102,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
         ) sessions_incarceration
         ON df.person_id = sessions_incarceration.person_id
         AND df.date_of_supervision >= sessions_incarceration.start_date
-      WHERE df.state_code = 'US_PA' 
+      WHERE df.state_code = 'US_PA' AND df.included_in_state_population
     ),
     df_and_board_actions AS (
       SELECT 
