@@ -50,6 +50,7 @@ from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db_instance,
     confirm_correct_git_branch,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -163,12 +164,27 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(
-            args.database,
-            args.repo_root,
-            args.dry_run,
-            args.skip_db_name_check,
-            args.confirm_hash,
-            args.ssl_cert_path,
-            args.using_proxy,
-        )
+        if args.using_proxy:
+            with cloudsql_proxy_control.connection(
+                schema_type=args.database,
+                prompt=not args.skip_db_name_check,
+            ):
+                main(
+                    schema_type=args.database,
+                    repo_root=args.repo_root,
+                    dry_run=args.dry_run,
+                    skip_db_name_check=args.skip_db_name_check,
+                    confirm_hash=args.confirm_hash,
+                    ssl_cert_path=args.ssl_cert_path,
+                    using_proxy=args.using_proxy,
+                )
+        else:
+            main(
+                schema_type=args.database,
+                repo_root=args.repo_root,
+                dry_run=args.dry_run,
+                skip_db_name_check=args.skip_db_name_check,
+                confirm_hash=args.confirm_hash,
+                ssl_cert_path=args.ssl_cert_path,
+                using_proxy=args.using_proxy,
+            )
