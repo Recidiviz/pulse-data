@@ -34,7 +34,7 @@ FROM (
   SELECT
     ID,
     PersonID,
-    SAFE_CAST(Date AS DATE) as Date,
+    CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', Date) AS DATE) as Date,
     Rank,
     Food
   FROM {vfds_favorite_food}
