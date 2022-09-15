@@ -29,6 +29,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_nd.implied_valid_early_termination_supervision_level import (
+    _CRITERIA_NAME as supervision_level_criteria,
+)
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -145,9 +148,30 @@ individual_sentence AS (
                     ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_classifications,
   ARRAY_AGG(crime_name ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_names,
   FROM individual_sentence_charges
-  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12),
-
- individual_sentence_ranks AS (
+  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+),
+eligible_population AS (
+   -- Pull the individuals that are currently eligible for early discharge
+   SELECT
+     state_code,
+     person_id,
+     start_date,
+     reasons
+   FROM `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized`
+   WHERE is_eligible
+    AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND DATE_SUB(end_date, INTERVAL 1 DAY)
+),
+supervision_levels AS (
+   -- Extract supervision level info from the reasons JSON blob
+   SELECT
+     state_code,
+     person_id,
+     JSON_VALUE(reason, '$.reason.supervision_level') AS supervision_level,
+   FROM eligible_population,
+   UNNEST(JSON_QUERY_ARRAY(reasons)) AS reason
+   WHERE JSON_VALUE(reason, '$.criteria_name') = "{supervision_level_criteria}"
+),
+individual_sentence_ranks AS (
   /* This CTE ranks sentences first by supervision type (Not IC Probation), longest duration,
    and severity of crime. It also keeps record of the # of sentences for an individual 
   
@@ -169,7 +193,7 @@ individual_sentence AS (
     inds.crime_subtypes,
     inds.crime_classifications,
     inds.supervision_type,
-    JSON_VALUE(te.reasons[2].reason, '$.supervision_level') AS supervision_level,
+    sl.supervision_level,
     inds.probation_expiration_date,
     --create sentence ranking by supervision type (not IC probation), length, and charge severity 
     ROW_NUMBER() OVER (PARTITION BY person_external_id ORDER BY supervision_type_rank,
@@ -181,15 +205,11 @@ individual_sentence AS (
     te.reasons, 
    COUNT(*) OVER(PARTITION BY person_external_id) AS number_of_sentences
   FROM dataflow_metrics dm
-  INNER JOIN `{project_id}.{task_eligibility_dataset}.complete_discharge_early_from_supervision_form_materialized` te
-    ON te.state_code = dm.state_code
-    AND te.person_id = dm.person_id
-    AND te.start_date <= CURRENT_DATE('US/Pacific')
-    AND te.end_date IS NULL
-    --only individuals that are currently eligible for early discharge
-    AND te.is_eligible
-   --AND te.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
- INNER JOIN individual_sentence inds
+  INNER JOIN eligible_population te
+    USING (state_code, person_id)
+  INNER JOIN supervision_levels sl
+    USING (state_code, person_id)
+  INNER JOIN individual_sentence inds
     ON te.state_code = inds.state_code
     AND te.person_id = inds.person_id
     AND te.start_date BETWEEN inds.prior_court_date AND COALESCE(inds.completion_date, "9999-12-31")
@@ -238,6 +258,7 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER = SimpleBigQ
     ),
     should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    supervision_level_criteria=supervision_level_criteria,
 )
 
 if __name__ == "__main__":
