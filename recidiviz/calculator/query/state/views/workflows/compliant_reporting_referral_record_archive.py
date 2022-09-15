@@ -86,7 +86,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             COALESCE(cr.compliant_reporting_eligible, client.compliant_reporting_eligible) AS compliant_reporting_eligible,
             -- These fields were migrated from the client_record to the compliant_reporting_referral_record
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
-                THEN cr.remaining_criteria_needed
+                THEN CAST(cr.remaining_criteria_needed AS INT64)
                 ELSE client.remaining_criteria_needed
             END AS remaining_criteria_needed,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
@@ -148,6 +148,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     LEFT JOIN records_by_state_by_date USING (state_code, export_date)
     LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id` 
         USING (state_code, person_external_id)
+    WHERE compliant_reporting_eligible IS NOT NULL
 """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
