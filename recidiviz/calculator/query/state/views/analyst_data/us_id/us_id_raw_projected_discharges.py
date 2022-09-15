@@ -36,12 +36,12 @@ US_ID_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         # TODO(#9211): Use projected_end_date from dataflow metrics once #9197 is resolved
         MAX(supervision_sentence.projected_completion_date) AS probation_max_completion_date,
         MAX(incarceration_sentence.projected_max_release_date) AS parole_max_completion_date,
-      FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` caseload 
+      FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload 
       LEFT JOIN `{project_id}.{base_dataset}.state_supervision_sentence` supervision_sentence
         ON caseload.person_id = supervision_sentence.person_id 
       LEFT JOIN `{project_id}.{base_dataset}.state_incarceration_sentence` incarceration_sentence
         ON caseload.person_id = incarceration_sentence.person_id 
-      WHERE caseload.state_code = 'US_ID'
+      WHERE caseload.state_code = 'US_ID' AND caseload.included_in_state_population
       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     ), 
     -- Add in additional information (name, PO info, district info)
