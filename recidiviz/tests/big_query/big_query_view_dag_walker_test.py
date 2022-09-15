@@ -1286,6 +1286,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="sessions", table_id="supervision_level_dedup_priority"
             ),
             BigQueryAddress(
+                dataset_id="sessions", table_id="assessment_level_dedup_priority"
+            ),
+            BigQueryAddress(
                 dataset_id="sessions", table_id="compartment_level_1_dedup_priority"
             ),
             BigQueryAddress(

@@ -40,7 +40,8 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
         assessment_type,
         assessment_class,
         assessment_score,
-        assessment_level
+        assessment_level,
+        assessment_level_raw_text,
     FROM
         (
         SELECT *,
@@ -56,7 +57,7 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
             ) AS rn
         FROM `{project_id}.{base_dataset}.state_assessment`
         WHERE assessment_date IS NOT NULL
-            AND (assessment_type = 'LSIR' OR assessment_type LIKE 'ORAS%')
+            AND (assessment_type IN ('LSIR','STRONG_R') OR assessment_type LIKE 'ORAS%')
         )
     WHERE rn = 1
     """

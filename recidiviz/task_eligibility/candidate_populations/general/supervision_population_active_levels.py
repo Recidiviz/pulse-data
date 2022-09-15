@@ -37,7 +37,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     description=_DESCRIPTION,
     additional_filters=[
         'attr.compartment_level_2 IN ("PAROLE", "PROBATION", "DUAL")',
-        'attr.correctional_level NOT IN ("UNASSIGNED", "IN_CUSTODY", "INTERSTATE_COMPACT")',
+        'attr.correctional_level NOT IN ("UNASSIGNED","IN_CUSTODY","INTERSTATE_COMPACT","WARRANT","ABSCONDED","EXTERNAL_UNKNOWN","INTERNAL_UNKNOWN")',
     ],
 )
 
