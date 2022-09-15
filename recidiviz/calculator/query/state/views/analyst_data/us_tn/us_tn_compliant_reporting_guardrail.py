@@ -33,19 +33,21 @@ US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_DESCRIPTION = """View that supports gua
 
 US_TN_COMPLIANT_REPORTING_GUARDRAIL_QUERY_TEMPLATE = """
     SELECT
-        date_of_supervision,
-        person_id,
-        person_external_id,
-        district,
-        compliant_reporting_eligible,
-        remaining_criteria_needed,
-        officer_id,
+        cl.date_of_supervision,
+        cl.person_id,
+        cl.person_external_id,
+        cl.district,
+        cr.compliant_reporting_eligible,
+        cr.remaining_criteria_needed,
+        cl.officer_id,
         is_positive_result,
         substance_detected,
-    FROM `{project_id}.{workflows_views_dataset}.client_record_archive_materialized`
+    FROM `{project_id}.{workflows_views_dataset}.client_record_archive_materialized` cl
+    LEFT JOIN `{project_id}.{workflows_views_dataset}.compliant_reporting_referral_record_archive_materialized` cr
+    USING (person_id, date_of_supervision, state_code)
     LEFT JOIN (
-        -- view is unique on person-date-sample_type, but sample_type is not implemented for TN
-        -- as of this writing so just deduping to future-proof
+        -- view is unique on person, date_of_supervision, and sample_type, but sample_type is not implemented for TN
+        -- as of this writing so just de-duping to future-proof
         SELECT 
             person_id,
             -- renaming this field for easier join
@@ -62,7 +64,7 @@ US_TN_COMPLIANT_REPORTING_GUARDRAIL_QUERY_TEMPLATE = """
         FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
         GROUP BY 1, 2
     ) USING (person_id, date_of_supervision)
-    WHERE state_code = "US_TN"
+    WHERE cl.state_code = "US_TN"
 """
 
 US_TN_COMPLIANT_REPORTING_GUARDRAIL_VIEW_BUILDER = SimpleBigQueryViewBuilder(

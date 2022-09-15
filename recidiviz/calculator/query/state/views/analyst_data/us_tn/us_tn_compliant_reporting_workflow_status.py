@@ -36,22 +36,23 @@ US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_QUERY_TEMPLATE = """
     WITH
     eligible_clients AS (
       SELECT
-            person_id,
-            ARRAY_AGG(compliant_reporting_eligible ORDER BY date_of_supervision DESC)[OFFSET(0)] AS compliant_reporting_eligible,
-            ARRAY_AGG(district ORDER BY date_of_supervision DESC)[OFFSET(0)] AS district,
-            ARRAY_AGG(officer_id ORDER BY date_of_supervision DESC)[OFFSET(0)] AS officer_id,
+            cl.person_id,
+            ARRAY_AGG(cr.compliant_reporting_eligible ORDER BY cr.date_of_supervision DESC)[OFFSET(0)] AS compliant_reporting_eligible,
+            ARRAY_AGG(cl.district ORDER BY cl.date_of_supervision DESC)[OFFSET(0)] AS district,
+            ARRAY_AGG(cl.officer_id ORDER BY cl.date_of_supervision DESC)[OFFSET(0)] AS officer_id,
             -- not straightforward to track changes to this value over time here, 
             -- so we are just surfacing the most recent (and possibly current) value
-            ARRAY_AGG(remaining_criteria_needed ORDER BY date_of_supervision DESC)[OFFSET(0)] AS remaining_criteria_needed_latest,
+            ARRAY_AGG(cr.remaining_criteria_needed ORDER BY cr.date_of_supervision DESC)[OFFSET(0)] AS remaining_criteria_needed_latest,
             -- Note: we are not currently accounting for people who become ineligible and then eligible again;
             -- once eligibility data is sessionized we will want to revise this logic to capture those cases.
             -- In the meantime we are effectively collapsing multiple periods for the same person into one,
             -- which should have minimal short-term impact as people should not be cycling in and out of eligibility
             -- with high frequency (the minimum expected turnaround is 3 months)
-            MIN(date_of_supervision) AS eligible_start,
-            MAX(date_of_supervision) AS eligible_end,
-        FROM `{project_id}.{workflows_dataset}.client_record_archive_materialized`
-        WHERE compliant_reporting_eligible IS NOT NULL
+            MIN(cl.date_of_supervision) AS eligible_start,
+            MAX(cl.date_of_supervision) AS eligible_end,
+        FROM `{project_id}.{workflows_dataset}.compliant_reporting_referral_record_archive_materialized` cr
+        INNER JOIN `{project_id}.{workflows_dataset}.client_record_archive_materialized` cl
+        USING (person_id, date_of_supervision, state_code)
         GROUP BY 1
     )
     , surfaced AS (
