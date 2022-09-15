@@ -111,12 +111,6 @@ resource "google_project_iam_member" "justice_counts_cloud_run_log_writer" {
   member   = "serviceAccount:${data.google_service_account.justice_counts_cloud_run.email}"
 }
 
-# Grab existing Justice Counts Cloud Run service to determine current revision
-data "google_cloud_run_service" "existing_justice_counts_cloud_run" {
-  name     = "justice-counts-web"
-  location = var.region
-}
-
 # Env vars from secrets
 data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
 
@@ -206,6 +200,13 @@ resource "google_cloud_run_service" "justice-counts" {
   name     = "justice-counts-web"
   location = var.region
 
+  # !Important! This block means that the Justice Counts Cloud Run service WILL NOT
+  # be updated with the standard data platform deploy. Instead, we manually control
+  # revisions via the UI.
+  lifecycle {
+    ignore_changes = [template[0].spec[0].containers[0].image, template[0].metadata[0].name, traffic]
+  }
+
   template {
     spec {
       containers {
@@ -245,16 +246,8 @@ resource "google_cloud_run_service" "justice-counts" {
     }
   }
 
-  # Keep 100% of traffic on previous revision. This makes it possible for us 
-  # to create and serve revisions in the UI without them being overridden by 
-  # a subsequent data platform deploy.
   traffic {
     percent         = 100
-    revision_name   = data.google_cloud_run_service.existing_justice_counts_cloud_run.template[0].metadata[0].name
-  }
-
-  traffic {
-    percent         = 0
     latest_revision = true
   }
 
