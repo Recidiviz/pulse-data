@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: CDCNOParole
+file_tag: CDCNOInCustody
 file_description: |-
-  This file has updated and some historical CDCNOs for individuals currently on parole in California
+  This file has updated and some historical CDCNOs for individuals currently in CDCR custody
 data_classification: source
 primary_key_cols: []
 columns:

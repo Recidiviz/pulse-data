@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: IncarcerationParole
+file_tag: IncarcerationInCustody
 file_description: |-
-  Information on the incarceration periods for people who are currently on parole in California
+  TODO(#15297): Historical incarceration periods for people currently in custody of CDCR and expected to be paroled within 90 days
 data_classification: source
 primary_key_cols: []
 columns:
@@ -13,16 +13,32 @@ columns:
     description: |-
       ORTGID identifies the Incarceration period associated with the case/offense.
   - name: IN_DATE
+    description: |-
+      TODO(#15297)
     is_datetime: True
   - name: In_Move
+    description: |-
+      TODO(#15297)
   - name: In_Reason
+    description: |-
+      TODO(#15297)
   - name: OUT_DATE
     description: |-
       OUT_DATE will be filled with the date a person was paroled or discharged.
     is_datetime: True
   - name: Out_Move
+    description: |-
+      TODO(#15297)
   - name: Out_Reason
+    description: |-
+      TODO(#15297)
   - name: ParoleEndDate
+    description: |-
+      TODO(#15297)
     is_datetime: True
   - name: ParoleEndMove
+    description: |-
+      TODO(#15297)
   - name: ParoleEndReason
+    description: |-
+      TODO(#15297)
