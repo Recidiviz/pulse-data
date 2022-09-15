@@ -48,15 +48,20 @@ PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
             year,
             month,
             gender,
-            admission_reason,
+            sess.start_reason AS admission_reason,
             IFNULL(aggregating_location_id, pop.facility) AS facility,
             {add_age_groups}
             prioritized_race_or_ethnicity as race,
-            COUNT(DISTINCT person_id) AS person_count
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_included_in_state_population_materialized` pop
+            COUNT(DISTINCT pop.person_id) AS person_count
+        FROM (
+            SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` 
+            WHERE included_in_state_population) pop
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
             ON pop.state_code = name_map.state_code
             AND pop.facility = name_map.location_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess
+            ON pop.date_of_stay BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+            AND pop.person_id = sess.person_id
         WHERE date_of_stay >= DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH)
         AND date_of_stay = DATE(year, month, 1)
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
@@ -132,6 +137,7 @@ PRISON_POPULATION_TIME_SERIES_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
     ),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     add_age_groups=add_age_groups(),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
