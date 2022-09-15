@@ -88,7 +88,7 @@ incremental_metric_pipelines:
   - pipeline: population_span_metrics
     job_name: full-us-mi-population-span-metrics
     state_code: US_MI
-    metric_types: INCARCERATION_POPULATION_SPAN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west1
 
   # Daily US_CO calculations
@@ -220,6 +220,12 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     calculation_month_count: 36
     region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-mi-supervision-metrics-36
+    state_code: US_MI
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
+    calculation_month_count: 36
+    region: us-west3
 
 historical_metric_pipelines:
   - pipeline: incarceration_metrics
@@ -336,6 +342,12 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-mi-historical-supervision-metrics-240
+    state_code: US_MI
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-west3
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental
