@@ -322,6 +322,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         />
         <StyledStep
           title="Drop data from primary database"
+          buttonsEnabled={isFlashInProgress}
           description={
             <>
               <p>
@@ -482,6 +483,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         />
         <StyledStep
           title="Clear secondary database"
+          buttonsEnabled={isFlashInProgress}
           description={
             <>
               <p>
@@ -554,6 +556,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         />
         <StyledStep
           title="Full Historical Refresh"
+          buttonsEnabled={isFlashInProgress}
           description={
             <>
               <p>
@@ -585,6 +588,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         {/* TODO(#9010): This step won't be necessary once the historical and incremental DAG have a more unified structure */}
         <StyledStep
           title="Trigger Incremental Pipelines"
+          buttonsEnabled={isFlashInProgress}
           description={
             <p>
               Run all incremental pipelines by visiting{" "}
