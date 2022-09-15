@@ -17,11 +17,12 @@
 """Defines a criteria span view that shows spans of time during which someone is past
 their supervision full term completion date (projected max completion date).
 """
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,13 +33,33 @@ _DESCRIPTION = """Defines a criteria span view that shows spans of time during w
 someone is past their supervision full term completion date (projected max completion
 date)"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
+_QUERY_TEMPLATE = f"""
+WITH critical_date_spans AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date AS start_datetime,
+        end_date AS end_datetime,
+        projected_completion_date_max AS critical_date
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized`
+),
+{critical_date_has_passed_spans_cte()}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+FROM critical_date_has_passed_spans
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

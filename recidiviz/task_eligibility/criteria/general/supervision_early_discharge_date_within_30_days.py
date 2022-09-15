@@ -25,6 +25,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
+    critical_date_spans_cte,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
     task_deadline_critical_date_update_datetimes_cte,
@@ -46,6 +47,7 @@ WITH
     task_type=StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,
     critical_date_column='eligible_date')
 },
+{critical_date_spans_cte()},
 {critical_date_has_passed_spans_cte(
     meets_criteria_leading_window_days=_DAYS_BEFORE_ELIGIBLE_DATE
 )}

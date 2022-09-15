@@ -23,7 +23,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_early_discharge_before_full_term_completion_date,
     supervision_early_discharge_date_within_30_days,
+    supervision_not_past_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_nd import (
     implied_valid_early_termination_sentence_type,
@@ -47,10 +49,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_early_discharge_date_within_30_days.VIEW_BUILDER,
         implied_valid_early_termination_sentence_type.VIEW_BUILDER,
         implied_valid_early_termination_supervision_level.VIEW_BUILDER,
         not_in_active_revocation_status.VIEW_BUILDER,
+        supervision_early_discharge_before_full_term_completion_date.VIEW_BUILDER,
+        supervision_early_discharge_date_within_30_days.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
     ],
 )
 

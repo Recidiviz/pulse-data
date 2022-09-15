@@ -23,8 +23,8 @@ from recidiviz.calculator.query.bq_utils import (
 )
 
 
-def _critical_date_spans_cte() -> str:
-    """Private helper method that returns a CTE with start and end datetime columns
+def critical_date_spans_cte() -> str:
+    """Helper method that returns a CTE with start and end datetime columns
     representing the span when the critical date had a particular value, with zero day
     spans removed. End date is exclusive and adjacent spans with the same critical date
     are not collapsed.
@@ -65,11 +65,10 @@ def critical_date_has_passed_spans_cte(
      criteria is met. The output spans are not collapsed so there can be two
     adjacent spans with the same `critical_date_has_passed` value.
 
-    There must be a CTE defined before this clause with the name
-    |critical_date_update_datetimes| that has columns state_code (string),
-    person_id (string), update_datetime (datetime), critical_date (date)."""
+    There must be a CTE defined before this clause with the name |critical_date_spans|
+    that has columns state_code (string), person_id (string), start_datetime (datetime),
+    end_datetime (datetime), critical_date (date)."""
     return f"""
-    {_critical_date_spans_cte()},
     /*
     Cast datetimes to dates, convert null dates to future dates, and create the
     `critical_or_in_window_date` column from the critical date by subtracting
@@ -148,7 +147,7 @@ def critical_date_exists_spans_cte() -> str:
     person_id (string), update_datetime (datetime), critical_date (date).
     """
     return f"""
-    {_critical_date_spans_cte()},
+    {critical_date_spans_cte()},
     critical_date_exists_spans AS (
         SELECT
             state_code,
