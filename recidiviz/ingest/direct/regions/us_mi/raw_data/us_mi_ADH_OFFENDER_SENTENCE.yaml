@@ -72,6 +72,7 @@ columns:
     description: minimum sentence length - days component
   - name: min_abs_flag
   - name: min_life_flag
+    description: flag for whether the minimum sentence length is a life sentence
   - name: min_credits_begin_date
   - name: min_credits_end_date
   - name: pmi_sgt_min_date
@@ -85,6 +86,7 @@ columns:
     description: maximum sentence length - days component
   - name: max_abs_flag
   - name: max_life_flag
+    description: flag for whether the maximum sentence length is a life sentence
   - name: max_credits_begin_date
   - name: max_credits_end_date
   - name: pmx_sgt_max_date

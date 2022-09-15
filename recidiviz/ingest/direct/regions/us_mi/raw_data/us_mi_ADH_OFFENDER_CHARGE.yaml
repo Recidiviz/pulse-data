@@ -146,6 +146,7 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: guilty_but_mentally_ill_flag
   - name: jail_credit_days
+    description: Number of jail credit days
   - name: habitual_override_flag
   - name: enhanced_offense_id
   - name: docket_number_lookup
