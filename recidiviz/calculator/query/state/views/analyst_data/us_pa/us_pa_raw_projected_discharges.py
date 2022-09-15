@@ -29,10 +29,10 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         person_external_id,
         supervision_level,
         incarceration_sentence.is_life,
-      FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` caseload
+      FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
       LEFT JOIN `{project_id}.{base_dataset}.state_incarceration_sentence` incarceration_sentence
         ON caseload.person_id = incarceration_sentence.person_id 
-      WHERE caseload.state_code = 'US_PA'
+      WHERE caseload.state_code = 'US_PA' AND caseload.included_in_state_population
     ),
     # TODO(#9274): Use projected_end_date from dataflow once state specific override is implemented
     external_ids AS (

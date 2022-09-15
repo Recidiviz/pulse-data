@@ -32,7 +32,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         -- Take max of is_life - if there's a concurrent sentence where one is a life sentence and one isn't, we take the max value which is true
         MAX(COALESCE(incarceration_sentence.is_life,false)) as is_life,
         MAX(supervision_sentence.projected_completion_date) AS max_parole_to_date,
-      FROM `{project_id}.{dataflow_dataset}.most_recent_single_day_supervision_population_metrics_materialized` caseload
+      FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
       -- The projected completion date is pulled from this table because it needs to correspond to the PAROLE_TO date, 
       -- which is ingested into supervision sentence. Using dataflow metrics would mean we are sometimes using PAROLE_TO 
       -- and sometimes the sentence expiration date from state_incarceration_sentence
@@ -41,7 +41,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         ON caseload.person_id = incarceration_sentence.person_id
       LEFT JOIN `{project_id}.{base_dataset}.state_supervision_sentence` supervision_sentence
         ON caseload.person_id = supervision_sentence.person_id 
-      WHERE caseload.state_code = 'US_ND' 
+      WHERE caseload.state_code = 'US_ND' AND caseload.included_in_state_population
       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     ), 
     us_nd as (   
