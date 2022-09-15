@@ -21,6 +21,9 @@ from recidiviz.calculator.query.state.views.sessions.admission_start_reason_dedu
     INCARCERATION_START_REASON_ORDERED_PRIORITY,
     SUPERVISION_START_REASON_ORDERED_PRIORITY,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_level_dedup_priority import (
+    ASSESSMENT_LEVEL_ORDERED_PRIORITY,
+)
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_dedup_priority import (
     SPECIALIZED_PURPOSE_FOR_INCARCERATION_ORDERED_PRIORITY,
     SUPERVISION_TYPE_ORDERED_PRIORITY,
@@ -32,6 +35,7 @@ from recidiviz.calculator.query.state.views.sessions.release_termination_reason_
 from recidiviz.calculator.query.state.views.sessions.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_ORDERED_PRIORITY,
 )
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -196,4 +200,28 @@ class CompartmentLevel2DedupPriorityEnumCoverageTest(unittest.TestCase):
                     f"Missing {compartment_level_2_priority} in "
                     f"StateSpecializedPurposeForIncarceration."
                     f"This may happen if sessions has an unsupported enum. This enum needs to be added to the state schema before it is used in sessions."
+                )
+
+
+class AssessmentLevelDedupPriorityEnumCoverageTest(unittest.TestCase):
+    """Tests full enum coverage for the assessment level priority lists in the
+    assessment_level_dedup_priority view."""
+
+    def test_assessment_level(self) -> None:
+        for assessment_level in StateAssessmentLevel:
+            if assessment_level not in ASSESSMENT_LEVEL_ORDERED_PRIORITY:
+                raise ValueError(
+                    f"Missing {assessment_level} in "
+                    f"ASSESSMENT_LEVEL_ORDERED_PRIORITY."
+                    f"This may happen if there is a new enum that needs to be added to ASSESSMENT_LEVEL_ORDERED_PRIORITY."
+                )
+
+        for assessment_level in ASSESSMENT_LEVEL_ORDERED_PRIORITY:
+            if assessment_level not in StateAssessmentLevel:
+                raise ValueError(
+                    f"Missing {assessment_level} in "
+                    f"StateAssessmentLevel. "
+                    f"This may happen if sessions has an unsupported enum. "
+                    f"This enum needs to be added to the state schema before it is "
+                    f"used in sessions."
                 )

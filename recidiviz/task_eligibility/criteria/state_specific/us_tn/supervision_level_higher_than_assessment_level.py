@@ -17,6 +17,9 @@
 """Describes the spans of time during which someone in TN
 is supervised at a stricter level than the risk assessment policy recommends.
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -31,31 +34,102 @@ _DESCRIPTION = """Describes the spans of time during which someone in TN
 is supervised at a stricter level than the risk assessment policy recommends.
 """
 
-_QUERY_TEMPLATE = """
-/*{description}*/
--- TODO(#14567): replace query stub with actual logic to identify potential downgrade opportunities
-WITH combined_cte AS (
-  SELECT 
-    state_code, 
-    person_id, 
-    assessment_date AS start_date, 
-    DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
-    TRUE AS meets_criteria, 
-    NULL AS supervision_level, 
-    assessment_level,
-  FROM `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized`
-)
-SELECT 
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    meets_criteria,
-    TO_JSON(STRUCT(
-        supervision_level AS supervision_level,
-        assessment_level AS assessment_level
-    )) AS reason,
-FROM combined_cte
+_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
+    WITH supervision_and_assessments AS (
+      SELECT 
+        state_code, 
+        person_id, 
+        assessment_date AS start_date, 
+        DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
+        NULL AS supervision_level, 
+        NULL AS supervision_level_raw_text, 
+        assessment_level,
+        assessment_level_raw_text,
+        assessment_date,
+      FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
+    
+      UNION ALL
+    
+      SELECT 
+        state_code, 
+        person_id, 
+        start_date, 
+        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date, 
+        supervision_level,
+        supervision_level_raw_text, 
+        NULL AS assessment_level,
+        NULL AS assessment_level_raw_text,
+        NULL AS assessment_date,
+      FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized`
+    ),
+    {create_sub_sessions_with_attributes('supervision_and_assessments')}
+    , 
+    priority_levels AS (
+        SELECT  DISTINCT
+                person_id, 
+                state_code, 
+                start_date, 
+                end_date, 
+                FIRST_VALUE(assessment_level) OVER (assessment_window) AS assessment_level,
+                FIRST_VALUE(assessment_level_raw_text) OVER (assessment_window) AS assessment_level_raw_text,
+                FIRST_VALUE(assessment_date) OVER (assessment_window) AS assessment_date,
+                FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
+                FIRST_VALUE(supervision_level_raw_text) OVER (supervision_level_window) AS supervision_level_raw_text,
+        FROM sub_sessions_with_attributes
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
+            ON supervision_level = correctional_level
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_level_dedup_priority`
+            USING(assessment_level)
+        WINDOW assessment_window AS (
+            PARTITION BY state_code, person_id, start_date, end_date
+            ORDER BY COALESCE(assessment_level_priority, 999)
+        ),
+        supervision_level_window AS (
+            PARTITION BY state_code, person_id, start_date, end_date
+            ORDER BY COALESCE(correctional_level_priority, 999)        
+        )
+    ),
+    state_specific_mapping AS (
+        SELECT *,
+            CASE 
+                WHEN assessment_level = 'LOW' 
+                    AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED') 
+                    /* 6P3 maps to PSU (Programmed Supervision Unit, for people with sex offenses)
+                       which Recidiviz maps to MEDIUM supervision level. However, the PSU designation is
+                       determined by courts/judges and thus people in that unit are not eligible for a downgrade 
+                       regardless of their assessment score
+                    */
+                    AND supervision_level_raw_text != '6P3' 
+                    THEN TRUE
+                WHEN assessment_level = 'MODERATE' 
+                    AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
+                    THEN TRUE
+                WHEN assessment_level_raw_text = 'HP' 
+                    AND Supervision_Level NOT IN ('HIGH','MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
+                    /* These levels map to various "special" supervision levels for people with sex or violent offenses.                    
+                       Recidiviz maps these to MAXIMUM supervision level. However, these designations are likely
+                       determined by courts/judges and thus people in those levels are not eligible for a downgrade 
+                       regardless of their assessment score
+                    */
+                    AND supervision_level_raw_text NOT IN ('KGE','KNE','QGE','QNE','VGE','VNE','XEN','XGE','XNE')  
+                    THEN TRUE
+                ELSE FALSE 
+                END as meets_criteria
+        FROM priority_levels
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(
+            supervision_level AS supervision_level,
+            assessment_level AS assessment_level,
+            assessment_date AS latest_assessment_date
+        )) AS reason,
+    FROM state_specific_mapping
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.sessions.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.assessment_level_dedup_priority import (
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_responses import (
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 )
@@ -225,6 +228,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
+    ASSESSMENT_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     CHARGES_PREPROCESSED_VIEW_BUILDER,
     COHORT_MONTH_INDEX_VIEW_BUILDER,
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
