@@ -25,6 +25,7 @@ columns:
   - name: SentencingCounty
   - name: CaseNumber
   - name: CaseStatus
+  - name: Offense
   - name: OffenseStatus
   - name: OffenseDescription
   - name: PRINCIPALOFFENSE
