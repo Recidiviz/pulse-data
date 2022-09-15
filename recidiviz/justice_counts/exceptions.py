@@ -16,9 +16,50 @@
 # =============================================================================
 """Contains the list of custom exceptions used by Justice Counts."""
 
+import enum
 from http import HTTPStatus
+from typing import Any, Optional
 
 from recidiviz.utils.flask_exception import FlaskException
+
+
+class BulkUploadMessageType(enum.Enum):
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+
+
+class JusticeCountsBulkUploadException(Exception):
+    """
+    Each field is incorporated into the design in the following way:
+    - title: header field is on the left side of the error row.
+    - subtitle: displayed on the right side of the error row, and gives more description about the error.
+    - error_type: helps the FE know what symbol to render to the left of the title.
+    - description: smaller text displayed under the title/subtitle.
+    """
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        message_type: BulkUploadMessageType,
+        subtitle: Optional[str] = None,
+    ):
+        super().__init__(description)
+        self.title = title
+        self.subtitle = subtitle
+        self.description = description
+
+        # JusticeCountsExceptions can be either warnings or errors.
+        # Warnings do now prevent data publishing, but errors do.
+        self.message_type = message_type
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "type": self.message_type.value,
+            "title": self.title,
+            "subtitle": self.subtitle,
+            "description": self.description,
+        }
 
 
 class JusticeCountsServerError(FlaskException):
