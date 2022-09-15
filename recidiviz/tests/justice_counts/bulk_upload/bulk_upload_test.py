@@ -17,7 +17,7 @@
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
 import os
-from typing import Dict
+from typing import Dict, cast
 
 import pandas as pd
 import pytest
@@ -38,6 +38,10 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     ProsecutionAndDefenseStaffType,
 )
 from recidiviz.justice_counts.dimensions.supervision import SupervisionStaffType
+from recidiviz.justice_counts.exceptions import (
+    BulkUploadMessageType,
+    JusticeCountsBulkUploadException,
+)
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -85,6 +89,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         self.law_enforcement_excel_mismatched_totals = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/law_enforcement/law_enforcement_mismatched_totals.xlsx",
+        )
+        self.law_enforcement_missing_metrics = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/law_enforcement/law_enforcement_missing_metrics.xlsx",
         )
         self.supervision_directory = os.path.join(
             os.path.dirname(__file__),
@@ -142,11 +150,15 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(len(filename_to_error), 2)
             self.assertTrue(
-                "No metric corresponds to the filename `gender`"
+                "No metric corresponds to the filename 'gender'"
                 in str(filename_to_error["gender.csv"])
             )
             self.assertTrue(
-                "No fuzzy matches found with high enough score. Input=Xxx"
+                (
+                    "The valid values for Month are January, February, March, "
+                    "April, May, June, July, August, September, October, "
+                    "November, December."
+                )
                 in str(filename_to_error["cases_disposed_by_type.csv"])
             )
 
@@ -639,3 +651,49 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         )
                     )
                     self.assertEqual(sum(inferred_value), 1000)
+
+    def test_missing_total_and_metric_validation(
+        self,
+    ) -> None:
+        """Checks that we warn the user when a metric is missing or a total sheet is missing."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            sheet_to_error: Dict[str, Exception] = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(self.law_enforcement_missing_metrics),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user_account,
+            )
+
+            self.assertEqual(len(sheet_to_error), 2)
+            self.maxDiff = None
+            arrest_error: JusticeCountsBulkUploadException = cast(
+                JusticeCountsBulkUploadException,
+                sheet_to_error["arrests"],
+            )
+            self.assertEqual(arrest_error.title, "Missing Total Value")
+            self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
+            self.assertTrue(
+                (
+                    "The sheet containing total values for the 'Total Arrests' metric should be called 'arrests'. "
+                    "No sheet with this name was found in the workbook. The total value for 'Total Arrests' "
+                    "will be shown as the sum of the breakdown values provided in"
+                )
+                in arrest_error.description,
+            )
+
+            use_of_force_error: JusticeCountsBulkUploadException = cast(
+                JusticeCountsBulkUploadException,
+                sheet_to_error["use_of_force"],
+            )
+            self.assertEqual(use_of_force_error.title, "Missing Metric")
+            self.assertEqual(
+                use_of_force_error.message_type, BulkUploadMessageType.WARNING
+            )
+            self.assertEqual(
+                use_of_force_error.description,
+                "No sheets for the 'Use of Force Incidents' metric were provided.",
+            )

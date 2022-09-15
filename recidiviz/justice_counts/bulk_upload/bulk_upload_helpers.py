@@ -21,12 +21,19 @@ from typing import List
 from thefuzz import fuzz
 
 from recidiviz.common.text_analysis import TextAnalyzer
+from recidiviz.justice_counts.exceptions import (
+    BulkUploadMessageType,
+    JusticeCountsBulkUploadException,
+)
 
 FUZZY_MATCHING_SCORE_CUTOFF = 90
 
 
 def fuzzy_match_against_options(
-    analyzer: TextAnalyzer, text: str, options: List[str]
+    analyzer: TextAnalyzer,
+    text: str,
+    options: List[str],
+    category_name: str,
 ) -> str:
     """Given a piece of input text and a list of options, uses
     fuzzy matching to calculate a match score between the input
@@ -43,9 +50,11 @@ def fuzzy_match_against_options(
 
     best_option = max(option_to_score, key=option_to_score.get)  # type: ignore[arg-type]
     if option_to_score[best_option] < FUZZY_MATCHING_SCORE_CUTOFF:
-        raise ValueError(
-            "No fuzzy matches found with high enough score. "
-            f"Input={text} and options={options}."
+        raise JusticeCountsBulkUploadException(
+            title=f"{text} Not Recognized",
+            subtitle=category_name,
+            description=f"The valid values for {category_name} are {', '.join(filter(None, options))}.",
+            message_type=BulkUploadMessageType.ERROR,
         )
 
     return best_option

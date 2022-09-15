@@ -20,11 +20,12 @@
 import calendar
 import csv
 import datetime
+import itertools
 import logging
 import os
 from collections import defaultdict
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -34,6 +35,10 @@ from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
 from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.exceptions import (
+    BulkUploadMessageType,
+    JusticeCountsBulkUploadException,
+)
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
@@ -104,6 +109,75 @@ class BulkUploader:
                     raise e
         return filename_to_error
 
+    def get_sheet_to_preingest_messages(
+        self,
+        actual_sheetnames: List[str],
+        expected_aggregate_sheetnames: Set[str],
+        filename_to_metricfiles: Dict[str, MetricFile],
+    ) -> Dict[str, Exception]:
+        """This method creates a sheet_to_error dictionary and will add pre-ingest warnings
+        if applicable.
+
+        The pre-ingest warnings include:
+
+        1) Missing Total Value - This occurs when a user does not include a total sheet in the
+        excel workbook. In this scenarios, we infer the value from a sheet containing breakdowns.
+
+        2) Missing Metric - This occurs when a user does not include any sheets for a metric in an
+        excel workbook. In this scenario, we warn the user that no data was provided.
+
+        """
+        sheet_to_error: Dict[str, Exception] = {}
+        actual_aggregate_sheetnames = {
+            s for s in actual_sheetnames if s in expected_aggregate_sheetnames
+        }
+        actual_breakdown_sheetnames = (
+            set(actual_sheetnames) - actual_aggregate_sheetnames
+        )
+        metric_key_to_actual_breakdowns = {
+            k: list(v)
+            for k, v in itertools.groupby(
+                actual_breakdown_sheetnames,
+                lambda x: filename_to_metricfiles[x].definition.key,
+            )
+        }
+        # For each missing total file or metric, add a warning.
+        for missing_total_filename in (
+            expected_aggregate_sheetnames - actual_aggregate_sheetnames
+        ):
+            metric_definition = filename_to_metricfiles[
+                missing_total_filename
+            ].definition
+            # If there are corresponding breakdown sheets, but no total sheet, warn the user
+            # that the aggregate value will be inferred.
+            if metric_definition.key in metric_key_to_actual_breakdowns:
+                sheet_to_error[
+                    missing_total_filename
+                ] = JusticeCountsBulkUploadException(
+                    title="Missing Total Value",
+                    message_type=BulkUploadMessageType.WARNING,
+                    description=(
+                        f"The sheet containing total values for the '{metric_definition.display_name}' metric "
+                        f"should be called '{missing_total_filename}'. No sheet with this name was found "
+                        f"in the workbook. The total value for '{metric_definition.display_name}' will be "
+                        "shown as the sum of the breakdown values provided in "
+                        f"'{metric_key_to_actual_breakdowns[metric_definition.key][0]}'."
+                    ),
+                )
+            # If no total total sheet is provided, or breakdown sheets, warn the user that all
+            # data corresponding to the metric is missing.
+            else:
+                sheet_to_error[
+                    missing_total_filename
+                ] = JusticeCountsBulkUploadException(
+                    title="Missing Metric",
+                    message_type=BulkUploadMessageType.WARNING,
+                    description=(
+                        f"No sheets for the '{metric_definition.display_name}' metric were provided."
+                    ),
+                )
+        return sheet_to_error
+
     def upload_excel(
         self,
         session: Session,
@@ -116,21 +190,29 @@ class BulkUploader:
         to the Justice Counts database using the `upload_rows` method defined below.
         If an error is encountered on a particular tab, log it and continue.
         """
-        sheet_to_error: Dict[str, Exception] = {}
-
         # Sort so that we process e.g. caseloads before caseloads_by_gender.
         # This is important because it allows us to remove the requirement
         # that caseloads_by_gender includes the aggregate metric value too,
         # which would be redundant.
         filename_to_metricfiles = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-        aggregate_sheet_names = {
+        expected_aggregate_sheetnames = {
             filename
             for filename, metricfile in filename_to_metricfiles.items()
             if metricfile.disaggregation is None
         }
-        for sheet_name in sorted(
-            xls.sheet_names, key=lambda x: 0 if x in aggregate_sheet_names else 1
-        ):
+        actual_sheetnames = sorted(
+            xls.sheet_names,
+            key=lambda x: 0 if x in expected_aggregate_sheetnames else 1,
+        )
+        # First, instantiate sheet_to_error dictionary and add any pre-ingest
+        # messages (e.g missing all sheets for a metric).
+        sheet_to_error = self.get_sheet_to_preingest_messages(
+            actual_sheetnames=actual_sheetnames,
+            filename_to_metricfiles=filename_to_metricfiles,
+            expected_aggregate_sheetnames=expected_aggregate_sheetnames,
+        )
+
+        for sheet_name in actual_sheetnames:
             logging.info("Uploading %s", sheet_name)
             try:
                 df = pd.read_excel(xls, sheet_name=sheet_name)
@@ -345,19 +427,28 @@ class BulkUploader:
         filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
 
         if stripped_filename not in filename_to_metricfile:
-            raise ValueError(
-                f"No metric corresponds to the filename `{stripped_filename}`. "
-                f"Options are {filename_to_metricfile.keys()}."
+            description = (
+                f"No metric corresponds to the filename '{stripped_filename}'. "
+                f"Valid options include {', '.join(filename_to_metricfile.keys())}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Metric Not Found",
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
             )
 
         return filename_to_metricfile[stripped_filename]
 
     def _get_rows_by_time_range(
-        self, rows: List[Dict[str, Any]], reporting_frequency: ReportingFrequency
+        self,
+        rows: List[Dict[str, Any]],
+        reporting_frequency: ReportingFrequency,
     ) -> Tuple[
         Dict[Tuple[datetime.date, datetime.date], List[Dict[str, Any]]],
         Dict[Tuple[datetime.date, datetime.date], Tuple[int, int]],
     ]:
+        """Given the rows from a particular sheet, this method returns the rows
+        organized by time range and by year and month."""
         rows_by_time_range = defaultdict(list)
         time_range_to_year_month = {}
         for row in rows:
@@ -403,12 +494,18 @@ class BulkUploader:
         # there should only be one row for a given time period.
         if metricfile.disaggregation is None:
             if len(rows_for_this_time_range) != 1:
-                raise ValueError(
-                    f"Only expected one row for time range {time_range} "
-                    f"because {metricfile.canonical_filename} doesn't have any disaggregations, "
-                    f"but found {len(rows_for_this_time_range)} rows."
+                description = (
+                    "There should only be a single row "
+                    f"containing data for {metricfile.canonical_filename} "
+                    f"in {time_range[0].month}/{time_range[0].year}."
                 )
 
+                raise JusticeCountsBulkUploadException(
+                    title="Too Many Rows",
+                    subtitle=f"{time_range[0].month}/{time_range[0].year}",
+                    description=description,
+                    message_type=BulkUploadMessageType.ERROR,
+                )
             row = rows_for_this_time_range[0]
             aggregate_value = self._get_column_value(
                 row=row, column_name="value", column_type=float
@@ -450,6 +547,7 @@ class BulkUploader:
                         analyzer=self.text_analyzer,
                         text=disaggregation_value,
                         options=disaggregation_options,
+                        category_name=metricfile.disaggregation.display_name(),
                     )
                     matching_disaggregation_member = metricfile.disaggregation(
                         disaggregation_value
@@ -479,8 +577,16 @@ class BulkUploader:
         """Given a row, a column name, and a column type, attempts to
         extract a value of the given type from the row."""
         if column_name not in row:
-            raise ValueError(
-                f"Expected the column {column_name} to be present. Got {list(row.keys())}"
+            description = (
+                f"We expected the following column: '{column_name}'. "
+                f"Only the following column names were found in the sheet: "
+                f"{', '.join(row.keys())}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Missing Column",
+                subtitle=column_name,
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
             )
 
         column_value = row[column_name]
@@ -501,8 +607,13 @@ class BulkUploader:
                 )
                 value = column_type(column_value)
             else:
-                raise ValueError(
-                    f"Expected the column {column_name} to be of type {column_type}. Got {row.items()}."
+                raise JusticeCountsBulkUploadException(
+                    title="Wrong Value Type",
+                    message_type=BulkUploadMessageType.ERROR,
+                    description=(
+                        f"We expected the value in column '{column_name}' to be of type '{column_type}'."
+                        f"Instead we found the value '{column_value}', which is of type '{type(column_value)}'."
+                    ),
                 ) from e
 
         # Round numbers to two decimal places
@@ -511,14 +622,20 @@ class BulkUploader:
 
         return value
 
-    def _get_month_column_value(self, column_value: str) -> int:
+    def _get_month_column_value(
+        self,
+        column_value: str,
+    ) -> int:
         """Takes as input a string and attempts to find the corresponding month
         index using the calendar module's month_names enum. For instance,
         March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
         column_value = column_value.title()
         if column_value not in MONTH_NAMES:
             column_value = fuzzy_match_against_options(
-                analyzer=self.text_analyzer, text=column_value, options=MONTH_NAMES
+                analyzer=self.text_analyzer,
+                category_name="Month",
+                text=column_value,
+                options=MONTH_NAMES,
             )
         return MONTH_NAMES.index(column_value)
 
