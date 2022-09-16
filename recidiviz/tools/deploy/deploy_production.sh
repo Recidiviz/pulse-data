@@ -58,9 +58,8 @@ then
 fi
 
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
-COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
 
-deployment_bot_message $PROJECT "🛳 \`[${GIT_VERSION_TAG}]\` Deploying \`${COMMIT_HASH_SHORT}\` to \`$PROJECT\`"
+update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
 
 # Use rev-list to get the hash of the commit that the tag points to, rev-parse parse
@@ -71,8 +70,8 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
-STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
-PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
+STAGING_IMAGE_URL="us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+PROD_IMAGE_URL="us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 
 CALC_CHANGES_SINCE_LAST_DEPLOY=$(calculation_pipeline_changes_since_last_deploy 'recidiviz-123')
 
@@ -92,11 +91,13 @@ echo "Starting deploy of main app - default"
 run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id ${PROJECT}
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
-GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
-run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
+GAE_VERSION=$(echo "${GIT_VERSION_TAG}" | tr '.' '-') || exit_on_fail
+run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${PROD_IMAGE_URL}"
 
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
+
+update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 
 duration=$SECONDS
 MINUTES=$(($duration / 60))
@@ -104,9 +105,11 @@ echo "Production deploy completed in ${MINUTES} minutes. Add to go/deploy-durati
 echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
 
 echo "Generating release notes."
-GITHUB_DEPLOY_BOT_TOKEN=$(get_secret $PROJECT github_deploy_script_pat))
-run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes --previous_tag $LAST_DEPLOYED_GIT_VERSION_TAG --new_tag $GIT_VERSION_TAG --github_token $GITHUB_DEPLOY_BOT_TOKEN
 
-deployment_bot_message $PROJECT "⚓️ \`[${GIT_VERSION_TAG}]\` <https://github.com/Recidiviz/pulse-data/releases/tag/${GIT_VERSION_TAG}|Release Notes>. Succeeded in ${MINUTES} minutes."
+GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat)
+run_cmd pipenv run  python -m recidiviz.tools.deploy.generate_release_notes \
+  --previous_tag "${LAST_DEPLOYED_GIT_VERSION_TAG}" \
+  --new_tag "${GIT_VERSION_TAG}" \
+  --github_token "${GITHUB_DEPLOY_BOT_TOKEN}"
 
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"

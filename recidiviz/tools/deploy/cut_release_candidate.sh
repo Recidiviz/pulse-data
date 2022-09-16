@@ -85,8 +85,6 @@ COMMIT_HASH_SHORT=${COMMIT_HASH:0:7}
 script_prompt "Will create tag and deploy version [$RELEASE_VERSION_TAG] at commit [${COMMIT_HASH_SHORT}] which is \
 the tip of branch [$RELEASE_CANDIDATE_BASE_BRANCH]. Continue?"
 
-deployment_bot_message $PROJECT "⛴ \`[${RELEASE_VERSION_TAG}]\` Deploying \`${COMMIT_HASH_SHORT}\` to \`$PROJECT\`"
-
 ${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${RELEASE_VERSION_TAG} -c ${COMMIT_HASH} -b ${RELEASE_CANDIDATE_BASE_BRANCH} ${STAGING_PUSH_PROMOTE_FLAG} || exit_on_fail
 
 echo "Deploy succeeded - creating local tag [${RELEASE_VERSION_TAG}]"
@@ -115,4 +113,3 @@ fi
 duration=$SECONDS
 MINUTES=$(($duration / 60))
 echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
-deployment_bot_message $PROJECT "⚓️ \`[${RELEASE_VERSION_TAG}]\` Succeeded in ${MINUTES} minutes. "
