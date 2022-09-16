@@ -449,9 +449,9 @@ DEPLOYMENT_SUCCESS_EMOJI=(🌅 🌁 🌄 🏞 🎑 🗾 🌠 🎇 🎆 🌇 🌆
 
 
 function on_deploy_exited {
-  PROJECT_ID=$1
-  COMMIT_HASH=$2
-  RELEASE_VERSION_TAG=$3
+  local PROJECT_ID=$1
+  local COMMIT_HASH=$2
+  local RELEASE_VERSION_TAG=$3
 
 
   if [[ "${DEPLOYMENT_STATUS}" < "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
@@ -464,10 +464,10 @@ function on_deploy_exited {
 
 
 function update_deployment_status {
-  NEW_DEPLOYMENT_STATUS=$1
-  PROJECT_ID=$2
-  COMMIT_HASH=$3
-  RELEASE_VERSION_TAG=$4
+  local NEW_DEPLOYMENT_STATUS=$1
+  local PROJECT_ID=$2
+  local COMMIT_HASH=$3
+  local RELEASE_VERSION_TAG=$4
 
   DEPLOYMENT_STATUS="${NEW_DEPLOYMENT_STATUS}"
   if [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_STARTED}" ]; then
@@ -477,7 +477,7 @@ function update_deployment_status {
     deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}"
 
     # Register exit hook in case the deploy fails midway
-    trap 'on_deploy_exited ${PROJECT_ID} ${COMMIT_HASH} ${RELEASE_VERSION_TAG}' EXIT
+    trap "on_deploy_exited '${PROJECT_ID}' '${COMMIT_HASH}' '${RELEASE_VERSION_TAG}'" EXIT
   elif [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_SUCCEEDED}" ]; then
       MINUTES=$((SECONDS / 60))
       EMOJI=${DEPLOYMENT_SUCCESS_EMOJI[$RANDOM % ${#DEPLOYMENT_SUCCESS_EMOJI[@]}]}
