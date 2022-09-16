@@ -196,10 +196,9 @@ def state_specific_supervision_level() -> str:
            'EXTERNAL_UNKNOWN') AS supervision_level"""
 
 
-def state_specific_facility_exclusion(optional_prefix: Optional[str] = None) -> str:
-    prefix = f"{optional_prefix}." if optional_prefix else ""
-    return f"""-- Revisit these exclusions when #3657 and #3723 are complete --
-      ({prefix}state_code != 'US_ND' OR {prefix}facility not in ('OOS', 'CPP'))"""
+def state_specific_facility_exclusion() -> str:
+    return """-- Revisit these exclusions when #3657 and #3723 are complete --
+      (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""
 
 
 def state_specific_external_id_type(state_code_table_prefix: str) -> str:
