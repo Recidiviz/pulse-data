@@ -278,7 +278,7 @@ SELECT
     state_code,
     person_id,
     "VIOLATION" AS event,
-    violation_date AS event_date,
+    IFNULL(violation_date, response_date) AS event_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         IFNULL(violation_type, "INTERNAL_UNKNOWN") AS violation_type,
         IFNULL(violation_type_subtype, "INTERNAL_UNKNOWN") AS violation_type_subtype,
@@ -288,7 +288,7 @@ SELECT
 FROM
     `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized`
 WHERE
-    violation_date IS NOT NULL
+    IFNULL(violation_date, response_date) IS NOT NULL
 GROUP BY 1, 2, 3, 4, violation_type, violation_type_subtype,
     most_severe_response_decision, is_most_severe_violation_type_of_all_violations
 

@@ -123,15 +123,27 @@ WITH date_array AS (
         {index_cols_long},
         person_id,
         start_date AS assignment_date,
-        end_date,
+        -- TODO(#14675): remove the DATE_ADD when end_dates are exclusive upstream
+        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
     FROM
         `{client_period_table}`
     WHERE
         {level} IS NOT NULL
-        {"AND compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')" if level_name == "state" else ""}
+        {'AND compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")' if level_name == "state" else ""}
 )
 
--- get day-level associations between {level_name} and client, which may be overlapping
+/* 
+Note that we count events occurring on days where a client transitions between two
+officers/offices/district towards both entities - this is because it is ambiguous
+which of the entities lead to the event when aggregating from the client level. We do
+not know the time of the transition, so it's not possible to assign the client to an 
+officer based on which spent the majority of the day assigned.
+
+As such, in the CTE below we allow events to occur on the exclusive end_date of the 
+assignment span. That day is the day the client transitioned from entity A to entity B 
+or to no entity, e.g. if the client is released or incarcerated.
+*/
+-- get day-level associations between {level_name} and client, which may be overlapping.
 , {level_name}_client_periods_unnested AS (
     SELECT
         {index_cols},
@@ -142,6 +154,7 @@ WITH date_array AS (
     INNER JOIN
         date_array
     ON
+        -- allow event to fall on (exclusive) end_date
         date BETWEEN assignment_date AND IFNULL(end_date, "9999-01-01")
 )
 
@@ -247,7 +260,7 @@ WITH date_array AS (
             event = "VIOLATION"
             AND JSON_EXTRACT_SCALAR(event_attributes, "$.violation_type") = "TECHNICAL",
             person_id, NULL
-        )) AS violations_technical,     
+        )) AS violations_technical,
         
         -- violation responses, max one per day
         COUNT(DISTINCT IF(
@@ -270,7 +283,7 @@ WITH date_array AS (
             AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_serious_violation_type") 
                 = "TECHNICAL",
             person_id, NULL
-        )) AS violation_responses_technical,   
+        )) AS violation_responses_technical,
         
         -- drug screens
         COUNT(DISTINCT IF(
@@ -368,6 +381,31 @@ WITH date_array AS (
 # All metrics here are derived from `person_spans`
 #################
 
+/* 
+Note that to be included in a span metric, a client must spend at least a full day in
+that span. For example, a client who is released to parole and re-incarcerated on that
+same day will _not_ count towards the supervision population that day.
+
+In the extreme case of a very small supervision population and many re-incarceration
+events like this, rates calculated as event-based metrics per avg_daily_population may
+appear unusually large. Example:
+
+rate_incarcerations_all = incarcerations_all / avg_daily_population
+
+The people re-incarcerated on the same day they are released count towards the numerator
+but not the denominator, which will increase rate_incarcerations_all.
+
+On the other hand, we could calculate span metrics where spending _any_ time in a span
+counts towards that day. But this method is also not without tradeoff: a client who is
+reassigned to a new officer on the same day may only spend a brief period of time on
+an officer's caseload but would count towards caseload size, making that metric appear
+larger than it would appear to the officer themselves.
+
+In practice, both of the above cases are infrequent and only affect the rounding error
+of the metric. In the CTEs below, we require that the date of metric observation 
+(`date`) fall between the start_date and **one day prior** to the (exclusive) end_date.
+*/
+
 , person_spans_agg AS (
     SELECT
         {index_cols},
@@ -460,13 +498,13 @@ WITH date_array AS (
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") = 
                 "DRUG_COURT",
             ps.person_id, NULL
-        )) AS population_drug_case_type,        
+        )) AS population_drug_case_type,
         COUNT(DISTINCT IF(
             span = "COMPARTMENT_SESSION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") IN (
                 "SERIOUS_MENTAL_ILLNESS", "MENTAL_HEALTH_COURT"
             ), ps.person_id, NULL
-        )) AS population_mental_health_case_type,  
+        )) AS population_mental_health_case_type,
         COUNT(DISTINCT IF(
             span = "COMPARTMENT_SESSION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") NOT IN (
@@ -478,8 +516,7 @@ WITH date_array AS (
             span = "COMPARTMENT_SESSION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.case_type_start") IS NULL,
             ps.person_id, NULL
-        )) AS population_unknown_case_type,        
-        
+        )) AS population_unknown_case_type,
         -- assessment_score_sessions-derived metrics
         AVG(IF(
             span = "ASSESSMENT_SCORE_SESSION"
@@ -542,12 +579,16 @@ WITH date_array AS (
     INNER JOIN
         `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` ps
     ON
-        d.date BETWEEN ps.start_date AND IFNULL(ps.end_date, "9999-01-01")
+        d.date BETWEEN ps.start_date AND IFNULL(
+            DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01"
+        )
     -- assignment here is date person assigned to {level_name}
     INNER JOIN (
         SELECT * EXCEPT(state_code) FROM {level_name}_assignments
     ) assign ON
-        d.date BETWEEN assign.assignment_date AND IFNULL(assign.end_date, "9999-01-01")
+        d.date BETWEEN assign.assignment_date AND IFNULL(
+            DATE_SUB(assign.end_date, INTERVAL 1 DAY), "9999-01-01"
+        )
         AND ps.person_id = assign.person_id
         
     GROUP BY {index_cols}, date
@@ -584,12 +625,16 @@ WITH date_array AS (
     INNER JOIN (
         SELECT * EXCEPT(state_code) FROM {level_name}_assignments
     ) assign ON
-        d.date BETWEEN assign.assignment_date AND IFNULL(assign.end_date, "9999-01-01")
+        d.date BETWEEN assign.assignment_date AND IFNULL(
+            DATE_SUB(assign.end_date, INTERVAL 1 DAY), "9999-01-01"
+        )
     INNER JOIN
         `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` ps
     ON
         -- next line is what's different from person_spans_agg
-        assign.assignment_date BETWEEN ps.start_date AND IFNULL(ps.end_date, "9999-01-01")
+        assign.assignment_date BETWEEN ps.start_date AND IFNULL(
+            DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01"
+        )
         AND assign.person_id = ps.person_id
         
     GROUP BY {index_cols}, date
@@ -753,9 +798,10 @@ WITH date_array AS (
             AND SAFE_CAST(
                 JSON_EXTRACT_SCALAR(span_attributes, "$.is_employed") AS BOOL
             ), DATE_DIFF(
-                LEAST(
-                    IFNULL(ps.end_date, CURRENT_DATE("US/Eastern")), 
-                    DATE_ADD(date, INTERVAL 365 DAY)
+                LEAST(IFNULL(
+                        DATE_SUB(ps.end_date, INTERVAL 1 DAY), 
+                        CURRENT_DATE("US/Eastern")
+                    ), DATE_ADD(date, INTERVAL 365 DAY)
                 ), GREATEST(date, ps.start_date), DAY
             ), 0
         )) AS days_employed,
@@ -765,8 +811,10 @@ WITH date_array AS (
             span = "EMPLOYMENT_PERIOD",
             DATE_DIFF(
                 LEAST(
-                    IFNULL(ps.end_date, CURRENT_DATE("US/Eastern")), 
-                    DATE_ADD(date, INTERVAL 365 DAY)
+                    IFNULL(
+                        DATE_SUB(ps.end_date, INTERVAL 1 DAY),
+                        CURRENT_DATE("US/Eastern")
+                    ), DATE_ADD(date, INTERVAL 365 DAY)
                 ), GREATEST(date, ps.start_date), DAY
             ), 0
         )) AS max_days_stable_employment,
@@ -823,7 +871,7 @@ WITH date_array AS (
             ps.start_date BETWEEN assign.assignment_date 
                 AND DATE_ADD(assign.assignment_date, INTERVAL window_length DAY)
             OR assign.assignment_date BETWEEN ps.start_date 
-                AND IFNULL(ps.end_date, "9999-01-01")
+                AND IFNULL(DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01")
         )
         
     GROUP BY assign.person_id, {index_cols}, date, window_length
@@ -883,8 +931,9 @@ WITH date_array AS (
             `{{project_id}}.{{analyst_dataset}}.person_spans_materialized`
     ) ps_assignment ON
         ps_assignment.person_id = assign.person_id
-        AND date BETWEEN ps_assignment.start_date 
-                AND IFNULL(ps_assignment.end_date, "9999-01-01")
+        AND date BETWEEN ps_assignment.start_date AND IFNULL(
+            DATE_SUB(ps_assignment.end_date, INTERVAL 1 DAY), "9999-01-01"
+        )
                 
     -- join person spans at end of window
     INNER JOIN (
@@ -894,7 +943,9 @@ WITH date_array AS (
         ps_window_end.person_id = ps_assignment.person_id
         AND ps_window_end.span = ps_assignment.span
         AND DATE_ADD(date, INTERVAL window_length DAY) BETWEEN 
-            ps_window_end.start_date AND IFNULL(ps_window_end.end_date, "9999-01-01")
+            ps_window_end.start_date AND IFNULL(
+                DATE_SUB(ps_window_end.end_date, INTERVAL 1 DAY), "9999-01-01"
+            )
         -- require the spans not be identical
         AND ps_assignment.start_date != ps_window_end.start_date
     

@@ -29,7 +29,9 @@ from recidiviz.utils.metadata import local_project_id_override
 PERSON_SPANS_VIEW_NAME = "person_spans"
 
 PERSON_SPANS_VIEW_DESCRIPTION = (
-    "View concatenating client (person) spans in a common format"
+    "View concatenating client (person) spans in a common format. Note that end_dates "
+    "are exclusive, i.e. the last full day of the span (if any) was the day prior to "
+    "the end_date."
 )
 
 PERSON_SPANS_QUERY_TEMPLATE = """
@@ -43,7 +45,7 @@ SELECT
     person_id,
     "COMPARTMENT_SESSION" AS span,
     start_date,
-    end_date,
+    DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         compartment_level_1,
         compartment_level_2,
@@ -61,7 +63,7 @@ SELECT
     person_id,
     "PERSON_DEMOGRAPHICS" AS span,
     MIN(start_date) AS start_date,
-    CURRENT_DATE("US/Eastern") AS end_date,
+    DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         birthdate,
         pd.gender,
@@ -83,7 +85,7 @@ SELECT
     person_id,
     "ASSESSMENT_SCORE_SESSION" AS span,
     assessment_date AS start_date,
-    score_end_date AS end_date,
+    DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         assessment_type,
         assessment_score,
@@ -105,7 +107,7 @@ SELECT
     person_id,
     "EMPLOYMENT_PERIOD" AS span,
     employment_start_date AS start_date,
-    employment_end_date AS end_date,
+    DATE_ADD(employment_end_date, INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         employer_name
     ))[OFFSET(0)]) AS span_attributes,
@@ -124,7 +126,7 @@ SELECT
     person_id,
     "EMPLOYMENT_STATUS_SESSION" AS span,
     employment_status_start_date AS start_date,
-    employment_status_end_date AS end_date,
+    DATE_ADD(employment_status_end_date, INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         CAST(is_employed AS STRING) AS is_employed
     ))[OFFSET(0)]) AS span_attributes,
@@ -144,11 +146,9 @@ SELECT
     person_id,
     "COMPLETED_CONTACT_SESSION" AS span,
     contact_date AS start_date,
-    DATE_SUB(
-        LEAD(contact_date) OVER (
-            PARTITION BY person_id
-            ORDER BY contact_date
-        ), INTERVAL 1 DAY
+    LEAD(contact_date) OVER (
+        PARTITION BY person_id
+        ORDER BY contact_date
     ) AS end_date,
     CAST(NULL AS STRING) AS span_attributes,
 FROM (
@@ -161,6 +161,27 @@ FROM (
     WHERE
         status = "COMPLETED"
 )
+
+UNION ALL
+
+-- open supervision mismatch (downgrades only)
+-- ends when mismatch corrected or supervision period ends
+SELECT
+    state_code,
+    person_id,
+    "TASK_ELIGIBLE" AS span,
+    start_date,
+    DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        "SUPERVISION_DOWNGRADE" AS task_name,
+        CAST(mismatch_corrected AS STRING) AS mismatch_corrected,
+        recommended_supervision_downgrade_level
+    ))[OFFSET(0)]) AS span_attributes,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
+WHERE
+    recommended_supervision_downgrade_level IS NOT NULL
+GROUP BY 1, 2, 3, 4, 5
 """
 
 PERSON_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
