@@ -64,7 +64,10 @@ officers as (
         supervision_level,
         supervision_type,
         case_type
-    from `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
+    from `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
+    WHERE included_in_state_population
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, person_external_id, supervising_officer_external_id, supervision_level, supervision_type, case_type 
+    ORDER BY date_of_supervision DESC) = 1
 ), clients AS (
     select
         state_person.state_code, 
