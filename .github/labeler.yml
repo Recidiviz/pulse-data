@@ -1,0 +1,2 @@
+Terraform:
+  - recidiviz/tools/deploy/terraform/**/*.tf
