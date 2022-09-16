@@ -59,7 +59,9 @@ risk_assessment_population_by_state = {
 }
 
 enabled_states = tuple(
-    set(contact_population_by_state).union(set(risk_assessment_population_by_state))
+    sorted(
+        set(contact_population_by_state).union(set(risk_assessment_population_by_state))
+    )
 )
 
 
@@ -70,8 +72,8 @@ def generate_state_specific_population(
     Defaults to counting all supervised people for unlisted states.
     """
     state_clauses = "\n            ".join(
-        f"WHEN '{state}' THEN COUNT(DISTINCT(IF(supervision_level in {populations}, person_id, null)))"
-        for state, populations in populations_by_state.items()
+        f"WHEN '{state}' THEN COUNT(DISTINCT(IF(supervision_level in {populations_by_state[state]}, person_id, null)))"
+        for state in sorted(populations_by_state.keys())
     )
     return f"""
         CASE state_code
