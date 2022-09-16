@@ -110,9 +110,11 @@ def get_supervision_aggregated_metrics_view_strings_by_level(
 
     view_description = f"""
 Tracks {level_name}-level metrics aggregated over monthly, quarterly, and yearly periods.
-Note that status metrics (e.g. days_incarcerated_365) are for all clients assigned
-to the {level_name} in the time period between start_date and end_date and tracked
-in the year following assignment.
+Note that span metrics (e.g. days_incarcerated_365) are for all clients assigned
+to the {level_name} in the time period between start_date and end_date (exclusive) and 
+tracked in the `_N` days following assignment.
+
+All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
 """
 
     # level-dependent columns/metrics
@@ -159,11 +161,13 @@ WITH date_array AS (
             INTERVAL 1 DAY
         )) AS date
 )
+
+-- end_dates are exclusive
 , truncated_dates AS (
     SELECT DISTINCT
         "MONTH" AS period,
         DATE_TRUNC(date, MONTH) AS start_date,
-        DATE_SUB(DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 MONTH), INTERVAL 1 DAY) AS end_date,
+        DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 MONTH) AS end_date,
     FROM
         date_array 
 
@@ -172,7 +176,7 @@ WITH date_array AS (
     SELECT DISTINCT
         "QUARTER" AS period,
         DATE_TRUNC(date, QUARTER) AS start_date,
-        DATE_SUB(DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER), INTERVAL 1 DAY) AS end_date,
+        DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER) AS end_date,
     FROM
         date_array 
 
@@ -182,7 +186,7 @@ WITH date_array AS (
     SELECT DISTINCT
         "YEAR" AS period,
         DATE_TRUNC(date, QUARTER) AS start_date,
-        DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 364 DAY) AS end_date,
+        DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 365 DAY) AS end_date,
     FROM
         date_array 
 )

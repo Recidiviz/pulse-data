@@ -33,9 +33,6 @@ from recidiviz.calculator.query.state.views.analyst_data.person_events import (
 from recidiviz.calculator.query.state.views.analyst_data.person_spans import (
     PERSON_SPANS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.person_statuses import (
-    PERSON_STATUSES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
 )
@@ -191,7 +188,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         OFFICER_EVENTS_VIEW_BUILDER,
         PERSON_EVENTS_VIEW_BUILDER,
         PERSON_SPANS_VIEW_BUILDER,
-        PERSON_STATUSES_VIEW_BUILDER,
         POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
         PROJECTED_DISCHARGES_VIEW_BUILDER,
         SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
