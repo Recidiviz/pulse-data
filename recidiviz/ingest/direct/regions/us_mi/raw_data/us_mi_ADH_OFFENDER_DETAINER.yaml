@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_OFFENDER_DETAINER
+file_description: |-
+  This table contains information on detainers issued for people under MIDOC jurisdiction.
+data_classification: source
+primary_key_cols:
+  - detainer_id
+columns:
+  - name: detainer_id
+    description: The OMNI-database generated ID for a detainer record
+  - name: offender_booking_id
+    description: The OMNI-database generated ID for an individual's booking
+    is_pii: True
+  - name: detainer_sequence_number
+    description: sequence number of the detainer for an individual
+  - name: detainer_received_date
+    description: Date detainer received
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: detainer_type_id
+    description: Reference code for the detainer type
+  - name: offender_id
+    description: The OMNI-database generated ID for a justice-impacted individual
+    is_pii: True
+  - name: originating_agency
+    # description: TODO(#15325)
+  - name: notify_date
+    description: Date of notification of the detainer
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: revoked_date
+    description: Date detainer revoked
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: ori_number
+  - name: contact_person
+    is_pii: True
+  - name: address1
+    is_pii: True
+  - name: address2
+    is_pii: True
+  - name: address3
+    is_pii: True
+  - name: city
+    is_pii: True
+  - name: state_id
+    is_pii: True
+  - name: postal_code
+    is_pii: True
+  - name: country_id
+  - name: contact_phone
+    is_pii: True
+  - name: reason
+    # description: TODO(#15325)
+  - name: complaint_number
+  - name: written_verification_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: request_for_clearance_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: clearance_method_lein
+  - name: clearance_method_letter
+  - name: clearance_method_other
+  - name: inactive_date
+    description: Date detainer was inactivated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+  - name: detainer_source_id
+    # description: TODO(#15325)
+  - name: dist_court_no
+    # description: TODO(#15325)
+  - name: circuit_court_no
+    # description: TODO(#15325)
+  - name: contact_phone_ext
+    is_pii: True
+  - name: contact_email
+    is_pii: True
+  - name: extradition_req_flg
+  - name: deportation_eligible_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: deportation_eligible_flg
+  - name: parole_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: deportation_final_order_flg
+  - name: assurance_from_ice_flg
+  - name: notes
+  - name: active_flag
+  - name: expiration_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: county
+  - name: followup_req
+  - name: followup_reason_id
+  - name: followup_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

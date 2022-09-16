@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_PERSONAL_PROTECTION_ORDER
+file_description: |-
+  This table contains information on personal protection orders issued against people under MIDOC jurisdiction.
+data_classification: source
+primary_key_cols:
+  - personal_protection_order_id
+columns:
+  - name: personal_protection_order_id
+    description: OMNI-database generated ID for a personal protection order
+  - name: offender_booking_id
+    description: OMNI-database generated ID for an individual's booking
+    is_pii: True
+  - name: offender_id
+    description: The OMNI-database generated ID for a justice-impacted individual
+    is_pii: True
+  - name: effective_date
+    description: Effective date of the personal protection order
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: expiration_date
+    description: Expiration date of the personal protection order
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: issuing_location_id
+    description: Reference code for the issuing location
+  - name: protected_person_last_name
+    is_pii: True
+  - name: protected_person_first_name
+    is_pii: True
+  - name: protected_person_middle_name
+    is_pii: True
+  - name: protectted_person_suffix
+    is_pii: True
+  - name: court_file_no
+    description: Court file number
+  - name: notes
+    is_pii: True
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
