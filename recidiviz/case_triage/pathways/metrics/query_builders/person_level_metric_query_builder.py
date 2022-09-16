@@ -39,13 +39,6 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder):
     aggregate_columns: List[Column]
 
     def build_query(self, params: FetchMetricParams) -> Query:
-        grouped_columns = [
-            column
-            for mapping in self.dimension_mappings
-            for column in mapping.columns
-            if column not in self.aggregate_columns
-        ] + self.non_aggregate_columns
-
         # The frontend displays a single row per person, with multiple ages/facilities separated
         # by ", ". Do that logic here to open the possibility of paginating later.
         aggregate_columns = [
@@ -58,10 +51,9 @@ class PersonLevelMetricQueryBuilder(MetricQueryBuilder):
             for column in self.aggregate_columns
         ]
         return (
-            Query([*grouped_columns, *aggregate_columns])
+            Query([*self.non_aggregate_columns, *aggregate_columns])
             .filter(*self.build_filter_conditions(params))
-            .group_by(*grouped_columns)
-            .order_by(*grouped_columns)
+            .group_by(*self.non_aggregate_columns)
         )
 
     @classmethod

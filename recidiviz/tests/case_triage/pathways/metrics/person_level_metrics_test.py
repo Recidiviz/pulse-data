@@ -51,10 +51,10 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
         metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
-        self.test.assertEqual(
-            {"data": self.all_expected_rows, "metadata": self.expected_metadata},
-            results,
-        )
+        self.test.assertEqual(list(results.keys()), ["data", "metadata"])
+        # Person-level metrics data are not returned in any particular order, so assert unordered.
+        self.test.assertCountEqual(results["data"], self.all_expected_rows)
+        self.test.assertEqual(results["metadata"], self.expected_metadata)
 
 
 class TestPrisonPopulationPersonLevel(PathwaysPersonLevelMetricTestBase, TestCase):
@@ -73,21 +73,17 @@ class TestPrisonPopulationPersonLevel(PathwaysPersonLevelMetricTestBase, TestCas
         return [
             {
                 "age": "25",
-                "ageGroup": "25-29",
                 "facility": "F1",
                 "fullName": "Example,Person",
                 "gender": "MALE",
-                "admissionReason": "NEW_ADMISSION",
                 "race": "WHITE",
                 "stateId": "1",
             },
             {
                 "age": "65",
-                "ageGroup": "60+",
                 "facility": "F2",
                 "fullName": "Fake,Person",
                 "gender": "FEMALE",
-                "admissionReason": "RETURN_FROM_TEMPORARY_RELEASE",
                 "race": "BLACK",
                 "stateId": "2",
             },
@@ -115,64 +111,60 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
     def all_expected_rows(self) -> List[Dict[str, Union[str, int, date]]]:
         return [
             {
-                "ageGroup": "20-25",
                 "age": "22, 23",
                 "gender": "MALE",
                 "race": "WHITE",
                 "facility": "ABC, DEF",
                 "fullName": "TEST, PERSON",
-                "timePeriod": "months_0_6",
                 "stateId": "0001",
             },
             {
-                "ageGroup": "60+",
                 "age": "62",
                 "gender": "FEMALE",
                 "race": "BLACK",
                 "facility": "ABC",
                 "fullName": "FAKE, USER",
-                "timePeriod": "months_0_6",
                 "stateId": "0003",
             },
             {
-                "ageGroup": "60+",
                 "age": "64",
                 "gender": "MALE",
                 "race": "ASIAN",
                 "facility": "ABC",
                 "fullName": "EXAMPLE, INDIVIDUAL",
-                "timePeriod": "months_0_6",
                 "stateId": "0005",
             },
             {
-                "ageGroup": "60+",
                 "age": "63",
                 "gender": "MALE",
                 "race": "BLACK",
                 "facility": "DEF",
                 "fullName": "FAKE2, USER2",
-                "timePeriod": "months_0_6",
                 "stateId": "0004",
             },
             {
-                "ageGroup": "60+",
                 "age": "61, 61",
                 "gender": "MALE",
                 "race": "WHITE",
                 "facility": "ABC, DEF",
                 "fullName": "TEST, PERSON2",
-                "timePeriod": "months_0_6",
                 "stateId": "0002",
             },
             {
                 "age": "65",
-                "ageGroup": "60+",
                 "facility": "GHI",
                 "fullName": "EXAMPLE, TIME",
                 "gender": "MALE",
                 "race": "WHITE",
                 "stateId": "0006",
-                "timePeriod": "months_25_60",
+            },
+            {
+                "age": "39, 40",
+                "facility": "DEF, GHI",
+                "fullName": "EXAMPLE, TIME",
+                "gender": "MALE",
+                "race": "WHITE",
+                "stateId": "0007",
             },
         ]
 
@@ -190,46 +182,38 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
             ),
         )
 
-        self.test.assertEqual(
+        self.test.assertCountEqual(
             [
                 {
-                    "ageGroup": "20-25",
                     "age": "22",
                     "gender": "MALE",
                     "race": "WHITE",
                     "facility": "ABC",
                     "fullName": "TEST, PERSON",
-                    "timePeriod": "months_0_6",
                     "stateId": "0001",
                 },
                 {
-                    "ageGroup": "60+",
                     "age": "62",
                     "gender": "FEMALE",
                     "race": "BLACK",
                     "facility": "ABC",
                     "fullName": "FAKE, USER",
-                    "timePeriod": "months_0_6",
                     "stateId": "0003",
                 },
                 {
-                    "ageGroup": "60+",
                     "age": "64",
                     "gender": "MALE",
                     "race": "ASIAN",
                     "facility": "ABC",
                     "fullName": "EXAMPLE, INDIVIDUAL",
-                    "timePeriod": "months_0_6",
                     "stateId": "0005",
                 },
                 {
-                    "ageGroup": "60+",
                     "age": "61",
                     "gender": "MALE",
                     "race": "WHITE",
                     "facility": "ABC",
                     "fullName": "TEST, PERSON2",
-                    "timePeriod": "months_0_6",
                     "stateId": "0002",
                 },
             ],
@@ -245,57 +229,55 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
             ),
         )
 
-        self.test.assertEqual(
+        self.test.assertCountEqual(
             [
                 {
                     "age": "22, 23",
-                    "ageGroup": "20-25",
                     "facility": "ABC, DEF",
                     "fullName": "TEST, PERSON",
                     "gender": "MALE",
                     "race": "WHITE",
                     "stateId": "0001",
-                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "62",
-                    "ageGroup": "60+",
                     "facility": "ABC",
                     "fullName": "FAKE, USER",
                     "gender": "FEMALE",
                     "race": "BLACK",
                     "stateId": "0003",
-                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "64",
-                    "ageGroup": "60+",
                     "facility": "ABC",
                     "fullName": "EXAMPLE, INDIVIDUAL",
                     "gender": "MALE",
                     "race": "ASIAN",
                     "stateId": "0005",
-                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "63",
-                    "ageGroup": "60+",
                     "facility": "DEF",
                     "fullName": "FAKE2, USER2",
                     "gender": "MALE",
                     "race": "BLACK",
                     "stateId": "0004",
-                    "timePeriod": "months_0_6",
                 },
                 {
                     "age": "61, 61",
-                    "ageGroup": "60+",
                     "facility": "ABC, DEF",
                     "fullName": "TEST, PERSON2",
                     "gender": "MALE",
                     "race": "WHITE",
                     "stateId": "0002",
-                    "timePeriod": "months_0_6",
+                },
+                {
+                    "age": "40",
+                    "facility": "DEF",
+                    "fullName": "EXAMPLE, TIME",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "stateId": "0007",
                 },
             ],
             results["data"],

@@ -172,21 +172,23 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         return {
             Dimension.GENDER: [
                 {"gender": "FEMALE", "count": 1},
-                {"gender": "MALE", "count": 7},
+                {"gender": "MALE", "count": 9},
             ],
             Dimension.AGE_GROUP: [
                 {"ageGroup": "20-25", "count": 2},
+                {"ageGroup": "35-39", "count": 1},
+                {"ageGroup": "40-44", "count": 1},
                 {"ageGroup": "60+", "count": 6},
             ],
             Dimension.FACILITY: [
                 {"facility": "ABC", "count": 4},
-                {"facility": "DEF", "count": 3},
-                {"facility": "GHI", "count": 1},
+                {"facility": "DEF", "count": 4},
+                {"facility": "GHI", "count": 2},
             ],
             Dimension.RACE: [
                 {"race": "ASIAN", "count": 1},
                 {"race": "BLACK", "count": 2},
-                {"race": "WHITE", "count": 5},
+                {"race": "WHITE", "count": 7},
             ],
         }
 
@@ -221,7 +223,7 @@ class TestPrisonToSupervisionTransitionsCount(PathwaysCountByMetricTestBase, Tes
         )
 
         self.test.assertEqual(
-            [{"facility": "ABC", "count": 4}, {"facility": "DEF", "count": 3}],
+            [{"facility": "ABC", "count": 4}, {"facility": "DEF", "count": 4}],
             results["data"],
         )
 

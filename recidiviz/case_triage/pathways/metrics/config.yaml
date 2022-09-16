@@ -77,6 +77,8 @@ PrisonPopulationPersonLevel:
     non_aggregate_columns:
       - full_name
       - state_id
+      - gender
+      - race
     aggregate_columns:
       - age
       - facility
@@ -123,6 +125,8 @@ PrisonToSupervisionTransitionsPersonLevel:
     non_aggregate_columns:
       - full_name
       - state_id
+      - gender
+      - race
     aggregate_columns:
       - age
       - facility

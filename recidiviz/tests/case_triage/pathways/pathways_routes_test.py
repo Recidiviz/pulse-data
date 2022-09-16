@@ -18,7 +18,7 @@
 import os
 from datetime import date
 from http import HTTPStatus
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 from unittest import mock
 from unittest.case import TestCase
 from unittest.mock import MagicMock, patch
@@ -48,6 +48,7 @@ from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     load_metrics_fixture,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils.types import assert_type
 
 
 class PathwaysBlueprintTestCase(TestCase):
@@ -252,75 +253,80 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             self.person_level_metric_path,
             headers={"Origin": "http://localhost:3000"},
         )
-        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
-        self.assertEqual(
-            response.get_json(),
-            {
-                "data": [
-                    {
-                        "ageGroup": "20-25",
-                        "age": "22, 23",
-                        "gender": "MALE",
-                        "race": "WHITE",
-                        "facility": "ABC, DEF",
-                        "fullName": "TEST, PERSON",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0001",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "62",
-                        "gender": "FEMALE",
-                        "race": "BLACK",
-                        "facility": "ABC",
-                        "fullName": "FAKE, USER",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0003",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "64",
-                        "gender": "MALE",
-                        "race": "ASIAN",
-                        "facility": "ABC",
-                        "fullName": "EXAMPLE, INDIVIDUAL",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0005",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "63",
-                        "gender": "MALE",
-                        "race": "BLACK",
-                        "facility": "DEF",
-                        "fullName": "FAKE2, USER2",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0004",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "61, 61",
-                        "gender": "MALE",
-                        "race": "WHITE",
-                        "facility": "ABC, DEF",
-                        "fullName": "TEST, PERSON2",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0002",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "65",
-                        "gender": "MALE",
-                        "race": "WHITE",
-                        "facility": "GHI",
-                        "fullName": "EXAMPLE, TIME",
-                        "timePeriod": "months_25_60",
-                        "stateId": "0006",
-                    },
-                ],
-                "metadata": {
-                    "lastUpdated": "2022-08-05",
+
+        # assert_type needs to take a Dict and not a Dict[X, Y], otherwise you get the error
+        # "Subscripted generics cannot be used with class and instance checks". Because of this,
+        # response_json needs to be Dict[Any, Any]
+        response_json: Dict[Any, Any] = assert_type(response.get_json(), Dict)
+
+        self.assertEqual(HTTPStatus.OK, response.status_code, response_json)
+        self.assertEqual(list(response_json.keys()), ["data", "metadata"])
+        # Person-level metrics data are not returned in any particular order, so assert unordered.
+        self.assertCountEqual(
+            response_json["data"],
+            [
+                {
+                    "age": "22, 23",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "ABC, DEF",
+                    "fullName": "TEST, PERSON",
+                    "stateId": "0001",
                 },
+                {
+                    "age": "62",
+                    "gender": "FEMALE",
+                    "race": "BLACK",
+                    "facility": "ABC",
+                    "fullName": "FAKE, USER",
+                    "stateId": "0003",
+                },
+                {
+                    "age": "64",
+                    "gender": "MALE",
+                    "race": "ASIAN",
+                    "facility": "ABC",
+                    "fullName": "EXAMPLE, INDIVIDUAL",
+                    "stateId": "0005",
+                },
+                {
+                    "age": "63",
+                    "gender": "MALE",
+                    "race": "BLACK",
+                    "facility": "DEF",
+                    "fullName": "FAKE2, USER2",
+                    "stateId": "0004",
+                },
+                {
+                    "age": "61, 61",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "ABC, DEF",
+                    "fullName": "TEST, PERSON2",
+                    "stateId": "0002",
+                },
+                {
+                    "age": "65",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "GHI",
+                    "fullName": "EXAMPLE, TIME",
+                    "stateId": "0006",
+                },
+                {
+                    "age": "39, 40",
+                    "facility": "DEF, GHI",
+                    "fullName": "EXAMPLE, TIME",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "stateId": "0007",
+                },
+            ],
+        )
+        self.assertEqual(
+            response_json["metadata"],
+            {
+                "lastUpdated": "2022-08-05",
             },
         )
 
@@ -331,46 +337,52 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 f"filters[{Dimension.FACILITY.value}]": "DEF",
             },
         )
-        self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
-        self.assertEqual(
-            {
-                "data": [
-                    {
-                        "ageGroup": "20-25",
-                        "age": "23",
-                        "gender": "MALE",
-                        "race": "WHITE",
-                        "facility": "DEF",
-                        "fullName": "TEST, PERSON",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0001",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "63",
-                        "gender": "MALE",
-                        "race": "BLACK",
-                        "facility": "DEF",
-                        "fullName": "FAKE2, USER2",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0004",
-                    },
-                    {
-                        "ageGroup": "60+",
-                        "age": "61",
-                        "gender": "MALE",
-                        "race": "WHITE",
-                        "facility": "DEF",
-                        "fullName": "TEST, PERSON2",
-                        "timePeriod": "months_0_6",
-                        "stateId": "0002",
-                    },
-                ],
-                "metadata": {
-                    "lastUpdated": "2022-08-05",
+        response_json = assert_type(response.get_json(), Dict)
+        self.assertEqual(HTTPStatus.OK, response.status_code, response_json)
+        self.assertEqual(list(response_json.keys()), ["data", "metadata"])
+        # Person-level metrics data are not returned in any particular order, so assert unordered.
+        self.assertCountEqual(
+            response_json["data"],
+            [
+                {
+                    "age": "23",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "DEF",
+                    "fullName": "TEST, PERSON",
+                    "stateId": "0001",
                 },
+                {
+                    "age": "63",
+                    "gender": "MALE",
+                    "race": "BLACK",
+                    "facility": "DEF",
+                    "fullName": "FAKE2, USER2",
+                    "stateId": "0004",
+                },
+                {
+                    "age": "61",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "facility": "DEF",
+                    "fullName": "TEST, PERSON2",
+                    "stateId": "0002",
+                },
+                {
+                    "age": "40",
+                    "facility": "DEF",
+                    "fullName": "EXAMPLE, TIME",
+                    "gender": "MALE",
+                    "race": "WHITE",
+                    "stateId": "0007",
+                },
+            ],
+        )
+        self.assertEqual(
+            response_json["metadata"],
+            {
+                "lastUpdated": "2022-08-05",
             },
-            response.get_json(),
         )
 
     @patch(
