@@ -193,7 +193,7 @@ class TestPrisonToSupervisionTransitionsOverTime(OverTimeMetricTestBase, TestCas
         return [
             {"avg90day": 0, "count": 1, "month": 1, "year": 2022},
             {"avg90day": 1, "count": 3, "month": 2, "year": 2022},
-            {"avg90day": 2, "count": 3, "month": 3, "year": 2022},
+            {"avg90day": 3, "count": 4, "month": 3, "year": 2022},
         ]
 
     @property
