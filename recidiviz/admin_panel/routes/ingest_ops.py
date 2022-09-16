@@ -135,9 +135,14 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return "invalid ingest instance provided", HTTPStatus.BAD_REQUEST
 
-        get_ingest_operations_store().start_ingest_rerun(
-            state_code, ingest_instance, raw_data_source_instance
-        )
+        try:
+            get_ingest_operations_store().start_ingest_rerun(
+                state_code, ingest_instance, raw_data_source_instance
+            )
+        except Exception as e:
+            # Catch all exceptions and display the errors associated.
+            return str(e), HTTPStatus.BAD_REQUEST
+
         return "", HTTPStatus.OK
 
     # Update ingest queues
