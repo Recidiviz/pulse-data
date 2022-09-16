@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_JUDGE
+file_description: |-
+  This table contains judge information.
+data_classification: source
+primary_key_cols:
+  - judge_id
+columns:
+  - name: judge_id
+    description: The OMNI-database generated ID for an individual judge
+  - name: title_id
+    description: Reference code for the title of the judge
+  - name: first_name
+    description: First name of the judge
+    is_pii: True
+  - name: middle_name
+    description: Middle name of the judge
+    is_pii: True
+  - name: last_name
+    description: Last name of the judge
+    is_pii: True
+  - name: name_suffix
+    description: Name suffix of the judge
+  - name: active_flag
+    description: Flag for whether the judge is still active
+  - name: list_seq
+  - name: address1
+    is_pii: True
+  - name: address2
+    is_pii: True
+  - name: address3
+    is_pii: True
+  - name: city
+    is_pii: True
+  - name: state_id
+    is_pii: True
+  - name: postal_code
+    is_pii: True
+  - name: country_id
+    is_pii: True
+  - name: business_phone_area_code
+    is_pii: True
+  - name: business_phone_number
+    is_pii: True
+  - name: business_phone_extension
+    is_pii: True
+  - name: expiration_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: county_id
+    description: Reference code for the county in which the judge operates
+  - name: circuit_id
+    description: Reference code for the circuit in which the judge operates
+  - name: district_court_id
+    description: Reference code for the district court in which the judge operates
+  - name: bar_number
+    is_pii: True
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node

@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_EMC_WARRANT
+file_description: |-
+  This table contains information on warrants issued for people under MIDOC jurisdiction.
+data_classification: source
+primary_key_cols:
+  - emc_warrant_id
+columns:
+  - name: emc_warrant_id
+    description: OMNI-database generated ID for the warrant record
+  - name: offender_booking_id
+    description: OMNI-database generated ID for an individual's booking
+    is_pii: True
+  - name: warrant_date
+    description: Date of warrant
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: entry_operator_user_id
+    is_pii: True
+  - name: entry_authorized_by
+  - name: entry_authorized_employee_id
+    is_pii: True
+  - name: offender_status_id
+    description: Reference code for the offender status
+  - name: offender_type_id
+    description: Reference code for the offender type
+  - name: agent_employee_id
+    is_pii: True
+  - name: agent_caseload_number
+  - name: entry_aru_referral_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: entry_aru_referral_user_id
+    is_pii: True
+  - name: cancel_operator_user_id
+    is_pii: True
+  - name: cancel_date
+    description: Date warrant was canceled
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: cancel_authorized_by
+    is_pii: True # TODO(#15325): see whether this is_pii flag is necessary
+  - name: cancel_authorized_employee_id
+    is_pii: True
+  - name: cancel_location_id
+  - name: cancel_aru_closing_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: cancel_aru_closing_reason_id
+  - name: cancel_aru_closing_user_id
+    is_pii: True
+  - name: warrant_entry_date
+    description: Date warrant was entered
+  - name: escape_abscond_location_id
+  - name: entry_remarks
+  - name: entry_aru_remarks
+  - name: cancel_remarks
+  - name: cancel_aru_remarks
+  - name: last_update_user
+    is_pii: True
+  - name: last_update_date
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
