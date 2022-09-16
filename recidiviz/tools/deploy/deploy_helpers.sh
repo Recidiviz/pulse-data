@@ -4,6 +4,8 @@ BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 
 VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
+SLACK_CHANNEL_ENG="GJDCVR2AY"
+SLACK_CHANNEL_DEPLOYMENT_BOT="C040N4DLMA4"
 
 # Parses a version tag and output a space-separated string of the version regex capture groups.
 # Example usage:
@@ -383,12 +385,13 @@ function deploy_terraform_infrastructure {
 # Posts a message to the #deployment-bot slack channel
 function deployment_bot_message {
   PROJECT_ID=$1
-  MESSAGE=$2
+  CHANNEL=$2
+  MESSAGE=$3
 
   AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
 
   curl -d "text=${MESSAGE}" \
-    -d "channel=C040N4DLMA4" \
+    -d "channel=${CHANNEL}" \
     -H "Authorization: Bearer ${AUTHORIZATION_TOKEN}" \
     -X POST https://slack.com/api/chat.postMessage > /dev/null 2>&1
 }
@@ -398,17 +401,17 @@ function deploy_migrations {
   COMMIT_HASH=$2
 
   echo "Running migrations using Cloud SQL Proxy"
-  deployment_bot_message $PROJECT "⏳ Starting migrations using Cloud SQL Proxy"
+  deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⏳ Starting migrations using Cloud SQL Proxy"
 
   pipenv run ./recidiviz/tools/migrations/run_all_migrations_using_proxy.sh $COMMIT_HASH $PROJECT
   return_code=$?
 
   if [[ $return_code -eq 0 ]]; then
-    deployment_bot_message $PROJECT "⌛️ Successfully ran migrations using Cloud SQL Proxy"
+    deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⌛️ Successfully ran migrations using Cloud SQL Proxy"
     return 0
   fi
 
-  deployment_bot_message $PROJECT "🚨 There was an error running migrations using the Cloud SQL Proxy"
+  deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "🚨 There was an error running migrations using the Cloud SQL Proxy"
   echo "There was an error running migrations using the Cloud SQL Proxy"
   echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
 
@@ -431,4 +434,56 @@ function post_deploy_triggers {
     echo "Triggering post-deploy tasks"
 
     run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id ${PROJECT} --trigger-historical-dag ${CALC_CHANGES_SINCE_LAST_DEPLOY}
+}
+
+
+DEPLOYMENT_STATUS_INITIAL=0
+DEPLOYMENT_STATUS_STARTED=1
+DEPLOYMENT_STATUS_SUCCEEDED=2
+DEPLOYMENT_STATUS=$DEPLOYMENT_STATUS_INITIAL
+
+
+DEPLOYMENT_STARTED_EMOJI=(🛳 🚀 ⛴ 🚢 🛸 ✈️ 🕊 🦅 ⛵ ️🚤 🛥 🛶 🚁 🛰 🚝 🚞 🚲 🛵 🛴)
+DEPLOYMENT_FAILED_EMOJI=(🌨 🌊 ⛈ 🌩 🌫 🌚 🗺 🚧)
+DEPLOYMENT_SUCCESS_EMOJI=(🌅 🌁 🌄 🏞 🎑 🗾 🌠 🎇 🎆 🌇 🌆 🏙 🌃 🌌 🌉 🌁 🛤)
+
+
+function on_deploy_exited {
+  PROJECT_ID=$1
+  COMMIT_HASH=$2
+  RELEASE_VERSION_TAG=$3
+
+
+  if [[ "${DEPLOYMENT_STATUS}" < "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
+    EMOJI=${DEPLOYMENT_FAILED_EMOJI[$RANDOM % ${#DEPLOYMENT_FAILED_EMOJI[@]}]}
+    DEPLOYMENT_ERROR_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` There was an error deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
+    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOYMENT_ERROR_MESSAGE}"
+    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOYMENT_ERROR_MESSAGE}"
+  fi
+}
+
+
+function update_deployment_status {
+  NEW_DEPLOYMENT_STATUS=$1
+  PROJECT_ID=$2
+  COMMIT_HASH=$3
+  RELEASE_VERSION_TAG=$4
+
+  DEPLOYMENT_STATUS="${NEW_DEPLOYMENT_STATUS}"
+  if [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_STARTED}" ]; then
+    EMOJI=${DEPLOYMENT_STARTED_EMOJI[$RANDOM % ${#DEPLOYMENT_STARTED_EMOJI[@]}]}
+    DEPLOY_STARTED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` Deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
+    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_STARTED_MESSAGE}"
+    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}"
+
+    # Register exit hook in case the deploy fails midway
+    trap 'on_deploy_exited ${PROJECT_ID} ${COMMIT_HASH} ${RELEASE_VERSION_TAG}' EXIT
+  elif [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_SUCCEEDED}" ]; then
+      MINUTES=$((SECONDS / 60))
+      EMOJI=${DEPLOYMENT_SUCCESS_EMOJI[$RANDOM % ${#DEPLOYMENT_SUCCESS_EMOJI[@]}]}
+      GCLOUD_USER=$(gcloud config get-value account)
+      DEPLOY_SUCCEEDED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` ${GCLOUD_USER} successfully deployed to \`${PROJECT_ID}\` in ${MINUTES} minutes"
+      deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_SUCCEEDED_MESSAGE}"
+      deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}"
+  fi
 }
