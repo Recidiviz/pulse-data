@@ -108,13 +108,20 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
           throw new Error(
             "Context for ingest rerun must have a defined ingestRerunRawDataSourceInstance."
           );
+        } else {
+          const res = await startIngestRerun(
+            stateCode,
+            instance,
+            (context as StartIngestRerunContext)
+              .ingestRerunRawDataSourceInstance
+          );
+          if (res.status === 200) {
+            message.success(`Start Ingest Rerun Succeeded!`);
+          } else {
+            const text = await res.text();
+            message.error(`Start Ingest Rerun Failed: ${text}`);
+          }
         }
-        await startIngestRerun(
-          stateCode,
-          instance,
-          (context as StartIngestRerunContext).ingestRerunRawDataSourceInstance
-        );
-
         setActionConfirmed();
         break;
       case RegionAction.PauseIngestInstance:

@@ -71,7 +71,6 @@ interface ActionRegionConfirmationFormProps {
   action: RegionAction;
   actionName: string;
   regionCode: string;
-  projectId?: string | undefined;
   ingestInstance?: DirectIngestInstance | undefined;
 }
 
@@ -83,7 +82,6 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
     action,
     actionName,
     regionCode,
-    projectId,
     ingestInstance,
   }) => {
     const [form] = Form.useForm();
@@ -92,7 +90,8 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
           .toUpperCase()
           .concat("_", action.toUpperCase(), "_", ingestInstance)
       : regionCode.toUpperCase().concat("_", action.toUpperCase());
-
+    const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
+    const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
     const [
       ingestRerunRawDataSourceInstance,
       setIngestRerunRawDataSourceInstance,
