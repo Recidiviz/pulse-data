@@ -1,10 +1,10 @@
-# Justice Counts Control Panel: Backend
+# Justice Counts Publisher: Backend
 
-Welcome to the Justice Counts Control Panel - a tool that allows agencies to report Justice Counts metrics.
+Welcome to the Justice Counts Publisher - a tool that allows agencies to report Justice Counts metrics.
 
-The backend of this application, which lives in this directory, consists of a Python+Flask app. The frontend lives in [pulse-data/frontends/justice-counts/control-panel](https://github.com/Recidiviz/pulse-data/tree/main/frontends/justice-counts/control-panel).
+The backend of this application, which lives in this directory, consists of a Python+Flask app. The frontend lives in the [justice-counts](https://github.com/Recidiviz/justice-counts) Github repo in the [`publisher`](https://github.com/Recidiviz/justice-counts/tree/main/publisher) directory.
 
-To run the app locally, you need to spin up both the backend and frontend simultaneously. Instructions for spinning up the backend are below; instructions for spinning up the frontend can be found in its directory's README.
+To run the app locally, you need to spin up both the backend and frontend simultaneously. Instructions for spinning up the backend are below; instructions for spinning up the frontend can be found [here](https://github.com/Recidiviz/justice-counts/tree/main/publisher).
 
 ## Setting up your environment
 
@@ -49,6 +49,16 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`flask`](https://flask.palletsprojects.com/en/1.1.x/) web server
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
+
+## Deployment
+
+The backend and frontend of the application are deployed together in the same Docker image to Google Cloud Run. To build a Docker image for deployment:
+
+1: Checkout the branch you want to deploy
+2: Run `docker build . -t us.gcr.io/recidiviz-staging/<your name>-test --platform linux/amd64`
+3: Run `docker push us.gcr.io/recidiviz-staging/<your name>-test`
+
+By default, when building the image, Docker will pull the frontend code from the `main` branch of the [justice-counts](https://github.com/Recidiviz/justice-counts) repo. To build an image with frontend code from another branch of this repo, run `docker build . -t us.gcr.io/recidiviz-staging/<your name>-test --build-arg JC_FRONTEND_BRANCH="<branch name>" --platform linux/amd64`. Note that in order for this to work, your branch must be pushed to Github, and it also must not contain forward slashes!
 
 ## Testing end-to-end
 
