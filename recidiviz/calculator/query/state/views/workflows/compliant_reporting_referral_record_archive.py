@@ -87,7 +87,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             -- These fields were migrated from the client_record to the compliant_reporting_referral_record
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
                 THEN CAST(cr.remaining_criteria_needed AS INT64)
-                ELSE client.remaining_criteria_needed
+                ELSE CAST(client.remaining_criteria_needed AS INT64)
             END AS remaining_criteria_needed,
             CASE WHEN cr.export_date >= (SELECT earliest_date FROM client_to_referral_record_migration_date)
                 THEN cr.almost_eligible_time_on_supervision_level
