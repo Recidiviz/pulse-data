@@ -138,7 +138,7 @@ else
     run_cmd gcloud -q container images add-tag ${REMOTE_BUILD_URL} ${IMAGE_URL}
 fi
 
-update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${RELEASE_VERSION_TAG}"
+update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 if [[ ! -z ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
@@ -179,4 +179,4 @@ else
     echo "Deploy succeeded - skipping post deploy triggers for no promote build."
 fi
 
-update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${RELEASE_VERSION_TAG}"
+update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
