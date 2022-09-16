@@ -18,7 +18,12 @@ input_columns:
   - JUDGE_NAME
   - ORDER_STATUS
   - ISSUING_AGY_LOC_ID
-unused_columns: []
+unused_columns:
+  - COUNTY_CODE
+  - CONVICTION_DATE
+  - ORDER_ID
+  - COURT_DATE
+  - ORDER_STATUS
 variables:
   - charge_sentence_id:
       $concat:
@@ -82,40 +87,3 @@ output:
                 judge_full_name:
                   $person_name:
                     $full_name: JUDGE_NAME
-                court_case:
-                  StateCourtCase:
-                    external_id:
-                      $custom:
-                        $function: us_nd_custom_parsers.decimal_str_as_int_str
-                        $args:
-                          dec_str: ORDER_ID
-                    status:
-                      $enum_mapping:
-                        $raw_text: ORDER_STATUS
-                        $mappings:
-                          StateCourtCaseStatus.PRESENT_WITHOUT_INFO:
-                            - "A"
-                            - "ACC"
-                            - "STEP"
-                    date_convicted: CONVICTION_DATE
-                    next_court_date: COURT_DATE
-                    county_code:
-                      $custom:
-                        $function: us_nd_custom_parsers.normalize_county_code
-                        $args:
-                          county_code: COUNTY_CODE
-                    judicial_district_code:
-                      $custom:
-                        $function: us_nd_custom_parsers.normalize_judicial_district_code
-                        $args:
-                          judicial_district_code_text: ISSUING_AGY_LOC_ID
-                    judge:
-                      $conditional:
-                        - $if:
-                            $not_null: JUDGE_NAME
-                          $then:
-                            StateAgent:
-                              agent_type: $literal_enum(StateAgentType.JUDGE)
-                              full_name:
-                                $person_name:
-                                  $full_name: JUDGE_NAME

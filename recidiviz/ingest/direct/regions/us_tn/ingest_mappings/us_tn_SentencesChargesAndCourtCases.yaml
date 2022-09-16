@@ -195,18 +195,6 @@ output:
                       judge_full_name:
                         $person_name:
                           $full_name: JudgeName
-                      court_case:
-                        StateCourtCase:
-                          external_id: $variable(sentence_external_id)
-                          date_convicted: SentenceImposeDate
-                          county_code: ConvictionCounty
-                          judicial_district_code: JudicialDistrict
-                          judge:
-                            StateAgent:
-                              agent_type: $literal_enum(StateAgentType.JUDGE)
-                              full_name:
-                                $json_dict:
-                                  full_name: JudgeName
 
     supervision_sentences:
       - $conditional:
@@ -260,15 +248,3 @@ output:
                       judge_full_name:
                         $person_name:
                           $full_name: JudgeName
-                      court_case:
-                        StateCourtCase:
-                          external_id: $variable(sentence_external_id)
-                          date_convicted: SentenceImposeDate
-                          county_code: ConvictionCounty
-                          judicial_district_code: JudicialDistrict
-                          judge:
-                            StateAgent:
-                              agent_type: $literal_enum(StateAgentType.JUDGE)
-                              full_name:
-                                $json_dict:
-                                  full_name: JudgeName

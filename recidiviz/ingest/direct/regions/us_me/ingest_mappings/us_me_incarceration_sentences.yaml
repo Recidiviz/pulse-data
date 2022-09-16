@@ -48,7 +48,9 @@ input_columns:
   - Term_Early_Cust_Rel_Date
   - Term_Max_Cust_Rel_Date
   - Term_Comm_Rel_Date
-unused_columns: []
+unused_columns:
+  - E_Professional_Type_Desc
+  - Court_Finding_Date
 variables:
   - is_life:
       $equal:
@@ -229,32 +231,3 @@ output:
                         $person_name:
                           $given_names: First_Name
                           $surname: Last_Name
-                court_case:
-                  StateCourtCase:
-                    external_id:
-                      $concat:
-                        $values:
-                          - Client_Id
-                          - Term_Id
-                          - Court_Order_Id
-                    date_convicted: Court_Finding_Date
-                    county_code: Jurisdiction_County_Cd
-                    judge:
-                      $conditional:
-                        - $if:
-                            $not_null: Judge_Professional_Id
-                          $then:
-                            StateAgent:
-                              external_id: Judge_Professional_Id
-                              agent_type:
-                                $enum_mapping:
-                                  $raw_text: E_Professional_Type_Desc
-                                  $mappings:
-                                    StateAgentType.JUDGE:
-                                      - Judge
-                                    StateAgentType.JUSTICE:
-                                      - Justice
-                              full_name:
-                                $person_name:
-                                  $given_names: First_Name
-                                  $surname: Last_Name

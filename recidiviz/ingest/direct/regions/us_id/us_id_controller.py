@@ -137,7 +137,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateAgent,
     StateAssessment,
     StateCharge,
-    StateCourtCase,
     StateEarlyDischarge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -718,7 +717,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
         mittimus_id = row.get("mitt_srl", "")
         sentence_id = row.get("sent_no", "")
-        court_case_id = row.get("caseno", "")
         period_id = row.get("period_id", "")
         violation_id = row.get("ofndr_tst_id", "")
         early_discharge_id = row.get("early_discharge_id", "")
@@ -742,9 +740,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             # Only one charge per sentence so recycle sentence id for the charge.
             if isinstance(obj, StateCharge):
                 obj.state_charge_id = f"{person_id}-{mittimus_id}-{sentence_id}"
-
-            if isinstance(obj, StateCourtCase):
-                obj.state_court_case_id = f"{person_id}-{court_case_id}"
 
             if isinstance(obj, StateSupervisionViolation):
                 obj.state_supervision_violation_id = f"{violation_id}"

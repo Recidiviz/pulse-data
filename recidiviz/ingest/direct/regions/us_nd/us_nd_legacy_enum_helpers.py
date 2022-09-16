@@ -31,7 +31,6 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
     legacy_mappings_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
-from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
     StateIncarcerationIncidentType,
@@ -126,9 +125,7 @@ def supervision_contact_location_mapper(
     return StateSupervisionContactLocation.INTERNAL_UNKNOWN
 
 
-IGNORES: Dict[Type[Enum], List[str]] = {
-    StateCourtCaseStatus: ["A", "ACC", "STEP"],
-}
+IGNORES: Dict[Type[Enum], List[str]] = {}
 
 
 def generate_enum_overrides() -> EnumOverrides:
