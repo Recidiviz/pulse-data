@@ -40,6 +40,11 @@ To load ALL views to a sandbox (this should be used only in rare circumstances),
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] all
 
+For any of the above commands, you can add a `--prompt` flag BEFORE the auto/manual/all
+keyword. This will make the script ask you if you want to proceed with loading the
+views after we've discovered all the views to be loaded to the sandbox. For example:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] --prompt auto
 
 To view more info on arguments that can be used with any of the sub-commands (i.e. auto,
 manual, all), run:
@@ -110,6 +115,7 @@ class _AllButSomeBigQueryViewsCollector(BigQueryViewCollector[BigQueryViewBuilde
 
 def load_all_views_to_sandbox(
     sandbox_dataset_prefix: str,
+    prompt: bool,
     dataflow_dataset_override: Optional[str] = None,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|. If
@@ -118,13 +124,14 @@ def load_all_views_to_sandbox(
     """
     prompt_for_confirmation("This will load all sandbox views, continue?")
 
+    logging.info("Gathering views to load to sandbox...")
+    collected_builders = _AllButSomeBigQueryViewsCollector(
+        datasets_to_exclude=_datasets_to_exclude_from_sandbox(dataflow_dataset_override)
+    ).collect_view_builders()
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
-        sandbox_view_builder_collector=_AllButSomeBigQueryViewsCollector(
-            datasets_to_exclude=_datasets_to_exclude_from_sandbox(
-                dataflow_dataset_override
-            )
-        ),
+        prompt=prompt,
+        collected_builders=collected_builders,
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
@@ -143,6 +150,7 @@ def _datasets_to_exclude_from_sandbox(
 def _load_manually_filtered_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
+    prompt: bool,
     dataflow_dataset_override: Optional[str],
     view_ids_to_load: Optional[List[str]],
     dataset_ids_to_load: Optional[List[str]],
@@ -212,10 +220,13 @@ def _load_manually_filtered_views_to_sandbox(
         ),
     )
 
+    logging.info("Gathering views to load to sandbox...")
+    collected_builders = collector.collect_view_builders()
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
+        prompt=prompt,
         dataflow_dataset_override=dataflow_dataset_override,
-        sandbox_view_builder_collector=collector,
+        collected_builders=collected_builders,
     )
 
 
@@ -257,39 +268,21 @@ def _get_all_views_changed_on_branch(
 
 
 def _get_changed_views_to_load_to_sandbox(
-    view_builders_in_full_dag: List[BigQueryViewBuilder],
+    address_to_change_type: Dict[BigQueryAddress, ViewChangeType],
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> Set[BigQueryAddress]:
     """Returns addresses for all views that have been added / updated since the last
     deploy and whose dataset is not in |changed_datasets_to_ignore|.
     """
-    all_views = build_views_to_update(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        candidate_view_builders=view_builders_in_full_dag,
-        address_overrides=None,
-    )
-    logging.info("Constructing DAG with all known views...")
-    full_dag_walker = BigQueryViewDagWalker(all_views)
-    logging.info("Checking for changes against [%s] BigQuery...", project_id())
-    changed_view_addresses = _get_all_views_changed_on_branch(full_dag_walker)
-
     added_view_addresses = set()
     updated_view_addresses = set()
     ignored_changed_addresses = set()
-    for address, change_type in changed_view_addresses.items():
+    for address, change_type in address_to_change_type.items():
         if (
             changed_datasets_to_ignore
             and address.dataset_id in changed_datasets_to_ignore
         ):
-            if change_type == ViewChangeType.ADDED:
-                logging.warning(
-                    "Cannot exclude newly added view [%s] from sandbox - including "
-                    "even though dataset [%s] is ignored.",
-                    address,
-                    address.dataset_id,
-                )
-            else:
-                ignored_changed_addresses.add(address)
+            ignored_changed_addresses.add(address)
 
         if change_type == ViewChangeType.ADDED:
             added_view_addresses.add(address)
@@ -316,7 +309,7 @@ def _get_changed_views_to_load_to_sandbox(
             _sorted_address_list_str(ignored_changed_addresses),
         )
 
-    return set(changed_view_addresses) - ignored_changed_addresses
+    return set(address_to_change_type) - ignored_changed_addresses
 
 
 def _confirm_rebased_on_latest_deploy() -> None:
@@ -332,19 +325,99 @@ def _confirm_rebased_on_latest_deploy() -> None:
         sys.exit(1)
 
 
+def _check_for_invalid_ignores(
+    full_dag_walker: BigQueryViewDagWalker,
+    address_to_change_type: Dict[BigQueryAddress, ViewChangeType],
+    addresses_to_load: Set[BigQueryAddress],
+) -> None:
+    """Exits if any views that will be loaded (in |addresses_to_load|) are downstream
+    of an ingored view that has not yet been deployed.
+    """
+    ignored_added_views = []
+    invalid_views_to_load = []
+
+    def find_invalid_ignores(
+        v: BigQueryView, parent_results: Dict[BigQueryView, bool]
+    ) -> bool:
+        view_change_type = (
+            address_to_change_type[v.address]
+            if v.address in address_to_change_type
+            else None
+        )
+
+        is_downstream_of_new_ignored_view = any(parent_results.values())
+
+        if v.address not in addresses_to_load:
+            if not view_change_type:
+                # All references to this downstream view will be to the normal version
+                # in BQ.
+                return False
+
+            if view_change_type == ViewChangeType.ADDED:
+                ignored_added_views.append(v.address)
+                return True
+            return is_downstream_of_new_ignored_view
+
+        if is_downstream_of_new_ignored_view:
+            # This is a view that will be loaded to the sandbox that is downstream of
+            # a new view that will NOT be loaded to the sandbox. This view (or any
+            # changed views upstream of this view) must be ignored as well.
+            invalid_views_to_load.append(v.address)
+        return is_downstream_of_new_ignored_view
+
+    full_dag_walker.process_dag(find_invalid_ignores)
+
+    if invalid_views_to_load:
+        logging.error(
+            "Attempting to load these views which are children of views that have been "
+            "added since the last deploy but were excluded from this sandbox run:\n%s",
+            _sorted_address_list_str(invalid_views_to_load),
+        )
+        logging.error(
+            "New views excluded from this sandbox run:\n%s",
+            _sorted_address_list_str(ignored_added_views),
+        )
+        logging.error(
+            "You must include these new views in the sandbox load or ignore all "
+            "changed downstream parents as well."
+        )
+        sys.exit(1)
+
+
 def _load_views_changed_on_branch_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
+    prompt: bool,
     dataflow_dataset_override: Optional[str],
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> None:
+    """Loads all views that have changed on this branch as compared to what is deployed
+    to the current project (usually staging).
+    """
     _confirm_rebased_on_latest_deploy()
 
     view_builders_in_full_dag = deployed_view_builders(project_id())
 
-    changed_views_to_load = _get_changed_views_to_load_to_sandbox(
-        view_builders_in_full_dag, changed_datasets_to_ignore
+    all_views = build_views_to_update(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        candidate_view_builders=view_builders_in_full_dag,
+        address_overrides=None,
     )
+    logging.info("Constructing DAG with all known views...")
+    full_dag_walker = BigQueryViewDagWalker(all_views)
+
+    logging.info("Checking for changes against [%s] BigQuery...", project_id())
+    address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
+
+    changed_views_to_load = _get_changed_views_to_load_to_sandbox(
+        address_to_change_type, changed_datasets_to_ignore
+    )
+
+    if not changed_views_to_load:
+        logging.warning(
+            "Did not find any changed views to load to the sandbox. Exiting."
+        )
+        sys.exit(1)
 
     sub_dag_collector = BigQueryViewSubDagCollector(
         view_builders_in_full_dag=view_builders_in_full_dag,
@@ -356,11 +429,20 @@ def _load_views_changed_on_branch_to_sandbox(
             dataflow_dataset_override
         ),
     )
+    logging.info("Gathering views to load to sandbox...")
+    collected_builders = sub_dag_collector.collect_view_builders()
+
+    _check_for_invalid_ignores(
+        full_dag_walker=full_dag_walker,
+        address_to_change_type=address_to_change_type,
+        addresses_to_load={b.address for b in collected_builders},
+    )
 
     _load_collected_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
+        prompt=prompt,
         dataflow_dataset_override=dataflow_dataset_override,
-        sandbox_view_builder_collector=sub_dag_collector,
+        collected_builders=collected_builders,
     )
 
 
@@ -371,17 +453,18 @@ def _sorted_address_list_str(addresses: Iterable[BigQueryAddress]) -> str:
 def _load_collected_views_to_sandbox(
     *,
     sandbox_dataset_prefix: str,
-    sandbox_view_builder_collector: BigQueryViewCollector,
+    prompt: bool,
+    collected_builders: List[BigQueryViewBuilder],
     dataflow_dataset_override: Optional[str] = None,
 ) -> None:
-
-    logging.info("Gathering views to load to sandbox...")
-
-    collected_builders = sandbox_view_builder_collector.collect_view_builders()
     logging.info(
         "Will load the following views to the sandbox: \n%s",
         _sorted_address_list_str({b.address for b in collected_builders}),
     )
+    if prompt:
+        prompt_for_confirmation(
+            f"Continue with loading {len(collected_builders)} views?"
+        )
 
     logging.info("Updating %s views...", len(collected_builders))
 
@@ -420,6 +503,16 @@ def parse_arguments() -> argparse.Namespace:
         "be loaded.",
         type=str,
         required=True,
+    )
+
+    parser.add_argument(
+        "--prompt",
+        dest="prompt",
+        action="store_true",
+        default=False,
+        help="If true, the script will prompt and ask if you want to continue after "
+        "the full list of views that will be loaded has been printed to the "
+        "console.",
     )
 
     parser.add_argument(
@@ -511,11 +604,13 @@ if __name__ == "__main__":
         if args.chosen_mode == "all":
             load_all_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
@@ -525,6 +620,7 @@ if __name__ == "__main__":
         elif args.chosen_mode == "auto":
             _load_views_changed_on_branch_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
+                prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
             )
