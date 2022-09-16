@@ -46,6 +46,7 @@ SENTENCE_SPANS_QUERY_TEMPLATE = f"""
             attr.sentences_preprocessed_id,
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
         UNNEST(offense_attributes) AS attr
+        WHERE attr.date_imposed != attr.completion_date
     ),
     {create_sub_sessions_with_attributes("sentences")}
     SELECT
