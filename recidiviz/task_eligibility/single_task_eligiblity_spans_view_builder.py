@@ -74,6 +74,11 @@ STATE_SPECIFIC_POPULATION_CTE = """candidate_population AS (
     WHERE state_code = '{state_code}'
 )"""
 
+CRITERIA_INFO_STRUCT_FRAGMENT = (
+    "STRUCT('{state_code}' AS state_code, '{criteria_name}' AS criteria_name, "
+    "{meets_criteria_default} AS meets_criteria_default)"
+)
+
 
 # TODO(#14310): Write tests for this class
 class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -138,6 +143,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             population_dataset_id=candidate_population_view_builder.materialized_address.dataset_id,
             population_view_id=candidate_population_view_builder.materialized_address.table_id,
         )
+        criteria_info_structs = []
         criteria_span_ctes = []
         for criteria_view_builder in criteria_spans_view_builders:
             if not criteria_view_builder.materialized_address:
@@ -153,11 +159,30 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
                     criteria_view_id=criteria_view_builder.materialized_address.table_id,
                 )
             )
+            criteria_info_structs.append(
+                StrictStringFormatter().format(
+                    CRITERIA_INFO_STRUCT_FRAGMENT,
+                    state_code=state_code.value,
+                    criteria_name=criteria_view_builder.criteria_name,
+                    meets_criteria_default=str(
+                        criteria_view_builder.meets_criteria_default
+                    ).upper(),
+                )
+            )
+
         all_criteria_spans_cte_str = (
             f"criteria_spans AS ({'UNION ALL'.join(criteria_span_ctes)})"
         )
+        criteria_info_structs_str = ",\n\t\t".join(criteria_info_structs)
+
         return f"""
 WITH
+all_criteria AS (
+    SELECT state_code, criteria_name, meets_criteria_default
+    FROM UNNEST([
+        {criteria_info_structs_str}
+    ])
+),
 {all_criteria_spans_cte_str},
 {population_span_cte},
 combined_cte AS (
@@ -182,8 +207,9 @@ sub-span represents an eligible or ineligible period for each individual.
         spans.person_id,
         spans.start_date,
         spans.end_date,
-        -- Only set the eligibility to TRUE if all criteria are TRUE
-        LOGICAL_AND(COALESCE(criteria.meets_criteria, FALSE)) AS is_eligible,
+        -- Only set the eligibility to TRUE if all criteria are TRUE. Use the criteria 
+        -- default value for criteria spans that do not overlap this sub-span.
+        LOGICAL_AND(COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default)) AS is_eligible,
         -- Assemble the reasons array from all the overlapping criteria reasons
         TO_JSON(ARRAY_AGG(
             TO_JSON(STRUCT(all_criteria.criteria_name AS criteria_name, reason AS reason))
@@ -192,7 +218,7 @@ sub-span represents an eligible or ineligible period for each individual.
         )) AS reasons,
         -- Aggregate all of the FALSE criteria into an array
         ARRAY_AGG(
-            IF(NOT COALESCE(criteria.meets_criteria, FALSE), all_criteria.criteria_name, NULL)
+            IF(NOT COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default), all_criteria.criteria_name, NULL)
             IGNORE NULLS
         ) AS ineligible_criteria,
     FROM (
@@ -201,10 +227,7 @@ sub-span represents an eligible or ineligible period for each individual.
         WHERE criteria_name = "POPULATION"
     ) spans
     -- Add 1 row per criteria type to ensure all are included in the results
-    INNER JOIN (
-        SELECT DISTINCT state_code, criteria_name
-        FROM criteria_spans
-    ) all_criteria
+    INNER JOIN all_criteria
         ON spans.state_code = all_criteria.state_code
     -- Join all criteria spans that overlap this sub-span
     LEFT JOIN criteria_spans criteria

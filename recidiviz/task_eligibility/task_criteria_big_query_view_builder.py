@@ -36,6 +36,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_name: str,
         criteria_spans_query_template: str,
         description: str,
+        meets_criteria_default: bool = False,
         # TODO(#14311): Add arguments to allow bounding the policy to specific dates
         #  and use those values in the span-collapsing logic in the
         #  SingleTaskEligibilitySpansBigQueryViewBuilder.
@@ -65,6 +66,7 @@ class StateSpecificTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         )
         self.state_code = state_code
         self.criteria_name = criteria_name
+        self.meets_criteria_default = meets_criteria_default
 
 
 class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
@@ -78,6 +80,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         criteria_name: str,
         criteria_spans_query_template: str,
         description: str,
+        meets_criteria_default: bool = False,
         **query_format_kwargs: str,
     ) -> None:
         if criteria_name.upper() != criteria_name:
@@ -96,6 +99,7 @@ class StateAgnosticTaskCriteriaBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             **query_format_kwargs,
         )
         self.criteria_name = criteria_name
+        self.meets_criteria_default = meets_criteria_default
 
 
 TaskCriteriaBigQueryViewBuilder = Union[
