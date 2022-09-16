@@ -156,7 +156,9 @@ def compare_metric_view_output_to_sandbox(
             "Loading views into sandbox datasets prefixed with %s",
             sandbox_dataset_prefix,
         )
-        load_all_views_to_sandbox(sandbox_dataset_prefix=sandbox_dataset_prefix)
+        load_all_views_to_sandbox(
+            sandbox_dataset_prefix=sandbox_dataset_prefix, prompt=False
+        )
 
     bq_client = BigQueryClientImpl()
     sandbox_comparison_output_dataset_id = (
