@@ -463,12 +463,14 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                     source_table_id="state_incarceration_period",
                     destination_dataset_id=temporary_dataset_id,
                     destination_table_id="state_incarceration_period",
+                    use_query_cache=True,
                 ),
                 mock.call(
                     source_dataset_id="us_yy_normalized_state",
                     source_table_id="state_incarceration_period",
                     destination_dataset_id=temporary_dataset_id,
                     destination_table_id="state_incarceration_period",
+                    use_query_cache=True,
                 ),
             ]
         )
@@ -557,12 +559,14 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                     source_table_id="state_incarceration_period",
                     destination_dataset_id=temporary_dataset_id,
                     destination_table_id="state_incarceration_period",
+                    use_query_cache=True,
                 ),
                 mock.call(
                     source_dataset_id="us_yy_normalized_state",
                     source_table_id="state_incarceration_period",
                     destination_dataset_id=temporary_dataset_id,
                     destination_table_id="state_incarceration_period",
+                    use_query_cache=True,
                 ),
             ]
         )

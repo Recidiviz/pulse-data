@@ -239,6 +239,7 @@ def compare_dataflow_output_to_sandbox(
                         table_id=metric_table,
                         query=comparison_query,
                         overwrite=True,
+                        use_query_cache=True,
                     )
 
                     # Add query job to the list of running jobs

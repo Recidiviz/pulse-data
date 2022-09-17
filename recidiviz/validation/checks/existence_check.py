@@ -172,7 +172,9 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
         cls, validation_job: DataValidationJob[ExistenceDataValidationCheck]
     ) -> DataValidationJobResult:
         query_job = BigQueryClientImpl().run_query_async(
-            validation_job.original_builder_query_str(), []
+            query_str=validation_job.original_builder_query_str(),
+            use_query_cache=True,
+            query_parameters=[],
         )
 
         return DataValidationJobResult(

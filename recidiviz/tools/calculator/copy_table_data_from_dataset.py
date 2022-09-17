@@ -55,10 +55,11 @@ def copy_table_data_from_dataset(
         destination_table_id = table_id.table_id
 
         job = bq_client.insert_into_table_from_table_async(
-            source_dataset_id,
-            source_table_id,
-            destination_dataset_id,
-            destination_table_id,
+            source_dataset_id=source_dataset_id,
+            source_table_id=source_table_id,
+            destination_dataset_id=destination_dataset_id,
+            destination_table_id=destination_table_id,
+            use_query_cache=True,
         )
         jobs.append(job)
 
