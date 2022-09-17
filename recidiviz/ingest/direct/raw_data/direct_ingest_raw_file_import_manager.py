@@ -644,7 +644,9 @@ class DirectIngestRawFileImportManager:
             parts.file_tag,
         )
         for migration_query in migration_queries:
-            query_job = self.big_query_client.run_query_async(query_str=migration_query)
+            query_job = self.big_query_client.run_query_async(
+                query_str=migration_query, use_query_cache=False
+            )
             try:
                 # Wait for the migration query to complete before running the next one
                 query_job.result()

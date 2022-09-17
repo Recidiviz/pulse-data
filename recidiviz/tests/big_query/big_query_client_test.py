@@ -136,7 +136,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Creating another client with the default location uses the original
         # bigquery.Client.
         default_location_bq_client = BigQueryClientImpl()
-        default_location_bq_client.run_query_async("some query")
+        default_location_bq_client.run_query_async(
+            query_str="some query", use_query_cache=True
+        )
         self.mock_client.query.assert_called()
         self.other_mock_client.query.assert_not_called()
 
@@ -295,7 +297,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         with self.assertLogs(level="WARNING"):
             self.bq_client.export_query_results_to_cloud_storage(
-                [
+                export_configs=[
                     ExportQueryConfig.from_view_query(
                         view=self.mock_view,
                         view_filter_clause="WHERE x = y",
@@ -305,6 +307,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                     )
                 ],
                 print_header=True,
+                use_query_cache=False,
             )
 
     def test_export_query_results_to_cloud_storage(self) -> None:
@@ -318,7 +321,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.query.return_value = query_job
         self.mock_client.extract_table.return_value = extract_job
         self.bq_client.export_query_results_to_cloud_storage(
-            [
+            export_configs=[
                 ExportQueryConfig.from_view_query(
                     view=self.mock_view,
                     view_filter_clause="WHERE x = y",
@@ -328,6 +331,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 )
             ],
             print_header=True,
+            use_query_cache=False,
         )
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
@@ -340,10 +344,11 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_create_table_from_query(self) -> None:
         """Tests that the create_table_from_query function calls the function to create a table from a query."""
         self.bq_client.create_table_from_query_async(
-            self.mock_dataset_id,
-            self.mock_table_id,
+            dataset_id=self.mock_dataset_id,
+            table_id=self.mock_table_id,
             query="SELECT * FROM some.fake.table",
             query_parameters=[],
+            use_query_cache=False,
         )
         self.mock_client.query.assert_called()
 
@@ -360,8 +365,9 @@ class BigQueryClientImplTest(unittest.TestCase):
             destination_dataset_id=self.mock_dataset_id,
             destination_table_id="fake_table_temp",
             query=fake_query,
-            clustering_fields=fake_cluster_fields,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+            clustering_fields=fake_cluster_fields,
+            use_query_cache=False,
         )
 
         # get inputs passed to client.query()
@@ -380,13 +386,17 @@ class BigQueryClientImplTest(unittest.TestCase):
         fake_cluster_fields = ["clustering_field_1", "clustering_field_2"]
 
         # verify ValueError thrown
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Trying to materialize into a table using different clustering fields than what currently exists requires 'WRITE_TRUNCATE' write_disposition.",
+        ):
             self.bq_client.insert_into_table_from_query_async(
                 destination_dataset_id=self.mock_dataset_id,
                 destination_table_id="fake_table_temp",
                 query=fake_query,
-                clustering_fields=fake_cluster_fields,
                 write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+                clustering_fields=fake_cluster_fields,
+                use_query_cache=False,
             )
 
     @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
@@ -399,6 +409,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             source_table_id=self.mock_table_id,
             destination_dataset_id=self.mock_dataset_id,
             destination_table_id="fake_table_temp",
+            use_query_cache=False,
         )
         expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
@@ -429,6 +440,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 destination_table_id=self.mock_destination_id,
                 hydrate_missing_columns_with_null=True,
                 allow_field_additions=True,
+                use_query_cache=False,
             )
             expected_query = (
                 "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name "
@@ -445,12 +457,16 @@ class BigQueryClientImplTest(unittest.TestCase):
         table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Destination table \[fake-recidiviz-project.fake_source_dataset_id.fake_table_id\] does not exist",
+        ):
             self.bq_client.insert_into_table_from_table_async(
-                self.mock_dataset_id,
-                self.mock_table_id,
-                "fake_source_dataset_id",
-                "fake_table_id",
+                source_dataset_id=self.mock_dataset_id,
+                source_table_id=self.mock_table_id,
+                destination_dataset_id="fake_source_dataset_id",
+                destination_table_id="fake_table_id",
+                use_query_cache=False,
             )
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_not_called()
@@ -458,13 +474,17 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_insert_into_table_from_table_invalid_filter_clause(self) -> None:
         """Tests that the insert_into_table_from_table_async function does not run the query if the filter clause
         does not start with a WHERE."""
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found filter clause \[bad filter clause\] that does not begin with WHERE",
+        ):
             self.bq_client.insert_into_table_from_table_async(
-                self.mock_dataset_id,
-                self.mock_table_id,
-                "fake_source_dataset_id",
-                "fake_table_id",
+                source_dataset_id=self.mock_dataset_id,
+                source_table_id=self.mock_table_id,
+                destination_dataset_id="fake_source_dataset_id",
+                destination_table_id="fake_table_id",
                 source_data_filter_clause="bad filter clause",
+                use_query_cache=False,
             )
         self.mock_client.query.assert_not_called()
 
@@ -476,11 +496,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         filter_clause = "WHERE state_code IN ('US_ND')"
         job_config = mock_job_config()
         self.bq_client.insert_into_table_from_table_async(
-            self.mock_dataset_id,
-            self.mock_table_id,
-            "fake_source_dataset_id",
-            "fake_table_id",
+            source_dataset_id=self.mock_dataset_id,
+            source_table_id=self.mock_table_id,
+            destination_dataset_id="fake_source_dataset_id",
+            destination_table_id="fake_table_id",
             source_data_filter_clause=filter_clause,
+            use_query_cache=False,
         )
         expected_query = (
             "SELECT * FROM `fake-recidiviz-project.fake-dataset.test_table` "
@@ -521,9 +542,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.insert_rows.assert_called()
 
     def test_stream_into_table_invalid_table(self) -> None:
-        self.mock_client.get_table.side_effect = ValueError("!")
+        error_message = "TEST - Something went wrong"
+        self.mock_client.get_table.side_effect = ValueError(error_message)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.stream_into_table(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
@@ -559,9 +581,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.load_table_from_json.assert_called()
 
     def test_load_into_table_async_invalid_table(self) -> None:
-        self.mock_client.get_table.side_effect = ValueError("!")
+        error_message = "TEST - Something went wrong"
+        self.mock_client.get_table.side_effect = ValueError(error_message)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.load_into_table_async(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
@@ -580,7 +603,10 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_delete_from_table_invalid_filter_clause(self) -> None:
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot delete from a table without a valid filter clause starting with WHERE.",
+        ):
             self.bq_client.delete_from_table_async(
                 self.mock_dataset_id, self.mock_table_id, filter_clause="x > y"
             )
@@ -591,7 +617,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         mock_table = create_autospec(bigquery.Table)
         self.mock_client.get_table.return_value = mock_table
 
-        self.bq_client.materialize_view_to_table(self.mock_view)
+        self.bq_client.materialize_view_to_table(
+            view=self.mock_view, use_query_cache=False
+        )
 
         expected_job_config_matcher = MaterializeTableJobConfigMatcher(
             expected_destination="fake-recidiviz-project.fake-dataset.test_view_materialized"
@@ -633,7 +661,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             ),
         ).build()
 
-        self.bq_client.materialize_view_to_table(mock_view)
+        self.bq_client.materialize_view_to_table(view=mock_view, use_query_cache=False)
 
         expected_job_config_matcher = MaterializeTableJobConfigMatcher(
             expected_destination="fake-recidiviz-project.custom_dataset.custom_view"
@@ -662,8 +690,13 @@ class BigQueryClientImplTest(unittest.TestCase):
             should_materialize=False,
         ).build()
 
-        with self.assertRaises(ValueError):
-            self.bq_client.materialize_view_to_table(invalid_view)
+        with self.assertRaisesRegex(
+            ValueError,
+            "Trying to materialize a view that does not have a set materialized_address.",
+        ):
+            self.bq_client.materialize_view_to_table(
+                view=invalid_view, use_query_cache=False
+            )
         self.mock_client.query.assert_not_called()
 
     def test_update_description(self) -> None:
@@ -710,7 +743,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = None
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Trying to create a table that already exists: fake-dataset.test_table.",
+        ):
             self.bq_client.create_table_with_schema(
                 self.mock_dataset_id, self.mock_table_id, schema_fields
             )
@@ -768,7 +804,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
-        self.bq_client.add_missing_fields_to_schema(
+        self.bq_client._add_missing_fields_to_schema(
             self.mock_dataset_id, self.mock_table_id, new_schema_fields
         )
 
@@ -784,7 +820,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("fake_schema_field", "STRING")]
 
-        self.bq_client.add_missing_fields_to_schema(
+        self.bq_client._add_missing_fields_to_schema(
             self.mock_dataset_id, self.mock_table_id, new_schema_fields
         )
 
@@ -796,8 +832,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         new_schema_fields = [bigquery.SchemaField("fake_schema_field", "STRING")]
 
-        with self.assertRaises(ValueError):
-            self.bq_client.add_missing_fields_to_schema(
+        with self.assertRaisesRegex(
+            ValueError,
+            "Cannot add schema fields to a table that does not exist: fake-dataset.test_table",
+        ):
+            self.bq_client._add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
 
@@ -815,8 +854,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("fake_schema_field", "INTEGER")]
 
-        with self.assertRaises(ValueError):
-            self.bq_client.add_missing_fields_to_schema(
+        with self.assertRaisesRegex(
+            ValueError,
+            "Trying to change the field type of an existing field in fake-dataset.test_table.",
+        ):
+            self.bq_client._add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
 
@@ -838,8 +880,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("fake_schema_field", "STRING", mode="REQUIRED")
         ]
 
-        with self.assertRaises(ValueError):
-            self.bq_client.add_missing_fields_to_schema(
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot change the mode of field SchemaField\('fake_schema_field'.*\) to REQUIRED",
+        ):
+            self.bq_client._add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
 
@@ -857,8 +902,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("field_1", "STRING")]
 
-        self.bq_client.remove_unused_fields_from_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
+        self.bq_client._remove_unused_fields_from_schema(
+            self.mock_dataset_id,
+            self.mock_table_id,
+            new_schema_fields,
+            allow_field_deletions=True,
         )
 
         self.mock_client.query.assert_called()
@@ -872,8 +920,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("field_1", "STRING")]
 
-        self.bq_client.remove_unused_fields_from_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
+        self.bq_client._remove_unused_fields_from_schema(
+            self.mock_dataset_id,
+            self.mock_table_id,
+            new_schema_fields,
+            allow_field_deletions=True,
         )
 
         self.mock_client.query.assert_not_called()
@@ -895,8 +946,11 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_3", "STRING"),
         ]
 
-        self.bq_client.remove_unused_fields_from_schema(
-            self.mock_dataset_id, self.mock_table_id, new_schema_fields
+        self.bq_client._remove_unused_fields_from_schema(
+            self.mock_dataset_id,
+            self.mock_table_id,
+            new_schema_fields,
+            allow_field_deletions=True,
         )
 
         self.mock_client.query.assert_called()
@@ -916,8 +970,11 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("field_1", "STRING")]
 
-        with self.assertRaises(ValueError):
-            self.bq_client.remove_unused_fields_from_schema(
+        with self.assertRaisesRegex(
+            ValueError,
+            "Found deprecated fields .*field_2.* for table: fake-dataset.test_table but field deletions is not allowed.",
+        ):
+            self.bq_client._remove_unused_fields_from_schema(
                 self.mock_dataset_id,
                 self.mock_table_id,
                 new_schema_fields,
@@ -927,10 +984,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.query.assert_not_called()
 
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._remove_unused_fields_from_schema"
     )
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._add_missing_fields_to_schema"
     )
     def test_update_schema(
         self, remove_unused_mock: mock.MagicMock, add_missing_mock: mock.MagicMock
@@ -957,10 +1014,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         add_missing_mock.assert_called()
 
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._remove_unused_fields_from_schema"
     )
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._add_missing_fields_to_schema"
     )
     def test_update_schema_fails_on_changed_type(
         self, remove_unused_mock: mock.MagicMock, add_missing_mock: mock.MagicMock
@@ -979,7 +1036,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "INT"),
         ]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            "Trying to change the field type of an existing field in "
+            "fake-dataset.test_table. Existing field field_2 has type STRING. "
+            "Cannot change this type to INT.",
+        ):
             self.bq_client.update_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -988,10 +1050,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         add_missing_mock.assert_not_called()
 
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._remove_unused_fields_from_schema"
     )
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._add_missing_fields_to_schema"
     )
     def test_update_schema_fails_on_changed_mode(
         self, remove_unused_mock: mock.MagicMock, add_missing_mock: mock.MagicMock
@@ -1010,7 +1072,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "INT"),
         ]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot change the mode of field SchemaField\('field_1'.*\) to NULLABLE",
+        ):
             self.bq_client.update_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -1019,10 +1084,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         add_missing_mock.assert_not_called()
 
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._remove_unused_fields_from_schema"
     )
     @mock.patch(
-        "recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema"
+        "recidiviz.big_query.big_query_client.BigQueryClientImpl._add_missing_fields_to_schema"
     )
     def test_update_schema_fails_on_no_allowed_deletions(
         self,
@@ -1038,13 +1103,16 @@ class BigQueryClientImplTest(unittest.TestCase):
         table = bigquery.Table(table_ref, schema_fields)
         self.mock_client.get_table.return_value = table
 
+        error_message = "TEST - Something went wrong"
+
         def cannot_remove_unused_columns(
-            _dataset_id: str,
-            _table_id: str,
-            _desired_schema_fields: List[bigquery.SchemaField],
-            _allow_field_deletions: bool,
+            *,
+            dataset_id: str,
+            table_id: str,
+            desired_schema_fields: List[bigquery.SchemaField],
+            allow_field_deletions: bool,
         ) -> Optional[bigquery.QueryJob]:
-            raise ValueError("error")
+            raise ValueError(error_message)
 
         remove_unused_mock.side_effect = cannot_remove_unused_columns
 
@@ -1052,7 +1120,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_1", "STRING"),
         ]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, error_message):
             self.bq_client.update_schema(
                 self.mock_dataset_id,
                 self.mock_table_id,

@@ -98,7 +98,8 @@ def compare_raw_data_between_projects(
                 raw_data_dataset_id=dataset_id,
                 raw_data_table_id=file_tag,
                 columns=columns,
-            )
+            ),
+            use_query_cache=True,
         )
         query_jobs[file_tag] = query_job
 

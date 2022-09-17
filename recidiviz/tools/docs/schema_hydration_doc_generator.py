@@ -78,7 +78,9 @@ def _get_all_null_columns(
         state_code=state_code,
         table_name=table_name,
     )
-    query_job = bq_client.run_query_async(formatted_query)
+    query_job = bq_client.run_query_async(
+        query_str=formatted_query, use_query_cache=True
+    )
     return sorted([row["null_column"] for row in query_job])
 
 
@@ -91,7 +93,9 @@ def _has_any_rows(
         state_code=state_code,
         table_name=table_name,
     )
-    query_job = bq_client.run_query_async(formatted_query)
+    query_job = bq_client.run_query_async(
+        query_str=formatted_query, use_query_cache=True
+    )
     for row in query_job:
         return int(row["count"]) > 0
 

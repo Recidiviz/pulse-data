@@ -68,11 +68,12 @@ class RosterManager:
             # we will join on this district value, so make sure we can handle it
             dataset_ref = self.bq.dataset_ref_for_id(PO_REPORT_DATASET)
             query_job = self.bq.run_query_async(
-                f"""
+                query_str=f"""
                 SELECT DISTINCT district
                 FROM `{self.bq.project_id}.{dataset_ref.dataset_id}.officer_supervision_district_association_materialized`
                 WHERE state_code = '{self.state_code.value}'
-                """
+                """,
+                use_query_cache=True,
             )
             res = query_job.result()
             known_districts = [row[0] for row in res]
@@ -102,13 +103,17 @@ class RosterManager:
             self._grant_po_report_access()
 
     def _grant_case_triage_access(self) -> None:
+        """Grants Case Triage access to the list of emails in the case_triage_users
+        table.
+        """
         dataset_ref = self.bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET)
 
         query_job = self.bq.run_query_async(
-            f"""
+            query_str=f"""
             SELECT email_address FROM `{self.bq.project_id}.{dataset_ref.dataset_id}.case_triage_users`
             WHERE state_code = '{self.state_code.value}'
-            """
+            """,
+            use_query_cache=True,
         )
         res = query_job.result()
         existing_user_emails = [row[0] for row in res]
@@ -135,10 +140,11 @@ class RosterManager:
     def _grant_po_report_access(self) -> None:
         dataset_ref = self.bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET)
         query_job = self.bq.run_query_async(
-            f"""
+            query_str=f"""
             SELECT email_address FROM `{self.bq.project_id}.{dataset_ref.dataset_id}.po_report_recipients`
             WHERE state_code = '{self.state_code.value}'
-            """
+            """,
+            use_query_cache=True,
         )
         res = query_job.result()
         existing_user_emails = [row[0] for row in res]
