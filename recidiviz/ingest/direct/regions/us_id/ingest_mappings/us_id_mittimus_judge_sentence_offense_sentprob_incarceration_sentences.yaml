@@ -53,20 +53,13 @@ input_columns:
   - mitt_disp
   - mitt_srl
   - mitt_time_typ
-  - off_actv_flg
   - off_cat
   - off_cd
   - off_deg
-  - off_rank1
-  - off_rank2
-  - off_rank3
-  - off_rpt_flg
   - off_sdesc
   - off_stat_eff_dtd
   - off_stat_subsec
-  - off_stat_term_dtd
   - off_typ
-  - offvisxo_flg
   - crm_grp_cd
   - ofnse_crm_grp_id
   - ucr
@@ -78,6 +71,7 @@ input_columns:
   - string_no
   - vio_doc
   - vio_1311
+  - description
 unused_columns:
   - cnty_ldesc
   - vio_1311
@@ -89,13 +83,10 @@ unused_columns:
   - lgl_fnam
   - cnty_cd
   - plea
-  - off_rank2
-  - off_rank1
   - ofnse_crm_grp_id
   - lgl_mnam
   - off_stat_eff_dtd
   - caseno_seq
-  - off_rank3
   - crm_grp_cd
   - sent_eff_dtd
   - def_atty
@@ -104,7 +95,6 @@ unused_columns:
   - off_cat
   - court_cred
   - state
-  - off_actv_flg
   - lgl_title
   - off_cd
   - law_cd
@@ -112,14 +102,11 @@ unused_columns:
   - am_sent_no
   - ucr
   - govn_sent
-  - off_rpt_flg
   - jail_cred
   - sent_exp_dtd
   - off_sdesc
   - off_stat_subsec
-  - off_stat_term_dtd
   - lgl_lnam
-  - offvisxo_flg
   - enhanced
   - mitt_disp
   - caseno
@@ -128,6 +115,7 @@ unused_columns:
   - vio_doc
   - interstate_mitt
   - consec_sent_no
+  - description
 output:
   StatePerson:
     external_ids:

@@ -17,6 +17,9 @@ input_columns:
   - LAST_UPDATE
   - CREATED_BY
   - MASTER_OFFENSE_IND
+  - REQUIRES_REGISTRATION
+  - Common_Statute_NCIC_Code
+  - Common_Statute_Number
 unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
@@ -26,6 +29,9 @@ unused_columns:
   - LAST_UPDATE # No apparent use for these
   - CREATED_BY # No apparent use for these
   - MASTER_OFFENSE_IND # Not in consistent use within source
+  - REQUIRES_REGISTRATION
+  - Common_Statute_NCIC_Code
+  - Common_Statute_Number
 output:
   StatePerson:
     external_ids:

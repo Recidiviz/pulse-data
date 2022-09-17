@@ -35,6 +35,7 @@ input_columns:
   - cnty_cd
   - cnty_ldesc
   - def_atty
+  - description
   - dist_atty
   - enhanced
   - govn_sent
@@ -51,20 +52,13 @@ input_columns:
   - mitt_disp
   - mitt_srl
   - mitt_time_typ
-  - off_actv_flg
   - off_cat
   - off_cd
   - off_deg
-  - off_rank1
-  - off_rank2
-  - off_rank3
-  - off_rpt_flg
   - off_sdesc
   - off_stat_eff_dtd
   - off_stat_subsec
-  - off_stat_term_dtd
   - off_typ
-  - offvisxo_flg
   - crm_grp_cd
   - ofnse_crm_grp_id
   - ucr
@@ -96,6 +90,7 @@ unused_columns:
   - cnty_cd
   - cnty_ldesc
   - def_atty
+  - description
   - dist_atty
   - enhanced
   - govn_sent
@@ -110,20 +105,13 @@ unused_columns:
   - lgl_title
   - mitt_disp
   - mitt_time_typ
-  - off_actv_flg
   - off_cat
   - off_cd
   - off_deg
-  - off_rank1
-  - off_rank2
-  - off_rank3
-  - off_rpt_flg
   - off_sdesc
   - off_stat_eff_dtd
   - off_stat_subsec
-  - off_stat_term_dtd
   - off_typ
-  - offvisxo_flg
   - crm_grp_cd
   - ofnse_crm_grp_id
   - ucr
