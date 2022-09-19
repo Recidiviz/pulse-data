@@ -23,8 +23,6 @@ import itertools
 import random
 from typing import Any, Iterable, List, cast
 
-from faker import Faker
-
 from recidiviz.common.constants.justice_counts import ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -37,8 +35,6 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 random.seed(0)
-Faker.seed(0)
-FAKE = Faker(locale=["en-US"])
 
 LAW_ENFORCEMENT_AGENCY_ID = 147
 DEFENSE_AGENCY_ID = 148
@@ -95,7 +91,7 @@ def _create_context_datapoint(
     elif context.value_type == ValueType.MULTIPLE_CHOICE:
         value = random.choice(["True", "False"])
     elif context.value_type == ValueType.TEXT:
-        value = FAKE.text(max_nb_chars=50)
+        value = "foobar"
     else:
         raise ValueError("Invalid ValueType")
     return schema.Datapoint(
@@ -172,7 +168,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
             schema.UserAccount(
                 id=i,
                 auth0_user_id=f"auth0|{i}",
-                name=FAKE.name(),
+                name=f"User {i}",
             )
             for i in range(num_users)
         ]
@@ -225,9 +221,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                 year=year,
                 month=1,
                 frequency="ANNUAL",
-                last_modified_at=FAKE.date_time_between(
-                    start_date=datetime.datetime(2020, 1, 1)
-                ),
+                last_modified_at=datetime.datetime(2020, 1, 1),
             )
             annual_report_datapoints = []
             for system in agency_systems:
@@ -245,9 +239,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                     year=year,
                     month=month,
                     frequency="MONTHLY",
-                    last_modified_at=FAKE.date_time_between(
-                        start_date=datetime.datetime(2020, 1, 1)
-                    ),
+                    last_modified_at=datetime.datetime(2020, 1, 1),
                 )
                 monthly_report_datapoints = []
                 for system in agency_systems:
