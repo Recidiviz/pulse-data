@@ -15,7 +15,10 @@ source ${BASH_SOURCE_DIR}/script_base.sh
 # - Remove any blank lines
 # - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
 # - Sort, in case the above transformations affected the sort order
-expected=$(pipenv requirements --dev \
+# The command to get the expected packages from pipenv has changed from `pipenv lock -r`
+# to `pipenv --requirements`. We try the new command first, but fall back to the old
+# command in case we are using an old pipenv version.
+expected=$( (pipenv requirements --dev || pipenv lock -r --dev) \
     | cut -d';' -f1 \
     | sed 's/\[.*\]//' \
     | sed '/^#/d' \
