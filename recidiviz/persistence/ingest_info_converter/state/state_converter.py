@@ -384,12 +384,6 @@ class StateConverter(BaseConverter):
             court_case_builder, ingest_court_case, self.metadata
         )
 
-        court_case_builder.judge = fn(
-            lambda i: state_agent.convert(self.agents[i], self.metadata),
-            "judge_id",
-            ingest_court_case,
-        )
-
         return court_case_builder.build(StateCourtCaseFactory.deserialize)
 
     def _convert_incarceration_period(

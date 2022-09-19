@@ -73,7 +73,6 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaTableConsistency,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_agent,
     generate_charge,
     generate_court_case,
     generate_early_discharge,
@@ -686,27 +685,19 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
             db_person = generate_person(
                 state_code=self.state_code, person_id=self.PERSON_ID_1
             )
-            db_judge = generate_agent(
-                state_code=self.state_code, external_id=self.EXTERNAL_ID_1
-            )
             db_court_case = generate_court_case(
                 person=db_person,
                 external_id=self.EXTERNAL_ID_1,
                 state_code=self.state_code,
-                judge=db_judge,
             )
 
             session.add(db_court_case)
             session.commit()
 
-            db_judge = generate_agent(
-                state_code=self.state_code, external_id=self.EXTERNAL_ID_2
-            )
             db_court_case_dupe = generate_court_case(
                 person=db_person,
                 external_id=self.EXTERNAL_ID_1,
                 state_code=self.state_code,
-                judge=db_judge,
             )
 
             # Act
@@ -724,27 +715,19 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
             db_person = generate_person(
                 state_code=self.state_code, person_id=self.PERSON_ID_1
             )
-            db_judge = generate_agent(
-                state_code=self.state_code, external_id=self.EXTERNAL_ID_1
-            )
             db_court_case = generate_court_case(
                 person=db_person,
                 external_id=self.EXTERNAL_ID_1,
                 state_code=self.state_code,
-                judge=db_judge,
             )
 
             session.add(db_court_case)
             session.commit()
 
-            db_judge = generate_agent(
-                state_code=self.state_code, external_id=self.EXTERNAL_ID_2
-            )
             db_court_case_dupe = generate_court_case(
                 person=db_person,
                 external_id=self.EXTERNAL_ID_1,
                 state_code=self.state_code,
-                judge=db_judge,
             )
 
             # Act

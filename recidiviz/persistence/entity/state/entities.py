@@ -402,7 +402,6 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    judge: Optional["StateAgent"] = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)

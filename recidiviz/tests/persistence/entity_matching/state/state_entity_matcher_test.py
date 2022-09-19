@@ -2716,10 +2716,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         self._commit_to_db(db_person)
 
-        new_agent = StateAgent.new_with_defaults(
-            agent_type=StateAgentType.JUDGE, state_code=_STATE_CODE
-        )
-
         person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
             external_ids=[
@@ -2742,7 +2738,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                             court_case=StateCourtCase.new_with_defaults(
                                 state_code=_STATE_CODE,
                                 external_id=_EXTERNAL_ID,
-                                judge=new_agent,
                             ),
                         ),
                     ],
@@ -2751,10 +2746,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
 
         expected_person = attr.evolve(entity_person)
-        expected_incarceration_sentence = expected_person.incarceration_sentences[0]
-        expected_incarceration_sentence.charges[0].court_case.judge = attr.evolve(
-            new_agent
-        )
 
         # Act 1 - Match
         session = self._session()
@@ -2801,10 +2792,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         self._commit_to_db(db_person)
 
-        new_agent = StateAgent.new_with_defaults(
-            agent_type=StateAgentType.JUDGE, state_code=_STATE_CODE
-        )
-
         person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE,
             external_ids=[
@@ -2825,7 +2812,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                             court_case=StateCourtCase.new_with_defaults(
                                 state_code=_STATE_CODE,
                                 external_id=_EXTERNAL_ID,
-                                judge=new_agent,
                             ),
                         ),
                     ],
@@ -2834,10 +2820,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
 
         expected_person = attr.evolve(entity_person)
-        expected_incarceration_sentence = expected_person.incarceration_sentences[0]
-        expected_incarceration_sentence.charges[0].court_case.judge = attr.evolve(
-            new_agent
-        )
 
         # Act 1 - Match
         session = self._session()
