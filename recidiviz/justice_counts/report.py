@@ -216,15 +216,20 @@ class ReportInterface:
         report: schema.Report,
         editor_ids_to_names: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
+        # Editor names will be displayed in reverse chronological order in
+        # an agency's reports table.
+        editors_reverse_chron = (
+            reversed(report.modified_by) if report.modified_by is not None else []
+        )
         if editor_ids_to_names is None:
             editor_names = [
                 UserAccountInterface.get_user_by_id(
                     session=session, user_account_id=id
                 ).name
-                for id in report.modified_by or []
+                for id in editors_reverse_chron
             ]
         else:
-            editor_names = [editor_ids_to_names[id] for id in report.modified_by or []]
+            editor_names = [editor_ids_to_names[id] for id in editors_reverse_chron]
         reporting_frequency = ReportInterface.get_reporting_frequency(report=report)
         return {
             "id": report.id,

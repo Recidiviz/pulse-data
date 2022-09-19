@@ -301,15 +301,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_update_report_metadata(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add_all(
-                [
-                    self.test_schema_objects.test_agency_A,
-                    self.test_schema_objects.test_user_A,
-                    self.test_schema_objects.test_user_C,
-                ]
-            )
+            user_A = self.test_schema_objects.test_user_A
+            user_C = self.test_schema_objects.test_user_C
+            session.add_all([self.test_schema_objects.test_agency_A, user_A, user_C])
             session.commit()
             session.refresh(self.test_schema_objects.test_agency_A)
+            session.refresh(user_A)
+            session.refresh(user_C)
 
             agency_id = self.test_schema_objects.test_agency_A.id
             update_datetime = datetime.datetime(
@@ -317,14 +315,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             with freeze_time(update_datetime):
-                user_a_id = UserAccountInterface.get_user_by_auth0_user_id(
-                    session=session,
-                    auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                ).id
                 report = ReportInterface.create_report(
                     session=session,
                     agency_id=agency_id,
-                    user_account_id=user_a_id,
+                    user_account_id=user_A.id,
                     month=2,
                     year=2022,
                     frequency=schema.ReportingFrequency.MONTHLY.value,
@@ -333,38 +327,42 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
                     report=report,
-                    editor_id=user_a_id,
+                    editor_id=user_A.id,
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(updated_report.modified_by, [user_a_id])
+                self.assertEqual(updated_report.modified_by, [user_A.id])
                 self.assertEqual(
                     updated_report.last_modified_at.timestamp(),
                     update_datetime.timestamp(),
                 )
-                user_c_id = UserAccountInterface.get_user_by_auth0_user_id(
-                    session=session,
-                    auth0_user_id=self.test_schema_objects.test_user_C.auth0_user_id,
-                ).id
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
                     report=updated_report,
-                    editor_id=user_c_id,
+                    editor_id=user_C.id,
                     status=schema.ReportStatus.DRAFT.value,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
-                self.assertEqual(updated_report.modified_by, [user_a_id, user_c_id])
+                self.assertEqual(updated_report.modified_by, [user_A.id, user_C.id])
                 updated_report = ReportInterface.update_report_metadata(
                     session=session,
                     report=updated_report,
                     status=schema.ReportStatus.PUBLISHED.value,
-                    editor_id=user_a_id,
+                    editor_id=user_A.id,
                 )
                 self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
                 self.assertEqual(
                     updated_report.modified_by,
-                    [user_c_id, user_a_id],
+                    [user_C.id, user_A.id],
                 )
+                editor_ids_to_names = {user_C.id: user_C.name, user_A.id: user_A.name}
+                report_json = ReportInterface.to_json_response(
+                    session=session,
+                    report=report,
+                    editor_ids_to_names=editor_ids_to_names,
+                )
+                # Editor names will be displayed in reverse chronological order.
+                self.assertEqual(report_json["editors"], [user_A.name, user_C.name])
 
             update_datetime = datetime.datetime(
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
@@ -374,7 +372,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     session=session,
                     report=updated_report,
                     status=schema.ReportStatus.PUBLISHED.value,
-                    editor_id=user_a_id,
+                    editor_id=user_A.id,
                 )
                 self.assertEqual(
                     updated_report.last_modified_at.timestamp(),
