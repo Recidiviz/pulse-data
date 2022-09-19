@@ -26,7 +26,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import pandas as pd
-from google.api_core.exceptions import BadRequest
+from google.api_core import retry
 from google.cloud import bigquery
 from more_itertools import one
 
@@ -43,6 +43,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
+from recidiviz.common.common_utils import google_api_retry_predicate
 from recidiviz.ingest.direct import raw_data, regions
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -721,6 +722,7 @@ class DirectIngestRawFileImportManager:
         # Waits for the deletion to complete
         delete_job.result()
 
+    @retry.Retry(predicate=google_api_retry_predicate)
     def _load_contents_to_bigquery(
         self, file_tag: str, temp_output_paths: List[GcsfsFilePath], columns: List[str]
     ) -> None:
@@ -758,7 +760,7 @@ class DirectIngestRawFileImportManager:
                 datetime.datetime.now().isoformat(),
                 len(temp_output_paths),
             )
-        except BadRequest as e:
+        except Exception as e:
             logging.error(
                 "Insert job [%s] failed with errors: [%s]",
                 load_job.job_id,
