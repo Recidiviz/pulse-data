@@ -17,7 +17,7 @@
 """Interface for working with the Datapoint model."""
 import datetime
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 from sqlalchemy.orm import Session
@@ -113,6 +113,26 @@ class DatapointInterface:
             disaggregation_display_name = dimension.human_readable_name()
             dimension_display_name = dimension.dimension_value
 
+        # If the value is a number has a trailing ".0", cast it to an int.
+        # If the value is a number and does not have a trailing ".0", cast it to a float.
+        # TODO(#15432): Move this logic to schema.Datapoint.get_value().
+        def cast_to_number(
+            value: Optional[str] = None,
+        ) -> Optional[Union[int, str, float]]:
+            if value is None:
+                return value
+
+            new_value: Union[int, str, float] = value
+            if isinstance(datapoint.get_value(), float):
+                # datapoint.get_value() will throw an error if the datapoint value
+                # is invalid.
+                if value[-2:] == ".0":
+                    new_value = int(value[0:-2])
+                else:
+                    new_value = float(value)
+
+            return new_value
+
         return {
             "id": datapoint.id,
             "report_id": datapoint.report_id,
@@ -122,8 +142,8 @@ class DatapointInterface:
             "metric_display_name": metric_display_name,
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
-            "value": datapoint.value,
-            "old_value": datapoint.datapoint_histories[-1].old_value
+            "value": cast_to_number(datapoint.value),
+            "old_value": cast_to_number(datapoint.datapoint_histories[-1].old_value)
             if len(datapoint.datapoint_histories) > 0
             else None,
             "is_published": is_published,

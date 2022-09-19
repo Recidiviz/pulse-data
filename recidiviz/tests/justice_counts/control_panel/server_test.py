@@ -1179,7 +1179,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             response_json_datapoint["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT"
         )
-        self.assertEqual(response_json_datapoint["value"], "5000")
+        self.assertEqual(response_json_datapoint["value"], 5000)
 
         response_json_dimensions = response_json[
             "dimension_names_by_metric_and_disaggregation"
