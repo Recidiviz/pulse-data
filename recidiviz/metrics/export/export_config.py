@@ -369,7 +369,7 @@ class ExportViewCollectionConfig:
             f" WHERE state_code = '{state_code_filter}'" if state_code_filter else None
         )
 
-        intermediate_table_name = "{export_view_name}_table"
+        intermediate_table_name_template = "{export_name}_{dataset_id}_{view_id}_table"
         if destination_override:
             output_directory = destination_override
         else:
@@ -377,7 +377,7 @@ class ExportViewCollectionConfig:
                 self.output_directory_uri_template, project_id=project_id
             )
         if state_code_filter:
-            intermediate_table_name += f"_{state_code_filter}"
+            intermediate_table_name_template += f"_{state_code_filter}"
             output_directory += f"/{state_code_filter}"
 
         configs = []
@@ -391,7 +391,10 @@ class ExportViewCollectionConfig:
                     view=view,
                     view_filter_clause=view_filter_clause,
                     intermediate_table_name=StrictStringFormatter().format(
-                        intermediate_table_name, export_view_name=view.view_id
+                        intermediate_table_name_template,
+                        export_name=self.export_name,
+                        dataset_id=view.dataset_id,
+                        view_id=view.view_id,
                     ),
                     output_directory=GcsfsDirectoryPath.from_absolute_path(
                         output_directory

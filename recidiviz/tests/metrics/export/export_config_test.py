@@ -271,7 +271,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=expected_view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{expected_view.view_id}_table",
+                intermediate_table_name="ALL_STATE_TEST_PRODUCT_base_dataset_test_view_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     StrictStringFormatter().format(
                         state_agnostic_dataset_export_config.output_directory_uri_template,
@@ -311,7 +311,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
+                intermediate_table_name="STATE_SPECIFIC_PRODUCT_EXPORT_base_dataset_test_view_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket/US_XX"
                 ),
@@ -345,7 +345,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=expected_view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{expected_view.view_id}_table",
+                intermediate_table_name="TEST_EXPORT_base_dataset_test_view_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     StrictStringFormatter().format(
                         lantern_dashboard_dataset_export_config.output_directory_uri_template,
@@ -382,7 +382,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=expected_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
+                intermediate_table_name="TEST_EXPORT_base_dataset_test_view_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket/US_XX"
                 ),
