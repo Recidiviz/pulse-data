@@ -237,7 +237,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             DatapointInterface.add_datapoint(
                 session=session,
                 report=monthly_report,
-                value="123",
+                value=123.0,
                 user_account=user,
                 metric_definition_key=law_enforcement.calls_for_service.key,
                 current_time=current_time,
@@ -254,7 +254,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
 
             assert len(datapoints) == 1
-            assert datapoints[0].value == "123"
+            assert datapoints[0].value == "123.0"
 
             datapoint_json = DatapointInterface.to_json_response(
                 datapoint=datapoints[0],
@@ -274,7 +274,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     "metric_display_name": "Calls for Service",
                     "disaggregation_display_name": None,
                     "dimension_display_name": None,
-                    "value": "123",
+                    "value": 123,
                     "old_value": None,
                     "is_published": False,
                 },
@@ -283,7 +283,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             DatapointInterface.add_datapoint(
                 session=session,
                 report=monthly_report,
-                value="456",
+                value=456.3,
                 user_account=user,
                 metric_definition_key=law_enforcement.calls_for_service.key,
                 current_time=current_time,
@@ -317,8 +317,8 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     "metric_display_name": "Calls for Service",
                     "disaggregation_display_name": None,
                     "dimension_display_name": None,
-                    "value": "456",
-                    "old_value": "123",
+                    "value": 456.3,
+                    "old_value": 123,
                     "is_published": False,
                 },
             )
