@@ -54,7 +54,7 @@ WITH LSIR_level_gender AS(
       score.person_id,
       score.state_code,
       score.assessment_date,
-      score.score_end_date,
+      DATE_ADD(score.score_end_date, INTERVAL 1 DAY) AS score_end_date,
       score.assessment_score,
   #TODO(#15022) add historical ranges 
   #TODO(#15153) move this logic to dataflow
@@ -118,6 +118,8 @@ WITH LSIR_level_gender AS(
     at the previous level and what the previous level was*/
     SELECT
         *, 
+        #TODO(#15398) recalculate days at level based on supervision start date
+        #task: add in supervision super sessions and select greatest(of supervision start date and score start date)
         DATE_DIFF(COALESCE(end_date, CURRENT_DATE('US/Pacific')), start_date, DAY) AS days_at_level,
         LAG(lsir_level) OVER(PARTITION BY person_id ORDER BY start_date) AS previous_lsir,
         IF((lsir_level IN ("LOW", "MODERATE") 

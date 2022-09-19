@@ -22,10 +22,7 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -59,17 +56,6 @@ WITH active_ncos AS (
     WHERE bci_caution_cd IN ('120','119','118','117','111','106')
     AND CAST(CAST(c.strt_dt AS DATETIME) AS DATE) != {nonnull_end_date_clause('''
         CAST(CAST(c.end_dt AS DATETIME) AS DATE)''')}
-#TODO(#15105) remove this section of the query once criteria can default to true
-    UNION ALL
-/*This CTE identifies supervision sessions for individuals and sets active_nco as FALSE*/
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
-        FALSE as active_nco,
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
-    WHERE compartment_level_1 = 'SUPERVISION'
 ),
 {create_sub_sessions_with_attributes('active_ncos')}
 SELECT
@@ -77,11 +63,10 @@ SELECT
     person_id,
     start_date,
     end_date,
-    --set any span that is TRUE For active_nco to FALSE for meets_criteria
-    NOT LOGICAL_OR(active_nco) AS meets_criteria,
+    NOT active_nco AS meets_criteria,
     TO_JSON(STRUCT(LOGICAL_OR(active_nco) AS active_nco)) AS reason,
 FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 """
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -90,8 +75,8 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_ID,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
         raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region("us_id"),
+        meets_criteria_default=True,
     )
 )
 
