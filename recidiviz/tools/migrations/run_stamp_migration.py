@@ -26,18 +26,7 @@ Note that the stamped alembic migration must exist for it to be run properly.
 
 
 
-Example usage (run from `pipenv shell` on `prod-data-client`):
-
-python -m recidiviz.tools.migrations.run_stamp_migration \
-    --database STATE \
-    --project-id recidiviz-staging \
-    --current-revision [revision_id] \
-    --target-revision [revision_id] \
-    --ssl-cert-path ~/dev_state_data_certs
-
 Example usage (run from `pipenv shell` locally):
-
-./recidiviz/tools/postgres/cloudsql_proxy_control.sh -c PROJECT_ID:REGION:CLOUD_SQL_INSTANCE_NAME -p 5440
 
 python -m recidiviz.tools.migrations.run_stamp_migration \
     --database STATE \
@@ -45,8 +34,6 @@ python -m recidiviz.tools.migrations.run_stamp_migration \
     --current-revision [revision_id] \
     --target-revision [revision_id] \
     --using-proxy
-
-./recidiviz/tools/postgres/cloudsql_proxy_control.sh -q -p 5440
 
 """
 import argparse
@@ -62,6 +49,7 @@ from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db_instance,
     confirm_correct_git_branch,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -109,11 +97,6 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--ssl-cert-path",
-        type=str,
-        help="The path to the folder where the certs live.",
-    )
-    parser.add_argument(
         "--dry-run",
         type=str_to_bool,
         help="Dry run? Migrates a fresh local postgres to HEAD and stamps the target revision",
@@ -136,7 +119,6 @@ def main(
     repo_root: str,
     current_revision: str,
     target_revision: str,
-    ssl_cert_path: str,
     dry_run: bool,
     using_proxy: bool,
 ) -> None:
@@ -161,7 +143,6 @@ def main(
     for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
         schema_type,
         using_proxy=using_proxy,
-        ssl_cert_path=ssl_cert_path,
         dry_run=dry_run,
     ):
         if dry_run:
@@ -186,7 +167,6 @@ def main(
     for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
         schema_type,
         using_proxy=using_proxy,
-        ssl_cert_path=ssl_cert_path,
         dry_run=dry_run,
     ):
         logging.info(
@@ -209,12 +189,22 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(
-            args.database,
-            args.repo_root,
-            args.current_revision,
-            args.target_revision,
-            args.ssl_cert_path,
-            args.dry_run,
-            args.using_proxy,
-        )
+        if args.using_proxy:
+            with cloudsql_proxy_control.connection(schema_type=args.database):
+                main(
+                    schema_type=args.database,
+                    repo_root=args.repo_root,
+                    current_revision=args.current_revision,
+                    target_revision=args.target_revision,
+                    dry_run=args.dry_run,
+                    using_proxy=args.using_proxy,
+                )
+        else:
+            main(
+                schema_type=args.database,
+                repo_root=args.repo_root,
+                current_revision=args.current_revision,
+                target_revision=args.target_revision,
+                dry_run=args.dry_run,
+                using_proxy=args.using_proxy,
+            )
