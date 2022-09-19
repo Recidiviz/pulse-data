@@ -20,7 +20,7 @@ import logging
 import re
 from typing import Optional, Tuple
 
-from recidiviz.common.str_field_utils import parse_int, person_name_case, snake_to_camel
+from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import (
@@ -68,10 +68,6 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         )
 
         # add nullable fields
-        # TODO(#2276): Remove field once frontend and looker are migrated
-        if "fee_exemptions" in data:
-            new_document["feeExemptions"] = data["fee_exemptions"]
-
         if "phone_number" in data:
             new_document["phoneNumber"] = data["phone_number"]
 
@@ -87,32 +83,10 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
         if "supervision_level" in data:
             new_document["supervisionLevel"] = data["supervision_level"]
 
-        # TODO(#2276): Remove field once frontend and looker are migrated
-        if "special_conditions_flag" in data:
-            new_document["specialConditionsFlag"] = data["special_conditions_flag"]
-
         # Note that date fields such as these are preserved as ISO strings (i.e., "YYYY-MM-DD")
         # rather than datetimes to avoid time-zone discrepancies
         if "supervision_level_start" in data:
             new_document["supervisionLevelStart"] = data["supervision_level_start"]
-
-        # TODO(#2276): Remove field once frontend and looker are migrated
-        if "next_special_conditions_check" in data:
-            new_document["nextSpecialConditionsCheck"] = data[
-                "next_special_conditions_check"
-            ]
-
-        # TODO(#2276): Remove field once frontend and looker are migrated
-        if "last_special_conditions_note" in data:
-            new_document["lastSpecialConditionsNote"] = data[
-                "last_special_conditions_note"
-            ]
-
-        # TODO(#2276): Remove field once frontend and looker are migrated
-        if "special_conditions_terminated_date" in data:
-            new_document["specialConditionsTerminatedDate"] = data[
-                "special_conditions_terminated_date"
-            ]
 
         if "last_payment_date" in data:
             new_document["lastPaymentDate"] = data["last_payment_date"]
@@ -121,98 +95,11 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
             new_document["expirationDate"] = data["expiration_date"]
 
         if "supervision_start_date" in data:
-            # TODO(#14224) Remove once frontend is migrated away from earliestSupervisionStartDateInLatestSystem
-            new_document["earliestSupervisionStartDateInLatestSystem"] = data[
-                "supervision_start_date"
-            ]
             new_document["supervisionStartDate"] = data["supervision_start_date"]
 
         # add nullable objects
-        # TODO(#2276): Remove field once frontend and looker are migrated
         if "compliant_reporting_eligible" in data:
-            new_document["compliantReportingEligible"] = {
-                "eligibilityCategory": data["compliant_reporting_eligible"],
-                "currentOffenses": data.get("current_offenses"),
-                "pastOffenses": data.get("past_offenses"),
-                "lifetimeOffensesExpired": data.get("lifetime_offenses_expired"),
-                "judicialDistrict": data.get("judicial_district"),
-                "drugScreensPastYear": [
-                    {
-                        "result": screen["ContactNoteType"],
-                        "date": screen["contact_date"],
-                    }
-                    for screen in data["drug_screens_past_year"]
-                ],
-                "sanctionsPastYear": data.get("sanctions_past_year"),
-                "finesFeesEligible": data["fines_fees_eligible"],
-            }
-
-            # TODO(#2276): Remove field once frontend and looker are migrated
-            if "eligible_level_start" in data:
-                new_document["compliantReportingEligible"]["eligibleLevelStart"] = data[
-                    "eligible_level_start"
-                ]
-
-            # TODO(#2276): Remove field once frontend and looker are migrated
-            if "most_recent_arrest_check" in data:
-                new_document["compliantReportingEligible"][
-                    "mostRecentArrestCheck"
-                ] = data["most_recent_arrest_check"]
-
-            # TODO(#2276): Remove field once frontend and looker are migrated
-            if data["zero_tolerance_codes"]:
-                new_document["compliantReportingEligible"]["zeroToleranceCodes"] = [
-                    {
-                        "contactNoteType": code["ContactNoteType"],
-                        "contactNoteDate": code["contact_date"],
-                    }
-                    for code in data["zero_tolerance_codes"]
-                ]
-
-            # TODO(#2276): Remove field once frontend and looker are migrated
-            remaining_criteria_needed = parse_int(data["remaining_criteria_needed"])
-            new_document["compliantReportingEligible"][
-                "remainingCriteriaNeeded"
-            ] = remaining_criteria_needed
-
-            almost_eligible_criteria = {}
-
-            # TODO(#2276): Remove field once frontend and looker are migrated
-            if data.get("almost_eligible_time_on_supervision_level") and (
-                current_level_eligibility_date := data.get(
-                    "date_supervision_level_eligible"
-                )
-            ):
-                almost_eligible_criteria[
-                    "currentLevelEligibilityDate"
-                ] = current_level_eligibility_date
-
-            if data.get("almost_eligible_drug_screen"):
-                almost_eligible_criteria["passedDrugScreenNeeded"] = True
-
-            if data.get("almost_eligible_fines_fees"):
-                almost_eligible_criteria["paymentNeeded"] = True
-
-            if data.get("almost_eligible_recent_rejection") and (
-                recent_rejection_codes := data.get("cr_rejections_past_3_months")
-            ):
-                almost_eligible_criteria["recentRejectionCodes"] = list(
-                    set(recent_rejection_codes)
-                )
-
-            if data.get("almost_eligible_serious_sanctions") and (
-                serious_sanctions_eligibility_date := data.get(
-                    "date_serious_sanction_eligible"
-                )
-            ):
-                almost_eligible_criteria[
-                    "seriousSanctionsEligibilityDate"
-                ] = serious_sanctions_eligibility_date
-
-            if almost_eligible_criteria:
-                new_document["compliantReportingEligible"][
-                    "almostEligibleCriteria"
-                ] = almost_eligible_criteria
+            new_document["compliantReportingEligible"] = True
 
         if data["board_conditions"]:
             new_document["boardConditions"] = [

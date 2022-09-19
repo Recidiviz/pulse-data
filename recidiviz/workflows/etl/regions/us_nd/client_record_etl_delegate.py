@@ -66,6 +66,11 @@ class ClientRecordETLDelegate(WorkflowsSingleStateETLDelegate):
                 "early_termination_eligible"
             ]
 
+        if "compliant_reporting_eligible" in data:
+            new_document["compliantReportingEligible"] = data[
+                "compliant_reporting_eligible"
+            ]
+
         # Note that date fields such as these are preserved as ISO strings (i.e., "YYYY-MM-DD")
         # rather than datetimes to avoid time-zone discrepancies
         if "supervision_level_start" in data:
