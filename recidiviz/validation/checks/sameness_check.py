@@ -429,7 +429,9 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
         validation = validation_job.validation
 
         error_query_job = BigQueryClientImpl().run_query_async(
-            validation_job.error_builder_query_str(), []
+            query_str=validation_job.error_builder_query_str(),
+            use_query_cache=True,
+            query_parameters=[],
         )
 
         failed_rows: List[Tuple[ResultRow, float]] = []
@@ -578,10 +580,14 @@ class SamenessPerViewValidationChecker(ValidationChecker[SamenessDataValidationC
         validation = validation_job.validation
 
         error_query_job = BigQueryClientImpl().run_query_async(
-            validation_job.error_builder_query_str(), []
+            query_str=validation_job.error_builder_query_str(),
+            use_query_cache=True,
+            query_parameters=[],
         )
         original_query_job = BigQueryClientImpl().run_query_async(
-            validation_job.original_builder_query_str(), []
+            query_str=validation_job.original_builder_query_str(),
+            use_query_cache=True,
+            query_parameters=[],
         )
 
         num_errors = len(list(error_query_job))

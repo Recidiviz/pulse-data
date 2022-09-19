@@ -81,7 +81,7 @@ WHERE {column.name} IS NOT NULL
 ORDER BY
   {column.name}
 """
-    query_job = bq_client.run_query_async(query_string)
+    query_job = bq_client.run_query_async(query_str=query_string, use_query_cache=True)
     distinct_values = [row["values"] for row in query_job]
     existing_values = [enum.value for enum in column.known_values_nonnull]
 

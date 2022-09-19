@@ -121,7 +121,9 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         storage_client: storage.Client,
         config: ExportBigQueryViewConfig[MetricBigQueryView],
     ) -> GcsfsFilePath:
-        query_job = self.bq_client.run_query_async(config.query, [])
+        query_job = self.bq_client.run_query_async(
+            query_str=config.query, use_query_cache=True, query_parameters=[]
+        )
         optimized_format = self.convert_query_results_to_optimized_value_matrix(
             query_job, config
         )

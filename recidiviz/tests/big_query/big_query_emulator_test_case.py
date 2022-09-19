@@ -80,7 +80,7 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
         self, query_str: str, expected_result: Iterable[Dict[str, Any]]
     ) -> None:
         query_job = self.bq_client.run_query_async(
-            query_str=query_str,
+            query_str=query_str, use_query_cache=True
         )
         contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
             query_job
