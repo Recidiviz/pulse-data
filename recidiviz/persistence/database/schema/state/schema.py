@@ -227,9 +227,6 @@ state_court_type = Enum(
 
 state_agent_type = Enum(
     state_enum_strings.present_without_info,
-    state_enum_strings.state_agent_correctional_officer,
-    state_enum_strings.state_agent_judge,
-    state_enum_strings.state_agent_justice,
     state_enum_strings.state_agent_supervision_officer,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,

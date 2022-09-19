@@ -282,12 +282,6 @@ def generate_full_graph_state_person(
 
     person.program_assignments = [program_assignment, program_assignment2]
 
-    incident_responding_officer = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.CORRECTIONAL_OFFICER,
-        state_code="US_XX",
-        full_name="MR SIR",
-    )
-
     incident_outcome = entities.StateIncarcerationIncidentOutcome.new_with_defaults(
         outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
         outcome_type_raw_text="WARNING",
@@ -305,7 +299,6 @@ def generate_full_graph_state_person(
         facility="ALCATRAZ",
         location_within_facility="13B",
         incident_details="Found contraband cell phone.",
-        responding_officer=incident_responding_officer,
         incarceration_incident_outcomes=[incident_outcome],
     )
 

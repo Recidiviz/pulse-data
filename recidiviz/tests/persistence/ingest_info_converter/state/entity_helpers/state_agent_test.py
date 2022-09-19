@@ -35,10 +35,10 @@ class StateAgentConverterTest(unittest.TestCase):
     def testParseStateAgent(self):
         # Arrange
         ingest_agent = ingest_info_pb2.StateAgent(
-            agent_type="JUDGE",
+            agent_type="SUPERVISION OFFICER",
             state_agent_id="AGENT_ID",
             state_code="us_nd",
-            full_name="Judge Joe Brown",
+            full_name="Joe Brown",
         )
 
         # Act
@@ -46,11 +46,11 @@ class StateAgentConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateAgent(
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="JUDGE",
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text="SUPERVISION OFFICER",
             external_id="AGENT_ID",
             state_code="US_ND",
-            full_name='{"full_name": "JUDGE JOE BROWN"}',
+            full_name='{"full_name": "JOE BROWN"}',
         )
 
         self.assertEqual(result, expected_result)

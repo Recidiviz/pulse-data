@@ -55,9 +55,6 @@ SHARED_ENUM_VALUE_DESCRIPTIONS: Dict[str, str] = {
 
 
 # state_agent.py
-state_agent_correctional_officer = "CORRECTIONAL_OFFICER"
-state_agent_judge = "JUDGE"
-state_agent_justice = "JUSTICE"
 state_agent_supervision_officer = "SUPERVISION_OFFICER"
 state_agent_subtype_supervision_officer = "SUPERVISION_OFFICER"
 state_agent_subtype_supervision_officer_supervisor = "SUPERVISION_OFFICER_SUPERVISOR"
