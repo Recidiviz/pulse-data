@@ -248,7 +248,7 @@ class ReportInterface:
         report_metric: MetricInterface,
         user_account: schema.UserAccount,
         use_existing_aggregate_value: bool = False,
-    ) -> None:
+    ) -> List[schema.Datapoint]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
         update the existing metric in-place.
@@ -265,6 +265,7 @@ class ReportInterface:
         is specified, we validate that it matches what is already in the db.
         If nothing is in the DB, we save the new aggregate value.
         """
+        datapoints: List[Optional[schema.Datapoint]] = []
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
@@ -274,14 +275,16 @@ class ReportInterface:
         # value but the incoming datapoint has its own value, we should still go
         # into this method to validate that the two values are the same.
         if not use_existing_aggregate_value or report_metric.value is not None:
-            DatapointInterface.add_datapoint(
-                session=session,
-                user_account=user_account,
-                current_time=current_time,
-                metric_definition_key=metric_definition.key,
-                report=report,
-                value=report_metric.value,
-                use_existing_aggregate_value=use_existing_aggregate_value,
+            datapoints.append(
+                DatapointInterface.add_datapoint(
+                    session=session,
+                    user_account=user_account,
+                    current_time=current_time,
+                    metric_definition_key=metric_definition.key,
+                    report=report,
+                    value=report_metric.value,
+                    use_existing_aggregate_value=use_existing_aggregate_value,
+                )
             )
 
         # Next, add a datapoint for each dimension
@@ -301,14 +304,16 @@ class ReportInterface:
                     # datapoint, which will overwrite any previously reported values.
                     continue
 
-                DatapointInterface.add_datapoint(
-                    session=session,
-                    user_account=user_account,
-                    current_time=current_time,
-                    metric_definition_key=metric_definition.key,
-                    report=report,
-                    value=all_dimensions_to_values[d],
-                    dimension=d,
+                datapoints.append(
+                    DatapointInterface.add_datapoint(
+                        session=session,
+                        user_account=user_account,
+                        current_time=current_time,
+                        metric_definition_key=metric_definition.key,
+                        report=report,
+                        value=all_dimensions_to_values[d],
+                        dimension=d,
+                    )
                 )
 
         # Finally, add a datapoint for each context
@@ -321,17 +326,20 @@ class ReportInterface:
                 # datapoint, which will overwrite any previously reported values.
                 continue
 
-            DatapointInterface.add_datapoint(
-                session=session,
-                user_account=user_account,
-                current_time=current_time,
-                metric_definition_key=metric_definition.key,
-                report=report,
-                value=context_key_to_value[context.key],
-                context_key=context.key,
-                value_type=context.value_type,
+            datapoints.append(
+                DatapointInterface.add_datapoint(
+                    session=session,
+                    user_account=user_account,
+                    current_time=current_time,
+                    metric_definition_key=metric_definition.key,
+                    report=report,
+                    value=context_key_to_value[context.key],
+                    context_key=context.key,
+                    value_type=context.value_type,
+                )
             )
         session.commit()
+        return [dp for dp in datapoints if dp is not None]
 
     @staticmethod
     def get_metrics_by_report(

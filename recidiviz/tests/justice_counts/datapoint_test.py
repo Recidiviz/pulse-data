@@ -275,6 +275,50 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     "disaggregation_display_name": None,
                     "dimension_display_name": None,
                     "value": "123",
+                    "old_value": None,
+                    "is_published": False,
+                },
+            )
+
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                value="456",
+                user_account=user,
+                metric_definition_key=law_enforcement.calls_for_service.key,
+                current_time=current_time,
+            )
+
+            report_ids = [
+                monthly_report.id,
+            ]
+
+            datapoints = DatapointInterface.get_datapoints_with_report_ids(
+                session=session,
+                report_ids=report_ids,
+                include_contexts=False,
+            )
+
+            datapoint_json = DatapointInterface.to_json_response(
+                datapoint=datapoints[0],
+                is_published=False,
+                frequency=ReportingFrequency.MONTHLY,
+            )
+
+            self.assertDictEqual(
+                datapoint_json,
+                {
+                    "id": monthly_report.id,
+                    "report_id": 1,
+                    "frequency": "MONTHLY",
+                    "start_date": datetime.date(2022, 6, 1),
+                    "end_date": datetime.date(2022, 7, 1),
+                    "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE_metric/law_enforcement/calls_for_service/type",
+                    "metric_display_name": "Calls for Service",
+                    "disaggregation_display_name": None,
+                    "dimension_display_name": None,
+                    "value": "456",
+                    "old_value": "123",
                     "is_published": False,
                 },
             )
