@@ -390,7 +390,6 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             query=query_str,
             allow_field_additions=False,
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            use_query_cache=False,
         )
         query_job.result()
 
@@ -426,7 +425,6 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             query=final_query,
             allow_field_additions=False,
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-            use_query_cache=False,
         )
         query_job.result()
 
@@ -492,8 +490,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                     upper_bound_datetime_inclusive
                 ),
                 batch_number=batch_number,
-            ),
-            use_query_cache=False,
+            )
         )
 
         return BigQueryResultsContentsHandle(
@@ -533,9 +530,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             )
         all_views_query = "\nUNION ALL\n".join(highest_priority_row_for_view_queries)
 
-        query_job = self._big_query_client.run_query_async(
-            query_str=all_views_query, use_query_cache=False
-        )
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
 
         result: Dict[str, Optional[ResultsBatchInfo]] = {
             ingest_view_name: None for ingest_view_name in ingest_views_with_results
@@ -575,9 +570,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             processed_time=self._datetime_clause(datetime.datetime.utcnow()),
             batch_number=batch_number,
         )
-        query_job = self._big_query_client.run_query_async(
-            query_str=query_str, use_query_cache=False
-        )
+        query_job = self._big_query_client.run_query_async(query_str=query_str)
         query_job.result()
 
     def get_ingest_view_contents_summary(
@@ -598,8 +591,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                 project_id=metadata.project_id(),
                 results_dataset=results_address.dataset_id,
                 results_table=results_address.table_id,
-            ),
-            use_query_cache=False,
+            )
         )
         rows: Iterable[Dict[str, Any]] = peekable(
             BigQueryResultsContentsHandle(query_job).get_contents_iterator()
@@ -650,9 +642,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             max_date_of_data_processed_before_datetime_for_view_queries
         )
 
-        query_job = self._big_query_client.run_query_async(
-            query_str=all_views_query, use_query_cache=False
-        )
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
 
         result: Dict[str, Optional[datetime.datetime]] = {
             ingest_view_name: None for ingest_view_name in ingest_views_with_results
@@ -702,9 +692,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             min_date_of_unprocessed_data_for_view_queries
         )
 
-        query_job = self._big_query_client.run_query_async(
-            query_str=all_views_query, use_query_cache=False
-        )
+        query_job = self._big_query_client.run_query_async(query_str=all_views_query)
 
         result: Dict[str, Optional[datetime.datetime]] = {
             ingest_view_name: None for ingest_view_name in ingest_views_with_results
@@ -794,7 +782,7 @@ if __name__ == "__main__":
             big_query_client=big_query_client_,
             region_code="us_pa",
             ingest_instance=DirectIngestInstance.PRIMARY,
-            dataset_prefix="ageid_no_cache",
+            dataset_prefix="ageiduschek",
         )
 
         ingest_view_name_ = "my_fake_view"

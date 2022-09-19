@@ -88,7 +88,6 @@ def main(dry_run: bool) -> None:
                 query=insert_query,
                 allow_field_additions=True,
                 write_disposition=WriteDisposition.WRITE_APPEND,
-                use_query_cache=False,
             )
 
             # Wait for the insert job to complete before running the delete job

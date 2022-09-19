@@ -33,10 +33,11 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.export.state.state_bq_table_export_utils import (
     state_table_export_query_str,
 )
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -104,9 +105,7 @@ def run_export(dry_run: bool, state_code: str, target_bucket: str) -> None:
     else:
         logging.info("Exporting [%d] tables to GCS", len(export_configs))
         big_query_client.export_query_results_to_cloud_storage(
-            export_configs=export_configs,
-            print_header=True,
-            use_query_cache=True,
+            export_configs, print_header=True
         )
 
 

@@ -142,7 +142,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
         query_job = self.big_query_client.run_query_async(
-            query_str=query, use_query_cache=False, query_parameters=query_params
+            query_str=query, query_parameters=query_params
         )
         return query_job
 

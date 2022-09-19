@@ -88,8 +88,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
             Dict[str, Any]
         ] = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_empty_table`;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_empty_table`;"
             )
         )
         results = list(handle.get_contents_iterator())
@@ -100,8 +99,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
             Dict[str, Any]
         ] = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;"
             )
         )
         results = list(handle.get_contents_iterator())
@@ -119,8 +117,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
             Dict[str, Any]
         ] = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;"
             )
         )
 
@@ -141,8 +138,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
             Dict[str, Any]
         ] = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;"
             )
         )
         iterator = handle.get_contents_iterator()
@@ -158,8 +154,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
             Dict[str, Any]
         ] = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;"
             )
         )
         iterator = handle.get_contents_iterator()
@@ -187,8 +182,7 @@ class BigQueryResultsContentsHandleTest(unittest.TestCase):
 
         handle = BigQueryResultsContentsHandle(
             self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
+                "SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;"
             ),
             value_converter=flip_types,
         )

@@ -29,11 +29,12 @@ import argparse
 import logging
 from typing import List
 
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.export.state.state_bq_table_export_utils import (
     state_table_export_query_str,
 )
+
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -44,11 +45,7 @@ def copy_table_to_dataset(
     """Copies the results of the given query to the target table and dataset, overwriting what lives there if the
     table already exists."""
     bq_client.create_table_from_query_async(
-        dataset_id=target_dataset,
-        table_id=target_table,
-        query=export_query,
-        overwrite=True,
-        use_query_cache=True,
+        target_dataset, target_table, export_query, overwrite=True
     )
 
 

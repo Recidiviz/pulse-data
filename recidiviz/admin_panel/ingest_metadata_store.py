@@ -132,12 +132,11 @@ class IngestDataFreshnessStore(AdminPanelStore):
         self, schema: SchemaType
     ) -> Dict[Optional[StateCode], CloudSqlToBqRefreshStatus]:
         query_job = self.bq_client.run_query_async(
-            query_str=cloud_sql_refresh_status_query_for_schema(
+            cloud_sql_refresh_status_query_for_schema(
                 metadata.project_id(),
                 CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
                 schema,
             ),
-            use_query_cache=True,
         )
 
         # Build up new results

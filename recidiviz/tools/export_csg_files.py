@@ -123,11 +123,7 @@ def export_csg_files(
             logging.info("%s", config)
     else:
         try:
-            client.export_query_results_to_cloud_storage(
-                export_configs=export_configs,
-                print_header=True,
-                use_query_cache=True,
-            )
+            client.export_query_results_to_cloud_storage(export_configs, True)
         except Exception as e:
             logging.error("Failed to export data: %s", e)
         finally:
