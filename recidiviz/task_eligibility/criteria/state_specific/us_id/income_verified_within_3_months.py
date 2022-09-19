@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time for
-which employment is verified within 3 months
+which employment or nonemployment lawful income is verified within 3 months
 """
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
@@ -37,7 +37,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_ID_INCOME_VERIFIED_WITHIN_3_MONTHS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time for
-which employment or nonemployment lawful is verified within 3 months"""
+which employment or nonemployment lawful income is verified within 3 months"""
 
 _QUERY_TEMPLATE = f"""
 WITH verified_employment_spans AS (

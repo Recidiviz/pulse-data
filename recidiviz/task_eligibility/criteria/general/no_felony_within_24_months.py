@@ -20,10 +20,7 @@ is no felony within 24 months on supervision
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -56,19 +53,6 @@ WITH supervision_violations AS (
         ON vr.supervision_violation_id = v.supervision_violation_id
         AND vr.person_id = v.person_id
         AND vr.state_code = v.state_code
-    #TODO(#15105) remove this section of the query once criteria can default to true
-    UNION ALL
-   /*This CTE identifies supervision sessions for individuals 
-   and sets felony_violation as FALSE*/
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
-        FALSE as felony_violation,
-        NULL AS violation_date
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
-    WHERE compartment_level_1 = 'SUPERVISION'
 ),
 {create_sub_sessions_with_attributes('supervision_violations')}
 SELECT 
@@ -76,20 +60,18 @@ SELECT
     person_id,
     start_date,
     end_date,
-    --when felony_violation is TRUE meets_criteria is FALSE 
-    --for identical spans, choose TRUE over FALSE felony_convictions
-    NOT LOGICAL_OR(felony_violation) AS meets_criteria,
+    NOT felony_violation AS meets_criteria,
     TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_felony_convictions)) AS reason,
 FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 """
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
     )
 )
 
