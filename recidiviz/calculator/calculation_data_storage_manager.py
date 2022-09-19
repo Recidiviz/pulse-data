@@ -359,7 +359,6 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
                 query=insert_query,
                 allow_field_additions=True,
                 write_disposition=WriteDisposition.WRITE_APPEND,
-                use_query_cache=True,
             )
 
             # Wait for the insert job to complete before running the replace job
@@ -380,11 +379,10 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
         else:
             # Replace the Dataflow table with only the rows that should remain
             replace_job = bq_client.create_table_from_query_async(
-                dataset_id=dataflow_metrics_dataset,
-                table_id=table_ref.table_id,
+                dataflow_metrics_dataset,
+                table_ref.table_id,
                 query=replace_query,
                 overwrite=True,
-                use_query_cache=True,
             )
 
             # Wait for the replace job to complete before moving on
@@ -460,7 +458,6 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
                     source_table_id=table_id,
                     destination_dataset_id=dataset_id,
                     destination_table_id=table_id,
-                    use_query_cache=True,
                 )
 
                 jobs.append(job)
@@ -561,7 +558,6 @@ def _decommission_dataflow_metric_table(
             query=insert_query,
             allow_field_additions=True,
             write_disposition=WriteDisposition.WRITE_APPEND,
-            use_query_cache=True,
         )
 
         # Wait for the insert job to complete before deleting the table

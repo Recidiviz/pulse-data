@@ -350,11 +350,7 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def export_query_results_to_cloud_storage(
-        self,
-        *,
-        export_configs: List[ExportQueryConfig],
-        print_header: bool,
-        use_query_cache: bool,
+        self, export_configs: List[ExportQueryConfig], print_header: bool
     ) -> None:
         """Exports the queries to cloud storage according to the given configs.
 
@@ -370,17 +366,13 @@ class BigQueryClient:
         Args:
             export_configs: List of queries along with how to export their results.
             print_header: Indicates whether to print out a header row in the results.
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
         """
 
     @abc.abstractmethod
     def run_query_async(
         self,
-        *,
         query_str: str,
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
 
@@ -395,8 +387,6 @@ class BigQueryClient:
         Args:
             query_str: The query to execute
             query_parameters: Parameters for the query
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -444,14 +434,12 @@ class BigQueryClient:
     @abc.abstractmethod
     def create_table_from_query_async(
         self,
-        *,
         dataset_id: str,
         table_id: str,
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         """Creates a table at the given address with the output from the given query.
         If overwrite is False, a 'duplicate' error is returned in the job result if the
@@ -465,8 +453,6 @@ class BigQueryClient:
             query_parameters: Optional parameters for the query
             overwrite: Whether or not to overwrite an existing table.
             clustering_fields: Columns by which to cluster the table.
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -475,12 +461,10 @@ class BigQueryClient:
     @abc.abstractmethod
     def insert_into_table_from_table_async(
         self,
-        *,
         source_dataset_id: str,
         source_table_id: str,
         destination_dataset_id: str,
         destination_table_id: str,
-        use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
@@ -505,8 +489,6 @@ class BigQueryClient:
                 has.
             write_disposition: Indicates whether BigQuery should overwrite the table completely (WRITE_TRUNCATE) or
                 adds to the table with new rows (WRITE_APPEND). By default, WRITE_APPEND is used.
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -523,7 +505,6 @@ class BigQueryClient:
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         """Inserts the results of the given query into the table at the given address.
         Creates a table if one does not yet exist. If |allow_field_additions| is set to
@@ -540,8 +521,6 @@ class BigQueryClient:
             write_disposition: What to do if the destination table already exists. Defaults to WRITE_APPEND, which will
                 append rows to an existing table.
             clustering_fields: Columns by which to cluster the table.
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -604,17 +583,13 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def materialize_view_to_table(
-        self, view: BigQueryView, use_query_cache: bool
-    ) -> bigquery.Table:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         """Materializes the result of a view's view_query into a table. The view's
         materialized_address must be set. The resulting table is put in the same
         project as the view, and it overwrites any previous materialization of the view.
 
         Args:
             view: The BigQueryView to materialize into a table.
-            use_query_cache: Whether to look for the result in the query cache. See:
-                https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery.FIELDS.use_query_cache
         """
 
     @abc.abstractmethod
@@ -660,6 +635,43 @@ class BigQueryClient:
 
         Returns:
             The bigquery.Table result of the update.
+        """
+
+    @abc.abstractmethod
+    def add_missing_fields_to_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
+        """Updates the schema of the table to include the schema_fields if they are not already present in the
+        Table's schema. Does not update the type or mode of any existing schema fields, and does not delete existing
+        schema fields.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to add fields to.
+            desired_schema_fields: A list of fields to add to the table
+        """
+
+    @abc.abstractmethod
+    def remove_unused_fields_from_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> Optional[bigquery.QueryJob]:
+        """Updates the schema of the table to drop any columns not in desired_schema_fields. This will not add any
+        fields to the table's schema.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to drop fields from.
+            desired_schema_fields: A list of fields to keep in the table. Any field not in this list will be dropped.
+
+        Returns:
+            If there are fields to be removed, returns a QueryJob which will contain the results once the query is
+            complete.
         """
 
     @abc.abstractmethod
@@ -1060,11 +1072,7 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def export_query_results_to_cloud_storage(
-        self,
-        *,
-        export_configs: List[ExportQueryConfig],
-        print_header: bool,
-        use_query_cache: bool,
+        self, export_configs: List[ExportQueryConfig], print_header: bool
     ) -> None:
         query_jobs = []
         for export_config in export_configs:
@@ -1074,7 +1082,6 @@ class BigQueryClientImpl(BigQueryClient):
                 query=export_config.query,
                 query_parameters=export_config.query_parameters,
                 overwrite=True,
-                use_query_cache=use_query_cache,
             )
             if query_job is not None:
                 query_jobs.append(query_job)
@@ -1127,12 +1134,10 @@ class BigQueryClientImpl(BigQueryClient):
 
     def run_query_async(
         self,
-        *,
         query_str: str,
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
-        job_config = bigquery.QueryJobConfig(use_query_cache=use_query_cache)
+        job_config = bigquery.QueryJobConfig()
         job_config.query_parameters = query_parameters or []
 
         return self.client.query(
@@ -1214,14 +1219,12 @@ class BigQueryClientImpl(BigQueryClient):
 
     def create_table_from_query_async(
         self,
-        *,
         dataset_id: str,
         table_id: str,
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
@@ -1240,17 +1243,14 @@ class BigQueryClientImpl(BigQueryClient):
             query_parameters=query_parameters,
             write_disposition=write_disposition,
             clustering_fields=clustering_fields,
-            use_query_cache=use_query_cache,
         )
 
     def _insert_into_table_from_table_async(
         self,
-        *,
         source_dataset_id: str,
         source_table_id: str,
         destination_dataset_id: str,
         destination_table_id: str,
-        use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         allow_field_additions: bool = False,
         hydrate_missing_columns_with_null: bool = False,
@@ -1303,7 +1303,6 @@ class BigQueryClientImpl(BigQueryClient):
             query=query,
             allow_field_additions=allow_field_additions,
             write_disposition=write_disposition,
-            use_query_cache=use_query_cache,
         )
 
     @staticmethod
@@ -1323,22 +1322,19 @@ class BigQueryClientImpl(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
         self.create_dataset_if_necessary(destination_dataset_ref)
 
-        query_job_config = bigquery.job.QueryJobConfig(use_query_cache=use_query_cache)
-        query_job_config.destination = destination_dataset_ref.table(
-            destination_table_id
-        )
+        job_config = bigquery.job.QueryJobConfig()
+        job_config.destination = destination_dataset_ref.table(destination_table_id)
 
-        query_job_config.write_disposition = write_disposition
-        query_job_config.query_parameters = query_parameters or []
+        job_config.write_disposition = write_disposition
+        job_config.query_parameters = query_parameters or []
 
         if clustering_fields:
-            query_job_config.clustering_fields = clustering_fields
+            job_config.clustering_fields = clustering_fields
 
             # if new clustering fields are different, delete existing table
             # only if the write_disposition is WRITE_TRUNCATE
@@ -1359,7 +1355,7 @@ class BigQueryClientImpl(BigQueryClient):
                 pass
 
         if allow_field_additions:
-            query_job_config.schema_update_options = [
+            job_config.schema_update_options = [
                 bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
             ]
 
@@ -1373,17 +1369,15 @@ class BigQueryClientImpl(BigQueryClient):
         return self.client.query(
             query=query,
             location=self.region,
-            job_config=query_job_config,
+            job_config=job_config,
         )
 
     def insert_into_table_from_table_async(
         self,
-        *,
         source_dataset_id: str,
         source_table_id: str,
         destination_dataset_id: str,
         destination_table_id: str,
-        use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
@@ -1399,7 +1393,6 @@ class BigQueryClientImpl(BigQueryClient):
             hydrate_missing_columns_with_null=hydrate_missing_columns_with_null,
             allow_field_additions=allow_field_additions,
             write_disposition=write_disposition,
-            use_query_cache=use_query_cache,
         )
 
     def stream_into_table(
@@ -1477,9 +1470,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         return self.client.query(delete_query)
 
-    def materialize_view_to_table(
-        self, view: BigQueryView, use_query_cache: bool
-    ) -> bigquery.Table:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
         if view.materialized_address is None:
             raise ValueError(
                 "Trying to materialize a view that does not have a set "
@@ -1497,12 +1488,11 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
         create_job = self.create_table_from_query_async(
-            dataset_id=dst_dataset_id,
-            table_id=dst_table_id,
-            query=view.direct_select_query,
+            dst_dataset_id,
+            dst_table_id,
+            view.direct_select_query,
             overwrite=True,
             clustering_fields=view.clustering_fields,
-            use_query_cache=use_query_cache,
         )
         create_job.result()
         table_description = (
@@ -1588,16 +1578,12 @@ class BigQueryClientImpl(BigQueryClient):
             if field.name in missing_desired_field_names
         ]
 
-    def _add_missing_fields_to_schema(
+    def add_missing_fields_to_schema(
         self,
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
     ) -> None:
-        """Updates the schema of the table to include the schema_fields if they are not
-        already present in the Table's schema. Does not update the type or mode of any
-        existing schema fields, and does not delete existing schema fields.
-        """
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if not self.table_exists(dataset_ref, table_id):
@@ -1659,12 +1645,12 @@ class BigQueryClientImpl(BigQueryClient):
         table.schema = updated_table_schema
         self.client.update_table(table, ["schema"])
 
-    def _remove_unused_fields_from_schema(
+    def remove_unused_fields_from_schema(
         self,
         dataset_id: str,
         table_id: str,
         desired_schema_fields: List[bigquery.SchemaField],
-        allow_field_deletions: bool,
+        allow_field_deletions: bool = True,
     ) -> Optional[bigquery.QueryJob]:
         """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
         dataset_ref = self.dataset_ref_for_id(dataset_id)
@@ -1702,14 +1688,11 @@ class BigQueryClientImpl(BigQueryClient):
         """
 
         return self.insert_into_table_from_query_async(
-            destination_dataset_id=dataset_id,
             destination_table_id=table_id,
+            destination_dataset_id=dataset_id,
             query=rebuild_query,
             allow_field_additions=False,
             write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-            # We want to be extra careful when copying data between tables that we are
-            # querying from the most recent version of the data.
-            use_query_cache=False,
         )
 
     def update_schema(
@@ -1747,22 +1730,15 @@ class BigQueryClientImpl(BigQueryClient):
                     )
 
         # Remove any deprecated fields first as it involves copying the entire view
-        removal_job = self._remove_unused_fields_from_schema(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            desired_schema_fields=desired_schema_fields,
-            allow_field_deletions=allow_field_deletions,
+        removal_job = self.remove_unused_fields_from_schema(
+            dataset_id, table_id, desired_schema_fields, allow_field_deletions
         )
 
         if removal_job:
             # Wait for the removal job to complete before running the job to add fields
             removal_job.result()
 
-        self._add_missing_fields_to_schema(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            desired_schema_fields=desired_schema_fields,
-        )
+        self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)
 
     def copy_table(
         self,

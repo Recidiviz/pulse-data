@@ -465,7 +465,6 @@ class IngestViewMaterializerTest(unittest.TestCase):
                             args.upper_bound_datetime_inclusive
                         )
                     ],
-                    use_query_cache=False,
                 ),
             ]
         )
@@ -542,12 +541,10 @@ class IngestViewMaterializerTest(unittest.TestCase):
                 mock.call(
                     query_str=expected_upper_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_2)],
-                    use_query_cache=False,
                 ),
                 mock.call(
                     query_str=expected_lower_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_1)],
-                    use_query_cache=False,
                 ),
             ]
         )
@@ -627,12 +624,10 @@ ORDER BY colA, colC;"""
                 mock.call(
                     query_str=expected_upper_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_2)],
-                    use_query_cache=False,
                 ),
                 mock.call(
                     query_str=expected_lower_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_1)],
-                    use_query_cache=False,
                 ),
             ]
         )
@@ -748,12 +743,10 @@ ORDER BY colA, colC;"""
                 mock.call(
                     query_str=expected_upper_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_2)],
-                    use_query_cache=False,
                 ),
                 mock.call(
                     query_str=expected_lower_bound_query,
                     query_parameters=[self.generate_query_params_for_date(_DATE_1)],
-                    use_query_cache=False,
                 ),
             ]
         )

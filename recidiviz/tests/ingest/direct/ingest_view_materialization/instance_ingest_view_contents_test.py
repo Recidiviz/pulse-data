@@ -129,7 +129,6 @@ FROM
                     query=input_query,
                     allow_field_additions=False,
                     write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-                    use_query_cache=False,
                 ),
                 call.insert_into_table_from_query_async().result(),
                 call.create_dataset_if_necessary(
@@ -156,7 +155,6 @@ FROM
                     query=expected_final_query,
                     allow_field_additions=False,
                     write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
-                    use_query_cache=False,
                 ),
                 call.insert_into_table_from_query_async().result(),
             ],
@@ -192,7 +190,7 @@ WHERE
   AND __processed_time IS NULL;"""
 
         self.assertEqual(
-            [call.run_query_async(query_str=expected_query, use_query_cache=False)],
+            [call.run_query_async(query_str=expected_query)],
             self.mock_bq_client.mock_calls,
         )
 
@@ -302,7 +300,7 @@ WHERE priority = 1
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -412,7 +410,7 @@ WHERE priority = 1
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -509,7 +507,7 @@ WHERE priority = 1
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -540,7 +538,7 @@ WHERE
 
         self.assertEqual(
             [
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
                 call.run_query_async().result(),
             ],
             self.mock_bq_client.mock_calls,
@@ -614,7 +612,7 @@ FROM
         self.assertEqual(
             [
                 call.table_exists(mock.ANY, self.ingest_view_name),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -691,7 +689,7 @@ WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_ut
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -749,7 +747,7 @@ WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_ut
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )
@@ -824,7 +822,7 @@ WHERE __processed_time IS NULL
         self.assertEqual(
             [
                 call.list_tables("us_xx_ingest_view_results_primary"),
-                call.run_query_async(query_str=expected_query, use_query_cache=False),
+                call.run_query_async(query_str=expected_query),
             ],
             self.mock_bq_client.mock_calls,
         )

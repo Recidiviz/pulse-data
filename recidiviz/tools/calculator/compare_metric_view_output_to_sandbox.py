@@ -406,7 +406,6 @@ def _view_output_comparison_job(
             table_id=output_table_id,
             query=diff_query,
             overwrite=True,
-            use_query_cache=True,
         ),
         output_table_id,
     )

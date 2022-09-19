@@ -200,20 +200,14 @@ class FakeBigQueryClient(BigQueryClient):
         raise ValueError("Must be implemented for use in tests.")
 
     def export_query_results_to_cloud_storage(
-        self,
-        *,
-        export_configs: List[ExportQueryConfig],
-        print_header: bool,
-        use_query_cache: bool,
+        self, export_configs: List[ExportQueryConfig], print_header: bool
     ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
     def run_query_async(
         self,
-        *,
         query_str: str,
         query_parameters: List[bigquery.ScalarQueryParameter] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         def run_query_fn() -> DataFrame:
             return self.database.run_query(query_str=query_str)
@@ -238,25 +232,21 @@ class FakeBigQueryClient(BigQueryClient):
 
     def create_table_from_query_async(
         self,
-        *,
         dataset_id: str,
         table_id: str,
         query: str,
         query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         overwrite: Optional[bool] = False,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
     def insert_into_table_from_table_async(
         self,
-        *,
         source_dataset_id: str,
         source_table_id: str,
         destination_dataset_id: str,
         destination_table_id: str,
-        use_query_cache: bool,
         source_data_filter_clause: Optional[str] = None,
         hydrate_missing_columns_with_null: bool = False,
         allow_field_additions: bool = False,
@@ -274,7 +264,6 @@ class FakeBigQueryClient(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
         clustering_fields: Optional[List[str]] = None,
-        use_query_cache: bool,
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
@@ -301,9 +290,23 @@ class FakeBigQueryClient(BigQueryClient):
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def materialize_view_to_table(
-        self, view: BigQueryView, use_query_cache: bool
-    ) -> bigquery.Table:
+    def materialize_view_to_table(self, view: BigQueryView) -> bigquery.Table:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def add_missing_fields_to_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> None:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def remove_unused_fields_from_schema(
+        self,
+        dataset_id: str,
+        table_id: str,
+        desired_schema_fields: List[bigquery.SchemaField],
+    ) -> Optional[bigquery.QueryJob]:
         raise ValueError("Must be implemented for use in tests.")
 
     def update_schema(

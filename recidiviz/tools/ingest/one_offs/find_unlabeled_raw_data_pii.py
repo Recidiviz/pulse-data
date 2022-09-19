@@ -76,12 +76,11 @@ def check_for_marked_pii(
     logging.info("*" * 80)
     logging.info("Finding PII cols for state [%s] ...", state_code.value)
     query_job = bq_client.run_query_async(
-        query_str=StrictStringFormatter().format(
+        StrictStringFormatter().format(
             QUERY_TEMPLATE,
             project_id=metadata.project_id(),
             region_pii_scan_table=region_pii_scan_table,
-        ),
-        use_query_cache=True,
+        )
     )
 
     pii_cols_by_file_tag: Dict[str, Set[str]] = defaultdict(set)

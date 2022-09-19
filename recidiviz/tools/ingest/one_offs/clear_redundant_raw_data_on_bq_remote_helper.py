@@ -137,9 +137,7 @@ def postgres_file_ids_present_in_bq(
     )
     try:
         logging.info("[%s] %s", file_tag, postgres_confirmation_query)
-        query_job = bq_client.run_query_async(
-            query_str=postgres_confirmation_query, use_query_cache=True
-        )
+        query_job = bq_client.run_query_async(postgres_confirmation_query)
         query_job.result()
         bq_file_ids = [row["file_id"] for row in query_job]
         logging.info(
@@ -291,9 +289,7 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                 )
             else:
                 logging.info("[%s] Running deletion query in BQ...", file_tag)
-                query_job = bq_client.run_query_async(
-                    query_str=deletion_query, use_query_cache=True
-                )
+                query_job = bq_client.run_query_async(deletion_query)
                 query_job.result()
                 logging.info(
                     "[%s] Marking %d metadata rows as invalidated...",

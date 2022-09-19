@@ -113,9 +113,7 @@ class JsonLinesBigQueryViewExporter(BigQueryViewExporter):
             for c in export_configs
         ]
         self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=export_query_configs,
-            print_header=True,
-            use_query_cache=True,
+            export_query_configs, print_header=True
         )
 
         return [
@@ -171,9 +169,7 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
             in export_config.export_output_formats
         ]
         self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=headerless_export_query_configs,
-            print_header=False,
-            use_query_cache=True,
+            headerless_export_query_configs, print_header=False
         )
 
         headered_export_query_configs = [
@@ -182,9 +178,7 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
             if ExportOutputFormatType.CSV in export_config.export_output_formats
         ]
         self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=headered_export_query_configs,
-            print_header=True,
-            use_query_cache=True,
+            headered_export_query_configs, print_header=True
         )
 
         return [

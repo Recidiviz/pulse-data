@@ -173,7 +173,7 @@ def rematerialize_views_for_view_builders(
                 )
                 return
 
-            bq_client.materialize_view_to_table(view=v, use_query_cache=True)
+            bq_client.materialize_view_to_table(v)
 
         views_to_rematerialize_dag.process_dag(_materialize_view)
     except Exception as e:
@@ -451,10 +451,7 @@ def _create_or_update_view_and_materialize_if_necessary(
             )
             or force_materialize
         ):
-            bq_client.materialize_view_to_table(
-                view=view,
-                use_query_cache=True,
-            )
+            bq_client.materialize_view_to_table(view)
         else:
             logging.info(
                 "Skipping materialization of view [%s.%s] which has not changed.",
