@@ -189,7 +189,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=view,
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
-                intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table_{self.mock_state_code}",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
@@ -198,7 +198,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
-                intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table_{self.mock_state_code}",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
@@ -237,7 +237,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{view.view_id}_table",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
@@ -246,7 +246,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{view.view_id}_table",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
@@ -285,7 +285,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
@@ -297,7 +297,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
@@ -376,7 +376,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{view.view_id}_table",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
@@ -385,7 +385,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=None,
-                intermediate_table_name=f"{view.view_id}_table",
+                intermediate_table_name=f"{self.mock_export_name}_{view.dataset_id}_{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
