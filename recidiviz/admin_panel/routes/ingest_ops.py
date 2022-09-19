@@ -51,6 +51,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    InstanceIngestViewContentsImpl,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
     DirectIngestInstancePauseStatusManager,
 )
@@ -596,6 +599,38 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 ingest_instance_source=ingest_instance_source,
                 ingest_instance_destination=ingest_instance_destination,
                 big_query_client=BigQueryClientImpl(),
+            )
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _delete_contents_in_secondary_ingest_view_dataset() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            ingest_view_contents = InstanceIngestViewContentsImpl(
+                BigQueryClientImpl(),
+                state_code.value,
+                DirectIngestInstance.SECONDARY,
+                dataset_prefix=None,
+            )
+            ingest_view_contents.delete_contents_in_ingest_view_dataset(
+                state_code=state_code,
             )
 
             return (

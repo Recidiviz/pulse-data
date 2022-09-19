@@ -31,6 +31,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
 from recidiviz.cloud_storage.gcs_file_system import generate_random_temp_path
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
     ResultsBatchInfo,
@@ -130,6 +131,9 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
             return BigQueryResultsContentsHandle(query_job)
 
         raise ValueError(f"Did not find data for batch: [{batch_to_find}]")
+
+    def delete_contents_in_ingest_view_dataset(self, state_code: StateCode) -> None:
+        raise ValueError("Unexpected call to delete_contents_in_ingest_view_dataset().")
 
     @staticmethod
     def _read_results_from_file(file_path: str) -> pd.DataFrame:

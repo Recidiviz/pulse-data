@@ -260,6 +260,17 @@ export const moveIngestViewResultsBetweenInstances = async (
   );
 };
 
+export const deleteContentsInSecondaryIngestViewDataset = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
+    {
+      stateCode,
+    }
+  );
+};
+
 // Mark instance ingest view data as invalidated
 export const markInstanceIngestViewDataInvalidated = async (
   stateCode: string,
