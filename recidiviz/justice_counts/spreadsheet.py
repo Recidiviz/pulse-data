@@ -16,9 +16,10 @@
 # =============================================================================
 """Interface for working with the Spreadsheet model."""
 import datetime
+import itertools
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -31,7 +32,15 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
-from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.exceptions import (
+    JusticeCountsBulkUploadException,
+    JusticeCountsServerError,
+)
+from recidiviz.justice_counts.metricfiles.metricfile_registry import (
+    SYSTEM_TO_FILENAME_TO_METRICFILE,
+)
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -191,7 +200,7 @@ class SpreadsheetInterface:
         spreadsheet: schema.Spreadsheet,
         auth0_user_id: str,
         agency_id: int,
-    ) -> schema.Spreadsheet:
+    ) -> Tuple[List[schema.Datapoint], Dict[str, Exception]]:
         """Ingests spreadsheet for an agency and logs any errors."""
         uploader = BulkUploader(catch_errors=True)
         user_account = (
@@ -199,17 +208,28 @@ class SpreadsheetInterface:
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
             .one()
         )
-        ingest_errors = uploader.upload_excel(
+        datapoints, ingest_errors = uploader.upload_excel(
             session=session,
             xls=xls,
             agency_id=spreadsheet.agency_id,
             system=spreadsheet.system,
             user_account=user_account,
         )
-        # If there are exceptions, log errors to console and set the spreadsheet status to ERRORED
-        if len(ingest_errors) > 0:
+
+        is_ingest_successful = (
+            any(  # pylint: disable=use-a-generator
+                [
+                    isinstance(e, JusticeCountsBulkUploadException)
+                    and e.message_type == "ERROR"
+                    for e in ingest_errors.values()
+                ]
+            )
+            or len(ingest_errors) == 0
+        )
+        # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
+        if not is_ingest_successful:
             logging.error(
-                "Failed to ingest without inferring aggregate values: agency_id: %i, spreadsheet_id: %i, errors: %s",
+                "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
                 agency_id,
                 spreadsheet.id,
                 ingest_errors,
@@ -217,7 +237,7 @@ class SpreadsheetInterface:
             spreadsheet.status = schema.SpreadsheetStatus.ERRORED
 
         else:
-            print(
+            logging.info(
                 "Ingest successful for agency_id %i, spreadsheet_id: %i",
                 agency_id,
                 spreadsheet.id,
@@ -227,7 +247,7 @@ class SpreadsheetInterface:
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
         session.commit()
-        return spreadsheet
+        return datapoints, ingest_errors
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
@@ -236,3 +256,69 @@ class SpreadsheetInterface:
             bucket_name=bucket_name,
             blob_name=spreadsheet.standardized_name,
         )
+
+    @staticmethod
+    def get_ingest_spreadsheet_json(
+        datapoints: List[schema.Datapoint],
+        sheet_to_error: dict[str, Exception],
+        system: str,
+    ) -> Dict[str, Any]:
+        """Returns json response for spreadsheets ingested with the BulkUploader"""
+        metric_key_to_datapoints = {
+            k: list(v)
+            for k, v in itertools.groupby(
+                datapoints,
+                key=lambda d: d.metric_definition_key,
+            )
+        }
+        filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system]
+        metric_definitions = METRICS_BY_SYSTEM[system]
+        metrics = []
+        for metric_definition in metric_definitions:
+            if metric_definition.disabled:
+                continue
+            # Create datapoint json for any datapoints that are associated with the metric.
+            # This information will be used on the bulk upload data summary page.
+            datapoint_json = [
+                DatapointInterface.to_json_response(
+                    datapoint=d,
+                    is_published=False,
+                    frequency=schema.ReportingFrequency[d.report.type],
+                )
+                for d in metric_key_to_datapoints.get(metric_definition.key) or []
+            ]
+            # For each sheet (i.e arrests_by_type) in an excel workbook that raised
+            # an exception, jsonify the exception information so that it can be rendered
+            # for the user on the bulk upload error page.
+            sheet_json = [
+                {
+                    "display_name": filename_to_metricfile[sheet_name].display_name,
+                    "sheet_name": sheet_name,
+                    "messages": [e.to_json()],
+                }
+                for sheet_name, e in sheet_to_error.items()
+                if isinstance(e, JusticeCountsBulkUploadException)
+                and sheet_name in filename_to_metricfile
+                and filename_to_metricfile[sheet_name].definition.key
+                == metric_definition.key
+            ]
+            metrics.append(
+                {
+                    "key": metric_definition.key,
+                    "display_name": metric_definition.display_name,
+                    "sheets": sheet_json,
+                    "datapoints": datapoint_json,
+                }
+            )
+        # Errors that are not associated with a metric are pre-ingest errors.
+        # For example, a pre-ingest exception would be raised if a user uploads an
+        # excel workbook that contains a sheet that is not associated with a MetricFile.
+        # This is an ingest-blocking error because in this scenario we are not able
+        # to convert the rows into datapoints.
+        pre_ingest_errors = [
+            e.to_json()
+            for sheet_name, e in sheet_to_error.items()
+            if isinstance(e, JusticeCountsBulkUploadException)
+            and sheet_name not in filename_to_metricfile
+        ]
+        return {"metrics": metrics, "pre_ingest_errors": pre_ingest_errors}

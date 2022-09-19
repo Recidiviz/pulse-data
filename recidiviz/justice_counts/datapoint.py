@@ -123,6 +123,9 @@ class DatapointInterface:
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
             "value": datapoint.value,
+            "old_value": datapoint.datapoint_histories[-1].old_value
+            if len(datapoint.datapoint_histories) > 0
+            else None,
             "is_published": is_published,
             "frequency": frequency.value,
         }

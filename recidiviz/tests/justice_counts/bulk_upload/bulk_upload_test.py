@@ -660,7 +660,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            sheet_to_error: Dict[str, Exception] = self.uploader.upload_excel(
+            _, sheet_to_error = self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.law_enforcement_missing_metrics),
                 agency_id=self.law_enforcement_agency_id,

@@ -819,20 +819,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
-            self.assertEqual(response_dict.get("name"), "law_enforcement_metrics.xlsx")
-            self.assertEqual(
-                response_dict.get("uploaded_at"),
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
-            )
-            self.assertEqual(
-                response_dict.get("uploaded_by"),
-                self.test_schema_objects.test_user_A.name,
-            )
-            self.assertEqual(
-                response_dict.get("ingested_at"), self.now_time.timestamp() * 1000
-            )
-            self.assertEqual(response_dict.get("status"), "INGESTED")
-            self.assertEqual(response_dict.get("system"), "LAW_ENFORCEMENT")
+            self.assertEqual(len(response_dict["metrics"]), 7)
+            self.assertEqual(len(response_dict["pre_ingest_errors"]), 0)
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
