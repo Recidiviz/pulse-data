@@ -37,7 +37,7 @@ function wait_for_postgres () {
     ATTEMPTS=$(($ATTEMPTS + 1))
 
     if [[ $ATTEMPTS -eq 10 ]]; then
-      echo "Postgres ${USER}@${HOST}:${PORT}/${DATABASE} was not ready in time"
+      echo "Postgres ${HOST}:${PORT}} was not ready in time"
       exit 1
     fi
 
