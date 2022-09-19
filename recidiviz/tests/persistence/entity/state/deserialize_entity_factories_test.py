@@ -228,20 +228,20 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StateAgent(self) -> None:
         result = deserialize_entity_factories.StateAgentFactory.deserialize(
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="J",
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text="OFFICER",
             external_id="AGENT_ID",
             state_code="us_xx",
-            full_name='{"full_name": "Judge Joe Brown"}',
+            full_name='{"full_name": "Joe Brown"}',
         )
 
         # Assert
         expected_result = entities.StateAgent(
-            agent_type=StateAgentType.JUDGE,
-            agent_type_raw_text="J",
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text="OFFICER",
             external_id="AGENT_ID",
             state_code="US_XX",
-            full_name='{"full_name": "JUDGE JOE BROWN"}',
+            full_name='{"full_name": "JOE BROWN"}',
         )
 
         self.assertEqual(expected_result, result)

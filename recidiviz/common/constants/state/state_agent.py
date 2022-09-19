@@ -29,9 +29,6 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 @unique
 class StateAgentType(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
-    CORRECTIONAL_OFFICER = state_enum_strings.state_agent_correctional_officer
-    JUDGE = state_enum_strings.state_agent_judge
-    JUSTICE = state_enum_strings.state_agent_justice
     # A parole/probation officer (PO)
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
@@ -51,11 +48,6 @@ class StateAgentType(StateEntityEnum):
 
 
 _STATE_AGENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
-    StateAgentType.CORRECTIONAL_OFFICER: "An official of the state department of "
-    "corrections who oversees individuals while they are in an incarceration facility.",
-    StateAgentType.JUDGE: "An official of the Judicial branch with authority to "
-    "decide lawsuits and determine sentences.",
-    StateAgentType.JUSTICE: "A `JUDGE` who sits on a Supreme Court.",
     StateAgentType.SUPERVISION_OFFICER: "An official of the state supervision "
     "department who oversees someone while they are on supervision. Also referred to "
     "as a probation/parole officer.",
@@ -64,9 +56,6 @@ _STATE_AGENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 
 _STATE_AGENT_TYPE_MAP = {
     "PRESENT WITHOUT INFO": StateAgentType.PRESENT_WITHOUT_INFO,
-    "CORRECTIONAL OFFICER": StateAgentType.CORRECTIONAL_OFFICER,
-    "JUDGE": StateAgentType.JUDGE,
-    "JUSTICE": StateAgentType.JUSTICE,
     "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
     "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
     "EXTERNAL UNKNOWN": StateAgentType.EXTERNAL_UNKNOWN,
