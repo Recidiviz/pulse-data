@@ -148,3 +148,5 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
+      - state_code: US_ID
+        environment: staging
