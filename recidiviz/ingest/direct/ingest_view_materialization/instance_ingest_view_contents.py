@@ -36,6 +36,7 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
@@ -294,6 +295,10 @@ class InstanceIngestViewContents:
         self,
     ) -> Dict[str, Optional[datetime.datetime]]:
         """Returns a dictionary with one entry per ingest view with the min date on any unprocessed results row."""
+
+    @abc.abstractmethod
+    def delete_contents_in_ingest_view_dataset(self, state_code: StateCode) -> None:
+        """Deletes the contents of the specified ingest view dataset."""
 
 
 class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
@@ -718,6 +723,15 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             result[ingest_view_name] = row["min_unprocessed_upper_bound_date"]
 
         return result
+
+    def delete_contents_in_ingest_view_dataset(self, state_code: StateCode) -> None:
+        """Deletes the contents of the specified ingest view dataset."""
+        self._big_query_client.delete_dataset(
+            dataset_ref=self._big_query_client.dataset_ref_for_id(
+                dataset_id=self.results_dataset()
+            ),
+            delete_contents=True,
+        )
 
 
 # Run this script if you are making changes to this file. It should produce the
