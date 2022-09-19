@@ -265,7 +265,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_court_cases.add(
             state_court_case_id="CASE_ID",
-            judge_id="JUDGE_AGENT_ID_1",
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID1",
@@ -473,12 +472,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_code="US_XX",
             status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=StateAgent.new_with_defaults(
-                external_id="JUDGE_AGENT_ID_1",
-                state_code="US_XX",
-                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                full_name='{"full_name": "JUDGE JUDY"}',
-            ),
         )
 
         charge_1 = StateCharge.new_with_defaults(

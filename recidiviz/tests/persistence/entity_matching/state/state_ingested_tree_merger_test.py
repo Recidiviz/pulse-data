@@ -23,7 +23,6 @@ from typing import Any
 import attr
 from more_itertools import one
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -349,12 +348,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                             # Placeholder charge
                             make_state_charge(
                                 # Placeholder court case
-                                court_case=make_court_case(
-                                    judge=make_agent(
-                                        external_id="ID_1",
-                                        agent_type=StateAgentType.JUDGE,
-                                    )
-                                ),
+                                court_case=make_court_case(),
                             )
                         ],
                     )
@@ -371,12 +365,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                             # Placeholder charge
                             make_state_charge(
                                 # Placeholder court case
-                                court_case=make_court_case(
-                                    judge=make_agent(
-                                        external_id="ID_1",
-                                        agent_type=StateAgentType.JUDGE,
-                                    )
-                                ),
+                                court_case=make_court_case(),
                             )
                         ],
                     )

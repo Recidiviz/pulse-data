@@ -440,12 +440,6 @@ def generate_full_graph_state_person(
     )
     person.supervising_officer = person_supervising_officer
 
-    judge = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.JUDGE,
-        state_code="US_XX",
-        full_name="JUDGE JUDY",
-    )
-
     court_case = entities.StateCourtCase.new_with_defaults(
         external_id="CASEID456",
         status=StateCourtCaseStatus.EXTERNAL_UNKNOWN,
@@ -454,7 +448,6 @@ def generate_full_graph_state_person(
         state_code="US_XX",
         court_type=StateCourtType.PRESENT_WITHOUT_INFO,
         court_type_raw_text=None,
-        judge=judge,
     )
 
     charge = entities.StateCharge.new_with_defaults(

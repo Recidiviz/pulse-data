@@ -1157,21 +1157,7 @@ class StateCourtCase(StateBase, _ReferencesStatePersonSharedColumns):
         "the case was tried.",
     )
 
-    @declared_attr
-    def judge_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment="The id of the judge who tried the case.<br />"
-            + StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
     person = relationship("StatePerson", uselist=False)
-    judge = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
 class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
