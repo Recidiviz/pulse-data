@@ -57,40 +57,11 @@ class ClientRecordEtlDelegateTest(TestCase):
                 row,
                 {
                     "address": "123 Fake st., Faketown, TN 12345",
-                    "compliantReportingEligible": {
-                        "eligibilityCategory": "c3",
-                        "remainingCriteriaNeeded": 0,
-                        "currentOffenses": None,
-                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
-                        "drugScreensPastYear": [
-                            {"date": "2021-02-03", "result": "DRUN"},
-                            {"date": "2021-04-20", "result": "DRUN"},
-                        ],
-                        "eligibleLevelStart": "2021-03-17",
-                        "judicialDistrict": "7",
-                        "lifetimeOffensesExpired": None,
-                        "mostRecentArrestCheck": "2021-11-15",
-                        "sanctionsPastYear": ["OPRD"],
-                        "finesFeesEligible": "regular_payments",
-                        "zeroToleranceCodes": [
-                            {
-                                "contactNoteType": "COHC",
-                                "contactNoteDate": "2020-02-02",
-                            },
-                            {
-                                "contactNoteType": "PWAR",
-                                "contactNoteDate": "2020-03-03",
-                            },
-                        ],
-                    },
+                    "compliantReportingEligible": True,
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
-                    "feeExemptions": "Exemption 1, Exemption2",
                     "lastPaymentAmount": 10.25,
                     "lastPaymentDate": "2021-12-20",
-                    "nextSpecialConditionsCheck": "2021-12-02",
-                    "lastSpecialConditionsNote": "2021-07-07",
-                    "specialConditionsTerminatedDate": "2021-08-08",
                     "officerId": "100",
                     "personExternalId": "200",
                     "pseudonymizedId": "p200",
@@ -116,10 +87,8 @@ class ClientRecordEtlDelegateTest(TestCase):
                             "conditionDescription": "COMMUNITY SERVICE REFERRAL",
                         },
                     ],
-                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
-                    "specialConditionsFlag": "current",
                 },
             )
 
@@ -165,12 +134,8 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "address": "456 Fake st., Faketown, TN 12345",
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
-                    "feeExemptions": "Exemption 1, Exemption2",
                     "lastPaymentAmount": 10.25,
                     "lastPaymentDate": "2021-12-20",
-                    "nextSpecialConditionsCheck": "2021-12-02",
-                    "lastSpecialConditionsNote": "2021-07-07",
-                    "specialConditionsTerminatedDate": "2021-08-08",
                     "officerId": "100",
                     "phoneNumber": "8889997777",
                     "specialConditions": "SPECIAL",
@@ -188,26 +153,9 @@ class ClientRecordEtlDelegateTest(TestCase):
                             "conditionDescription": "COMMUNITY SERVICE REFERRAL",
                         },
                     ],
-                    "earliestSupervisionStartDateInLatestSystem": "2021-03-04",
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
-                    "specialConditionsFlag": "current",
-                    "compliantReportingEligible": {
-                        "eligibilityCategory": "c1",
-                        "remainingCriteriaNeeded": 1,
-                        "almostEligibleCriteria": {
-                            "passedDrugScreenNeeded": True,
-                        },
-                        "currentOffenses": None,
-                        "pastOffenses": ["TRAFFIC OFFENSE", "EVADING ARREST"],
-                        "drugScreensPastYear": [],
-                        "eligibleLevelStart": "2021-03-17",
-                        "judicialDistrict": "7",
-                        "lifetimeOffensesExpired": None,
-                        "mostRecentArrestCheck": "2021-11-15",
-                        "sanctionsPastYear": [],
-                        "finesFeesEligible": "regular_payments",
-                    },
+                    "compliantReportingEligible": True,
                 },
             )
 
@@ -223,10 +171,10 @@ class ClientRecordEtlDelegateTest(TestCase):
     def test_run_etl_imports_with_document_id(
         self,
         mock_get_file_stream: MagicMock,
-        mock_delete_old_documents: MagicMock,  # pylint: disable=unused-argument
+        _mock_delete_old_documents: MagicMock,
         mock_batch_writer: MagicMock,
         mock_get_collection: MagicMock,
-        mock_firestore_client: MagicMock,  # pylint: disable=unused-argument
+        _mock_firestore_client: MagicMock,
     ) -> None:
         """Tests that the ETL Delegate for Clients imports the collection with the document ID."""
         mock_batch_set = MagicMock()
