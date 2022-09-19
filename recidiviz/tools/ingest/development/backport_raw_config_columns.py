@@ -63,7 +63,7 @@ ORDER BY
 """
 
     bq_client = BigQueryClientImpl()
-    query_job = bq_client.run_query_async(query_string)
+    query_job = bq_client.run_query_async(query_str=query_string, use_query_cache=True)
     for row in query_job:
         column_name = row["column_name"]
         if column_name in {"file_id", "update_datetime"}:

@@ -312,7 +312,9 @@ class RawDataFixturesGenerator:
                 person_external_id_columns=person_external_id_columns,
             )
 
-            query_job = self.bq_client.run_query_async(query_str)
+            query_job = self.bq_client.run_query_async(
+                query_str=query_str, use_query_cache=True
+            )
             query_results = query_job.to_dataframe()
             query_results = self.randomize_column_data(query_results)
             self.write_results_to_csv(query_results, output_fixture_path)

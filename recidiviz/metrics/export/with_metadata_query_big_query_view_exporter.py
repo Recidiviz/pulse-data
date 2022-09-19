@@ -86,7 +86,10 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
         for config, destination in configs_and_destinations:
             metadata_query = self._build_metadata_query(config)
             logging.info("Running metadata query for view %s:", config.view.view_id)
-            query_job = self.bq_client.run_query_async(metadata_query)
+            query_job = self.bq_client.run_query_async(
+                query_str=metadata_query,
+                use_query_cache=True,
+            )
             results = [dict(row) for row in query_job]
             if len(results) > 1:
                 raise ValueError(

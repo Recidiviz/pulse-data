@@ -409,10 +409,11 @@ class ValidationStatusStore(AdminPanelStore):
     def recalculate_store(self) -> None:
         """Recalculates validation data by querying the validation data store"""
         query_job = self.bq_client.run_query_async(
-            recent_run_results_query(
+            query_str=recent_run_results_query(
                 metadata.project_id(), VALIDATION_RESULTS_BIGQUERY_ADDRESS
             ),
-            [],
+            use_query_cache=True,
+            query_parameters=[],
         )
 
         # Build up new results
@@ -444,13 +445,14 @@ class ValidationStatusStore(AdminPanelStore):
         self, validation_name: str, state_code: str
     ) -> ValidationStatusRecords_pb2:
         query_job = self.bq_client.run_query_async(
-            validation_history_results_query(
+            query_str=validation_history_results_query(
                 metadata.project_id(),
                 VALIDATION_RESULTS_BIGQUERY_ADDRESS,
                 validation_name,
                 state_code,
             ),
-            [],
+            use_query_cache=True,
+            query_parameters=[],
         )
 
         # Build up new results
@@ -490,12 +492,10 @@ class ValidationStatusStore(AdminPanelStore):
                 )
 
                 query_job = self.bq_client.run_query_async(
-                    query_str,
-                    [],
+                    query_str=query_str, use_query_cache=True, query_parameters=[]
                 )
                 count_query_job = self.bq_client.run_query_async(
-                    count_query_str,
-                    [],
+                    query_str=count_query_str, use_query_cache=True, query_parameters=[]
                 )
 
                 records = [dict(row) for row in query_job]

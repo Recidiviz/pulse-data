@@ -231,6 +231,7 @@ def load_from_temp_to_permanent_table(
             final_table=FINAL_DESTINATION_TABLE,
         ),
         write_disposition=WriteDisposition.WRITE_APPEND,
+        use_query_cache=True,
     )
 
     insert_job_result = insert_job.result()

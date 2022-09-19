@@ -181,7 +181,8 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.materialize_view_to_table.assert_has_calls(
-            [mock.call(mock_view_builders[0].build())], any_order=True
+            [mock.call(view=mock_view_builders[0].build(), use_query_cache=True)],
+            any_order=True,
         )
 
     def test_rematerialize_views_downstream_view(self) -> None:
@@ -228,8 +229,11 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
-                mock.call(mock_view_builders_to_rematerialize[0].build()),
-                mock.call(all_mock_view_builders[2].build()),
+                mock.call(
+                    view=mock_view_builders_to_rematerialize[0].build(),
+                    use_query_cache=True,
+                ),
+                mock.call(view=all_mock_view_builders[2].build(), use_query_cache=True),
             ],
             any_order=True,
         )
@@ -434,9 +438,9 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
                 # This view was updated
-                mock.call(mock_view_builders[1].build()),
+                mock.call(view=mock_view_builders[1].build(), use_query_cache=True),
                 # Child view of updated view is also materialized
-                mock.call(mock_view_builders[2].build()),
+                mock.call(view=mock_view_builders[2].build(), use_query_cache=True),
             ],
             any_order=True,
         )
@@ -626,7 +630,10 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [
                 mock.call(
-                    materialized_view_builder.build(address_overrides=address_overrides)
+                    view=materialized_view_builder.build(
+                        address_overrides=address_overrides
+                    ),
+                    use_query_cache=True,
                 )
             ],
             any_order=True,
