@@ -480,19 +480,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         self.assertEqual(sentence.charges, [charge])
 
-    def test_addChildToEntity_singular(self) -> None:
-        charge = schema.StateCharge(
-            state_code=_STATE_CODE,
-            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            charge_id=_ID,
-        )
-        court_case = schema.StateCourtCase(state_code=_STATE_CODE, court_case_id=_ID)
-
-        add_child_to_entity(
-            entity=charge, child_field_name="court_case", child_to_add=court_case
-        )
-        self.assertEqual(charge.court_case, court_case)
-
     def test_removeChildFromEntity(self) -> None:
         charge = schema.StateCharge(state_code=_STATE_CODE, charge_id=_ID)
         charge_another = schema.StateCharge(state_code=_STATE_CODE, charge_id=_ID_2)

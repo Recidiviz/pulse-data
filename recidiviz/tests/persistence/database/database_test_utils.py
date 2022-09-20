@@ -10,7 +10,6 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
 )
@@ -212,22 +211,9 @@ def generate_test_incarceration_period(
     return instance
 
 
-def generate_test_court_case(person_id) -> state_schema.StateCourtCase:
-    instance = state_schema.StateCourtCase(
-        court_case_id=8888,
-        state_code="US_XX",
-        court_type=StateCourtType.PRESENT_WITHOUT_INFO.value,
-        court_type_raw_text=None,
-        person_id=person_id,
-    )
-
-    return instance
-
-
 def generate_test_charge(
     person_id: int,
     charge_id: int,
-    court_case: Optional[state_schema.StateCourtCase] = None,
     state_code: str = "US_XX",
 ) -> state_schema.StateCharge:
     instance = state_schema.StateCharge(
@@ -235,8 +221,6 @@ def generate_test_charge(
         person_id=person_id,
         state_code=state_code,
         status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-        court_case=court_case,
-        court_case_id=(court_case.court_case_id if court_case else None),
     )
 
     return instance
@@ -413,17 +397,13 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         test_person_id,
     )
 
-    test_court_case = generate_test_court_case(test_person_id)
-
     test_charge_1 = generate_test_charge(
         test_person_id,
         6666,
-        test_court_case,
     )
     test_charge_2 = generate_test_charge(
         test_person_id,
         7777,
-        test_court_case,
     )
 
     test_early_discharge = generate_test_early_discharge(test_person_id)

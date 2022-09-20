@@ -43,7 +43,6 @@ message IngestInfo {
     repeated StateSupervisionSentence state_supervision_sentences = 16;
     repeated StateIncarcerationSentence state_incarceration_sentences = 17;
     repeated StateCharge state_charges = 19;
-    repeated StateCourtCase state_court_cases = 20;
     repeated StateIncarcerationPeriod state_incarceration_periods = 22;
     repeated StateSupervisionPeriod state_supervision_periods = 23;
     repeated StateSupervisionCaseTypeEntry state_supervision_case_type_entries = 24;
@@ -194,21 +193,6 @@ message StateCharge {
     optional string charge_notes = 14;
     optional string is_controlling = 15;
     optional string charging_entity = 16;
-
-    optional string state_court_case_id = 17;
-}
-
-message StateCourtCase {
-    optional string state_court_case_id = 1;
-    optional string status = 2;
-    optional string court_type = 3;
-    optional string date_convicted = 4;
-    optional string next_court_date = 5;
-    optional string state_code = 6;
-    optional string county_code = 7;
-    optional string judicial_district_code = 8;
-
-    optional string judge_id = 10;
 }
 
 message StateIncarcerationPeriod {

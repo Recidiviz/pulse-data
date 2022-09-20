@@ -780,7 +780,6 @@ class StateCharge(IngestObject):
         charge_notes=None,
         is_controlling=None,
         charging_entity=None,
-        state_court_case=None,
     ):
         self.state_charge_id: Optional[str] = state_charge_id
         self.status: Optional[str] = status
@@ -802,67 +801,11 @@ class StateCharge(IngestObject):
         self.is_controlling: Optional[str] = is_controlling
         self.charging_entity: Optional[str] = charging_entity
 
-        self.state_court_case: Optional[StateCourtCase] = state_court_case
-
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_court_case", name, value)
-
-    def create_state_court_case(self, **kwargs) -> "StateCourtCase":
-        court_case = StateCourtCase(**kwargs)
-        self.state_court_case = court_case
-        return self.state_court_case
-
-    def get_state_court_case_by_id(self, court_case_id) -> Optional["StateCourtCase"]:
-        if (
-            self.state_court_case
-            and self.state_court_case.state_court_case_id == court_case_id
-        ):
-            return self.state_court_case
-        return None
+        restricted_setattr(self, "charging_entity", name, value)
 
     def prune(self) -> "StateCharge":
-        if not self.state_court_case:
-            self.state_court_case = None
         return self
-
-
-class StateCourtCase(IngestObject):
-    """Class for information about a court case. Referenced from StateCharge."""
-
-    def __init__(
-        self,
-        state_court_case_id=None,
-        status=None,
-        court_type=None,
-        date_convicted=None,
-        next_court_date=None,
-        state_code=None,
-        county_code=None,
-        judicial_district_code=None,
-        judge=None,
-    ):
-        self.state_court_case_id: Optional[str] = state_court_case_id
-        self.status: Optional[str] = status
-        self.court_type: Optional[str] = court_type
-        self.date_convicted: Optional[str] = date_convicted
-        self.next_court_date: Optional[str] = next_court_date
-        self.state_code: Optional[str] = state_code
-        self.county_code: Optional[str] = county_code
-        self.judicial_district_code: Optional[str] = judicial_district_code
-
-        self.judge: Optional[StateAgent] = judge
-
-    def create_state_agent(self, **kwargs) -> "StateAgent":
-        self.judge = StateAgent(**kwargs)
-        return self.judge
-
-    def get_state_agent_by_id(self, state_agent_id) -> Optional["StateAgent"]:
-        if self.judge and self.judge.state_agent_id == state_agent_id:
-            return self.judge
-        return None
-
-    def __setattr__(self, name, value):
-        restricted_setattr(self, "judge", name, value)
 
 
 class StateIncarcerationPeriod(IngestObject):

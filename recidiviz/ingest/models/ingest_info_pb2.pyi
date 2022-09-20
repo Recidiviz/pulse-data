@@ -37,7 +37,6 @@ class IngestInfo(google.protobuf.message.Message):
     STATE_SUPERVISION_SENTENCES_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_SENTENCES_FIELD_NUMBER: builtins.int
     STATE_CHARGES_FIELD_NUMBER: builtins.int
-    STATE_COURT_CASES_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_PERIODS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_PERIODS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CASE_TYPE_ENTRIES_FIELD_NUMBER: builtins.int
@@ -105,12 +104,6 @@ class IngestInfo(google.protobuf.message.Message):
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___StateCharge
-    ]: ...
-    @property
-    def state_court_cases(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
-        global___StateCourtCase
     ]: ...
     @property
     def state_incarceration_periods(
@@ -220,9 +213,6 @@ class IngestInfo(google.protobuf.message.Message):
             typing.Iterable[global___StateIncarcerationSentence]
         ] = ...,
         state_charges: typing.Optional[typing.Iterable[global___StateCharge]] = ...,
-        state_court_cases: typing.Optional[
-            typing.Iterable[global___StateCourtCase]
-        ] = ...,
         state_incarceration_periods: typing.Optional[
             typing.Iterable[global___StateIncarcerationPeriod]
         ] = ...,
@@ -275,8 +265,6 @@ class IngestInfo(google.protobuf.message.Message):
             b"state_assessments",
             "state_charges",
             b"state_charges",
-            "state_court_cases",
-            b"state_court_cases",
             "state_early_discharges",
             b"state_early_discharges",
             "state_incarceration_incident_outcomes",
@@ -1164,7 +1152,6 @@ class StateCharge(google.protobuf.message.Message):
     CHARGE_NOTES_FIELD_NUMBER: builtins.int
     IS_CONTROLLING_FIELD_NUMBER: builtins.int
     CHARGING_ENTITY_FIELD_NUMBER: builtins.int
-    STATE_COURT_CASE_ID_FIELD_NUMBER: builtins.int
     state_charge_id: typing.Text = ...
     status: typing.Text = ...
     offense_date: typing.Text = ...
@@ -1184,7 +1171,6 @@ class StateCharge(google.protobuf.message.Message):
     charge_notes: typing.Text = ...
     is_controlling: typing.Text = ...
     charging_entity: typing.Text = ...
-    state_court_case_id: typing.Text = ...
     def __init__(
         self,
         *,
@@ -1207,7 +1193,6 @@ class StateCharge(google.protobuf.message.Message):
         charge_notes: typing.Optional[typing.Text] = ...,
         is_controlling: typing.Optional[typing.Text] = ...,
         charging_entity: typing.Optional[typing.Text] = ...,
-        state_court_case_id: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -1246,8 +1231,6 @@ class StateCharge(google.protobuf.message.Message):
             b"state_charge_id",
             "state_code",
             b"state_code",
-            "state_court_case_id",
-            b"state_court_case_id",
             "status",
             b"status",
             "statute",
@@ -1291,8 +1274,6 @@ class StateCharge(google.protobuf.message.Message):
             b"state_charge_id",
             "state_code",
             b"state_code",
-            "state_court_case_id",
-            b"state_court_case_id",
             "status",
             b"status",
             "statute",
@@ -1301,88 +1282,6 @@ class StateCharge(google.protobuf.message.Message):
     ) -> None: ...
 
 global___StateCharge = StateCharge
-
-class StateCourtCase(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
-    STATE_COURT_CASE_ID_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    COURT_TYPE_FIELD_NUMBER: builtins.int
-    DATE_CONVICTED_FIELD_NUMBER: builtins.int
-    NEXT_COURT_DATE_FIELD_NUMBER: builtins.int
-    STATE_CODE_FIELD_NUMBER: builtins.int
-    COUNTY_CODE_FIELD_NUMBER: builtins.int
-    JUDICIAL_DISTRICT_CODE_FIELD_NUMBER: builtins.int
-    JUDGE_ID_FIELD_NUMBER: builtins.int
-    state_court_case_id: typing.Text = ...
-    status: typing.Text = ...
-    court_type: typing.Text = ...
-    date_convicted: typing.Text = ...
-    next_court_date: typing.Text = ...
-    state_code: typing.Text = ...
-    county_code: typing.Text = ...
-    judicial_district_code: typing.Text = ...
-    judge_id: typing.Text = ...
-    def __init__(
-        self,
-        *,
-        state_court_case_id: typing.Optional[typing.Text] = ...,
-        status: typing.Optional[typing.Text] = ...,
-        court_type: typing.Optional[typing.Text] = ...,
-        date_convicted: typing.Optional[typing.Text] = ...,
-        next_court_date: typing.Optional[typing.Text] = ...,
-        state_code: typing.Optional[typing.Text] = ...,
-        county_code: typing.Optional[typing.Text] = ...,
-        judicial_district_code: typing.Optional[typing.Text] = ...,
-        judge_id: typing.Optional[typing.Text] = ...,
-    ) -> None: ...
-    def HasField(
-        self,
-        field_name: typing_extensions.Literal[
-            "county_code",
-            b"county_code",
-            "court_type",
-            b"court_type",
-            "date_convicted",
-            b"date_convicted",
-            "judge_id",
-            b"judge_id",
-            "judicial_district_code",
-            b"judicial_district_code",
-            "next_court_date",
-            b"next_court_date",
-            "state_code",
-            b"state_code",
-            "state_court_case_id",
-            b"state_court_case_id",
-            "status",
-            b"status",
-        ],
-    ) -> builtins.bool: ...
-    def ClearField(
-        self,
-        field_name: typing_extensions.Literal[
-            "county_code",
-            b"county_code",
-            "court_type",
-            b"court_type",
-            "date_convicted",
-            b"date_convicted",
-            "judge_id",
-            b"judge_id",
-            "judicial_district_code",
-            b"judicial_district_code",
-            "next_court_date",
-            b"next_court_date",
-            "state_code",
-            b"state_code",
-            "state_court_case_id",
-            b"state_court_case_id",
-            "status",
-            b"status",
-        ],
-    ) -> None: ...
-
-global___StateCourtCase = StateCourtCase
 
 class StateIncarcerationPeriod(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...

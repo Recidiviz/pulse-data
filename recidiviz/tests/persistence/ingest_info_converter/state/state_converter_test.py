@@ -26,10 +26,6 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -58,7 +54,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
     StateCharge,
-    StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
@@ -244,27 +239,21 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_charges.add(
             state_charge_id="CHARGE_ID1",
-            state_court_case_id="CASE_ID",
             classification_type="M",
             classification_subtype="1",
             ncic_code="5006",
         )
         ingest_info.state_charges.add(
             state_charge_id="CHARGE_ID2",
-            state_court_case_id="CASE_ID",
             classification_type="M",
             classification_subtype="2",
         )
         ingest_info.state_charges.add(
             state_charge_id="CHARGE_ID3",
-            state_court_case_id="CASE_ID",
             classification_type="F",
             classification_subtype="3",
             ncic_code="5006",
             description="Obstruction of investigation",
-        )
-        ingest_info.state_court_cases.add(
-            state_court_case_id="CASE_ID",
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID1",
@@ -467,13 +456,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ],
         )
 
-        court_case = StateCourtCase.new_with_defaults(
-            external_id="CASE_ID",
-            state_code="US_XX",
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-        )
-
         charge_1 = StateCharge.new_with_defaults(
             external_id="CHARGE_ID1",
             classification_type=StateChargeClassificationType.MISDEMEANOR,
@@ -482,7 +464,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ncic_code="5006",
             state_code="US_XX",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            court_case=court_case,
         )
 
         charge_2 = StateCharge.new_with_defaults(
@@ -492,7 +473,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_subtype="2",
             state_code="US_XX",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            court_case=court_case,
         )
 
         charge_3 = StateCharge.new_with_defaults(
@@ -504,7 +484,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ncic_code="5006",
             description="OBSTRUCTION OF INVESTIGATION",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-            court_case=court_case,
         )
 
         incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(

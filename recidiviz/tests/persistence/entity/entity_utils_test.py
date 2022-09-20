@@ -207,7 +207,6 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
             status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
-    schema.StateCourtCase: [schema.StateCourtCase(state_code=StateCode.US_XX.value)],
     schema.StateDrugScreen: [schema.StateDrugScreen(state_code=StateCode.US_XX.value)],
     schema.StateEmploymentPeriod: [
         schema.StateEmploymentPeriod(state_code=StateCode.US_XX.value)
@@ -317,11 +316,6 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             state_code=StateCode.US_XX.value,
             external_id=_EXTERNAL_ID,
             status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
-        )
-    ],
-    schema.StateCourtCase: [
-        schema.StateCourtCase(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
         )
     ],
     schema.StateDrugScreen: [
@@ -484,16 +478,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             state_code=StateCode.US_XX.value,
             status=StateChargeStatus.PRESENT_WITHOUT_INFO.value,
             statute="1234a",
-        ),
-    ],
-    schema.StateCourtCase: [
-        schema.StateCourtCase(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            county_code="my county",
-        ),
-        schema.StateCourtCase(
-            state_code=StateCode.US_XX.value, county_code="my county"
         ),
     ],
     schema.StateDrugScreen: [

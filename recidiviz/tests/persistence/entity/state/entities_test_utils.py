@@ -32,10 +32,6 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
 )
@@ -433,16 +429,6 @@ def generate_full_graph_state_person(
     )
     person.supervising_officer = person_supervising_officer
 
-    court_case = entities.StateCourtCase.new_with_defaults(
-        external_id="CASEID456",
-        status=StateCourtCaseStatus.EXTERNAL_UNKNOWN,
-        date_convicted=datetime.date(year=2018, month=7, day=1),
-        next_court_date=datetime.date(year=2019, month=7, day=1),
-        state_code="US_XX",
-        court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-        court_type_raw_text=None,
-    )
-
     charge = entities.StateCharge.new_with_defaults(
         external_id="CHARGE1_EXTERNAL_ID",
         status=StateChargeStatus.CONVICTED,
@@ -458,7 +444,6 @@ def generate_full_graph_state_person(
         classification_subtype="A",
         counts=1,
         charge_notes=None,
-        court_case=court_case,
     )
 
     charge2 = entities.StateCharge.new_with_defaults(
@@ -476,7 +461,6 @@ def generate_full_graph_state_person(
         classification_subtype="B",
         counts=1,
         charge_notes=None,
-        court_case=court_case,
     )
 
     charge3 = entities.StateCharge.new_with_defaults(
@@ -494,7 +478,6 @@ def generate_full_graph_state_person(
         classification_subtype="AA",
         counts=1,
         charge_notes=None,
-        court_case=court_case,
     )
 
     supervision_sentence.charges = [charge, charge2, charge3]
@@ -592,8 +575,6 @@ def generate_full_graph_state_person(
             else:
                 child.supervision_sentence = supervision_sentence  # type: ignore[attr-defined]
 
-        court_case.charges = [charge, charge2, charge3]
-
         incarceration_incident_children: List[
             StateIncarcerationIncidentOutcome
         ] = incarceration_incident.incarceration_incident_outcomes
@@ -636,7 +617,6 @@ def generate_full_graph_state_person(
         *incarceration_sentence.charges,
         *incarceration_sentence.early_discharges,
         *supervision_sentence.early_discharges,
-        *[court_case],
         *incarceration_incident.incarceration_incident_outcomes,
         *supervision_period.case_type_entries,
         *supervision_violation.supervision_violation_responses,

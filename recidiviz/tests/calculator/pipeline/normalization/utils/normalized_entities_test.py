@@ -223,7 +223,6 @@ class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
         expected_subtree = {
             state_entities.StateSupervisionSentence,
             state_entities.StateCharge,
-            state_entities.StateCourtCase,
             state_entities.StateEarlyDischarge,
             state_entities.StateIncarcerationSentence,
         }

@@ -38,10 +38,6 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
@@ -567,32 +563,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             ethnicity=StateEthnicity.HISPANIC,
             ethnicity_raw_text="H",
             state_code="US_XX",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StateCourtCase(self) -> None:
-        result = deserialize_entity_factories.StateCourtCaseFactory.deserialize(
-            status=None,
-            court_type=None,
-            external_id="CASE_ID",
-            date_convicted="1/2/2111",
-            next_court_date="1/10/2111",
-            state_code="us_xx",
-            county_code="111",
-        )
-
-        # Assert
-        expected_result = entities.StateCourtCase(
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            status_raw_text=None,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            court_type_raw_text=None,
-            external_id="CASE_ID",
-            date_convicted=date(year=2111, month=1, day=2),
-            next_court_date=date(year=2111, month=1, day=10),
-            state_code="US_XX",
-            county_code="111",
         )
 
         self.assertEqual(expected_result, result)

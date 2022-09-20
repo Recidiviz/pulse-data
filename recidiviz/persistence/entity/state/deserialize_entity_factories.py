@@ -17,10 +17,6 @@
 """Factories for deserializing entities in state/entities.py from ingested values."""
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -132,22 +128,6 @@ class StateChargeFactory(EntityFactory):
                 "judge_full_name": EntityFieldConverter(str, normalize_flat_json)
             },
             defaults={"status": StateChargeStatus.PRESENT_WITHOUT_INFO},
-            **kwargs,
-        )
-
-
-class StateCourtCaseFactory(EntityFactory):
-    @staticmethod
-    def deserialize(
-        **kwargs: DeserializableEntityFieldValue,
-    ) -> entities.StateCourtCase:
-        return entity_deserialize(
-            cls=entities.StateCourtCase,
-            converter_overrides={},
-            defaults={
-                "court_type": StateCourtType.PRESENT_WITHOUT_INFO,
-                "status": StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            },
             **kwargs,
         )
 

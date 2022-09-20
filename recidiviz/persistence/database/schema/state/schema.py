@@ -211,20 +211,6 @@ state_incarceration_type = Enum(
     name="state_incarceration_type",
 )
 
-state_court_case_status = Enum(
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    state_enum_strings.present_without_info,
-    name="state_court_case_status",
-)
-
-state_court_type = Enum(
-    state_enum_strings.present_without_info,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_court_type",
-)
-
 state_agent_type = Enum(
     state_enum_strings.present_without_info,
     state_enum_strings.state_agent_supervision_officer,
@@ -1085,78 +1071,6 @@ class StatePerson(StateBase):
     supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
-class StateCourtCase(StateBase, _ReferencesStatePersonSharedColumns):
-    """Represents a StateCourtCase in the SQL schema"""
-
-    __tablename__ = "state_court_case"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            "person_id",
-            name="court_case_external_ids_unique_within_state_and_person",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateCourtCase object holds information on a single court case that a person stands trial "
-            "at. This represents the case itself, not the charges brought in the case, or any sentences "
-            "imposed as a result of the case."
-        },
-    )
-
-    court_case_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="court case"
-        ),
-    )
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCourtCase"
-        ),
-    )
-    status = Column(state_court_case_status, comment="The current status of the case.")
-    status_raw_text = Column(
-        String(255), comment="The raw text value of the current status of the case."
-    )
-    court_type = Column(
-        state_court_type, comment="The type of court this charge will be/was heard in."
-    )
-    court_type_raw_text = Column(
-        String(255), comment="The raw text value of the court type."
-    )
-    date_convicted = Column(
-        Date, comment="The date the person was convicted, if applicable."
-    )
-    next_court_date = Column(
-        Date,
-        comment="Date of the next scheduled court appearance for this case, if applicable.",
-    )
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-    county_code = Column(
-        String(255),
-        index=True,
-        comment="The code of the county under whose jurisdiction the case was tried.",
-    )
-    judicial_district_code = Column(
-        String(255),
-        comment="The code of the judicial district under whose jurisdiction "
-        "the case was tried.",
-    )
-
-    person = relationship("StatePerson", uselist=False)
-
-
 class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateCharge in the SQL schema"""
 
@@ -1175,8 +1089,7 @@ class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
             "concurrent sentences served due to an overlapping set of charges) and a multiple charges can "
             "reference a single Incarceration/Supervision Sentence (e.g. one sentence resulting from multiple "
             "charges). Thus, the relationship between StateCharge and each distinct Supervision/Incarceration "
-            "Sentence type is many:many. Each StateCharge is brought to trial as part of no more than a single"
-            " StateCourtCase."
+            "Sentence type is many:many."
         },
     )
 
@@ -1288,22 +1201,8 @@ class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
         " tried.",
     )
 
-    @declared_attr
-    def court_case_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_court_case.court_case_id"),
-            index=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="court case"
-            ),
-        )
-
     # Cross-entity relationships
     person = relationship("StatePerson", uselist=False)
-    court_case = relationship(
-        "StateCourtCase", uselist=False, backref="charges", lazy="selectin"
-    )
 
 
 class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):

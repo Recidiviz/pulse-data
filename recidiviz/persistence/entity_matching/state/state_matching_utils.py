@@ -22,7 +22,6 @@ from typing import List, Optional, Sequence, Set, Type, cast
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.common.constants.state import enum_canonical_strings
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
@@ -315,9 +314,6 @@ def convert_to_placeholder(
         if field_name == "incarceration_type":
             entity.set_field(field_name, StateIncarcerationType.STATE_PRISON.value)
             continue
-        if field_name == "court_type":
-            entity.set_field(field_name, StateCourtType.PRESENT_WITHOUT_INFO.value)
-            continue
         if field_name == "agent_type":
             entity.set_field(field_name, StateAgentType.PRESENT_WITHOUT_INFO.value)
             continue
@@ -356,7 +352,6 @@ def can_atomically_merge_entity(
         (
             schema.StateAssessment,
             schema.StateCharge,
-            schema.StateCourtCase,
             schema.StateDrugScreen,
             schema.StateEmploymentPeriod,
             schema.StateIncarcerationIncident,
@@ -463,7 +458,6 @@ def get_person_external_ids(db_person: schema.StatePerson) -> List[str]:
 def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     cls_list: List[Type[DatabaseEntity]] = [
         schema.StateCharge,
-        schema.StateCourtCase,
         schema.StateAgent,
     ]
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()

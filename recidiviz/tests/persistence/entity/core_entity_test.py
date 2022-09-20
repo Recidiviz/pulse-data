@@ -45,12 +45,6 @@ class TestCoreEntity(unittest.TestCase):
             ).get_entity_name(),
         )
         self.assertEqual(
-            "state_court_case",
-            entities.StateCourtCase.new_with_defaults(
-                state_code="US_XX"
-            ).get_entity_name(),
-        )
-        self.assertEqual(
             "state_supervision_violation_response",
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX"
@@ -71,12 +65,6 @@ class TestCoreEntity(unittest.TestCase):
             ).get_id(),
         )
         self.assertEqual(
-            789,
-            entities.StateCourtCase.new_with_defaults(
-                court_case_id=789, state_code="US_XX"
-            ).get_id(),
-        )
-        self.assertEqual(
             901,
             entities.StateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=901, state_code="US_XX"
@@ -92,7 +80,6 @@ class TestCoreEntity(unittest.TestCase):
             "supervision_contact_id",
             entities.StateSupervisionContact.get_class_id_name(),
         )
-        self.assertEqual("court_case_id", entities.StateCourtCase.get_class_id_name())
         self.assertEqual(
             "supervision_violation_response_id",
             entities.StateSupervisionViolationResponse.get_class_id_name(),

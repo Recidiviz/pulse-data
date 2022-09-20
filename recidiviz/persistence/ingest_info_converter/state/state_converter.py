@@ -20,7 +20,6 @@
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateAssessment,
     StateCharge,
-    StateCourtCase,
     StateEarlyDischarge,
     StateIncarcerationIncident,
     StateIncarcerationPeriod,
@@ -37,7 +36,6 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateAssessmentFactory,
     StateChargeFactory,
-    StateCourtCaseFactory,
     StateEarlyDischargeFactory,
     StateIncarcerationIncidentFactory,
     StateIncarcerationPeriodFactory,
@@ -56,7 +54,6 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_alias,
     state_assessment,
     state_charge,
-    state_court_case,
     state_early_discharge,
     state_incarceration_incident,
     state_incarceration_incident_outcome,
@@ -121,9 +118,6 @@ class StateConverter(BaseConverter):
             ed.state_early_discharge_id: ed for ed in ingest_info.state_early_discharges
         }
         self.charges = {sc.state_charge_id: sc for sc in ingest_info.state_charges}
-        self.court_cases = {
-            cc.state_court_case_id: cc for cc in ingest_info.state_court_cases
-        }
         self.supervision_periods = {
             sp.state_supervision_period_id: sp
             for sp in ingest_info.state_supervision_periods
@@ -369,22 +363,7 @@ class StateConverter(BaseConverter):
             charge_builder, ingest_charge, self.metadata
         )
 
-        charge_builder.court_case = fn(
-            lambda i: self._convert_court_case(self.court_cases[i]),
-            "state_court_case_id",
-            ingest_charge,
-        )
-
         return charge_builder.build(StateChargeFactory.deserialize)
-
-    def _convert_court_case(self, ingest_court_case: StateCourtCase):
-        court_case_builder = entities.StateCourtCase.builder()
-
-        state_court_case.copy_fields_to_builder(
-            court_case_builder, ingest_court_case, self.metadata
-        )
-
-        return court_case_builder.build(StateCourtCaseFactory.deserialize)
 
     def _convert_incarceration_period(
         self, ingest_incarceration_period: StateIncarcerationPeriod
