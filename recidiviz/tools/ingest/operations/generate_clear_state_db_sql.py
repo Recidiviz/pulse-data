@@ -27,9 +27,7 @@ from typing import List
 import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -119,25 +117,11 @@ def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     )
     print("HOW TO PERFORM DELETION:")
     print(
-        "1) Log into prod data client (`gcloud compute ssh prod-data-client --project=recidiviz-123`)"
+        "1) Run ./recidiviz/tools/postgres/access_cloudsql_instance.sh \n"
+        "Select project, instance: `state_v2`, user: `state_v2_db_user`"
     )
-    print("\n> For production deletion:")
     print(
-        "2) Go to secret manager to get login credentials stored in `state_db_user` and `state_db_password` secrets:"
-        "\n\thttps://console.cloud.google.com/security/secret-manager?organizationId=448885369991&"
-        "project=recidiviz-123"
-    )
-    print("3) Log into postgres database (`prod-state-psql`)")
-    print("\n> For staging deletion:")
-    print(
-        "2) Go to secret manager to get login credentials stored in `state_db_user` and `state_db_password` secrets:"
-        "\n\thttps://console.cloud.google.com/security/secret-manager?organizationId=448885369991&"
-        "project=recidiviz-staging"
-    )
-    print("3) Log into postgres database (`dev-state-psql`)")
-    print("\n> For all:")
-    print(
-        "4) Paste full list of commands listed above in postgres command line and run. Some commands may take a "
+        "2) Paste full list of commands listed above in postgres command line and run. Some commands may take a "
         "while to run."
     )
 

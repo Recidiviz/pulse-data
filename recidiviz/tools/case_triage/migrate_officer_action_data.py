@@ -27,7 +27,6 @@ python -m recidiviz.tools.case_triage.migrate_officer_action_data \
 
 import argparse
 import logging
-import os
 import sys
 
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -39,7 +38,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import metadata
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -97,25 +96,21 @@ def main(
         new_officer_external_id,
     )
 
-    is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
-    ssl_cert_path = os.path.expanduser(
-        f"~/{'prod' if is_prod else 'dev'}_case_triage_certs"
-    )
+    schema_type = SchemaType.CASE_TRIAGE
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-    with SessionFactory.for_prod_data_client(
-        SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
-        os.path.abspath(ssl_cert_path),
-    ) as session:
-        for entity, external_id_column in ENTITY_TO_EXTERNAL_ID_COLUMN_MAP.items():
-            query = session.query(entity).filter(
-                external_id_column == old_officer_external_id
-            )
-            if dry_run:
-                logging.info(
-                    "[DRY RUN] Would update %i rows in %s", query.count(), entity
+    with cloudsql_proxy_control.connection(schema_type=schema_type):
+        with SessionFactory.for_proxy(database_key) as session:
+            for entity, external_id_column in ENTITY_TO_EXTERNAL_ID_COLUMN_MAP.items():
+                query = session.query(entity).filter(
+                    external_id_column == old_officer_external_id
                 )
-            else:
-                query.update({external_id_column: new_officer_external_id})
+                if dry_run:
+                    logging.info(
+                        "[DRY RUN] Would update %i rows in %s", query.count(), entity
+                    )
+                else:
+                    query.update({external_id_column: new_officer_external_id})
 
 
 if __name__ == "__main__":

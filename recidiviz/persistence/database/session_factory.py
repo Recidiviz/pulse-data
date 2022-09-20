@@ -81,16 +81,15 @@ class SessionFactory:
     @classmethod
     @contextmanager
     @environment.local_only
-    def for_prod_data_client(
+    def for_proxy(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        ssl_cert_path: str,
         *,
         autocommit: bool = True,
     ) -> Iterator[Session]:
-        """Implements a context manager for db sessions for use in prod-data-client."""
-        engine = SQLAlchemyEngineManager.get_engine_for_database_with_ssl_certs(
-            database_key=database_key, ssl_cert_path=ssl_cert_path
+        """Implements a context manager for db sessions for use with the Cloud SQL Proxy."""
+        engine = SQLAlchemyEngineManager.get_engine_for_database_with_proxy(
+            database_key=database_key
         )
         if engine is None:
             raise ValueError(f"No engine set for key [{database_key}]")
