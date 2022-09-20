@@ -370,6 +370,11 @@ or to no entity, e.g. if the client is released or incarcerated.
                 JSON_EXTRACT_SCALAR(event_attributes, "$.is_employed") AS BOOL
             ), person_id, NULL
         )) AS employment_lost,
+
+        -- treatment_referrals
+        COUNT(DISTINCT IF(
+            event = "TREATMENT_REFERRAL", person_id, NULL
+        )) AS treatment_referrals,
     FROM
         unnested_person_events
     GROUP BY

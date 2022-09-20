@@ -636,6 +636,24 @@ FROM
     `{project_id}.{experiments_dataset}.person_assignments_materialized`
 GROUP BY 1, 2, 3, 4, experiment_id, variant_id
 
+UNION ALL
+
+-- treatment referrals
+SELECT
+    state_code,
+    person_id,
+    "TREATMENT_REFERRAL" AS event,
+    referral_date AS event_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        program_id,
+        referring_agent_id,
+        referral_metadata,
+        participation_status
+    ))[OFFSET(0)]) AS event_attributes,
+FROM
+    `{project_id}.{state_base_dataset}.state_program_assignment`
+GROUP BY 1, 2, 3, 4, program_id, referring_agent_id, referral_metadata, participation_status
+
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

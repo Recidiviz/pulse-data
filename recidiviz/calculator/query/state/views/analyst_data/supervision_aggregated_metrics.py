@@ -316,6 +316,8 @@ SELECT
     SUM(employment_gained) AS employment_gained,
     SUM(employment_lost) AS employment_lost,
 
+    -- treatment referrals
+    SUM(treatment_referrals) AS treatment_referrals,
 
     ## window-based metrics
     /*
