@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -169,7 +170,7 @@ UNION ALL
 SELECT
     state_code,
     person_id,
-    "TASK_ELIGIBLE" AS span,
+    "SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE" AS span,
     start_date,
     DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
@@ -182,6 +183,25 @@ FROM
 WHERE
     recommended_supervision_downgrade_level IS NOT NULL
 GROUP BY 1, 2, 3, 4, 5
+
+UNION ALL
+
+-- all task eligibility spans
+SELECT
+    state_code,
+    person_id,
+    "TASK_ELIGIBILITY_SESSION" AS span,
+    start_date,
+    end_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        task_name,
+        is_eligible,
+        ineligible_criteria
+    ))[OFFSET(0)]) AS span_attributes
+FROM
+    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+GROUP BY 1, 2, 3, 4, 5, task_name
+
 """
 
 PERSON_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -191,6 +211,7 @@ PERSON_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PERSON_SPANS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
+    task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
     should_materialize=True,
     clustering_fields=["state_code", "span"],
 )

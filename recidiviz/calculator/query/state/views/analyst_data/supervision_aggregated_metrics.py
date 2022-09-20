@@ -258,6 +258,11 @@ SELECT
     SAFE_DIVIDE(SUM(avg_days_since_latest_completed_contact * daily_population),
         SUM(daily_population)) AS avg_days_since_latest_completed_contact,   
 
+    ## summed person days in status across period
+    SUM(person_days_supervision_level_downgrade_eligible) AS person_days_supervision_level_downgrade_eligible,
+    SUM(person_days_early_discharge_from_supervision_eligible) AS person_days_early_discharge_from_supervision_eligible,
+    SUM(person_days_full_term_discharge_from_supervision_eligible) 
+        AS person_days_full_term_discharge_from_supervision_eligible,
 
     ## event-based metrics
     /*

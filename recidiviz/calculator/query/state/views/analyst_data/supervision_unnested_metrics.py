@@ -558,6 +558,42 @@ of the metric. In the CTEs below, we require that the date of metric observation
             ), ps.person_id, NULL
         )) AS population_unknown_risk_level,
             
+        -- task_eligible-derived metrics
+        COUNT(DISTINCT IF(
+            (
+                span = "TASK_ELIGIBILITY_SESSION"
+                AND SAFE_CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.is_eligible")
+                    AS BOOL)
+                AND JSON_EXTRACT_SCALAR(span_attributes, "$.task_name") = 
+                    "SUPERVISION_LEVEL_DOWNGRADE"
+            ) OR (
+                span = "SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE"
+            ),
+            ps.person_id, NULL
+        )) AS person_days_supervision_level_downgrade_eligible,
+
+        COUNT(DISTINCT IF(
+            span = "TASK_ELIGIBILITY_SESSION"
+            AND SAFE_CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.is_eligible")
+                AS BOOL)
+            AND JSON_EXTRACT_SCALAR(span_attributes, "$.task_name") IN
+                (
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
+                ),
+            ps.person_id, NULL
+        )) AS person_days_early_discharge_from_supervision_eligible,
+
+        COUNT(DISTINCT IF(
+            span = "TASK_ELIGIBILITY_SESSION"
+            AND SAFE_CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.is_eligible")
+                AS BOOL)
+            AND JSON_EXTRACT_SCALAR(span_attributes, "$.task_name") =
+                "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
+            ps.person_id, NULL
+        )) AS person_days_full_term_discharge_from_supervision_eligible,
+
         -- employment_sessions-derived metrics
         COUNT(DISTINCT IF(
             span = "EMPLOYMENT_PERIOD",
