@@ -38,20 +38,38 @@ def generate_bulk_upload_template(system: schema.System) -> None:
     system_enum = schema.System(system)
     metricfiles = SYSTEM_TO_METRICFILES[system_enum]
     filename_to_rows = {}
-    for metricfile in metricfiles:
+    for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
         rows = []
         if (
             metricfile.definition.reporting_frequency
             == schema.ReportingFrequency.ANNUAL
         ):
-            for year in [2021, 2022]:
-                row = {"year": str(year), "value": ""}
-                rows.append(row)
-        else:
-            for year in [2021, 2022]:
-                for month in range(1, 13):
-                    row = {"year": str(year), "month": str(month), "value": ""}
+            if metricfile.definition.system == schema.System.SUPERVISION:
+                for s in ["PAROLE", "PROBATION"]:
+                    for year in [2021, 2022]:
+                        row = {"year": str(year), "system": s, "value": ""}
+                        rows.append(row)
+            else:
+                for year in [2021, 2022]:
+                    row = {"year": str(year), "value": ""}
                     rows.append(row)
+        else:
+            if metricfile.definition.system == schema.System.SUPERVISION:
+                for s in ["PAROLE", "PROBATION"]:
+                    for year in [2021, 2022]:
+                        for month in range(1, 13):
+                            row = {
+                                "year": str(year),
+                                "month": str(month),
+                                "system": s,
+                                "value": "",
+                            }
+                            rows.append(row)
+            else:
+                for year in [2021, 2022]:
+                    for month in range(1, 13):
+                        row = {"year": str(year), "month": str(month), "value": ""}
+                        rows.append(row)
 
         new_rows = []
         if metricfile.disaggregation:
