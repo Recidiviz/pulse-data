@@ -19,6 +19,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_id.supervision_staff_template import (
+    US_ID_SUPERVISION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
     US_ND_SUPERVISION_STAFF_TEMPLATE,
 )
@@ -44,10 +47,13 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
+        , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
     
     SELECT {{columns}} FROM tn_staff
     UNION ALL 
     SELECT {{columns}} FROM nd_staff
+    UNION ALL
+    SELECT {{columns}} FROM id_staff
 """
 
 STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
