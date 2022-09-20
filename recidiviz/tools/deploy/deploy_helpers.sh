@@ -7,12 +7,12 @@ VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 SLACK_CHANNEL_ENG="GJDCVR2AY"
 SLACK_CHANNEL_DEPLOYMENT_BOT="C040N4DLMA4"
 
-DEPLOYMENT_LOG_PATH="${BASH_SOURCE_DIR}/recidiviz/tools/deploy/log/deploy.log"
+DEPLOYMENT_LOG_PATH="${BASH_SOURCE_DIR}/log/deploy.log"
 
 
 # Creates the log file at the log path and redirects output to it
 function initialize_deployment_log {
-  mkdir "-p $(dirname "${DEPLOYMENT_LOG_PATH}")"
+  mkdir -p "$(dirname "${DEPLOYMENT_LOG_PATH}")"
 
   # Copy STDOUT and STDERR to the deployment log
   exec &> >(tee "${DEPLOYMENT_LOG_PATH}")
