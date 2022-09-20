@@ -121,7 +121,7 @@ def main(
             purge_schema_str,
         )
 
-    with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+    with cloudsql_proxy_control.connection(schema_type=SchemaType.STATE):
         db_key = ingest_instance.database_key_for_state(state_code)
 
         with SessionFactory.for_proxy(db_key) as session:
