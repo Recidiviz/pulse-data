@@ -7,6 +7,51 @@ VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 SLACK_CHANNEL_ENG="GJDCVR2AY"
 SLACK_CHANNEL_DEPLOYMENT_BOT="C040N4DLMA4"
 
+DEPLOYMENT_LOG_PATH="${BASH_SOURCE_DIR}/recidiviz/tools/deploy/log/deploy.log"
+
+
+# Creates the log file at the log path and redirects output to it
+function initialize_deployment_log {
+  mkdir "-p $(dirname "${DEPLOYMENT_LOG_PATH}")"
+
+  # Copy STDOUT and STDERR to the deployment log
+  exec &> >(tee "${DEPLOYMENT_LOG_PATH}")
+}
+
+# Uploads the deployment logs to GCS, responds to a #deployment-bot Slack message with the logs
+function upload_deployment_log {
+  local PROJECT_ID=$1
+  local GIT_HASH=$2
+  local RELEASE_VERSION_TAG=$3
+  local THREAD_TS=$4
+
+  local CURRENT_TIME
+  CURRENT_TIME="$(date +"%s")"
+
+  local LOG_FILE_NAME="${RELEASE_VERSION_TAG}-${GIT_HASH}-${CURRENT_TIME}.log"
+  local LOG_OBJECT_PATH="${PROJECT_ID}-deploy-logs/${LOG_FILE_NAME}"
+
+  gsutil cp "${DEPLOYMENT_LOG_PATH}" "gs://${LOG_OBJECT_PATH}" > /dev/null 2>&1
+
+  local LOG_URL="https://console.cloud.google.com/storage/browser/_details/${LOG_OBJECT_PATH};tab=live_object?project=${PROJECT_ID}"
+
+  local MESSAGE
+  MESSAGE=$(
+cat <<- EOM
+<${LOG_URL}|Full logs can be found here.>
+\`\`\`
+$(tail -n 40 "${DEPLOYMENT_LOG_PATH}")
+\`\`\`
+EOM
+)
+
+  deployment_bot_message "${PROJECT}" \
+    "${SLACK_CHANNEL_DEPLOYMENT_BOT}" \
+    "${MESSAGE}" \
+    "${THREAD_TS}" > /dev/null
+}
+
+
 # Parses a version tag and output a space-separated string of the version regex capture groups.
 # Example usage:
 #    $ VERSION_PARTS=($(parse_version v1.2.0-alpha.0))
@@ -191,7 +236,8 @@ import toml
 with open("Pipfile", "r", encoding="utf-8") as f:
   config = toml.loads(f.read())
   print(config['requires']['python_version'])
-EOM)
+EOM
+)
   MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python)
   PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}
 
@@ -384,21 +430,42 @@ function deploy_terraform_infrastructure {
 
 # Posts a message to the #deployment-bot slack channel
 function deployment_bot_message {
-  PROJECT_ID=$1
-  CHANNEL=$2
-  MESSAGE=$3
+  local PROJECT_ID=$1
+  local CHANNEL=$2
+  local MESSAGE=$3
 
-  AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
+  local AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
 
-  curl -d "text=${MESSAGE}" \
-    -d "channel=${CHANNEL}" \
-    -H "Authorization: Bearer ${AUTHORIZATION_TOKEN}" \
-    -X POST https://slack.com/api/chat.postMessage > /dev/null 2>&1
+  declare -a CURL_ARGS
+  local CURL_ARGS=(
+    --silent
+    -d "text=${MESSAGE}"
+    -d "channel=${CHANNEL}"
+    -H "Authorization: Bearer ${AUTHORIZATION_TOKEN}"
+  )
+
+  # THREAD_TS provided at argument 4
+  if [ $# -eq 4 ]; then
+    CURL_ARGS+=(
+      -d "thread_ts=$4"
+    )
+  fi
+
+
+  CURL_OUTPUT=$(curl "${CURL_ARGS[@]}" -X POST https://slack.com/api/chat.postMessage)
+  RESPONSE_OK=$(echo "${CURL_OUTPUT}" | jq -r .ok)
+
+  if [ "${RESPONSE_OK}" == "true" ]; then
+    echo "${CURL_OUTPUT}" | jq -r .message.ts
+  else
+    echo "${CURL_OUTPUT}"
+    return 1
+  fi
 }
 
 function deploy_migrations {
-  PROJECT=$1
-  COMMIT_HASH=$2
+  local PROJECT=$1
+  local COMMIT_HASH=$2
 
   echo "Running migrations using Cloud SQL Proxy"
   deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⏳ Starting migrations using Cloud SQL Proxy"
@@ -412,8 +479,6 @@ function deploy_migrations {
   fi
 
   deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "🚨 There was an error running migrations using the Cloud SQL Proxy"
-  echo "There was an error running migrations using the Cloud SQL Proxy"
-  echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
 
   # TODO(#14842): Remove this once prod-data-client is deprecated
   script_prompt "Would you like to use prod-data-client to re-run the migrations? [no exits the script]"
@@ -455,9 +520,12 @@ function on_deploy_exited {
 
 
   if [[ "${DEPLOYMENT_STATUS}" < "${DEPLOYMENT_STATUS_SUCCEEDED}" ]]; then
-    EMOJI=${DEPLOYMENT_FAILED_EMOJI[$RANDOM % ${#DEPLOYMENT_FAILED_EMOJI[@]}]}
-    DEPLOYMENT_ERROR_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` There was an error deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
-    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOYMENT_ERROR_MESSAGE}"
+    local EMOJI=${DEPLOYMENT_FAILED_EMOJI[$RANDOM % ${#DEPLOYMENT_FAILED_EMOJI[@]}]}
+    local DEPLOYMENT_ERROR_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` There was an error deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
+    local ERROR_MESSAGE_TS
+    ERROR_MESSAGE_TS=$(deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOYMENT_ERROR_MESSAGE}")
+
+    upload_deployment_log "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}" "${ERROR_MESSAGE_TS}"
   fi
 }
 
@@ -470,9 +538,11 @@ function update_deployment_status {
 
   DEPLOYMENT_STATUS="${NEW_DEPLOYMENT_STATUS}"
   if [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_STARTED}" ]; then
+    initialize_deployment_log
+
     EMOJI=${DEPLOYMENT_STARTED_EMOJI[$RANDOM % ${#DEPLOYMENT_STARTED_EMOJI[@]}]}
     DEPLOY_STARTED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` Deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
-    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}"
+    deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}" > /dev/null
 
     # Register exit hook in case the deploy fails midway
     trap "on_deploy_exited '${PROJECT_ID}' '${COMMIT_HASH}' '${RELEASE_VERSION_TAG}'" EXIT
@@ -481,6 +551,11 @@ function update_deployment_status {
       EMOJI=${DEPLOYMENT_SUCCESS_EMOJI[$RANDOM % ${#DEPLOYMENT_SUCCESS_EMOJI[@]}]}
       GCLOUD_USER=$(gcloud config get-value account)
       DEPLOY_SUCCEEDED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` ${GCLOUD_USER} successfully deployed to \`${PROJECT_ID}\` in ${MINUTES} minutes"
-      deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}"
+
+      local SUCCESS_MESSAGE_TS
+      SUCCESS_MESSAGE_TS=$(deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}")
+      upload_deployment_log "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}" "${SUCCESS_MESSAGE_TS}"
+
+      deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_SUCCEEDED_MESSAGE}" > /dev/null
   fi
 }
