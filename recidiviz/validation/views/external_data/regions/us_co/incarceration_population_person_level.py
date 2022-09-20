@@ -28,6 +28,7 @@ VIEW_QUERY_TEMPLATE = """
   SELECT 
     'US_CO' as region_code,
     offenderid AS person_external_id, 
+    'US_CO_PID' AS external_id_type,
     PARSE_DATE("%Y-%m-%d", DWNLD_DTD) as date_of_stay,
     CASE 
         WHEN FAC_CD ='AC' THEN 'ACC'

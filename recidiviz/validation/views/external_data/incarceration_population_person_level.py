@@ -32,22 +32,23 @@ from recidiviz.validation.views.external_data import regions as external_data_re
 # of version control.
 _LEGACY_QUERY_TEMPLATE = """
 -- Don't use facility from this ID data as it groups most of the jails together.
-SELECT region_code, person_external_id, date_of_stay, NULL as facility
+SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, NULL as facility
 FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_person_level_raw`
 UNION ALL
-SELECT region_code, person_external_id, date_of_stay, facility
+SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_id_validation_dataset}.daily_summary_incarceration`
 UNION ALL 
-SELECT region_code, person_external_id, date_of_stay, facility
+SELECT region_code, person_external_id, 'US_ME_DOC' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_me_validation_dataset}.incarceration_population_person_level_view`
 UNION ALL
-SELECT region_code, person_external_id, date_of_stay, facility
+SELECT region_code, person_external_id, 'US_PA_CONT' as external_id_type, date_of_stay, facility
 FROM `{project_id}.{us_pa_validation_dataset}.incarceration_population_person_level_raw`
 -- TODO(#10883): Ignoring this ND data for now because we are not sure that it is correct.
 -- UNION ALL 
 -- SELECT
 --   'US_ND' as region_code,
 --   Offender_ID as person_external_id,
+--   'US_ND_ELITE' as external_id_type,
 --   DATE('2021-11-01') as date_of_stay,
 --   Facility as facility
 -- FROM `{project_id}.{us_nd_validation_dataset}.incarcerated_individuals_2021_11_01`
@@ -55,6 +56,7 @@ UNION ALL
 SELECT
   'US_TN' as region_code,
   OffenderID as person_external_id,
+  'US_TN_DOC' as external_id_type,
   DATE(Date) as date_of_stay,
   Site as facility
 FROM `{project_id}.{us_tn_raw_data_up_to_date_dateset}.TDPOP_latest`
@@ -62,6 +64,7 @@ UNION ALL
 SELECT
   'US_PA' as region_code,
   person_external_id,
+  'US_PA_CONT' as external_id_type,
   date_of_stay,
   facility
 FROM (
@@ -114,7 +117,7 @@ def get_incarceration_population_person_level_view_builder() -> SimpleBigQueryVi
             region_subqueries.append(
                 f"""
                 SELECT
-                  region_code, person_external_id, date_of_stay, facility
+                  region_code, person_external_id, external_id_type, date_of_stay, facility
                 FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
                 """
             )
