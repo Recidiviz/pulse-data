@@ -282,32 +282,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
-            title="Set status to FLASH_CANCELLATION_IN_PROGRESS"
-            description={
-              isReadyToFlash ? (
-                <p>
-                  Cancellation of flash can proceed. Set ingest status to
-                  FLASH_CANCELLATION_IN_PROGRESS in SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Secondary instance status is not READY_TO_FLASH. Cannot
-                  proceed with cancellation.
-                </p>
-              )
-            }
-            actionButtonTitle="Update Ingest Instance Status"
-            buttonsEnabled={isReadyToFlash}
-            onActionButtonClick={async () =>
-              changeIngestInstanceStatus(
-                stateCode,
-                DirectIngestInstance.SECONDARY,
-                "FLASH_CANCELLATION_IN_PROGRESS"
-              )
-            }
-          />
-          <StyledStep
             title="Acquire SECONDARY Ingest Lock"
             description={
               <p>
@@ -333,6 +307,32 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               pauseDirectIngestInstance(
                 stateCode,
                 DirectIngestInstance.SECONDARY
+              )
+            }
+          />
+          <StyledStep
+            title="Set status to FLASH_CANCELLATION_IN_PROGRESS"
+            description={
+              isReadyToFlash ? (
+                <p>
+                  Cancellation of flash can proceed. Set ingest status to
+                  FLASH_CANCELLATION_IN_PROGRESS in SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Secondary instance status is not READY_TO_FLASH. Cannot
+                  proceed with cancellation.
+                </p>
+              )
+            }
+            actionButtonTitle="Update Ingest Instance Status"
+            buttonsEnabled={isReadyToFlash}
+            onActionButtonClick={async () =>
+              changeIngestInstanceStatus(
+                stateCode,
+                DirectIngestInstance.SECONDARY,
+                "FLASH_CANCELLATION_IN_PROGRESS"
               )
             }
           />
@@ -471,28 +471,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
-            title="Set status to FLASH_IN_PROGRESS"
-            description={
-              isReadyToFlash ? (
-                <p>
-                  Flash to primary can proceed. Set ingest status to
-                  FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Secondary instance status is not READY_TO_FLASH. Cannot
-                  &nbsp;proceed.
-                </p>
-              )
-            }
-            actionButtonTitle="Update Ingest Instance Status"
-            buttonsEnabled={isReadyToFlash}
-            onActionButtonClick={async () =>
-              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
-            }
-          />
-          <StyledStep
             title="Acquire PRIMARY Ingest Lock"
             description={
               <p>
@@ -520,6 +498,28 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+            }
+          />
+          <StyledStep
+            title="Set status to FLASH_IN_PROGRESS"
+            description={
+              isReadyToFlash ? (
+                <p>
+                  Flash to primary can proceed. Set ingest status to
+                  FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Secondary instance status is not READY_TO_FLASH. Cannot
+                  &nbsp;proceed.
+                </p>
+              )
+            }
+            actionButtonTitle="Update Ingest Instance Status"
+            buttonsEnabled={isReadyToFlash}
+            onActionButtonClick={async () =>
+              setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
             }
           />
           <StyledStep
