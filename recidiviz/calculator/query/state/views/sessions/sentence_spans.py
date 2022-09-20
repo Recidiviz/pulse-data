@@ -17,6 +17,7 @@
 """Spans when sentences were being served or pending served and already imposed"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -46,7 +47,7 @@ SENTENCE_SPANS_QUERY_TEMPLATE = f"""
             attr.sentences_preprocessed_id,
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
         UNNEST(offense_attributes) AS attr
-        WHERE attr.date_imposed != attr.completion_date
+        WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
     ),
     {create_sub_sessions_with_attributes("sentences")}
     SELECT
