@@ -31,7 +31,6 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateCharge,
-    StateCourtCase,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StateIncarcerationSentence,
@@ -76,10 +75,6 @@ def make_state_charge(**kwargs: Any) -> StateCharge:
     return StateCharge.new_with_defaults(
         state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs
     )
-
-
-def make_court_case(**kwargs: Any) -> StateCourtCase:
-    return StateCourtCase.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_agent(**kwargs: Any) -> StateAgent:
@@ -346,10 +341,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                         external_id="ID_1",
                         charges=[
                             # Placeholder charge
-                            make_state_charge(
-                                # Placeholder court case
-                                court_case=make_court_case(),
-                            )
+                            make_state_charge()
                         ],
                     )
                 ],
@@ -363,10 +355,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                         external_id="ID_1",
                         charges=[
                             # Placeholder charge
-                            make_state_charge(
-                                # Placeholder court case
-                                court_case=make_court_case(),
-                            )
+                            make_state_charge()
                         ],
                     )
                 ],
@@ -391,9 +380,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                         external_id="ID_1",
                         charges=[
                             # Placeholder charge
-                            make_state_charge(
-                                court_case=make_court_case(county_code="COUNTY"),
-                            )
+                            make_state_charge()
                         ],
                     )
                 ],
@@ -407,9 +394,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                         external_id="ID_1",
                         charges=[
                             # Placeholder charge
-                            make_state_charge(
-                                court_case=make_court_case(county_code="COUNTY"),
-                            )
+                            make_state_charge()
                         ],
                     )
                 ],
@@ -425,9 +410,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
                         external_id="ID_1",
                         charges=[
                             # Placeholder charge
-                            make_state_charge(
-                                court_case=make_court_case(county_code="COUNTY"),
-                            )
+                            make_state_charge()
                         ],
                     )
                 ],

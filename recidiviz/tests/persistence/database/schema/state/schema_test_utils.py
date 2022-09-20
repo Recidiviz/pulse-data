@@ -19,7 +19,6 @@ prepopulated.
 """
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -187,15 +186,6 @@ def generate_charge(person, **kwargs) -> schema.StateCharge:
     }
     args.update(kwargs)
     return schema.StateCharge(person=person, **args)
-
-
-def generate_court_case(person, **kwargs) -> schema.StateCourtCase:
-    args = {
-        "status": StateCourtCaseStatus.PRESENT_WITHOUT_INFO.value,
-        "state_code": _STATE_CODE,
-    }
-    args.update(kwargs)
-    return schema.StateCourtCase(person=person, **args)
 
 
 def generate_assessment(person, **kwargs) -> schema.StateAssessment:

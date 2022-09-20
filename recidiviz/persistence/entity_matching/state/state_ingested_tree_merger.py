@@ -198,8 +198,8 @@ class StateIngestedTreeMerger:
     ) -> List[List[EntityT]]:
         """Buckets the list of ingested placeholder entities into groups that should be
         merged into the same entity, based on their direct children. If two placeholders
-        have hydrated children on a 1:1 relationship field (e.g. StateCourtCase <->
-        StateAgent) then they cannot be merged because their children cannot be merged.
+        have hydrated children on a 1:1 relationship field then they cannot be merged
+        because their children cannot be merged.
 
         This function assumes each entity in the list has an identical parent chain that
         will be merged.

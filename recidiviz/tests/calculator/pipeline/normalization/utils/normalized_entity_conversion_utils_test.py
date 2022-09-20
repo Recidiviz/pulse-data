@@ -61,7 +61,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
     FakeNormalizedStateCharge,
-    FakeNormalizedStateCourtCase,
     FakeNormalizedStateSupervisionSentence,
     get_normalized_violation_tree,
     get_violation_tree,
@@ -247,7 +246,6 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         [
             FakeNormalizedStateSupervisionSentence,
             FakeNormalizedStateCharge,
-            FakeNormalizedStateCourtCase,
         ],
     )
     def test_convert_entity_trees_to_normalized_versions_invalid_subtree(self) -> None:

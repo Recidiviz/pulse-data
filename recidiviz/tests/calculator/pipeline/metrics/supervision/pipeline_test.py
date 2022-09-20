@@ -273,7 +273,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id,
             charge_id=1234523,
-            court_case=None,
         )
 
         assessment = schema.StateAssessment(
@@ -651,7 +650,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             person_id=fake_person_id,
             state_code="US_XX",
             charge_id=1234523,
-            court_case=None,
         )
 
         ssvr = schema.StateSupervisionViolationResponse(
@@ -896,7 +894,6 @@ class TestSupervisionPipeline(unittest.TestCase):
         charge = database_test_utils.generate_test_charge(
             person_id=fake_person_id_1,
             charge_id=1234523,
-            court_case=None,
         )
 
         supervision_violation_response = (

@@ -63,7 +63,6 @@ def convert_ingest_info_to_proto(
     ] = {}
     state_early_discharge_map: Dict[str, ingest_info.StateEarlyDischarge] = {}
     state_charge_map: Dict[str, ingest_info.StateCharge] = {}
-    state_court_case_map: Dict[str, ingest_info.StateCourtCase] = {}
     state_incarceration_period_map: Dict[str, ingest_info.StateIncarcerationPeriod] = {}
     state_supervision_period_map: Dict[str, ingest_info.StateSupervisionPeriod] = {}
     state_case_type_map: Dict[str, ingest_info.StateSupervisionCaseTypeEntry] = {}
@@ -145,28 +144,6 @@ def convert_ingest_info_to_proto(
                 "state_charges", state_charge, "state_charge_id", state_charge_map
             )
             parent_proto.state_charge_ids.append(proto_state_charge.state_charge_id)
-
-            if state_charge.state_court_case:
-                state_court_case = state_charge.state_court_case
-
-                proto_court_case = _populate_proto(
-                    "state_court_cases",
-                    state_court_case,
-                    "state_court_case_id",
-                    state_court_case_map,
-                )
-                proto_state_charge.state_court_case_id = (
-                    proto_court_case.state_court_case_id
-                )
-
-                if state_court_case.judge:
-                    proto_judge = _populate_proto(
-                        "state_agents",
-                        state_court_case.judge,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_court_case.judge_id = proto_judge.state_agent_id
 
     for state_person in ingest_info_py.state_people:
         proto_state_person = _populate_proto(
@@ -554,10 +531,6 @@ def convert_proto_to_ingest_info(
         _proto_to_py(state_charge, ingest_info.StateCharge, "state_charge_id")
         for state_charge in proto.state_charges
     )
-    state_court_case_map: Dict[str, ingest_info.StateCourtCase] = dict(
-        _proto_to_py(court_case, ingest_info.StateCourtCase, "state_court_case_id")
-        for court_case in proto.state_court_cases
-    )
     state_incarceration_period_map: Dict[
         str, ingest_info.StateIncarcerationPeriod
     ] = dict(
@@ -688,11 +661,6 @@ def convert_proto_to_ingest_info(
             for proto_id in proto_sentence.state_early_discharge_ids
         ]
 
-    for proto_court_case in proto.state_court_cases:
-        state_court_case = state_court_case_map[proto_court_case.state_court_case_id]
-        if proto_court_case.judge_id:
-            state_court_case.judge = state_agent_map[proto_court_case.judge_id]
-
     for proto_incident in proto.state_incarceration_incidents:
         incarceration_incident = state_incarceration_incident_map[
             proto_incident.state_incarceration_incident_id
@@ -792,14 +760,6 @@ def convert_proto_to_ingest_info(
             state_incarceration_incident_outcome_map[proto_id]
             for proto_id in proto_incarceration_incident.state_incarceration_incident_outcome_ids
         ]
-
-    # Wire court cases and state bonds to respective state charges
-    for proto_state_charge in proto.state_charges:
-        state_charge = state_charge_map[proto_state_charge.state_charge_id]
-        if proto_state_charge.state_court_case_id:
-            state_charge.state_court_case = state_court_case_map[
-                proto_state_charge.state_court_case_id
-            ]
 
     # Wire all state charges to respective sentence types
     for proto_incarceration_sentence in proto.state_incarceration_sentences:

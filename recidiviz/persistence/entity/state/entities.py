@@ -42,10 +42,6 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
-from recidiviz.common.constants.state.state_court_case import (
-    StateCourtCaseStatus,
-    StateCourtType,
-)
 from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
@@ -345,66 +341,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a StateCourtCase associated with some set of StateCharges"""
-
-    # State Code
-    # Location of the court itself
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Status
-    status: Optional[StateCourtCaseStatus] = attr.ib(
-        validator=attr_validators.is_opt(StateCourtCaseStatus)
-    )
-    status_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Type
-    court_type: Optional[StateCourtType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateCourtType)
-    )
-    court_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Attributes
-    #   - When
-    date_convicted: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-    next_court_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-
-    #   - Where
-    # County where the court case took place
-    county_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    # Area of jurisdictional coverage of the court which tried the case, may be the
-    # same as the county, the entire state, or some jurisdiction out of the state.
-    judicial_district_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    #   - Who
-    # See |judge| below
-
-    # Primary key - Only optional when hydrated in the parsing layer, before we have
-    # written this entity to the persistence layer
-    court_case_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-    charges: List["StateCharge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-
-
-@attr.s(eq=False, kw_only=True)
 class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateCharge against a particular StatePerson."""
 
@@ -500,7 +436,6 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    court_case: Optional["StateCourtCase"] = attr.ib(default=None)
 
     incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
