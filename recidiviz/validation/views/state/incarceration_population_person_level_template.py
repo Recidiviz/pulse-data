@@ -34,6 +34,7 @@ external_data AS (
   SELECT
     region_code,
     person_external_id,
+    external_id_type,
     date_of_stay,
     CASE region_code
       WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
@@ -51,9 +52,8 @@ external_data AS (
     FROM external_data
     LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
-    -- Limit to incarceration IDs in states that have multiple
-    AND (region_code != 'US_ND' OR id_type = 'US_ND_ELITE')
-    AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
+    -- Limit to the correct ID type in states that have multiple
+    AND external_data.external_id_type = all_state_person_ids.id_type
 ),
 sanitized_internal_metrics AS (
   SELECT
