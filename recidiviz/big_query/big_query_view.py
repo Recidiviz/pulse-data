@@ -298,6 +298,17 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         """Returns the address of this view, with no dataset overrides applied."""
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
 
+    @property
+    def table_for_query(self) -> BigQueryAddress:
+        """The (dataset_id, table_id) to use when querying from this view.
+
+        Will return the materialized view address when available, otherwise the plain
+        view address."""
+
+        if self.materialized_address:
+            return self.materialized_address
+        return self.address
+
     def build(
         self,
         *,

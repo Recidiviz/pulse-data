@@ -15,7 +15,7 @@ tables:
       - date_of_stay
       - facility
       - population_count
-  - name: incarceration_population_person_level
+  - name: incarceration_population_person_level_materialized
     columns:
       - region_code
       - person_external_id

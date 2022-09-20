@@ -171,13 +171,24 @@ def query_template(date_of_data: date) -> str:
     return f"SELECT Offender_Number AS person_external_id, DATE('{date_of_data.strftime('%Y-%m-%d')}') AS date_of_stay, Location AS facility FROM `{{project_id}}.{{us_mi_validation_oneoff_dataset}}.orc_report_{date_of_data.strftime('%Y%m%d')}` WHERE Unique = 'Yes'\n"
 
 
-VIEW_QUERY_TEMPLATE = "UNION ALL\n".join(
+_SUBQUERY_TEMPLATE = "UNION ALL\n".join(
     [query_template(d) for d in DATES_WITH_AVAILABLE_DATA]
 )
 
-OOR_REPORT_UNIFIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+VIEW_QUERY_TEMPLATE = f"""
+SELECT
+  'US_MI' as region_code,
+  person_external_id,
+  date_of_stay,
+  facility
+FROM (
+    {_SUBQUERY_TEMPLATE}
+)
+"""
+
+US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.validation_dataset_for_state(StateCode.US_MI),
-    view_id="oor_report_unified",
+    view_id="incarceration_population_person_level",
     description="A unified view of all OOR reports that report per person information for MIDOC.",
     view_query_template=VIEW_QUERY_TEMPLATE,
     should_materialize=True,
@@ -188,4 +199,4 @@ OOR_REPORT_UNIFIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        OOR_REPORT_UNIFIED_VIEW_BUILDER.build_and_print()
+        US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
