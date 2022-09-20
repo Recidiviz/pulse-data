@@ -368,9 +368,12 @@ def _create_managed_dataset_and_deploy_views(
         v: BigQueryView, parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus]
     ) -> CreateOrUpdateViewStatus:
         """Returns True if this view or any of its parents were updated."""
-        return _create_or_update_view_and_materialize_if_necessary(
-            bq_client, v, parent_results, force_materialize
-        )
+        try:
+            return _create_or_update_view_and_materialize_if_necessary(
+                bq_client, v, parent_results, force_materialize
+            )
+        except Exception as e:
+            raise ValueError(f"Error creating or updating view [{v.address}]") from e
 
     dag_walker.process_dag(process_fn)
 
