@@ -116,10 +116,10 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
               .ingestRerunRawDataSourceInstance
           );
           if (res.status === 200) {
-            message.success(`Start Ingest Rerun Succeeded!`);
+            message.success(`Start Ingest Rerun Succeeded!`, 7);
           } else {
             const text = await res.text();
-            message.error(`Start Ingest Rerun Failed: ${text}`);
+            message.error(`Start Ingest Rerun Failed: ${text}`, 7);
           }
         }
         setActionConfirmed();
