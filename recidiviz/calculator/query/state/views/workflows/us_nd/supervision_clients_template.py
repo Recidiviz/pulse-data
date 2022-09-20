@@ -123,7 +123,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS DATE) AS last_payment_date,
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
-            CAST(NULL AS BOOLEAN) AS compliant_reporting_eligible,
+            CAST(NULL AS STRING) AS compliant_reporting_eligible,
             CAST(NULL AS STRING) AS district,
         FROM clients
         LEFT JOIN eligibility USING(person_external_id)
