@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.criteria.general import (
     negative_ua_within_90_days,
     no_felony_within_24_months,
     no_violent_misdemeanor_within_12_months,
+    supervision_not_past_full_term_completion_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_id import (
     income_verified_within_3_months,
@@ -49,6 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=parole_dual_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         parole_dual_supervision_past_early_discharge_date.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         negative_ua_within_90_days.VIEW_BUILDER,
         lsir_level_low_moderate_for_x_days.VIEW_BUILDER,
         no_felony_within_24_months.VIEW_BUILDER,
