@@ -84,7 +84,7 @@ SELECT
 FROM
     `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
 WHERE
-    compartment_level_1 IN ("LIBERTY", "SUPERVISION")
+    compartment_level_1 IN ("LIBERTY", "PENDING_CUSTODY", "SUPERVISION")
 GROUP BY 1, 2, 3, 4
 
 UNION ALL

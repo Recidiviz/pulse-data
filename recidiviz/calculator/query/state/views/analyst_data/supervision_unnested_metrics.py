@@ -129,7 +129,12 @@ WITH date_array AS (
         `{client_period_table}`
     WHERE
         {level} IS NOT NULL
-        {'AND compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")' if level_name == "state" else ""}
+        {'''-- require that clients be associated with a compartment that is part of the
+        -- target "supervision" population for all aggregated metrics
+        AND compartment_level_1 = "SUPERVISION"
+        AND compartment_level_2 IN (
+            "COMMUNITY_CONFINEMENT", "DUAL", "INFORMAL_PROBATION", "PAROLE", "PROBATION"
+        )''' if level_name == "state" else ""}
 )
 
 /* 
@@ -147,15 +152,30 @@ or to no entity, e.g. if the client is released or incarcerated.
 , {level_name}_client_periods_unnested AS (
     SELECT
         {index_cols},
-        person_id,
+        a.person_id,
         date,
+        a.assignment_date AS assignment_start_date,
+        a.end_date AS assignment_end_date,
     FROM
-        {level_name}_assignments
+        {level_name}_assignments a
     INNER JOIN
         date_array
     ON
         -- allow event to fall on (exclusive) end_date
-        date BETWEEN assignment_date AND IFNULL(end_date, "9999-01-01")
+        date BETWEEN assignment_date AND IFNULL(a.end_date, "9999-01-01")
+    {'''-- require that clients be associated with a compartment that is part of the
+    -- target "supervision" population for all aggregated metrics
+    INNER JOIN (SELECT * EXCEPT (state_code) FROM
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    ) b ON
+        a.person_id = b.person_id
+        AND date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
+    WHERE
+        compartment_level_1 = "SUPERVISION"
+        AND compartment_level_2 IN (
+            "COMMUNITY_CONFINEMENT", "DUAL", "INFORMAL_PROBATION", "PAROLE", "PROBATION"
+        )''' if level_name != "state" else ""
+    }
 )
 
 #################
@@ -195,23 +215,21 @@ or to no entity, e.g. if the client is released or incarcerated.
         
         -- transitions from supervision
         COUNT(DISTINCT IF(
-            event = "LIBERTY_START"
-            AND JSON_EXTRACT_SCALAR(event_attributes, "$.inflow_from_level_1") IN 
-                ("SUPERVISION", "SUPERVISION_OUT_OF_STATE"),
+            event = "LIBERTY_START",
             person_id, NULL
         )) AS successful_completions,
         COUNT(DISTINCT IF(
-            event = "INCARCERATION_START"
-            AND JSON_EXTRACT_SCALAR(event_attributes, "$.inflow_from_level_1") IN 
-                ("SUPERVISION", "SUPERVISION_OUT_OF_STATE"),
+            event = "INCARCERATION_START",
             person_id, NULL
         )) AS incarcerations_all,
         COUNT(DISTINCT IF(
-            event = "INCARCERATION_START_TEMPORARY"
-            AND JSON_EXTRACT_SCALAR(event_attributes, "$.inflow_from_level_1") IN 
-                ("SUPERVISION", "SUPERVISION_OUT_OF_STATE"),
+            event = "INCARCERATION_START_TEMPORARY",
             person_id, NULL
         )) AS incarcerations_temporary,
+        COUNT(DISTINCT IF(
+            event = "PENDING_CUSTODY_START",
+            person_id, NULL
+        )) AS pending_custody_starts,
         
         -- absconsions/bench warrants
         COUNT(DISTINCT IF(
@@ -417,18 +435,9 @@ of the metric. In the CTEs below, we require that the date of metric observation
         date,
 
         -- compartment_sessions-derived metrics
-        COUNT(DISTINCT IF(
-            span = "COMPARTMENT_SESSION"
-            AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") = 
-                "SUPERVISION",
-            ps.person_id, NULL
-        )) AS daily_population,
-        COUNT(DISTINCT IF(
-            span = "COMPARTMENT_SESSION"
-            AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") = 
-                "SUPERVISION_OUT_OF_STATE",
-            ps.person_id, NULL
-        )) AS population_out_of_state,
+        -- we do not need to filter to supervision compartments because that's already 
+        -- done in `{level_name}_client_periods_unnested`
+        COUNT(DISTINCT ps.person_id) AS daily_population,
         COUNT(DISTINCT IF(
             span = "COMPARTMENT_SESSION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") IN
@@ -443,20 +452,10 @@ of the metric. In the CTEs below, we require that the date of metric observation
         )) AS population_probation,
         COUNT(DISTINCT IF(
             span = "COMPARTMENT_SESSION"
-            AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") =
-                "SUPERVISION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") =
                 "COMMUNITY_CONFINEMENT",
             ps.person_id, NULL
         )) AS population_community_confinement,
-        COUNT(DISTINCT IF(
-            span = "COMPARTMENT_SESSION"
-            AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_1") IN
-                ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
-            AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") IN (
-                "BENCH_WARRANT", "ABSCONSION", "INTERNAL_UNKNOWN"
-            ), ps.person_id, NULL
-        )) AS population_other_supervision_type,
 
         -- person_demographics-derived metrics
         COUNT(DISTINCT IF(
@@ -615,22 +614,17 @@ of the metric. In the CTEs below, we require that the date of metric observation
             AND DATE_DIFF(date, ps.start_date, DAY) > 365, ps.person_id, NULL
         )) AS population_no_completed_contact_past_1yr,
 
+    -- assignment here is to {level_name}
     FROM
-        date_array d
-    INNER JOIN
-        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` ps
-    ON
-        d.date BETWEEN ps.start_date AND IFNULL(
+        {level_name}_client_periods_unnested assign
+    INNER JOIN (
+        SELECT * EXCEPT(state_code) FROM
+        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized`
+    ) ps ON
+        assign.person_id = ps.person_id
+        AND date BETWEEN ps.start_date AND IFNULL(
             DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01"
         )
-    -- assignment here is date person assigned to {level_name}
-    INNER JOIN (
-        SELECT * EXCEPT(state_code) FROM {level_name}_assignments
-    ) assign ON
-        d.date BETWEEN assign.assignment_date AND IFNULL(
-            DATE_SUB(assign.end_date, INTERVAL 1 DAY), "9999-01-01"
-        )
-        AND ps.person_id = assign.person_id
         
     GROUP BY {index_cols}, date
 
@@ -661,22 +655,18 @@ of the metric. In the CTEs below, we require that the date of metric observation
             assign.person_id, NULL
         )) AS population_no_lsir_score_at_assignment,
         
+    -- assignment here is to {level_name}
     FROM
-        date_array d
+        {level_name}_client_periods_unnested assign
     INNER JOIN (
-        SELECT * EXCEPT(state_code) FROM {level_name}_assignments
-    ) assign ON
-        d.date BETWEEN assign.assignment_date AND IFNULL(
-            DATE_SUB(assign.end_date, INTERVAL 1 DAY), "9999-01-01"
-        )
-    INNER JOIN
-        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` ps
-    ON
+        SELECT * EXCEPT(state_code) FROM
+        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized`
+    ) ps ON
+        assign.person_id = ps.person_id
         -- next line is what's different from person_spans_agg
-        assign.assignment_date BETWEEN ps.start_date AND IFNULL(
+        AND date BETWEEN ps.start_date AND IFNULL(
             DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01"
         )
-        AND assign.person_id = ps.person_id
         
     GROUP BY {index_cols}, date
         
