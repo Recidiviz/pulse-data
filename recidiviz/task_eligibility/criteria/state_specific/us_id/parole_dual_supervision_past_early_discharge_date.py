@@ -17,12 +17,14 @@
 """Defines a criteria span view that shows spans of time during which someone is past
 their parole/dual supervision early discharge date, computed using US_ID specific logic.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,19 +33,104 @@ _CRITERIA_NAME = "US_ID_PAROLE_DUAL_SUPERVISION_PAST_EARLY_DISCHARGE_DATE"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is past their parole/dual supervision early discharge date, computed using
-US_ID specific logic."""
+US_ID specific logic.
+- If convicted of nonviolent crime, served at least one (1) year on parole
+- If convicted of sex/violent offense, served at least one-third (1/3) of their remaining sentence on parole.
+- If sentenced to a life term must serve at least five (5) years on parole
+"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(
-    'PAROLE' AS sentence_type,
-    DATE("9999-12-31") AS eligible_date
-))"""
+_QUERY_TEMPLATE = f"""
+WITH parole_starts AS (
+  SELECT
+    state_code,
+    person_id,
+    start_date AS parole_start_date,
+    compartment_level_2 AS supervision_type,
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_{{sessions_dataset}}_materialized`
+  WHERE state_code = "US_ID"
+    AND compartment_level_2 IN ("PAROLE", "DUAL")
+    AND inflow_from_level_1 = "INCARCERATION"
+),
+sentences AS (
+  SELECT
+      span.state_code,
+      span.person_id,
+      span.start_date,
+      span.end_date,
+      LOGICAL_OR(sent.is_violent OR sent.is_sex_offense) AS any_violent_or_sex_offense,
+      LOGICAL_OR(sent.life_sentence) AS any_life_sentence,
+      MAX(sent.projected_completion_date_max) AS projected_completion_date,
+  FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+  UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+  INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+    USING (state_code, person_id, sentences_preprocessed_id)
+  WHERE state_code = "US_ID"
+  GROUP BY 1, 2, 3, 4
+),
+parole_starts_with_sentences AS (
+  SELECT
+    s.*,
+    parole_start_date,
+  FROM sentences s
+  INNER JOIN parole_starts p
+    ON p.state_code = s.state_code
+    AND p.person_id = s.person_id
+    AND p.parole_start_date < {nonnull_end_date_clause('DATE_SUB(s.end_date, INTERVAL 1 DAY)')}
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY s.state_code, s.person_id, s.start_date
+    -- Pick the most recent parole start date
+    ORDER BY parole_start_date DESC
+  ) = 1
+),
+critical_date_spans AS (
+  SELECT
+    state_code,
+    person_id,
+    start_date AS start_datetime,
+    end_date AS end_datetime,
+    CASE
+      WHEN any_life_sentence THEN DATE_ADD(parole_start_date, INTERVAL 5 YEAR)
+      WHEN any_violent_or_sex_offense
+        THEN DATE_ADD(
+          parole_start_date,
+          INTERVAL CAST(
+            CEILING(DATE_DIFF(projected_completion_date, parole_start_date, DAY) / 3)
+          AS INT64) DAY
+        )
+      ELSE DATE_ADD(parole_start_date, INTERVAL 1 YEAR)
+    END AS critical_date
+  FROM parole_starts_with_sentences
+),
+{critical_date_has_passed_spans_cte()}
+SELECT
+    cd.state_code,
+    cd.person_id,
+    cd.start_date,
+    cd.end_date,
+    cd.critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(
+        sup_type.supervision_type AS sentence_type,
+        cd.critical_date AS eligible_date
+    )) AS reason,
+FROM critical_date_has_passed_spans cd
+LEFT JOIN parole_starts sup_type
+    ON sup_type.state_code = cd.state_code
+    AND sup_type.person_id = cd.person_id
+    AND sup_type.parole_start_date < {nonnull_end_date_clause('cd.end_date')}
+-- Prioritize the latest supervision session
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY state_code, person_id, cd.start_date
+    ORDER BY parole_start_date DESC
+) = 1
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_ID,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 
