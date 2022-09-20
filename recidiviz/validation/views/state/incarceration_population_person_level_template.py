@@ -39,7 +39,7 @@ external_data AS (
       WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
       ELSE facility
     END AS facility
-  FROM `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_person_level`
+  FROM `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_person_level_materialized`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
     SELECT

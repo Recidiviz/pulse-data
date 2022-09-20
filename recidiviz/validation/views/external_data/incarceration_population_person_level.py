@@ -17,15 +17,20 @@
 """A view containing external data for person level incarceration population to validate against."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
+from recidiviz.validation.views.external_data import regions as external_data_regions
 
-_QUERY_TEMPLATE = """
+# This gets data for states with validation datasets that are still managed outside
+# of version control.
+_LEGACY_QUERY_TEMPLATE = """
 -- Don't use facility from this ID data as it groups most of the jails together.
 SELECT region_code, person_external_id, date_of_stay, NULL as facility
 FROM `{project_id}.{us_id_validation_dataset}.incarceration_population_person_level_raw`
@@ -82,47 +87,72 @@ FROM (
   UNION ALL
   SELECT control_number as person_external_id, LAST_DAY(DATE '2022-01-01', MONTH) as date_of_stay, CurrLoc_Cd as facility from `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_population`
 )
-UNION ALL
-SELECT
-  'US_MI' as region_code,
-  person_external_id,
-  date_of_stay,
-  facility
-FROM `{project_id}.{us_mi_validation_dataset}.oor_report_unified_materialized`
-UNION ALL
-SELECT
-    region_code, person_external_id, date_of_stay, facility
-FROM `{project_id}.{us_co_validation_dataset}.incarceration_population_person_level` 
- """
+"""
 
-INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    view_id="incarceration_population_person_level",
-    view_query_template=_QUERY_TEMPLATE,
-    description="Contains external data for person level incarceration population to "
-    "validate against. See http://go/external-validations for instructions on adding "
-    "new data.",
-    us_co_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_CO
-    ),
-    us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ID
-    ),
-    us_me_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ME
-    ),
-    us_mi_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_MI
-    ),
-    us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ND
-    ),
-    us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_PA
-    ),
-    us_tn_raw_data_up_to_date_dateset=raw_latest_views_dataset_for_region("us_tn"),
-)
+VIEW_ID = "incarceration_population_person_level"
+
+
+def get_incarceration_population_person_level_view_builder() -> SimpleBigQueryViewBuilder:
+    region_views = BigQueryViewCollector.collect_view_builders_in_module(
+        builder_type=SimpleBigQueryViewBuilder,
+        view_dir_module=external_data_regions,
+        recurse=True,
+        view_builder_attribute_name_regex=".*_VIEW_BUILDER",
+    )
+
+    region_subqueries = []
+    region_dataset_params = {}
+    # Gather all region views with a matching view id and union them in.
+    for region_view in region_views:
+        if region_view.view_id == VIEW_ID and region_view.should_deploy_in_project(
+            metadata.project_id()
+        ):
+            dataset_param = f"{region_view.table_for_query.dataset_id}_dataset"
+            region_dataset_params[
+                dataset_param
+            ] = region_view.table_for_query.dataset_id
+            region_subqueries.append(
+                f"""
+                SELECT
+                  region_code, person_external_id, date_of_stay, facility
+                FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
+                """
+            )
+
+    query_template = "\nUNION ALL\n".join(region_subqueries + [_LEGACY_QUERY_TEMPLATE])
+
+    return SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
+        view_id=VIEW_ID,
+        view_query_template=query_template,
+        description="Contains external data for person level incarceration population to "
+        "validate against. See http://go/external-validations for instructions on adding "
+        "new data.",
+        should_materialize=True,
+        # Specify default values here so that mypy knows these are not used in the
+        # dictionary below.
+        projects_to_deploy=None,
+        materialized_address_override=None,
+        should_deploy_predicate=None,
+        clustering_fields=None,
+        # Query format arguments
+        us_id_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_ID
+        ),
+        us_me_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_ME
+        ),
+        us_nd_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_ND
+        ),
+        us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_PA
+        ),
+        us_tn_raw_data_up_to_date_dateset=raw_latest_views_dataset_for_region("us_tn"),
+        **region_dataset_params,
+    )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        get_incarceration_population_person_level_view_builder().build_and_print()
