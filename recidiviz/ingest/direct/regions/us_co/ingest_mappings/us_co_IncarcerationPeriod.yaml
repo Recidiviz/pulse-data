@@ -208,25 +208,25 @@ output:
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - "79" # Returned to ISP-I - TODO(#13602) Update after schema change
-                  - "80" # Escaped - TODO(#13602) Update after schema change
                   - "81" # Out to Court - TODO(#13602) Update after schema change
                   - "82" # Out on Escorted Leave - TODO(#13602) Update after schema change
                   - "83" # Out to Hospital - TODO(#13602) Update after schema change
                   - "84" # Out on Bond - TODO(#13602) Update after schema change
                   - "86" # Out on Furlough - TODO(#13602) Update after schema change
                   - "8B" # Out on Work Crew - TODO(#13602) Update after schema change
-                  - "8C" # Absent without Leave (AWOL) - TODO(#13602) Update after schema change
-                  - "8E" # AWOL from ISP-I - TODO(#13602) Update after schema change
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - "33" # Escapee in Custody - Other Jurisdiction (seen as Escapee in CO)
+                  - "8C" # Absent without Leave (AWOL)
+                  - "8E" # AWOL from ISP-I
+                  - "80" # Escaped
+                  - "56" # Unauthorized Release - TODO(#13602) Update after schema change includes erroneous release
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - "01" # New CO Commitment
                   - "03" # YOS Commitment
                   - "06" # Recommitment
-                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE:
-                  - "56" # Unauthorized Release
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                   - "20" # Return from Escape
                   - "2C" # Returned from AWOL
-                  - "33" # Escapee in Custody - Other Jurisdiction
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
                   - "21" # Returned from Court
                   - "22" # Returned from Escorted Leave
