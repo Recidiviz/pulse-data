@@ -21,7 +21,6 @@ when run anywhere else.
 This script runs all downgrade migrations for a given state database, so that when
 new data is subsequently imported, it will not conflict due to duplicate definitions
 of enums for instance.
-
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.migrations.purge_state_db \
@@ -33,13 +32,19 @@ python -m recidiviz.tools.migrations.purge_state_db \
 import argparse
 import logging
 
+import alembic
+
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.git import get_hash_of_deployed_commit
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.utils.script_helpers import (
-    prompt_for_confirmation,
-    run_command_streaming,
+from recidiviz.persistence.database.schema.state.schema import StateAgent, StatePerson
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
 )
+from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -104,6 +109,7 @@ def main(
         f"This script will PURGE all data for for [{state_code.value}] in DB [{db_key.db_name}].",
         purge_str,
     )
+
     if purge_schema:
         purge_schema_str = (
             f"RUN {state_code.value} DOWNGRADE MIGRATIONS IN "
@@ -115,33 +121,54 @@ def main(
             purge_schema_str,
         )
 
-    commit_hash = get_hash_of_deployed_commit(project_id=metadata.project_id())
-    remote_commands = [
-        "cd ~/pulse-data",
-        # Git routes a lot to stderr that isn't really an error - redirect to stdout.
-        "git fetch --all --tags --prune --prune-tags 2>&1",
-        f"git checkout {commit_hash} 2>&1",
-        (
-            "pipenv run python -m recidiviz.tools.migrations.purge_state_db_remote_helper "
-            f"--state-code {state_code.value} "
-            f"--ingest-instance {ingest_instance.value} "
-            f"--project-id {metadata.project_id()} "
-            f"--commit-hash {commit_hash} "
-            f"{'--purge-schema' if purge_schema else ''} "
-        ),
-    ]
-    remote_command = " && ".join(remote_commands)
-    local_command = (
-        f"gcloud compute ssh prod-data-client --project recidiviz-123 --zone=us-east4-c "
-        f'--command "{remote_command}"'
-    )
+    with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+        db_key = ingest_instance.database_key_for_state(state_code)
 
-    logging.info(
-        "Running purge command on remote `prod-data-client`. "
-        "You will be prompted for your `prod-data-client` password."
-    )
-    for stdout_line in run_command_streaming(local_command):
-        print(stdout_line.rstrip())
+        with SessionFactory.for_proxy(db_key) as session:
+            tables_to_truncate = [
+                StatePerson.__tablename__,
+                StateAgent.__tablename__,
+            ]
+            for table_name in tables_to_truncate:
+                command = f"TRUNCATE TABLE {table_name} CASCADE;"
+                logging.info('Running query ["%s"]. This may take a while...', command)
+                session.execute(command)
+
+            logging.info("Done running truncate commands.")
+
+        if purge_schema:
+            with SessionFactory.for_proxy(db_key) as purge_session:
+                overridden_env_vars = None
+
+                try:
+                    logging.info("Purging schema...")
+
+                    overridden_env_vars = (
+                        SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                            database_key=db_key,
+                            using_proxy=True,
+                            migration_user=True,
+                        )
+                    )
+
+                    # Alembic normally hijacks logging with its own logging, which means
+                    # we would stop sending output to stdout. We set the 'configure_logger'
+                    # flag here to turn off all logger configuration in the alembic env.py files.
+                    config = alembic.config.Config(
+                        db_key.alembic_file, attributes={"configure_logger": False}
+                    )
+                    alembic.command.downgrade(config, "base")
+
+                    # We need to manually delete alembic_version because it's leftover after
+                    # the downgrade migrations
+                    purge_session.execute("DROP TABLE alembic_version;")
+                finally:
+                    if overridden_env_vars:
+                        local_postgres_helpers.restore_local_env_vars(
+                            overridden_env_vars
+                        )
+
+            logging.info("Purge complete.")
 
     logging.info("Script complete.")
 
