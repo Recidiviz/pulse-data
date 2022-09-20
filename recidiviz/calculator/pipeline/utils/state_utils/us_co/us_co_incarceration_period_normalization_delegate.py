@@ -15,12 +15,39 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_CO implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+import datetime
+from typing import Optional
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsCoIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_CO implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def incarceration_facility_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[str]:
+        """If there is an incarceration period starting with an escape code and the return date is 72 hours after the
+        start date, or there is no end date, then we assume the period's facility was fugitive inmate."""
+
+        if incarceration_period.admission_date is None:
+            return incarceration_period.facility
+
+        delta = incarceration_period.duration.timedelta()
+
+        if (
+            incarceration_period.admission_reason
+            is StateIncarcerationPeriodAdmissionReason.ESCAPE
+        ) and (delta >= datetime.timedelta(days=3)):
+            incarceration_period.facility = "FUG-INMATE"
+
+        return incarceration_period.facility

@@ -115,6 +115,15 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         By default, uses the one on the incarceration period as ingested."""
         return incarceration_period.admission_reason
 
+    def incarceration_facility_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[str]:
+        """States may have specific logic that determines the facility for an
+        incarceration period.
+        By default, uses the one on the incarceration period as ingested."""
+        return incarceration_period.facility
+
     def get_pfi_info_for_period_if_commitment_from_supervision(  # pylint: disable=unused-argument
         self,
         incarceration_period_list_index: int,
@@ -1181,6 +1190,10 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 self.normalization_delegate.incarceration_admission_reason_override(
                     ip, incarceration_sentences
                 )
+            )
+            # for facility
+            ip.facility = self.normalization_delegate.incarceration_facility_override(
+                ip
             )
             updated_periods.append(ip)
         return updated_periods

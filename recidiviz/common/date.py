@@ -131,6 +131,9 @@ class DateRange(PotentiallyOpenDateRange):
 
         return months_range_overlaps
 
+    def timedelta(self) -> datetime.timedelta:
+        return self.upper_bound_exclusive_date - self.lower_bound_inclusive_date
+
     @classmethod
     def for_year_of_date(cls, date: datetime.date) -> "DateRange":
         return cls.for_year(date.year)

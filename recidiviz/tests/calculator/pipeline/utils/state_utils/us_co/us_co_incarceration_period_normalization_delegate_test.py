@@ -16,11 +16,18 @@
 #  =============================================================================
 """Tests us_co_incarceration_period_normalization_delegate.py."""
 import unittest
+from datetime import date
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_incarceration_period_normalization_delegate import (
     UsCoIncarcerationNormalizationDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 _STATE_CODE = StateCode.US_CO.value
 
@@ -32,3 +39,72 @@ class TestUsCoIncarcerationNormalizationDelegate(unittest.TestCase):
         self.delegate = UsCoIncarcerationNormalizationDelegate()
 
     # ~~ Add new tests here ~~
+    def test_facility_override_fugitive_inmate_closed(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            facility="JAIL BCKLG",
+            admission_date=date(2010, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ESCAPE,
+            release_date=date(2012, 12, 25),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        actual_facility = self.delegate.incarceration_facility_override(
+            incarceration_period
+        )
+        self.assertEqual(actual_facility, "FUG-INMATE")
+
+    def test_facility_override_fugitive_inmate_open(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            external_id="2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            facility="COMMUNITY CORRECTIONS",
+            admission_date=date(2022, 2, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ESCAPE,
+        )
+
+        actual_facility = self.delegate.incarceration_facility_override(
+            incarceration_period
+        )
+        self.assertEqual(actual_facility, "FUG-INMATE")
+
+    def test_facility_override_not_3days(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1117,
+            external_id="2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            facility="JAIL BCKLG",
+            admission_date=date(2021, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ESCAPE,
+            release_date=date(2021, 12, 22),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        actual_facility = self.delegate.incarceration_facility_override(
+            incarceration_period
+        )
+        self.assertEqual(actual_facility, "JAIL BCKLG")
+
+    def test_facility_override_not_fi(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1119,
+            external_id="2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            facility="COMMUNITY CORRECTIONS",
+            admission_date=date(2022, 2, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2022, 2, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        actual_facility = self.delegate.incarceration_facility_override(
+            incarceration_period
+        )
+        self.assertEqual(actual_facility, "COMMUNITY CORRECTIONS")
