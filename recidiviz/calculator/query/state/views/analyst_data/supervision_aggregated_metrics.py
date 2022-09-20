@@ -208,11 +208,9 @@ SELECT
 
     -- compartments
     AVG(daily_population) AS avg_daily_population,
-    AVG(population_out_of_state) AS avg_population_out_of_state,
     AVG(population_parole) AS avg_population_parole,
     AVG(population_probation) AS avg_population_probation,
     AVG(population_community_confinement) AS avg_population_community_confinement,
-    AVG(population_other_supervision_type) AS avg_population_other_supervision_type,
 
     -- person demographics
     AVG(population_female) AS avg_population_female,
@@ -258,9 +256,11 @@ SELECT
     SAFE_DIVIDE(SUM(avg_days_since_latest_completed_contact * daily_population),
         SUM(daily_population)) AS avg_days_since_latest_completed_contact,   
 
-    ## summed person days in status across period
-    SUM(person_days_supervision_level_downgrade_eligible) AS person_days_supervision_level_downgrade_eligible,
-    SUM(person_days_early_discharge_from_supervision_eligible) AS person_days_early_discharge_from_supervision_eligible,
+    ## summed person days in span across period
+    SUM(person_days_supervision_level_downgrade_eligible) AS 
+        person_days_supervision_level_downgrade_eligible,
+    SUM(person_days_early_discharge_from_supervision_eligible) AS 
+        person_days_early_discharge_from_supervision_eligible,
     SUM(person_days_full_term_discharge_from_supervision_eligible) 
         AS person_days_full_term_discharge_from_supervision_eligible,
 
@@ -275,7 +275,10 @@ SELECT
     SUM(successful_completions) AS successful_completions,
     SUM(incarcerations_all) AS incarcerations_all,
     SUM(incarcerations_temporary) AS incarcerations_temporary,
+    SUM(pending_custody_starts) AS pending_custody_starts,
     SUM(absconsions_bench_warrants) AS absconsions_bench_warrants,
+    SUM(incarcerations_all + pending_custody_starts + absconsions_bench_warrants)
+        AS unsuccessful_terminations,
     SUM(early_discharge_requests) AS early_discharge_requests,
     SUM(supervision_downgrades) AS supervision_downgrades,
     SUM(supervision_upgrades) AS supervision_upgrades,
