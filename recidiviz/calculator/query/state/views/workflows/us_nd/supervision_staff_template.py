@@ -22,7 +22,10 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             officer_id AS id,
             state_code,
+            CAST(officers.status AS STRING) = "(1)" AS is_active 
         FROM `{project_id}.{workflows_dataset}.client_record`
+        LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest` officers
+            ON officer_id = officers.OFFICER
         WHERE state_code = "US_ND"
     )
     , caseload_staff AS (
@@ -48,6 +51,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON ids.state_code = districts.state_code 
             AND ids.id = districts.supervising_officer_external_id
+        WHERE is_active 
     )
     , leadership_staff AS (
         SELECT

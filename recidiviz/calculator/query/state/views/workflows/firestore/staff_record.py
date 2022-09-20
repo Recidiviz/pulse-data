@@ -71,6 +71,9 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ),
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ND.value
+    ),
 )
 
 if __name__ == "__main__":
