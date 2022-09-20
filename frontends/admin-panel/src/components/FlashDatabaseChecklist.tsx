@@ -413,6 +413,32 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
+            title="Set status to NO_RERUN_IN_PROGRESS"
+            description={
+              isFlashCanceled ? (
+                <p>
+                  Cancellation Flash to primary has completed. Set ingest status
+                  to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Cannot set status to NO_RERUN_IN_PROGRESS. Current status in
+                  SECONDARY is not FLASH_CANCELED.
+                </p>
+              )
+            }
+            buttonsEnabled={isFlashCanceled}
+            actionButtonTitle="Update Ingest Instance Status"
+            onActionButtonClick={async () =>
+              changeIngestInstanceStatus(
+                stateCode,
+                DirectIngestInstance.SECONDARY,
+                "NO_RERUN_IN_PROGRESS"
+              )
+            }
+          />
+          <StyledStep
             title="Release SECONDARY Ingest Lock"
             description={
               <p>
@@ -764,6 +790,32 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
+            }
+          />
+          <StyledStep
+            title="Set status to NO_RERUN_IN_PROGRESS"
+            description={
+              isFlashCompleted ? (
+                <p>
+                  Flash to primary has completed. Set ingest status to
+                  NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                  {stateCode}.
+                </p>
+              ) : (
+                <p>
+                  Cannot set status to NO_RERUN_IN_PROGRESS. Current status in
+                  SECONDARY is not FLASH_COMPLETED.
+                </p>
+              )
+            }
+            buttonsEnabled={isFlashCompleted}
+            actionButtonTitle="Update Ingest Instance Status"
+            onActionButtonClick={async () =>
+              changeIngestInstanceStatus(
+                stateCode,
+                DirectIngestInstance.SECONDARY,
+                "NO_RERUN_IN_PROGRESS"
+              )
             }
           />
           <StyledStep
