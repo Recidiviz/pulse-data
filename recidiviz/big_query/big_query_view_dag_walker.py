@@ -16,7 +16,6 @@
 # =============================================================================
 """Implements a class that allows us to walk across a DAG of BigQueryViews
 and perform actions on each of them in some order."""
-import logging
 from concurrent import futures
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TypeVar
 
@@ -272,11 +271,11 @@ class BigQueryViewDagWalker:
                     try:
                         view_result: ViewResultT = future.result()
                     except Exception as e:
-                        logging.error(
-                            "Exception found fetching result for view_key: %s",
-                            node.dag_key,
+                        # Ordering of exception here maintains that the top-level
+                        # exception matches the type of the original exception.
+                        raise e from ValueError(
+                            f"Exception found fetching result for view_key: [{node.dag_key}]",
                         )
-                        raise e
                     result[node.view] = view_result
                     processing.remove(node.dag_key)
                     processed.add(node.dag_key)
