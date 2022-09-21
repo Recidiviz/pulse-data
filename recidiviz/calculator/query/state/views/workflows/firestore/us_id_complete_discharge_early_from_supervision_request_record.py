@@ -142,7 +142,11 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_QUERY_TEMPLATE = 
         SELECT 
             pei.external_id,
             tes.state_code,
-            TO_JSON(ARRAY_AGG(STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+            tes.start_date AS eligible_start_date,
+            ses.start_date AS supervision_start_date,
+            DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
+            ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
+            TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
         FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes 
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
             ON tes.state_code = ses.state_code
@@ -152,6 +156,11 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_QUERY_TEMPLATE = 
                 "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
                 "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
                 )
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` proj
+            ON proj.state_code = ses.state_code
+            AND proj.person_id = ses.person_id
+            --use the projected completion date from the current span
+            AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND proj.end_date
         LEFT JOIN notes n
             ON ses.state_code = n.state_code
             AND ses.person_id = n.person_id
@@ -165,7 +174,7 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_QUERY_TEMPLATE = 
         WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
             AND tes.is_eligible
             AND tes.state_code = 'US_ID'
-        GROUP BY 1,2
+        GROUP BY 1,2,3,4,5
     )
    SELECT * FROM client_notes
 """
