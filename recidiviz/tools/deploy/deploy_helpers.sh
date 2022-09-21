@@ -477,7 +477,7 @@ function deploy_migrations {
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq 0 ]]; then
-      deployment_bot_message "${PROJECT}" "⌛️ Successfully ran migrations using Cloud SQL Proxy"
+      deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⌛️ Successfully ran migrations using Cloud SQL Proxy"
       return 0
     fi
 
@@ -486,11 +486,11 @@ function deploy_migrations {
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq $CLOUDSQL_PROXY_NETWORK_ERROR_EXIT_CODE ]]; then
-      deployment_bot_message "${PROJECT}" "⛈ An intermittent network error occurred while applying migrations."
+      deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⛈ An intermittent network error occurred while applying migrations."
       script_prompt "There was an intermittent network error while applying migrations. Would you like to retry?"
       continue
     else
-      deployment_bot_message "${PROJECT}" "🚨 There was an error while applying migrations"
+      deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "🚨 There was an error while applying migrations"
       echo "There was an error running migrations, likely due to application code and not the deploy scripts."
       echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
     fi
