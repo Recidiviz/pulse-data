@@ -153,7 +153,6 @@ secrets.yaml # keep in case any developers still have them
 yalc.lock
 *.tsbuildinfo
 
-
 # Stackdriver Traces
 traces
 
@@ -180,5 +179,4 @@ recidiviz/tools/postgres/vendor/
 # Tool logs
 logs/
 get-pip.py
-*.code-workspace
 *.code-workspace
