@@ -19,7 +19,7 @@ metric pipelines."""
 import sys
 from collections import OrderedDict, defaultdict
 from datetime import date
-from typing import Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Dict, Iterable, List, NamedTuple, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -105,7 +105,7 @@ def _identify_most_severe_violation_type_and_subtype(
         violation_subtypes.extend(
             violation_delegate.get_violation_type_subtype_strings_for_violation(
                 violation
-            )
+            ).keys()
         )
 
     if not violation_subtypes:
@@ -126,7 +126,8 @@ def _identify_most_severe_violation_type_and_subtype(
 
 
 def most_severe_violation_subtype(
-    violation_subtypes: List[str], violation_delegate: StateSpecificViolationDelegate
+    violation_subtypes: Iterable[str],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
     """Given the |violation_delegate| and list of |violation_subtypes|, determines
     the most severe subtype present. Defers to the severity in the
@@ -159,10 +160,10 @@ def _get_violation_type_frequency_counter(
         return None
 
     for violation in violations:
-        violation_types = (
+        violation_types = list(
             violation_delegate.get_violation_type_subtype_strings_for_violation(
                 violation
-            )
+            ).keys()
         )
 
         if violation_types:
@@ -343,16 +344,18 @@ def filter_violation_responses_for_violation_history(
 
 
 def sorted_violation_subtypes_by_severity(
-    violation_subtypes: List[str], violation_delegate: StateSpecificViolationDelegate
+    violation_subtypes: Iterable[str],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> List[str]:
     """Sorts the provided |violation_subtypes| by severity, and returns the list in
     order of descending severity. Follows the severity ordering returned by the
     state-specific violation delegate"""
-
     sorted_violation_subtypes = sorted(
         violation_subtypes,
         key=lambda subtype: safe_list_index(
-            _get_violation_subtype_sort_order(violation_delegate), subtype, sys.maxsize
+            _get_violation_subtype_sort_order(violation_delegate),
+            subtype,
+            sys.maxsize,
         ),
     )
 

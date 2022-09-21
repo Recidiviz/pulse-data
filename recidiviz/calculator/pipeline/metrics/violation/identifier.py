@@ -179,41 +179,45 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 "Invalid control: All responses should have response_dates."
             )
 
-        violation_subtypes = violation_delegate.get_violation_type_subtype_strings_for_violation(
+        violation_subtypes_to_raw_text_map = violation_delegate.get_violation_type_subtype_strings_for_violation(
             first_violation_response.supervision_violation  # type: ignore
         )
         sorted_violation_subtypes = sorted_violation_subtypes_by_severity(
-            violation_subtypes, violation_delegate
+            violation_subtypes_to_raw_text_map.keys(), violation_delegate
         )
         supported_violation_subtypes = (
             violation_type_subtypes_with_violation_type_mappings(violation_delegate)
         )
 
         for index, violation_subtype in enumerate(sorted_violation_subtypes):
-            if violation_subtype not in supported_violation_subtypes:
-                # It's possible for violations to have subtypes that don't explicitly map to a
-                # StateSupervisionViolationType value. We only want to record violation events for the defined
-                # StateSupervisionViolationType values on a violation, so we avoid creating events for subtypes
-                # without supported mappings to these values.
-                continue
-            violation_type = violation_type_from_subtype(
-                violation_delegate, violation_subtype
-            )
-            is_most_severe_violation_type = index == 0
-            violation_with_response_events.append(
-                ViolationWithResponseEvent(
-                    state_code=state_code,
-                    supervision_violation_id=supervision_violation_id,
-                    event_date=response_date,
-                    violation_date=violation_date,
-                    violation_type=violation_type,
-                    violation_type_subtype=violation_subtype,
-                    is_most_severe_violation_type=is_most_severe_violation_type,
-                    is_violent=is_violent,
-                    is_sex_offense=is_sex_offense,
-                    most_severe_response_decision=most_severe_response_decision,
+            for subtype_raw_text in violation_subtypes_to_raw_text_map[
+                violation_subtype
+            ]:
+                if violation_subtype not in supported_violation_subtypes:
+                    # It's possible for violations to have subtypes that don't explicitly map to a
+                    # StateSupervisionViolationType value. We only want to record violation events for the defined
+                    # StateSupervisionViolationType values on a violation, so we avoid creating events for subtypes
+                    # without supported mappings to these values.
+                    continue
+                violation_type = violation_type_from_subtype(
+                    violation_delegate, violation_subtype
                 )
-            )
+                is_most_severe_violation_type = index == 0
+                violation_with_response_events.append(
+                    ViolationWithResponseEvent(
+                        state_code=state_code,
+                        supervision_violation_id=supervision_violation_id,
+                        event_date=response_date,
+                        violation_date=violation_date,
+                        violation_type=violation_type,
+                        violation_type_subtype=violation_subtype,
+                        violation_type_subtype_raw_text=subtype_raw_text,
+                        is_most_severe_violation_type=is_most_severe_violation_type,
+                        is_violent=is_violent,
+                        is_sex_offense=is_sex_offense,
+                        most_severe_response_decision=most_severe_response_decision,
+                    )
+                )
 
         return violation_with_response_events
 
