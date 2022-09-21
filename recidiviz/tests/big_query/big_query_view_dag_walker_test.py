@@ -173,9 +173,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         result = walker.process_dag(process_simple)
 
         expected_view_keys = set(walker.nodes_by_key)
-        self.assertEqual(expected_view_keys, set(result.values()))
+        self.assertEqual(expected_view_keys, set(result.view_results.values()))
 
-        walked_view_keys_from_process_results = set(result.values())
+        walked_view_keys_from_process_results = set(result.view_results.values())
         self.assertEqual(expected_view_keys, walked_view_keys_from_process_results)
 
     def test_dag_process_time(self) -> None:
@@ -197,7 +197,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         result = walker.process_dag(process_simple)
         end = datetime.datetime.now()
 
-        self.assertEqual(num_views, len(result))
+        self.assertEqual(num_views, len(result.view_results))
 
         processing_time = end - start
 
@@ -244,7 +244,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 all_processed.add(node.dag_key)
 
         result = walker.process_dag(process_check_parents)
-        self.assertEqual(len(self.all_views), len(result))
+        self.assertEqual(len(self.all_views), len(result.view_results))
 
     def test_children_match_parent_projects_to_deploy(self) -> None:
         """Checks that if any parents have the projects_to_deploy field set, all
@@ -291,7 +291,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             return expected_projects_to_deploy.intersection(view_projects_to_deploy)
 
         result = walker.process_dag(process_check_using_materialized)
-        self.assertEqual(len(self.all_views), len(result))
+        self.assertEqual(len(self.all_views), len(result.view_results))
 
         if failing_views:
 
@@ -320,11 +320,11 @@ The following views have less restrictive projects_to_deploy than their parents:
             return max(parent_results.values()) + 1
 
         result = walker.process_dag(process_check_parents)
-        self.assertEqual(len(self.all_views), len(result))
+        self.assertEqual(len(self.all_views), len(result.view_results))
 
         max_depth = 0
         max_depth_view = None
-        for view, depth in result.items():
+        for view, depth in result.view_results.items():
             if depth > max_depth:
                 max_depth = depth
                 max_depth_view = view
@@ -386,7 +386,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 )
 
         result = walker.process_dag(process_check_using_materialized)
-        self.assertEqual(len(self.all_views), len(result))
+        self.assertEqual(len(self.all_views), len(result.view_results))
 
     def test_dag_with_cycle_at_root(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(
@@ -1109,7 +1109,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         result = walker.process_dag(process_simple)
         self.assertEqual(
             {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
-            result,
+            result.view_results,
         )
 
     def test_dag_parents_materialized_non_default(self) -> None:
@@ -1146,7 +1146,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
         def process_simple(
-            view: BigQueryView, parent_results: Dict[BigQueryView, DagKey]
+            view: BigQueryView, parent_results: Dict[BigQueryView, str]
         ) -> str:
             if view == view_3:
                 # View 3 should have two parents
@@ -1159,7 +1159,15 @@ The following views have less restrictive projects_to_deploy than their parents:
         result = walker.process_dag(process_simple)
         self.assertEqual(
             {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
-            result,
+            result.view_results,
+        )
+
+        self.assertEqual(
+            {view_1: 0, view_2: 0, view_3: 1},
+            {
+                view: metadata.graph_depth
+                for view, metadata in result.view_processing_stats.items()
+            },
         )
 
     def test_union_dags(self) -> None:

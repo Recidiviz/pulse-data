@@ -74,6 +74,9 @@ TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 # https://github.com/googleapis/python-storage/issues/253
 MAX_WORKERS = 10
 
+# The number of slowest-to-process views to print at the end of processing the full DAG.
+NUM_SLOW_VIEWS_TO_LOG = 25
+
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     """ "A function that will determine whether we should retry a given Google exception."""
@@ -178,7 +181,8 @@ def rematerialize_views_for_view_builders(
             except Exception as e:
                 raise ValueError(f"Failed to materialize view [{v.address}]") from e
 
-        views_to_rematerialize_dag.process_dag(_materialize_view)
+        results = views_to_rematerialize_dag.process_dag(_materialize_view)
+        results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
     except Exception as e:
         with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
@@ -378,7 +382,8 @@ def _create_managed_dataset_and_deploy_views(
         except Exception as e:
             raise ValueError(f"Error creating or updating view [{v.address}]") from e
 
-    dag_walker.process_dag(process_fn)
+    results = dag_walker.process_dag(process_fn)
+    results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 
 
 def _create_or_update_view_and_materialize_if_necessary(

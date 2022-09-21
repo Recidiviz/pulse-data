@@ -262,7 +262,7 @@ def _get_all_views_changed_on_branch(
     results = full_dag_walker.process_dag(check_for_change)
     return {
         view.address: change_type
-        for view, change_type in results.items()
+        for view, change_type in results.view_results.items()
         if change_type
     }
 
