@@ -173,7 +173,10 @@ def rematerialize_views_for_view_builders(
                 )
                 return
 
-            bq_client.materialize_view_to_table(view=v, use_query_cache=True)
+            try:
+                bq_client.materialize_view_to_table(view=v, use_query_cache=True)
+            except Exception as e:
+                raise ValueError(f"Failed to materialize view [{v.address}]") from e
 
         views_to_rematerialize_dag.process_dag(_materialize_view)
     except Exception as e:
