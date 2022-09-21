@@ -35,7 +35,7 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     passthrough_authorization_decorator,
 )
-from recidiviz.utils.environment import in_ci
+from recidiviz.utils.environment import in_ci, in_gcp_staging
 from recidiviz.utils.secrets import get_secret
 
 
@@ -47,11 +47,23 @@ class Config:
     DATABASE_KEY: SQLAlchemyDatabaseKey = SQLAlchemyDatabaseKey.for_schema(SCHEMA_TYPE)
     # Indicates whether CSRF protection is enabled for the whole app. Should be set to False for tests.
     WTF_CSRF_ENABLED: bool = True
+    # Whether to enforce the same origin policy by checking that the referrer matches the host.
+    # Set to False in staging so that we can run the frontend locally against our staging backend.
+    WTF_CSRF_SSL_STRICT: bool = attr.field()
     DB_URL: str = attr.field()
     AUTH0_CONFIGURATION: Auth0Config = attr.field()
     AUTH_DECORATOR: Callable = attr.field()
     AUTH0_CLIENT: Auth0Client = attr.field()
     SEGMENT_KEY: Optional[str] = attr.field()
+
+    @WTF_CSRF_SSL_STRICT.default
+    def _wtf_csrf_ssl_factory(self) -> bool:
+        if in_gcp_staging():
+            # In staging, don't enforce same origin policy. This allows us to run
+            # our frontend locally against our staging backend, which is important
+            # for contractors who aren't able to run our backend locally.
+            return False
+        return True
 
     @DB_URL.default
     def _db_url_factory(self) -> str:
