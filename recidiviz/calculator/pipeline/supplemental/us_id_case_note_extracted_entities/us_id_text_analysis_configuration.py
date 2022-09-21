@@ -18,6 +18,8 @@
 from thefuzz import fuzz
 
 from recidiviz.common.text_analysis import (
+    REMOVE_WORDS_WITH_NON_CHARACTERS,
+    TEXT_NORMALIZERS,
     RegexFuzzyMatcher,
     ScoringFuzzyMatcher,
     TextEntity,
@@ -39,9 +41,7 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="extend", matching_function=fuzz.partial_ratio)
     ]
     ABSCONSION = [
-        ScoringFuzzyMatcher(
-            search_term="abscond", matching_function=fuzz.partial_ratio
-        ),
+        ScoringFuzzyMatcher(search_term="abscond"),
         ScoringFuzzyMatcher(search_term="absconsion"),
     ]
     IN_CUSTODY = [
@@ -104,32 +104,36 @@ class UsIdTextEntity(TextEntity):
         RegexFuzzyMatcher(search_regex=(r".*nco(\s|/|-).*|.*(-|/|\s)nco.*|^NCO")),
         RegexFuzzyMatcher(search_regex=(r".*no contact.*")),
     ]
-    # TODO(#15276) fix c/s, c.s.
-    COMMUNITY_SERVICE = [
-        ScoringFuzzyMatcher(search_term="community service"),
-        ScoringFuzzyMatcher(search_term="community serv"),
-        ScoringFuzzyMatcher(search_term="community svc"),
-        ScoringFuzzyMatcher(search_term="community service hours"),
-        ScoringFuzzyMatcher(search_term="community service work"),
-        ScoringFuzzyMatcher(search_term="community service exten"),
-        ScoringFuzzyMatcher(search_term="community service done"),
-        ScoringFuzzyMatcher(search_term="community service compl"),
-        ScoringFuzzyMatcher(search_term="community service complet"),
-        ScoringFuzzyMatcher(search_term="community service complete"),
-        ScoringFuzzyMatcher(search_term="community service completed"),
-        ScoringFuzzyMatcher(search_term="completion service hours"),
-        ScoringFuzzyMatcher(search_term="completed service project"),
-        ScoringFuzzyMatcher(search_term="community service refferal"),
-        ScoringFuzzyMatcher(search_term="community service refl"),
-        ScoringFuzzyMatcher(search_term="completed service hours"),
-        ScoringFuzzyMatcher(search_term="community svc completed"),
-        RegexFuzzyMatcher(search_regex=(r".*com[m\.]*\.*\s*(serv|svc).*")),
-        RegexFuzzyMatcher(search_regex=(r".*communityservice.*")),
-        RegexFuzzyMatcher(search_regex=(r".* c/s.*|.*c/s .*|.*c\.s\s*.*")),
-        RegexFuzzyMatcher(
-            search_regex=(r".*cs.*(hours|hrs).*|.*(hrs|hours).*[^R]cs[^C].*")
-        ),
-    ]
+    COMMUNITY_SERVICE = (
+        [
+            ScoringFuzzyMatcher(search_term="community service"),
+            ScoringFuzzyMatcher(search_term="community serv"),
+            ScoringFuzzyMatcher(search_term="community svc"),
+            ScoringFuzzyMatcher(search_term="community service hours"),
+            ScoringFuzzyMatcher(search_term="community service work"),
+            ScoringFuzzyMatcher(search_term="community service exten"),
+            ScoringFuzzyMatcher(search_term="community service done"),
+            ScoringFuzzyMatcher(search_term="community service compl"),
+            ScoringFuzzyMatcher(search_term="community service complet"),
+            ScoringFuzzyMatcher(search_term="community service complete"),
+            ScoringFuzzyMatcher(search_term="community service completed"),
+            ScoringFuzzyMatcher(search_term="completion service hours"),
+            ScoringFuzzyMatcher(search_term="completed service project"),
+            ScoringFuzzyMatcher(search_term="community service refferal"),
+            ScoringFuzzyMatcher(search_term="community service refl"),
+            ScoringFuzzyMatcher(search_term="completed service hours"),
+            ScoringFuzzyMatcher(search_term="community svc completed"),
+            RegexFuzzyMatcher(search_regex=(r".*com[m\.]*\.*\s*(serv|svc).*")),
+            RegexFuzzyMatcher(search_regex=(r".*communityservice.*")),
+            RegexFuzzyMatcher(search_regex=(r".* c/s.*|.*c/s .*|.*c\.s\s*.*")),
+            RegexFuzzyMatcher(
+                search_regex=(r".*cs.*(hours|hrs).*|.*(hrs|hours).*[^R]cs[^C].*")
+            ),
+            RegexFuzzyMatcher(search_regex=r".*c/s.*"),
+            RegexFuzzyMatcher(search_regex=r".*c\.s\..*"),
+        ],
+        [n for n in TEXT_NORMALIZERS if n not in {REMOVE_WORDS_WITH_NON_CHARACTERS}],
+    )
     DUI = [RegexFuzzyMatcher(search_regex=(r".*dui.*"))]
     NOT_M_DUI = [
         RegexFuzzyMatcher(

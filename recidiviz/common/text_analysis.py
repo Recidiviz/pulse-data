@@ -33,18 +33,28 @@ from thefuzz import fuzz
 
 from recidiviz.common.data_sets import nltk_data
 
+Normalizer = Tuple[str, str]
+
 DEFAULT_MATCHING_SCORE_CUTOFF = 90
 
+REMOVE_HYPHENS: Normalizer = ("-", "")
+REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS: Normalizer = (
+    r"\S*(\d|@|http|www|\ufffd)\S*",
+    " ",
+)
+REMOVE_WORDS_WITH_NON_CHARACTERS: Normalizer = ("[^a-z ]+", " ")
+REMOVE_MULTIPLE_WHITESPACES: Normalizer = (r"\s+", " ")
+
 # A set of substitutions used to normalize input text, executed in order
-TEXT_NORMALIZERS: List[Tuple[str, str]] = [
+TEXT_NORMALIZERS: List[Normalizer] = [
     # remove hyphens
-    ("-", ""),
+    REMOVE_HYPHENS,
     # words with a number, "@", website, or encoding string
-    (r"\S*(\d|@|http|www|\ufffd)\S*", " "),
+    REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS,
     # all non characters (numbers, punctuation, non-spaces)
-    ("[^a-z ]+", " "),  # remove anything not a character or space
+    REMOVE_WORDS_WITH_NON_CHARACTERS,  # remove anything not a character or space
     # multiple whitespaces
-    (r"\s+", " "),
+    REMOVE_MULTIPLE_WHITESPACES,
 ]
 
 _nltk_path = os.path.dirname(nltk_data.__file__)
@@ -93,8 +103,13 @@ class TextEntity(Enum, metaclass=EnumMeta):
     the fuzzy matching results of given free text. Each flag is associated with a set
     of fuzzy matchers."""
 
-    def __init__(self, fuzzy_matchers: List[FuzzyMatcher]) -> None:
+    def __init__(
+        self,
+        fuzzy_matchers: List[FuzzyMatcher],
+        normalizers: Optional[List[Normalizer]] = None,
+    ) -> None:
         self.fuzzy_matchers = fuzzy_matchers
+        self.normalizers = normalizers
 
     def matches(self, normalized_text: str) -> bool:
         """Indicates that a text flag matches the normalized text by looping through all
@@ -131,11 +146,14 @@ class TextAnalyzer:
         self.tokenizer = ToktokTokenizer()
         self.stemmer = SnowballStemmer(language="english")
 
-    def _clean_text(self, text: str) -> str:
+    def _clean_text(
+        self, text: str, normalizers: Optional[List[Normalizer]] = None
+    ) -> str:
         """Cleans text by lowercasing, removing any unwanted characters and extra
         whitespaces."""
         text = text.lower()
-        for expression, replacement in TEXT_NORMALIZERS:
+        normalizers = normalizers or TEXT_NORMALIZERS
+        for expression, replacement in normalizers:
             text = re.sub(expression, replacement, text)
         return text.strip()
 
@@ -148,19 +166,29 @@ class TextAnalyzer:
         """Stems the token (reduces the word to its root form)."""
         return self.stemmer.stem(token)
 
-    def normalize_text(self, text: str, stem_tokens: bool = False) -> str:
+    def normalize_text(
+        self,
+        text: str,
+        stem_tokens: bool = False,
+        normalizers: Optional[List[Normalizer]] = None,
+    ) -> str:
         """Normalizes a text string, by lowercasing, removing punctuation,
         irregular white space, and stop words. Optionally stems the tokens."""
-        tokens = sorted(self._tokenize(self._clean_text(text)))
+        tokens = sorted(self._tokenize(self._clean_text(text, normalizers)))
         if stem_tokens:
             tokens = [self._stem(token) for token in tokens]
         return " ".join(tokens)
 
     def extract_entities(self, text: str) -> Set[TextEntity]:
         """Returns the set of TextEntity that apply to the input text."""
-        normalized_text = self.normalize_text(text)
+        standard_normalized_text = self.normalize_text(text)
         matched_entities = set()
         for text_entity in self.configuration.text_entities:
+            normalized_text = (
+                self.normalize_text(text, normalizers=text_entity.normalizers)
+                if text_entity.normalizers
+                else standard_normalized_text
+            )
             if text_entity.matches(normalized_text):
                 matched_entities.add(text_entity)
 
