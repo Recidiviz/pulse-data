@@ -17,25 +17,52 @@
 """Delegate class to ETL opportunity referral records for workflows into Firestore."""
 import json
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+import attr
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
 
+@attr.s
+class OpportunityExportConfig:
+    source_filename: str = attr.ib()
+    export_collection_name: str = attr.ib()
+
+
+CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
+    "US_ID": [
+        OpportunityExportConfig(
+            source_filename="us_id_complete_discharge_early_from_supervision_record.json",
+            export_collection_name="US_ID-earnedDischargeReferrals",
+        )
+    ],
+    "US_ND": [
+        OpportunityExportConfig(
+            source_filename="us_nd_complete_discharge_early_from_supervision_record.json",
+            export_collection_name="earlyTerminationReferrals",
+        )
+    ],
+}
+
+
 class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' opportunity records into Firestore."""
 
-    EXPORT_BY_STATE = {
-        "US_ND": ["us_nd_complete_discharge_early_from_supervision_record.json"]
-    }
-    COLLECTION_BY_FILENAME = {
-        "us_nd_complete_discharge_early_from_supervision_record.json": "earlyTerminationReferrals"
-    }
+    @property
+    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
+        return {
+            config.source_filename: config.export_collection_name
+            for config_list in CONFIG_BY_STATE.values()
+            for config in config_list
+        }
 
     def get_supported_files(self, state_code: str) -> List[str]:
-        return self.EXPORT_BY_STATE.get(state_code, [])
+        return [
+            config.source_filename for config in CONFIG_BY_STATE.get(state_code, [])
+        ]
 
     @property
     def timestamp_key(self) -> str:

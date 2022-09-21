@@ -16,7 +16,7 @@
 #  =============================================================================
 """Delegate class to ETL staff records for Workflows into Firestore."""
 import json
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from recidiviz.common.str_field_utils import person_name_case
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
@@ -25,9 +25,7 @@ from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETL
 class WorkflowsStaffETLDelegate(WorkflowsFirestoreETLDelegate):
     """Delegate class to ETL the staff_record.json file into Firestore."""
 
-    @property
-    def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return {"staff_record.json": "staff"}
+    COLLECTION_BY_FILENAME = {"staff_record.json": "staff"}
 
     def get_supported_files(self, state_code: str) -> List[str]:
         return ["staff_record.json"]
