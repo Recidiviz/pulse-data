@@ -81,9 +81,22 @@ SUPPLEMENTAL_DATASETS = set(SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS.keys())
 VALIDATION_DATASETS_TO_DESCRIPTIONS = {
     validation_dataset_for_state(
         state_code
-    ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}."
+    ): f"Contains one-off validation data provided directly by {StateCode.get_state(state_code)}. "
+    "Once this state has been migrated to have version controlled validation views, the one-off "
+    f"data will be moved to {validation_oneoff_dataset_for_state(state_code)}."
     for state_code in StateCode
-    if state_code not in (StateCode.US_MI, StateCode.US_CO)
+    if state_code
+    # TODO(#13312): Move all one off validation data for these states into `us_xx_validation_oneoffs`
+    # and have `us_xx_validation` only contain version controlled views pulling from oneoffs and raw data.
+    in (
+        StateCode.US_ID,
+        StateCode.US_ME,
+        StateCode.US_MO,
+        StateCode.US_ND,
+        StateCode.US_PA,
+        # Note: Some pre-existing migration work exists for TN in #13641.
+        StateCode.US_TN,
+    )
 }
 VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
     validation_oneoff_dataset_for_state(
