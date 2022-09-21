@@ -16,14 +16,28 @@
 # =============================================================================
 """Implements a class that allows us to walk across a DAG of BigQueryViews
 and perform actions on each of them in some order."""
+import heapq
+import logging
+import time
 from concurrent import futures
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, TypeVar
+from concurrent.futures import Future
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.utils import structured_logging
+from recidiviz.utils import structured_logging, trace
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
@@ -64,6 +78,58 @@ class DagKey:
 
 ViewResultT = TypeVar("ViewResultT")
 ParentResultsT = Dict[BigQueryView, ViewResultT]
+
+
+@attr.s(auto_attribs=True, kw_only=True)
+class ViewProcessingMetadata:
+    node_processing_runtime_seconds: float
+    total_time_in_queue_seconds: float
+    graph_depth: int
+
+
+@attr.s(auto_attribs=True, kw_only=True)
+class ProcessDagResult(Generic[ViewResultT]):
+    """Stores results and metadata about a single call to
+    BigQueryDagWalker.process_dag().
+    """
+
+    view_results: Dict[BigQueryView, ViewResultT]
+    view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata]
+
+    def log_processing_stats(self, n_slowest: int) -> None:
+        """Logs various stats about a DAG processing run.
+
+        Args:
+            n_slowest: (int) The number of slowest nodes to print out.
+        """
+        if not self.view_processing_stats:
+            logging.info("No views processed - no stats to show.")
+            return
+
+        processing_runtimes = []
+        queued_wait_times = []
+        for view, metadata in self.view_processing_stats.items():
+            processing_time = metadata.node_processing_runtime_seconds
+            total_queue_time = metadata.total_time_in_queue_seconds
+            processing_runtimes.append((processing_time, view.address))
+            queued_wait_times.append(total_queue_time - processing_time)
+
+        avg_wait_time = round(sum(queued_wait_times) / len(queued_wait_times), 2)
+        max_wait_time = max(queued_wait_times)
+
+        slowest_to_process = heapq.nlargest(n_slowest, processing_runtimes)
+        slowest_list = "\n".join(
+            [
+                f"{i+1}) {seconds} sec: {address.dataset_id}.{address.table_id}"
+                for i, (seconds, address) in enumerate(slowest_to_process)
+            ]
+        )
+
+        logging.info("Average queue wait time: %s seconds", avg_wait_time)
+        logging.info("Max queue wait time: %s seconds", max_wait_time)
+        logging.info(
+            "Top [%s] most expensive nodes in DAG: \n%s", n_slowest, slowest_list
+        )
 
 
 class BigQueryViewDagNode:
@@ -248,35 +314,61 @@ class BigQueryViewDagWalker:
 
     def process_dag(
         self, view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
-    ) -> Dict[BigQueryView, ViewResultT]:
+    ) -> ProcessDagResult[ViewResultT]:
         """This method provides a level-by-level "breadth-first" traversal of a DAG and executes
         view_process_fn on every node in level order."""
         processed: Set[DagKey] = set()
         queue: Set[BigQueryViewDagNode] = set(self.roots)
-        result: Dict[BigQueryView, ViewResultT] = {}
+        view_results: Dict[BigQueryView, ViewResultT] = {}
+        view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
         with futures.ThreadPoolExecutor(max_workers=DAG_WALKER_MAX_WORKERS) as executor:
-            future_to_view = {
+            future_to_context: Dict[
+                Future[Tuple[float, ViewResultT]],
+                Tuple[BigQueryViewDagNode, ParentResultsT, float],
+            ] = {
                 executor.submit(
-                    structured_logging.with_context(view_process_fn), node.view, {}
-                ): node
+                    _timed_func(structured_logging.with_context(view_process_fn)),
+                    node.view,
+                    {},
+                ): (node, {}, time.perf_counter())
                 for node in self.roots
             }
-            processing = {node.dag_key for node in future_to_view.values()}
+            processing = {node.dag_key for node, _, _ in future_to_context.values()}
             while processing:
                 completed, _not_completed = futures.wait(
-                    future_to_view.keys(), return_when="FIRST_COMPLETED"
+                    future_to_context.keys(), return_when="FIRST_COMPLETED"
                 )
+                end = time.perf_counter()
                 for future in completed:
-                    node = future_to_view.pop(future)
+                    node, parent_results, entered_queue_time = future_to_context.pop(
+                        future
+                    )
                     try:
-                        view_result: ViewResultT = future.result()
+                        execution_sec, view_result = future.result()
                     except Exception as e:
                         # Ordering of exception here maintains that the top-level
                         # exception matches the type of the original exception.
                         raise e from ValueError(
                             f"Exception found fetching result for view_key: [{node.dag_key}]",
                         )
-                    result[node.view] = view_result
+                    graph_depth = (
+                        0
+                        if not parent_results
+                        else max(
+                            {
+                                view_processing_stats[p].graph_depth
+                                for p in parent_results
+                            }
+                        )
+                        + 1
+                    )
+                    view_stats = ViewProcessingMetadata(
+                        node_processing_runtime_seconds=execution_sec,
+                        total_time_in_queue_seconds=(end - entered_queue_time),
+                        graph_depth=graph_depth,
+                    )
+                    view_results[node.view] = view_result
+                    view_processing_stats[node.view] = view_stats
                     processing.remove(node.dag_key)
                     processed.add(node.dag_key)
 
@@ -300,16 +392,30 @@ class BigQueryViewDagWalker:
                                 break
                             if parent_key in self.nodes_by_key:
                                 parent_view = self.nodes_by_key[parent_key].view
-                                parent_results[parent_view] = result[parent_view]
+                                parent_results[parent_view] = view_results[parent_view]
                         if parents_all_processed:
+                            if not parent_results:
+                                raise ValueError(
+                                    f"Expected child node [{child_node.view.address}] "
+                                    f"to have parents."
+                                )
+                            entered_queue_time = time.perf_counter()
                             future = executor.submit(
-                                structured_logging.with_context(view_process_fn),
+                                _timed_func(
+                                    structured_logging.with_context(view_process_fn)
+                                ),
                                 child_node.view,
                                 parent_results,
                             )
-                            future_to_view[future] = child_node
+                            future_to_context[future] = (
+                                child_node,
+                                parent_results,
+                                entered_queue_time,
+                            )
                             processing.add(child_node.dag_key)
-        return result
+        return ProcessDagResult(
+            view_results=view_results, view_processing_stats=view_processing_stats
+        )
 
     def _check_sub_dag_input_views(self, *, input_views: List[BigQueryView]) -> None:
         missing_views = set(input_views).difference(self.views)
@@ -502,3 +608,21 @@ class BigQueryViewDagWalker:
         called after populate_node_view_builders() is called on this BigQueryDagWalker.
         """
         return [node.view_builder for node in self.nodes_by_key.values()]
+
+
+def _timed_func(
+    func: Callable[[BigQueryView, ParentResultsT], ViewResultT]
+) -> Callable[[BigQueryView, ParentResultsT], Tuple[float, ViewResultT]]:
+    """Wraps a DAG node processing function in a function that will return both the
+    processing result and the execution time.
+    """
+
+    def _wrapper(
+        view: BigQueryView, parent_results: ParentResultsT
+    ) -> Tuple[float, ViewResultT]:
+        start = time.perf_counter()
+        res = trace.span(func)(view, parent_results)
+        end = time.perf_counter()
+        return (end - start), res
+
+    return _wrapper
