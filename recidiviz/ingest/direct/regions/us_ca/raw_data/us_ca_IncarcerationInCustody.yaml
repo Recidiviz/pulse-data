@@ -22,6 +22,7 @@ columns:
   - name: In_Reason
     description: |-
       TODO(#15297)
+  - name: Intake_Date
   - name: OUT_DATE
     description: |-
       OUT_DATE will be filled with the date a person was paroled or discharged.
