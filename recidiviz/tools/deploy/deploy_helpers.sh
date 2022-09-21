@@ -2,6 +2,7 @@
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
+source ${BASH_SOURCE_DIR}/../postgres/script_helpers.sh
 
 VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 SLACK_CHANNEL_ENG="GJDCVR2AY"
@@ -467,29 +468,44 @@ function deploy_migrations {
   local PROJECT=$1
   local COMMIT_HASH=$2
 
-  echo "Running migrations using Cloud SQL Proxy"
-  deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⏳ Starting migrations using Cloud SQL Proxy"
+  while true
+  do
+    echo "Running migrations using Cloud SQL Proxy"
+    deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⏳ Starting migrations using Cloud SQL Proxy"
 
-  pipenv run ./recidiviz/tools/migrations/run_all_migrations_using_proxy.sh $COMMIT_HASH $PROJECT
-  return_code=$?
+    pipenv run ./recidiviz/tools/migrations/run_all_migrations_using_proxy.sh "${COMMIT_HASH}" "${PROJECT}"
+    RETURN_CODE=$?
 
-  if [[ $return_code -eq 0 ]]; then
-    deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⌛️ Successfully ran migrations using Cloud SQL Proxy"
-    return 0
-  fi
+    if [[ $RETURN_CODE -eq 0 ]]; then
+      deployment_bot_message "${PROJECT}" "⌛️ Successfully ran migrations using Cloud SQL Proxy"
+      return 0
+    fi
 
-  deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "🚨 There was an error running migrations using the Cloud SQL Proxy"
+    # Migrations did not run successfully. Check if there was an error in the Cloud SQL Proxy
+    pipenv run ./recidiviz/tools/postgres/cloudsql_proxy_control.sh -v -p "${CLOUDSQL_PROXY_MIGRATION_PORT}"
+    RETURN_CODE=$?
 
-  # TODO(#14842): Remove this once prod-data-client is deprecated
-  script_prompt "Would you like to use prod-data-client to re-run the migrations? [no exits the script]"
+    if [[ $RETURN_CODE -eq $CLOUDSQL_PROXY_NETWORK_ERROR_EXIT_CODE ]]; then
+      deployment_bot_message "${PROJECT}" "⛈ An intermittent network error occurred while applying migrations."
+      script_prompt "There was an intermittent network error while applying migrations. Would you like to retry?"
+      continue
+    else
+      deployment_bot_message "${PROJECT}" "🚨 There was an error while applying migrations"
+      echo "There was an error running migrations, likely due to application code and not the deploy scripts."
+      echo "🚨 Please reply to the latest #deployment-bot slack message with the logs of the migration step."
+    fi
 
-  echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
-  # The remote migration execution script doesn't play nice with run_cmd
-  gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
-      && git fetch --all --tags --prune --prune-tags \
-      && git checkout $COMMIT_HASH \
-      && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
-  exit_on_fail
+    # TODO(#14842): Remove this once prod-data-client is deprecated
+    script_prompt "Would you like to use prod-data-client to re-run the migrations?"
+
+    echo "Running migrations on prod-data-client. You may have to enter the passphrase for your ssh key to continue."
+    # The remote migration execution script doesn't play nice with run_cmd
+    gcloud compute ssh --ssh-flag="-t" prod-data-client --project recidiviz-123 --zone us-east4-c --command "cd pulse-data \
+        && git fetch --all --tags --prune --prune-tags \
+        && git checkout $COMMIT_HASH \
+        && pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh $COMMIT_HASH $PROJECT"
+    exit_on_fail
+  done
 }
 
 function post_deploy_triggers {
