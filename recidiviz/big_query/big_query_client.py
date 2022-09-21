@@ -28,6 +28,7 @@ from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pandas as pd
 import pytz
+import requests
 from google.api_core.client_options import ClientOptions
 from google.api_core.future.polling import PollingFuture
 from google.auth.credentials import AnonymousCredentials
@@ -52,6 +53,9 @@ _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaul
     dict
 )
 
+BQ_CLIENT_MAX_POOL_CONNECTIONS = 128
+BQ_CLIENT_MAX_POOL_SIZE = 128
+
 
 def client(project_id: str, region: str) -> bigquery.Client:
     if (
@@ -69,6 +73,17 @@ def client(project_id: str, region: str) -> bigquery.Client:
             )
         else:
             new_client = bigquery.Client(project=project_id, location=region)
+
+            # Update the number of allowed connections to allow for more parallel BQ
+            # requests to the same Client. See:
+            # https://github.com/googleapis/python-storage/issues/253#issuecomment-687068266.
+            adapter = requests.adapters.HTTPAdapter(
+                pool_connections=BQ_CLIENT_MAX_POOL_CONNECTIONS,
+                pool_maxsize=BQ_CLIENT_MAX_POOL_SIZE,
+            )
+            # pylint: disable=protected-access
+            new_client._http.mount("https://", adapter)
+            new_client._http._auth_request.session.mount("https://", adapter)
 
         _clients_by_project_id_by_region[project_id][region] = new_client
     return _clients_by_project_id_by_region[project_id][region]
