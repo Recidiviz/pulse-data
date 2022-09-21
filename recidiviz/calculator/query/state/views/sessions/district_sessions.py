@@ -96,7 +96,6 @@ SELECT
     *  EXCEPT(district_session_id_unordered),
     ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01'), district) AS district_session_id
 FROM sessionized_cte 
-ORDER BY district_session_id
 """
 DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,

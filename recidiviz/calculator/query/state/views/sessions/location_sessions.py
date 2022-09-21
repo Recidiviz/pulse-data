@@ -113,7 +113,6 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         * EXCEPT(location_session_id_unordered),
         ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01'), location) AS location_session_id
     FROM sessionized_cte 
-    ORDER BY location_session_id
     """
 
 LOCATION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
