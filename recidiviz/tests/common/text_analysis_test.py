@@ -22,6 +22,9 @@ from parameterized import parameterized
 from thefuzz import fuzz
 
 from recidiviz.common.text_analysis import (
+    REMOVE_HYPHENS,
+    REMOVE_MULTIPLE_WHITESPACES,
+    REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS,
     RegexFuzzyMatcher,
     ScoringFuzzyMatcher,
     TextAnalyzer,
@@ -39,6 +42,14 @@ PARTIAL_RATIO_MATCHER = ScoringFuzzyMatcher(
 class FakeTextEntity(TextEntity):
     HELLO = [REGEX_MATCHER, DEFAULT_MATCHER]
     GOODBYE = [PARTIAL_RATIO_MATCHER]
+    SOMETHING_WITH_PUNCTUATION = (
+        [RegexFuzzyMatcher(search_regex="h.i.")],
+        [
+            REMOVE_HYPHENS,
+            REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS,
+            REMOVE_MULTIPLE_WHITESPACES,
+        ],
+    )
 
 
 class TestTextAnalyzer(unittest.TestCase):
@@ -47,7 +58,11 @@ class TestTextAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
         self.text_matching_delegate = TextMatchingConfiguration(
             stop_words_to_remove={"in", "out"},
-            text_entities=[FakeTextEntity.HELLO, FakeTextEntity.GOODBYE],
+            text_entities=[
+                FakeTextEntity.HELLO,
+                FakeTextEntity.GOODBYE,
+                FakeTextEntity.SOMETHING_WITH_PUNCTUATION,
+            ],
         )
         self.text_analyzer = TextAnalyzer(self.text_matching_delegate)
 
@@ -103,4 +118,24 @@ class TestTextAnalyzer(unittest.TestCase):
         self.assertEqual(
             self.text_analyzer.normalize_text("felonies", stem_tokens=True),
             self.text_analyzer.normalize_text("felony", stem_tokens=True),
+        )
+
+    def test_normalization_with_non_default_normalizer_list(self) -> None:
+        self.assertEqual(
+            self.text_analyzer.normalize_text(
+                "h.i. h.i.",
+                normalizers=FakeTextEntity.SOMETHING_WITH_PUNCTUATION.normalizers,
+            ),
+            ". h.i h.i.",
+        )
+        self.assertEqual(
+            self.text_analyzer.normalize_text(
+                "h.i. h.i.",
+                normalizers=FakeTextEntity.HELLO.normalizers,
+            ),
+            "h",
+        )
+        self.assertSetEqual(
+            self.text_analyzer.extract_entities(text="h.i. h.i."),
+            {FakeTextEntity.SOMETHING_WITH_PUNCTUATION},
         )
