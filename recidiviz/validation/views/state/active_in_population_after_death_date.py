@@ -52,16 +52,16 @@ WITH death_periods AS (
 most_recent_metrics AS (
     /* The most recent appearance of the person in the supervision_population or incarceration_population metrics */
     SELECT 
-    state_code, person_id, MAX(date_of_supervision) AS most_recent_population_date, 
+    state_code, person_id, MAX(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))) AS most_recent_population_date, 
     'supervision_population' as most_recent_population_date_metric
-    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
+    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_span_metrics_materialized`
     WHERE included_in_state_population
     GROUP BY state_code, person_id
     UNION ALL 
     SELECT
-    state_code, person_id, MAX(date_of_stay) AS most_recent_population_date,
+    state_code, person_id, MAX(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))) AS most_recent_population_date,
     'incarceration_population' as most_recent_population_date_metric
-    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+    FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_incarceration_population_span_metrics_materialized`
     WHERE included_in_state_population
     GROUP BY state_code, person_id
 )

@@ -54,9 +54,10 @@ SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
         population_date,
         person_id,
         1 AS in_dataflow
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` in_state
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` in_state
     JOIN population_dates
-        ON in_state.date_of_supervision = population_dates.population_date
+        ON population_dates.population_date BETWEEN in_state.start_date_inclusive 
+        AND COALESCE(DATE_SUB(in_state.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
         AND in_state.included_in_state_population
     )
     ,
