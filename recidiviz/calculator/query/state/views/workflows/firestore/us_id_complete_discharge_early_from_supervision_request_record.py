@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for discretionary criteria and relevant metadata case notes needed to determine eligibility
+"""Query for relevant case notes needed to determine eligibility
 for early discharge from supervision in Idaho
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -37,15 +37,15 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_VIEW_NAME = (
-    "us_id_complete_discharge_early_from_supervision_record"
+COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_NAME = (
+    "us_id_complete_discharge_early_from_supervision_request_record"
 )
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_DESCRIPTION = """
-    View of relevant case notes and discretionary criteria for determining eligibility 
+COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_DESCRIPTION = """
+    View of relevant case notes for determining eligibility 
     for early discharge from supervision in Idaho 
     """
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_QUERY_TEMPLATE = f"""
+COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_QUERY_TEMPLATE = f"""
  /*{{description}}*/
    WITH notes AS(
       --violations
@@ -170,11 +170,11 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_QUERY_TEMPLATE = f"""
    SELECT * FROM client_notes
 """
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_VIEW_NAME,
-    view_query_template=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_QUERY_TEMPLATE,
-    description=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_DESCRIPTION,
+    view_id=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_NAME,
+    view_query_template=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_QUERY_TEMPLATE,
+    description=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     sessions_dataset=SESSIONS_DATASET,
@@ -187,4 +187,4 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_VIEW_BUILDER = SimpleBigQ
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ID_RECORD_VIEW_BUILDER.build_and_print()
+        COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_BUILDER.build_and_print()
