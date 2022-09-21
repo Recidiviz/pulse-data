@@ -23,6 +23,7 @@ jobs:
         with:
           image-ref: "us.gcr.io/recidiviz-staging/appengine/default:latest"
           format: "sarif"
+          ignore-unfixed: true
           output: "trivy-results.sarif"
 
       - name: Upload Trivy scan results to GitHub Security tab
