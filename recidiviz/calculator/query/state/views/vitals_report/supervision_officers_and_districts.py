@@ -47,7 +47,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
         {{vitals_state_specific_district_id}},
         {{vitals_state_specific_district_name}}
    FROM (
-      SELECT * FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_to_single_day_metrics_materialized` 
+      SELECT * FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` 
       WHERE included_in_state_population
     ) sup_pop
    LEFT JOIN us_id_roster 
@@ -57,7 +57,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
         ON sup_pop.state_code = locations.state_code
         AND {{vitals_state_specific_join_with_supervision_location_ids}}
    
-   WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
+   WHERE COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern')) > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
         AND sup_pop.state_code in {enabled_states}
         AND (
             (us_id_roster.supervising_officer_external_id IS NOT NULL 
