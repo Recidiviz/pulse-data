@@ -193,7 +193,7 @@ final_movements AS (
     LEFT JOIN {ADH_REFERENCE_CODE} rc2
     ON lb.county_id = rc2.reference_code_id
     -- Omitting certain movement reason ids that are not considered incarceration admissions
-    WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106')
+    WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106', '105')
     ORDER BY
         o.offender_number,
         e.offender_external_movement_id,
