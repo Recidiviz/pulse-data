@@ -352,6 +352,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "D7 DUI COURT",
             "EXPANDED CRC",
             "BENCH WARRANT",  # SupervisionType, not SupervisionLevel
+            "PROBATION VIOLATOR",  # SupervisionType, not SupervisionLevel
             "ADMINISTRATIVE",  # Used for a non-standardized set of situations.
             "GOLD SEAL PENDING",  # Pending supervision termination (after parole board has approved termination)
             # No longer under IDOC authority
