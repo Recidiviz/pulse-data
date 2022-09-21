@@ -17,7 +17,7 @@
 """Tests the us_mo_violation_delegate.py file."""
 import unittest
 from datetime import date
-from typing import List
+from typing import Dict, List, Optional
 
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     _shorthand_for_violation_subtype,
@@ -254,8 +254,10 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Act
-        type_subtype_strings = (
-            self.delegate.get_violation_type_subtype_strings_for_violation(violation)
+        type_subtype_strings = list(
+            self.delegate.get_violation_type_subtype_strings_for_violation(
+                violation
+            ).keys()
         )
 
         # Assert
@@ -287,8 +289,8 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["SUBSTANCE_ABUSE"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"SUBSTANCE_ABUSE": ["DRG"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_mo_get_violation_type_subtype_strings_for_violation_law_citation(
         self,
@@ -315,8 +317,8 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["LAW_CITATION"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"LAW_CITATION": ["LAW_CITATION"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_mo_get_violation_type_subtype_strings_for_violation_technical(
         self,
@@ -338,8 +340,10 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Act
-        type_subtype_strings = (
-            self.delegate.get_violation_type_subtype_strings_for_violation(violation)
+        type_subtype_strings = list(
+            self.delegate.get_violation_type_subtype_strings_for_violation(
+                violation
+            ).keys()
         )
 
         # Assert
@@ -358,7 +362,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings: List[str] = []
+        expected_type_subtype_strings: Dict[str, List[Optional[str]]] = {}
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_violation_type_subtypes_with_violation_type_mappings(self) -> None:
@@ -387,7 +391,7 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.delegate = UsMoViolationDelegate()
 
     def test_us_mo_sorted_violation_subtypes_by_severity(self) -> None:
-        violation_subtypes = ["TECHNICAL", "FELONY", "ABSCONDED"]
+        violation_subtypes: List[str] = ["TECHNICAL", "FELONY", "ABSCONDED"]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate
@@ -398,7 +402,7 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
     def test_us_mo_sorted_violation_subtypes_by_severity_law_citation(self) -> None:
-        violation_subtypes = ["ABSCONDED", "LAW_CITATION"]
+        violation_subtypes: List[str] = ["ABSCONDED", "LAW_CITATION"]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate
@@ -409,7 +413,11 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
     def test_us_mo_sorted_violation_subtypes_by_severity_substance(self) -> None:
-        violation_subtypes = ["EMP", "SUBSTANCE_ABUSE", "SPC"]
+        violation_subtypes: List[str] = [
+            "EMP",
+            "SUBSTANCE_ABUSE",
+            "SPC",
+        ]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate

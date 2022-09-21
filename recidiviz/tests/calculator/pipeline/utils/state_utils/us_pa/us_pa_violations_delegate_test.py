@@ -17,7 +17,7 @@
 """Tests the us_pa_violation_delegate.py file."""
 import unittest
 from datetime import date
-from typing import List
+from typing import Dict, List, Optional
 
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     _shorthand_for_violation_subtype,
@@ -62,8 +62,10 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Act
-        type_subtype_strings = (
-            self.delegate.get_violation_type_subtype_strings_for_violation(violation)
+        type_subtype_strings = list(
+            self.delegate.get_violation_type_subtype_strings_for_violation(
+                violation
+            ).keys()
         )
 
         # Assert
@@ -91,8 +93,8 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["SUBSTANCE_ABUSE"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"SUBSTANCE_ABUSE": ["H12"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_electronic_monitoring(
         self,
@@ -115,8 +117,8 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["ELEC_MONITORING"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"ELEC_MONITORING": ["M16"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_low_technical(
         self,
@@ -139,8 +141,8 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["LOW_TECH"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"LOW_TECH": ["L05"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_medium_technical(
         self,
@@ -165,8 +167,8 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["MED_TECH"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"MED_TECH": ["M05"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_high_technical(
         self,
@@ -191,8 +193,8 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings = ["HIGH_TECH"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
+        expected_type_subtype_strings = {"HIGH_TECH": ["H05"]}
+        self.assertDictEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_unsupported_technical(
         self,
@@ -253,7 +255,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Assert
-        expected_type_subtype_strings: List[str] = []
+        expected_type_subtype_strings: Dict[str, List[Optional[str]]] = {}
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
     def test_violation_type_subtypes_with_violation_type_mappings(self) -> None:
@@ -279,7 +281,11 @@ class TestUsPaSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.delegate = UsPaViolationDelegate()
 
     def test_us_pa_sorted_violation_subtypes_by_severity(self) -> None:
-        violation_subtypes = ["LOW_TECH", "LAW", "ABSCONDED"]
+        violation_subtypes: List[str] = [
+            "LOW_TECH",
+            "LAW",
+            "ABSCONDED",
+        ]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate
@@ -290,7 +296,11 @@ class TestUsPaSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
     def test_us_pa_sorted_violation_subtypes_by_severity_high_tech(self) -> None:
-        violation_subtypes = ["ABSCONDED", "SUBSTANCE_ABUSE", "HIGH_TECH"]
+        violation_subtypes: List[str] = [
+            "ABSCONDED",
+            "SUBSTANCE_ABUSE",
+            "HIGH_TECH",
+        ]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate
@@ -301,7 +311,11 @@ class TestUsPaSortedViolationSubtypesBySeverity(unittest.TestCase):
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
     def test_us_pa_sorted_violation_subtypes_by_severity_substance_abuse(self) -> None:
-        violation_subtypes = ["LOW_TECH", "SUBSTANCE_ABUSE", "ELEC_MONITORING"]
+        violation_subtypes: List[str] = [
+            "LOW_TECH",
+            "SUBSTANCE_ABUSE",
+            "ELEC_MONITORING",
+        ]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate
@@ -314,7 +328,11 @@ class TestUsPaSortedViolationSubtypesBySeverity(unittest.TestCase):
     def test_us_pa_sorted_violation_subtypes_by_severity_electronic_monitoring(
         self,
     ) -> None:
-        violation_subtypes = ["LOW_TECH", "MED_TECH", "ELEC_MONITORING"]
+        violation_subtypes: List[str] = [
+            "LOW_TECH",
+            "MED_TECH",
+            "ELEC_MONITORING",
+        ]
 
         sorted_subtypes = sorted_violation_subtypes_by_severity(
             violation_subtypes, self.delegate

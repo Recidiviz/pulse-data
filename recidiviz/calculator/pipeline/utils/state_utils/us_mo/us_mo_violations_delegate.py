@@ -16,7 +16,8 @@
 # =============================================================================
 """Utils for state-specific logic related to violations
 in US_MO."""
-from typing import List, Optional, Tuple
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -121,9 +122,9 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
     def get_violation_type_subtype_strings_for_violation(
         self,
         violation: StateSupervisionViolation,
-    ) -> List[str]:
+    ) -> Dict[str, List[Optional[str]]]:
         """Returns a list of strings that represent the violation subtypes present on
-        the given |violation|.
+        the given |violation|, along with the raw text used to determine the subtype.
 
         For all non-TECHNICAL violation types on the |violation|, includes the raw
         violation_type value string. If the |violation| includes a TECHNICAL
@@ -135,15 +136,10 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
         then the subtype values are included in the list and 'TECHNICAL' is not
         included.
         """
-        violation_type_list: List[str] = []
+        violation_subtypes_map: Dict[str, List[Optional[str]]] = defaultdict(list)
 
         includes_technical_violation = False
         includes_special_case_violation_subtype = False
-
-        supervision_violation_types = violation.supervision_violation_types
-
-        if not supervision_violation_types:
-            return violation_type_list
 
         for violation_type_entry in violation.supervision_violation_types:
             if (
@@ -151,7 +147,11 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
                 and violation_type_entry.violation_type
                 != StateSupervisionViolationType.TECHNICAL
             ):
-                violation_type_list.append(violation_type_entry.violation_type.value)
+                violation_subtypes_map[
+                    violation_type_entry.violation_type.value
+                ].append(
+                    violation_type_entry.violation_type_raw_text,
+                )
             else:
                 includes_technical_violation = True
 
@@ -159,21 +159,25 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
             condition = condition_entry.condition
             if condition:
                 if condition.upper() == _SUBSTANCE_ABUSE_CONDITION_STR:
-                    violation_type_list.append(_SUBSTANCE_ABUSE_SUBTYPE_STR)
+                    violation_subtypes_map[_SUBSTANCE_ABUSE_SUBTYPE_STR].append(
+                        condition.upper()
+                    )
                     includes_special_case_violation_subtype = True
                 else:
                     if condition.upper() == LAW_CITATION_SUBTYPE_STR:
                         includes_special_case_violation_subtype = True
 
                     # Condition values are free text so we standardize all to be upper case
-                    violation_type_list.append(condition.upper())
+                    violation_subtypes_map[condition.upper()].append(condition.upper())
 
         # If this is a TECHNICAL violation without either a SUBSTANCE_ABUSE or LAW_CITATION condition, then add
         # 'TECHNICAL' to the type list so that this will get classified as a TECHNICAL violation
         if includes_technical_violation and not includes_special_case_violation_subtype:
-            violation_type_list.append(StateSupervisionViolationType.TECHNICAL.value)
+            violation_subtypes_map[
+                StateSupervisionViolationType.TECHNICAL.value
+            ].append(None)
 
-        return violation_type_list
+        return violation_subtypes_map
 
     def include_decisions_on_follow_up_responses_for_most_severe_response(self) -> bool:
         """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response

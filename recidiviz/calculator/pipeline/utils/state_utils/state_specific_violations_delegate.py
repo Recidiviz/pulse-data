@@ -18,7 +18,8 @@
 for state-specific decisions involved in categorizing various attributes of
 violations."""
 import abc
-from typing import List, Tuple
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -76,9 +77,9 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
     def get_violation_type_subtype_strings_for_violation(
         self,
         violation: StateSupervisionViolation,
-    ) -> List[str]:
-        """Returns a list of strings that represent the violation subtypes present on
-        the given |violation|.
+    ) -> Dict[str, List[Optional[str]]]:
+        """Returns a list of tuples that represent the violation subtypes present on
+        the given |violation|, along with the raw text used to determine the subtype.
 
         Default behavior is to return a list of the violation_type raw values in the
         violation's supervision_violation_types.
@@ -87,14 +88,14 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
 
         supervision_violation_types = violation.supervision_violation_types
 
-        if not supervision_violation_types:
-            return []
+        violation_subtypes_map: Dict[str, List[Optional[str]]] = defaultdict(list)
+        for violation_type_entry in supervision_violation_types:
+            if violation_type_entry.violation_type:
+                violation_subtypes_map[
+                    violation_type_entry.violation_type.value
+                ].append(violation_type_entry.violation_type_raw_text)
 
-        return [
-            violation_type_entry.violation_type.value
-            for violation_type_entry in supervision_violation_types
-            if violation_type_entry.violation_type
-        ]
+        return violation_subtypes_map
 
     def include_decisions_on_follow_up_responses_for_most_severe_response(self) -> bool:
         """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response

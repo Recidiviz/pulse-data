@@ -16,7 +16,8 @@
 # =============================================================================
 """Utils for state-specific logic related to violations
 in US_PA."""
-from typing import Dict, List, Tuple
+from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -95,20 +96,15 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
     def get_violation_type_subtype_strings_for_violation(
         self,
         violation: StateSupervisionViolation,
-    ) -> List[str]:
+    ) -> Dict[str, List[Optional[str]]]:
         """Returns a list of strings that represent the violation subtypes present on
-        the given |violation|.
+        the given |violation|, along with the raw text used to determine the subtype.
 
         For TECHNICAL violation types, determines the US_PA-specific violation subtype
         using the violation_type_raw_text. For all other violation types, the subtype is
         just the violation_type raw value string.
         """
-        violation_type_list: List[str] = []
-
-        supervision_violation_types = violation.supervision_violation_types
-
-        if not supervision_violation_types:
-            return violation_type_list
+        violation_subtypes_map: Dict[str, List[Optional[str]]] = defaultdict(list)
 
         for violation_type_entry in violation.supervision_violation_types:
             if (
@@ -116,12 +112,15 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
                 and violation_type_entry.violation_type
                 != StateSupervisionViolationType.TECHNICAL
             ):
-                violation_type_list.append(violation_type_entry.violation_type.value)
+                violation_subtypes_map[
+                    violation_type_entry.violation_type.value
+                ].append(violation_type_entry.violation_type_raw_text)
+
             else:
-                violation_type_list.append(
+                violation_subtypes_map[
                     _violation_subtype_from_violation_type_entry(violation_type_entry)
-                )
-        return violation_type_list
+                ].append(violation_type_entry.violation_type_raw_text)
+        return violation_subtypes_map
 
 
 def _violation_subtype_from_violation_type_entry(

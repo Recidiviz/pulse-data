@@ -129,6 +129,9 @@ class ViolationResponseMixin(BuildableAttr):
         default=None
     )
 
+    # The raw text that determines the violation_type_subtype.
+    violation_type_subtype_raw_text: Optional[str] = attr.ib(default=None)
+
 
 @attr.s
 class SupervisionLocationMixin(BuildableAttr):
