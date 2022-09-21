@@ -148,6 +148,7 @@ PIPFILE_KEY = "pipfile"
 INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
+IGNORE_KEY = "ignore"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # admin panel files
@@ -226,6 +227,13 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
         for data_type in ["clients", "opportunities", "client_events"]
     ],
     ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
+    # ignore files
+    IGNORE_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset({".gitignore"}),
+            then_modified_files=frozenset({".dockerignore", ".gcloudignore"}),
+        )
+    ],
 }
 
 
