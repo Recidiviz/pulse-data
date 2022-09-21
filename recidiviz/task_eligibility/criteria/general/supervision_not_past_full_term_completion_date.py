@@ -51,6 +51,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         criteria_dataset=past_full_term_completion_builder.dataset_id,
+        meets_criteria_default=True,
     )
 )
 

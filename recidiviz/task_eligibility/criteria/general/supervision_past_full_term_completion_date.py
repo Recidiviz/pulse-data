@@ -17,6 +17,7 @@
 """Defines a criteria span view that shows spans of time during which someone is past
 their supervision full term completion date (projected max completion date).
 """
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -50,7 +51,7 @@ SELECT
     start_date,
     end_date,
     critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+    TO_JSON(STRUCT({revert_nonnull_end_date_clause('critical_date')} AS eligible_date)) AS reason,
 FROM critical_date_has_passed_spans
 """
 
