@@ -36,15 +36,9 @@ from typing import (
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.utils import structured_logging, trace
-
-# We set this to 10 because urllib3 (used by the Google BigQuery client) has a default limit of 10 connections and
-# we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
-# increased.
-# In the future, we could increase the worker number by playing around with increasing the pool size per this post:
-# https://github.com/googleapis/python-storage/issues/253
-DAG_WALKER_MAX_WORKERS = 10
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -321,7 +315,12 @@ class BigQueryViewDagWalker:
         queue: Set[BigQueryViewDagNode] = set(self.roots)
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
-        with futures.ThreadPoolExecutor(max_workers=DAG_WALKER_MAX_WORKERS) as executor:
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
             future_to_context: Dict[
                 Future[Tuple[float, ViewResultT]],
                 Tuple[BigQueryViewDagNode, ParentResultsT, float],
