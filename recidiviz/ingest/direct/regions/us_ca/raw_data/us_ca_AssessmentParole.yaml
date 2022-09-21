@@ -84,6 +84,9 @@ columns:
     is_datetime: True
   - name: Assessment
     description: |-
+      [Soon to be deprecated column] COMPAS Assessment score. Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a case management and decision support tool developed and owned by Northpointe (now Equivant) used by U.S. courts to assess the likelihood of a defendant becoming a recidivist.
+  - name: COMPAS_Assessment
+    description: |-
       COMPAS Assessment score. Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a case management and decision support tool developed and owned by Northpointe (now Equivant) used by U.S. courts to assess the likelihood of a defendant becoming a recidivist.
   - name: SubstanceAbuseScore
     description: |-

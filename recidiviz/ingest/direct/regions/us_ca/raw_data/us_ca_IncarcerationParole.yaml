@@ -16,6 +16,7 @@ columns:
     is_datetime: True
   - name: In_Move
   - name: In_Reason
+  - name: Intake_Date
   - name: OUT_DATE
     description: |-
       OUT_DATE will be filled with the date a person was paroled or discharged.
