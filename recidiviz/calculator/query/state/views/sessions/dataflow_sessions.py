@@ -116,16 +116,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-        AND state_code NOT IN ('US_ID','US_TN', 'US_CO')
+        AND state_code NOT IN ('US_ID', 'US_CO')
         AND included_in_state_population
     UNION ALL
     -- Use Idaho preprocessed dataset to deal with state-specific logic
     SELECT *
     FROM `{project_id}.{sessions_dataset}.us_id_incarceration_population_metrics_preprocessed_materialized`
-    UNION ALL
-    -- Use TN preprocessed dataset to deal with state-specific logic
-    SELECT *
-    FROM `{project_id}.{sessions_dataset}.us_tn_incarceration_population_metrics_preprocessed_materialized`
     UNION ALL
     -- Use CO preprocessed dataset to deal with state-specific logic
     SELECT *
