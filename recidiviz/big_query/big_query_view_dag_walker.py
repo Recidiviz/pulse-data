@@ -114,7 +114,7 @@ class ProcessDagResult(Generic[ViewResultT]):
         slowest_to_process = heapq.nlargest(n_slowest, processing_runtimes)
         slowest_list = "\n".join(
             [
-                f"{i+1}) {seconds} sec: {address.dataset_id}.{address.table_id}"
+                f"{i+1}) {seconds:.2f} sec: {address.dataset_id}.{address.table_id}"
                 for i, (seconds, address) in enumerate(slowest_to_process)
             ]
         )
