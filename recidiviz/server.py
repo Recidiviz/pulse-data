@@ -65,9 +65,8 @@ if environment.in_gcp():
     trace_sampler: samplers.Sampler = trace.CompositeSampler(
         {
             "/direct/extract_and_merge": samplers.AlwaysOnSampler(),
-            # There are a lot of scraper requests, so they can use the default rate of 1 in 10k.
-            "/scraper/": samplers.ProbabilitySampler(),
-            "/scrape_aggregate_reports/": samplers.ProbabilitySampler(),
+            # We only have a few of these requests a day
+            "/view_update/": samplers.AlwaysOnSampler(),
         },
         # For other requests, trace 1 in 20.
         default_sampler=samplers.ProbabilitySampler(rate=0.05),
