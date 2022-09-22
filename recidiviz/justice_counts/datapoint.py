@@ -100,6 +100,7 @@ class DatapointInterface:
         datapoint: schema.Datapoint,
         is_published: bool,
         frequency: schema.ReportingFrequency,
+        old_value: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Serializes Datapoint object into json format for consumption in the Justice Counts Control Panel"""
         metric_definition = METRIC_KEY_TO_METRIC[datapoint.metric_definition_key]
@@ -143,9 +144,7 @@ class DatapointInterface:
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
             "value": cast_to_number(datapoint.value),
-            "old_value": cast_to_number(datapoint.datapoint_histories[-1].old_value)
-            if len(datapoint.datapoint_histories) > 0
-            else None,
+            "old_value": cast_to_number(old_value),
             "is_published": is_published,
             "frequency": frequency.value,
         }
@@ -304,7 +303,7 @@ class DatapointInterface:
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
         use_existing_aggregate_value: bool = False,
-    ) -> Optional[schema.Datapoint]:
+    ) -> Optional[Dict[str, Any]]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
         All datapoints associated with a metric are saved, even if the value is None.
 
@@ -373,7 +372,6 @@ class DatapointInterface:
             ingested_entity,
             session,
         )
-
         if existing_datapoint:
             if existing_datapoint.value != datapoint.value:
                 datapoint_history = schema.DatapointHistory(
@@ -383,9 +381,23 @@ class DatapointInterface:
                     old_value=existing_datapoint.value,
                     new_value=str(value) if value is not None else value,
                 )
-
                 datapoint.datapoint_histories.append(datapoint_history)
-        return datapoint
+
+        # Return datapoint json because datapoint values and metadata will be
+        # used in the bulk upload data summary pages.
+        return (
+            DatapointInterface.to_json_response(
+                datapoint=datapoint,
+                is_published=report.status == schema.ReportStatus.PUBLISHED,
+                frequency=schema.ReportingFrequency[report.type],
+                old_value=existing_datapoint.value
+                if existing_datapoint is not None
+                and existing_datapoint.value != datapoint.value
+                else None,
+            )
+            if datapoint is not None
+            else None
+        )
 
     @attr.define
     class DatapointsForMetricDefinition:

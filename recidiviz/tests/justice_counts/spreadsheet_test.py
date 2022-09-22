@@ -61,7 +61,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.bulk_upload_test_files
                 / "law_enforcement/arrests_metric_errors.xlsx"
             ).open("rb")
-            datapoints, sheet_to_error = SpreadsheetInterface.ingest_spreadsheet(
+            (
+                datapoint_json_list,
+                sheet_to_error,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
                 spreadsheet=spreadsheet,
@@ -69,7 +72,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 agency_id=agency.id,
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                datapoints=datapoints,
+                datapoint_json_list=datapoint_json_list,
                 sheet_to_error=sheet_to_error,
                 system="LAW_ENFORCEMENT",
             )
@@ -114,8 +117,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                             },
                         ],
                     )
-                    # 24 total datapoints. 2 for aggregate total (May and June), 10 for gender breakdowns (May-June),
-                    # 10 for arrest_by_type breakdowns (May - June).
+                    # 24 datapoints. 2 for aggregate total (Totals are inferred from arrest_by_type).
+                    # 10 for gender breakdowns (May - June), and 12 for arrest_by_type
+                    # breakdowns (May - June).
                     self.assertEqual(len(metric["datapoints"]), 24)
                 else:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
@@ -151,7 +155,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.bulk_upload_test_files
                 / "law_enforcement/annual_budget_metric.xlsx"
             ).open("rb")
-            datapoints, sheet_to_error = SpreadsheetInterface.ingest_spreadsheet(
+            (
+                datapoint_json_list,
+                sheet_to_error,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
                 spreadsheet=spreadsheet,
@@ -159,7 +166,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 agency_id=agency.id,
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                datapoints=datapoints,
+                datapoint_json_list=datapoint_json_list,
                 sheet_to_error=sheet_to_error,
                 system="LAW_ENFORCEMENT",
             )
@@ -173,6 +180,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(metric["sheets"], [])
                     # 3 total datapoints, for each year (2020-2022) annual budget.
                     self.assertEqual(len(metric["datapoints"]), 3)
+                    for datapoint in metric["datapoints"]:
+                        self.assertIsNone(datapoint["old_value"])
                 elif len(metric["sheets"]) != 0:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
                     self.assertEqual(len(metric["sheets"]), 1)
@@ -189,6 +198,33 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     )
 
             self.assertEqual(len(json_response["pre_ingest_errors"]), 0)
+            # Uploading the spreadsheet with changes will result in datapoints
+            # with non-None old_value values.
+            file = (
+                self.bulk_upload_test_files
+                / "law_enforcement/annual_budget_metric_update.xlsx"
+            ).open("rb")
+            (
+                datapoint_json_list,
+                sheet_to_error,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
+                session=session,
+                xls=pd.ExcelFile(file),
+                spreadsheet=spreadsheet,
+                auth0_user_id=user.auth0_user_id,
+                agency_id=agency.id,
+            )
+            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+                datapoint_json_list=datapoint_json_list,
+                sheet_to_error=sheet_to_error,
+                system="LAW_ENFORCEMENT",
+            )
+            for metric in json_response["metrics"]:
+                if metric["key"] == law_enforcement.annual_budget.key:
+                    # 3 total datapoints, for each year (2020-2022) annual budget.
+                    self.assertEqual(len(metric["datapoints"]), 3)
+                    for datapoint in metric["datapoints"]:
+                        self.assertIsNotNone(datapoint["old_value"])
 
     def test_ingest_json_response_arrests_wrong_system(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -208,7 +244,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.bulk_upload_test_files
                 / "law_enforcement/arrests_metric_errors.xlsx"
             ).open("rb")
-            datapoints, sheet_to_error = SpreadsheetInterface.ingest_spreadsheet(
+            (
+                datapoint_json_list,
+                sheet_to_error,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
                 spreadsheet=spreadsheet,
@@ -216,7 +255,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 agency_id=agency.id,
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                datapoints=datapoints,
+                datapoint_json_list=datapoint_json_list,
                 sheet_to_error=sheet_to_error,
                 system="LAW_ENFORCEMENT",
             )

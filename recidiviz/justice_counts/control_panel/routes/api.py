@@ -410,7 +410,10 @@ def get_api_blueprint(
             ingest_on_upload == "True"
             and ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions
         ):
-            datapoints, sheet_to_error = SpreadsheetInterface.ingest_spreadsheet(
+            (
+                datapoint_json_list,
+                sheet_to_error,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
@@ -419,7 +422,9 @@ def get_api_blueprint(
             )
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
-                    sheet_to_error=sheet_to_error, datapoints=datapoints, system=system
+                    sheet_to_error=sheet_to_error,
+                    datapoint_json_list=datapoint_json_list,
+                    system=system,
                 )
             )
 

@@ -189,12 +189,12 @@ class BulkUploader:
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
-    ) -> Tuple[List[schema.Datapoint], Dict[str, Exception]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Exception]]:
         """Iterate through all tabs in an Excel spreadsheet and upload them
         to the Justice Counts database using the `upload_rows` method defined below.
         If an error is encountered on a particular tab, log it and continue.
         """
-        datapoints: List[schema.Datapoint] = []
+        datapoint_json_list: List[Dict[str, Any]] = []
         # Sort so that we process e.g. caseloads before caseloads_by_gender.
         # This is important because it allows us to remove the requirement
         # that caseloads_by_gender includes the aggregate metric value too,
@@ -225,7 +225,7 @@ class BulkUploader:
                 df = df.dropna(axis=0, how="any", subset="value")
                 # Convert dataframe to a list of dictionaries
                 rows = df.to_dict("records")
-                datapoints += self._upload_rows(
+                datapoint_json_list += self._upload_rows(
                     session=session,
                     system=system,
                     rows=rows,
@@ -238,7 +238,7 @@ class BulkUploader:
                     sheet_to_error[sheet_name] = e
                 else:
                     raise e
-        return datapoints, sheet_to_error
+        return datapoint_json_list, sheet_to_error
 
     def upload_csv(
         self,
@@ -273,26 +273,26 @@ class BulkUploader:
         filename: str,
         agency_id: int,
         user_account: schema.UserAccount,
-    ) -> List[schema.Datapoint]:
+    ) -> List[Dict[str, Any]]:
         """Generally, a file will only contain metrics for one system. In the case
         of supervision, the file could contain metrics for supervision, parole, or
         probation. This is indicated by the `system` column. In this case, we break
         up the rows by system, and then ingest one system at a time."""
         system_to_rows = self._get_system_to_rows(system=system, rows=rows)
-        datapoints = []
+        datapoint_json_list = []
         for current_system, current_rows in system_to_rows.items():
             # Based on the system and the name of the CSV file, determine which
             # Justice Counts metric this file contains data for
             metricfile = self._get_metricfile(filename=filename, system=current_system)
 
-            datapoints += self._upload_rows_for_metricfile(
+            datapoint_json_list += self._upload_rows_for_metricfile(
                 session=session,
                 rows=current_rows,
                 metricfile=metricfile,
                 agency_id=agency_id,
                 user_account=user_account,
             )
-        return datapoints
+        return datapoint_json_list
 
     def _get_system_to_rows(
         self, system: schema.System, rows: List[Dict[str, Any]]
@@ -331,7 +331,7 @@ class BulkUploader:
         metricfile: MetricFile,
         agency_id: int,
         user_account: schema.UserAccount,
-    ) -> List[schema.Datapoint]:
+    ) -> List[Dict[str, Any]]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
         The rows should be formatted according to the technical specification, and contain
@@ -381,7 +381,7 @@ class BulkUploader:
         # reported data into a MetricInterface object. If a report already
         # exists for this time range, update it with the MetricInterface.
         # Else, create a new report and add the MetricInterface.
-        datapoints = []
+        datapoint_json_list = []
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
             existing_report = reports_by_time_range.get(time_range)
             if existing_report is not None:
@@ -408,12 +408,13 @@ class BulkUploader:
                 rows_for_this_time_range=rows_for_this_time_range,
             )
 
-            datapoints += ReportInterface.add_or_update_metric(
+            datapoint_json_list += ReportInterface.add_or_update_metric(
                 session=session,
                 report=report,
                 report_metric=report_metric,
                 user_account=user_account,
                 use_existing_aggregate_value=metricfile.disaggregation is not None,
+                # TODO(#15499) Infer aggregate value only if total sheet was not provided.
             )
 
             ReportInterface.update_report_metadata(
@@ -422,7 +423,7 @@ class BulkUploader:
                 editor_id=user_account.id,
                 status=ReportStatus.DRAFT.value,
             )
-        return datapoints
+        return datapoint_json_list
 
     def _get_metricfile(self, filename: str, system: schema.System) -> MetricFile:
         try:

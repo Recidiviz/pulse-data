@@ -318,7 +318,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     "disaggregation_display_name": None,
                     "dimension_display_name": None,
                     "value": 456.3,
-                    "old_value": 123,
+                    "old_value": None,
                     "is_published": False,
                 },
             )
