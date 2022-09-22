@@ -278,19 +278,38 @@ SELECT
     state_code,
     person_id,
     "VIOLATION" AS event,
-    IFNULL(violation_date, response_date) AS event_date,
+    event_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         IFNULL(violation_type, "INTERNAL_UNKNOWN") AS violation_type,
         IFNULL(violation_type_subtype, "INTERNAL_UNKNOWN") AS violation_type_subtype,
         IFNULL(most_severe_response_decision, "INTERNAL_UNKNOWN") AS most_severe_response_decision,
-        CAST(is_most_severe_violation_type_of_all_violations AS STRING) AS is_most_severe_violation_type
+        CAST(is_most_severe_violation_type_of_all_violations AS STRING) AS is_most_severe_violation_type,
+        CAST(response_date AS STRING) AS response_date,
+        CAST(is_inferred_violation_date AS STRING) AS is_inferred_violation_date
     ))[OFFSET(0)]) AS event_attributes,
-FROM
-    `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized`
+FROM (
+    SELECT
+        state_code,
+        person_id,
+        IFNULL(violation_date, response_date) AS event_date,
+        violation_type,
+        violation_type_subtype,
+        most_severe_response_decision,
+        is_most_severe_violation_type_of_all_violations,
+        -- Indicates that event_date is hydrated with response_date because violation_date is NULL
+        violation_date IS NULL AS is_inferred_violation_date,
+        -- Deduplicates to the earliest response date associated with the violation date
+        MIN(response_date) AS response_date
+    FROM
+        `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized`
+    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+)
 WHERE
-    IFNULL(violation_date, response_date) IS NOT NULL
-GROUP BY 1, 2, 3, 4, violation_type, violation_type_subtype,
-    most_severe_response_decision, is_most_severe_violation_type_of_all_violations
+    event_date IS NOT NULL
+GROUP BY 1, 2, 3, 4, 
+    violation_type, violation_type_subtype,
+    most_severe_response_decision, is_most_severe_violation_type_of_all_violations,
+    response_date, is_inferred_violation_date
 
 UNION ALL
 
