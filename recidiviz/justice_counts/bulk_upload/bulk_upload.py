@@ -111,7 +111,7 @@ class BulkUploader:
 
     def get_sheet_to_preingest_messages(
         self,
-        actual_sheetnames: List[str],
+        actual_sheetnames: Set[str],
         expected_aggregate_sheetnames: Set[str],
         filename_to_metricfiles: Dict[str, MetricFile],
     ) -> Dict[str, Exception]:
@@ -205,10 +205,13 @@ class BulkUploader:
             for filename, metricfile in filename_to_metricfiles.items()
             if metricfile.disaggregation is None
         }
-        actual_sheetnames = sorted(
-            xls.sheet_names,
-            key=lambda x: 0 if x in expected_aggregate_sheetnames else 1,
-        )
+        actual_sheetnames = {
+            s.strip().lower()
+            for s in sorted(
+                xls.sheet_names,
+                key=lambda x: 0 if x in expected_aggregate_sheetnames else 1,
+            )
+        }
         # First, instantiate sheet_to_error dictionary and add any pre-ingest
         # messages (e.g missing all sheets for a metric).
 
