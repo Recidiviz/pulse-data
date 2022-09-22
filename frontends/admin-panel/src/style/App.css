@@ -102,6 +102,8 @@ tr.metadata-table-row > td.ant-table-cell > div {
   height: 60px;
   width: 450px;
   padding: 10px;
+  border-radius: 15px;
+  font-weight: bold;
 }
 
 .ingest-status-cell-green {
@@ -111,7 +113,7 @@ tr.metadata-table-row > td.ant-table-cell > div {
 
 .ingest-status-cell-grey {
   color: #ffffff;
-  background-color: #a9a9a9;
+  background-color: #444444;
 }
 
 .ingest-status-cell-yellow {
@@ -122,11 +124,15 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .queue-status-running {
   color: #ffffff;
   background-color: #389e0d;
+  width: 150px;
+  text-align: center;
 }
 
 .queue-status-not-running {
   color: #ffffff;
   background-color: #f5222d;
+  width: 150px;
+  text-align: center;
 }
 
 .ingest-caution {
