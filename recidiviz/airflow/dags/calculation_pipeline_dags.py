@@ -237,6 +237,9 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
             tracker_dataset_id="view_update_metadata",
             tracker_table_id="rematerialization_tracker",
         ),
+        # TODO(#15413): Change the timeout back to the default once rematerialization
+        #  is reliably back down under 2 hours.
+        timeout=(60 * 60 * 4),
     )
 
     trigger_validations = trigger_validations_operator()
