@@ -23,7 +23,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH status_bw AS (
+WITH status_bw AS (
         SELECT
             *
         FROM
@@ -69,6 +69,15 @@ VIEW_QUERY_TEMPLATE = """
         FROM
             board_holdover_parole_revocation_partition_statuses
     ),
+    -- This CTE filters for only periods where someone is listed as "I" (Institution).
+    incarceration_subcycle_body_status AS (
+        SELECT
+            *
+        FROM {LBAKRDTA_TAK158} body_status_f1
+        WHERE body_status_f1.F1_DOC IS NOT NULL
+            AND body_status_f1.F1_SST = 'I'
+            # TODO(#14717) - Consider adding in "F" Field statuses for those listed in facilties during these periods
+    ),
     subcycle_partition_status_change_dates AS (
         SELECT
             sub_cycle_partition_statuses.DOC AS DOC,
@@ -83,7 +92,7 @@ VIEW_QUERY_TEMPLATE = """
             '2-PARTITION' AS SUBCYCLE_DATE_TYPE
 
         FROM
-            {LBAKRDTA_TAK158} body_status_f1
+            incarceration_subcycle_body_status body_status_f1
         LEFT OUTER JOIN
             sub_cycle_partition_statuses
         ON
@@ -107,7 +116,7 @@ VIEW_QUERY_TEMPLATE = """
             F1_CD AS STATUS_CODE_CHG_DT,
             '1-OPEN' AS SUBCYCLE_DATE_TYPE
         FROM
-            {LBAKRDTA_TAK158} body_status_f1
+            incarceration_subcycle_body_status body_status_f1
     ),
     subcycle_close_status_change_dates AS (
         SELECT
@@ -122,7 +131,7 @@ VIEW_QUERY_TEMPLATE = """
             F1_WW AS STATUS_CODE_CHG_DT,
             '3-CLOSE' AS SUBCYCLE_DATE_TYPE
         FROM
-            {LBAKRDTA_TAK158} body_status_f1
+            incarceration_subcycle_body_status body_status_f1
     ),
     all_sub_sub_cycle_critical_dates AS (
         SELECT
@@ -140,10 +149,10 @@ VIEW_QUERY_TEMPLATE = """
                     STATUS_SEQ_NUM ASC
             ) AS SUB_SQN_SEQ
         FROM (
-             SELECT * FROM subcycle_open_status_change_dates
-             UNION DISTINCT
+            SELECT * FROM subcycle_open_status_change_dates
+            UNION DISTINCT
             SELECT * FROM subcycle_partition_status_change_dates
-             UNION DISTINCT
+            UNION DISTINCT
             SELECT * FROM subcycle_close_status_change_dates
         ) all_dates
     ),
@@ -184,15 +193,6 @@ VIEW_QUERY_TEMPLATE = """
         FROM
             status_bw
         GROUP BY BW_DOC, BW_CYC, BW_SY
-    ),
-    -- This CTE filters for only periods where someone is listed as "I" (Institution).
-    incarceration_subcycle_body_status AS (
-        SELECT
-            *
-        FROM {LBAKRDTA_TAK158} body_status_f1
-        WHERE body_status_f1.F1_DOC IS NOT NULL
-            AND body_status_f1.F1_SST = 'I'
-            # TODO(#14717) - Consider adding in "F" Field statuses for those listed in facilties during these periods
     ),
     most_recent_status_updates as (
         SELECT
