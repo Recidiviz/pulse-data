@@ -32,6 +32,9 @@ METRIC_DATE_COLUMNS_BY_SINGLE_DAY_METRICS_TABLES_TO_MATERIALIZE: Dict[str, str] 
     "supervision_population_metrics": "date_of_supervision",
     "incarceration_population_metrics": "date_of_stay",
     "program_participation_metrics": "date_of_participation",
+    # TODO(#14762) Remove this when we no longer are using the unnested population spans
+    "incarceration_population_span_to_single_day_metrics": "date_of_stay",
+    "supervision_population_span_to_single_day_metrics": "date_of_supervision",
 }
 
 MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
