@@ -122,7 +122,17 @@ def address_overrides_for_view_builders(
             dataflow_dataset_override,
         )
 
-        address_overrides_builder.register_custom_dataset_override(
-            DATAFLOW_METRICS_DATASET, dataflow_dataset_override
-        )
+        if (
+            BigQueryAddressOverrides.format_sandbox_dataset(
+                view_dataset_override_prefix, DATAFLOW_METRICS_DATASET
+            )
+            == dataflow_dataset_override
+        ):
+            address_overrides_builder.register_sandbox_override_for_entire_dataset(
+                DATAFLOW_METRICS_DATASET
+            )
+        else:
+            address_overrides_builder.register_custom_dataset_override(
+                DATAFLOW_METRICS_DATASET, dataflow_dataset_override
+            )
     return address_overrides_builder.build()
