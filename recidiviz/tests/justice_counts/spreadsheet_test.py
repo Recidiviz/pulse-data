@@ -84,29 +84,17 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         metric["display_name"],
                         law_enforcement.total_arrests.display_name,
                     )
-                    self.assertEqual(
-                        metric["sheets"],
-                        [
-                            {
-                                "display_name": filename_to_metricfile[
-                                    "arrests"
-                                ].display_name,
-                                "sheet_name": "arrests",
-                                "messages": [
-                                    {
-                                        "title": "Too Many Rows",
-                                        "subtitle": "6/2021",
-                                        "description": "There should only be a single row containing data for arrests in 6/2021.",
-                                        "type": "ERROR",
-                                    },
-                                ],
-                            },
-                            {
-                                "display_name": filename_to_metricfile[
-                                    "arrests_by_race"
-                                ].display_name,
-                                "sheet_name": "arrests_by_race",
-                                "messages": [
+                    self.assertEqual(len(metric["sheets"]), 2)
+                    for sheet in metric["sheets"]:
+                        if (
+                            sheet["display_name"]
+                            == filename_to_metricfile["arrests_by_race"].display_name
+                        ):
+
+                            self.assertEqual(sheet["sheet_name"], "arrests_by_race")
+                            self.assertEqual(
+                                sheet["messages"],
+                                [
                                     {
                                         "title": "Missing Column",
                                         "subtitle": "race/ethnicity",
@@ -114,12 +102,25 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                                         "type": "ERROR",
                                     },
                                 ],
-                            },
-                        ],
-                    )
-                    # 24 datapoints. 2 for aggregate total (Totals are inferred from arrest_by_type).
-                    # 10 for gender breakdowns (May - June), and 12 for arrest_by_type
-                    # breakdowns (May - June).
+                            )
+                        elif (
+                            sheet["display_name"]
+                            == filename_to_metricfile["arrests"].display_name
+                        ):
+                            self.assertEqual(sheet["sheet_name"], "arrests")
+                            self.assertEqual(
+                                sheet["messages"],
+                                [
+                                    {
+                                        "title": "Too Many Rows",
+                                        "subtitle": "6/2021",
+                                        "description": "There should only be a single row containing data for arrests in 6/2021.",
+                                        "type": "ERROR",
+                                    },
+                                ],
+                            )
+                    # 24 total datapoints. 2 for aggregate total (May and June), 10 for gender breakdowns (May-June),
+                    # 10 for arrest_by_type breakdowns (May - June).
                     self.assertEqual(len(metric["datapoints"]), 24)
                 else:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
