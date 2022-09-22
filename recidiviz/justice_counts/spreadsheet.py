@@ -32,7 +32,6 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
-from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import (
     JusticeCountsBulkUploadException,
     JusticeCountsServerError,
@@ -200,7 +199,7 @@ class SpreadsheetInterface:
         spreadsheet: schema.Spreadsheet,
         auth0_user_id: str,
         agency_id: int,
-    ) -> Tuple[List[schema.Datapoint], Dict[str, Exception]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Exception]]:
         """Ingests spreadsheet for an agency and logs any errors."""
         uploader = BulkUploader(catch_errors=True)
         user_account = (
@@ -208,7 +207,7 @@ class SpreadsheetInterface:
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
             .one()
         )
-        datapoints, ingest_errors = uploader.upload_excel(
+        datapoint_json_list, ingest_errors = uploader.upload_excel(
             session=session,
             xls=xls,
             agency_id=spreadsheet.agency_id,
@@ -247,7 +246,7 @@ class SpreadsheetInterface:
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
         session.commit()
-        return datapoints, ingest_errors
+        return datapoint_json_list, ingest_errors
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
@@ -259,7 +258,7 @@ class SpreadsheetInterface:
 
     @staticmethod
     def get_ingest_spreadsheet_json(
-        datapoints: List[schema.Datapoint],
+        datapoint_json_list: List[Dict[str, Any]],
         sheet_to_error: dict[str, Exception],
         system: str,
     ) -> Dict[str, Any]:
@@ -267,8 +266,8 @@ class SpreadsheetInterface:
         metric_key_to_datapoints = {
             k: list(v)
             for k, v in itertools.groupby(
-                datapoints,
-                key=lambda d: d.metric_definition_key,
+                datapoint_json_list,
+                key=lambda d: d.get("metric_definition_key"),
             )
         }
         filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system]
@@ -277,16 +276,6 @@ class SpreadsheetInterface:
         for metric_definition in metric_definitions:
             if metric_definition.disabled:
                 continue
-            # Create datapoint json for any datapoints that are associated with the metric.
-            # This information will be used on the bulk upload data summary page.
-            datapoint_json = [
-                DatapointInterface.to_json_response(
-                    datapoint=d,
-                    is_published=False,
-                    frequency=schema.ReportingFrequency[d.report.type],
-                )
-                for d in metric_key_to_datapoints.get(metric_definition.key) or []
-            ]
             # For each sheet (i.e arrests_by_type) in an excel workbook that raised
             # an exception, jsonify the exception information so that it can be rendered
             # for the user on the bulk upload error page.
@@ -307,7 +296,9 @@ class SpreadsheetInterface:
                     "key": metric_definition.key,
                     "display_name": metric_definition.display_name,
                     "sheets": sheet_json,
-                    "datapoints": datapoint_json,
+                    "datapoints": metric_key_to_datapoints.get(
+                        metric_definition.key, []
+                    ),
                 }
             )
         # Errors that are not associated with a metric are pre-ingest errors.

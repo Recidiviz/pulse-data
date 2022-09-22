@@ -253,7 +253,7 @@ class ReportInterface:
         report_metric: MetricInterface,
         user_account: schema.UserAccount,
         use_existing_aggregate_value: bool = False,
-    ) -> List[schema.Datapoint]:
+    ) -> List[Dict[str, Any]]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
         update the existing metric in-place.
@@ -270,7 +270,7 @@ class ReportInterface:
         is specified, we validate that it matches what is already in the db.
         If nothing is in the DB, we save the new aggregate value.
         """
-        datapoints: List[Optional[schema.Datapoint]] = []
+        datapoint_json_list: List[Optional[Dict[str, Any]]] = []
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]
@@ -280,7 +280,7 @@ class ReportInterface:
         # value but the incoming datapoint has its own value, we should still go
         # into this method to validate that the two values are the same.
         if not use_existing_aggregate_value or report_metric.value is not None:
-            datapoints.append(
+            datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
                     session=session,
                     user_account=user_account,
@@ -309,7 +309,7 @@ class ReportInterface:
                     # datapoint, which will overwrite any previously reported values.
                     continue
 
-                datapoints.append(
+                datapoint_json_list.append(
                     DatapointInterface.add_datapoint(
                         session=session,
                         user_account=user_account,
@@ -331,7 +331,7 @@ class ReportInterface:
                 # datapoint, which will overwrite any previously reported values.
                 continue
 
-            datapoints.append(
+            datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
                     session=session,
                     user_account=user_account,
@@ -344,7 +344,7 @@ class ReportInterface:
                 )
             )
         session.commit()
-        return [dp for dp in datapoints if dp is not None]
+        return [dp for dp in datapoint_json_list if dp is not None]
 
     @staticmethod
     def get_metrics_by_report(
