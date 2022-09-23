@@ -289,7 +289,6 @@ class DatapointInterface:
                                 ),
                                 entity_cls=schema.Datapoint,
                             )
-        session.commit()
 
     @staticmethod
     def add_datapoint(

@@ -1137,7 +1137,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
         self.session.add_all([report, user_A])
-        self.session.commit()
 
         report_metric = self.test_schema_objects.reported_residents_metric
         ReportInterface.add_or_update_metric(
@@ -1146,6 +1145,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             report_metric=report_metric,
             user_account=user_A,
         )
+        self.session.commit()
 
         with self.app.test_request_context():
             g.user_context = UserContext(
@@ -1259,6 +1259,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
         )
+        self.session.commit()
 
         feed_response_no_metric = self.client.get(f"/feed/{agency_id}")
         self.assertEqual(feed_response_no_metric.status_code, 200)

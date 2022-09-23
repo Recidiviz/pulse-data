@@ -112,6 +112,7 @@ def get_api_blueprint(
                     },
                 )
 
+            current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
@@ -137,6 +138,7 @@ def get_api_blueprint(
                     session=current_session, agency_ids=agency_ids
                 )
 
+            current_session.commit()
             return jsonify(
                 {
                     "id": user_account.id,
@@ -200,7 +202,6 @@ def get_api_blueprint(
             )
 
             ReportInterface.update_report_metadata(
-                session=current_session,
                 report=report,
                 editor_id=user_account_id,
                 status=request_dict["status"],
@@ -226,6 +227,8 @@ def get_api_blueprint(
                 report=report,
                 editor_ids_to_names=editor_ids_to_names,
             )
+
+            current_session.commit()
             return jsonify(report_json)
         except Exception as e:
             raise _get_error(error=e) from e
@@ -302,6 +305,8 @@ def get_api_blueprint(
             report_response = ReportInterface.to_json_response(
                 session=current_session, report=report
             )
+
+            current_session.commit()
             return jsonify(report_response)
         except Exception as e:
             raise _get_error(error=e) from e
@@ -333,6 +338,8 @@ def get_api_blueprint(
 
             report_ids = map(int, report_ids)
             ReportInterface.delete_reports_by_id(current_session, report_ids=report_ids)
+
+            current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
@@ -355,6 +362,7 @@ def get_api_blueprint(
                     session=current_session, agency_metric=agency_metric, agency=agency
                 )
 
+            current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
@@ -420,6 +428,8 @@ def get_api_blueprint(
                 xls=pd.ExcelFile(file),
                 agency_id=agency_id,
             )
+
+            current_session.commit()
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
                     sheet_to_error=sheet_to_error,
@@ -428,6 +438,7 @@ def get_api_blueprint(
                 )
             )
 
+        current_session.commit()
         return jsonify(
             SpreadsheetInterface.get_spreadsheet_json(
                 spreadsheet=spreadsheet, session=current_session
@@ -498,6 +509,8 @@ def get_api_blueprint(
                 status=status,
                 auth0_user_id=auth0_user_id,
             )
+
+            current_session.commit()
             return jsonify(
                 SpreadsheetInterface.get_spreadsheet_json(
                     spreadsheet=spreadsheet, session=current_session
@@ -514,6 +527,8 @@ def get_api_blueprint(
                 session=current_session,
                 spreadsheet_id=int(spreadsheet_id),
             )
+
+            current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e

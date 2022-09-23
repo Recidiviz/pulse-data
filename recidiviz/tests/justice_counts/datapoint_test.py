@@ -211,7 +211,6 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 monthly_report = session.query(Report).one()
                 user = session.query(UserAccount).one()
                 ReportInterface.update_report_metadata(
-                    session=session,
                     report=monthly_report,
                     editor_id=user.id,
                     status=ReportStatus.PUBLISHED.value,
