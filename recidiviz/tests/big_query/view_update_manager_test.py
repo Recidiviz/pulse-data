@@ -31,10 +31,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
-from recidiviz.big_query.view_update_manager import (
-    get_dag_walker_for_views_sub_dag,
-    view_update_manager_blueprint,
-)
+from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
     GCP_PROJECT_STAGING,
@@ -149,8 +146,8 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
-    def test_rematerialize_views(self) -> None:
-        """Test that rematerialize_views_for_view_builders updates the appropriate
+    def test_rematerialize_all_deployed_views(self) -> None:
+        """Test that _rematerialize_all_deployed_views updates the appropriate
         views.
         """
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
@@ -174,67 +171,14 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
-        view_update_manager.rematerialize_views_for_view_builders(
+        # pylint: disable=protected-access
+        view_update_manager._rematerialize_all_deployed_views(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            views_to_update_builders=mock_view_builders,
             all_view_builders=mock_view_builders,
         )
 
         self.mock_client.materialize_view_to_table.assert_has_calls(
             [mock.call(view=mock_view_builders[0].build(), use_query_cache=True)],
-            any_order=True,
-        )
-
-    def test_rematerialize_views_downstream_view(self) -> None:
-        """Test that rematerialize_views_for_view_builders updates the appropriate
-        views, including views that are downstream of the views we are rematerializing.
-        """
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
-        mock_view_builders_to_rematerialize = [
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view",
-                description="my_fake_view description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=True,
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view_2",
-                description="my_fake_view_2 description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=False,
-            ),
-        ]
-
-        all_mock_view_builders = mock_view_builders_to_rematerialize + [
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view_3",
-                description="my_fake_view_3 description",
-                view_query_template=f"SELECT * FROM `{{project_id}}.{_DATASET_NAME}.my_fake_view` "
-                f"JOIN `{{project_id}}.{_DATASET_NAME}.my_fake_view_2`;",
-                should_materialize=True,
-            ),
-        ]
-
-        self.mock_client.dataset_ref_for_id.return_value = dataset
-
-        view_update_manager.rematerialize_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            views_to_update_builders=mock_view_builders_to_rematerialize,
-            all_view_builders=all_mock_view_builders,
-        )
-
-        self.mock_client.materialize_view_to_table.assert_has_calls(
-            [
-                mock.call(
-                    view=mock_view_builders_to_rematerialize[0].build(),
-                    use_query_cache=True,
-                ),
-                mock.call(view=all_mock_view_builders[2].build(), use_query_cache=True),
-            ],
             any_order=True,
         )
 
@@ -940,124 +884,6 @@ class ViewManagerTest(unittest.TestCase):
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
 
-    def test_get_dag_walker_for_views_sub_dag(self) -> None:
-        table_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-
-        table_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-
-        table_3 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
-            view_query_template="""
-                    SELECT * FROM `{project_id}.dataset_1.table_1`
-                    JOIN `{project_id}.dataset_2.table_2`
-                    USING (col)""",
-        )
-
-        table_4 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-
-        table_5 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_5",
-            view_id="table_5",
-            description="table_5 description",
-            view_query_template="""
-                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-
-        # Views forming a DAG shaped like an X:
-        #  1     2
-        #   \   /
-        #     3
-        #   /   \
-        #  4     5
-        x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
-
-        sub_graph_builders = get_dag_walker_for_views_sub_dag(
-            view_builders_in_sub_dag=[table_4],
-            view_builders_in_full_dag=x_shaped_dag_view_builders_list,
-            include_ancestors=True,
-            include_descendants=False,
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        ).view_builders()
-
-        self.assertCountEqual([table_4, table_3, table_2, table_1], sub_graph_builders)
-
-    def test_get_dag_walker_for_views_sub_dag_descendants(self) -> None:
-        table_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-
-        table_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-
-        table_3 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
-            view_query_template="""
-                    SELECT * FROM `{project_id}.dataset_1.table_1`
-                    JOIN `{project_id}.dataset_2.table_2`
-                    USING (col)""",
-        )
-
-        table_4 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-
-        table_5 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_5",
-            view_id="table_5",
-            description="table_5 description",
-            view_query_template="""
-                            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-
-        # Views forming a DAG shaped like an X:
-        #  1     2
-        #   \   /
-        #     3
-        #   /   \
-        #  4     5
-        x_shaped_dag_view_builders_list = [table_1, table_2, table_3, table_4, table_5]
-
-        sub_graph_builders = get_dag_walker_for_views_sub_dag(
-            view_builders_in_sub_dag=[table_3],
-            view_builders_in_full_dag=x_shaped_dag_view_builders_list,
-            include_ancestors=False,
-            include_descendants=True,
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        ).view_builders()
-
-        self.assertCountEqual([table_4, table_5, table_3], sub_graph_builders)
-
     def test_valid_view_query_templates(self) -> None:
         """Validates that the view_query_template does not contain any raw GCP
         project_id values. Note that this prevents views from referencing project IDs
@@ -1163,7 +989,7 @@ class TestViewUpdateEndpoints(unittest.TestCase):
 
     @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
     @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+        "recidiviz.big_query.view_update_manager._rematerialize_all_deployed_views"
     )
     def test_rematerialize_all_deployed_views(
         self, mock_rematerialize: MagicMock, _mock_bq_client: MagicMock

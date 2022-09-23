@@ -458,7 +458,9 @@ class BigQueryViewDagWalker:
 
         self.process_dag(collect_descendants)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
-        return BigQueryViewDagWalker(list(sub_dag_views))
+        sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
+        sub_dag.populate_node_view_builders(self.view_builders())
+        return sub_dag
 
     def get_ancestors_sub_dag(
         self,
@@ -489,14 +491,52 @@ class BigQueryViewDagWalker:
 
         self.process_dag(collect_ancestors)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
-        return BigQueryViewDagWalker(list(sub_dag_views))
+        sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
+        sub_dag.populate_node_view_builders(self.view_builders())
+        return sub_dag
 
     @staticmethod
     def union_dags(
         dag_1: "BigQueryViewDagWalker", dag_2: "BigQueryViewDagWalker"
     ) -> "BigQueryViewDagWalker":
         views: List[BigQueryView] = [*{*dag_1.views, *dag_2.views}]
-        return BigQueryViewDagWalker(views=views)
+        unioned_dag = BigQueryViewDagWalker(views=views)
+        unioned_dag.populate_node_view_builders(
+            [*dag_1.view_builders(), *dag_2.view_builders()]
+        )
+        return unioned_dag
+
+    def get_sub_dag(
+        self,
+        *,
+        views: List[BigQueryView],
+        include_ancestors: bool,
+        include_descendants: bool,
+    ) -> "BigQueryViewDagWalker":
+        """Returns a BigQueryDagWalker that represents the sub-portion of the view graph
+         that includes all views in |views|.
+
+        If |get_ancestors| is True, includes all ancestor views of |views|.
+        If |get_descendants| is True, includes all views that are descendant from the
+        |views|.
+        """
+        sub_dag_walker = BigQueryViewDagWalker(views)
+        sub_dag_walker.populate_node_view_builders(self.view_builders())
+
+        # If necessary, get descendants of views_in_sub_dag
+        if include_descendants:
+            sub_dag_walker = BigQueryViewDagWalker.union_dags(
+                sub_dag_walker,
+                self.get_descendants_sub_dag(views),
+            )
+
+        # If necessary, get ancestor views of views_in_sub_dag
+        if include_ancestors:
+            sub_dag_walker = BigQueryViewDagWalker.union_dags(
+                sub_dag_walker, self.get_ancestors_sub_dag(views)
+            )
+
+        return sub_dag_walker
 
     def populate_node_family_for_node(
         self,
