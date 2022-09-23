@@ -131,6 +131,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "name": "Freq_of_FAC_Contact_GT_1",
         "type": "INTEGER",
     },
+    "FAC Note 4": {
+        "mode": "NULLABLE",
+        "name": "FAC_Note_4",
+        "type": "DATE",
+    },
     "FAC Note 3": {
         "mode": "NULLABLE",
         "name": "FAC_Note_3",
@@ -191,6 +196,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "name": "Last_AHOM_Note",
         "type": "DATE",
     },
+    "Number of AHOM": {
+        "mode": "NULLABLE",
+        "name": "Number_of_AHOM",
+        "type": "INTEGER",
+    },
     "Last HOMC Note": {
         "mode": "NULLABLE",
         "name": "Last_HOMC_Note",
@@ -235,6 +245,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "mode": "NULLABLE",
         "name": "Risk_Level",
         "type": "STRING",
+    },
+    "Last FSWR Date": {
+        "mode": "NULLABLE",
+        "name": "Last_FSWR_Date",
+        "type": "DATE",
     },
     "Alcohol/Drug Needs": {
         "mode": "NULLABLE",
