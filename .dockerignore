@@ -206,3 +206,10 @@ recidiviz/tools/postgres/vendor/
 logs/
 get-pip.py
 *.code-workspace
+
+# Local Justice Counts files
+recidiviz/justice_counts/control_panel/local/**/*
+
+# Terraform cache
+recidiviz/tools/deploy/terraform/.terraform
+
