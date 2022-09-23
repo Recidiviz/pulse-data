@@ -290,7 +290,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isFlashCancellationInProgress}
+            buttonsEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -301,7 +301,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             description={
               <p>Mark secondary ingest as paused in the operations db.</p>
             }
-            buttonsEnabled={isFlashCancellationInProgress}
+            buttonsEnabled={isReadyToFlash}
             actionButtonTitle="Mark Paused"
             onActionButtonClick={async () =>
               pauseDirectIngestInstance(
@@ -505,7 +505,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            buttonsEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -520,7 +520,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            buttonsEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
