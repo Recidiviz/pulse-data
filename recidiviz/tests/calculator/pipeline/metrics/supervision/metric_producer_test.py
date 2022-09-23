@@ -1933,6 +1933,8 @@ class TestIncludeEventInMetric(unittest.TestCase):
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
         self.metric_producer = metric_producer.SupervisionMetricProducer()
+        self.calculation_upper_bound_month = date(2020, 1, 1)
+        self.capped_calculation_bound_month = date(2000, 1, 1)
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -1955,7 +1957,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_COMPLIANCE
+                event,
+                SupervisionMetricType.SUPERVISION_COMPLIANCE,
+                self.calculation_upper_bound_month,
+                None,
             )
         )
 
@@ -1979,7 +1984,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_COMPLIANCE
+                event,
+                SupervisionMetricType.SUPERVISION_COMPLIANCE,
+                self.calculation_upper_bound_month,
+                None,
             )
         )
 
@@ -1999,7 +2007,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_DOWNGRADE
+                event,
+                SupervisionMetricType.SUPERVISION_DOWNGRADE,
+                self.calculation_upper_bound_month,
+                None,
             )
         )
 
@@ -2019,7 +2030,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_DOWNGRADE
+                event,
+                SupervisionMetricType.SUPERVISION_DOWNGRADE,
+                self.calculation_upper_bound_month,
+                None,
             )
         )
 
@@ -2039,7 +2053,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+                event,
+                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
             )
         )
 
@@ -2069,7 +2086,37 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
+                event,
+                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
+            )
+        )
+
+    def test_include_event_in_metric_out_of_state_outside_20_years(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+        mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        mock_supervision_delegate.return_value = self.OutOfStateDelegate([])
+
+        event = SupervisionPopulationEvent(
+            state_code="US_XX",
+            year=2018,
+            month=3,
+            event_date=date(1999, 3, 31),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="HIGH",
+            supervision_level_downgrade_occurred=True,
+            projected_end_date=None,
+        )
+
+        self.assertFalse(
+            self.metric_producer.include_event_in_metric(
+                event,
+                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
             )
         )
 
@@ -2092,7 +2139,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertFalse(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_POPULATION
+                event,
+                SupervisionMetricType.SUPERVISION_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
             )
         )
 
@@ -2112,7 +2162,33 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_POPULATION
+                event,
+                SupervisionMetricType.SUPERVISION_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
+            )
+        )
+
+    def test_include_event_in_metric_in_state_outside_20_years(self) -> None:
+        event = SupervisionPopulationEvent(
+            state_code="US_XX",
+            year=2018,
+            month=3,
+            event_date=date(1999, 3, 31),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text="HIGH",
+            supervision_level_downgrade_occurred=True,
+            projected_end_date=None,
+        )
+
+        self.assertFalse(
+            self.metric_producer.include_event_in_metric(
+                event,
+                SupervisionMetricType.SUPERVISION_POPULATION,
+                self.calculation_upper_bound_month,
+                self.capped_calculation_bound_month,
             )
         )
 
