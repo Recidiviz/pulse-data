@@ -575,29 +575,12 @@ SELECT DISTINCT
     "TASK_ELIGIBILITY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
 WHERE
-    surfaced_date IS NOT NULL
-
-UNION ALL
-
--- overdue for discharge surfaced
--- TODO(#14950): remove after #14951 lands as overdue discharge will be added to
--- `all_tasks`
--- keep one eligibility start per person-day-task_name
-SELECT DISTINCT
-    state_code, 
-    person_id,
-    "TASK_ELIGIBILITY_START" AS event,
-    report_date AS event_date,
-    TO_JSON_STRING(STRUCT(
-        "OVERDUE_DISCHARGE" AS task_name
-    )) AS event_attributes,
-FROM 
-    `{project_id}.{shared_metric_views_dataset}.overdue_discharge_outcomes`
+    recommended_supervision_downgrade_level IS NOT NULL
 
 UNION ALL 
 
@@ -611,13 +594,12 @@ SELECT DISTINCT
     "TASK_ELIGIBILITY_GRANT" AS event,
     end_date AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
 WHERE
-    surfaced_date IS NOT NULL
-    AND mismatch_corrected
+    mismatch_corrected
 
 UNION ALL 
 
@@ -630,13 +612,96 @@ SELECT DISTINCT
     "TASK_ELIGIBILITY_GRANT" AS event,
     discharge_date AS event_date,
     TO_JSON_STRING(STRUCT(
-        "OVERDUE_DISCHARGE" AS task_name
+        "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION" AS task_name
     )) AS event_attributes,
 FROM 
     `{project_id}.{shared_metric_views_dataset}.overdue_discharge_outcomes`
 WHERE
     discharge_date IS NOT NULL
     AND discharge_outflow = "LIBERTY"
+    
+UNION ALL
+
+-- late responses to eligible opportunities eligibility
+-- 7 days
+SELECT
+    state_code,
+    person_id,
+    "TASK_ELIGIBLE_7_DAYS" AS event,
+    DATE_ADD(start_date, INTERVAL 7 DAY) AS event_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        task_name
+    ))[OFFSET(0)]) AS event_attributes,
+FROM
+    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+WHERE
+    is_eligible
+    AND LEAST(
+            IFNULL(end_date, CURRENT_DATE("US/Eastern")),
+            CURRENT_DATE("US/Eastern")
+        ) > DATE_ADD(start_date, INTERVAL 7 DAY)
+GROUP BY 1, 2, 3, 4, task_name
+
+UNION ALL
+
+-- TODO(#14994): remove once downgrades are added to `all_tasks_materialized`
+SELECT DISTINCT
+    state_code,
+    person_id,
+    "TASK_ELIGIBLE_7_DAYS" AS event,
+    DATE_ADD(start_date, INTERVAL 7 DAY) AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+    )) AS event_attributes,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
+WHERE
+    recommended_supervision_downgrade_level IS NOT NULL
+    AND LEAST(
+            IFNULL(end_date, CURRENT_DATE("US/Eastern")),
+            CURRENT_DATE("US/Eastern")
+        ) > DATE_ADD(start_date, INTERVAL 7 DAY)
+    
+UNION ALL
+
+-- 30 days
+SELECT
+    state_code,
+    person_id,
+    "TASK_ELIGIBLE_30_DAYS" AS event,
+    DATE_ADD(start_date, INTERVAL 30 DAY) AS event_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        task_name
+    ))[OFFSET(0)]) AS event_attributes,
+FROM
+    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+WHERE
+    is_eligible
+    AND LEAST(
+            IFNULL(end_date, CURRENT_DATE("US/Eastern")),
+            CURRENT_DATE("US/Eastern")
+        ) > DATE_ADD(start_date, INTERVAL 30 DAY)
+GROUP BY 1, 2, 3, 4, task_name
+
+UNION ALL
+
+-- TODO(#14994): remove once downgrades are added to `all_tasks_materialized`
+SELECT DISTINCT
+    state_code,
+    person_id,
+    "TASK_ELIGIBLE_30_DAYS" AS event,
+    DATE_ADD(start_date, INTERVAL 30 DAY) AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+    )) AS event_attributes,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
+WHERE
+    recommended_supervision_downgrade_level IS NOT NULL
+    AND LEAST(
+            IFNULL(end_date, CURRENT_DATE("US/Eastern")),
+            CURRENT_DATE("US/Eastern")
+        ) > DATE_ADD(start_date, INTERVAL 30 DAY)
     
 UNION ALL
 
