@@ -185,8 +185,10 @@ def _federated_bq_regional_dataset_refresh(
         historically_managed_datasets_for_schema = {
             dataset
             for dataset in historically_managed_datasets_for_schema
-            for region_code in config.region_codes_to_exclude
-            if region_code.lower() not in dataset
+            if not any(
+                dataset.startswith(region_code.lower())
+                for region_code in config.region_codes_to_exclude
+            )
         }
 
     address_overrides = None
