@@ -21,9 +21,10 @@ up only a part of a full DAG of BigQuery views.
 from typing import List, Optional, Sequence, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.big_query.view_update_manager import get_dag_walker_for_views_sub_dag
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
@@ -70,22 +71,30 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
         self.view_builders_in_full_dag = view_builders_in_full_dag
         self.view_addresses_in_sub_dag = view_addresses_in_sub_dag
         self.dataset_ids_in_sub_dag = dataset_ids_in_sub_dag
-        self.update_ancestors = include_ancestors
-        self.update_descendants = include_descendants
+        self.include_ancestors = include_ancestors
+        self.include_descendants = include_descendants
         self.datasets_to_exclude = datasets_to_exclude
 
     def collect_view_builders(self) -> List[BigQueryViewBuilder]:
-        root_view_builders_in_sub_dag = self._get_root_view_builders_to_load(
-            all_view_builders=self.view_builders_in_full_dag,
+        # Get dag walker for *all* views
+        full_dag_walker = BigQueryViewDagWalker(
+            build_views_to_update(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                candidate_view_builders=self.view_builders_in_full_dag,
+                address_overrides=None,
+            )
+        )
+        full_dag_walker.populate_node_view_builders(self.view_builders_in_full_dag)
+
+        root_views_in_sub_dag = self._get_root_views_in_sub_dag(
+            all_views=full_dag_walker.views,
         )
 
         # Get the full subgraph
-        sub_graph_dag_walker = get_dag_walker_for_views_sub_dag(
-            view_builders_in_sub_dag=root_view_builders_in_sub_dag,
-            view_builders_in_full_dag=self.view_builders_in_full_dag,
-            include_ancestors=self.update_ancestors,
-            include_descendants=self.update_descendants,
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        sub_graph_dag_walker = full_dag_walker.get_sub_dag(
+            views=root_views_in_sub_dag,
+            include_ancestors=self.include_ancestors,
+            include_descendants=self.include_descendants,
         )
 
         # Return the view builders in the sub-graph that aren't in datasets_to_exclude
@@ -96,30 +105,30 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
             or builder.dataset_id not in self.datasets_to_exclude
         ]
 
-    def _get_root_view_builders_to_load(
-        self, all_view_builders: Sequence[BigQueryViewBuilder]
-    ) -> List[BigQueryViewBuilder]:
+    def _get_root_views_in_sub_dag(
+        self, all_views: Sequence[BigQueryView]
+    ) -> List[BigQueryView]:
         """Returns the list of view builders that match either the addresses in
         view_ids_to_load or dataset_ids in dataset_ids_to_load. These are the roots of
         the sub-DAG that we will expand from to build the full sub-DAG (including
         child/parent views as is appropriate).
         """
 
-        view_builders_to_load: List[BigQueryViewBuilder] = []
+        views_in_sub_dag: List[BigQueryView] = []
         if self.dataset_ids_in_sub_dag:
-            view_builders_in_datasets = [
+            views_in_datasets = [
                 view
-                for view in all_view_builders
+                for view in all_views
                 if view.dataset_id in self.dataset_ids_in_sub_dag
             ]
 
-            found_datasets = {view.dataset_id for view in view_builders_in_datasets}
+            found_datasets = {view.dataset_id for view in views_in_datasets}
             if found_datasets != set(self.dataset_ids_in_sub_dag):
                 missing_datasets = set(self.dataset_ids_in_sub_dag) - found_datasets
                 raise ValueError(
                     f"Did not find any views in the following datasets: {missing_datasets}"
                 )
-            view_builders_to_load.extend(view_builders_in_datasets)
+            views_in_sub_dag.extend(views_in_datasets)
 
         if self.view_addresses_in_sub_dag:
             if len(set(self.view_addresses_in_sub_dag)) != len(
@@ -141,20 +150,20 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
                         f"listed in --dataset_ids_to_load: {overlapping_addresses}"
                     )
 
-            view_builders_with_addresses = [
+            views_with_addresses = [
                 view
-                for view in all_view_builders
+                for view in all_views
                 if view.address in self.view_addresses_in_sub_dag
             ]
-            if len(view_builders_with_addresses) != len(self.view_addresses_in_sub_dag):
-                found_builders_set = {vb.address for vb in view_builders_with_addresses}
+            if len(views_with_addresses) != len(self.view_addresses_in_sub_dag):
+                found_builders_set = {vb.address for vb in views_with_addresses}
                 expected_builders_set = set(self.view_addresses_in_sub_dag)
                 missing = expected_builders_set - found_builders_set
                 raise ValueError(
                     f"Expected to find [{len(self.view_addresses_in_sub_dag)}], but only "
-                    f"found [{len(view_builders_with_addresses)}] that matched managed views. "
+                    f"found [{len(views_with_addresses)}] that matched managed views. "
                     f"Did not find views that matched the following expected "
                     f"addresses: {missing}."
                 )
-            view_builders_to_load.extend(view_builders_with_addresses)
-        return view_builders_to_load
+            views_in_sub_dag.extend(views_with_addresses)
+        return views_in_sub_dag

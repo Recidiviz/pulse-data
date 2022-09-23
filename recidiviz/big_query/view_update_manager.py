@@ -116,8 +116,7 @@ def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
 
     start = datetime.datetime.now()
     view_builders = deployed_view_builders(metadata.project_id())
-    rematerialize_views_for_view_builders(
-        views_to_update_builders=view_builders,
+    _rematerialize_all_deployed_views(
         all_view_builders=view_builders,
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
     )
@@ -138,8 +137,7 @@ def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-def rematerialize_views_for_view_builders(
-    views_to_update_builders: Sequence[BigQueryViewBuilder],
+def _rematerialize_all_deployed_views(
     all_view_builders: Sequence[BigQueryViewBuilder],
     view_source_table_datasets: Set[str],
 ) -> None:
@@ -149,7 +147,6 @@ def rematerialize_views_for_view_builders(
     underlying query of the view(s).
 
     Args:
-        views_to_update_builders: List of views to re-materialize
         all_view_builders: Superset of the views_to_update that contains all views that
             either depend on or are dependents of the list of input views.
         view_source_table_datasets: Set of datasets containing tables that can be
@@ -158,13 +155,12 @@ def rematerialize_views_for_view_builders(
     try:
         bq_client = BigQueryClientImpl()
 
-        # Limit DAG to only views directly related to the views we are rematerializing
-        views_to_rematerialize_dag = get_dag_walker_for_views_sub_dag(
-            view_builders_in_sub_dag=views_to_update_builders,
-            view_builders_in_full_dag=all_view_builders,
-            include_ancestors=True,
-            include_descendants=True,
-            view_source_table_datasets=view_source_table_datasets,
+        full_dag_walker = BigQueryViewDagWalker(
+            build_views_to_update(
+                view_source_table_datasets=view_source_table_datasets,
+                candidate_view_builders=all_view_builders,
+                address_overrides=None,
+            )
         )
 
         def _materialize_view(
@@ -181,7 +177,7 @@ def rematerialize_views_for_view_builders(
             except Exception as e:
                 raise ValueError(f"Failed to materialize view [{v.address}]") from e
 
-        results = views_to_rematerialize_dag.process_dag(_materialize_view)
+        results = full_dag_walker.process_dag(_materialize_view)
         results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
     except Exception as e:
         with monitoring.measurements() as measurements:
@@ -478,54 +474,3 @@ def _create_or_update_view_and_materialize_if_necessary(
         if has_changes
         else CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES
     )
-
-
-def get_dag_walker_for_views_sub_dag(
-    *,
-    view_builders_in_sub_dag: Sequence[BigQueryViewBuilder],
-    view_builders_in_full_dag: Sequence[BigQueryViewBuilder],
-    include_ancestors: bool,
-    include_descendants: bool,
-    view_source_table_datasets: Set[str],
-) -> BigQueryViewDagWalker:
-    """Returns a BigQueryDagWalker that represents the sub-portion of the view graph
-     that includes all views in |view_builders_in_sub_dag|.
-
-    If |get_ancestors| is True, includes all ancestor views of |view_builders_in_sub_dag|.
-    If |get_descendants| is True, includes all views that are descendant from the
-    |view_builders_in_sub_dag|.
-    """
-
-    # Get dag walker for *all* views
-    full_dag_walker = BigQueryViewDagWalker(
-        build_views_to_update(
-            view_source_table_datasets=view_source_table_datasets,
-            candidate_view_builders=view_builders_in_full_dag,
-            address_overrides=None,
-        )
-    )
-
-    view_addresses_in_sub_dag = {b.address for b in view_builders_in_sub_dag}
-
-    views_in_sub_dag = [
-        v for v in full_dag_walker.views if v.address in view_addresses_in_sub_dag
-    ]
-
-    sub_dag_walker = BigQueryViewDagWalker(views_in_sub_dag)
-
-    # If necessary, get descendants of views_in_sub_dag
-    if include_descendants:
-        sub_dag_walker = BigQueryViewDagWalker.union_dags(
-            sub_dag_walker, full_dag_walker.get_descendants_sub_dag(views_in_sub_dag)
-        )
-
-    # If necessary, get ancestor views of views_in_sub_dag
-    if include_ancestors:
-        sub_dag_walker = BigQueryViewDagWalker.union_dags(
-            sub_dag_walker, full_dag_walker.get_ancestors_sub_dag(views_in_sub_dag)
-        )
-
-    sub_dag_walker.populate_node_view_builders(
-        all_candidate_view_builders=view_builders_in_full_dag
-    )
-    return sub_dag_walker
