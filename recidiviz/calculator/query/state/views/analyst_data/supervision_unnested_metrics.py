@@ -393,6 +393,58 @@ or to no entity, e.g. if the client is released or incarcerated.
         COUNT(DISTINCT IF(
             event = "TREATMENT_REFERRAL", person_id, NULL
         )) AS treatment_referrals,
+        
+        -- N days late responding to task         
+        -- supervision downgrades    
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_7_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") = 
+                    "SUPERVISION_LEVEL_DOWNGRADE",
+            person_id, NULL
+        )) AS late_opportunity_supervision_level_downgrade_7_days,
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_30_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") = 
+                    "SUPERVISION_LEVEL_DOWNGRADE",
+            person_id, NULL
+        )) AS late_opportunity_supervision_level_downgrade_30_days,
+                
+        -- early discharge
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_7_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") IN
+                (
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
+                ),
+            person_id, NULL
+        )) AS late_opportunity_early_discharge_from_supervision_7_days,
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_30_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") IN
+                (
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM"
+                ),
+            person_id, NULL
+        )) AS late_opportunity_early_discharge_from_supervision_30_days,
+        
+        -- full term discharge
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_7_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") = 
+                    "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
+            person_id, NULL
+        )) AS late_opportunity_full_term_discharge_7_days,
+        COUNT(DISTINCT IF(
+            event = "TASK_ELIGIBLE_30_DAYS"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.task_name") = 
+                    "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
+            person_id, NULL
+        )) AS late_opportunity_full_term_discharge_30_days,
+        
     FROM
         unnested_person_events
     GROUP BY

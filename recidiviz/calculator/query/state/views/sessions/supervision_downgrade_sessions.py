@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,11 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized view of each individual. Session defined as continuous supervision downgrade recommendation of the same value.
-
-To generate the BQ view, run:
-python -m recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessions
-"""
+"""Sessionized view of each individual. Session defined as continuous supervision
+downgrade recommendation of the same value."""
 
 from operator import itemgetter
 
@@ -52,48 +49,86 @@ SUPERVISION_DOWNGRADE_SESSIONS_VIEW_NAME = "supervision_downgrade_sessions"
 SUPERVISION_DOWNGRADE_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual.
 Session defined as continuous supervision downgrade recommendation of the same value.
 A mismatch is considered "corrected" if the person's supervision level was reduced to match
-the recommendation without a reassessment.
+the recommendation without a reassessment. Spans in this table are non-overlapping
+within person_id.
 """
 
 SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
-    WITH 
-    day_zero_reports AS (
+/*
+{{description}}
+*/
+
+WITH 
+-- dates when a client was surfaced in a day zero report
+day_zero_reports AS (
+    SELECT
+        person_id,
+        report_date,
+    FROM
+        `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_reports
+    INNER JOIN
+        `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+    ON
+        day_zero_reports.state_code = pei.state_code
+        AND day_zero_reports.person_external_id = pei.external_id
+        AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
+    WHERE
+        opportunity_type = "{OpportunityType.OVERDUE_DOWNGRADE.value}"
+)
+
+-- dates when a client was surfaced in a monthly report
+, po_monthly_reports AS (
+    SELECT
+        person_id,
+        DATE(event_datetime) AS date_sent,
+    FROM
+        `{{project_id}}.{{po_report_dataset}}.sendgrid_po_report_email_events_materialized`
+    INNER JOIN
+        `{{project_id}}.{{static_reference_dataset}}.po_report_recipients`
+    ON
+        email = email_address
+    INNER JOIN
+        `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
+    ON
+         DATE(event_datetime) BETWEEN start_date AND IFNULL(end_date, "9999-01-01")
+    WHERE
+        event = "delivered"
+)
+
+-- identify contiguous blocks of the same downgrade recommendation in daily dataflow observations;
+-- we will group these into sessions in the next step
+, recommendation_grouped AS (
+    SELECT
+        *,
+        -- this variable will be used for grouping sessions, its actual value is not necessarily meaningful;
+        -- it happens to be the start date of a contiguous block of the same recommendation
+        DATE_SUB(
+            date_of_supervision, 
+            INTERVAL 
+                ROW_NUMBER() OVER (
+                    PARTITION BY 
+                        person_id, 
+                        IFNULL(recommended_supervision_downgrade_level, "NONE")
+                    ORDER BY date_of_supervision ASC
+                ) 
+            DAY 
+        ) AS group_by_status,
+    FROM (
         SELECT
-            day_zero_reports.*,
-            person_id,
-        FROM `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_reports
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
-            ON day_zero_reports.state_code = pei.state_code
-            AND day_zero_reports.person_external_id = pei.external_id
-            AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
-        WHERE opportunity_type = "{OpportunityType.OVERDUE_DOWNGRADE.value}"
-    ),
-    po_monthly_reports AS (
-        SELECT
-            DATE(event_datetime) AS date_sent,
-            officer_external_id,
-        FROM `{{project_id}}.{{po_report_dataset}}.sendgrid_po_report_email_events_materialized`
-        INNER JOIN `{{project_id}}.{{static_reference_dataset}}.po_report_recipients`
-            ON email = email_address
-        WHERE event = "delivered"
-    ),
-    # identify contiguous blocks of the same downgrade recommendation in daily dataflow observations;
-    # we will group these into sessions in the next step
-    recommendation_grouped AS (
-        SELECT 
             compliance_metrics.state_code,
             compliance_metrics.person_id,
             date_of_supervision,
             supervision_level,
             recommended_supervision_downgrade_level,
             assessment_date,
-            # date_of_supervision is eligible to be considered a "surfaced date" if: 
-            # 1. there is a recommended downgrade AND
-            # 2. the person was supervised by someone with Case Triage access 
-            # OR was included in a Day Zero Report on that day
-            # OR was included in a PO Monthly Report on that day
-            IF(
+            /* 
+            date_of_supervision is eligible to be considered a "surfaced date" if: 
+             1. there is a recommended downgrade AND
+             2. the person was supervised by someone with Case Triage access 
+                OR was included in a Day Zero Report on that day
+                OR was included in a PO Monthly Report on that day
+            */
+            MAX(IF(
                 recommended_supervision_downgrade_level IS NOT NULL 
                 AND (
                     has_case_triage_access
@@ -102,101 +137,133 @@ SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
                 ),
                 date_of_supervision,
                 NULL
-            ) AS date_of_surface_eligibility,
-            # this variable will be used for grouping sessions, its actual value is not necessarily meaningful;
-            # it happens to be the start date of a contiguous block of the same recommendation
-            DATE_SUB(
-                date_of_supervision, 
-                INTERVAL 
-                    ROW_NUMBER() OVER (
-                        PARTITION BY 
-                            compliance_metrics.person_id, 
-                            IFNULL(recommended_supervision_downgrade_level, 'NONE')
-                        ORDER BY date_of_supervision ASC
-                    ) 
-                DAY 
-            ) AS group_by_status,
-        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized` compliance_metrics
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` assessment_score_sessions
-            ON compliance_metrics.person_id = assessment_score_sessions.person_id
-            AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date AND IFNULL(assessment_score_sessions.score_end_date, CURRENT_DATE('US/Eastern'))
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_tool_access_sessions_materialized` supervision_tool_access_sessions
-            ON compliance_metrics.person_id = supervision_tool_access_sessions.person_id 
-            AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE('US/Eastern'))
-        LEFT JOIN day_zero_reports
-            ON compliance_metrics.person_id = day_zero_reports.person_id
+            )) AS date_of_surface_eligibility,
+        FROM (
+            SELECT DISTINCT
+                state_code,
+                person_id,
+                date_of_supervision,
+                supervision_level,
+                recommended_supervision_downgrade_level,
+            FROM
+                `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized`
+            WHERE
+                supervision_level IS NOT NULL
+        ) compliance_metrics
+        LEFT JOIN
+            `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` assessment_score_sessions
+        ON
+            compliance_metrics.person_id = assessment_score_sessions.person_id
+            AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date 
+                AND IFNULL(assessment_score_sessions.score_end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN
+            `{{project_id}}.{{sessions_dataset}}.supervision_tool_access_sessions_materialized` supervision_tool_access_sessions
+        ON
+            compliance_metrics.person_id = supervision_tool_access_sessions.person_id 
+            AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date 
+                AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE('US/Eastern'))
+        LEFT JOIN
+            day_zero_reports
+        ON
+            compliance_metrics.person_id = day_zero_reports.person_id
             AND date_of_supervision = day_zero_reports.report_date
-        LEFT JOIN po_monthly_reports
-            ON compliance_metrics.supervising_officer_external_id = po_monthly_reports.officer_external_id
+        LEFT JOIN
+            po_monthly_reports
+        ON
+            compliance_metrics.person_id = po_monthly_reports.person_id
             AND compliance_metrics.date_of_supervision = po_monthly_reports.date_sent
-    ),
-    # this will sessionize the downgrade recommendations themselves;
-    # determining the reason why a session ended will require another pass comparing adjacent sessions
-    mismatch_sessions_base AS (
-        select
-            state_code,
-            person_id,
-            recommended_supervision_downgrade_level,
-            MIN(date_of_supervision) AS start_date,
-            MAX(date_of_supervision) AS end_date,
-            MIN(date_of_surface_eligibility) AS surfaced_date,
-            ARRAY_AGG(assessment_date ORDER BY date_of_supervision ASC LIMIT 1)[OFFSET(0)] AS assessment_date_start,
-            ARRAY_AGG(assessment_date ORDER BY date_of_supervision DESC LIMIT 1)[OFFSET(0)] AS assessment_date_end,
-            ARRAY_AGG(supervision_level ORDER BY date_of_supervision ASC LIMIT 1)[OFFSET(0)] AS supervision_level_start,
-            ARRAY_AGG(supervision_level ORDER BY date_of_supervision DESC LIMIT 1)[OFFSET(0)] AS supervision_level_end,
-        FROM recommendation_grouped
-        GROUP BY 
-            state_code, 
-            person_id, 
-            recommended_supervision_downgrade_level, 
-            group_by_status
-    ),
-    # gives us numeric values we can compare to identify downgrades
-    levels_for_comparison AS (
-        SELECT
-            level,
-            severity,
-        FROM UNNEST({_supervision_levels_ascending}) AS level
-        WITH OFFSET as severity
-    ),
-    mismatch_sessions_with_severity AS (
-        SELECT
-            *,
-            comp_recommended.severity AS recommended_supervision_downgrade_level_severity,
-            comp_start.severity AS supervision_level_start_severity,
-        FROM mismatch_sessions_base
-        LEFT JOIN levels_for_comparison comp_recommended
-            ON recommended_supervision_downgrade_level = comp_recommended.level
-        LEFT JOIN levels_for_comparison comp_start
-            ON supervision_level_start = comp_start.level
-    ),
-    # will use this to identify open periods
-    last_day_of_data_by_state AS (
-        SELECT 
-            state_code,
-            MAX(date_of_supervision) last_day_of_data
-        FROM recommendation_grouped 
-        GROUP BY state_code
+        GROUP BY 1, 2, 3, 4, 5, 6
     )
-    SELECT 
-        mismatch_sessions_with_severity.state_code,
-        mismatch_sessions_with_severity.person_id,
+)
+
+-- this will sessionize the downgrade recommendations themselves;
+-- determining the reason why a session ended will require another pass comparing adjacent sessions
+, mismatch_sessions_base AS (
+    SELECT
+        state_code,
+        person_id,
         recommended_supervision_downgrade_level,
-        mismatch_sessions_with_severity.start_date,
-        # gives open sessions a NULL end date
-        IF(mismatch_sessions_with_severity.end_date < last_day_of_data, mismatch_sessions_with_severity.end_date, NULL) AS end_date,
-        surfaced_date,
-        # the mismatch is only considered "corrected" if the client was downgraded to (or beyond) the recommended level without reassessment
-        recommended_supervision_downgrade_level_severity >= LEAD(supervision_level_start_severity) OVER person_sessions_chronological
-            AND assessment_date_end = LEAD(assessment_date_start) OVER person_sessions_chronological
-            AND end_date = DATE_SUB(LEAD(start_date) OVER person_sessions_chronological, INTERVAL 1 DAY)
-        AS mismatch_corrected,
-    FROM mismatch_sessions_with_severity
-    LEFT JOIN last_day_of_data_by_state USING (state_code)
-    WINDOW person_sessions_chronological AS (
-        PARTITION BY mismatch_sessions_with_severity.person_id 
-        ORDER BY mismatch_sessions_with_severity.start_date
-    )
+        group_by_status, -- should be same as start_date
+        MIN(date_of_supervision) AS start_date,
+        MAX(date_of_supervision) AS end_date,
+        MIN(date_of_surface_eligibility) AS surfaced_date,
+        ARRAY_AGG(assessment_date ORDER BY date_of_supervision ASC LIMIT 1)[OFFSET(0)] AS assessment_date_start,
+        ARRAY_AGG(assessment_date ORDER BY date_of_supervision DESC LIMIT 1)[OFFSET(0)] AS assessment_date_end,
+        ARRAY_AGG(supervision_level ORDER BY date_of_supervision ASC LIMIT 1)[OFFSET(0)] AS supervision_level_start,
+        ARRAY_AGG(supervision_level ORDER BY date_of_supervision DESC LIMIT 1)[OFFSET(0)] AS supervision_level_end,
+    FROM
+        recommendation_grouped
+    GROUP BY 1, 2, 3, 4
+)
+
+-- gives us numeric values we can compare to identify downgrades
+, levels_for_comparison AS (
+    SELECT
+        level,
+        severity,
+    FROM
+        UNNEST({_supervision_levels_ascending}) AS level
+    WITH
+        OFFSET AS severity
+)
+
+, mismatch_sessions_with_severity AS (
+    SELECT
+        *,
+        comp_recommended.severity AS recommended_supervision_downgrade_level_severity,
+        comp_start.severity AS supervision_level_start_severity,
+    FROM
+        mismatch_sessions_base
+    LEFT JOIN
+        levels_for_comparison comp_recommended
+    ON
+        recommended_supervision_downgrade_level = comp_recommended.level
+    LEFT JOIN
+        levels_for_comparison comp_start
+    ON
+        supervision_level_start = comp_start.level
+)
+
+-- will use this to identify open periods
+, last_day_of_data_by_state AS (
+    SELECT 
+        state_code,
+        MAX(date_of_supervision) last_day_of_data
+    FROM
+        recommendation_grouped 
+    GROUP BY state_code
+)
+
+-- identify if mismatch corrected
+SELECT 
+    mismatch_sessions_with_severity.state_code,
+    mismatch_sessions_with_severity.person_id,
+    mismatch_sessions_with_severity.start_date,
+    -- gives open sessions a NULL end date
+    IF(
+        mismatch_sessions_with_severity.end_date < last_day_of_data,
+        mismatch_sessions_with_severity.end_date, NULL
+    ) AS end_date,
+    recommended_supervision_downgrade_level,
+    surfaced_date,
+    -- the mismatch is only considered "corrected" if the client was downgraded to (or beyond) the recommended level 
+    -- without reassessment. Recommended level must not be null.
+    IF(recommended_supervision_downgrade_level IS NULL, NULL,
+        recommended_supervision_downgrade_level_severity >= LEAD(supervision_level_start_severity) 
+            OVER person_sessions_chronological
+        AND assessment_date_end = LEAD(assessment_date_start) OVER person_sessions_chronological
+        AND end_date = DATE_SUB(LEAD(start_date) OVER person_sessions_chronological, INTERVAL 1 DAY)
+    ) AS mismatch_corrected,
+FROM
+    mismatch_sessions_with_severity
+LEFT JOIN
+    last_day_of_data_by_state 
+USING
+    (state_code)
+WINDOW person_sessions_chronological AS (
+    PARTITION BY mismatch_sessions_with_severity.person_id 
+    ORDER BY mismatch_sessions_with_severity.start_date
+)
 """
 
 SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

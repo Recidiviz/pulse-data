@@ -149,7 +149,7 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
     query_template = f"""
 /*{{description}}*/
 
--- unnested date array starting at SUPERVISION_METRICS_START_DATE 
+-- unnested date array starting at SUPERVISION_METRICS_START_DATE
 -- through the last day of the most recent complete month
 WITH date_array AS (
     SELECT
@@ -321,6 +321,20 @@ SELECT
 
     -- treatment referrals
     SUM(treatment_referrals) AS treatment_referrals,
+    
+    -- N days late responding to task
+    SUM(late_opportunity_supervision_level_downgrade_7_days) AS
+        late_opportunity_supervision_level_downgrade_7_days,
+    SUM(late_opportunity_supervision_level_downgrade_30_days) AS
+        late_opportunity_supervision_level_downgrade_30_days,
+    SUM(late_opportunity_early_discharge_from_supervision_7_days) AS
+        late_opportunity_early_discharge_from_supervision_7_days,
+    SUM(late_opportunity_early_discharge_from_supervision_30_days) AS
+        late_opportunity_early_discharge_from_supervision_30_days,
+    SUM(late_opportunity_full_term_discharge_7_days) AS
+        late_opportunity_full_term_discharge_7_days,
+    SUM(late_opportunity_full_term_discharge_30_days) AS
+        late_opportunity_full_term_discharge_30_days,    
 
     ## window-based metrics
     /*
