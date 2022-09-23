@@ -39,7 +39,6 @@ import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
-import JusticeCountsBulkUploadView from "./JusticeCountsTools/BulkUpload";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
@@ -216,10 +215,6 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
             component={UserProvisioningView}
-          />
-          <Route
-            path={JusticeCountsTools.BULK_UPLOAD_ROUTE}
-            component={JusticeCountsBulkUploadView}
           />
           <Redirect from="/" to={IngestOperations.INGEST_ACTIONS_ROUTE} />
         </Switch>

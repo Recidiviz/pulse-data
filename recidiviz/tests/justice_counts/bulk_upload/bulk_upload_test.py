@@ -51,13 +51,6 @@ from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )
-from recidiviz.tools.justice_counts.control_panel.generate_fixtures import (
-    LAW_ENFORCEMENT_AGENCY_ID,
-    PROSECUTION_AGENCY_ID,
-)
-from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
-    reset_justice_counts_fixtures,
-)
 
 
 @pytest.mark.uses_db
@@ -70,17 +63,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         self.uploader = BulkUploader(catch_errors=False)
         self.uploader_catch_errors = BulkUploader()
 
-        self.prisons_directory = os.path.join(
+        self.prisons_excel = os.path.join(
             os.path.dirname(__file__),
-            "bulk_upload_fixtures/prison",
-        )
-        self.prosecution_directory = os.path.join(
-            os.path.dirname(__file__),
-            "bulk_upload_fixtures/prosecution",
-        )
-        self.law_enforcement_directory = os.path.join(
-            os.path.dirname(__file__),
-            "bulk_upload_fixtures/law_enforcement",
+            "bulk_upload_fixtures/prison/prison_metrics.xlsx",
         )
         self.law_enforcement_excel = os.path.join(
             os.path.dirname(__file__),
@@ -94,10 +79,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/law_enforcement/law_enforcement_missing_metrics.xlsx",
         )
-        self.supervision_directory = os.path.join(
-            os.path.dirname(__file__),
-            "bulk_upload_fixtures/supervision",
-        )
         self.supervision_excel = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/supervision/supervision_metrics.xlsx",
@@ -106,8 +87,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/prosecution/prosecution_metrics.xlsx",
         )
-        self.invalid_directory = os.path.join(
-            os.path.dirname(__file__), "bulk_upload_fixtures/invalid"
+        self.invalid_excel = os.path.join(
+            os.path.dirname(__file__), "bulk_upload_fixtures/invalid/invalid.xlsx"
         )
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
 
@@ -141,17 +122,17 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            filename_to_error = self.uploader_catch_errors.upload_directory(
+            _, filename_to_error = self.uploader_catch_errors.upload_excel(
                 session=session,
-                directory=self.invalid_directory,
+                xls=pd.ExcelFile(self.invalid_excel),
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 2)
+            self.assertEqual(len(filename_to_error), 8)
             self.assertTrue(
                 "No metric corresponds to the filename 'gender'"
-                in str(filename_to_error["gender.csv"])
+                in str(filename_to_error["gender"])
             )
             self.assertTrue(
                 (
@@ -159,18 +140,18 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "April, May, June, July, August, September, October, "
                     "November, December."
                 )
-                in str(filename_to_error["cases_disposed_by_type.csv"])
+                in str(filename_to_error["cases_disposed_by_type"])
             )
 
-    def test_prison_new(self) -> None:
+    def test_prison(self) -> None:
         """Bulk upload prison metrics into an empty database."""
         with SessionFactory.using_database(self.database_key) as session:
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.uploader.upload_directory(
+            self.uploader.upload_excel(
                 session=session,
-                directory=self.prisons_directory,
+                xls=pd.ExcelFile(self.prisons_excel),
                 agency_id=self.prison_agency_id,
                 system=schema.System.PRISONS,
                 user_account=user_account,
@@ -203,65 +184,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(metrics[1].value, 2151.29)
 
-    def test_prosecution_new(self) -> None:
-        """Bulk upload prosecution metrics into an empty database."""
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = UserAccountInterface.get_user_by_id(
-                session=session, user_account_id=self.user_account_id
-            )
-            self.uploader.upload_directory(
-                session=session,
-                directory=self.prosecution_directory,
-                agency_id=self.prosecution_agency_id,
-                system=schema.System.PROSECUTION,
-                user_account=user_account,
-            )
-
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=session,
-                agency_id=self.prosecution_agency_id,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self.assertEqual(
-                set(reports_by_instance.keys()),
-                {
-                    "2021 Annual Metrics",
-                    "2022 Annual Metrics",
-                    "01 2021 Metrics",
-                    "02 2021 Metrics",
-                    "03 2022 Metrics",
-                },
-            )
-            self._test_prosecution(reports_by_instance=reports_by_instance)
-
-    def test_prosecution_update(self) -> None:
-        """Bulk upload prosecution metrics into a database already
-        populated with fixtures.
-        """
-
-        reset_justice_counts_fixtures(self.engine)
-
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = session.query(schema.UserAccount).limit(1).one()
-
-            self.uploader.upload_directory(
-                session=session,
-                directory=self.prosecution_directory,
-                agency_id=PROSECUTION_AGENCY_ID,
-                system=schema.System.PROSECUTION,
-                user_account=user_account,
-            )
-
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=session,
-                agency_id=PROSECUTION_AGENCY_ID,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self._test_prosecution(reports_by_instance=reports_by_instance)
-
-    def test_prosecution_excel(self) -> None:
+    def test_prosecution(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -284,70 +207,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             reports_by_instance = {report.instance: report for report in reports}
             self._test_prosecution(reports_by_instance=reports_by_instance)
 
-    def test_law_enforcement_new(self) -> None:
-        """Bulk upload prosecution metrics into an empty database."""
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = UserAccountInterface.get_user_by_id(
-                session=session, user_account_id=self.user_account_id
-            )
-            self.uploader.upload_directory(
-                session=session,
-                directory=self.law_enforcement_directory,
-                agency_id=self.law_enforcement_agency_id,
-                system=schema.System.LAW_ENFORCEMENT,
-                user_account=user_account,
-            )
-
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=session,
-                agency_id=self.law_enforcement_agency_id,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self.assertEqual(
-                set(reports_by_instance.keys()),
-                {
-                    "2021 Annual Metrics",
-                    "2022 Annual Metrics",
-                    "01 2021 Metrics",
-                    "02 2021 Metrics",
-                    "08 2021 Metrics",
-                    "2020 Annual Metrics",
-                    "07 2021 Metrics",
-                    "04 2021 Metrics",
-                    "05 2021 Metrics",
-                    "06 2021 Metrics",
-                },
-            )
-            self._test_law_enforcement(reports_by_instance=reports_by_instance)
-
-    def test_law_enforcement_update(self) -> None:
-        """Bulk upload law_enforcement metrics into a database already
-        populated with fixtures.
-        """
-
-        reset_justice_counts_fixtures(self.engine)
-
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = session.query(schema.UserAccount).limit(1).one()
-
-            self.uploader.upload_directory(
-                session=session,
-                directory=self.law_enforcement_directory,
-                agency_id=LAW_ENFORCEMENT_AGENCY_ID,
-                system=schema.System.LAW_ENFORCEMENT,
-                user_account=user_account,
-            )
-
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=session,
-                agency_id=LAW_ENFORCEMENT_AGENCY_ID,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self._test_law_enforcement(reports_by_instance=reports_by_instance)
-
-    def test_law_enforcement_excel(self) -> None:
+    def test_law_enforcement(self) -> None:
         """Bulk upload law_enforcement metrics from excel spreadsheet."""
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -370,31 +230,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             reports_by_instance = {report.instance: report for report in reports}
             self._test_law_enforcement(reports_by_instance=reports_by_instance)
 
-    def test_supervision_new(self) -> None:
-        """Bulk upload supervision metrics into an empty database."""
-
-        with SessionFactory.using_database(self.database_key) as session:
-            user_account = UserAccountInterface.get_user_by_id(
-                session=session, user_account_id=self.user_account_id
-            )
-
-            self.uploader.upload_directory(
-                session=session,
-                directory=self.supervision_directory,
-                agency_id=self.supervision_agency_id,
-                system=schema.System.SUPERVISION,
-                user_account=user_account,
-            )
-
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=session,
-                agency_id=self.supervision_agency_id,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self._test_supervision(reports_by_instance=reports_by_instance)
-
-    def test_supervision_excel(self) -> None:
+    def test_supervision(self) -> None:
         """Bulk upload supervision metrics from excel spreadsheet."""
 
         with SessionFactory.using_database(self.database_key) as session:

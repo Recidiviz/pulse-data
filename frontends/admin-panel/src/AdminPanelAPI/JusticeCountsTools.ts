@@ -55,13 +55,3 @@ export const updateUser = async (
     agency_ids: agencyIds,
   });
 };
-
-export const bulkUpload = async (formData: FormData): Promise<Response> => {
-  // Don't use postWithURLAndBody because that will JSONify payload,
-  // and we don't want to do that because it contains a file
-  const url = `/api/justice_counts_tools/bulk_upload`;
-  return fetch(`/admin${url}`, {
-    method: "POST",
-    body: formData,
-  });
-};

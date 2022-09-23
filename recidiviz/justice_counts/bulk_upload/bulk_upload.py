@@ -18,11 +18,9 @@
 
 
 import calendar
-import csv
 import datetime
 import itertools
 import logging
-import os
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple, Type
@@ -69,45 +67,6 @@ class BulkUploader:
                 stop_words_to_remove={"other"}
             )
         )
-
-    def upload_directory(
-        self,
-        session: Session,
-        directory: str,
-        agency_id: int,
-        system: schema.System,
-        user_account: schema.UserAccount,
-    ) -> Dict[str, Exception]:
-        """Iterate through all CSV files in the given directory and upload them
-        to the Justice Counts database using the `upload_csv` method defined below.
-        If an error is encountered on a particular file, log it and continue.
-        """
-        filename_to_error = {}
-
-        # Sort so that we process e.g. caseloads before caseloads_by_gender.
-        # This is important because it allows us to remove the requirement
-        # that caseloads_by_gender includes the aggregate metric value too,
-        # which would be redundant.
-        for filename in sorted(os.listdir(directory)):
-            if not filename.endswith(".csv"):
-                continue
-
-            filepath = os.path.join(directory, filename)
-            logging.info("Uploading %s", filename)
-            try:
-                self.upload_csv(
-                    session=session,
-                    filename=filepath,
-                    agency_id=agency_id,
-                    system=system,
-                    user_account=user_account,
-                )
-            except Exception as e:
-                if self.catch_errors:
-                    filename_to_error[filename] = e
-                else:
-                    raise e
-        return filename_to_error
 
     def get_sheet_to_preingest_messages(
         self,
@@ -242,31 +201,6 @@ class BulkUploader:
                 else:
                     raise e
         return datapoint_json_list, sheet_to_error
-
-    def upload_csv(
-        self,
-        session: Session,
-        filename: str,
-        agency_id: int,
-        system: schema.System,
-        user_account: schema.UserAccount,
-    ) -> None:
-        """Uploads a CSV file containing data for a particular metric.
-        Core functionality is handled by the `upload_rows` method below.
-        """
-        with open(filename, "r", encoding="utf-8") as csvfile:
-            rows = list(csv.DictReader(csvfile))
-
-        # TODO(#13731): Save raw CSV file in GCS
-
-        self._upload_rows(
-            session=session,
-            system=system,
-            rows=rows,
-            filename=filename,
-            agency_id=agency_id,
-            user_account=user_account,
-        )
 
     def _upload_rows(
         self,
