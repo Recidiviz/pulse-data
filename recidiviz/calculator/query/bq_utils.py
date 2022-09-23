@@ -159,7 +159,7 @@ def add_age_groups(age_field: str = "age") -> str:
 
 
 def filter_to_enabled_states(state_code_column: str, enabled_states: List[str]) -> str:
-    return f"""WHERE {state_code_column} in ({', '.join(f"'{state}'" for state in enabled_states)})"""
+    return f"""WHERE {state_code_column} in ({', '.join(f"'{state}'" for state in sorted(enabled_states))})"""
 
 
 def length_of_stay_month_groups(
