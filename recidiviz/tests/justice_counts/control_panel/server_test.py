@@ -21,6 +21,7 @@ from http import HTTPStatus
 from pathlib import Path
 from unittest import mock
 
+import pandas as pd
 import pytest
 from flask import g, session
 from freezegun import freeze_time
@@ -1245,16 +1246,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.flush()
         agency_id = self.test_schema_objects.test_agency_A.id
 
-        law_enforcement_directory = os.path.abspath(
+        law_enforcement_excel = os.path.abspath(
             os.path.join(
                 os.path.dirname(__file__),
                 "..",
-                "bulk_upload/bulk_upload_fixtures/law_enforcement",
+                "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
             )
         )
-        BulkUploader(catch_errors=False).upload_directory(
+        BulkUploader(catch_errors=False).upload_excel(
             session=self.session,
-            directory=law_enforcement_directory,
+            xls=pd.ExcelFile(law_enforcement_excel),
             agency_id=agency_id,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
