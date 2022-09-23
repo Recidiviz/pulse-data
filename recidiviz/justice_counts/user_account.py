@@ -51,7 +51,6 @@ class UserAccountInterface:
 
         result = session.execute(insert_statement)
         user = session.query(UserAccount).get(result.inserted_primary_key)
-        session.commit()
         return user
 
     @staticmethod

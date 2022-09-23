@@ -78,11 +78,9 @@ class ReportInterface:
     @staticmethod
     def delete_reports_by_id(session: Session, report_ids: List[int]) -> None:
         session.query(schema.Report).filter(schema.Report.id.in_(report_ids)).delete()
-        session.commit()
 
     @staticmethod
     def update_report_metadata(
-        session: Session,
         report: schema.Report,
         editor_id: int,
         status: Optional[str] = None,
@@ -97,10 +95,7 @@ class ReportInterface:
             # bump most recent modifier to end of list
             modified_by = list(already_modified_by - {editor_id}) + [editor_id]
         report.modified_by = modified_by
-
         report.last_modified_at = datetime.datetime.now(tz=datetime.timezone.utc)
-
-        session.commit()
         return report
 
     @staticmethod
@@ -135,7 +130,6 @@ class ReportInterface:
             recurring_report=recurring_report,
         )
         session.add(report)
-        session.commit()
         return report
 
     @staticmethod
@@ -343,7 +337,6 @@ class ReportInterface:
                     value_type=context.value_type,
                 )
             )
-        session.commit()
         return [dp for dp in datapoint_json_list if dp is not None]
 
     @staticmethod

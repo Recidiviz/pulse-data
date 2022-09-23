@@ -61,7 +61,6 @@ class SpreadsheetInterface:
         if status == schema.SpreadsheetStatus.INGESTED.value:
             spreadsheet.ingested_by = auth0_user_id
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
-        session.commit()
         return spreadsheet
 
     @staticmethod
@@ -93,7 +92,6 @@ class SpreadsheetInterface:
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         session.add(spreadsheet)
-        session.commit()
         return spreadsheet
 
     @staticmethod
@@ -190,7 +188,6 @@ class SpreadsheetInterface:
             path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
         )
         session.delete(spreadsheet)
-        session.commit()
 
     @staticmethod
     def ingest_spreadsheet(
@@ -245,7 +242,6 @@ class SpreadsheetInterface:
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
-        session.commit()
         return datapoint_json_list, ingest_errors
 
     @staticmethod

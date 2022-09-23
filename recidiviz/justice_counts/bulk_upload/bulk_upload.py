@@ -421,7 +421,6 @@ class BulkUploader:
             )
 
             ReportInterface.update_report_metadata(
-                session=session,
                 report=report,
                 editor_id=user_account.id,
                 status=ReportStatus.DRAFT.value,

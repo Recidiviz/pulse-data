@@ -90,7 +90,7 @@ Then run the admin panel frontend (`yarn run dev` from the `frontends/admin-pane
 - Until you (or a context manager) calls `session.commit()`, any changes you've made are _temporary_.
 - Calling `session.commit()` will persist new data to the database, and also refresh objects with their new ID.
 - If you're operating in a `with SessionFactory.using_database` context manager (i.e. in our unit tests), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
-- In our API code, `session.commit()` will not be called for you automatically. Thus, at the end of any ObjectInterface method that creates or updates objects, remember to call `session.add()` followed by `session.commit()`. You should call these methods in the Interface classes, not in the API itself.
+- In our API code, we don't the `with SessionFactory.using_database` context manager, so `session.commit()` will not be called for you automatically. Thus, at the end of any API method, you should explicitly call `current_session.commit()`.
 - You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.
 
 ## Testing the backend API
