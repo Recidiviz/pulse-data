@@ -32,7 +32,7 @@ python -m recidiviz.tools.migrations.purge_state_db \
 import argparse
 import logging
 
-import alembic
+import alembic.config
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
