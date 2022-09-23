@@ -130,6 +130,9 @@ COPY --from=justice-counts-build /justice-counts/publisher/build /app/frontends/
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
 
+# Install security patches
+RUN apt-get update && apt-get -y upgrade
+
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
 
