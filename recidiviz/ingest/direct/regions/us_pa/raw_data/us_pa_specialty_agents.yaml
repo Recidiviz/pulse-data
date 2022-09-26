@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: specialty_agents
+file_description: |-
+  A table containing a list of Agents in Pennsylvania with information such as name and district office.
+data_classification: source
+primary_key_cols:
+  - AgentName
+  - DistrictOffice
+columns:
+  - name: PosNo6
+    is_pii: True
+    description: |-
+      ID for Position number related to Agent
+  - name: PositionNumber
+    is_pii: True
+    description: |-
+      Position number related to Agent
+  - name: AgentName
+    is_pii: True
+    description: |-
+      Name of PA Agent
+  - name: AgentType
+    description: |-
+      Type of Agent
+  - name: AgentTypeOriginal
+    description: |-
+      Original Agent Type
+  - name: DistrictOffice
+    description: |-
+      Office where Agent is located
+  - name: Notes
+    is_pii: True
+    description: |-
+      Notes related to Agent
