@@ -58,8 +58,9 @@ interface StyledStepProps extends StepProps {
   // Action that will be performed when the action button is clicked.
   onActionButtonClick?: () => Promise<Response>;
 
-  // Whether the buttons should be enabled.
-  buttonsEnabled?: boolean;
+  // Whether the action button on a step should be enabled. The Mark Done button
+  // is always enabled.
+  actionButtonEnabled?: boolean;
 }
 
 interface CodeBlockProps {
@@ -172,7 +173,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     actionButtonTitle,
     onActionButtonClick,
     description,
-    buttonsEnabled,
+    actionButtonEnabled,
     ...rest
   }: StyledStepProps): JSX.Element => {
     const [loading, setLoading] = React.useState(false);
@@ -183,7 +184,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         {onActionButtonClick && (
           <Button
             type="primary"
-            disabled={!buttonsEnabled}
+            disabled={!actionButtonEnabled}
             onClick={async () => {
               setLoading(true);
               const succeeded = await runAndCheckStatus(onActionButtonClick);
@@ -205,7 +206,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         )}
         <Button
           type={onActionButtonClick ? undefined : "primary"}
-          disabled={!buttonsEnabled}
+          disabled={false}
           onClick={async () => {
             setLoading(true);
             await getData();
@@ -276,7 +277,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>Pause all of the ingest-related queues for {stateCode}.</p>
             }
             actionButtonTitle="Pause Queues"
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
@@ -290,7 +291,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -301,7 +302,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             description={
               <p>Mark secondary ingest as paused in the operations db.</p>
             }
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             actionButtonTitle="Mark Paused"
             onActionButtonClick={async () =>
               pauseDirectIngestInstance(
@@ -327,7 +328,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
             actionButtonTitle="Update Ingest Instance Status"
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
                 stateCode,
@@ -338,7 +339,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           />
           <StyledStep
             title="Clear secondary database"
-            buttonsEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isFlashCancellationInProgress}
             description={
               <>
                 <p>
@@ -366,7 +367,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 operations database table as invalidated.
               </p>
             }
-            buttonsEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isFlashCancellationInProgress}
             actionButtonTitle="Invalidate secondary rows"
             onActionButtonClick={async () =>
               markInstanceIngestViewDataInvalidated(
@@ -383,7 +384,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <code>{secondaryIngestViewResultsDataset}</code> dataset.
               </p>
             }
-            buttonsEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isFlashCancellationInProgress}
             actionButtonTitle="Clean up SECONDARY ingest view results"
             onActionButtonClick={async () =>
               deleteContentsInSecondaryIngestViewDataset(stateCode)
@@ -402,7 +403,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <p>Cannot set status to FLASH_CANCELED.</p>
               )
             }
-            buttonsEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isFlashCancellationInProgress}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
@@ -428,7 +429,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </p>
               )
             }
-            buttonsEnabled={isFlashCanceled}
+            actionButtonEnabled={isFlashCanceled}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
@@ -446,7 +447,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 instance.
               </p>
             }
-            buttonsEnabled={isFlashCanceled}
+            actionButtonEnabled={isFlashCanceled}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -460,7 +461,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonTitle="Unpause Queues"
-            buttonsEnabled={isFlashCanceled}
+            actionButtonEnabled={isFlashCanceled}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
@@ -491,7 +492,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>Pause all of the ingest-related queues for {stateCode}.</p>
             }
             actionButtonTitle="Pause Queues"
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
@@ -505,7 +506,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -520,7 +521,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -543,7 +544,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
             actionButtonTitle="Update Ingest Instance Status"
-            buttonsEnabled={isReadyToFlash}
+            actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () =>
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
             }
@@ -563,7 +564,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 the operation succeeds, just select &#39;Mark Done&#39;.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Export Data"
             onActionButtonClick={async () =>
               exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY)
@@ -600,7 +601,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </p>
               </>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Move to Backup"
             onActionButtonClick={async () =>
               moveIngestViewResultsToBackup(
@@ -618,7 +619,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 operations database table as invalidated.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Invalidate primary rows"
             onActionButtonClick={async () =>
               markInstanceIngestViewDataInvalidated(
@@ -643,7 +644,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 the operation succeeds, just select &#39;Mark Done&#39;.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Import Data"
             onActionButtonClick={async () =>
               importDatabaseFromGCS(
@@ -663,7 +664,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 updated instance <code>SECONDARY</code>.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Move Secondary Metadata"
             onActionButtonClick={async () =>
               transferIngestViewMetadataToNewInstance(
@@ -682,7 +683,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <code>{primaryIngestViewResultsDataset}</code>
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Move Secondary Data"
             onActionButtonClick={async () =>
               moveIngestViewResultsBetweenInstances(
@@ -699,7 +700,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 Release the ingest lock for {stateCode}&#39;s primary instance.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -713,7 +714,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 instance.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -724,7 +725,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             description={
               <p>Mark secondary ingest as paused in the operations db.</p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Mark Paused"
             onActionButtonClick={async () =>
               pauseDirectIngestInstance(
@@ -761,7 +762,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <code>{stateCode.toLowerCase()}_primary</code> database.
               </p>
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Delete"
             onActionButtonClick={async () =>
               deleteDatabaseImportGCSFiles(
@@ -786,7 +787,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </p>
               )
             }
-            buttonsEnabled={isFlashInProgress}
+            actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_COMPLETED")
@@ -808,7 +809,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </p>
               )
             }
-            buttonsEnabled={isFlashCompleted}
+            actionButtonEnabled={isFlashCompleted}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
@@ -826,7 +827,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonTitle="Unpause Queues"
-            buttonsEnabled={isFlashCompleted}
+            actionButtonEnabled={isFlashCompleted}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
