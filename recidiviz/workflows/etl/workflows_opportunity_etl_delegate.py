@@ -74,15 +74,27 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
 
     @staticmethod
     def build_document(row: dict[str, Any]) -> dict:
-        new_document: dict[str, Any] = {"formInformation": {}, "metadata": {}}
-        # Rename form_information and metadata fields
+        new_document: dict[str, Any] = {
+            "formInformation": {},
+            "metadata": {},
+            "criteria": {},
+        }
         for key, value in row.items():
+            # Rename form_information and metadata fields
             if key.startswith("form_information_"):
                 formatted_key = re.sub(r"form_information_", "", key)
                 new_document["formInformation"][formatted_key] = value
             elif key.startswith("metadata_"):
                 formatted_key = re.sub(r"metadata_", "", key)
                 new_document["metadata"][formatted_key] = value
+            # transform reasons array to mapping
+            elif key == "reasons":
+                new_document["criteria"] = {
+                    # conversion below is relatively naive and does not support CONSTANT_CASE,
+                    # which is what we expect these names to be
+                    reason["criteria_name"].lower(): reason["reason"]
+                    for reason in value
+                }
             else:
                 new_document[key] = value
 

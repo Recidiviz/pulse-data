@@ -56,24 +56,14 @@ EXPECTED_DOCUMENT = {
     "formInformation": {
         "crimeNames": ["Class (A) Misdemeanor", "Class (A) Misdemeanor"]
     },
-    "reasons": [
-        {
-            "criteriaName": "SUPERVISION_EARLY_DISCHARGE_DATE_WITHIN_30_DAYS",
-            "reason": {"eligibleDate": "2022-11-11"},
+    "criteria": {
+        "supervisionEarlyDischargeDateWithin30Days": {"eligibleDate": "2022-11-11"},
+        "usNdImpliedValidEarlyTerminationSentenceType": {"supervisionType": "DEFERRED"},
+        "usNdImpliedValidEarlyTerminationSupervisionLevel": {
+            "supervisionLevel": "MEDIUM"
         },
-        {
-            "criteriaName": "US_ND_IMPLIED_VALID_EARLY_TERMINATION_SENTENCE_TYPE",
-            "reason": {"supervisionType": "DEFERRED"},
-        },
-        {
-            "criteriaName": "US_ND_IMPLIED_VALID_EARLY_TERMINATION_SUPERVISION_LEVEL",
-            "reason": {"supervisionLevel": "MEDIUM"},
-        },
-        {
-            "criteriaName": "US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS",
-            "reason": {"revocationDate": None},
-        },
-    ],
+        "usNdNotInActiveRevocationStatus": {"revocationDate": None},
+    },
     "metadata": {
         "outOfState": False,
         "multipleSentences": True,
