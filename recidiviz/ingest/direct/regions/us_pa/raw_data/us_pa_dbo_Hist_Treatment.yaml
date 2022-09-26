@@ -38,7 +38,11 @@ columns:
     description: |-
       The code associated with the given treatment program. Corresponds to the `TrtProgramCode` column in `dbo_Treatment`.
   - name: TrtHistOutcomeStatusCode
+    description: |-
+      TODO(#13772) Add in description from PA.
   - name: TrtHistTreatmentDescription
+    description: |-
+      TODO(#13772) Add in description from PA.
     is_pii: True
   - name: TrtHistDOCO
     is_pii: True
