@@ -97,17 +97,20 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         COALESCE(sup_pop.person_id,sup_oos_pop.person_id) IS NOT NULL AS in_supervision_population_on_date, 
         COALESCE(releases.person_id, terminations.person_id) IS NOT NULL AS same_day_start_end,
     FROM start_metric_cte starts
-    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` inc_pop
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized` inc_pop
         ON starts.person_id = inc_pop.person_id
-        AND starts.start_date = inc_pop.date_of_stay 
+        AND starts.start_date BETWEEN inc_pop.start_date_inclusive 
+            AND COALESCE(DATE_SUB(inc_pop.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
         AND inc_pop.included_in_state_population
-    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` sup_pop
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` sup_pop
         ON starts.person_id = sup_pop.person_id
-        AND starts.start_date = sup_pop.date_of_supervision 
+        AND starts.start_date BETWEEN sup_pop.start_date_inclusive 
+            AND COALESCE(DATE_SUB(sup_pop.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
         AND sup_pop.included_in_state_population
-    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` sup_oos_pop
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` sup_oos_pop
         ON starts.person_id = sup_oos_pop.person_id
-        AND starts.start_date = sup_oos_pop.date_of_supervision 
+        AND starts.start_date BETWEEN sup_oos_pop.start_date_inclusive 
+            AND COALESCE(DATE_SUB(sup_oos_pop.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
         AND NOT sup_oos_pop.included_in_state_population
     LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_included_in_state_population_materialized` releases
         ON starts.person_id = releases.person_id

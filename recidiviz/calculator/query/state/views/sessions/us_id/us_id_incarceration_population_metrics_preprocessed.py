@@ -35,15 +35,15 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
 
 US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     /*{description}*/
+    -- TODO(#15610): Remove preprocessing file when out of state facilities are flagged in sessions
     WITH incarceration_population_cte AS (
         SELECT 
-            DISTINCT
             person_id,
-            date_of_stay AS date,
+            start_date_inclusive AS start_date,
+            end_date_exclusive AS end_date,                   
             metric_type AS metric_source,
-            created_on,
             state_code,
-            'INCARCERATION' as compartment_level_1,
+            IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
             /* TODO(#6126): Investigate ID missing reason for incarceration */
             CASE 
                 WHEN purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
@@ -59,14 +59,14 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS case_type,
             judicial_district_code,
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
-        WHERE state_code = 'US_ID' AND included_in_state_population
+            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
+        WHERE state_code = 'US_ID'
     )
     SELECT
         pop.person_id,
-        pop.date,
+        pop.start_date,
+        pop.end_date,
         pop.metric_source,
-        pop.created_on,
         pop.state_code,
         CASE
             WHEN facilities.facility IS NULL THEN 'INCARCERATION_OUT_OF_STATE'
@@ -85,6 +85,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     FROM incarceration_population_cte pop
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` facilities
         ON pop.compartment_location = facilities.facility
+        AND pop.compartment_level_1 = 'INCARCERATION'
 """
 
 US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -35,14 +35,15 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
 
 US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     /*{description}*/
+    -- TODO(#15611): Remove preprocessing file when community confinement facilities are flagged in sessions
     WITH incarceration_population_cte AS (
         SELECT
-            DISTINCT person_id,
-            date_of_stay AS date,
+            person_id,
+            start_date_inclusive AS start_date,
+            end_date_exclusive AS end_date,                   
             metric_type AS metric_source,
-            created_on,
             state_code,
-            'INCARCERATION' AS compartment_level_1,
+            IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
             COALESCE(purpose_for_incarceration, 'GENERAL') AS compartment_level_2,
             COALESCE(facility, 'EXTERNAL_UNKNOWN') AS compartment_location,
             COALESCE(facility, 'EXTERNAL_UNKNOWN') AS facility,
@@ -54,15 +55,15 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS case_type,
             judicial_district_code,
         FROM
-            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+            `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
         WHERE
-            state_code='US_CO' AND included_in_state_population)
-    
+            state_code='US_CO'
+    )
     SELECT
         pop.person_id,
-        pop.date,
+        pop.start_date,
+        pop.end_date,
         pop.metric_source,
-        pop.created_on,
         pop.state_code,
         pop.compartment_level_1,
         IF(facilities.facility IS NULL, pop.compartment_level_2, 'COMMUNITY_CONFINEMENT') 
@@ -79,7 +80,8 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     FROM incarceration_population_cte pop
     --- TODO(#14601): Replace with common facility reference table
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_community_correction_facilities` facilities
-        ON    pop.facility = facilities.facility AND pop.state_code = facilities.state_code
+        ON pop.facility = facilities.facility AND pop.state_code = facilities.state_code
+        AND pop.compartment_level_1 = 'INCARCERATION'
 """
 
 US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
