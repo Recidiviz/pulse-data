@@ -59,6 +59,9 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, sentence_effective_date ORDER BY judicial_district_code)=1
         )
     )
+    ,
+    sessionized_cte AS 
+    (
     SELECT
         person_id,
         state_code,
@@ -80,6 +83,37 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
             )
         )
     GROUP BY 1,2,3,4
+    )
+    ,
+    last_day_of_data_cte AS
+    (
+    SELECT 
+        MAX(GREATEST(start_date_inclusive, end_date_exclusive)) AS last_day_of_data
+    FROM 
+        (
+        SELECT 
+            start_date_inclusive, 
+            end_date_exclusive 
+        FROM `dataflow_metrics_materialized.most_recent_incarceration_population_span_metrics_materialized`
+        WHERE state_code = 'US_TN'
+        UNION ALL
+        SELECT 
+            start_date_inclusive, 
+            end_date_exclusive 
+        FROM `dataflow_metrics_materialized.most_recent_incarceration_population_span_metrics_materialized`
+        WHERE state_code = 'US_TN'
+        )
+    )
+    SELECT 
+        person_id,
+        state_code,
+        judicial_district_session_id,
+        judicial_district_code,
+        judicial_district_start_date,
+        CASE WHEN judicial_district_end_date <= last_day_of_data THEN judicial_district_end_date END AS judicial_district_end_date,
+    FROM sessionized_cte
+    JOIN last_day_of_data_cte ON TRUE
+    WHERE judicial_district_start_date<=last_day_of_data
 """
 
 US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

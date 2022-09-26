@@ -17,6 +17,10 @@
 """PA State-specific preprocessing for joining with dataflow sessions"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
@@ -32,34 +36,96 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """PA State
 - Recategorizes CCC overlap with supervision as COMMUNITY_CONFINEMENT
 """
 
-US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = r"""
-    /*{description}*/   
-    SELECT DISTINCT
-    s.person_id,
-    s.date_of_supervision AS date,
-    s.metric_type AS metric_source,
-    s.created_on,       
-    s.state_code,
-    'SUPERVISION' AS compartment_level_1,
-    IF(ccc.person_id IS NOT NULL, 'COMMUNITY_CONFINEMENT', s.supervision_type) AS compartment_level_2,
-    CONCAT(COALESCE(s.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(s.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
-    COALESCE(ccc.facility,'EXTERNAL_UNKNOWN') AS facility,
-    COALESCE(s.level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
-    COALESCE(s.level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
-    s.supervision_level AS correctional_level,
-    s.supervision_level_raw_text AS correctional_level_raw_text,
-    s.supervising_officer_external_id,
-    s.case_type,
-    s.judicial_district_code,
-FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` s
-LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized` ccc
-    ON s.person_id = ccc.person_id
-    AND s.state_code = ccc.state_code
-    AND s.date_of_supervision BETWEEN ccc.start_date_inclusive AND DATE_SUB(COALESCE(ccc.end_date_exclusive,'9999-01-01'), INTERVAL 1 DAY)
-    AND NOT ccc.included_in_state_population
-    AND REGEXP_CONTAINS(ccc.facility, "^[123]\\d\\d\\D*")
-WHERE s.state_code = 'US_PA' 
-AND s.included_in_state_population
+US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
+    /*{{description}}*/
+    -- TODO(#15613): Remove PA community confinement recategorization when hydrated in population metrics
+    WITH overlapping_periods_cte AS 
+    (
+    SELECT
+        person_id,
+        start_date_inclusive AS start_date,
+        end_date_exclusive AS end_date,
+        metric_type AS metric_source,
+        state_code,
+        IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
+        supervision_type as compartment_level_2,
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        CAST(NULL AS STRING) AS facility,
+        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
+        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
+        supervision_level AS correctional_level,
+        supervision_level_raw_text AS correctional_level_raw_text,
+        supervising_officer_external_id,
+        case_type,
+        judicial_district_code,
+    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` s
+    WHERE state_code = 'US_PA'
+        
+    UNION ALL  
+    
+    SELECT
+        person_id,
+        start_date_inclusive AS start_date,
+        end_date_exclusive AS end_date,
+        CAST(NULL AS STRING) AS metric_source,
+        state_code,
+        CAST(NULL AS STRING) AS compartment_level_1,
+        CAST(NULL AS STRING) AS compartment_level_2, 
+        CAST(NULL AS STRING) AS compartment_location,
+        facility,
+        CAST(NULL AS STRING) AS supervision_office,
+        CAST(NULL AS STRING) AS supervision_district,
+        CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS correctional_level_raw_text,
+        CAST(NULL AS STRING) AS supervising_officer_external_id,
+        CAST(NULL AS STRING) AS case_type,
+        CAST(NULL AS STRING) AS judicial_district_code,
+    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` s
+    WHERE state_code = 'US_PA' 
+        AND NOT included_in_state_population
+        AND REGEXP_CONTAINS(facility, "^[123]\\d\\d\\D*")
+    )
+    ,
+    {create_sub_sessions_with_attributes(table_name='overlapping_periods_cte', use_magic_date_end_dates=True)}
+    ,
+    sub_sessions_with_attributes_dedup AS
+    (    
+    SELECT 
+        * EXCEPT(compartment_level_2, facility),
+        IF(is_ccc_overlap, 'COMMUNITY_CONFINEMENT', compartment_level_2) AS compartment_level_2,
+        IF(is_ccc_overlap, ccc_facility, NULL) AS facility,
+    FROM 
+        (
+        SELECT 
+            *,
+            -- If we have a duplicate with a NULL value for metric_source it is a CCC overlap because this field is only NULL for the CCC sessions.
+            LOGICAL_OR(metric_source IS NULL) OVER(PARTITION BY person_id, state_code, start_date, end_date)
+                AND LOGICAL_OR(compartment_level_1 = 'SUPERVISION') OVER(PARTITION BY person_id, state_code, start_date, end_date) AS is_ccc_overlap,
+            -- Get the name of the facility from CCC sessions
+            FIRST_VALUE(facility) OVER(PARTITION BY person_id, state_code, start_date, end_date ORDER BY IF(facility IS NULL,1,0)) AS ccc_facility,
+        FROM sub_sessions_with_attributes
+        )
+    -- Drop rows representing time on CCC from the incarceration metric as the supervision metric row is now recategorized
+    WHERE metric_source IS NOT NULL
+    )
+    SELECT 
+        person_id,
+        start_date,
+        {revert_nonnull_end_date_clause('end_date')} AS end_date,
+        metric_source,
+        state_code,
+        compartment_level_1,
+        compartment_level_2,
+        compartment_location,
+        facility,
+        supervision_office,
+        supervision_district,
+        correctional_level,
+        correctional_level_raw_text,
+        supervising_officer_external_id,
+        case_type,
+        judicial_district_code
+    FROM sub_sessions_with_attributes_dedup
 """
 
 US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

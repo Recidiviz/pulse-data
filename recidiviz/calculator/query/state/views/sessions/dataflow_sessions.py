@@ -17,6 +17,10 @@
 """Sessionized view of each continuous period of dates with the same population attributes inherited from dataflow metrics"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
@@ -26,16 +30,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
-DATAFLOW_SESSIONS_SUPPORTED_STATES = (
-    "US_ND",
-    "US_ID",
-    "US_MO",
-    "US_PA",
-    "US_TN",
-    "US_ME",
-    "US_MI",
-    "US_CO",
-)
+INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_ID", "US_TN")
+SUPERVISION_POPULATION_SPECIAL_STATES = ("US_PA", "US_TN")
 
 DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
 ## Overview
@@ -75,30 +71,28 @@ This table is the source of other sessions tables such as `compartment_sessions`
     1. Continuous dates within `metric_source`, `compartment_level_1`, `compartment_level_2`, `location`, `correctional_level`, `supervising_officer_external_id`, `case_type`, and `person_id`
 """
 
-DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
+DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH population_cte AS
     /*
     Union together incarceration and supervision population metrics (both in state and out of state). There are cases in 
     each of these individual dataflow metrics where we have the same person on the same day with different values for 
     supervision types or specialized purpose for incarceration. This deduplication is handled further down in the query. 
-
+    
     Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2.
-
+    
     The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This 
     is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
-
     Compartment location is defined as facility for incarceration and judicial district for supervision periods.
     */
     (
     SELECT 
-        DISTINCT
         person_id,
-        date_of_stay AS date,
+        start_date_inclusive AS start_date,
+        end_date_exclusive AS end_date,        
         metric_type AS metric_source,
-        created_on,
         state_code,
-        'INCARCERATION' as compartment_level_1,
+        IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
         /* TODO(#6126): Investigate ID missing reason for incarceration */
         CASE 
             WHEN state_code = 'US_ND' AND facility = 'CPP' 
@@ -113,51 +107,32 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
-    FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
-    WHERE state_code in ('{supported_states}')
-        AND state_code NOT IN ('US_ID', 'US_CO')
-        AND included_in_state_population
+    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
+    WHERE state_code NOT IN ('{{incarceration_special_states}}')
+            
     UNION ALL
-    -- Use Idaho preprocessed dataset to deal with state-specific logic
+    -- TODO(#15610): Remove ID preprocessing file when out of state facilities are flagged in sessions
     SELECT *
-    FROM `{project_id}.{sessions_dataset}.us_id_incarceration_population_metrics_preprocessed_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.us_id_incarceration_population_metrics_preprocessed_materialized`
+    
     UNION ALL
-    -- Use CO preprocessed dataset to deal with state-specific logic
+    -- TODO(#15610): Remove CO preprocessing file when out of state facilities are flagged in sessions
     SELECT *
-    FROM `{project_id}.{sessions_dataset}.us_co_incarceration_population_metrics_preprocessed_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.us_co_incarceration_population_metrics_preprocessed_materialized`
+
+    UNION ALL
+    -- TODO(#10747): Remove TN judicial district preprocessing once hydrated in population metrics
+    SELECT *
+    FROM `{{project_id}}.{{sessions_dataset}}.us_tn_incarceration_population_metrics_preprocessed_materialized`
+
     UNION ALL
     SELECT
-        DISTINCT
         person_id,
-        date_of_stay AS date,
+        start_date_inclusive AS start_date,
+        end_date_exclusive AS end_date,        
         metric_type AS metric_source,
-        created_on,
         state_code,
-        'INCARCERATION_NOT_INCLUDED_IN_STATE' as compartment_level_1,
-        purpose_for_incarceration as compartment_level_2,
-        COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
-        COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
-        CAST(NULL AS STRING) AS supervision_office,
-        CAST(NULL AS STRING) AS supervision_district,
-        CAST(NULL AS STRING) AS correctional_level,
-        CAST(NULL AS STRING) AS correctional_level_raw_text,
-        CAST(NULL AS STRING) AS supervising_officer_external_id,
-        CAST(NULL AS STRING) AS case_type,
-        judicial_district_code,
-    FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
-    WHERE state_code in ('{supported_states}')
-    AND NOT included_in_state_population
-    UNION ALL
-    SELECT 
-        DISTINCT
-        person_id,
-        date_of_supervision AS date,
-        metric_type AS metric_source,
-        created_on,       
-        state_code,
-        'SUPERVISION' as compartment_level_1,
+        IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
         supervision_type as compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
         CAST(NULL AS STRING) AS facility,
@@ -169,72 +144,54 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         case_type,
         judicial_district_code,
     FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
-    WHERE state_code in ('{supported_states}')
-        AND state_code not in ('US_TN', 'US_PA')
-        AND included_in_state_population
+        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
+    WHERE state_code NOT IN ('{{supervision_special_states}}')
+            
     UNION ALL
-    -- Use TN preprocessed dataset to deal with state-specific logic
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
-    SELECT 
+    -- TODO(#10747): Remove TN judicial district preprocessing once hydrated in population metrics
+    SELECT
         *
-    FROM `{project_id}.{sessions_dataset}.us_tn_supervision_population_metrics_preprocessed_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_population_metrics_preprocessed_materialized`
+    
     UNION ALL
-     -- Use PA preprocessed dataset to handle COMMUNITY_CONFINEMENT recategorization
-    SELECT 
+    -- TODO(#15613): Remove PA community confinement recategorization when hydrated in population metrics
+    SELECT
         *
-    FROM `{project_id}.{sessions_dataset}.us_pa_supervision_population_metrics_preprocessed_materialized`
-    UNION ALL
-    SELECT 
-        DISTINCT
-        person_id,
-        date_of_supervision AS date,
-        metric_type AS metric_source,
-        created_on,       
-        state_code,
-        'SUPERVISION_OUT_OF_STATE' as compartment_level_1,
-        supervision_type as compartment_level_2,
-        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
-        CAST(NULL AS STRING) AS facility,
-        COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_office,
-        COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN') AS supervision_district,
-        supervision_level AS correctional_level,
-        supervision_level_raw_text AS correctional_level_raw_text,
-        supervising_officer_external_id,
-        case_type,
-        judicial_district_code,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
-    WHERE state_code in ('{supported_states}')
-    AND NOT included_in_state_population
-    ),
+    FROM `{{project_id}}.{{sessions_dataset}}.us_pa_supervision_population_metrics_preprocessed_materialized`        
+    )
+    ,
     last_day_of_data_by_state_and_source AS
     /*
-    Get the max date for each state and population source, and then the min of these dates for each state. This is to 
-    be used as the 'current' date for which we assume anyone listed on this date is still in that compartment. 
+    Get the max date for each state and population source, and then the min of these dates for each state. This is to
+    be used as the 'current' date for which we assume anyone listed on this date is still in that compartment.
     */
     (
-    SELECT 
+    SELECT
         state_code,
         metric_source,
-        MAX(date) AS last_day_of_data
+        MAX(GREATEST(start_date,end_date)) AS last_day_of_data
     FROM population_cte
     GROUP BY 1,2
     )
     ,
     last_day_of_data_by_state AS
     (
-    SELECT 
+    SELECT
         state_code,
         MIN(last_day_of_data) last_day_of_data
     FROM last_day_of_data_by_state_and_source
     GROUP BY 1
-    ) 
+    )
     ,
-    session_attributes_cte AS
+    {create_sub_sessions_with_attributes(table_name='population_cte', use_magic_date_end_dates=True)}
+    ,
+    sub_sessions_with_attributes_dedup AS
     (
-    SELECT 
+    SELECT
         p.person_id,
-        date,
+        p.start_date,
+        p.end_date,
         p.state_code,
         last_day_of_data,
         ARRAY_AGG(
@@ -250,9 +207,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                COALESCE(j.judicial_district_code, p.judicial_district_code) AS judicial_district_code
+                judicial_district_code
                 )
-            ORDER BY 
+            ORDER BY
                 metric_source,
                 compartment_level_1,
                 compartment_level_2,
@@ -264,62 +221,41 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
                 correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                COALESCE(j.judicial_district_code, p.judicial_district_code)
+                judicial_district_code
             ) AS session_attributes,
-    FROM population_cte p
-    JOIN last_day_of_data_by_state 
+    FROM sub_sessions_with_attributes p
+    JOIN last_day_of_data_by_state
         USING(state_code)
-    --TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics
-    LEFT JOIN `{project_id}.{sessions_dataset}.us_tn_judicial_district_sessions_materialized` j
-        ON p.person_id = j.person_id
-        AND p.date BETWEEN j.judicial_district_start_date AND COALESCE(j.judicial_district_end_date,'9999-01-01')
-        AND p.state_code = 'US_TN'
-    WHERE date<=last_day_of_data 
-    GROUP BY 1,2,3,4
+    GROUP BY 1,2,3,4,5
     )
-    ,
-    sessionized_cte AS 
     /*
-    Aggregate across distinct sub-sessions (continuous dates within metric_source, compartment, location, and person_id)
-    and get the range of dates that define the session
+    Final sessionization step that aggregates together any adjacent sessions that have identical attributes
     */
-    (
     SELECT
         person_id,
         dataflow_session_id,
         state_code,
-        last_day_of_data,
-        MIN(date) AS start_date,
-        MAX(date) AS end_date,
+        MIN(start_date) AS start_date,
+        DATE_SUB({revert_nonnull_end_date_clause('MAX(end_date)')}, INTERVAL 1 DAY) AS end_date,
         ANY_VALUE(session_attributes) session_attributes,
+        last_day_of_data
     FROM 
         (
         SELECT 
             *,
-            SUM(IF(new_session OR date_gap,1,0)) OVER(PARTITION BY person_id ORDER BY date) AS dataflow_session_id
+            SUM(IF(attribute_change OR date_gap,1,0)) OVER(PARTITION BY person_id ORDER BY start_date, end_date) AS dataflow_session_id
         FROM 
             (
             SELECT 
                 *,
-                COALESCE(LAG(TO_JSON_STRING(session_attributes)) OVER(PARTITION BY person_id, state_code ORDER BY date),'') != COALESCE(TO_JSON_STRING(session_attributes),'') AS new_session,
-                LAG(date) OVER(PARTITION BY person_id ORDER BY date) != DATE_SUB(date, INTERVAL 1 DAY) AS date_gap
-            FROM session_attributes_cte
+                COALESCE(LAG(TO_JSON_STRING(session_attributes)) OVER w != TO_JSON_STRING(session_attributes),TRUE) AS attribute_change,
+                COALESCE(LAG(end_date) OVER w != start_date, TRUE) AS date_gap,
+            FROM sub_sessions_with_attributes_dedup
+            WHERE start_date!=end_date
+            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, end_date)
             )
         )
-    GROUP BY 1,2,3,4
-    )
-    /*
-    Same as sessionized cte with null end dates for active sessions.
-    */
-    SELECT 
-        person_id,
-        dataflow_session_id,
-        state_code,
-        start_date,
-        CASE WHEN end_date < last_day_of_data THEN end_date END AS end_date,
-        session_attributes,
-        last_day_of_data
-    FROM sessionized_cte
+    GROUP BY 1,2,3,7
 """
 
 DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -331,7 +267,8 @@ DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
-    supported_states="', '".join(DATAFLOW_SESSIONS_SUPPORTED_STATES),
+    incarceration_special_states="', '".join(INCARCERATION_POPULATION_SPECIAL_STATES),
+    supervision_special_states="', '".join(SUPERVISION_POPULATION_SPECIAL_STATES),
 )
 
 if __name__ == "__main__":
