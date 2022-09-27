@@ -35,7 +35,7 @@ class OpportunityExportConfig:
 CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
     "US_ID": [
         OpportunityExportConfig(
-            source_filename="us_id_complete_discharge_early_from_supervision_record.json",
+            source_filename="us_id_complete_discharge_early_from_supervision_request_record.json",
             export_collection_name="US_ID-earnedDischargeReferrals",
         )
     ],
