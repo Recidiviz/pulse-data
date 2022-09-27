@@ -358,11 +358,13 @@ class BigQueryViewDagWalker:
                     try:
                         execution_sec, view_result = future.result()
                     except Exception as e:
-                        # Ordering of exception here maintains that the top-level
-                        # exception matches the type of the original exception.
-                        raise e from ValueError(
-                            f"Exception found fetching result for view_key: [{node.dag_key}]",
+                        # We log an error here rather than doing `raise Error() from e`
+                        # so that we maintain the original error format.
+                        logging.error(
+                            "Exception found fetching results for for view_key: [%s]",
+                            node.dag_key,
                         )
+                        raise e
                     graph_depth = (
                         0
                         if not parent_results
