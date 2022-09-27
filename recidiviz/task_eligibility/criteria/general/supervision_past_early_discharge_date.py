@@ -33,13 +33,13 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_EARLY_DISCHARGE_DATE_WITHIN_30_DAYS"
+_CRITERIA_NAME = "SUPERVISION_PAST_EARLY_DISCHARGE_DATE"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is within 30 days of their supervision early discharge eligible date, or has
 passed their early discharge eligible date."""
 
-_DAYS_BEFORE_ELIGIBLE_DATE = 30
+_DAYS_BEFORE_ELIGIBLE_DATE = 0
 _QUERY_TEMPLATE = f"""
 /*{{description}}*/
 WITH
