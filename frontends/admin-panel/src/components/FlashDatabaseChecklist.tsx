@@ -110,6 +110,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     currentSecondaryIngestInstanceStatus === "READY_TO_FLASH";
   const isFlashCompleted =
     currentSecondaryIngestInstanceStatus === "FLASH_COMPLETED";
+  const isNoRerunInProgress =
+    currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
+
   const incrementCurrentStep = async () => setCurrentStep(currentStep + 1);
 
   const getData = React.useCallback(async () => {
@@ -447,7 +450,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 instance.
               </p>
             }
-            actionButtonEnabled={isFlashCanceled}
+            actionButtonEnabled={isNoRerunInProgress}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -461,7 +464,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonTitle="Unpause Queues"
-            actionButtonEnabled={isFlashCanceled}
+            actionButtonEnabled={isNoRerunInProgress}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
@@ -827,7 +830,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonTitle="Unpause Queues"
-            actionButtonEnabled={isFlashCompleted}
+            actionButtonEnabled={isNoRerunInProgress}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
