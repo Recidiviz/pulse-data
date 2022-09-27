@@ -220,6 +220,7 @@ sub-span represents an eligible or ineligible period for each individual.
         ARRAY_AGG(
             IF(NOT COALESCE(criteria.meets_criteria, all_criteria.meets_criteria_default), all_criteria.criteria_name, NULL)
             IGNORE NULLS
+            ORDER BY all_criteria.criteria_name
         ) AS ineligible_criteria,
     FROM (
         -- Form the eligibility spans around all of the population sub-spans
@@ -251,14 +252,19 @@ type switches.
             ORDER BY start_date ASC) AS task_eligibility_span_id,
     FROM (
         SELECT
-        *,
+        * EXCEPT(ineligible_reasons_str),
         -- TODO(#14445): split spans when the `reasons` array changes
         COALESCE(
             start_date != LAG(end_date) OVER state_person_window
-                OR is_eligible != LAG(is_eligible) OVER state_person_window,
+                OR is_eligible != LAG(is_eligible) OVER state_person_window
+                OR ineligible_reasons_str != LAG(ineligible_reasons_str) OVER state_person_window,
             TRUE
         ) AS new_span,
-        FROM eligibility_sub_spans
+        FROM (
+            SELECT 
+                *, ARRAY_TO_STRING(ineligible_criteria, ",") AS ineligible_reasons_str
+            FROM eligibility_sub_spans
+        )
         WINDOW state_person_window AS (PARTITION BY state_code, person_id
             ORDER BY start_date ASC)
     )
