@@ -19,7 +19,6 @@
 This contains the core logic for calculating supervision metrics on a person-by-person
 basis. It transforms SupervisionEvents into SupervisionMetrics.
 """
-import datetime
 from operator import attrgetter
 from typing import Dict, List, Optional, Type
 
@@ -151,13 +150,6 @@ class SupervisionMetricProducer(
             calculation_month_upper_bound, calculation_month_count
         )
 
-        # # TODO(#15541) Remove customized logic once population metrics stop being populated.
-        capped_calculation_month_lower_bound = (
-            get_calculation_month_lower_bound_date(calculation_month_upper_bound, 240)
-            if calculation_month_count == -1
-            else calculation_month_lower_bound
-        )
-
         metrics_producer_delegate_class = self.metrics_producer_delegate_classes.get(
             self.metric_class
         )
@@ -206,12 +198,7 @@ class SupervisionMetricProducer(
                 if not metric_class:
                     raise ValueError(f"No metric class for metric type {metric_type}")
 
-                if self.include_event_in_metric(
-                    event,
-                    metric_type,
-                    calculation_month_upper_bound,
-                    capped_calculation_month_lower_bound,
-                ):
+                if self.include_event_in_metric(event, metric_type):
                     metric = build_metric(
                         result=event,
                         metric_class=metric_class,
@@ -240,8 +227,6 @@ class SupervisionMetricProducer(
         self,
         event: SupervisionEvent,
         metric_type: SupervisionMetricType,
-        calculation_month_upper_bound: datetime.date,
-        capped_calculation_month_lower_bound: Optional[datetime.date],
     ) -> bool:
         """Returns whether the given event should contribute to metrics of the given metric_type."""
         supervision_delegate = get_state_specific_supervision_delegate(
@@ -264,33 +249,15 @@ class SupervisionMetricProducer(
                 and event.supervision_level_downgrade_occurred
             )
         if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
-            return (
-                isinstance(
-                    event,
-                    (SupervisionPopulationEvent,),
-                )
-                and supervision_period_is_out_of_state(event, supervision_delegate)
-                and include_in_output(
-                    event.event_date.year,
-                    event.event_date.month,
-                    calculation_month_upper_bound=calculation_month_upper_bound,
-                    calculation_month_lower_bound=capped_calculation_month_lower_bound,
-                )
-            )
+            return isinstance(
+                event,
+                (SupervisionPopulationEvent,),
+            ) and supervision_period_is_out_of_state(event, supervision_delegate)
         if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
-            return (
-                isinstance(
-                    event,
-                    (SupervisionPopulationEvent,),
-                )
-                and not supervision_period_is_out_of_state(event, supervision_delegate)
-                and include_in_output(
-                    event.event_date.year,
-                    event.event_date.month,
-                    calculation_month_upper_bound=calculation_month_upper_bound,
-                    calculation_month_lower_bound=capped_calculation_month_lower_bound,
-                )
-            )
+            return isinstance(
+                event,
+                (SupervisionPopulationEvent,),
+            ) and not supervision_period_is_out_of_state(event, supervision_delegate)
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESS,

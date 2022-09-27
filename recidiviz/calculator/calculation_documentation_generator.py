@@ -1056,7 +1056,7 @@ class CalculationDocumentationGenerator:
 
         state_infos_list = sorted(
             self.state_metric_calculations_by_metric[metric_type],
-            key=lambda info: (info.name, info.month_count if info.month_count else -1),
+            key=lambda info: (info.name, info.month_count),
         )
         state_info_headers = [
             "**State**",
