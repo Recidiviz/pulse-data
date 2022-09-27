@@ -89,6 +89,7 @@ class ProcessDagResult(Generic[ViewResultT]):
 
     view_results: Dict[BigQueryView, ViewResultT]
     view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata]
+    total_runtime: float
 
     def log_processing_stats(self, n_slowest: int) -> None:
         """Logs various stats about a DAG processing run.
@@ -99,7 +100,7 @@ class ProcessDagResult(Generic[ViewResultT]):
         if not self.view_processing_stats:
             logging.info("No views processed - no stats to show.")
             return
-
+        nodes_processed = len(self.view_results)
         processing_runtimes = []
         queued_wait_times = []
         for view, metadata in self.view_processing_stats.items():
@@ -108,21 +109,32 @@ class ProcessDagResult(Generic[ViewResultT]):
             processing_runtimes.append((processing_time, view.address))
             queued_wait_times.append(total_queue_time - processing_time)
 
-        avg_wait_time = round(sum(queued_wait_times) / len(queued_wait_times), 2)
-        max_wait_time = max(queued_wait_times)
+        avg_wait_time = max(
+            0.0, round(sum(queued_wait_times) / len(queued_wait_times), 2)
+        )
+        max_wait_time = max(0.0, max(queued_wait_times))
 
         slowest_to_process = heapq.nlargest(n_slowest, processing_runtimes)
         slowest_list = "\n".join(
             [
-                f"{i+1}) {seconds:.2f} sec: {address.dataset_id}.{address.table_id}"
+                f"  {i+1}) {seconds:.2f} sec: {address.dataset_id}.{address.table_id}"
                 for i, (seconds, address) in enumerate(slowest_to_process)
             ]
         )
 
-        logging.info("Average queue wait time: %s seconds", avg_wait_time)
-        logging.info("Max queue wait time: %s seconds", max_wait_time)
         logging.info(
-            "Top [%s] most expensive nodes in DAG: \n%s", n_slowest, slowest_list
+            "### BQ DAG PROCESSING STATS ###\n"
+            "Total processing time: %s sec\n"
+            "Nodes processed: %s\n"
+            "Average queue wait time: %s seconds\n"
+            "Max queue wait time: %s seconds\n"
+            "Top [%s] most expensive nodes in DAG: \n%s",
+            round(self.total_runtime, 2),
+            nodes_processed,
+            avg_wait_time,
+            max_wait_time,
+            n_slowest,
+            slowest_list,
         )
 
 
@@ -315,6 +327,7 @@ class BigQueryViewDagWalker:
         queue: Set[BigQueryViewDagNode] = set(self.roots)
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
+        dag_processing_start = time.perf_counter()
         with futures.ThreadPoolExecutor(
             # Conservatively allow only half as many workers as allowed connections.
             # Lower this number if we see "urllib3.connectionpool:Connection pool is
@@ -413,7 +426,9 @@ class BigQueryViewDagWalker:
                             )
                             processing.add(child_node.dag_key)
         return ProcessDagResult(
-            view_results=view_results, view_processing_stats=view_processing_stats
+            view_results=view_results,
+            view_processing_stats=view_processing_stats,
+            total_runtime=(time.perf_counter() - dag_processing_start),
         )
 
     def _check_sub_dag_input_views(self, *, input_views: List[BigQueryView]) -> None:
