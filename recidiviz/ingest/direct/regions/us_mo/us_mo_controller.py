@@ -283,7 +283,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             + (
                 ["tak158_tak026_incarceration_periods"]
                 if not environment.in_gcp_production()
-                and self.ingest_instance == DirectIngestInstance.SECONDARY
+                or self.ingest_instance == DirectIngestInstance.SECONDARY
                 else [
                     "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
                     "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
