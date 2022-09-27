@@ -43,15 +43,21 @@ class JusticeCountsBulkUploadException(Exception):
         description: str,
         message_type: BulkUploadMessageType,
         subtitle: Optional[str] = None,
+        sheet_name: Optional[str] = None,
     ):
         super().__init__(description)
         self.title = title
         self.subtitle = subtitle
         self.description = description
 
-        # JusticeCountsExceptions can be either warnings or errors.
+        # A JusticeCountsBulkUploadException can be either warnings or errors.
         # Warnings do now prevent data publishing, but errors do.
         self.message_type = message_type
+        # JusticeCountsBulkUploadExceptions that are associated with a particular
+        # sheet will have a non-None sheet name. JusticeCountsBulkUploadExceptions
+        # that are associated with an entire metric will have a sheet_name
+        # value of None.
+        self.sheet_name = sheet_name
 
     def to_json(self) -> dict[str, Any]:
         return {
