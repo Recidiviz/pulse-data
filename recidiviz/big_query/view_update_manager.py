@@ -397,6 +397,12 @@ def _create_or_update_view_and_materialize_if_necessary(
         - CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES if neither this view or any of the
            views in its parent chain were updated.
     """
+    # TODO(#15671): HACK ALERT - Remove this logic once querying Cloud SQL connections
+    #  is stable again and the justice counts views can be refreshed as part of the
+    #  deploy.
+    if "justice_counts" in view.address.dataset_id:
+        return CreateOrUpdateViewStatus.SUCCESS_WITHOUT_CHANGES
+
     if not view.should_deploy():
         logging.info(
             "Skipping creation of view [%s.%s] which cannot be deployed.",
