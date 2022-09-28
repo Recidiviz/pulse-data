@@ -16,8 +16,9 @@
 # =============================================================================
 """Interface for working with the Datapoint model."""
 import datetime
+import json
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import attr
 from sqlalchemy.orm import Session
@@ -38,10 +39,13 @@ from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRI
 from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
     expunge_existing,
-    get_existing_entity,
     update_existing_or_create,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+
+# Datapoints are unique by a tuple of:
+# <report ID, metric definition, context key, disaggregations>
+DatapointUniqueKey = Tuple[int, str, Optional[str], Optional[str]]
 
 
 class DatapointInterface:
@@ -294,6 +298,7 @@ class DatapointInterface:
     def add_datapoint(
         session: Session,
         report: schema.Report,
+        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         value: Any,
         user_account: schema.UserAccount,
         metric_definition_key: str,
@@ -330,7 +335,36 @@ class DatapointInterface:
                     ),
                 ) from e
 
-        ingested_entity = schema.Datapoint(
+        # Check if there is an existing datapoint that needs to be updated,
+        # or if we need to create a new one. Datapoints are unique by a tuple of:
+        # <report, metric definition, context key, disaggregations>
+        datapoint_key = (
+            report.id,
+            metric_definition_key,
+            context_key.value if context_key else None,
+            json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
+            if dimension
+            else None,
+        )
+        existing_datapoint = existing_datapoints_dict.get(datapoint_key)
+
+        if use_existing_aggregate_value:
+            # If this flag is set, and the incoming aggregate value does not match
+            # what's already in the DB, then keep the existing aggregate value.
+            if (
+                existing_datapoint is not None
+                and existing_datapoint.value is not None
+                and abs(float(existing_datapoint.value) - value) > 1
+            ):
+                logging.info(
+                    "The incoming (read or inferred) aggregate value (%s) does not match "
+                    "the existing aggregate value (%s). Keeping the existing value.",
+                    value,
+                    existing_datapoint.value,
+                )
+                value = existing_datapoint.value
+
+        new_datapoint = schema.Datapoint(
             value=str(value) if value is not None else value,
             report_id=report.id,
             metric_definition_key=metric_definition_key,
@@ -346,55 +380,42 @@ class DatapointInterface:
             else None,
         )
 
-        if use_existing_aggregate_value:
-            # Validate that the incoming aggregate value matches what's already
-            # in the db. If not, set the value to None. If so, or if nothing is
-            # in the DB, continue on and save the value.
-            expunge_existing(session=session, ingested_entity=ingested_entity)
-            existing_entity = get_existing_entity(ingested_entity, session)
-            if (
-                existing_entity is not None
-                and existing_entity.value is not None
-                and abs(float(existing_entity.value) - value) > 1
-            ):
-                logging.warning(
-                    "`use_existing_aggregate_value` was specified, but the aggregate "
-                    "value either read or inferred from incoming data (%s) does not "
-                    "match the existing aggregate value (%s). The datapoint will keep the "
-                    "existing aggregate value",
-                    value,
-                    existing_entity.value,
-                )
-                ingested_entity.value = existing_entity.value
+        expunge_existing(session, new_datapoint)
 
-        datapoint, existing_datapoint = update_existing_or_create(
-            ingested_entity,
-            session,
+        # save existing datapoint value since it will get overwritten in session.merge
+        existing_datapoint_value = (
+            existing_datapoint.value if existing_datapoint is not None else None
         )
-        if existing_datapoint:
-            if existing_datapoint.value != datapoint.value:
-                datapoint_history = schema.DatapointHistory(
-                    datapoint_id=existing_datapoint.id,
-                    user_account_id=user_account.id,
-                    timestamp=current_time,
-                    old_value=existing_datapoint.value,
-                    new_value=str(value) if value is not None else value,
+
+        if existing_datapoint is None:
+            session.add(new_datapoint)
+        else:
+            new_datapoint.id = existing_datapoint.id
+            new_datapoint = session.merge(new_datapoint)
+            if existing_datapoint_value != new_datapoint.value:
+                session.add(
+                    schema.DatapointHistory(
+                        datapoint_id=existing_datapoint.id,
+                        user_account_id=user_account.id,
+                        timestamp=current_time,
+                        old_value=existing_datapoint_value,
+                        new_value=str(value) if value is not None else value,
+                    )
                 )
-                datapoint.datapoint_histories.append(datapoint_history)
 
         # Return datapoint json because datapoint values and metadata will be
         # used in the bulk upload data summary pages.
         return (
             DatapointInterface.to_json_response(
-                datapoint=datapoint,
+                datapoint=new_datapoint,
                 is_published=report.status == schema.ReportStatus.PUBLISHED,
                 frequency=schema.ReportingFrequency[report.type],
-                old_value=existing_datapoint.value
+                old_value=existing_datapoint_value
                 if existing_datapoint is not None
-                and existing_datapoint.value != datapoint.value
+                and existing_datapoint_value != new_datapoint.value
                 else None,
             )
-            if datapoint is not None
+            if new_datapoint is not None
             else None
         )
 
