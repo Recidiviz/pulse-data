@@ -162,6 +162,10 @@ def in_development() -> bool:
     return os.environ.get("IS_DEV") == "true"
 
 
+def in_offline_mode() -> bool:
+    return os.environ.get("IS_OFFLINE_MODE") == "true"
+
+
 def get_version() -> str:
     return os.getenv("GAE_VERSION", "")
 

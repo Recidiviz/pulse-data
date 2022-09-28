@@ -48,11 +48,9 @@ import argparse
 import logging
 import os
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import ProgrammingError
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
@@ -80,32 +78,11 @@ from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
     get_pathways_table_classes,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.utils.fixture_helpers import reset_fixtures
+from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
 from recidiviz.utils.environment import in_development
-
-
-def create_dbs(state_codes: List[str], engine: Optional[Engine] = None) -> None:
-    if not engine:
-        # Connect to the "postgres" database so we can operate on all the states.
-        pg_db_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="postgres")
-        engine = SQLAlchemyEngineManager.init_engine(pg_db_key)
-
-    with engine.connect() as connection:
-        for state_code in state_codes:
-            logging.info("creating database %s if it doesn't exist", state_code.lower())
-            try:
-                # The easiest way to create it if it doesn't exist is to just try to create it, and
-                # ignore the error we get if it already exists.
-                connection.execution_options(isolation_level="AUTOCOMMIT").execute(
-                    text(f"CREATE DATABASE {state_code.lower()}")
-                )
-            except ProgrammingError as e:
-                if e.orig.pgcode != "42P04":  # ignore duplicate_database error
-                    raise e
 
 
 def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
@@ -199,7 +176,7 @@ def main(
     gcs_bucket: str,
 ) -> None:
 
-    create_dbs(state_codes)
+    create_dbs(state_codes, SchemaType.PATHWAYS)
 
     for state in state_codes:
         database_key = PathwaysDatabaseManager.database_key_for_state(state)

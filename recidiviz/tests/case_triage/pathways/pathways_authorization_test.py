@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for Pathways authorization."""
 import os
+from typing import Any, Dict
 from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
@@ -47,21 +48,33 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         self.endpoint = "PrisonPopulationOverTimeCount"
 
     @classmethod
-    def process_claims(cls, path: str, user_state_code: str) -> None:
+    def _process_claims(
+        cls, path: str, claims: Dict[str, Any], offline_mode: bool
+    ) -> None:
         with test_app.test_request_context(path=path):
-            return on_successful_authorization(
-                {
-                    "https://recidiviz-test/app_metadata": {
-                        "state_code": user_state_code,
-                        "routes": {
-                            "system_prison": True,
-                            "system_prisonToSupervision": False,
-                            "system_supervision": False,
-                            "system_supervisionToLiberty": True,
-                        },
-                    }
+            return on_successful_authorization(claims, offline_mode=offline_mode)
+
+    @classmethod
+    def process_claims(cls, path: str, user_state_code: str) -> None:
+        return cls._process_claims(
+            path,
+            {
+                "https://recidiviz-test/app_metadata": {
+                    "state_code": user_state_code,
+                    "routes": {
+                        "system_prison": True,
+                        "system_prisonToSupervision": False,
+                        "system_supervision": False,
+                        "system_supervisionToLiberty": True,
+                    },
                 }
-            )
+            },
+            offline_mode=False,
+        )
+
+    @classmethod
+    def process_offline_claim(cls, path: str) -> None:
+        return cls._process_claims(path, {}, offline_mode=True)
 
     @mock.patch(
         "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
@@ -160,3 +173,10 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
             self.process_claims("/", user_state_code="recidiviz")
 
         self.assertEqual(assertion.exception.code, "state_required")
+
+    def test_offline_mode(self) -> None:
+        self.assertIsNone(self.process_offline_claim(f"/US_OZ/{self.endpoint}"))
+
+        with self.assertRaises(FlaskException) as assertion:
+            self.process_offline_claim(f"/US_CA/{self.endpoint}")
+        self.assertEqual(assertion.exception.code, "offline_state_required")
