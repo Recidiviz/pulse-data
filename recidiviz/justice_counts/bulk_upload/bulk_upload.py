@@ -32,6 +32,7 @@ from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfigurati
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
+from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -153,11 +154,27 @@ class BulkUploader:
         to the Justice Counts database using the `upload_rows` method defined below.
         If an error is encountered on a particular tab, log it and continue.
         """
-        datapoint_json_list: List[Dict[str, Any]] = []
-        # Sort so that we process e.g. caseloads before caseloads_by_gender.
-        # This is important because it allows us to remove the requirement
-        # that caseloads_by_gender includes the aggregate metric value too,
-        # which would be redundant.
+        # 1. Fetch existing reports and datapoints for this agency, so that
+        # we know what objects to update vs. what new objects to create.
+        reports = ReportInterface.get_reports_by_agency_id(
+            session, agency_id=agency_id, include_datapoints=True
+        )
+        reports_sorted_by_time_range = sorted(
+            reports, key=lambda x: (x.date_range_start, x.date_range_end)
+        )
+        reports_by_time_range = {
+            k: list(v)
+            for k, v in groupby(
+                reports_sorted_by_time_range,
+                key=lambda x: (x.date_range_start, x.date_range_end),
+            )
+        }
+        existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+            reports=reports
+        )
+
+        # 2. Compare the sheetnames we expect to see (based on the metrics for this system)
+        # with the sheetnames we actually see in the uploaded file.
         filename_to_metricfiles = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
         expected_aggregate_sheetnames = {
             filename
@@ -167,22 +184,31 @@ class BulkUploader:
         actual_sheetnames = {
             s.strip().lower()
             for s in sorted(
+                # Sort so that we process e.g. caseloads before caseloads_by_gender.
+                # This is important because it allows us to remove the requirement
+                # that caseloads_by_gender includes the aggregate metric value too,
+                # which would be redundant.
                 xls.sheet_names,
                 key=lambda x: 0 if x in expected_aggregate_sheetnames else 1,
             )
         }
-        # First, instantiate sheet_to_error dictionary and add any pre-ingest
-        # messages (e.g missing all sheets for a metric).
 
+        # 3. Instantiate sheet_to_error dictionary and add any pre-ingest
+        # messages (i.e. messages that we determine before we've even tried
+        # to upload a file, like that we're missing all sheets for a metric).
         sheet_to_error = self.get_sheet_to_preingest_messages(
             actual_sheetnames=actual_sheetnames,
             filename_to_metricfiles=filename_to_metricfiles,
             expected_aggregate_sheetnames=expected_aggregate_sheetnames,
         )
+
+        # 4. Now run through all sheets and process each in turn.
+        datapoint_json_list: List[Dict[str, Any]] = []
+        sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
         for sheet_name in actual_sheetnames:
             logging.info("Uploading %s", sheet_name)
             try:
-                df = pd.read_excel(xls, sheet_name=sheet_name)
+                df = sheet_name_to_df[sheet_name]
                 # Drop any rows that contain any NaN values
                 df = df.dropna(axis=0, how="any", subset="value")
                 # Convert dataframe to a list of dictionaries
@@ -194,12 +220,24 @@ class BulkUploader:
                     filename=sheet_name,
                     agency_id=agency_id,
                     user_account=user_account,
+                    reports_by_time_range=reports_by_time_range,
+                    existing_datapoints_dict=existing_datapoints_dict,
                 )
             except Exception as e:
                 if self.catch_errors:
                     sheet_to_error[sheet_name] = e
                 else:
                     raise e
+
+        # 5. For any report that was updated, set its status to DRAFT
+        report: schema.Report  # make mypy happy
+        for report in itertools.chain(*reports_by_time_range.values()):
+            ReportInterface.update_report_metadata(
+                report=report,
+                editor_id=user_account.id,
+                status=ReportStatus.DRAFT.value,
+            )
+
         return datapoint_json_list, sheet_to_error
 
     def _upload_rows(
@@ -210,6 +248,8 @@ class BulkUploader:
         filename: str,
         agency_id: int,
         user_account: schema.UserAccount,
+        reports_by_time_range: Dict,
+        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
     ) -> List[Dict[str, Any]]:
         """Generally, a file will only contain metrics for one system. In the case
         of supervision, the file could contain metrics for supervision, parole, or
@@ -228,6 +268,8 @@ class BulkUploader:
                 metricfile=metricfile,
                 agency_id=agency_id,
                 user_account=user_account,
+                reports_by_time_range=reports_by_time_range,
+                existing_datapoints_dict=existing_datapoints_dict,
             )
         return datapoint_json_list
 
@@ -268,6 +310,8 @@ class BulkUploader:
         metricfile: MetricFile,
         agency_id: int,
         user_account: schema.UserAccount,
+        reports_by_time_range: Dict,
+        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
     ) -> List[Dict[str, Any]]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -290,31 +334,17 @@ class BulkUploader:
         The filename is assumed to be of the format "metric_name.csv", where metric_name
         corresponds to one of the MetricFile objects in bulk_upload_helpers.py.
         """
-        reports = ReportInterface.get_reports_by_agency_id(session, agency_id=agency_id)
-
-        # Step 1: Group any existing reports for this agency by time range.
-        reports_sorted_by_time_range = sorted(
-            reports, key=lambda x: (x.date_range_start, x.date_range_end)
-        )
-        reports_by_time_range = {
-            k: list(v)
-            for k, v in groupby(
-                reports_sorted_by_time_range,
-                key=lambda x: (x.date_range_start, x.date_range_end),
-            )
-        }
-
         metric_definition = metricfile.definition
         reporting_frequency = metric_definition.reporting_frequency
 
-        # TODO(#13731): Make sure there are no unexpected columns in the file
+        # TODO(#13731): Warn if there are unexpected columns in the file
 
-        # Step 2: Group the rows in this file by time range.
+        # Step 1: Group the rows in this file by time range.
         (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
             rows=rows, reporting_frequency=reporting_frequency
         )
 
-        # Step 3: For each time range represented in the file, convert the
+        # Step 2: For each time range represented in the file, convert the
         # reported data into a MetricInterface object. If a report already
         # exists for this time range, update it with the MetricInterface.
         # Else, create a new report and add the MetricInterface.
@@ -350,15 +380,11 @@ class BulkUploader:
                 report=report,
                 report_metric=report_metric,
                 user_account=user_account,
-                use_existing_aggregate_value=metricfile.disaggregation is not None,
                 # TODO(#15499) Infer aggregate value only if total sheet was not provided.
+                use_existing_aggregate_value=metricfile.disaggregation is not None,
+                existing_datapoints_dict=existing_datapoints_dict,
             )
 
-            ReportInterface.update_report_metadata(
-                report=report,
-                editor_id=user_account.id,
-                status=ReportStatus.DRAFT.value,
-            )
         return datapoint_json_list
 
     def _get_metricfile(self, filename: str, system: schema.System) -> MetricFile:

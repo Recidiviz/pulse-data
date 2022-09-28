@@ -17,11 +17,12 @@
 """Interface for working with the Reports model."""
 import datetime
 import itertools
+import json
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Query, Session, lazyload
 
-from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -247,6 +248,9 @@ class ReportInterface:
         report_metric: MetricInterface,
         user_account: schema.UserAccount,
         use_existing_aggregate_value: bool = False,
+        existing_datapoints_dict: Optional[
+            Dict[DatapointUniqueKey, schema.Datapoint]
+        ] = None,
     ) -> List[Dict[str, Any]]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
@@ -264,6 +268,11 @@ class ReportInterface:
         is specified, we validate that it matches what is already in the db.
         If nothing is in the DB, we save the new aggregate value.
         """
+        existing_datapoints_dict = (
+            existing_datapoints_dict
+            or ReportInterface.get_existing_datapoints_dict(reports=[report])
+        )
+
         datapoint_json_list: List[Optional[Dict[str, Any]]] = []
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -277,6 +286,7 @@ class ReportInterface:
             datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
                     session=session,
+                    existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,
                     current_time=current_time,
                     metric_definition_key=metric_definition.key,
@@ -306,6 +316,7 @@ class ReportInterface:
                 datapoint_json_list.append(
                     DatapointInterface.add_datapoint(
                         session=session,
+                        existing_datapoints_dict=existing_datapoints_dict,
                         user_account=user_account,
                         current_time=current_time,
                         metric_definition_key=metric_definition.key,
@@ -328,6 +339,7 @@ class ReportInterface:
             datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
                     session=session,
+                    existing_datapoints_dict=existing_datapoints_dict,
                     user_account=user_account,
                     current_time=current_time,
                     metric_definition_key=metric_definition.key,
@@ -338,6 +350,30 @@ class ReportInterface:
                 )
             )
         return [dp for dp in datapoint_json_list if dp is not None]
+
+    @staticmethod
+    def get_existing_datapoints_dict(
+        reports: List[schema.Report],
+    ) -> Dict[DatapointUniqueKey, schema.Datapoint]:
+        """Fetches all datapoints from the given list of reports. Returns a
+        dictionary of these datapoints keyed by their unique ID, which is a tuple of
+        <report ID, metric definition, context key, disaggregations>
+        """
+        return {
+            (
+                report.id,
+                datapoint.metric_definition_key,
+                datapoint.context_key,
+                datapoint.dimension_identifier_to_member
+                if (
+                    isinstance(datapoint.dimension_identifier_to_member, str)
+                    or datapoint.dimension_identifier_to_member is None
+                )
+                else json.dumps(datapoint.dimension_identifier_to_member),
+            ): datapoint
+            for report in reports
+            for datapoint in report.datapoints
+        }
 
     @staticmethod
     def get_metrics_by_report(

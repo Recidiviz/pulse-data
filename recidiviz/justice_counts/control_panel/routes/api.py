@@ -207,6 +207,10 @@ def get_api_blueprint(
                 status=request_dict["status"],
             )
 
+            existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+                reports=[report]
+            )
+
             for metric_json in request_dict.get("metrics", []):
                 report_metric = MetricInterface.from_json(
                     json=metric_json,
@@ -217,6 +221,7 @@ def get_api_blueprint(
                     report=report,
                     report_metric=report_metric,
                     user_account=user_account,
+                    existing_datapoints_dict=existing_datapoints_dict,
                 )
 
             editor_ids_to_names = ReportInterface.get_editor_ids_to_names(

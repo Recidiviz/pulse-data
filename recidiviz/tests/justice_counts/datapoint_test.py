@@ -196,6 +196,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 # When a report is in Draft mode, no errors are raised when the value is invalid
                 DatapointInterface.add_datapoint(
                     session=session,
+                    existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                        reports=[monthly_report]
+                    ),
                     report=monthly_report,
                     value="123abc",
                     user_account=user,
@@ -217,6 +220,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 )
                 DatapointInterface.add_datapoint(
                     session=session,
+                    existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                        reports=[monthly_report]
+                    ),
                     report=monthly_report,
                     value="123abc",
                     user_account=user,
@@ -235,6 +241,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
             DatapointInterface.add_datapoint(
                 session=session,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
                 report=monthly_report,
                 value=123.0,
                 user_account=user,
@@ -281,6 +290,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
             DatapointInterface.add_datapoint(
                 session=session,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
                 report=monthly_report,
                 value=456.3,
                 user_account=user,
