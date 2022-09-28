@@ -34,14 +34,16 @@ function upload_deployment_log {
 
   gsutil cp "${DEPLOYMENT_LOG_PATH}" "gs://${LOG_OBJECT_PATH}" > /dev/null 2>&1
 
-  local LOG_URL="https://console.cloud.google.com/storage/browser/_details/${LOG_OBJECT_PATH};tab=live_object?project=${PROJECT_ID}"
-
   local MESSAGE
+  # sed is used to strip ANSI codes such as [34m and [0;10m
   MESSAGE=$(
 cat <<- EOM
-<${LOG_URL}|Full logs can be found here.>
 \`\`\`
-$(tail -n 40 "${DEPLOYMENT_LOG_PATH}")
+gsutil cat ${LOG_OBJECT_PATH}
+\`\`\`
+
+\`\`\`
+$(tail -n 30 "${DEPLOYMENT_LOG_PATH}" | sed -e 's/\x1b\[[0-9;]*m//g')
 \`\`\`
 EOM
 )
