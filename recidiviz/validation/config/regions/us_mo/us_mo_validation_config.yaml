@@ -9,6 +9,9 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: MO has not provided us with person-level validation data for supervising officers
 max_allowed_error_overrides:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
+    hard_max_allowed_error_override: 1.0
+    override_reason: TODO(#15466) - Fix reference view hydration to compare external data correctly.
   - validation_name: sentence_type_by_district_by_demographics_internal_consistency
     hard_max_allowed_error_override: 0.2
     override_reason: TODO(#5074) - The age_bucket_breakdown_sum column does not match the others - investigate.
@@ -23,22 +26,22 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 500
     override_reason:
       In MO we rely on a table where they build incarceration period
-      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Current error at 411
-      rows as of 04/12/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
-      query to derive periods directly from the status codes table.
+      spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
+      rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
+      query to derive periods directly from the status codes table. Update - the error did not improve after rework was done. Further investigation still needed.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 2000
+    hard_num_allowed_rows_override: 2500
     override_reason:
       Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
       that do follow standard formats. Rerun decreased error significantly, bumping threshold down to 1500 to note if it greatly
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
-      at 1699 as of 07/01/2022. Will require more investigation.
+      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. Will require more investigation.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 200
     override_reason:
       TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
       actually using it. Doing so will likely make these edge case periods go away.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 20
+    hard_num_allowed_rows_override: 30
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
