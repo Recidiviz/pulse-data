@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Tests the ability for ClientRecordEtlDelegate to parse json rows."""
+"""Tests the ability for WorkflowsClientETLDelegate to parse json rows."""
 import os
 from datetime import datetime, timezone
 from unittest import TestCase
@@ -26,22 +26,32 @@ from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import 
     FakeFileStream,
 )
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
-    ClientRecordETLDelegate,
+from recidiviz.workflows.etl.workflows_client_etl_delegate import (
+    WorkflowsClientETLDelegate,
 )
 
 
-class ClientRecordEtlDelegateTest(TestCase):
+class WorkflowsClientETLDelegateTest(TestCase):
     """
-    Test class for the ClientRecordEtlDelegate
+    Test class for the WorkflowsClientETLDelegate
     """
+
+    def test_supports_filename(self) -> None:
+        """Test that the client file is supported for any state"""
+        delegate = WorkflowsClientETLDelegate()
+
+        self.assertTrue(delegate.supports_file("US_ND", "client_record.json"))
+        self.assertTrue(delegate.supports_file("US_TN", "client_record.json"))
+        self.assertTrue(
+            delegate.supports_file("LITERALLY_ANYTHING", "client_record.json")
+        )
+        self.assertFalse(delegate.supports_file("US_ND", "not_client_record.json"))
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        self.maxDiff = None
-        delegate = ClientRecordETLDelegate()
+        delegate = WorkflowsClientETLDelegate()
 
         path_to_fixture = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -49,12 +59,12 @@ class ClientRecordEtlDelegateTest(TestCase):
             "client_record.json",
         )
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
-            # first row is comprehensive
             fixture = fp.readline()
+
             doc_id, row = delegate.transform_row(fixture)
+            # US_TN first row has board conditions
             self.assertEqual(doc_id, "200")
             self.assertEqual(
-                row,
                 {
                     "address": "123 Fake st., Faketown, TN 12345",
                     "compliantReportingEligible": True,
@@ -73,7 +83,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                     },
                     "phoneNumber": "8889997777",
                     "specialConditions": "SPECIAL",
-                    "stateCode": "US_XX",
+                    "stateCode": "US_TN",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionType": "Probation",
@@ -90,18 +100,18 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
                 },
+                row,
             )
 
-            # second row has none of the nullable fields
+            # US_TN second row has none of the nullable fields
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "201")
             self.assertEqual(
-                row,
                 {
                     "personExternalId": "201",
                     "pseudonymizedId": "p201",
-                    "stateCode": "US_XX",
+                    "stateCode": "US_TN",
                     "personName": {
                         "givenNames": "Harry",
                         "middleNames": "Henry",
@@ -114,14 +124,14 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
                 },
+                row,
             )
 
-            # third row has almost-eligible data
+            # US_TN third row has almost-eligible data
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "202")
             self.assertEqual(
-                row,
                 {
                     "personExternalId": "202",
                     "pseudonymizedId": "p202",
@@ -139,7 +149,7 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "officerId": "100",
                     "phoneNumber": "8889997777",
                     "specialConditions": "SPECIAL",
-                    "stateCode": "US_XX",
+                    "stateCode": "US_TN",
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionType": "Probation",
@@ -157,6 +167,64 @@ class ClientRecordEtlDelegateTest(TestCase):
                     "district": "DISTRICT 0",
                     "compliantReportingEligible": True,
                 },
+                row,
+            )
+
+            # US_ND row
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "203")
+            self.assertEqual(
+                {
+                    "personExternalId": "203",
+                    "pseudonymizedId": "p203",
+                    "stateCode": "US_ND",
+                    "address": "456 Fake st., Faketown, ND 12345",
+                    "phoneNumber": "8889997777",
+                    "expirationDate": "2022-02-28",
+                    "personName": {
+                        "givenNames": "Fourth",
+                        "middleNames": "Persons",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "officerId": "100",
+                    "supervisionType": "DUAL",
+                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevelStart": "2020-03-10",
+                    "supervisionStartDate": "2021-03-04",
+                    "earlyTerminationEligible": True,
+                },
+                row,
+            )
+
+            # US_ID row
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "204")
+            self.assertEqual(
+                {
+                    "personExternalId": "204",
+                    "pseudonymizedId": "p204",
+                    "stateCode": "US_ID",
+                    "address": "456 Fake st., Faketown, ID 12345",
+                    "expirationDate": "2022-02-28",
+                    "phoneNumber": "8889997777",
+                    "personName": {
+                        "givenNames": "Fifth",
+                        "middleNames": "Persons",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "officerId": "100",
+                    "supervisionType": "PROBATION",
+                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevelStart": "2020-03-10",
+                    "supervisionStartDate": "2021-03-04",
+                    "earnedDischargeEligible": True,
+                    "LSUEligible": False,
+                },
+                row,
             )
 
     @patch("google.cloud.firestore.Client")
@@ -176,7 +244,7 @@ class ClientRecordEtlDelegateTest(TestCase):
         mock_get_collection: MagicMock,
         _mock_firestore_client: MagicMock,
     ) -> None:
-        """Tests that the ETL Delegate for Clients imports the collection with the document ID."""
+        """Tests that the ETL Delegate for Client imports the collection with the document ID."""
         mock_batch_set = MagicMock()
         mock_batch_writer.return_value = mock_batch_set
         mock_get_file_stream.return_value = [FakeFileStream(1)]
@@ -189,10 +257,10 @@ class ClientRecordEtlDelegateTest(TestCase):
         with local_project_id_override("test-project"):
             with freeze_time(mock_now):
                 with patch.object(
-                    ClientRecordETLDelegate, "transform_row"
+                    WorkflowsClientETLDelegate, "transform_row"
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
-                    delegate = ClientRecordETLDelegate()
+                    delegate = WorkflowsClientETLDelegate()
                     delegate.run_etl("US_TN", "client_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
