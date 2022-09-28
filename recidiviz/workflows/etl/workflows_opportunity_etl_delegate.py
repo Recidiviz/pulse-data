@@ -37,13 +37,17 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
         OpportunityExportConfig(
             source_filename="us_id_complete_discharge_early_from_supervision_request_record.json",
             export_collection_name="US_ID-earnedDischargeReferrals",
-        )
+        ),
+        OpportunityExportConfig(
+            source_filename="us_id_complete_transfer_to_limited_supervision_form_record.json",
+            export_collection_name="US_ID-LSUReferrals",
+        ),
     ],
     "US_ND": [
         OpportunityExportConfig(
             source_filename="us_nd_complete_discharge_early_from_supervision_record.json",
             export_collection_name="earlyTerminationReferrals",
-        )
+        ),
     ],
 }
 
