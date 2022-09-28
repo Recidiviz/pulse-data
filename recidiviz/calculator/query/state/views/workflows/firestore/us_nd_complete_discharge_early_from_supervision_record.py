@@ -38,17 +38,17 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_NAME = (
+US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_NAME = (
     "us_nd_complete_discharge_early_from_supervision_record"
 )
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_DESCRIPTION = """
+US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_DESCRIPTION = """
     View of early termination record for form completion for individuals that are
     currently eligible for early termination 
     """
 
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_QUERY_TEMPLATE = """
+US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE = """
     /*{description}*/
     
 WITH probation_officer AS(
@@ -245,11 +245,11 @@ WHERE sentence_rank = 1 --only choose one sentence
 ORDER BY person_external_id
 """
 
-COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_NAME,
-    view_query_template=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_QUERY_TEMPLATE,
-    description=COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_DESCRIPTION,
+    view_id=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_NAME,
+    view_query_template=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE,
+    description=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
@@ -263,4 +263,4 @@ COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER = SimpleBigQ
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER.build_and_print()
+        US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER.build_and_print()

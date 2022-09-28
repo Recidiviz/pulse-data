@@ -21,9 +21,6 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
     CLIENT_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.complete_discharge_early_from_supervision_us_nd_record import (
-    COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.compliant_reporting_referral_record import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
 )
@@ -31,17 +28,24 @@ from recidiviz.calculator.query.state.views.workflows.firestore.staff_record imp
     STAFF_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_discharge_early_from_supervision_request_record import (
-    COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_BUILDER,
+    US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_full_term_early_from_supervision_request_record import (
+    US_ID_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_transfer_to_limited_supervision_form_record import (
-    COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_US_ID_RECORD_VIEW_BUILDER,
+    US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
+    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
     STAFF_RECORD_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
-    COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_US_ND_RECORD_VIEW_BUILDER,
-    COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_US_ID_RECORD_VIEW_BUILDER,
-    COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_US_ID_RECORD_VIEW_BUILDER,
+    US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+    US_ID_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
+    US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
+    US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 ]

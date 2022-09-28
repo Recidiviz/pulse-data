@@ -42,6 +42,10 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
             source_filename="us_id_complete_transfer_to_limited_supervision_form_record.json",
             export_collection_name="US_ID-LSUReferrals",
         ),
+        OpportunityExportConfig(
+            source_filename="us_id_complete_full_term_discharge_from_supervision_request_record",
+            export_collection_name="US_ID-pastFullTermReleaseDate",
+        ),
     ],
     "US_ND": [
         OpportunityExportConfig(
