@@ -26,7 +26,7 @@ from recidiviz.common.constants.states import (
     TEST_STATE_CODE_2,
     StateCode,
 )
-from recidiviz.utils.environment import in_gcp_production
+from recidiviz.utils.environment import in_gcp_production, in_offline_mode
 
 yaml_path = os.path.join(
     os.path.dirname(recidiviz.__file__),
@@ -34,6 +34,8 @@ yaml_path = os.path.join(
 )
 
 _pathways_enabled_states: List[str] = []
+
+PATHWAYS_OFFLINE_STATE = StateCode.US_OZ
 
 
 def get_pathways_enabled_states() -> List[str]:
@@ -54,5 +56,8 @@ def get_pathways_enabled_states() -> List[str]:
     if not in_gcp_production():
         # Add demo states to staging for pentesting
         _pathways_enabled_states += [TEST_STATE_CODE, TEST_STATE_CODE_2]
+
+    if in_offline_mode():
+        _pathways_enabled_states += [PATHWAYS_OFFLINE_STATE.value]
 
     return _pathways_enabled_states

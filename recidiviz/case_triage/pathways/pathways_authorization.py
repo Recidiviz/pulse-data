@@ -18,7 +18,7 @@
 import json
 import os
 from http import HTTPStatus
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from flask import request
 
@@ -32,11 +32,14 @@ from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
     build_auth0_authorization_handler,
 )
+from recidiviz.utils.environment import in_offline_mode
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.secrets import get_secret
 
 
-def on_successful_authorization(claims: Dict[str, Any]) -> None:
+def on_successful_authorization(
+    claims: Dict[str, Any], offline_mode: Optional[bool] = False
+) -> None:
     """No-ops if either:
     1. A recidiviz user is requesting a pathways enabled state
     2. A state user is requesting their own pathways enabled state
@@ -59,6 +62,15 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
             description="A valid state must be passed to the route",
             status_code=HTTPStatus.BAD_REQUEST,
         )
+
+    if offline_mode:
+        if requested_state != "US_OZ":
+            raise FlaskException(
+                code="offline_state_required",
+                description="Offline mode requests may only be for US_OZ",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+        return
 
     enabled_states = get_pathways_enabled_states()
 
@@ -101,6 +113,11 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
 
 def build_authorization_handler() -> Callable:
     """Loads Auth0 configuration secret and builds the middleware"""
+
+    if in_offline_mode():
+        # Offline mode does not require authorization since it is only returning fixture data.
+        return lambda: on_successful_authorization({}, offline_mode=True)
+
     dashboard_auth0_configuration = get_secret("dashboard_auth0")
 
     if not dashboard_auth0_configuration:

@@ -41,7 +41,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.pathways.load_fixtures import (
-    create_dbs,
     import_pathways_from_gcs,
     reset_pathways_fixtures,
 )
@@ -49,6 +48,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import (
     get_on_disk_postgres_database_name,
 )
+from recidiviz.tools.utils.fixture_helpers import create_dbs
 
 
 @pytest.mark.uses_db
@@ -108,13 +108,13 @@ class TestLoadFixtures(TestCase):
         with pytest.raises(Exception):
             tn_engine.connect()
 
-        create_dbs(["US_TN"], engine=self.engine)
+        create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
 
         # Should no longer throw
         tn_engine.connect()
 
         # Should no-op
-        create_dbs(["US_TN"], engine=self.engine)
+        create_dbs(["US_TN"], SchemaType.PATHWAYS, engine=self.engine)
 
     def test_import_pathways_from_gcs(self) -> None:
         bucket = "recidiviz-456-dashboard-event-level-data"

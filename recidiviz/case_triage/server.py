@@ -16,6 +16,7 @@
 # =============================================================================
 """Backend entry point for Case Triage API server."""
 import json
+import logging
 import os
 
 import sentry_sdk
@@ -24,8 +25,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
+from sqlalchemy import func
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+import recidiviz
+from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
+    PATHWAYS_OFFLINE_STATE,
+)
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_routes import (
@@ -45,15 +51,24 @@ from recidiviz.case_triage.util import (
     get_redis_connection_options,
     get_sessions_redis,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_pathways_database_entities,
+)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     TokenClaims,
     build_auth0_authorization_decorator,
     update_session_with_user_info,
 )
-from recidiviz.utils.environment import in_development, in_gcp, in_test
+from recidiviz.utils.environment import in_development, in_gcp, in_offline_mode, in_test
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.timer import RepeatedTimer
 
@@ -153,6 +168,37 @@ store_refresh = RepeatedTimer(
 
 if not in_test():
     store_refresh.start()
+
+if in_offline_mode():
+    # Python logs at the warning level by default, but in offline mode we'll want to know that it's
+    # made progress loading the data in at server start and other info steps.
+    logging.basicConfig(level=logging.DEBUG)
+
+    # Override the SQL current_date function to return a constant so we don't have to change dates
+    # in fixture files as time passes.
+    func.current_date = lambda: "2021-12-15"
+
+    def initialize_pathways_db_from_fixtures() -> None:
+        state_code = PATHWAYS_OFFLINE_STATE.value.lower()
+        create_dbs([state_code], SchemaType.PATHWAYS)
+        db_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name=state_code)
+        engine = SQLAlchemyEngineManager.init_engine(db_key)
+        logging.info("(re)creating tables")
+        # reset_fixtures doesn't handle schema changes, so drop and recreate the tables
+        PathwaysBase.metadata.drop_all(engine)
+        PathwaysBase.metadata.create_all(engine)
+        logging.info("finished (re)creating tables")
+
+        reset_fixtures(
+            engine,
+            get_pathways_database_entities(),
+            os.path.join(os.path.dirname(recidiviz.__file__), "local/fixtures"),
+            csv_headers=True,
+        )
+
+        logging.info("finished initializing pathways database")
+
+    initialize_pathways_db_from_fixtures()
 
 
 # Security headers

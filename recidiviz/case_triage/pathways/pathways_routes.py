@@ -34,6 +34,7 @@ from recidiviz.case_triage.pathways.enabled_metrics import (
 )
 from recidiviz.case_triage.pathways.exceptions import MetricNotEnabledError
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
+from recidiviz.case_triage.pathways.metric_fetcher import PathwaysMetricFetcher
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
@@ -41,6 +42,7 @@ from recidiviz.case_triage.pathways.pathways_authorization import (
     build_authorization_handler,
 )
 from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.utils.environment import in_offline_mode
 
 PATHWAYS_ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -144,6 +146,16 @@ def create_pathways_api_blueprint() -> Blueprint:
         )
         fetch_metric_params = metric_mapper.build_params(fetch_metric_params_schema)
 
+        if in_offline_mode():
+            # The cache only adds extra complexity for offline mode because it would need to be
+            # updated when fixture files change, adding startup time to the container. The DBs are
+            # small enough in offline mode that we don't need to worry too much about slow queries,
+            # so just use the fetcher directly instead of the cache.
+            return jsonify(
+                PathwaysMetricFetcher(state_code).fetch(
+                    metric_mapper, fetch_metric_params
+                )
+            )
         return jsonify(
             PathwaysMetricCache.build(state_code).fetch(
                 metric_mapper, fetch_metric_params
