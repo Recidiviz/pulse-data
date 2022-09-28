@@ -1154,7 +1154,7 @@ for level_string in SUPERVISION_METRICS_SUPPORTED_LEVELS:
             analyst_dataset=ANALYST_VIEWS_DATASET,
             sessions_dataset=SESSIONS_DATASET,
             clustering_fields=clustering_fields,
-            should_materialize=True,
+            should_materialize=False,  # materialize in an unmanaged dataset instead
         )
     )
 
