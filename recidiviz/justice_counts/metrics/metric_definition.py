@@ -158,19 +158,12 @@ class MetricDefinition:
     @property
     def key(self) -> str:
         """Returns a unique identifier across all Justice Counts metrics.
-        Metrics are unique by <system, metric_type, aggregated_dimensions>
+        Metrics are unique by <system, metric_type>
         """
-        aggregated_dimension_key = ",".join(
-            sorted(
-                aggregation.dimension.dimension_identifier()
-                for aggregation in self.aggregated_dimensions or []
-            )
-        )
         return "_".join(
             [
                 self.system.value,
                 self.metric_type.value,
-                aggregated_dimension_key,
             ],
         )
 

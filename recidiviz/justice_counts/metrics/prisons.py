@@ -79,7 +79,7 @@ annual_budget = MetricDefinition(
 
 total_staff = MetricDefinition(
     system=System.PRISONS,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
     description="Measures the number of full-time staff employed by your agency.",

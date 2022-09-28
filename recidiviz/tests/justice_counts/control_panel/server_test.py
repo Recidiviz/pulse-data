@@ -1172,7 +1172,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json_datapoint["is_published"], False)
         self.assertEqual(
             response_json_datapoint["metric_definition_key"],
-            "LAW_ENFORCEMENT_RESIDENTS_global/gender/restricted,global/race_and_ethnicity",
+            "LAW_ENFORCEMENT_RESIDENTS",
         )
         self.assertEqual(
             response_json_datapoint["metric_display_name"], "Jurisdiction Residents"
@@ -1189,7 +1189,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             response_json_dimensions,
             {
-                "LAW_ENFORCEMENT_ARRESTS_global/gender/restricted,global/race_and_ethnicity,metric/law_enforcement/reported_crime/type": {
+                "LAW_ENFORCEMENT_ARRESTS": {
                     "Gender": ["Male", "Female", "Other", "Non-Binary", "Unknown"],
                     "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"],
                     "Race / Ethnicity": [
@@ -1203,16 +1203,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "White",
                     ],
                 },
-                "LAW_ENFORCEMENT_BUDGET_": {},
-                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE_metric/law_enforcement/calls_for_service/type": {
+                "LAW_ENFORCEMENT_BUDGET": {},
+                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE": {
                     "Call Type": ["Emergency", "Non-emergency", "Unknown"]
                 },
-                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED_": {},
-                "LAW_ENFORCEMENT_REPORTED_CRIME_metric/law_enforcement/reported_crime/type": {
+                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {},
+                "LAW_ENFORCEMENT_REPORTED_CRIME": {
                     "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"]
                 },
-                "LAW_ENFORCEMENT_TOTAL_STAFF_": {},
-                "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS_metric/law_enforcement/officer_use_of_force_incidents/type": {
+                "LAW_ENFORCEMENT_TOTAL_STAFF": {},
+                "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS": {
                     "Force Type": [
                         "Physical",
                         "Restraint",
