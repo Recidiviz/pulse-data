@@ -62,6 +62,7 @@ resource "google_bigquery_data_transfer_config" "supervision_district_metrics_ma
   location               = "US"
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
   destination_dataset_id = module.unmanaged_views_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_district_metrics_materialized"
@@ -77,6 +78,7 @@ resource "google_bigquery_data_transfer_config" "supervision_office_metrics_mate
   location               = "US"
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
   destination_dataset_id = module.unmanaged_views_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_office_metrics_materialized"
@@ -92,6 +94,7 @@ resource "google_bigquery_data_transfer_config" "supervision_officer_metrics_mat
   location               = "US"
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
   destination_dataset_id = module.unmanaged_views_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_officer_metrics_materialized"
@@ -107,6 +110,7 @@ resource "google_bigquery_data_transfer_config" "supervision_state_metrics_mater
   location               = "US"
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
   destination_dataset_id = module.unmanaged_views_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_state_metrics_materialized"
