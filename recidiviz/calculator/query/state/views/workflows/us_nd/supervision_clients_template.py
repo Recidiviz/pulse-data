@@ -19,7 +19,7 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
-    supervision_cases AS (
+    nd_supervision_cases AS (
         # This CTE returns a row for each person and supervision sentence, so will return multiple rows if someone
         # is on dual supervision (parole and probation)
         SELECT
@@ -43,7 +43,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         WHERE dataflow.state_code = 'US_ND'
         AND supervising_officer_external_id IS NOT NULL
     ),
-    supervision_level_start AS (
+    nd_supervision_level_start AS (
     # This CTE selects the most recent supervision level for each person with an active supervision period,
     # prioritizing the highest level in cases where one person is currently assigned to multiple levels
         SELECT
@@ -54,7 +54,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         WHERE state_code = "US_ND"
         AND end_date IS NULL
     ),
-    supervision_super_sessions AS (
+    nd_supervision_super_sessions AS (
       # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
       # the earliest start date for dual supervision periods.
       SELECT
@@ -64,7 +64,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
       WHERE state_code = "US_ND"
       AND end_date IS NULL
     ),
-    phone_numbers AS (
+    nd_phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT 
             state_code, 
@@ -75,7 +75,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
     ),
-    clients AS (
+    join_nd_clients AS (
         SELECT DISTINCT
           sc.person_id,
           sc.person_external_id,
@@ -91,19 +91,20 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
           ) AS expiration_date,
-        FROM supervision_cases sc 
-        INNER JOIN supervision_level_start sl USING(person_id)
-        INNER JOIN supervision_super_sessions ss USING(person_id)
+        FROM nd_supervision_cases sc 
+        INNER JOIN nd_supervision_level_start sl USING(person_id)
+        INNER JOIN nd_supervision_super_sessions ss USING(person_id)
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
-        LEFT JOIN phone_numbers ph USING(person_external_id)
+        LEFT JOIN nd_phone_numbers ph USING(person_external_id)
     ),
-    eligibility AS (
+    nd_eligibility AS (
         SELECT
             external_id AS person_external_id,
             TRUE AS early_termination_eligible
         FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
     ),
     nd_clients AS (
+        # Values set to NULL are not applicable for this state
         SELECT 
             person_external_id,
             "US_ND" AS state_code,
@@ -116,16 +117,17 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             phone_number,
             supervision_start_date,
             expiration_date,
-            early_termination_eligible,
-            # Not applicable to US_ND
             NULL AS current_balance,
             NULL AS last_payment_amount,
             CAST(NULL AS DATE) AS last_payment_date,
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
-            CAST(NULL AS STRING) AS compliant_reporting_eligible,
             CAST(NULL AS STRING) AS district,
-        FROM clients
-        LEFT JOIN eligibility USING(person_external_id)
+            CAST(NULL AS STRING) AS compliant_reporting_eligible,
+            early_termination_eligible,
+            FALSE AS earned_discharge_eligible,
+            FALSE AS limited_supervision_eligible,
+        FROM join_nd_clients
+        LEFT JOIN nd_eligibility USING(person_external_id)
     )
 """

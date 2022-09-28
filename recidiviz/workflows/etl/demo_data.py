@@ -21,11 +21,11 @@ from typing import Dict, Iterator, TextIO
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.regions.us_tn.client_record_etl_delegate import (
-    ClientRecordETLDelegate,
-)
 from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
     CompliantReportingReferralRecordETLDelegate,
+)
+from recidiviz.workflows.etl.workflows_client_etl_delegate import (
+    WorkflowsClientETLDelegate,
 )
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
@@ -66,7 +66,7 @@ def load_demo_fixture(
 
 def load_all_demo_data() -> None:
     load_demo_fixture(WorkflowsStaffETLDelegate, "US_TN", "staff_record.json")
-    load_demo_fixture(ClientRecordETLDelegate, "US_TN", "client_record.json")
+    load_demo_fixture(WorkflowsClientETLDelegate, "US_TN", "client_record.json")
     load_demo_fixture(
         CompliantReportingReferralRecordETLDelegate,
         "US_TN",

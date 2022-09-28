@@ -19,6 +19,7 @@
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
     tn_clients AS (
+        # Values set to NULL are not applicable for this state
         SELECT
             person_external_id,
             "US_TN" AS state_code,
@@ -31,14 +32,16 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
             phone_number,
             earliest_supervision_start_date_in_latest_system AS supervision_start_date,
             expiration_date,
-            FALSE AS early_termination_eligible,
             current_balance,
             last_payment_amount,
             last_payment_date,
             special_conditions_on_current_sentences AS special_conditions,
             board_conditions,
-            compliant_reporting_eligible,
             district,
+            compliant_reporting_eligible,
+            FALSE AS early_termination_eligible,
+            FALSE AS earned_discharge_eligible,
+            FALSE AS limited_supervision_eligible,
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
     )
 """
