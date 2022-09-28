@@ -32,7 +32,9 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             full_name AS name,
             districts.district_name AS district,
             roster.email_address AS email,
-            true AS has_caseload
+            true AS has_caseload,
+            names.given_names as given_names,
+            names.surname as surname,
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_id_roster` roster
             ON roster.external_id = ids.id
@@ -50,7 +52,9 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             first_name || " " || last_name AS name,
             district,
             email_address AS email,
-            false AS has_caseload
+            false AS has_caseload,
+            first_name as given_names,
+            last_name as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_id_leadership_users`
         WHERE workflows = true
     )

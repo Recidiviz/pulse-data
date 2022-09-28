@@ -70,6 +70,8 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "email": "jjjj3@xx.gov",
                     "hasCaseload": True,
                     "district": "District 1",
+                    "givenNames": "Joey",
+                    "surname": "Joe-Joe Jr. III",
                 },
             )
 
@@ -86,6 +88,8 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "email": "sal.sli@xx.gov",
                     "hasCaseload": False,
                     "district": "District 2",
+                    "givenNames": "Sally S.",
+                    "surname": "Slithers",
                 },
             )
 
@@ -102,6 +106,8 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "email": None,
                     "hasCaseload": True,
                     "district": "District 3",
+                    "givenNames": "Foghorn",
+                    "surname": "Leghorn",
                 },
             )
 
