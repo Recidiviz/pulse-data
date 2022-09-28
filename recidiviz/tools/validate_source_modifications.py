@@ -149,6 +149,7 @@ INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
 IGNORE_KEY = "ignore"
+BUILD_INFRA_KEY = "build_infra"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # admin panel files
@@ -233,6 +234,14 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
             if_modified_files=frozenset({".gitignore"}),
             then_modified_files=frozenset({".dockerignore", ".gcloudignore"}),
         )
+    ],
+    # build infrastructure
+    BUILD_INFRA_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {"mirror/copy.bara.sky", "Dockerfile.case-triage-pathways.dockerignore"}
+            )
+        ),
     ],
 }
 
