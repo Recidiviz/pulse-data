@@ -28,6 +28,8 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             first_name || " " || last_name AS name,
             CAST(null AS STRING) AS district,
             LOWER(email_address) AS email,
+            first_name as given_names,
+            last_name as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_tn_leadership_users` leadership
         LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
         ON UPPER(leadership.first_name) = staff.FirstName
@@ -41,6 +43,8 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             facilities.district AS district,
             LOWER(roster.email_address) AS email,
             logic_staff IS NOT NULL AS has_caseload,
+            FirstName as given_names,
+            LastName as surname,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
         LEFT JOIN staff_from_report
         ON logic_staff = StaffID
@@ -57,9 +61,15 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
     UNION ALL
 
     SELECT
-        leadership_users.*,
+        leadership.id,
+        leadership.state_code,
+        leadership.name,
+        leadership.district,
+        leadership.email,
         logic_staff IS NOT NULL AS has_caseload,
-    FROM leadership_users
+        leadership.given_names as given_names,
+        leadership.surname as surname,
+    FROM leadership_users leadership
     LEFT JOIN staff_from_report
-    ON leadership_users.id = staff_from_report.logic_staff
+    ON leadership.id = staff_from_report.logic_staff
 """

@@ -22,7 +22,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             officer_id AS id,
             state_code,
-            CAST(officers.status AS STRING) = "(1)" AS is_active 
+            CAST(officers.status AS STRING) = "(1)" AS is_active, 
         FROM `{project_id}.{workflows_dataset}.client_record`
         LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest` officers
             ON officer_id = officers.OFFICER
@@ -35,7 +35,9 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             full_name AS name,
             districts.district_name AS district,
             leadership.email_address AS email,
-            true AS has_caseload
+            true AS has_caseload,
+            names.given_names as given_names,
+            names.surname as surname,
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
             ON ids.id = names.external_id 
@@ -60,7 +62,9 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             first_name || " " || last_name AS name,
             district,
             email_address AS email,
-            false AS has_caseload
+            false AS has_caseload,
+            first_name as given_names,
+            last_name as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_nd_leadership_users`
         WHERE workflows = true
         AND (
