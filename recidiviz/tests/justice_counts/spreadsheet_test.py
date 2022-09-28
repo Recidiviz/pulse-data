@@ -63,7 +63,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ).open("rb")
             (
                 datapoint_json_list,
-                sheet_to_error,
+                metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
@@ -73,7 +73,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 datapoint_json_list=datapoint_json_list,
-                sheet_to_error=sheet_to_error,
+                metric_key_to_errors=metric_key_to_errors,
                 system="LAW_ENFORCEMENT",
             )
             filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
@@ -84,8 +84,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         metric["display_name"],
                         law_enforcement.total_arrests.display_name,
                     )
-                    self.assertEqual(len(metric["sheets"]), 2)
-                    for sheet in metric["sheets"]:
+                    self.assertEqual(len(metric["metric_errors"]), 2)
+                    for sheet in metric["metric_errors"]:
                         if (
                             sheet["display_name"]
                             == filename_to_metricfile["arrests_by_race"].display_name
@@ -124,19 +124,19 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(len(metric["datapoints"]), 24)
                 else:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    self.assertEqual(len(metric["sheets"]), 1)
+                    self.assertEqual(len(metric["metric_errors"]), 1)
                     self.assertEqual(
-                        metric["sheets"][0]["messages"],
+                        metric["metric_errors"][0]["messages"],
                         [
                             {
                                 "title": "Missing Metric",
                                 "subtitle": None,
                                 "description": f"No sheets for the '{metric_definition.display_name}' metric were provided.",
-                                "type": "WARNING",
+                                "type": "ERROR",
                             },
                         ],
                     )
-            self.assertEqual(len(json_response["pre_ingest_errors"]), 0)
+            self.assertEqual(len(json_response["non_metric_errors"]), 0)
 
     def test_ingest_json_response_annual_budget_no_errors(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -158,7 +158,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ).open("rb")
             (
                 datapoint_json_list,
-                sheet_to_error,
+                metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
@@ -168,7 +168,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 datapoint_json_list=datapoint_json_list,
-                sheet_to_error=sheet_to_error,
+                metric_key_to_errors=metric_key_to_errors,
                 system="LAW_ENFORCEMENT",
             )
             self.assertEqual(len(json_response["metrics"]), 7)
@@ -178,27 +178,27 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         metric["display_name"],
                         law_enforcement.annual_budget.display_name,
                     )
-                    self.assertEqual(metric["sheets"], [])
+                    self.assertEqual(metric["metric_errors"], [])
                     # 3 total datapoints, for each year (2020-2022) annual budget.
                     self.assertEqual(len(metric["datapoints"]), 3)
                     for datapoint in metric["datapoints"]:
                         self.assertIsNone(datapoint["old_value"])
-                elif len(metric["sheets"]) != 0:
+                elif len(metric["metric_errors"]) != 0:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    self.assertEqual(len(metric["sheets"]), 1)
+                    self.assertEqual(len(metric["metric_errors"]), 1)
                     self.assertEqual(
-                        metric["sheets"][0]["messages"],
+                        metric["metric_errors"][0]["messages"],
                         [
                             {
                                 "title": "Missing Metric",
                                 "subtitle": None,
                                 "description": f"No sheets for the '{metric_definition.display_name}' metric were provided.",
-                                "type": "WARNING",
+                                "type": "ERROR",
                             },
                         ],
                     )
 
-            self.assertEqual(len(json_response["pre_ingest_errors"]), 0)
+            self.assertEqual(len(json_response["non_metric_errors"]), 0)
             # Uploading the spreadsheet with changes will result in datapoints
             # with non-None old_value values.
             file = (
@@ -207,7 +207,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ).open("rb")
             (
                 datapoint_json_list,
-                sheet_to_error,
+                metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
@@ -217,7 +217,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 datapoint_json_list=datapoint_json_list,
-                sheet_to_error=sheet_to_error,
+                metric_key_to_errors=metric_key_to_errors,
                 system="LAW_ENFORCEMENT",
             )
             for metric in json_response["metrics"]:
@@ -247,7 +247,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ).open("rb")
             (
                 datapoint_json_list,
-                sheet_to_error,
+                metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file),
@@ -257,46 +257,33 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 datapoint_json_list=datapoint_json_list,
-                sheet_to_error=sheet_to_error,
-                system="LAW_ENFORCEMENT",
+                metric_key_to_errors=metric_key_to_errors,
+                system="PROSECUTION",
             )
-            # There should be a metric error for the arrest metric because it does
-            # not belong to the prosecution metrics and a warning for the annual_budget
-            # metric because no sheet was provided. The rest of the warnings regarding
-            # missing metrics are in pre_ingest. Annual budget is an exception because
-            # all systems have an annual budget metric, and as a result, an annual_budget
-            # sheet name.
+            # There should be a missing metric error for each metric in prosecution.
             self.assertEqual(len(json_response["metrics"]), 7)
             for metric in json_response["metrics"]:
                 metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                if metric["key"] == law_enforcement.annual_budget.key:
-                    self.assertEqual(len(metric["sheets"]), 1)
-                    self.assertEqual(
-                        metric["sheets"][0]["messages"],
-                        [
-                            {
-                                "title": "Missing Metric",
-                                "subtitle": None,
-                                "description": f"No sheets for the '{metric_definition.display_name}' metric were provided.",
-                                "type": "WARNING",
-                            },
-                        ],
-                    )
-                elif len(metric["sheets"]) != 0:
-                    self.assertEqual(len(metric["sheets"]), 4)
-                    for sheet in metric["sheets"]:
-                        self.assertEqual(
-                            sheet["messages"][0]["title"], "Metric Not Found"
-                        )
-                        self.assertEqual(sheet["messages"][0]["type"], "ERROR")
-                        self.assertTrue(
-                            "No metric corresponds to the filename"
-                            in sheet["messages"][0]["description"]
-                        )
+                self.assertEqual(len(metric["metric_errors"]), 1)
+                self.assertEqual(
+                    metric["metric_errors"][0]["messages"],
+                    [
+                        {
+                            "title": "Missing Metric",
+                            "subtitle": None,
+                            "description": f"No sheets for the '{metric_definition.display_name}' metric "
+                            "were provided.",
+                            "type": "ERROR",
+                        },
+                    ],
+                )
 
-            # 6 pre-ingest warnings because no data was provided for the 6 prosecution metrics.
-            self.assertEqual(len(json_response["pre_ingest_errors"]), 6)
-            for error in json_response["pre_ingest_errors"]:
-                self.assertEqual(error["type"], "WARNING")
-                self.assertEqual(error["title"], "Missing Metric")
-                self.assertTrue("No sheets for the" in error["description"])
+            # 1 non_metric error for invalid sheet names.
+            self.assertEqual(len(json_response["non_metric_errors"]), 1)
+            error = json_response["non_metric_errors"][0]
+            self.assertEqual(error["type"], "ERROR")
+            self.assertEqual(error["title"], "Invalid Sheet Names")
+            self.assertTrue(
+                "The following sheet names do not correspond to a metric for"
+                in error["description"]
+            )

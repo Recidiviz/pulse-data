@@ -821,7 +821,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
             self.assertEqual(len(response_dict["metrics"]), 7)
-            self.assertEqual(len(response_dict["pre_ingest_errors"]), 0)
+            self.assertEqual(len(response_dict["non_metric_errors"]), 0)
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
