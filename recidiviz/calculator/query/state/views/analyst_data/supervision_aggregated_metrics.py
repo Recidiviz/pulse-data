@@ -395,7 +395,7 @@ SELECT
     {add_window_to_weighted_avg("avg_lsir_score_change", "lsir_clients_reassessed", window_days)},
 
 FROM
-    `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics_materialized` a
+    `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics` a
 INNER JOIN
     truncated_dates b
 ON
@@ -433,7 +433,7 @@ for level_string in SUPERVISION_METRICS_SUPPORTED_LEVELS:
             description=view_description_string,
             analyst_dataset=ANALYST_VIEWS_DATASET,
             clustering_fields=clustering_fields,
-            should_materialize=True,
+            should_materialize=False,  # materialize in an unmanaged dataset instead
         )
     )
 
