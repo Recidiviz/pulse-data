@@ -425,7 +425,7 @@ def get_api_blueprint(
         ):
             (
                 datapoint_json_list,
-                sheet_to_error,
+                metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
@@ -437,7 +437,7 @@ def get_api_blueprint(
             current_session.commit()
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
-                    sheet_to_error=sheet_to_error,
+                    metric_key_to_errors=metric_key_to_errors,
                     datapoint_json_list=datapoint_json_list,
                     system=system,
                 )

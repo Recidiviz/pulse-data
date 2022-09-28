@@ -17,7 +17,7 @@
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
 import os
-from typing import Dict, cast
+from typing import Dict, List
 
 import pandas as pd
 import pytest
@@ -42,7 +42,7 @@ from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics import law_enforcement, prosecution
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -122,17 +122,29 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            _, filename_to_error = self.uploader_catch_errors.upload_excel(
+            _, metric_key_to_errors = self.uploader_catch_errors.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.invalid_excel),
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
             )
-            self.assertEqual(len(filename_to_error), 8)
+            self.assertEqual(len(metric_key_to_errors), 7)
+            invalid_file_name_error = metric_key_to_errors.get(None, []).pop()
             self.assertTrue(
-                "No metric corresponds to the filename 'gender'"
-                in str(filename_to_error["gender"])
+                "The following sheet names do not correspond to a metric for your agency: gender."
+                in invalid_file_name_error.description
+            )
+            cases_disposed_errors: List[
+                JusticeCountsBulkUploadException
+            ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
+            self.assertEqual(len(cases_disposed_errors), 2)
+            cases_disposed_by_type_error = cases_disposed_errors[0]
+            month_error = cases_disposed_errors[1]
+            self.assertTrue(
+                "The sheet containing total values for the 'Cases Disposed' metric should "
+                "be called 'cases_disposed'."
+                in cases_disposed_by_type_error.description,
             )
             self.assertTrue(
                 (
@@ -140,7 +152,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "April, May, June, July, August, September, October, "
                     "November, December."
                 )
-                in str(filename_to_error["cases_disposed_by_type"])
+                in month_error.description
             )
 
     def test_prison(self) -> None:
@@ -496,7 +508,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            _, sheet_to_error = self.uploader.upload_excel(
+            _, metric_key_to_errors = self.uploader_catch_errors.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.law_enforcement_missing_metrics),
                 agency_id=self.law_enforcement_agency_id,
@@ -504,30 +516,26 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 user_account=user_account,
             )
 
-            self.assertEqual(len(sheet_to_error), 2)
+            self.assertEqual(len(metric_key_to_errors), 2)
             self.maxDiff = None
-            arrest_error: JusticeCountsBulkUploadException = cast(
-                JusticeCountsBulkUploadException,
-                sheet_to_error["arrests"],
-            )
+            arrest_errors = metric_key_to_errors[law_enforcement.total_arrests.key]
+            self.assertEqual(len(arrest_errors), 1)
+            arrest_error = arrest_errors[0]
             self.assertEqual(arrest_error.title, "Missing Total Value")
             self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
             self.assertTrue(
-                (
-                    "The sheet containing total values for the 'Total Arrests' metric should be called 'arrests'. "
-                    "No sheet with this name was found in the workbook. The total value for 'Total Arrests' "
-                    "will be shown as the sum of the breakdown values provided in"
-                )
-                in arrest_error.description,
+                "The sheet containing total values for the 'Total Arrests' metric should "
+                "be called 'arrests'." in arrest_error.description,
             )
 
-            use_of_force_error: JusticeCountsBulkUploadException = cast(
-                JusticeCountsBulkUploadException,
-                sheet_to_error["use_of_force"],
-            )
+            use_of_force_errors = metric_key_to_errors[
+                law_enforcement.officer_use_of_force_incidents.key
+            ]
+            self.assertEqual(len(use_of_force_errors), 1)
+            use_of_force_error = use_of_force_errors[0]
             self.assertEqual(use_of_force_error.title, "Missing Metric")
             self.assertEqual(
-                use_of_force_error.message_type, BulkUploadMessageType.WARNING
+                use_of_force_error.message_type, BulkUploadMessageType.ERROR
             )
             self.assertEqual(
                 use_of_force_error.description,

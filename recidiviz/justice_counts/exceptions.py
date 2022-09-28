@@ -28,6 +28,22 @@ class BulkUploadMessageType(enum.Enum):
     WARNING = "WARNING"
 
 
+class BulkUploadSheetNameError(KeyError):
+    """BulkUploadSheetNameError is raised when a user uploads an Excel workbook
+    with a sheet name that does not match the the sheets we are expecting
+    for their agency. This error is different from JusticeCountsBulkUploadException
+    because this is not ultimately surfaced to the user. This error is used to compile
+    the list of invalid sheet names that will be surfaced in the Invalid Sheet Name error.
+    """
+
+    def __init__(
+        self,
+        sheet_name: str,
+    ):
+        super().__init__()
+        self.sheet_name = sheet_name
+
+
 class JusticeCountsBulkUploadException(Exception):
     """
     Each field is incorporated into the design in the following way:
