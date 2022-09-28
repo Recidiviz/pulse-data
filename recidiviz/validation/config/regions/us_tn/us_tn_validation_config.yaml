@@ -3,6 +3,9 @@
 region_code: US_TN
 exclusions: []
 max_allowed_error_overrides:
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
+    hard_max_allowed_error_override: 1.0
+    override_reason: TODO(#15466) - Fix reference view hydration to compare external data correctly.
   - validation_name: case_termination_by_type_comparison_discharges
     hard_max_allowed_error_override: 0.25
     override_reason: TODO(#12170) Needs investigation.
