@@ -46,7 +46,7 @@ $(tail -n 40 "${DEPLOYMENT_LOG_PATH}")
 EOM
 )
 
-  deployment_bot_message "${PROJECT}" \
+  deployment_bot_message "${PROJECT_ID}" \
     "${SLACK_CHANNEL_DEPLOYMENT_BOT}" \
     "${MESSAGE}" \
     "${THREAD_TS}" > /dev/null
