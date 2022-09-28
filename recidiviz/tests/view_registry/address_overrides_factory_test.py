@@ -187,6 +187,7 @@ class TestAddressOverrides(unittest.TestCase):
         expected_prefix: str,
         expected_skipped_datasets: Set[str],
     ) -> None:
+        """Throws if there isn't an override set for each of the provided builders."""
         for builder in builders:
             if builder.dataset_id in expected_skipped_datasets:
                 continue
@@ -195,6 +196,11 @@ class TestAddressOverrides(unittest.TestCase):
             )
             override_address = overrides.get_sandbox_address(address)
             if override_address is None:
+                # TODO(#15671): HACK ALERT - Remove this logic once querying Cloud SQL
+                #  connections is stable again and the justice counts views can be
+                #  refreshed as part of the deploy.
+                if "justice_counts" in address.dataset_id:
+                    continue
                 raise ValueError(f"Found no override for {address}")
             self.assertTrue(override_address.dataset_id.startswith(expected_prefix))
 
