@@ -78,7 +78,7 @@ annual_budget = MetricDefinition(
 
 total_staff = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Total Staff",
     definitions=[

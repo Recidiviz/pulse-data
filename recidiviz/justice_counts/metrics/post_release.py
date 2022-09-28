@@ -118,7 +118,7 @@ supervision_violations = MetricDefinition(
 
 new_supervision_cases = MetricDefinition(
     system=System.POST_RELEASE,
-    metric_type=MetricType.POPULATION,
+    metric_type=MetricType.SUPERVISION_STARTS,
     category=MetricCategory.POPULATIONS,
     display_name="New Post-Release Cases",
     description="Measures the number of new post-release cases referred to your agency.",

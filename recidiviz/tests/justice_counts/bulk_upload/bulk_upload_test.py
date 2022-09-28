@@ -337,16 +337,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET")
             self.assertEqual(metrics[0].value, None)
-            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET")
             self.assertEqual(metrics[3].value, None)
-            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[6].value, 400)
 
-            self.assertEqual(
-                metrics[7].key, "SUPERVISION_TOTAL_STAFF_metric/staff/supervision/type"
-            )
+            self.assertEqual(metrics[7].key, "SUPERVISION_TOTAL_STAFF")
             self.assertEqual(metrics[7].value, 150)
             self.assertEqual(
                 metrics[7]
@@ -362,11 +360,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            self.assertEqual(metrics[0].key, "PAROLE_BUDGET_")
+            self.assertEqual(metrics[0].key, "PAROLE_BUDGET")
             self.assertEqual(metrics[0].value, 2000)
-            self.assertEqual(metrics[3].key, "PROBATION_BUDGET_")
+            self.assertEqual(metrics[3].key, "PROBATION_BUDGET")
             self.assertEqual(metrics[3].value, 300)
-            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET_")
+            self.assertEqual(metrics[6].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[6].value, 1000)
 
     def _test_law_enforcement(
