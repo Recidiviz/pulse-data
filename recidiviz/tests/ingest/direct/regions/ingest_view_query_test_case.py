@@ -18,7 +18,7 @@
 ingest view queries.
 """
 from datetime import datetime, timedelta
-from typing import Iterable, Optional, Tuple
+from typing import Iterator, Tuple
 
 import numpy as np
 import pandas as pd
@@ -132,13 +132,20 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
             self.create_mock_raw_file(
                 region_code=region_code,
                 file_config=raw_file_config,
-                mock_data=csv.get_rows_as_tuples(raw_fixture_path),
+                mock_data=csv.get_rows_as_tuples(
+                    raw_fixture_path, skip_header_row=False
+                ),
             )
 
     @staticmethod
     def schema_from_raw_file_config(
-        config: DirectIngestRawFileConfig,
+        config: DirectIngestRawFileConfig, headers: Tuple[str, ...]
     ) -> PostgresTableSchema:
+        column_names = tuple(column.name for column in config.available_columns)
+        if headers != column_names:
+            raise ValueError(
+                f"Columns in file do not match file config:\nheaders: {headers}\nconfig: {column_names}"
+            )
         return PostgresTableSchema(
             {
                 # Postgres does case-sensitive lowercase search on all non-quoted
@@ -153,10 +160,11 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         self,
         region_code: str,
         file_config: DirectIngestRawFileConfig,
-        mock_data: Iterable[Tuple[Optional[str], ...]],
+        mock_data: Iterator[Tuple[str, ...]],
         update_datetime: datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
-        mock_schema = self.schema_from_raw_file_config(file_config)
+        header_row = next(mock_data)
+        mock_schema = self.schema_from_raw_file_config(file_config, headers=header_row)
         raw_data_df = augment_raw_data_df_with_metadata_columns(
             raw_data_df=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
             file_id=0,
