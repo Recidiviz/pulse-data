@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,16 +31,12 @@ OFFENSE_TYPES_DESCRIPTION = """
 """
 
 OFFENSE_TYPES_QUERY_TEMPLATE = """
- WITH latest_sentences AS (    
+ WITH latest_sessions AS (    
     SELECT compartment_sessions.state_code,
         state_person_external_id.external_id as person_external_id,
         compartment_sessions.person_id,
         MAX(compartment_sessions.session_id) AS session_id
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment_sessions
-    JOIN `{project_id}.{sessions_dataset}.compartment_sentences_materialized` compartment_sentences
-        ON compartment_sentences.state_code = compartment_sessions.state_code
-        AND compartment_sentences.person_id = compartment_sessions.person_id
-        AND compartment_sentences.session_id = compartment_sentences.session_id
     JOIN `{project_id}.{base_dataset}.state_person_external_id` state_person_external_id
         ON state_person_external_id.state_code = compartment_sessions.state_code
         AND state_person_external_id.person_id = compartment_sessions.person_id
@@ -50,13 +46,23 @@ OFFENSE_TYPES_QUERY_TEMPLATE = """
     compartment_sessions.person_id
 )
 SELECT 
-    latest_sentences.state_code,
-    latest_sentences.person_external_id,
-    latest_sentences.person_id,
-    latest_sentences.session_id,
-    ARRAY_TO_STRING(compartment_sentences.offense_type, ',') AS offense_type
-FROM latest_sentences 
-JOIN `{project_id}.{sessions_dataset}.compartment_sentences_materialized` compartment_sentences USING (state_code, person_id, session_id);
+    latest_sessions.state_code,
+    latest_sessions.person_external_id,
+    latest_sessions.person_id,
+    latest_sessions.session_id,
+    ARRAY_TO_STRING(ARRAY_AGG(offense_attributes.offense_type), ',') AS offense_type
+FROM 
+    latest_sessions
+LEFT JOIN 
+    `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` cs
+USING 
+    (person_id, state_code, session_id)
+LEFT JOIN 
+    `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` c
+USING 
+    (state_code, sentence_imposed_group_id, person_id),
+UNNEST(offense_attributes) offense_attributes
+GROUP BY 1,2,3,4
 
 """
 

@@ -54,9 +54,6 @@ from recidiviz.calculator.query.state.views.sessions.compartment_level_2_dedup_p
 from recidiviz.calculator.query.state.views.sessions.compartment_level_2_super_sessions import (
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.compartment_sentences import (
-    COMPARTMENT_SENTENCES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_session_end_reasons import (
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
 )
@@ -195,9 +192,6 @@ from recidiviz.calculator.query.state.views.sessions.us_nd.us_nd_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_pa.us_pa_supervision_population_metrics_preprocessed import (
     US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_compartment_sentences import (
-    US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sentences_preprocessed import (
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -236,7 +230,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_LEVEL_1_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_LEVEL_2_SUPER_SESSIONS_VIEW_BUILDER,
-    COMPARTMENT_SENTENCES_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
@@ -276,7 +269,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-    US_TN_COMPARTMENT_SENTENCES_VIEW_BUILDER,
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
