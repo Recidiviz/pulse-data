@@ -19,7 +19,6 @@
 
 import base64
 import io
-import logging
 from typing import BinaryIO, Optional
 
 import google_crc32c
@@ -55,10 +54,8 @@ class VerifiableBytesReader(io.BufferedIOBase, BinaryIO):
 
     def verify_crc32c(self, expected_checksum: str) -> None:
         if not self._eof:
-            logging.info(
-                "The checksum for %s cannot be verified as the file was not fully downloaded.",
-                self._name,
-            )
+            # We can't verify the checksum if we don't download the whole file. That is
+            # fine so we can just return.
             return
         # GCS provides Base64 encoded string representation of the big-endian ordered
         # checksum. We match that here:
