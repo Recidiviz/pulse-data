@@ -89,13 +89,6 @@ def client(project_id: str, region: str) -> bigquery.Client:
     return _clients_by_project_id_by_region[project_id][region]
 
 
-# The urllib3 library (used by the Google BigQuery client) has a default limit of 10 connections and when we do
-# concurrent operations with the same client we see "urllib3.connectionpool:Connection pool is full, discarding
-# connection" errors when this number increased.
-# In the future, we could increase this number by playing around with increasing the pool size per this post:
-# https://github.com/googleapis/python-storage/issues/253
-BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
-
 DATASET_BACKUP_TABLE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000  # 7 days
 
 CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC = 10
@@ -1915,7 +1908,10 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Waiting for [%s] query jobs to complete", len(jobs))
         results = []
         with futures.ThreadPoolExecutor(
-            max_workers=BIG_QUERY_CLIENT_MAX_CONNECTIONS
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
         ) as executor:
             job_futures = [executor.submit(job.result) for job in jobs]
             for f in futures.as_completed(job_futures):
