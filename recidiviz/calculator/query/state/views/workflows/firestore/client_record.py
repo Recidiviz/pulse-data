@@ -17,6 +17,9 @@
 """View to prepare client records for Workflows for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_id.supervision_clients_template import (
+    US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_clients_template import (
     US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
@@ -53,10 +56,13 @@ CLIENT_RECORD_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH 
         {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
-        {US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE}
+        {US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
+        {US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE}
     SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
     UNION ALL
     SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM nd_clients
+    UNION ALL
+    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM id_clients
 """
 
 CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -70,6 +76,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_nd_raw_data="us_nd_raw_data_up_to_date_views",
+    us_id_raw_data="us_id_raw_data_up_to_date_views",
 )
 
 if __name__ == "__main__":

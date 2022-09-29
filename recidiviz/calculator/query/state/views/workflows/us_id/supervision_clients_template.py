@@ -14,12 +14,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""View logic to prepare US_ND Workflows supervision clients."""
+"""View logic to prepare US_ID Workflows supervision clients."""
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
-US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
-    nd_supervision_cases AS (
+from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
+    us_id_latest_phone_number,
+)
+
+US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
+    us_id_supervision_cases AS (
         # This CTE returns a row for each person and supervision sentence, so will return multiple rows if someone
         # is on dual supervision (parole and probation)
         SELECT
@@ -40,48 +44,50 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             AND dataflow.date_of_supervision
                 BETWEEN projected_end.start_date
                     AND {nonnull_end_date_clause('projected_end.end_date')}
-        WHERE dataflow.state_code = 'US_ND'
+        WHERE dataflow.state_code = 'US_ID'
         AND supervising_officer_external_id IS NOT NULL
     ),
-    nd_supervision_level_start AS (
+    us_id_supervision_level_start AS (
     # This CTE selects the most recent supervision level for each person with an active supervision period,
     # prioritizing the highest level in cases where one person is currently assigned to multiple levels
         SELECT
-          person_id,
-          most_recent_active_supervision_level AS supervision_level,
-          start_date as supervision_level_start,  
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
-        WHERE state_code = "US_ND"
-        AND end_date IS NULL
+          sl.person_id,
+          sl.start_date as supervision_level_start,  
+          CASE 
+              -- US_ID expressed preference for the raw text for DIVERSION cases
+              WHEN sl.most_recent_active_supervision_level = 'DIVERSION'
+              THEN session_attributes.correctional_level_raw_text
+              ELSE sl.most_recent_active_supervision_level 
+          END AS supervision_level,
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` sl
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized` dataflow
+              ON dataflow.person_id = sl.person_id
+              AND dataflow.dataflow_session_id = sl.dataflow_session_id_start,
+              UNNEST(session_attributes) as session_attributes
+        WHERE sl.state_code = "US_ID"
+        AND sl.end_date IS NULL
     ),
-    nd_supervision_super_sessions AS (
+    us_id_supervision_super_sessions AS (
       # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
       # the earliest start date for dual supervision periods.
       SELECT
         person_id,
         start_date
       FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
-      WHERE state_code = "US_ND"
+      WHERE state_code = "US_ID"
       AND end_date IS NULL
     ),
-    nd_phone_numbers AS (
+    us_id_phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
-        SELECT 
-            state_code, 
-            external_id AS person_external_id, 
-            PHONE AS phone_number
-        FROM `{{project_id}}.{{us_nd_raw_data}}.docstars_offenders_latest` doc
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
-        ON doc.SID = pei.external_id
-        AND pei.id_type = "US_ND_SID"
+        {us_id_latest_phone_number()}
     ),
-    join_nd_clients AS (
+    join_id_clients AS (
         SELECT DISTINCT
           sc.person_id,
           sc.person_external_id,
           sp.full_name as person_name,
           sp.current_address as address,
-          CAST(ph.phone_number AS INT64) AS phone_number,
+          CAST(ph.phonenumber AS INT64) AS phone_number,
           supervision_type,
           sc.officer_id,
           sl.supervision_level,
@@ -91,23 +97,29 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
           ) AS expiration_date,
-        FROM nd_supervision_cases sc 
-        INNER JOIN nd_supervision_level_start sl USING(person_id)
-        INNER JOIN nd_supervision_super_sessions ss USING(person_id)
+        FROM us_id_supervision_cases sc 
+        INNER JOIN us_id_supervision_level_start sl USING(person_id)
+        INNER JOIN us_id_supervision_super_sessions ss USING(person_id)
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
-        LEFT JOIN nd_phone_numbers ph USING(person_external_id)
+        LEFT JOIN us_id_phone_numbers ph USING(person_external_id)
     ),
-    nd_eligibility AS (
+    id_lsu_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            TRUE AS early_termination_eligible
-        FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
+            TRUE AS limited_supervision_eligible,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_transfer_to_limited_supervision_form_record_materialized`
     ),
-    nd_clients AS (
+    id_earned_discharge_eligibility AS (
+        SELECT
+            external_id AS person_external_id,
+            TRUE AS earned_discharge_eligible,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
+    ),
+    id_clients AS (
         # Values set to NULL are not applicable for this state
-        SELECT 
+        SELECT
             person_external_id,
-            "US_ND" AS state_code,
+            "US_ID" AS state_code,
             person_name,
             officer_id,
             supervision_type,
@@ -124,10 +136,11 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             CAST(NULL AS STRING) AS district,
             CAST(NULL AS STRING) AS compliant_reporting_eligible,
-            IFNULL(early_termination_eligible, FALSE),
-            FALSE AS earned_discharge_eligible,
-            FALSE AS limited_supervision_eligible,
-        FROM join_nd_clients
-        LEFT JOIN nd_eligibility USING(person_external_id)
+            FALSE AS early_termination_eligible,
+            IFNULL(earned_discharge_eligible, FALSE),
+            IFNULL(limited_supervision_eligible, FALSE),
+        FROM join_id_clients
+        LEFT JOIN id_earned_discharge_eligibility USING(person_external_id)
+        LEFT JOIN id_lsu_eligibility USING (person_external_id)
     )
 """
