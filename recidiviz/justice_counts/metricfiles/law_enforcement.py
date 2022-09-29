@@ -69,9 +69,6 @@ LAW_ENFORCEMENT_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="arrests_by_race",
-        allowed_filenames=[
-            "arrests_by_race/ethnicity",
-        ],
         definition=law_enforcement.total_arrests,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",

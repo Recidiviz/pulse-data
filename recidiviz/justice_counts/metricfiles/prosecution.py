@@ -91,7 +91,6 @@ PROSECUTION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="cases_declined_by_race",
-        allowed_filenames=["cases_declined_by_race/ethnicity"],
         definition=prosecution.cases_declined,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
