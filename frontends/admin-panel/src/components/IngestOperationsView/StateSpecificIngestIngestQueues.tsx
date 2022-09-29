@@ -15,17 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { SyncOutlined } from "@ant-design/icons";
-import { Button, Divider, PageHeader } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getIngestQueuesState } from "../../AdminPanelAPI";
-import {
-  RegionAction,
-  regionActionNames,
-} from "../Utilities/ActionRegionConfirmationForm";
 import { QueueMetadata } from "./constants";
-import IngestActionButton from "./IngestActionButton";
+import IngestQueuesActionsPageHeader from "./IngestOperationsComponents/IngestQueuesActionsPageHeader";
 import IngestQueuesTable from "./IngestQueuesTable";
 
 const StateSpecificIngestQueues = (): JSX.Element => {
@@ -35,11 +29,6 @@ const StateSpecificIngestQueues = (): JSX.Element => {
   const { stateCode } = useParams<{ stateCode: string }>();
   const [queueStates, setQueueStates] = useState<QueueMetadata[]>([]);
   const [queueStatesLoading, setQueueStatesLoading] = useState<boolean>(true);
-
-  const ingestQueueActions = [
-    RegionAction.PauseIngestQueues,
-    RegionAction.ResumeIngestQueues,
-  ];
 
   const getData = useCallback(async () => {
     setQueueStatesLoading(true);
@@ -59,46 +48,20 @@ const StateSpecificIngestQueues = (): JSX.Element => {
 
   return (
     <>
-      <PageHeader
-        extra={[
-          <Button
-            type="primary"
-            shape="circle"
-            icon={<SyncOutlined />}
-            onClick={() => getData()}
-          />,
-        ]}
-      />
-      <Divider orientation="left">Ingest Queues</Divider>
-      <div className="site-card-wrapper" />
-      <IngestQueuesTable
-        projectId={projectId}
+      <IngestQueuesActionsPageHeader
+        stateCode={stateCode}
         queueStates={queueStates}
-        loading={queueStatesLoading}
+        onRefreshQueuesData={getData}
       />
-      <br />
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-evenly",
-        }}
+        style={{ height: "90%", padding: "0 24px" }}
+        className="main-content"
       >
-        {ingestQueueActions.map((action) => {
-          return (
-            <IngestActionButton
-              style={{ display: "block", textAlign: "center", width: "auto" }}
-              action={action}
-              stateCode={stateCode}
-              buttonText={regionActionNames[action]}
-              onActionConfirmed={() => {
-                getData();
-              }}
-              block
-              key={action}
-            />
-          );
-        })}
+        <IngestQueuesTable
+          projectId={projectId}
+          queueStates={queueStates}
+          loading={queueStatesLoading}
+        />
       </div>
     </>
   );

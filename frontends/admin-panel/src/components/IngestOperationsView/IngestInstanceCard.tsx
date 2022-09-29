@@ -16,22 +16,14 @@
 // =============================================================================
 import { Card, Col, Descriptions, Spin } from "antd";
 import { useCallback, useEffect, useState } from "react";
-import {
-  getIngestInstanceSummary,
-  getIngestRawFileProcessingStatus,
-} from "../../AdminPanelAPI/IngestOperations";
+import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
-import {
-  regionActionNames,
-  RegionAction,
-} from "../Utilities/ActionRegionConfirmationForm";
 import {
   GCP_STORAGE_BASE_URL,
   DirectIngestInstance,
   IngestInstanceSummary,
   IngestRawFileProcessingStatus,
 } from "./constants";
-import IngestActionButton from "./IngestActionButton";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
@@ -40,25 +32,20 @@ interface IngestInstanceCardProps {
   instance: DirectIngestInstance;
   env: string;
   stateCode: string;
+  ingestInstanceSummary: IngestInstanceSummary | undefined;
+  ingestInstanceSummaryLoading: boolean;
 }
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
   env,
   stateCode,
+  ingestInstanceSummary,
+  ingestInstanceSummaryLoading,
 }) => {
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
-
-  const [ingestInstanceSummaryLoading, setIngestInstanceSummaryLoading] =
-    useState<boolean>(true);
-  const [ingestInstanceSummary, setIngestInstanceSummary] =
-    useState<IngestInstanceSummary | undefined>(undefined);
-
-  const pauseUnpauseInstanceAction = ingestInstanceSummary?.operations.isPaused
-    ? RegionAction.UnpauseIngestInstance
-    : RegionAction.PauseIngestInstance;
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -66,18 +53,6 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
-
-  const fetchIngestInstanceSummary = useCallback(async () => {
-    setIngestInstanceSummaryLoading(true);
-    const primaryResponse = await getIngestInstanceSummary(stateCode, instance);
-    const result: IngestInstanceSummary = await primaryResponse.json();
-    setIngestInstanceSummary(result);
-    setIngestInstanceSummaryLoading(false);
-  }, [instance, stateCode]);
-
-  useEffect(() => {
-    fetchIngestInstanceSummary();
-  }, [fetchIngestInstanceSummary]);
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
@@ -116,59 +91,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   }
 
   return (
-    <Card
-      title={instance}
-      extra={
-        <>
-          <IngestActionButton
-            style={{ marginRight: 5 }}
-            action={RegionAction.ExportToGCS}
-            buttonText={regionActionNames[RegionAction.ExportToGCS]}
-            instance={instance}
-            stateCode={stateCode}
-          />
-          <IngestActionButton
-            style={
-              ingestInstanceSummary.operations.isPaused
-                ? { display: "none" }
-                : { marginRight: 5 }
-            }
-            action={RegionAction.TriggerTaskScheduler}
-            buttonText={regionActionNames[RegionAction.TriggerTaskScheduler]}
-            instance={instance}
-            stateCode={stateCode}
-          />
-          <IngestActionButton
-            style={
-              // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
-              instance === "SECONDARY"
-                ? { marginRight: 5 }
-                : { display: "none" }
-            }
-            action={RegionAction.StartIngestRerun}
-            buttonText={regionActionNames[RegionAction.StartIngestRerun]}
-            instance={instance}
-            stateCode={stateCode}
-          />
-          <IngestActionButton
-            action={pauseUnpauseInstanceAction}
-            buttonText={regionActionNames[pauseUnpauseInstanceAction]}
-            instance={instance}
-            stateCode={stateCode}
-            onActionConfirmed={() => {
-              fetchIngestInstanceSummary();
-            }}
-            type="primary"
-          />
-        </>
-      }
-    >
-      <Descriptions bordered>
-        <Descriptions.Item label="Status" span={3}>
-          {ingestInstanceSummary.operations.isPaused ? "PAUSED" : "UNPAUSED"}
-        </Descriptions.Item>
-      </Descriptions>
-      <br />
+    <Card>
       <h1>Raw data</h1>
       {ingestRawFileProcessingStatusLoading ? (
         <Spin />

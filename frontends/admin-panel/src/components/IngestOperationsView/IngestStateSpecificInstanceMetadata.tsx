@@ -15,10 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Divider, Alert } from "antd";
+import { Alert } from "antd";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { DirectIngestInstance } from "./constants";
+import { getIngestInstanceSummary } from "../../AdminPanelAPI";
+import { DirectIngestInstance, IngestInstanceSummary } from "./constants";
 import IngestInstanceCard from "./IngestInstanceCard";
+import IngestInstanceActionsPageHeader from "./IngestOperationsComponents/IngestInstanceActionsPageHeader";
 
 const instances = [
   DirectIngestInstance.PRIMARY,
@@ -31,30 +34,64 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
     useParams<{ stateCode: string; instance: string }>();
 
   const directInstance = getInstance(instance);
+
+  const [ingestInstanceSummaryLoading, setIngestInstanceSummaryLoading] =
+    useState<boolean>(true);
+  const [ingestInstanceSummary, setIngestInstanceSummary] =
+    useState<IngestInstanceSummary | undefined>(undefined);
+
+  const fetchIngestInstanceSummary = useCallback(async () => {
+    if (!directInstance) {
+      return;
+    }
+    setIngestInstanceSummaryLoading(true);
+    const primaryResponse = await getIngestInstanceSummary(
+      stateCode,
+      directInstance
+    );
+    const result: IngestInstanceSummary = await primaryResponse.json();
+    setIngestInstanceSummary(result);
+    setIngestInstanceSummaryLoading(false);
+  }, [directInstance, stateCode]);
+
+  useEffect(() => {
+    fetchIngestInstanceSummary();
+  }, [fetchIngestInstanceSummary]);
+
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
   }
 
   return (
     <>
-      <Divider orientation="left" style={{ marginTop: 24 }}>
-        Ingest Instances
-      </Divider>
+      <IngestInstanceActionsPageHeader
+        instance={directInstance}
+        stateCode={stateCode}
+        ingestInstanceSummary={ingestInstanceSummary}
+        onRefreshIngestSummary={fetchIngestInstanceSummary}
+      />
       {env === "development" ? (
-        <Alert
-          message="The Operations Database information is inaccurate. Users are unable to hit a live database
+        <>
+          <Alert
+            style={{ margin: "6px 24px" }}
+            message="The Operations Database information is inaccurate. Users are unable to hit a live database
           from a local machine"
-          type="warning"
-          showIcon
-        />
+            type="warning"
+            showIcon
+          />
+        </>
       ) : null}
-      <br />
 
-      <div className="site-card-wrapper">
+      <div
+        style={{ height: "95%", padding: "0 24px" }}
+        className="main-content"
+      >
         <IngestInstanceCard
           instance={directInstance}
           env={env}
           stateCode={stateCode}
+          ingestInstanceSummary={ingestInstanceSummary}
+          ingestInstanceSummaryLoading={ingestInstanceSummaryLoading}
         />
       </div>
     </>

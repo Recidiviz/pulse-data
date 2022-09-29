@@ -23,14 +23,14 @@ import {
   unpauseDirectIngestInstance,
   exportDatabaseToGCS,
   startIngestRerun,
-} from "../../AdminPanelAPI";
+} from "../../../AdminPanelAPI";
 import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
   regionActionNames,
   StartIngestRerunContext,
-} from "../Utilities/ActionRegionConfirmationForm";
-import { DirectIngestInstance, QueueState } from "./constants";
+} from "../../Utilities/ActionRegionConfirmationForm";
+import { DirectIngestInstance, QueueState } from "../constants";
 
 interface IngestActionButtonProps {
   action: RegionAction;

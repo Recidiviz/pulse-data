@@ -92,7 +92,7 @@ const IngestStateSpecificMetadata = (): JSX.Element => {
             items={items}
           />
         </Sider>
-        <Layout style={{ padding: "0 24px 24px" }}>
+        <Layout className="main-content">
           <Content>
             <Switch>
               <Route

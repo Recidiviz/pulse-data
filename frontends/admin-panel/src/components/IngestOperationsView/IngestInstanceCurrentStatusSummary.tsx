@@ -40,6 +40,7 @@ import {
 } from "./constants";
 import IngestPageHeader from "./IngestPageHeader";
 import {
+  getIngestQueuesCumalativeState,
   getQueueColor,
   getQueueStatusSortedOrder,
   getStatusBoxColor,
@@ -77,17 +78,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       // QueueState for that state.
       const queueStatusSummaries: QueueState[] = queueStatusResponsesJson.map(
         (queueInfos): QueueState => {
-          return queueInfos
-            .map((queueInfo) => queueInfo.state)
-            .reduce((acc: QueueState, state: QueueState) => {
-              if (acc === QueueState.UNKNOWN) {
-                return state;
-              }
-              if (acc === state) {
-                return acc;
-              }
-              return QueueState.MIXED_STATUS;
-            }, QueueState.UNKNOWN);
+          return getIngestQueuesCumalativeState(queueInfos);
         }
       );
       // Turn lists back into map of stateCode -> QueueStatus
