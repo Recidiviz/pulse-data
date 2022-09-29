@@ -31,7 +31,7 @@ const IngestPageHeader: React.FC<IngestPageHeaderProps> = ({
 }) => {
   return (
     <PageHeader
-      title="Ingest Operations"
+      title="Ingest Status"
       extra={[
         <StateSelector
           fetchStateList={fetchIngestStateCodes}
