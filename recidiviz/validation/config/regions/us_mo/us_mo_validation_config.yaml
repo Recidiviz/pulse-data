@@ -45,3 +45,6 @@ num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 30
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
+  - validation_name: incarceration_release_prior_to_admission
+    hard_num_allowed_rows_override: 22
+    override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
