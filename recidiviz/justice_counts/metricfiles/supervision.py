@@ -89,9 +89,6 @@ SUPERVISION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        allowed_filenames=[
-            "population_by_race/ethnicity",
-        ],
         definition=supervision.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
@@ -171,9 +168,6 @@ PAROLE_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        allowed_filenames=[
-            "population_by_race/ethnicity",
-        ],
         definition=parole.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
@@ -253,9 +247,6 @@ PROBATION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        allowed_filenames=[
-            "population_by_race/ethnicity",
-        ],
         definition=probation.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
@@ -335,9 +326,6 @@ POST_RELEASE_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        allowed_filenames=[
-            "population_by_race/ethnicity",
-        ],
         definition=post_release.individuals_under_supervision,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",

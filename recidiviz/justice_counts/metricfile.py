@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines the MetricFile class."""
 
-from typing import List, Optional, Type
+from typing import Optional, Type
 
 import attr
 
@@ -49,13 +49,8 @@ class MetricFile:
     # e.g. `race/ethnicity`.
     disaggregation_column_name: Optional[str] = None
 
-    # List of filenames that are accepted during bulk upload.
-    allowed_filenames: List[str] = attr.field(factory=list)
-
     display_name: str = attr.field(factory=str)
 
     def __attrs_post_init__(self) -> None:
-        self.allowed_filenames = list(
-            set(self.allowed_filenames) | {self.canonical_filename}
-        )
+
         self.display_name = self.canonical_filename.replace("_", " ").title()

@@ -51,9 +51,7 @@ SYSTEM_TO_METRICFILES = {
 # includes all metrics registered for each system.
 SYSTEM_TO_FILENAME_TO_METRICFILE = {
     system.value: {
-        filename: metricfile
-        for metricfile in metric_files
-        for filename in metricfile.allowed_filenames
+        metricfile.canonical_filename: metricfile for metricfile in metric_files
     }
     for system, metric_files in SYSTEM_TO_METRICFILES.items()
 }
