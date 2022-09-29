@@ -84,7 +84,7 @@ class ManualUploadStateFilesToIngestBucketController(
 
     def __init__(
         self,
-        paths: str,
+        paths: List[str],
         project_id: str,
         region: str,
         date: str,
@@ -183,6 +183,74 @@ class ManualUploadStateFilesToIngestBucketController(
                 )
 
 
+def upload_raw_state_files_to_ingest_bucket_with_date(
+    paths: List[str],
+    project_id: str,
+    region: str,
+    date: str,
+    dry_run: bool,
+    destination_bucket: Optional[str] = None,
+) -> None:
+    """Makes this a callable function."""
+    override_bucket = (
+        GcsfsBucketPath(destination_bucket) if destination_bucket else None
+    )
+    controller = ManualUploadStateFilesToIngestBucketController(
+        paths=paths,
+        project_id=project_id,
+        region=region,
+        date=date,
+        dry_run=dry_run,
+        destination_bucket_override=override_bucket,
+    )
+
+    if controller.dry_run:
+        logging.info("Running in DRY RUN mode for region [%s]", controller.region)
+    else:
+        i = input(
+            f"This will upload raw files to the [{controller.region}] ingest bucket "
+            f"[{controller.destination_ingest_bucket.uri()}] with datetime "
+            f"[{date}]. Type {controller.project_id} to continue: "
+        )
+
+        if i != controller.project_id:
+            return
+
+    if override_bucket:
+        if not controller.dry_run:
+            i = input(
+                f"Are you sure you want to upload to non-standard bucket "
+                f"[{controller.destination_ingest_bucket.uri()}]?. Type "
+                f"{controller.destination_ingest_bucket.bucket_name} to continue: "
+            )
+
+            if i != controller.destination_ingest_bucket.bucket_name:
+                return
+
+    msg_prefix = "[DRY RUN] " if controller.dry_run else ""
+    controller.move_progress = Bar(
+        f"{msg_prefix}Uploading files...", max=len(controller.get_paths_to_upload())
+    )
+
+    controller.do_upload()
+
+    if not controller.move_progress:
+        raise ValueError("Progress bar should not be None")
+    controller.move_progress.finish()
+
+    controller.write_copies_to_log_file()
+
+    if controller.dry_run:
+        logging.info(
+            "[DRY RUN] See results in [%s].\nRerun with [--dry-run False] to execute move.",
+            controller.log_output_path,
+        )
+    else:
+        logging.info(
+            "Upload complete! See results in [%s].", controller.log_output_path
+        )
+
+
 def main() -> None:
     """Executes the main flow of the script."""
     parser = argparse.ArgumentParser(
@@ -226,63 +294,14 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    override_bucket = (
-        GcsfsBucketPath(args.destination_bucket) if args.destination_bucket else None
-    )
-    controller = ManualUploadStateFilesToIngestBucketController(
+    upload_raw_state_files_to_ingest_bucket_with_date(
         paths=args.paths,
         project_id=args.project_id,
         region=args.region,
         date=args.date,
         dry_run=args.dry_run,
-        destination_bucket_override=override_bucket,
+        destination_bucket=args.destination_bucket,
     )
-
-    if controller.dry_run:
-        logging.info("Running in DRY RUN mode for region [%s]", controller.region)
-    else:
-        i = input(
-            f"This will upload raw files to the [{controller.region}] ingest bucket "
-            f"[{controller.destination_ingest_bucket.uri()}] with datetime "
-            f"[{args.date}]. Type {controller.project_id} to continue: "
-        )
-
-        if i != controller.project_id:
-            return
-
-    if override_bucket:
-        if not controller.dry_run:
-            i = input(
-                f"Are you sure you want to upload to non-standard bucket "
-                f"[{controller.destination_ingest_bucket.uri()}]?. Type "
-                f"{controller.destination_ingest_bucket.bucket_name} to continue: "
-            )
-
-            if i != controller.destination_ingest_bucket.bucket_name:
-                return
-
-    msg_prefix = "[DRY RUN] " if controller.dry_run else ""
-    controller.move_progress = Bar(
-        f"{msg_prefix}Uploading files...", max=len(controller.get_paths_to_upload())
-    )
-
-    controller.do_upload()
-
-    if not controller.move_progress:
-        raise ValueError("Progress bar should not be None")
-    controller.move_progress.finish()
-
-    controller.write_copies_to_log_file()
-
-    if controller.dry_run:
-        logging.info(
-            "[DRY RUN] See results in [%s].\nRerun with [--dry-run False] to execute move.",
-            controller.log_output_path,
-        )
-    else:
-        logging.info(
-            "Upload complete! See results in [%s].", controller.log_output_path
-        )
 
 
 if __name__ == "__main__":
