@@ -58,6 +58,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
     StateProgramAssignment,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -104,6 +105,7 @@ class TestNormalizeEntities(unittest.TestCase):
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
+        persons: Optional[List[StatePerson]] = None,
         state_code_override: Optional[str] = None,
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
@@ -116,6 +118,7 @@ class TestNormalizeEntities(unittest.TestCase):
             StateIncarcerationSentence.__name__: incarceration_sentences or [],
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
+            StatePerson.__name__: persons or [],
         }
         if not state_code_override:
             required_delegates = STATE_DELEGATES_FOR_TESTS
@@ -191,6 +194,23 @@ class TestNormalizeEntities(unittest.TestCase):
             }
         )
 
+        expected_additional_attributes_map.update(
+            {
+                StateAssessment.__name__: {
+                    assessment.assessment_id: {
+                        "assessment_score_bucket": "39+"
+                        if assessment.assessment_score == 55
+                        else "0-23",
+                        "sequence_num": index,
+                    }
+                    for index, assessment in enumerate(
+                        self.full_graph_person.assessments
+                    )
+                    if assessment.assessment_id
+                }
+            }
+        )
+
         expected_output_entities: Dict[str, Sequence[Entity]] = {
             StateIncarcerationPeriod.__name__: [
                 attr.evolve(
@@ -206,6 +226,10 @@ class TestNormalizeEntities(unittest.TestCase):
             StateProgramAssignment.__name__: [
                 attr.evolve(pa) for pa in self.full_graph_person.program_assignments
             ],
+            StateAssessment.__name__: [
+                attr.evolve(assessment)
+                for assessment in self.full_graph_person.assessments
+            ],
         }
 
         normalized_entities, additional_attributes_map = self._run_normalize_entities(
@@ -213,6 +237,7 @@ class TestNormalizeEntities(unittest.TestCase):
             supervision_periods=self.full_graph_person.supervision_periods,
             violation_responses=violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
+            assessments=self.full_graph_person.assessments,
         )
 
         self.assertEqual(expected_additional_attributes_map, additional_attributes_map)
@@ -268,6 +293,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
+        persons: Optional[List[StatePerson]] = None,
         state_code_override: Optional[str] = None,
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
@@ -279,6 +305,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateIncarcerationSentence.__name__: incarceration_sentences or [],
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
+            StatePerson.__name__: persons or [],
         }
 
         if not state_code_override:
@@ -402,6 +429,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionPeriod.__name__: normalized_sps,
             StateSupervisionViolation.__name__: [get_normalized_violation_tree()],
             StateProgramAssignment.__name__: normalized_pas,
+            StateAssessment.__name__: [],
         }
 
         for entity_name, items in normalized_entities.items():
@@ -437,6 +465,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionPeriod.__name__: [],
             StateSupervisionViolation.__name__: [get_normalized_violation_tree()],
             StateProgramAssignment.__name__: [],
+            StateAssessment.__name__: [],
         }
 
         for entity_name, entity_list in normalized_entities.items():

@@ -22,6 +22,9 @@ from typing import Dict, List, Optional, Sequence, Set, Type, Union
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    StateSpecificAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -69,6 +72,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_assessment_normalization_delegate import (
+    UsCaAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_commitment_from_supervision_utils import (
     UsCaCommitmentFromSupervisionDelegate,
 )
@@ -102,6 +108,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_violations_delegate import (
     UsCaViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_assessment_normalization_delegate import (
+    UsCoAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_commitment_from_supervision_utils import (
     UsCoCommitmentFromSupervisionDelegate,
 )
@@ -134,6 +143,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_violations_delegate import (
     UsCoViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_assessment_normalization_delegate import (
+    UsIdAssessmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
@@ -171,6 +183,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violations_delegate import (
     UsIdViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_assessment_normalization_delegate import (
+    UsIxAssessmentNormalizationDelegate,
+)
 
 # TODO(#10703): Remove this state_code after merging US_IX into US_ID
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_commitment_from_supervision_utils import (
@@ -206,6 +221,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_violations_delegate import (
     UsIxViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_assessment_normalization_delegate import (
+    UsMeAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_commitment_from_supervision_delegate import (
     UsMeCommitmentFromSupervisionDelegate,
 )
@@ -238,6 +256,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_violations_delegate import (
     UsMeViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_assessment_normalization_delegate import (
+    UsMiAssessmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_commitment_from_supervision_delegate import (
     UsMiCommitmentFromSupervisionDelegate,
@@ -272,6 +293,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_violations_delegate import (
     UsMiViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_assessment_normalization_delegate import (
+    UsMoAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_delegate import (
     UsMoCommitmentFromSupervisionDelegate,
 )
@@ -304,6 +328,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     UsMoViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_assessment_normalization_delegate import (
+    UsNdAssessmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
@@ -341,6 +368,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_assessment_normalization_delegate import (
+    UsOrAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_commitment_from_supervision_utils import (
     UsOrCommitmentFromSupervisionDelegate,
 )
@@ -374,6 +404,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_violations_delegate import (
     UsOrViolationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_assessment_normalization_delegate import (
+    UsOzAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_commitment_from_supervision_utils import (
     UsOzCommitmentFromSupervisionDelegate,
 )
@@ -406,6 +439,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_violations_delegate import (
     UsOzViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_assessment_normalization_delegate import (
+    UsPaAssessmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
@@ -442,6 +478,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_respo
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_assessment_normalization_delegate import (
+    UsTnAssessmentNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_commitment_from_supervision_delegate import (
     UsTnCommitmentFromSupervisionDelegate,
@@ -502,7 +541,13 @@ def get_required_state_specific_delegates(
     implementation of that delegate."""
     required_state_specific_delegates: Dict[str, StateSpecificDelegate] = {}
     for required_delegate in required_delegates:
-        if required_delegate is StateSpecificIncarcerationNormalizationDelegate:
+        if required_delegate is StateSpecificAssessmentNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_assessment_normalization_delegate(
+                state_code, entity_kwargs
+            )
+        elif required_delegate is StateSpecificIncarcerationNormalizationDelegate:
             required_state_specific_delegates[
                 required_delegate.__name__
             ] = _get_state_specific_incarceration_period_normalization_delegate(
@@ -629,6 +674,50 @@ def get_state_specific_case_compliance_manager(
         )
 
     return None
+
+
+def _get_state_specific_assessment_normalization_delegate(
+    state_code: str,
+    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
+) -> StateSpecificAssessmentNormalizationDelegate:
+    """Returns the type of AssessmentNormalizationDelegate that should be used for
+    normalizing StateAssessment entities from a given |state_code|."""
+    persons = (
+        [assert_type(a, StatePerson) for a in entity_kwargs[StatePerson.__name__]]
+        if entity_kwargs and entity_kwargs.get(StatePerson.__name__) is not None
+        else None
+    )
+    if state_code == StateCode.US_CA.value:
+        return UsCaAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_CO.value:
+        return UsCoAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        if persons is None:
+            raise ValueError(
+                "Missing StatePerson entity for UsIdAssessmentNormalizationDelegate"
+            )
+        return UsIdAssessmentNormalizationDelegate(persons=persons)
+    if state_code == StateCode.US_ME.value:
+        return UsMeAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_MI.value:
+        return UsMiAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_OR.value:
+        return UsOrAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnAssessmentNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzAssessmentNormalizationDelegate()
+    # TODO(#10703): Remove this state_code after merging US_IX into US_ID
+    if state_code == StateCode.US_IX.value:
+        return UsIxAssessmentNormalizationDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
 
 
 def _get_state_specific_incarceration_period_normalization_delegate(

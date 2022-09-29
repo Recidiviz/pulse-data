@@ -27,6 +27,10 @@ from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_mana
     normalized_periods_for_calculations,
     normalized_violation_responses_from_processed_versions,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    AssessmentNormalizationManager,
+    StateSpecificAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -46,6 +50,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
+    StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateProgramAssignment,
@@ -92,6 +97,9 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             program_assignment_normalization_delegate=normalizer_args[
                 StateSpecificProgramAssignmentNormalizationDelegate.__name__
             ],
+            assessment_normalization_delegate=normalizer_args[
+                StateSpecificAssessmentNormalizationDelegate.__name__
+            ],
             incarceration_periods=normalizer_args[StateIncarcerationPeriod.__name__],
             incarceration_sentences=normalizer_args[
                 StateIncarcerationSentence.__name__
@@ -102,6 +110,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
                 StateSupervisionViolationResponse.__name__
             ],
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
+            assessments=normalizer_args[StateAssessment.__name__],
         )
 
     def _normalize_entities(
@@ -111,12 +120,14 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
         violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
         program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
+        assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
         incarceration_periods: List[StateIncarcerationPeriod],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         supervision_periods: List[StateSupervisionPeriod],
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
+        assessments: List[StateAssessment],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
@@ -125,12 +136,14 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             sp_normalization_delegate=sp_normalization_delegate,
             violation_response_normalization_delegate=violation_response_normalization_delegate,
             program_assignment_normalization_delegate=program_assignment_normalization_delegate,
+            assessment_normalization_delegate=assessment_normalization_delegate,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
             violation_responses=violation_responses,
             program_assignments=program_assignments,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
+            assessments=assessments,
             field_index=self.field_index,
         )
 
@@ -143,12 +156,14 @@ def all_normalized_entities(
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
     violation_response_normalization_delegate: StateSpecificViolationResponseNormalizationDelegate,
     program_assignment_normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
+    assessment_normalization_delegate: StateSpecificAssessmentNormalizationDelegate,
     incarceration_periods: List[StateIncarcerationPeriod],
     supervision_periods: List[StateSupervisionPeriod],
     violation_responses: List[StateSupervisionViolationResponse],
     program_assignments: List[StateProgramAssignment],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
+    assessments: List[StateAssessment],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -202,6 +217,17 @@ def all_normalized_entities(
         supervision_sentences=supervision_sentences,
     )
 
+    assessment_normalization_manager = AssessmentNormalizationManager(
+        assessments, assessment_normalization_delegate
+    )
+
+    (
+        processed_assessments,
+        additional_assessments_attributes,
+    ) = (
+        assessment_normalization_manager.normalized_assessments_and_additional_attributes()
+    )
+
     additional_attributes_map = merge_additional_attributes_maps(
         # We don't expect any overlapping entity types in this list, but we just merge
         # so that we can return one unified map.
@@ -210,6 +236,7 @@ def all_normalized_entities(
             additional_sp_attributes,
             additional_pa_attributes,
             additional_vr_attributes,
+            additional_assessments_attributes,
         ]
     )
 
@@ -234,6 +261,7 @@ def all_normalized_entities(
             StateSupervisionPeriod.__name__: processed_supervision_periods,
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,
+            StateAssessment.__name__: processed_assessments,
         },
         additional_attributes_map,
     )

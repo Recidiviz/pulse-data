@@ -75,7 +75,7 @@ class IncarcerationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StatePersonRace,
                 entities.StatePersonEthnicity,
                 entities.StatePersonExternalId,
-                entities.StateAssessment,
+                normalized_entities.NormalizedStateAssessment,
                 normalized_entities.NormalizedStateIncarcerationPeriod,
                 normalized_entities.NormalizedStateSupervisionPeriod,
                 normalized_entities.NormalizedStateSupervisionCaseTypeEntry,

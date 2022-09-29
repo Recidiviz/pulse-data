@@ -189,7 +189,12 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(program_assignment, {"sequence_num": 0})
         ]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 0},
+            )
+        ]
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period, {"sequence_num": 0})
@@ -387,7 +392,12 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(program_assignment, {"sequence_num": 0})
         ]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"sequence_num": 0, "assessment_score_bucket": "NOT_ASSESSED"},
+            )
+        ]
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period, {"sequence_num": 0})
