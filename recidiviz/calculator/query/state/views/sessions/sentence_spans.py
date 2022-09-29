@@ -56,10 +56,10 @@ SENTENCE_SPANS_QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         ARRAY_AGG(
-            sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
+            DISTINCT sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
         ) AS sentence_imposed_group_id_array,
         ARRAY_AGG(
-            sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
+            DISTINCT sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
         ) AS sentences_preprocessed_id_array,
     FROM sub_sessions_with_attributes
     GROUP BY state_code, person_id, start_date, end_date
