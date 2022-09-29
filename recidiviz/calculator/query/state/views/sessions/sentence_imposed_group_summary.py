@@ -137,7 +137,9 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         LOGICAL_OR(offense_conspired_uniform) AS any_offense_conspired_uniform,        
         
         ANY_VALUE(IF(is_first_sentence, sentence_type, NULL)) AS parent_sentence_type,
+        ANY_VALUE(IF(is_first_sentence, sentence_sub_type, NULL)) AS parent_sentence_sub_type,
         ANY_VALUE(IF(is_first_sentence, judicial_district, NULL)) AS judicial_district,
+        ANY_VALUE(IF(is_first_sentence, county_code, NULL)) AS county_code,
         COUNT(1) AS number_of_sentences,
         ANY_VALUE(num_levels) AS num_levels,
         IF(date_imposed>=MAX(effective_date), DATE_DIFF(date_imposed, MAX(effective_date), DAY), 0) AS days_effective_prior_to_imposed, 
