@@ -123,33 +123,15 @@ output:
               $args:
                 county_code: BS_CNS
           projected_max_release_date:
-            $conditional:
-              - $if:
-                  $not_in:
-                    $value: BS_PD
-                    $options:
-                      - $literal("0")
-                      - $literal("19000000")
-                      - $literal("20000000")
-                      - $literal("66666666")
-                      - $literal("77777777")
-                      - $literal("88888888")
-                      - $literal("99999999")
-                $then: BS_PD
+            $custom:
+              $function: us_mo_custom_parsers.null_if_magic_date
+              $args:
+                date: BS_PD
           projected_min_release_date:
-            $conditional:
-              - $if:
-                  $not_in:
-                    $value: BT_PC
-                    $options:
-                      - $literal("0")
-                      - $literal("19000000")
-                      - $literal("20000000")
-                      - $literal("66666666")
-                      - $literal("77777777")
-                      - $literal("88888888")
-                      - $literal("99999999")
-                $then: BT_PC
+            $custom:
+              $function: us_mo_custom_parsers.null_if_magic_date
+              $args:
+                date: BT_PC
           date_imposed: BT_SD
           start_date: # TODO(#9185): [US_MO] Ensure correct handling of magic date in start_date of incarceration sentence
             $conditional:
