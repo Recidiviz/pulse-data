@@ -60,8 +60,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.uploader = BulkUploader(catch_errors=False)
-        self.uploader_catch_errors = BulkUploader()
+        self.uploader = BulkUploader()
 
         self.prisons_excel = os.path.join(
             os.path.dirname(__file__),
@@ -122,7 +121,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            _, metric_key_to_errors = self.uploader_catch_errors.upload_excel(
+            _, metric_key_to_errors = self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.invalid_excel),
                 agency_id=self.prosecution_agency_id,
@@ -138,21 +137,17 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             cases_disposed_errors: List[
                 JusticeCountsBulkUploadException
             ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
-            self.assertEqual(len(cases_disposed_errors), 2)
+
+            self.assertEqual(len(cases_disposed_errors), 1)
             cases_disposed_by_type_error = cases_disposed_errors[0]
-            month_error = cases_disposed_errors[1]
-            self.assertTrue(
-                "The sheet containing total values for the 'Cases Disposed' metric should "
-                "be called 'cases_disposed'."
-                in cases_disposed_by_type_error.description,
-            )
+
             self.assertTrue(
                 (
                     "The valid values for Month are January, February, March, "
                     "April, May, June, July, August, September, October, "
                     "November, December."
                 )
-                in month_error.description
+                in cases_disposed_by_type_error.description
             )
 
     def test_prison(self) -> None:
@@ -506,7 +501,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            _, metric_key_to_errors = self.uploader_catch_errors.upload_excel(
+            _, metric_key_to_errors = self.uploader.upload_excel(
                 session=session,
                 xls=pd.ExcelFile(self.law_enforcement_missing_metrics),
                 agency_id=self.law_enforcement_agency_id,
@@ -522,8 +517,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(arrest_error.title, "Missing Total Value")
             self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
             self.assertTrue(
-                "The sheet containing total values for the 'Total Arrests' metric should "
-                "be called 'arrests'." in arrest_error.description,
+                "No totals values were provided for the 'Total Arrests' metric"
+                in arrest_error.description,
             )
 
             use_of_force_errors = metric_key_to_errors[
@@ -537,5 +532,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 use_of_force_error.description,
-                "No sheets for the 'Use of Force Incidents' metric were provided.",
+                "No data for the 'Use of Force Incidents' metric was provided. "
+                "You did not include any sheets for this metric in your excel workbook. "
+                "Please provide data in a sheet titled 'use_of_force'.",
             )

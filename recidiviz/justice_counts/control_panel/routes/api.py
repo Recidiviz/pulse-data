@@ -424,7 +424,7 @@ def get_api_blueprint(
             and ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions
         ):
             (
-                datapoint_json_list,
+                metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
@@ -438,7 +438,7 @@ def get_api_blueprint(
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
                     metric_key_to_errors=metric_key_to_errors,
-                    datapoint_json_list=datapoint_json_list,
+                    metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     system=system,
                 )
             )
