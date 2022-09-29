@@ -51,7 +51,7 @@ class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StatePerson,
                 entities.StatePersonRace,
                 entities.StatePersonEthnicity,
-                entities.StateAssessment,
+                normalized_entities.NormalizedStateAssessment,
                 normalized_entities.NormalizedStateProgramAssignment,
                 normalized_entities.NormalizedStateSupervisionPeriod,
             ],

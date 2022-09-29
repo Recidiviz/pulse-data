@@ -24,6 +24,7 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
@@ -53,6 +54,7 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateAssessment,
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)

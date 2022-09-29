@@ -231,6 +231,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         program_assignment_data = [normalized_database_base_dict(program_assignment)]
 
+        assessment = database_test_utils.generate_test_assessment(fake_person_id)
+
+        assessment_data = [normalized_database_base_dict(assessment)]
+
         us_mo_sentence_status_data: List[Dict[str, Any]] = (
             [
                 {
@@ -265,6 +269,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
             schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violated_condition_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
+            schema.StateAssessment.__tablename__: assessment_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
         }
         data_dict.update(data_dict_overrides)

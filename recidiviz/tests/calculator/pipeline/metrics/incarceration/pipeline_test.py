@@ -302,7 +302,12 @@ class TestIncarcerationPipeline(unittest.TestCase):
             )
         ]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 0},
+            )
+        ]
 
         fake_person_id_to_county_query_result = [
             {

@@ -27,6 +27,7 @@ from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_li
 from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
+    StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
     StateProgramAssignment,
@@ -144,6 +145,22 @@ class SequencedEntityMixin:
     """Set of attributes for a normalized entity that can be ordered in a sequence."""
 
     sequence_num: int = attr.ib()
+
+
+# StateAssessment subtree
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateAssessment(
+    StateAssessment, NormalizedStateEntity, SequencedEntityMixin
+):
+    """Stores instances of StateAssessment entities that have been normalized and are
+    prepared to be used in calculations."""
+
+    # A string representing an interval category based on assessment score
+    assessment_score_bucket: Optional[str] = attr.ib(default=None)
 
 
 # StateIncarcerationPeriod subtree

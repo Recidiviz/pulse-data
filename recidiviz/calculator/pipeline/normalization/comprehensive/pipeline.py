@@ -28,6 +28,10 @@ from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline imp
     NormalizationPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.normalization.comprehensive import entity_normalizer
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    AssessmentNormalizationManager,
+    StateSpecificAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
@@ -85,6 +89,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateSupervisionViolationResponseDecisionEntry,
                 entities.StateProgramAssignment,
                 entities.StateAssessment,
+                entities.StatePerson,
             ],
             required_reference_tables=[],
             required_state_based_reference_tables=[],
@@ -93,6 +98,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 StateSpecificSupervisionNormalizationDelegate,
                 StateSpecificViolationResponseNormalizationDelegate,
                 StateSpecificProgramAssignmentNormalizationDelegate,
+                StateSpecificAssessmentNormalizationDelegate,
             ],
             state_specific_required_reference_tables={
                 # We need to bring in the US_MO sentence status table to do
@@ -115,4 +121,5 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
             ProgramAssignmentNormalizationManager,
             SupervisionPeriodNormalizationManager,
             ViolationResponseNormalizationManager,
+            AssessmentNormalizationManager,
         ]

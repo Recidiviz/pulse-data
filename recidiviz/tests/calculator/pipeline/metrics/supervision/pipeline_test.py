@@ -51,6 +51,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
@@ -108,7 +109,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionSentence,
@@ -335,7 +335,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 0},
+            )
+        ]
 
         supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
 
@@ -745,7 +750,12 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         charge_data = [normalized_database_base_dict(charge)]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 0},
+            )
+        ]
 
         supervision_period_to_agent_data = [
             {
@@ -980,7 +990,12 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_period__1, {"sequence_num": 0})
         ]
 
-        assessment_data = [normalized_database_base_dict(assessment)]
+        assessment_data = [
+            normalized_database_base_dict(
+                assessment,
+                {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 0},
+            )
+        ]
 
         supervision_period_to_agent_data = [
             {
@@ -1173,11 +1188,12 @@ class TestClassifyEvents(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 10),
+            assessment_score_bucket="30-38",
         )
 
         judicial_district_code = "NORTHEAST"

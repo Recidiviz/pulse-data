@@ -18,6 +18,9 @@
 import datetime
 from typing import List, Optional, Tuple, Type, Union
 
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    AssessmentNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
@@ -68,6 +71,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
     ProgramAssignmentNormalizationManager,
     SupervisionPeriodNormalizationManager,
     ViolationResponseNormalizationManager,
+    AssessmentNormalizationManager,
 ]
 
 

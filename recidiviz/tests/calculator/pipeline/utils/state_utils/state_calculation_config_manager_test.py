@@ -47,6 +47,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_assessment_normalization_delegate import (
+    UsXxAssessmentNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commitment_from_supervision_utils import (
     UsXxCommitmentFromSupervisionDelegate,
 )
@@ -74,6 +77,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_viola
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StatePerson,
     StateSupervisionPeriod,
 )
 
@@ -102,6 +106,7 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(
         DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
     ),
+    "StateSpecificAssessmentNormalizationDelegate": UsXxAssessmentNormalizationDelegate(),
 }
 
 
@@ -120,6 +125,9 @@ def test_get_required_state_specific_delegates() -> None:
             entity_kwargs={
                 StateAssessment.__name__: [
                     StateAssessment.new_with_defaults(state_code=state.value)
+                ],
+                StatePerson.__name__: [
+                    StatePerson.new_with_defaults(state_code=state.value)
                 ],
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             },
