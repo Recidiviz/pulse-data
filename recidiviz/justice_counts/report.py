@@ -197,13 +197,12 @@ class ReportInterface:
         editor_ids = set(
             itertools.chain(*[report.modified_by or [] for report in reports])
         )
-        editor_ids_to_names = {
-            id: UserAccountInterface.get_user_by_id(
-                session=session, user_account_id=id
-            ).name
-            for id in editor_ids
+        return {
+            user.id: user.name
+            for user in UserAccountInterface.get_users_by_id(
+                session=session, user_account_ids=editor_ids
+            )
         }
-        return editor_ids_to_names
 
     @staticmethod
     def to_json_response(

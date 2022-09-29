@@ -16,7 +16,7 @@
 # =============================================================================
 """Interface for working with the User model."""
 
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -69,4 +69,14 @@ class UserAccountInterface:
     def get_user_by_id(session: Session, user_account_id: int) -> UserAccount:
         return (
             session.query(UserAccount).filter(UserAccount.id == user_account_id).one()
+        )
+
+    @staticmethod
+    def get_users_by_id(
+        session: Session, user_account_ids: Set[int]
+    ) -> List[UserAccount]:
+        return (
+            session.query(UserAccount)
+            .filter(UserAccount.id.in_(user_account_ids))
+            .all()
         )
