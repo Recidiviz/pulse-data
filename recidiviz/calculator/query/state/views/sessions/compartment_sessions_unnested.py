@@ -119,6 +119,8 @@ COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=COMPARTMENT_SESSIONS_UNNESTED_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
+    # TODO(#15413): Stop materializing this view once the Looker dashboards point to
+    #  `unmanaged_views.compartment_sessions_unnested_materialized`.
     should_materialize=True,
 )
 

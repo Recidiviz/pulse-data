@@ -57,6 +57,23 @@ module "unmanaged_views_dataset" {
 }
 
 # Actually create the scheduled queries
+resource "google_bigquery_data_transfer_config" "compartment_sessions_unnested_materialized" {
+  display_name           = "compartment_sessions_unnested_materialized"
+  location               = "US"
+  data_source_id         = "scheduled_query"
+  schedule               = "every day 08:00" # In UTC
+  service_account_name   = google_service_account.bigquery_scheduled_queries.email
+  destination_dataset_id = module.unmanaged_views_dataset.dataset_id
+  params = {
+    destination_table_name_template = "compartment_sessions_unnested_materialized"
+    write_disposition               = "WRITE_TRUNCATE"
+    query                           = "SELECT * FROM `${var.project_id}.analyst_data.compartment_sessions_unnested"
+  }
+
+  depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
+}
+
+
 resource "google_bigquery_data_transfer_config" "supervision_district_metrics_materialized" {
   display_name           = "supervision_district_metrics_materialized"
   location               = "US"
