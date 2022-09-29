@@ -49,6 +49,12 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.incarceration_sentence_id AS sentence_id,
         sis.external_id AS external_id,
         'INCARCERATION' AS sentence_type,
+        CASE 
+          WHEN sis.county_code = 'OUT_OF_STATE' 
+            THEN 'INCARCERATION_OUT_OF_STATE'
+          WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
+            THEN 'TREATMENT'
+          ELSE 'INCARCERATION' END AS sentence_sub_type,
         sis.start_date AS effective_date,
         sis.date_imposed,
         sis.completion_date,
@@ -61,7 +67,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         COALESCE(sis.is_life, FALSE) AS life_sentence,
         sis.min_length_days,
         sis.max_length_days,
-        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text)
+        sis.county_code,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
@@ -80,6 +87,12 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.supervision_sentence_id AS sentence_id,
         sss.external_id AS external_id,
         'SUPERVISION' AS sentence_type,
+        CASE 
+            WHEN sss.county_code = 'OUT_OF_STATE' 
+                THEN 'SUPERVISION_OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
+                THEN 'TREATMENT'
+            ELSE sss.supervision_type END AS sentence_sub_type,
         sss.start_date AS effective_date,
         -- TODO(#14091): hydrate `date_imposed` for US_MO supervision sentences
         IF(sss.state_code = 'US_MO', COALESCE(sss.date_imposed, sss.start_date), sss.date_imposed) AS date_imposed,
@@ -93,7 +106,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         FALSE AS life_sentence,
         sss.min_length_days,
         sss.max_length_days,
-        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text)
+        sss.county_code,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
@@ -147,6 +161,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.sentence_id,
             sen.external_id AS external_id,
             sen.sentence_type,
+            sen.sentence_sub_type,
             sen.judicial_district,
             sen.effective_date,
             sen.date_imposed,
@@ -187,6 +202,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.offense_completed_uniform,
             sen.offense_attempted_uniform,
             sen.offense_conspired_uniform,
+            sen.county_code,
             cs.consecutive_sentence_id,
             -- Set the session_id_imposed if the sentence date imposed matches the session start date
             IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,

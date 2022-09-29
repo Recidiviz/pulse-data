@@ -70,6 +70,12 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.incarceration_sentence_id AS sentence_id,
         sis.external_id AS external_id,
         'INCARCERATION' AS sentence_type,
+        CASE 
+          WHEN sis.county_code = 'OUT_OF_STATE' 
+            THEN 'INCARCERATION_OUT_OF_STATE'
+          WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
+            THEN 'TREATMENT'
+          ELSE 'INCARCERATION' END AS sentence_sub_type,
         sis.start_date AS effective_date,
         sis.date_imposed,
         sis.completion_date,
@@ -80,7 +86,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.projected_max_release_date AS projected_completion_date_max,
         sis.initial_time_served_days,
         COALESCE(sis.is_life, FALSE) AS life_sentence,
-        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description),
+        sis.county_code,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
@@ -102,6 +109,12 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.supervision_sentence_id AS sentence_id,
         sss.external_id AS external_id,
         'SUPERVISION' AS sentence_type,
+        CASE 
+            WHEN sss.county_code = 'OUT_OF_STATE' 
+                THEN 'SUPERVISION_OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
+                THEN 'TREATMENT'
+            ELSE sss.supervision_type END AS sentence_sub_type,
         sss.start_date AS effective_date,
         sss.date_imposed,
         sss.completion_date,
@@ -112,7 +125,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.projected_completion_date AS projected_completion_date_max,
         CAST(NULL AS INT64) AS initial_time_served_days,
         FALSE AS life_sentence,
-        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description),
+        sss.county_code,
+        charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
@@ -155,6 +169,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.sentence_id,
         sen.external_id AS external_id,
         sen.sentence_type,
+        sen.sentence_sub_type,
         COALESCE(raw.judicial_district, 'EXTERNAL_UNKNOWN') AS judicial_district,
         dedup.effective_date,
         dedup.date_imposed,
@@ -194,7 +209,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.is_violent_uniform,
         sen.offense_completed_uniform,
         sen.offense_attempted_uniform,
-        sen.offense_conspired_uniform,        
+        sen.offense_conspired_uniform, 
+        sen.county_code,       
         
         --these are TN specific fields which are not included in the state-agnostic schema at this point
         raw.total_program_credits,
