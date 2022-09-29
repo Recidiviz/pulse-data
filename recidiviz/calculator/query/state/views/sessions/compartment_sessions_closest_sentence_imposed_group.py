@@ -33,8 +33,8 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_DESCRIPTION = """
 COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
-        state_code,
-        person_id,
+        a.state_code,
+        a.person_id,
         a.session_id,
         a.start_date,
         b.sentence_imposed_group_id,
@@ -43,8 +43,12 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     LEFT JOIN 
         `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` b
-    USING 
-        (state_code, person_id)
+    ON 
+        a.person_id = b.person_id
+        AND a.state_code = b.state_code
+        -- Check for overlap between session and sentence group (effective date to projected completion date max)
+        AND COALESCE(b.projected_completion_date_max, b.completion_date) > a.start_date
+        AND COALESCE(a.end_date, "9999-01-01") > b.effective_date
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY a.person_id, a.session_id
         ORDER BY ABS(COALESCE(DATE_DIFF(b.date_imposed, a.start_date, DAY), 999999999))

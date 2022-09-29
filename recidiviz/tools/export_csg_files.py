@@ -46,7 +46,6 @@ TEMP_DATASET_NAME = "temp_csg_export"
 # list of sessions views to export
 SESSIONS_TO_EXPORT: List[str] = [
     "compartment_sessions",
-    "compartment_sentences",
     "revocation_sessions",
     "reincarceration_sessions_from_sessions",
     "supervision_super_sessions",
@@ -55,14 +54,6 @@ SESSIONS_TO_EXPORT: List[str] = [
 
 # map from sessions views to list of fields to be serialized from array to string
 SESSIONS_FIELDS_TO_SERIALIZE: Dict[str, List[str]] = {
-    "compartment_sentences": [
-        "classification_type",
-        "description",
-        "offense_type",
-        "offense_type_short",
-        "ncic_code",
-        "felony_class",
-    ],
     "violation_responses": [
         "violations_array",
     ],

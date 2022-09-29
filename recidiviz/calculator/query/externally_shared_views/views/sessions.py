@@ -24,9 +24,6 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     CSG_CONFIG,
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.sessions.compartment_sentences import (
-    COMPARTMENT_SENTENCES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
@@ -47,7 +44,6 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # list of source view builders, which will provide view names and descriptions
 SESSIONS_SOURCE_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
-    COMPARTMENT_SENTENCES_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,

@@ -121,19 +121,19 @@ treatment AS (
 sentences AS (
     SELECT
         pei.external_id AS person_external_id,
-        s.sentence_start_date,
-        s.sentence_completion_date,
+        s.effective_date AS sentence_start_date,
+        s.completion_date AS sentence_completion_date,
         CASE
             WHEN CURRENT_DATE("US/Mountain") >= s.projected_completion_date_max THEN NULL
-            WHEN COALESCE(s.max_projected_sentence_length, 0) = 0 THEN NULL
-            WHEN CURRENT_DATE("US/Mountain") >= s.sentence_completion_date THEN NULL
-            ELSE DATE_DIFF(CURRENT_DATE("US/Mountain"), s.sentence_start_date, DAY) / s.max_projected_sentence_length
+            WHEN COALESCE(s.max_sentence_imposed_group_length_days, 0) = 0 THEN NULL
+            WHEN CURRENT_DATE("US/Mountain") >= s.completion_date THEN NULL
+            ELSE DATE_DIFF(CURRENT_DATE("US/Mountain"), s.effective_date, DAY) / s.max_sentence_imposed_group_length_days
         END AS pct_sentence_served,
-        offense_type,
-        CASE WHEN offense_type = 'MURDER & MAN' THEN 1 ELSE 0 END AS offense_type_murder,
-        CASE WHEN offense_type = 'SEX' THEN 1 ELSE 0 END AS offense_type_sex,
-    FROM `{project_id}.{sessions_dataset}.compartment_sentences_materialized` s,
-        UNNEST(offense_type) AS offense_type
+        offense_attributes.offense_type,
+        CASE WHEN offense_attributes.offense_type = 'MURDER & MAN' THEN 1 ELSE 0 END AS offense_type_murder,
+        CASE WHEN offense_attributes.offense_type = 'SEX' THEN 1 ELSE 0 END AS offense_type_sex,
+    FROM `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` s,
+        UNNEST(offense_attributes) AS offense_attributes
     INNER JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
         USING (state_code, person_id)
     WHERE state_code = 'US_ID'
@@ -175,18 +175,18 @@ dui AS (
     SELECT DISTINCT
         external_id AS person_external_id,
         1 AS dui_flag,
-    FROM `{project_id}.{sessions_dataset}.compartment_sentences_materialized`,
-    UNNEST(description) AS description
+    FROM `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sentences,
+    UNNEST(offense_attributes) AS offense_attributes
     INNER JOIN `{project_id}.{state_dataset}.state_person_external_id`
         USING (state_code, person_id)
     WHERE state_code = 'US_ID'
-        AND description IN (
+        AND offense_attributes.description IN (
             'DRIVING UNDER THE INFLUENCE',
             'AGGRAVATED DRIVING UNDER THE INFLUENCE',
             'DRIVING WHILE INTOXICATED',
             'AGGRAVATED DRIVING UNDER INFLUENCE OF INTOXICATING SUBSTANCE'
         )
-        AND CURRENT_DATE("US/Mountain") BETWEEN sentence_start_date AND IFNULL(sentence_completion_date, '9999-01-01')
+        AND CURRENT_DATE("US/Mountain") BETWEEN sentences.effective_date AND IFNULL(sentences.completion_date, '9999-01-01')
 ),
 us_id_le_contact AS (
     SELECT

@@ -64,8 +64,8 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             sessions.gender,
             sessions.start_date AS session_start_date,
             sessions.end_date AS sessions_end_date,
-            sentences.sentence_start_date,
-            sentences.sentence_completion_date,
+            sentences.effective_date AS sentence_start_date,
+            sentences.completion_date AS sentence_completion_date,
             sentences.projected_completion_date_max,
             sentences.parole_eligibility_date,
             run_date_array.run_date,
@@ -76,10 +76,16 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
                     THEN FLOOR(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
             END AS compartment_duration
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
-        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sentences_materialized`  sentences
-          USING (state_code, person_id, session_id)
+        LEFT JOIN 
+            `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` cs
+        USING 
+            (person_id, state_code, session_id)
+        LEFT JOIN 
+            `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sentences
+        USING 
+            (state_code, sentence_imposed_group_id, person_id)
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
-          ON run_date_array.run_date BETWEEN start_date AND coalesce(end_date, '9999-01-01')
+          ON run_date_array.run_date BETWEEN sessions.start_date AND coalesce(end_date, '9999-01-01')
         WHERE sessions.compartment LIKE 'INCARCERATION%'
           -- Union the rider transitions at the end
           AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
