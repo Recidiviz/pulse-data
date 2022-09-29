@@ -197,17 +197,17 @@ class SpreadsheetInterface:
         auth0_user_id: str,
         agency_id: int,
     ) -> Tuple[
-        List[Dict[str, Any]],
+        Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
-        uploader = BulkUploader(catch_errors=True)
+        uploader = BulkUploader()
         user_account = (
             session.query(schema.UserAccount)
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
             .one()
         )
-        datapoint_json_list, metric_key_to_errors = uploader.upload_excel(
+        metric_key_to_datapoint_jsons, metric_key_to_errors = uploader.upload_excel(
             session=session,
             xls=xls,
             agency_id=spreadsheet.agency_id,
@@ -245,7 +245,7 @@ class SpreadsheetInterface:
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
-        return datapoint_json_list, metric_key_to_errors
+        return metric_key_to_datapoint_jsons, metric_key_to_errors
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
@@ -257,20 +257,13 @@ class SpreadsheetInterface:
 
     @staticmethod
     def get_ingest_spreadsheet_json(
-        datapoint_json_list: List[Dict[str, Any]],
+        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         system: str,
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
-        metric_key_to_datapoints = {
-            k: list(v)
-            for k, v in itertools.groupby(
-                datapoint_json_list,
-                key=lambda d: d.get("metric_definition_key"),
-            )
-        }
         sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system]
         metric_definitions = METRICS_BY_SYSTEM[system]
         metrics = []
@@ -300,7 +293,7 @@ class SpreadsheetInterface:
                     "key": metric_definition.key,
                     "display_name": metric_definition.display_name,
                     "metric_errors": metric_errors,
-                    "datapoints": metric_key_to_datapoints.get(
+                    "datapoints": metric_key_to_datapoint_jsons.get(
                         metric_definition.key, []
                     ),
                 }

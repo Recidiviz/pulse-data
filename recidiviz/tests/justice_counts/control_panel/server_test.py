@@ -1253,7 +1253,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
             )
         )
-        BulkUploader(catch_errors=False).upload_excel(
+        BulkUploader().upload_excel(
             session=self.session,
             xls=pd.ExcelFile(law_enforcement_excel),
             agency_id=agency_id,
