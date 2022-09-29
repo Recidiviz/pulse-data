@@ -117,24 +117,101 @@ WITH date_array AS (
         )) AS date
 )
 
--- client assignments to {level_name}
-, {level_name}_assignments AS (
+-- define supervision population
+-- We only include supervised clients in designated compartment_level_2 for metrics.
+-- This is for consistency across states when defining a supervision sample.
+, sample AS (
     SELECT
-        {index_cols_long},
+        {"state_code," if level_name == "state" else ""}
         person_id,
-        start_date AS assignment_date,
-        -- TODO(#14675): remove the DATE_ADD when end_dates are exclusive upstream
-        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
+        start_date AS sample_start_date,
+        -- TODO(#14675): remove the DATE_ADD when session end_dates are exclusive
+        DATE_ADD(end_date, INTERVAL 1 DAY) AS sample_end_date,
     FROM
-        `{client_period_table}`
+        `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
     WHERE
-        {level} IS NOT NULL
-        {'''-- require that clients be associated with a compartment that is part of the
+        -- require that clients be associated with a compartment that is part of the
         -- target "supervision" population for all aggregated metrics
-        AND compartment_level_1 = "SUPERVISION"
+        compartment_level_1 = "SUPERVISION"
         AND compartment_level_2 IN (
             "COMMUNITY_CONFINEMENT", "DUAL", "INFORMAL_PROBATION", "PAROLE", "PROBATION"
-        )''' if level_name == "state" else ""}
+        )
+)
+
+-- client assignments to {level_name}
+-- if client not always in sample population, take intersection of inclusive periods
+-- to determine the start and end dates of assignment
+, potentially_adjacent_spans AS (
+    SELECT
+{'''
+        * EXCEPT(sample_start_date, sample_end_date),
+        sample_start_date AS assignment_date,
+        -- impute end date as 9999-01-01 if null (we'll adjust in the next cte)
+        IFNULL(sample_end_date, "9999-01-01") AS end_date,
+    FROM
+        sample
+''' if level_name == "state" else f'''
+        {index_cols_long},
+        assign.person_id,
+        -- latest start date of overlap is the assignment date
+        GREATEST(sample_start_date, start_date) AS assignment_date,
+        -- earliest end date of overlap is the end of association.
+        -- end_date here is exclusive, i.e. the date of transition, but leave as 
+        -- 9999-01-01 if null (we'll adjust in the next cte)
+        LEAST(
+            IFNULL(end_date, "9999-01-01"),
+            IFNULL(sample_end_date, "9999-01-01")
+        ) AS end_date,
+    FROM (
+        SELECT
+            * EXCEPT (end_date),
+            -- TODO(#14675): remove the DATE_ADD when end_dates are exclusive upstream
+            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
+        FROM
+            `{client_period_table}`
+    ) assign
+    INNER JOIN
+        sample 
+    ON
+        sample.person_id = assign.person_id
+        -- sample and assignment spans must overlap
+        AND (
+            sample_start_date BETWEEN start_date AND IFNULL(end_date, "9999-01-01")
+            OR start_date BETWEEN sample_start_date AND IFNULL(sample_end_date, 
+                "9999-01-01")
+        )
+    WHERE
+        {level} IS NOT NULL
+'''}
+)
+
+-- now session-ize contiguous periods
+, {level_name}_assignments AS (
+    SELECT
+        {index_cols},
+        person_id,
+        session_id,
+        MIN(assignment_date) AS assignment_date,
+        NULLIF(MAX(end_date), "9999-01-01") AS end_date,
+    FROM (
+        SELECT
+            * EXCEPT(date_gap),
+            SUM(IF(date_gap, 1, 0)) OVER (
+                PARTITION BY {index_cols}, person_id ORDER BY assignment_date
+            ) AS session_id,
+        FROM (
+            SELECT
+                *,
+                IFNULL(
+                    LAG(end_date) OVER(
+                        PARTITION BY {index_cols}, person_id ORDER BY assignment_date
+                    ) != assignment_date, TRUE
+                ) AS date_gap,
+            FROM
+                potentially_adjacent_spans
+        )
+    )
+    GROUP BY {index_cols}, person_id, session_id
 )
 
 /* 
@@ -163,19 +240,6 @@ or to no entity, e.g. if the client is released or incarcerated.
     ON
         -- allow event to fall on (exclusive) end_date
         date BETWEEN assignment_date AND IFNULL(a.end_date, "9999-01-01")
-    {'''-- require that clients be associated with a compartment that is part of the
-    -- target "supervision" population for all aggregated metrics
-    INNER JOIN (SELECT * EXCEPT (state_code) FROM
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-    ) b ON
-        a.person_id = b.person_id
-        AND date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
-    WHERE
-        compartment_level_1 = "SUPERVISION"
-        AND compartment_level_2 IN (
-            "COMMUNITY_CONFINEMENT", "DUAL", "INFORMAL_PROBATION", "PAROLE", "PROBATION"
-        )''' if level_name != "state" else ""
-    }
 )
 
 #################
@@ -489,7 +553,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
         -- compartment_sessions-derived metrics
         -- we do not need to filter to supervision compartments because that's already 
         -- done in `{level_name}_client_periods_unnested`
-        COUNT(DISTINCT ps.person_id) AS daily_population,
+        COUNT(DISTINCT assign.person_id) AS daily_population,
         COUNT(DISTINCT IF(
             span = "COMPARTMENT_SESSION"
             AND JSON_EXTRACT_SCALAR(span_attributes, "$.compartment_level_2") IN
@@ -677,6 +741,9 @@ of the metric. In the CTEs below, we require that the date of metric observation
         AND date BETWEEN ps.start_date AND IFNULL(
             DATE_SUB(ps.end_date, INTERVAL 1 DAY), "9999-01-01"
         )
+    -- days where the client leaves the supervision population not included in pop
+    WHERE
+        date != IFNULL(assignment_end_date, "9999-01-01")
         
     GROUP BY {index_cols}, date
 
@@ -839,7 +906,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
         
     -- join person events 
     -- person events must fall within `window_length` of assignment
-    -- left join -> nulls filled for all metrics
+    -- left join -> nulls possible for all metrics
     LEFT JOIN (
         SELECT * EXCEPT(state_code) FROM
             `{{project_id}}.{{analyst_dataset}}.person_events_materialized`

@@ -205,6 +205,8 @@ SELECT
 
     ## average daily populations assigned to {level_name} across period
     -- these are all calculated using person_spans
+    -- population metrics should only be null only where necessary fields are not 
+    -- hydrated, e.g. employment periods in some states
 
     -- compartments
     AVG(daily_population) AS avg_daily_population,
@@ -241,7 +243,6 @@ SELECT
     AVG(population_no_completed_contact_past_1yr) AS 
         avg_population_no_completed_contact_past_1yr,
 
-
     ## average numeric attributes across period
     SAFE_DIVIDE(SUM(avg_age * daily_population), SUM(daily_population)) AS avg_age,
     SAFE_DIVIDE(SUM(avg_lsir_score * daily_population), SUM(daily_population))
@@ -257,11 +258,11 @@ SELECT
         SUM(daily_population)) AS avg_days_since_latest_completed_contact,   
 
     ## summed person days in span across period
-    SUM(person_days_supervision_level_downgrade_eligible) AS 
+    IFNULL(SUM(person_days_supervision_level_downgrade_eligible), 0) AS 
         person_days_supervision_level_downgrade_eligible,
-    SUM(person_days_early_discharge_from_supervision_eligible) AS 
+    IFNULL(SUM(person_days_early_discharge_from_supervision_eligible), 0) AS 
         person_days_early_discharge_from_supervision_eligible,
-    SUM(person_days_full_term_discharge_from_supervision_eligible) 
+    IFNULL(SUM(person_days_full_term_discharge_from_supervision_eligible), 0) 
         AS person_days_full_term_discharge_from_supervision_eligible,
 
     ## event-based metrics
@@ -269,71 +270,76 @@ SELECT
         Here we list counts of events and average event attributes during period.
         To get rates, divide by `avg_daily_population`.
         Averages here are representative of the event that occurred.
+        
+        For metrics that will be null if no event occurred, impute a true zero.
+        Since entities must have at least one assigned client to be included in this
+        table, all event count metrics should be not-null.
     */
 
     -- compartment transitions
-    SUM(successful_completions) AS successful_completions,
-    SUM(incarcerations_all) AS incarcerations_all,
-    SUM(incarcerations_temporary) AS incarcerations_temporary,
-    SUM(pending_custody_starts) AS pending_custody_starts,
-    SUM(absconsions_bench_warrants) AS absconsions_bench_warrants,
-    SUM(incarcerations_all + pending_custody_starts + absconsions_bench_warrants)
-        AS unsuccessful_terminations,
-    SUM(early_discharge_requests) AS early_discharge_requests,
-    SUM(supervision_downgrades) AS supervision_downgrades,
-    SUM(supervision_upgrades) AS supervision_upgrades,
-    SUM(supervision_downgrades_to_limited) AS supervision_downgrades_to_limited,
+    IFNULL(SUM(successful_completions), 0) AS successful_completions,
+    IFNULL(SUM(incarcerations_all), 0) AS incarcerations_all,
+    IFNULL(SUM(incarcerations_temporary), 0) AS incarcerations_temporary,
+    IFNULL(SUM(pending_custody_starts), 0) AS pending_custody_starts,
+    IFNULL(SUM(absconsions_bench_warrants), 0) AS absconsions_bench_warrants,
+    IFNULL(SUM(incarcerations_all + pending_custody_starts + 
+        absconsions_bench_warrants), 0) AS unsuccessful_terminations,
+    IFNULL(SUM(early_discharge_requests), 0) AS early_discharge_requests,
+    IFNULL(SUM(supervision_downgrades), 0) AS supervision_downgrades,
+    IFNULL(SUM(supervision_upgrades), 0) AS supervision_upgrades,
+    IFNULL(SUM(supervision_downgrades_to_limited), 0) AS supervision_downgrades_to_limited,
 
     -- violations
-    SUM(violations) AS violations,
-    SUM(violations_absconded) AS violations_absconded,
-    SUM(violations_new_crime) AS violations_new_crime,
-    SUM(violations_technical) AS violations_technical,
+    IFNULL(SUM(violations), 0) AS violations,
+    IFNULL(SUM(violations_absconded), 0) AS violations_absconded,
+    IFNULL(SUM(violations_new_crime), 0) AS violations_new_crime,
+    IFNULL(SUM(violations_technical), 0) AS violations_technical,
 
     -- violation responses
-    SUM(violation_responses) AS violation_responses,
-    SUM(violation_responses_absconded) AS violation_responses_absconded,
-    SUM(violation_responses_new_crime) AS violation_responses_new_crime,
-    SUM(violation_responses_technical) AS violation_responses_technical,
+    IFNULL(SUM(violation_responses), 0) AS violation_responses,
+    IFNULL(SUM(violation_responses_absconded), 0) AS violation_responses_absconded,
+    IFNULL(SUM(violation_responses_new_crime), 0) AS violation_responses_new_crime,
+    IFNULL(SUM(violation_responses_technical), 0) AS violation_responses_technical,
 
     -- drug screens
-    SUM(drug_screens_all) AS drug_screens_all,
-    SUM(drug_screens_positive) AS drug_screens_positive,
+    IFNULL(SUM(drug_screens_all), 0) AS drug_screens_all,
+    IFNULL(SUM(drug_screens_positive), 0) AS drug_screens_positive,
 
     -- assessments
-    SUM(lsir_assessments_any_officer) AS lsir_assessments_any_officer,
-    SUM(lsir_risk_increase_any_officer) AS lsir_risk_increase_any_officer,
-    SUM(lsir_risk_decrease_any_officer) AS lsir_risk_decrease_any_officer,
+    IFNULL(SUM(lsir_assessments_any_officer), 0) AS lsir_assessments_any_officer,
+    IFNULL(SUM(lsir_risk_increase_any_officer), 0) AS lsir_risk_increase_any_officer,
+    IFNULL(SUM(lsir_risk_decrease_any_officer), 0) AS lsir_risk_decrease_any_officer,
+    -- can be null if no lsir assessments
     SAFE_DIVIDE(
         SUM(lsir_assessments_any_officer * avg_lsir_score_change_any_officer),
         SUM(lsir_assessments_any_officer)
     ) AS avg_lsir_score_change_any_officer,
 
     -- contacts
-    SUM(contacts_completed) AS contacts_completed,
-    SUM(contacts_attempted) AS contacts_attempted,
-    SUM(contacts_home_visit) AS contacts_home_visit,
-    SUM(contacts_face_to_face) AS contacts_face_to_face,
+    IFNULL(SUM(contacts_completed), 0) AS contacts_completed,
+    IFNULL(SUM(contacts_attempted), 0) AS contacts_attempted,
+    IFNULL(SUM(contacts_home_visit), 0) AS contacts_home_visit,
+    IFNULL(SUM(contacts_face_to_face), 0) AS contacts_face_to_face,
 
     -- employment
-    SUM(employment_gained) AS employment_gained,
-    SUM(employment_lost) AS employment_lost,
+    IFNULL(SUM(employment_gained), 0) AS employment_gained,
+    IFNULL(SUM(employment_lost), 0) AS employment_lost,
 
     -- treatment referrals
-    SUM(treatment_referrals) AS treatment_referrals,
+    IFNULL(SUM(treatment_referrals), 0) AS treatment_referrals,
     
     -- N days late responding to task
-    SUM(late_opportunity_supervision_level_downgrade_7_days) AS
+    IFNULL(SUM(late_opportunity_supervision_level_downgrade_7_days), 0) AS
         late_opportunity_supervision_level_downgrade_7_days,
-    SUM(late_opportunity_supervision_level_downgrade_30_days) AS
+    IFNULL(SUM(late_opportunity_supervision_level_downgrade_30_days), 0) AS
         late_opportunity_supervision_level_downgrade_30_days,
-    SUM(late_opportunity_early_discharge_from_supervision_7_days) AS
+    IFNULL(SUM(late_opportunity_early_discharge_from_supervision_7_days), 0) AS
         late_opportunity_early_discharge_from_supervision_7_days,
-    SUM(late_opportunity_early_discharge_from_supervision_30_days) AS
+    IFNULL(SUM(late_opportunity_early_discharge_from_supervision_30_days), 0) AS
         late_opportunity_early_discharge_from_supervision_30_days,
-    SUM(late_opportunity_full_term_discharge_7_days) AS
+    IFNULL(SUM(late_opportunity_full_term_discharge_7_days), 0) AS
         late_opportunity_full_term_discharge_7_days,
-    SUM(late_opportunity_full_term_discharge_30_days) AS
+    IFNULL(SUM(late_opportunity_full_term_discharge_30_days), 0) AS
         late_opportunity_full_term_discharge_30_days,    
 
     ## window-based metrics
@@ -351,15 +357,19 @@ SELECT
         For example, `days_incarcerated_365` is the number of days incarcerated for 
         all clients assigned to each {level_name} between start and end dates over the 
         365 days following assignment.
+        
+        These metrics may be null if no clients were assigned during the period, though
+        `clients_assigned` should never be null.
     */
     -- number of clients assigned to each {level_name} - the 'cohort' size
-    SUM(clients_assigned) AS clients_assigned,
+    IFNULL(SUM(clients_assigned), 0) AS clients_assigned,
 
     -- cumulative number of days observed since assignment up to end of window
     {add_window_to_metric("SUM", "days_since_assignment", window_days)},
 
     -- average attributes at assignment for the cohort
     -- these depend on period length but not window
+    -- these can be null if no clients assigned during period
     SUM(lsir_score_present_at_assignment_cohort) AS 
         lsir_score_present_at_assignment_cohort,
     SAFE_DIVIDE(SUM(avg_lsir_score_at_assignment_cohort * 
@@ -370,6 +380,7 @@ SELECT
     -- days until 'event' since assignment
     -- divide these by `days_since_assignment_X` to get percent of window until event
     -- divide these by `clients_assigned` to get average days until event per person
+    -- all can be null if no clients assigned during period
     {add_window_to_metric("SUM", "days_to_first_incarceration", window_days)},
     {add_window_to_metric("SUM", "days_to_first_absconsion_bench_warrant", window_days)},
     {add_window_to_metric("SUM", "days_to_first_absconsion_violation", window_days)},
