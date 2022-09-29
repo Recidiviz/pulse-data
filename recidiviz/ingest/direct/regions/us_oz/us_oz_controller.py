@@ -40,4 +40,9 @@ class UsOzController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return ["internDS_initialtable", "vfds_person", "vfds_periods"]
+        return [
+            "internDS_initialtable",
+            "internDS_table",
+            "vfds_person",
+            "vfds_periods",
+        ]

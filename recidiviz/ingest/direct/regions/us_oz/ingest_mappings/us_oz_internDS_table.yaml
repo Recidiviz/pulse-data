@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_internDS_table` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - incarceration_type
+  - admission_date
+  - release_date
+  - facility
+  - admission_reason
+  - release_reason
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ID
+          id_type: $literal("US_OZ_INTERNDS")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("US_OZ_INTERNDS")
+                - ID
+          admission_date: admission_date
+          release_date: release_date
+          facility: facility
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: incarceration_type
+              $mappings:
+                StateIncarcerationType.COUNTY_JAIL: "COUNTY_JAIL"
+                StateIncarcerationType.FEDERAL_PRISON: "FEDERAL_PRISON"
+          admission_reason:
+            $enum_mapping:
+              $raw_text: admission_reason
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION: "ADMITTED_FROM_SUPERVISION"
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: "ADMITTED_IN_ERROR"
+          release_reason:
+            $enum_mapping:
+              $raw_text: release_reason
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.COMPASSIONATE: "COMPASSIONATE"
+                StateIncarcerationPeriodReleaseReason.COURT_ORDER: "COURT_ORDER"
