@@ -8,12 +8,6 @@ primary_key_cols:
 columns:
   - name: ID
     description: A number used to uniquely identify this person in the system.
-  - name: First_Name
-    description: The person's first name.
-  - name: Last_Name
-    description: The person's last name.
-  - name: Birthdate
-    description: The date this person was born.
   - name: incarceration_type
     description: The type of incarceration the person is serving.
   - name: admission_date
