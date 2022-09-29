@@ -41,8 +41,8 @@ class WorkflowsStaffETLDelegate(WorkflowsFirestoreETLDelegate):
             "email": data.get("email"),
             "hasCaseload": data["has_caseload"],
             "district": data.get("district"),
-            "givenNames": person_name_case(data.get("given_names")),
-            "surname": person_name_case(data.get("surname")),
+            "givenNames": person_name_case(data.get("given_names", "")),
+            "surname": person_name_case(data.get("surname", "")),
         }
 
         return data["id"], new_document
