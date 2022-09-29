@@ -9,6 +9,10 @@ columns:
     description: |-
       The name of the parole agent
     is_pii: True
+  - name: BadgeNumber
+    description: |-
+      The badge number of the parole agent.
+    is_pii: True
   - name: AgentClassification
     description: |-
       Classification of a parole agent. Refer to DAPO Agent Classifications on the CalHR website.

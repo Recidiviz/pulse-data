@@ -33,6 +33,10 @@ columns:
   - name: ParoleUnit
   - name: ParoleAgentName
     is_pii: True
+  - name: BadgeNumber
+    description: |-
+      The badge number of the parole agent.
+    is_pii: True
   - name: LastParoleDate
     description: |-
       The most recent time this person went onto parole.
