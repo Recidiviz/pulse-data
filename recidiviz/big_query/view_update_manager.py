@@ -180,8 +180,10 @@ def _rematerialize_all_deployed_views(
 
             try:
                 bq_client.materialize_view_to_table(view=v, use_query_cache=True)
-            except Exception as e:
-                raise ValueError(f"Failed to materialize view [{v.address}]") from e
+            except Exception as e_inner:
+                raise ValueError(
+                    f"Failed to materialize view [{v.address}]"
+                ) from e_inner
 
         results = full_dag_walker.process_dag(_materialize_view)
         results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
