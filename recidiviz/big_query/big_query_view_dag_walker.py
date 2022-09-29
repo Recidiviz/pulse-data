@@ -112,7 +112,7 @@ class ProcessDagResult(Generic[ViewResultT]):
         avg_wait_time = max(
             0.0, round(sum(queued_wait_times) / len(queued_wait_times), 2)
         )
-        max_wait_time = max(0.0, max(queued_wait_times))
+        max_wait_time = max(0.0, round(max(queued_wait_times), 2))
 
         slowest_to_process = heapq.nlargest(n_slowest, processing_runtimes)
         slowest_list = "\n".join(

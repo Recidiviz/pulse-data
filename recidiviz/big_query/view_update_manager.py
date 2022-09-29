@@ -18,6 +18,7 @@
 import datetime
 import logging
 from concurrent import futures
+from concurrent.futures import Future
 from enum import Enum
 from http import HTTPStatus
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
@@ -29,7 +30,12 @@ from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClient,
+    BigQueryClientImpl,
+)
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.rematerialization_success_persister import (
@@ -241,32 +247,78 @@ def copy_dataset_schemas_to_sandbox(
     the schemas.
     """
 
-    def copy_dataset_schema(dataset: str) -> Optional[str]:
-        test_dataset = BigQueryAddressOverrides.format_sandbox_dataset(
-            sandbox_prefix, dataset
-        )
+    bq_client = BigQueryClientImpl()
+
+    def create_sandbox_dataset_and_get_source_table_addresses(
+        dataset_id: str,
+    ) -> Optional[List[BigQueryAddress]]:
         if not bq_client.dataset_exists(
-            dataset_ref=bq_client.dataset_ref_for_id(dataset)
+            dataset_ref=bq_client.dataset_ref_for_id(dataset_id)
         ):
             return None
+
         bq_client.create_dataset_if_necessary(
-            dataset_ref=bq_client.dataset_ref_for_id(test_dataset),
+            dataset_ref=bq_client.dataset_ref_for_id(
+                BigQueryAddressOverrides.format_sandbox_dataset(
+                    sandbox_prefix, dataset_id
+                )
+            ),
             default_table_expiration_ms=default_table_expiration,
         )
-        bq_client.copy_dataset_tables(dataset, test_dataset, schema_only=True)
-        return test_dataset
+        return [
+            BigQueryAddress(dataset_id=t.dataset_id, table_id=t.table_id)
+            for t in bq_client.list_tables(dataset_id)
+        ]
 
-    bq_client = BigQueryClientImpl()
-    with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        copy_futures = {
+    def copy_table_schema(source_table_address: BigQueryAddress) -> BigQueryAddress:
+        destination_table_address = BigQueryAddress(
+            dataset_id=BigQueryAddressOverrides.format_sandbox_dataset(
+                sandbox_prefix, source_table_address.dataset_id
+            ),
+            table_id=source_table_address.table_id,
+        )
+        bq_client.copy_table(
+            source_dataset_id=source_table_address.dataset_id,
+            source_table_id=source_table_address.table_id,
+            destination_dataset_id=destination_table_address.dataset_id,
+            schema_only=True,
+            overwrite=False,
+        )
+        return destination_table_address
+
+    with futures.ThreadPoolExecutor(
+        # Conservatively allow only half as many workers as allowed connections.
+        # Lower this number if we see "urllib3.connectionpool:Connection pool is
+        # full, discarding connection" errors.
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        logging.info("Collecting tables in [%s] datasets", len(datasets))
+
+        list_tables_futures = {
             executor.submit(
-                structured_logging.with_context(copy_dataset_schema), dataset
+                structured_logging.with_context(
+                    create_sandbox_dataset_and_get_source_table_addresses
+                ),
+                dataset_id,
             )
-            for dataset in datasets
+            for dataset_id in datasets
         }
+
+        copy_futures: Set[Future[BigQueryAddress]] = set()
+        for future in futures.as_completed(list_tables_futures):
+            source_table_addresses = future.result()
+            if source_table_addresses is not None:
+                copy_futures.update(
+                    executor.submit(
+                        structured_logging.with_context(copy_table_schema),
+                        source_table_address,
+                    )
+                    for source_table_address in source_table_addresses
+                )
+        logging.info("Copying schemas for [%s] tables", len(copy_futures))
         for future in futures.as_completed(copy_futures):
-            if output_dataset := future.result():
-                logging.info("Completed copy of schemas to '%s'", output_dataset)
+            destination_address = future.result()
+            logging.info("Completed copy of schema to [%s]", destination_address)
 
 
 def build_views_to_update(
@@ -305,9 +357,26 @@ def _create_all_datasets_if_necessary(
     """Creates all required datasets for the list of dataset ids,
     with a table timeout if necessary. Done up front to avoid conflicts during a run of the DagWalker.
     """
-    for dataset_id in dataset_ids:
+
+    def create_dataset(dataset_id: str) -> None:
         dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
         bq_client.create_dataset_if_necessary(dataset_ref, dataset_table_expiration)
+
+    with futures.ThreadPoolExecutor(
+        # Conservatively allow only half as many workers as allowed connections.
+        # Lower this number if we see "urllib3.connectionpool:Connection pool is
+        # full, discarding connection" errors.
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        create_dataset_futures = {
+            executor.submit(
+                structured_logging.with_context(create_dataset),
+                dataset_id,
+            )
+            for dataset_id in dataset_ids
+        }
+        for future in futures.as_completed(create_dataset_futures):
+            future.result()
 
 
 class CreateOrUpdateViewStatus(Enum):

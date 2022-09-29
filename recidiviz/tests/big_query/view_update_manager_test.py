@@ -19,9 +19,9 @@
 import re
 import unittest
 from http import HTTPStatus
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Iterator, Set, Tuple
 from unittest import mock
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, call, create_autospec, patch
 
 import flask
 from flask import Flask
@@ -835,6 +835,28 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_exists.side_effect = dataset_exists
 
+        mock_table = create_autospec(bigquery.table.TableListItem)
+        mock_table.table_type = "TABLE"
+        mock_table.dataset_id = _DATASET_NAME
+        mock_table.table_id = "my_table"
+
+        mock_table_2 = create_autospec(bigquery.table.TableListItem)
+        mock_table_2.table_type = "TABLE"
+        mock_table_2.dataset_id = _DATASET_NAME_2
+        mock_table_2.table_id = "my_table_2"
+
+        def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
+            if dataset_id == _DATASET_NAME:
+                tables = [mock_table]
+            elif dataset_id == _DATASET_NAME_2:
+                tables = [mock_table_2]
+            else:
+                raise ValueError(f"Unexpected dataset [{dataset_id}]")
+
+            return iter(tables)
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
         view_update_manager.copy_dataset_schemas_to_sandbox(
             {_DATASET_NAME, _DATASET_NAME_2, _DATASET_NAME_3},
             sandbox_prefix="test",
@@ -854,10 +876,22 @@ class ViewManagerTest(unittest.TestCase):
             ],
             any_order=True,
         )
-        self.mock_client.copy_dataset_tables.assert_has_calls(
+        self.mock_client.copy_table.assert_has_calls(
             [
-                call(_DATASET_NAME, f"test_{_DATASET_NAME}", schema_only=True),
-                call(_DATASET_NAME_2, f"test_{_DATASET_NAME_2}", schema_only=True),
+                call(
+                    source_dataset_id=_DATASET_NAME,
+                    source_table_id="my_table",
+                    destination_dataset_id=f"test_{_DATASET_NAME}",
+                    schema_only=True,
+                    overwrite=False,
+                ),
+                call(
+                    source_dataset_id=_DATASET_NAME_2,
+                    source_table_id="my_table_2",
+                    destination_dataset_id=f"test_{_DATASET_NAME_2}",
+                    schema_only=True,
+                    overwrite=False,
+                ),
             ],
             any_order=True,
         )
