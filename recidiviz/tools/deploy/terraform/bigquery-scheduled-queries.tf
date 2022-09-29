@@ -67,7 +67,7 @@ resource "google_bigquery_data_transfer_config" "compartment_sessions_unnested_m
   params = {
     destination_table_name_template = "compartment_sessions_unnested_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.analyst_data.compartment_sessions_unnested"
+    query                           = "SELECT * FROM `${var.project_id}.sessions.compartment_sessions_unnested`"
   }
 
   depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
@@ -84,7 +84,7 @@ resource "google_bigquery_data_transfer_config" "supervision_district_metrics_ma
   params = {
     destination_table_name_template = "supervision_district_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_district_metrics"
+    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_district_metrics`"
   }
 
   depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
@@ -100,7 +100,7 @@ resource "google_bigquery_data_transfer_config" "supervision_office_metrics_mate
   params = {
     destination_table_name_template = "supervision_office_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_office_metrics"
+    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_office_metrics`"
   }
 
   depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
@@ -116,7 +116,7 @@ resource "google_bigquery_data_transfer_config" "supervision_officer_metrics_mat
   params = {
     destination_table_name_template = "supervision_officer_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_officer_metrics"
+    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_officer_metrics`"
   }
 
   depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
@@ -132,7 +132,7 @@ resource "google_bigquery_data_transfer_config" "supervision_state_metrics_mater
   params = {
     destination_table_name_template = "supervision_state_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_state_metrics"
+    query                           = "SELECT * FROM `${var.project_id}.analyst_data.supervision_state_metrics`"
   }
 
   depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
