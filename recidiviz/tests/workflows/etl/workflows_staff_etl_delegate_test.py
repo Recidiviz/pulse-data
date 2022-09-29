@@ -111,6 +111,24 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                 },
             )
 
+            fixture = fp.readline()
+
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "103")
+            self.assertEqual(
+                row,
+                {
+                    "id": "103",
+                    "stateCode": "US_XX",
+                    "name": "The Brain",
+                    "email": None,
+                    "hasCaseload": True,
+                    "district": "District 4",
+                    "givenNames": "",
+                    "surname": "",
+                },
+            )
+
     @patch("google.cloud.firestore.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
