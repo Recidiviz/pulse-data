@@ -131,3 +131,25 @@ def mo_julian_date_to_yyyymmdd(julian_date_str: Optional[str]) -> Optional[str]:
         year=(years_since_1900 + 1900), month=1, day=1
     ) + datetime.timedelta(days=days_since_jan_1)
     return date.isoformat().replace("-", "")
+
+
+def null_if_magic_date(date: str) -> Optional[str]:
+    """
+    if the date is a special date, then return none
+    if the date is not a special date, then return the date
+    """
+
+    # special date codes
+    date_codes = [
+        "0",
+        "19000000",
+        "20000000",
+        "66666666",
+        "77777777",
+        "88888888",
+        "99999999",
+    ]
+
+    if date in date_codes:
+        return None
+    return date
