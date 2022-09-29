@@ -44,7 +44,7 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
         ),
         OpportunityExportConfig(
             source_filename="us_id_complete_full_term_discharge_from_supervision_request_record",
-            export_collection_name="US_ID-pastFullTermReleaseDate",
+            export_collection_name="US_ID-pastFTRDReferrals",
         ),
     ],
     "US_ND": [
