@@ -287,6 +287,27 @@ or to no entity, e.g. if the client is released or incarcerated.
             person_id, NULL
         )) AS incarcerations_all,
         COUNT(DISTINCT IF(
+            event = "INCARCERATION_START"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") = "TECHNICAL",
+            person_id, NULL
+        )) AS incarcerations_technical_violation,
+        COUNT(DISTINCT IF(
+            event = "INCARCERATION_START"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") = "ABSCONDED",
+            person_id, NULL
+        )) AS incarcerations_absconded_violation,
+        COUNT(DISTINCT IF(
+            event = "INCARCERATION_START"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") 
+                IN ("LAW", "FELONY", "MISDEMEANOR"),
+            person_id, NULL
+        )) AS incarcerations_new_crime_violation,
+        COUNT(DISTINCT IF(
+            event = "INCARCERATION_START"
+            AND JSON_EXTRACT_SCALAR(event_attributes, "$.most_severe_violation_type") LIKE "%UNKNOWN%",
+            person_id, NULL
+        )) AS incarcerations_unknown_violation,
+        COUNT(DISTINCT IF(
             event = "INCARCERATION_START_TEMPORARY",
             person_id, NULL
         )) AS incarcerations_temporary,

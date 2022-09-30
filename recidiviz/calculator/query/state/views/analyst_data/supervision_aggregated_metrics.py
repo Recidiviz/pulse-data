@@ -312,6 +312,10 @@ SELECT
     -- compartment transitions
     IFNULL(SUM(successful_completions), 0) AS successful_completions,
     IFNULL(SUM(incarcerations_all), 0) AS incarcerations_all,
+    IFNULL(SUM(incarcerations_all), 0) AS incarcerations_technical,
+    IFNULL(SUM(incarcerations_all), 0) AS incarcerations_absconded,
+    IFNULL(SUM(incarcerations_all), 0) AS incarcerations_new_crime,
+    IFNULL(SUM(incarcerations_unknown_violation), 0) AS incarcerations_unknown_violation,
     IFNULL(SUM(incarcerations_temporary), 0) AS incarcerations_temporary,
     IFNULL(SUM(pending_custody_starts), 0) AS pending_custody_starts,
     IFNULL(SUM(absconsions_bench_warrants), 0) AS absconsions_bench_warrants,

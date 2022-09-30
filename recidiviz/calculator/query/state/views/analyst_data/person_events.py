@@ -91,7 +91,7 @@ UNION ALL
 
 -- transitions to incarceration
 -- this differs from the other compartment level 1 starts since 
--- start_sub_reason -> most_severe_violation_type
+-- most_severe_violation_type is included
 SELECT
     state_code,
     person_id,
@@ -101,12 +101,33 @@ SELECT
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason,
-        IFNULL(start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type
+        IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type
     ))[OFFSET(0)]) AS event_attributes,
-FROM
-    `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
-WHERE
-    compartment_level_1 = "INCARCERATION"
+FROM (
+    SELECT
+        a.state_code,
+        a.person_id,
+        a.start_date,
+        a.inflow_from_level_1,
+        a.inflow_from_level_2,
+        a.start_reason,
+        -- Get the first non-null start_sub_reason among incarceration starts occurring during the super session
+        b.start_sub_reason AS most_severe_violation_type,
+    FROM
+        `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` a
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` b
+    ON 
+        a.person_id = b.person_id
+        AND b.session_id BETWEEN a.session_id_start AND a.session_id_end
+        AND b.start_sub_reason IS NOT NULL
+    WHERE
+        a.compartment_level_1 = "INCARCERATION"
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY a.person_id, a.start_date
+        ORDER BY b.start_date
+    ) = 1
+)
 GROUP BY 1, 2, 3, 4
 
 UNION ALL
