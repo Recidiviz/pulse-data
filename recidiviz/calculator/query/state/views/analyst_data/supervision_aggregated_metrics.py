@@ -130,7 +130,9 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
             `{project_id}.{analyst_dataset}.supervision_officer_primary_office_materialized`"""
         level_dependent_metrics = """-- primary officer district and office
     MIN(district) AS primary_district,
-    MIN(office) AS primary_office"""
+    MIN(office) AS primary_office,
+    DATE_DIFF(start_date, MIN(first_assignment_date), DAY) AS officer_tenure_days"""
+        officer_level_metrics_join = ""
 
     else:
         primary_officer_count = f"""
@@ -142,9 +144,40 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
             `{{project_id}}.{{analyst_dataset}}.supervision_officer_primary_office_materialized`
         GROUP BY {index_cols}, start_date"""
         level_dependent_metrics = f"""-- number of officers in each {level_name}
-    MIN(primary_officers) AS primary_officers"""
+    MIN(primary_officers) AS primary_officers,
+    AVG(avg_daily_caseload_officer) AS avg_daily_caseload_officer,
+    AVG(clients_assigned_officer) AS avg_clients_assigned_officer,
+    AVG(officer_tenure_days) AS avg_officer_tenure_days"""
 
-    # TODO(#15115): add back officer_tenure_days and avg_caseload size
+        officer_level_metrics_join_vars = "start_date, end_date, state_code"
+        if level_name in ["office", "district"]:
+            level_specific_name = f"primary_{level_name}"
+            officer_level_metrics_join = f"""LEFT JOIN (
+    SELECT
+        {officer_level_metrics_join_vars},
+        {level_specific_name} AS {level_name},
+        avg_daily_population AS avg_daily_caseload_officer,
+        clients_assigned AS clients_assigned_officer,
+        officer_tenure_days,
+    FROM
+        `{{project_id}}.{{analyst_dataset}}.supervision_officer_metrics`
+) c
+USING
+    ({officer_level_metrics_join_vars}, {level_name})
+        """
+        else:
+            officer_level_metrics_join = f"""LEFT JOIN (
+    SELECT
+        {officer_level_metrics_join_vars},
+        avg_daily_population AS avg_daily_caseload_officer,
+        clients_assigned AS clients_assigned_officer,
+        officer_tenure_days,
+    FROM
+        `{{project_id}}.{{analyst_dataset}}.supervision_officer_metrics`
+)
+USING
+    ({officer_level_metrics_join_vars})
+        """
 
     query_template = f"""
 /*{{description}}*/
@@ -415,6 +448,7 @@ LEFT JOIN
     primary_officer_count
 USING
     ({index_cols}, start_date)
+{officer_level_metrics_join}
 GROUP BY {index_cols}, period, start_date, end_date
 """
 

@@ -233,6 +233,7 @@ or to no entity, e.g. if the client is released or incarcerated.
         date,
         a.assignment_date AS assignment_start_date,
         a.end_date AS assignment_end_date,
+        MIN(a.assignment_date) OVER (PARTITION BY {index_cols}) AS first_assignment_date,
     FROM
         {level_name}_assignments a
     INNER JOIN
@@ -276,7 +277,6 @@ or to no entity, e.g. if the client is released or incarcerated.
     SELECT
         {index_cols},
         date,
-        
         -- transitions from supervision
         COUNT(DISTINCT IF(
             event = "LIBERTY_START",
@@ -549,7 +549,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
     SELECT
         {index_cols},
         date,
-
+        MIN(first_assignment_date) AS first_assignment_date,
         -- compartment_sessions-derived metrics
         -- we do not need to filter to supervision compartments because that's already 
         -- done in `{level_name}_client_periods_unnested`
