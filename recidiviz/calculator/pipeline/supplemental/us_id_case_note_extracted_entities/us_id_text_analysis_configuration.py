@@ -82,6 +82,7 @@ class UsIdTextEntity(TextEntity):
     NEW_CRIME = [
         ScoringFuzzyMatcher(search_term="psi"),
         RegexFuzzyMatcher(search_regex=".*file.*review.*"),
+        ScoringFuzzyMatcher(search_term=("new crime")),
     ]
     ANY_TREATMENT = [
         ScoringFuzzyMatcher(search_term="tx"),
@@ -93,16 +94,18 @@ class UsIdTextEntity(TextEntity):
         RegexFuzzyMatcher(search_regex=".*interl.*"),
     ]
     CASE_PLAN = [
-        ScoringFuzzyMatcher(search_term="case pl"),
-        ScoringFuzzyMatcher(search_term="cse pl"),
-        ScoringFuzzyMatcher(search_term="cs pl"),
+        ScoringFuzzyMatcher(search_term="cse plan"),
+        ScoringFuzzyMatcher(search_term="case plan"),
+        ScoringFuzzyMatcher(search_term="case planning"),
     ]
     NCIC_ILETS_NCO_CHECK = [
-        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*new cri.*|.*icourts.*"))
+        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*icourts.*")),
+        ScoringFuzzyMatcher(search_term=("new crime")),
     ]
     NCO_CHECK = [
-        RegexFuzzyMatcher(search_regex=(r".*nco(\s|/|-).*|.*(-|/|\s)nco.*|^NCO")),
-        RegexFuzzyMatcher(search_regex=(r".*no contact.*")),
+        ScoringFuzzyMatcher(search_term=("NCO")),
+        ScoringFuzzyMatcher(search_term=("no contact")),
+        ScoringFuzzyMatcher(search_term=("no contact order")),
     ]
     COMMUNITY_SERVICE = (
         [
@@ -123,18 +126,82 @@ class UsIdTextEntity(TextEntity):
             ScoringFuzzyMatcher(search_term="community service refl"),
             ScoringFuzzyMatcher(search_term="completed service hours"),
             ScoringFuzzyMatcher(search_term="community svc completed"),
-            RegexFuzzyMatcher(search_regex=(r".*com[m\.]*\.*\s*(serv|svc).*")),
+            ScoringFuzzyMatcher(search_term="cs"),
+            ScoringFuzzyMatcher(search_term="cs hours"),
+            ScoringFuzzyMatcher(search_term="cs hrs"),
+            ScoringFuzzyMatcher(search_term="cs hr"),
+            ScoringFuzzyMatcher(search_term="comm serv"),
+            ScoringFuzzyMatcher(search_term="comm svc"),
+            ScoringFuzzyMatcher(search_term="com serv"),
+            ScoringFuzzyMatcher(search_term="com svc"),
             RegexFuzzyMatcher(search_regex=(r".*communityservice.*")),
-            RegexFuzzyMatcher(search_regex=(r".* c/s.*|.*c/s .*|.*c\.s\s*.*")),
-            RegexFuzzyMatcher(
-                search_regex=(r".*cs.*(hours|hrs).*|.*(hrs|hours).*[^R]cs[^C].*")
-            ),
             RegexFuzzyMatcher(search_regex=r".*c/s.*"),
-            RegexFuzzyMatcher(search_regex=r".*c\.s\..*"),
+            RegexFuzzyMatcher(search_regex=r".*c\.s\.*"),
         ],
         [n for n in TEXT_NORMALIZERS if n not in {REMOVE_WORDS_WITH_NON_CHARACTERS}],
     )
+    NOT_CS = [
+        RegexFuzzyMatcher(search_regex=(r".*koot.*")),
+        RegexFuzzyMatcher(search_regex=(r".*bonner.*")),
+        RegexFuzzyMatcher(search_regex=(r".*history.*")),
+        RegexFuzzyMatcher(search_regex=(r".*shosho.*")),
+        RegexFuzzyMatcher(search_regex=(r".*benewah.*")),
+        ScoringFuzzyMatcher(search_term="gold seal"),
+        RegexFuzzyMatcher(search_regex=(r".*icots.*")),
+    ]
+    TRANSFER_CHRONO = [
+        ScoringFuzzyMatcher(search_term="transfer chrono"),
+        ScoringFuzzyMatcher(search_term="transfer chronicle"),
+        RegexFuzzyMatcher(search_regex=(r".*chrono.*")),
+    ]
+    LSU = [RegexFuzzyMatcher(search_regex=(r".*lsu.*"))]
     DUI = [RegexFuzzyMatcher(search_regex=(r".*dui.*"))]
+    SPECIALTY_COURT = [
+        ScoringFuzzyMatcher(search_term="drug court"),
+        ScoringFuzzyMatcher(search_term="mental health court"),
+        ScoringFuzzyMatcher(search_term="ada court"),
+        ScoringFuzzyMatcher(search_term="dc court"),
+        ScoringFuzzyMatcher(search_term="wood court"),
+        ScoringFuzzyMatcher(search_term="fremont court"),
+        ScoringFuzzyMatcher(search_term="woods court"),
+        ScoringFuzzyMatcher(search_term="bonneville court"),
+        ScoringFuzzyMatcher(search_term="du court"),
+        ScoringFuzzyMatcher(search_term="vet court"),
+        ScoringFuzzyMatcher(search_term="speciality court"),
+        ScoringFuzzyMatcher(search_term="gem court"),
+        ScoringFuzzyMatcher(search_term="dv court"),
+        ScoringFuzzyMatcher(search_term="mv court"),
+        ScoringFuzzyMatcher(search_term="drug crt"),
+        ScoringFuzzyMatcher(search_term="mental health crt"),
+        ScoringFuzzyMatcher(search_term="ada crt"),
+        ScoringFuzzyMatcher(search_term="dc crt"),
+        ScoringFuzzyMatcher(search_term="wood crt"),
+        ScoringFuzzyMatcher(search_term="fremont crt"),
+        ScoringFuzzyMatcher(search_term="woods crt"),
+        ScoringFuzzyMatcher(search_term="bonneville crt"),
+        ScoringFuzzyMatcher(search_term="du crt"),
+        ScoringFuzzyMatcher(search_term="vet crt"),
+        ScoringFuzzyMatcher(search_term="speciality crt"),
+        ScoringFuzzyMatcher(search_term="gem crt"),
+        ScoringFuzzyMatcher(search_term="dv crt"),
+        ScoringFuzzyMatcher(search_term="mv crt"),
+        ScoringFuzzyMatcher(search_term="drug ct"),
+        ScoringFuzzyMatcher(search_term="mental health ct"),
+        ScoringFuzzyMatcher(search_term="ada ct"),
+        ScoringFuzzyMatcher(search_term="dc ct"),
+        ScoringFuzzyMatcher(search_term="wood ct"),
+        ScoringFuzzyMatcher(search_term="fremont ct"),
+        ScoringFuzzyMatcher(search_term="woods ct"),
+        ScoringFuzzyMatcher(search_term="bonneville ct"),
+        ScoringFuzzyMatcher(search_term="du ct"),
+        ScoringFuzzyMatcher(search_term="vet ct"),
+        ScoringFuzzyMatcher(search_term="speciality ct"),
+        ScoringFuzzyMatcher(search_term="gem ct"),
+        ScoringFuzzyMatcher(search_term="dv ct"),
+        ScoringFuzzyMatcher(search_term="mv ct"),
+        ScoringFuzzyMatcher(search_term="woodcourt"),
+        RegexFuzzyMatcher(search_regex=r".*advancement.*"),
+    ]
     NOT_M_DUI = [
         RegexFuzzyMatcher(
             search_regex=(
