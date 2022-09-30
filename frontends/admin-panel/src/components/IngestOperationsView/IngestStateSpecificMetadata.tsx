@@ -34,7 +34,13 @@ import {
   INGEST_ACTIONS_SECONDARY_ROUTE,
   INGEST_ACTIONS_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
-import { StateCodeInfo } from "./constants";
+import {
+  ANCHOR_INGEST_LOGS,
+  ANCHOR_INGEST_RAW_DATA,
+  ANCHOR_INGEST_RESOURCES,
+  ANCHOR_INGEST_VIEWS,
+  StateCodeInfo,
+} from "./constants";
 import IngestPageHeader from "./IngestPageHeader";
 import IngestStateSpecificInstanceMetadata from "./IngestStateSpecificInstanceMetadata";
 import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
@@ -59,8 +65,36 @@ function getItem(
 
 const items: MenuProps["items"] = [
   getItem("Ingest Queues", INGEST_ACTIONS_INGEST_QUEUES_ROUTE),
-  getItem("Primary Instance", INGEST_ACTIONS_PRIMARY_ROUTE),
-  getItem("Secondary Instance", INGEST_ACTIONS_SECONDARY_ROUTE),
+  getItem("Primary Instance", INGEST_ACTIONS_PRIMARY_ROUTE, null, [
+    getItem(
+      "Raw Data",
+      `${INGEST_ACTIONS_PRIMARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
+    ),
+    getItem(
+      "Ingest Views",
+      `${INGEST_ACTIONS_PRIMARY_ROUTE}#${ANCHOR_INGEST_VIEWS}`
+    ),
+    getItem(
+      "Resources",
+      `${INGEST_ACTIONS_PRIMARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
+    ),
+    getItem("Logs", `${INGEST_ACTIONS_PRIMARY_ROUTE}#${ANCHOR_INGEST_LOGS}`),
+  ]),
+  getItem("Secondary Instance", INGEST_ACTIONS_SECONDARY_ROUTE, null, [
+    getItem(
+      "Raw Data",
+      `${INGEST_ACTIONS_SECONDARY_ROUTE}#${ANCHOR_INGEST_RAW_DATA}`
+    ),
+    getItem(
+      "Ingest Views",
+      `${INGEST_ACTIONS_SECONDARY_ROUTE}#${ANCHOR_INGEST_VIEWS}`
+    ),
+    getItem(
+      "Resources",
+      `${INGEST_ACTIONS_SECONDARY_ROUTE}#${ANCHOR_INGEST_RESOURCES}`
+    ),
+    getItem("Logs", `${INGEST_ACTIONS_SECONDARY_ROUTE}#${ANCHOR_INGEST_LOGS}`),
+  ]),
 ];
 
 const IngestStateSpecificMetadata = (): JSX.Element => {

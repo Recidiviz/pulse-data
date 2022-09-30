@@ -24,6 +24,11 @@ export const SPECIAL_FILE_TAGS = [
   FILE_TAG_IGNORED_IN_SUBDIRECTORY,
 ];
 
+export const ANCHOR_INGEST_RAW_DATA = "ingest_raw_data";
+export const ANCHOR_INGEST_VIEWS = "ingest_views";
+export const ANCHOR_INGEST_RESOURCES = "ingest_resources";
+export const ANCHOR_INGEST_LOGS = "ingest_logs";
+
 export enum QueueState {
   PAUSED = "PAUSED",
   RUNNING = "RUNNING",
