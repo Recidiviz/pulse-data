@@ -32,3 +32,20 @@ export function optionalBooleanSort(
 export function getUniqueValues<T>(values: T[]): T[] {
   return Array.from(new Set(values));
 }
+
+/**
+ * Scrolls to the first element with the given hash
+ * @param hash id to scroll to
+ */
+export function scrollToAnchor(hash: string): void {
+  const id = hash.replace("#", "");
+
+  if (id) {
+    const anchor = document.getElementById(id);
+    if (anchor) {
+      anchor.scrollIntoView();
+      anchor.classList.add(...["highlight"]);
+      setTimeout(() => anchor.classList.remove(...["highlight"]), 1000);
+    }
+  }
+}

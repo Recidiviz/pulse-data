@@ -96,6 +96,22 @@ tr.metadata-table-row > td.ant-table-cell > div {
     border-right-width: 0;
   }
 }
+
+.highlight {
+  animation: highlight-animation 1s;
+}
+
+@keyframes highlight-animation {
+  from {
+    background-color: inherit;
+  }
+  50% {
+    background-color: #F2BB05;
+  }
+  to {
+    background-color: inherit;
+  }
+}
 /* Actions and Summaries*/
 
 .ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow, .queue-status-running, .queue-status-not-running {
@@ -144,3 +160,4 @@ tr.metadata-table-row > td.ant-table-cell > div {
   color: #ffffff;
   background-color: #f5222d;
 }
+

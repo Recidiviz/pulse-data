@@ -15,14 +15,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Card, Col, Descriptions, Spin } from "antd";
+import Title from "antd/lib/typography/Title";
 import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
+import { scrollToAnchor } from "../Utilities/GeneralUtilities";
 import {
   GCP_STORAGE_BASE_URL,
   DirectIngestInstance,
   IngestInstanceSummary,
   IngestRawFileProcessingStatus,
+  ANCHOR_INGEST_RAW_DATA,
+  ANCHOR_INGEST_VIEWS,
+  ANCHOR_INGEST_RESOURCES,
+  ANCHOR_INGEST_LOGS,
 } from "./constants";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
@@ -46,6 +53,7 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
+  const { hash } = useLocation();
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -53,6 +61,10 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
+
+  useEffect(() => {
+    scrollToAnchor(hash);
+  }, [hash, ingestRawFileProcessingStatus]);
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
@@ -92,7 +104,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
 
   return (
     <Card>
-      <h1>Raw data</h1>
+      <Title id={ANCHOR_INGEST_RAW_DATA} level={4}>
+        Raw data
+      </Title>
       {ingestRawFileProcessingStatusLoading ? (
         <Spin />
       ) : (
@@ -111,13 +125,17 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         </>
       )}
       <br />
-      <h1>Ingest views</h1>
+      <Title id={ANCHOR_INGEST_VIEWS} level={4}>
+        Ingest views
+      </Title>
       <InstanceIngestViewMetadata
         stateCode={stateCode}
         data={ingestInstanceSummary}
       />
       <br />
-      <h1>Resources</h1>
+      <Title id={ANCHOR_INGEST_RESOURCES} level={4}>
+        Resources
+      </Title>
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
           <NewTabLink
@@ -142,7 +160,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         </Descriptions.Item>
       </Descriptions>
       <br />
-      <h1>Logs</h1>
+      <Title id={ANCHOR_INGEST_LOGS} level={4}>
+        Logs
+      </Title>
       <Descriptions bordered>
         <Descriptions.Item label="Logs Explorer" span={3}>
           <NewTabLink href={logsUrl}>{logsUrl}</NewTabLink>
