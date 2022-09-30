@@ -6,8 +6,8 @@ labels: 'Subject: Ingest Rerun'
 assignees: ''
 ---
 > BEFORE YOU BEGIN!! PLEASE CHECK OFF AND COMPLETE THE FOLLOWING.
-- [ ] I have added the corresponding `REGION: US_XX` label associated with my rerun.
-- [ ] I have added the corresponding `Team: *` or `State Pod: *` label for the group tracking progress of this rerun.
+- [ ] I have added the corresponding `Region: US_XX` label associated with my rerun.
+- [ ] I have added the corresponding `Team: *` label for the group tracking progress of this rerun.
 
 **Describe the set of changes that require this rerun**
 

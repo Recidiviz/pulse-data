@@ -7,8 +7,8 @@ assignees: ''
 
 ---
 > BEFORE YOU BEGIN!! PLEASE CHECK OFF AND COMPLETE THE FOLLOWING.
-- [ ] I have added the corresponding `Team: *` or `State Pod: *` label for the group tracking progress of this bug.
-- [ ] I have added the corresponding `REGION: US_XX` label if applicable.
+- [ ] I have added the corresponding `Team: *` label for the group tracking progress of this bug.
+- [ ] I have added the corresponding `Region: US_XX` label if applicable.
 
 **Describe the bug**
 A clear and concise description of the bug.
