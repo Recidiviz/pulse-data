@@ -33,6 +33,7 @@ import NewTabLink from "../NewTabLink";
 import {
   IngestInstanceStatusInfo,
   IngestInstanceStatusResponse,
+  IngestInstanceStatusTableInfo,
   QueueMetadata,
   QueueState,
   StateCodeInfo,
@@ -123,6 +124,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
 
     const secondaryStatus: string = secondaryInstanceInfo.status;
 
+    const primaryTimestamp: string = primaryInstanceInfo.timestamp;
+    const secondaryTimestamp: string = secondaryInstanceInfo.timestamp;
+
     return {
       stateCode: key,
       primary: primaryStatus,
@@ -130,12 +134,14 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       queueInfo: stateIngestQueueStatuses
         ? stateIngestQueueStatuses[key]
         : undefined,
+      timestampPrimary: primaryTimestamp,
+      timestampSecondary: secondaryTimestamp,
     };
   });
 
-  const renderStatusCell = (status: string) => {
+  const renderStatusCell = (status: string, timestamp: string) => {
     const statusColorClassName = getStatusBoxColor(status);
-    const statusMessage = getStatusMessage(status);
+    const statusMessage = getStatusMessage(status, timestamp);
 
     return (
       <div className={classNames(statusColorClassName)}>{statusMessage}</div>
@@ -151,12 +157,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     return <div className={classNames(queueColor)}>{queueInfo}</div>;
   };
 
-  const columns: ColumnsType<{
-    stateCode: string;
-    primary: string;
-    secondary: string;
-    queueInfo: string | undefined;
-  }> = [
+  const columns: ColumnsType<IngestInstanceStatusTableInfo> = [
     {
       title: "State Code",
       dataIndex: "stateCode",
@@ -174,7 +175,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       dataIndex: "primary",
       key: "primary",
 
-      render: (primary: string) => <span>{renderStatusCell(primary)}</span>,
+      render: (value, record: IngestInstanceStatusTableInfo) => (
+        <span>{renderStatusCell(record.primary, record.timestampPrimary)}</span>
+      ),
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.primary) -
         getStatusSortedOrder().indexOf(b.primary),
@@ -183,7 +186,11 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Secondary Instance Status",
       dataIndex: "secondary",
       key: "secondary",
-      render: (secondary: string) => <span>{renderStatusCell(secondary)}</span>,
+      render: (value, record: IngestInstanceStatusTableInfo) => (
+        <span>
+          {renderStatusCell(record.secondary, record.timestampSecondary)}
+        </span>
+      ),
       sorter: (a, b) =>
         getStatusSortedOrder().indexOf(a.secondary) -
         getStatusSortedOrder().indexOf(b.secondary),
@@ -192,7 +199,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       title: "Queue Status",
       dataIndex: "queueInfo",
       key: "queueInfo",
-      render: (queueInfo: string) => (
+      render: (queueInfo: string | undefined) => (
         <span>{renderIngestQueuesCell(queueInfo)}</span>
       ),
       sorter: (a, b) =>
