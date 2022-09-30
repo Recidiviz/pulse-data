@@ -16,7 +16,8 @@
 # =============================================================================
 """Helpers for bulk upload functionality."""
 
-from typing import List
+from datetime import date
+from typing import List, Optional, Tuple
 
 from thefuzz import fuzz
 
@@ -34,6 +35,7 @@ def fuzzy_match_against_options(
     text: str,
     options: List[str],
     category_name: str,
+    time_range: Optional[Tuple[date, date]] = None,
 ) -> str:
     """Given a piece of input text and a list of options, uses
     fuzzy matching to calculate a match score between the input
@@ -51,10 +53,10 @@ def fuzzy_match_against_options(
     best_option = max(option_to_score, key=option_to_score.get)  # type: ignore[arg-type]
     if option_to_score[best_option] < FUZZY_MATCHING_SCORE_CUTOFF:
         raise JusticeCountsBulkUploadException(
-            title=f"{text} Not Recognized",
-            subtitle=category_name,
-            description=f"The valid values for {category_name} are {', '.join(filter(None, options))}.",
+            title=f"{category_name} Not Recognized",
+            description=f"\"{text}\" is not a valid value for {category_name}. The valid values for this column are {', '.join(filter(None, options))}.",
             message_type=BulkUploadMessageType.ERROR,
+            time_range=time_range,
         )
 
     return best_option

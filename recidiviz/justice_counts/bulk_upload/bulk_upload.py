@@ -60,6 +60,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 
 MONTH_NAMES = list(calendar.month_name)
+PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
 
 
 class BulkUploader:
@@ -283,18 +284,17 @@ class BulkUploader:
                     if metricfile.definition.key == metric_definition.key
                     and metricfile.disaggregation is None
                 ].pop()
-                description = (
-                    "You did not include any sheets for this metric in your excel workbook. "
-                    f"Please provide data in a sheet titled '{totals_filename}'."
+                description_suffix = (
+                    f"Please provide data in a sheet named {totals_filename}."
                 )
                 if len(files_without_rows) > 0:
-                    description = f"You did not include any data in the following sheets: '{', '.join(files_without_rows)}'."
+                    description_suffix = f"The following sheets were empty: {', '.join(files_without_rows)}."
                 missing_metric_warning = JusticeCountsBulkUploadException(
                     title="Missing Metric",
                     message_type=BulkUploadMessageType.ERROR,
                     description=(
-                        f"No data for the '{METRIC_KEY_TO_METRIC[metric_definition.key].display_name}' metric was provided. "
-                        + description
+                        f"No data for the {METRIC_KEY_TO_METRIC[metric_definition.key].display_name} metric was provided. "
+                        + description_suffix
                     ),
                 )
                 metric_key_to_errors[metric_definition.key].append(
@@ -343,6 +343,9 @@ class BulkUploader:
                     metric_key_to_errors=metric_key_to_errors,
                     metric_definition=metricfile.definition,
                     is_sheet_provided=False,
+                    # we know metricfile.disaggreation will be non-None, so it's
+                    # safe to silence mypy
+                    disaggregation=metricfile.disaggregation,  # type: ignore[arg-type]
                 )
         return metric_key_to_errors
 
@@ -354,17 +357,16 @@ class BulkUploader:
         ],
         metric_definition: MetricDefinition,
         is_sheet_provided: bool,
+        disaggregation: Type[DimensionBase],
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        description = f"No '{sheet_name}' sheet was provided for the '{metric_definition.display_name}' metric."
+        description_suffix = f"Please provide data in a sheet named {sheet_name}."
         if is_sheet_provided is True:
-            description = (
-                f"No breakdown data was provided in the '{sheet_name}' sheet for "
-                f"the '{metric_definition.display_name}' metric."
-            )
+            description_suffix = f"The sheet named {sheet_name} was empty."
         missing_sheet_error = JusticeCountsBulkUploadException(
             title="Missing Breakdown Sheet",
             message_type=BulkUploadMessageType.WARNING,
-            description=description,
+            description=f"No data for the {disaggregation.human_readable_name()} breakdown was provided. "
+            + description_suffix,
             sheet_name=sheet_name,
         )
         metric_key_to_errors[metric_definition.key].append(missing_sheet_error)
@@ -385,10 +387,8 @@ class BulkUploader:
             message_type=BulkUploadMessageType.WARNING,
             sheet_name=sheet_name,
             description=(
-                f"No totals values were provided for the '{metric_definition.display_name}' "
-                f"metric or the totals sheet provided contained errors. The total "
-                f"value for '{metric_definition.display_name}' will be "
-                f"shown as the sum of the breakdown values provided in {sheet_name}"
+                f"No total values were provided for this metric. The total values will be assumed "
+                f"to be equal to the sum of the breakdown values provided in {sheet_name}."
             ),
         )
         metric_key_to_errors[metric_definition.key].append(missing_total_error)
@@ -473,6 +473,7 @@ class BulkUploader:
                         metric_definition=metricfile.definition,
                         metric_key_to_errors=metric_key_to_errors,
                         is_sheet_provided=True,
+                        disaggregation=metricfile.disaggregation,
                     )
             except Exception as e:
                 curr_metricfile = sheet_name_to_metricfile[sheet_name]
@@ -666,20 +667,22 @@ class BulkUploader:
         if metricfile.disaggregation is None:
             if len(rows_for_this_time_range) != 1:
                 description = (
-                    "There should only be a single row "
-                    f"containing data for {metricfile.canonical_filename} "
-                    f"in {time_range[0].month}/{time_range[0].year}."
+                    "There should only be a single row containing data "
+                    f"for the time period {time_range[0].month}/{time_range[0].year}."
                 )
 
                 raise JusticeCountsBulkUploadException(
                     title="Too Many Rows",
-                    subtitle=f"{time_range[0].month}/{time_range[0].year}",
                     description=description,
                     message_type=BulkUploadMessageType.ERROR,
+                    time_range=time_range,
                 )
             row = rows_for_this_time_range[0]
             aggregate_value = self._get_column_value(
-                row=row, column_name="value", column_type=float
+                row=row,
+                column_name="value",
+                column_type=float,
+                time_range=time_range,
             )
 
         else:  # metricfile.disaggregation is not None
@@ -718,7 +721,10 @@ class BulkUploader:
                         analyzer=self.text_analyzer,
                         text=disaggregation_value,
                         options=disaggregation_options,
-                        category_name=metricfile.disaggregation.display_name(),
+                        category_name=metricfile.disaggregation_column_name.replace(
+                            "_", " "
+                        ).title(),
+                        time_range=time_range,
                     )
                     matching_disaggregation_member = metricfile.disaggregation(
                         disaggregation_value
@@ -743,21 +749,25 @@ class BulkUploader:
         )
 
     def _get_column_value(
-        self, row: Dict[str, Any], column_name: str, column_type: Type
+        self,
+        row: Dict[str, Any],
+        column_name: str,
+        column_type: Type,
+        time_range: Optional[Tuple[datetime.date, datetime.date]] = None,
     ) -> Any:
         """Given a row, a column name, and a column type, attempts to
         extract a value of the given type from the row."""
         if column_name not in row:
             description = (
-                f"We expected the following column: '{column_name}'. "
-                f"Only the following column names were found in the sheet: "
+                f'We expected to see a column named "{column_name}". '
+                f"Only the following columns were found in the sheet: "
                 f"{', '.join(row.keys())}."
             )
             raise JusticeCountsBulkUploadException(
                 title="Missing Column",
-                subtitle=column_name,
                 description=description,
                 message_type=BulkUploadMessageType.ERROR,
+                time_range=time_range,
             )
 
         column_value = row[column_name]
@@ -781,9 +791,9 @@ class BulkUploader:
                 raise JusticeCountsBulkUploadException(
                     title="Wrong Value Type",
                     message_type=BulkUploadMessageType.ERROR,
-                    description=f"We expected the value in column '{column_name}' to "
-                    f"be of type '{column_type.__name__}'. Instead we found the value "
-                    f"'{column_value}', which is of type '{column_value}'.",
+                    description=f'We expected all values in the column named "{column_name}" to '
+                    f"be {PYTHON_TYPE_TO_READABLE_NAME.get(column_type.__name__, column_type.__name__)}. Instead we found the value "
+                    f'"{column_value}", which is {PYTHON_TYPE_TO_READABLE_NAME.get(type(column_value).__name__, type(column_value).__name__)}.',
                 ) from e
 
         # Round numbers to two decimal places

@@ -143,7 +143,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             self.assertTrue(
                 (
-                    "The valid values for Month are January, February, March, "
+                    "The valid values for this column are January, February, March, "
                     "April, May, June, July, August, September, October, "
                     "November, December."
                 )
@@ -516,7 +516,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(arrest_error.title, "Missing Total Value")
             self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
             self.assertTrue(
-                "No totals values were provided for the 'Total Arrests' metric"
+                "No total values were provided for this metric"
                 in arrest_error.description,
             )
 
@@ -529,9 +529,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 use_of_force_error.message_type, BulkUploadMessageType.ERROR
             )
-            self.assertEqual(
-                use_of_force_error.description,
-                "No data for the 'Use of Force Incidents' metric was provided. "
-                "You did not include any sheets for this metric in your excel workbook. "
-                "Please provide data in a sheet titled 'use_of_force'.",
+            self.assertTrue(
+                "No data for the Use of Force Incidents metric was provided. "
+                in use_of_force_error.description,
             )
