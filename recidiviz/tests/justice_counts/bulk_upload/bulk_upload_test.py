@@ -461,7 +461,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 key=lambda x: x.key,
             )
             self.assertEqual(len(metrics), 3)
-            # the arrest metric should have the aggregate value that is reported, not any of the infered
+            # the arrest metric should have the aggregate value that is reported, not any of the inferred
             # values from the breakdown
             arrest_metric = list(
                 filter(lambda m: m.key == law_enforcement.total_arrests.key, metrics)

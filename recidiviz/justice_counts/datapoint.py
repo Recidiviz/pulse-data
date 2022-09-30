@@ -354,7 +354,7 @@ class DatapointInterface:
             if (
                 existing_datapoint is not None
                 and existing_datapoint.value is not None
-                and abs(float(existing_datapoint.value) - value) > 1
+                and abs(float(existing_datapoint.value) - value) > 0
             ):
                 logging.info(
                     "The incoming (read or inferred) aggregate value (%s) does not match "
