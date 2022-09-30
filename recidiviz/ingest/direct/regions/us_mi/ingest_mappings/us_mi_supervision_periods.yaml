@@ -23,6 +23,10 @@ input_columns:
   - last_name
   - name_suffix
   - employee_county
+  - prev_order_type_id_list
+  - next_order_type_id_list
+  - position
+  - prev_movement_reason_id
 unused_columns: []
 output:
   StatePerson:
@@ -82,12 +86,13 @@ output:
                       StateSupervisionPeriodSupervisionType.ABSCONSION:
                         - "ABSCONSION-external_movement_reason-112"
                         - "ABSCONSION-external_movement_reason-119"
-              # If the movements data indicate that the individual is going through intake, then we're going to mark supervision type as INVESTIGATION
-              # (MI says that individuals are assigned a supervision officer for pre-sentence investigations)
+              # If the movements data indicate that the individual is going through intake and a legal order hasn't been issued yet, then we're going to mark supervision type as INVESTIGATION
               - $else_if:
-                  $equal:
-                    - movement_reason_id
-                    - $literal("2") # Intake
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
                 $then:
                   $enum_mapping:
                     $raw_text: $literal("INVESTIGATION-movement_reason_id-2")
@@ -435,12 +440,53 @@ output:
           supervision_site: dest_name
           admission_reason:
             $conditional:
-              # if the previous record is associated with the same movement_id, then this period must have been constructed because some other field changed
+              # if the movement is intake and this is the first period of intake with no previous movement or with a previous different movement, then mark admission reason as investigation
               - $if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
+                    - $or:
+                        - $is_null: prev_movement_reason_id
+                        - $not_in:
+                            $value: prev_movement_reason_id
+                            $options:
+                              - $literal("2")
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
+              # if the movement is intake and this is the first period where a legal order applies, mark admission reason as Court Sentence
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $not_null: order_type_id_list
+                    - $is_null: prev_order_type_id_list
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE)
+              # if the previous record was an intake period with a legal order, and this is the first probation movement,
+              # mark this as transfer within state actually since the first intake period with a legal order should have already been marked as Court Sentence
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - prev_movement_reason_id
+                        - $literal("2") # Intake
+                    - $not_null: prev_order_type_id_list
+                    - $equal:
+                        - prev_order_type_id_list
+                        - order_type_id_list
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("77")
+                          - $literal("120")
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              # if the previous record is associated with the same movement_id, then this period must have been constructed because some other field changed
+              - $else_if:
                   $equal:
                     - offender_external_movement_id
                     - prev_offender_external_movement_id
                 $then: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+              # else mark based on movement
               - $else:
                   $enum_mapping:
                     $raw_text: movement_reason_id
@@ -452,6 +498,7 @@ output:
                         - "77" # Court Resentenced to Probation
                         - "120" # Placed on Probation
                       StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                        # If not one of the special intake cases above (e.g. when an individual starts a new intake session)
                         - "2" # Intake
                       StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
                         - "141" # Disch. Prison MAX - Transfer for Probation
@@ -476,12 +523,57 @@ output:
                         - "4" # Transfer Out State
           termination_reason:
             $conditional:
-              # if the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
+              # if movement reason is intake and order type id list is currently null but the next period it's not null, then end this as investigation
               - $if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
+                    - $not_null: period_end
+                    - $not_null: next_order_type_id_list
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.INVESTIGATION)
+              # if movement reason is intake and legal order is valued and period end date is valued and the next period is a start of probation movement
+              # then mark termination reason as TRANSFER WITHIN STATE because this should already be of type PROBATION
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $not_null: order_type_id_list
+                    - $not_null: period_end
+                    - $in:
+                        $value: movement_reason_id
+                        $options:
+                          - $literal("77")
+                          - $literal("120")
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              # if not the two cases above and the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
+              - $else_if:
                   $equal:
                     - offender_external_movement_id
                     - next_offender_external_movement_id
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              # if not any of the above cases and it's intake and the next movement reason is 143 (Discharged After Special Investigation Only), then map to discharge
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $equal:
+                        - next_movement_reason_id
+                        - $literal("143") # Discharged After Special Investigation Only
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.DISCHARGE)
+              # if not any of the above cases and it's the last intake period with a valued end date and legal order is still null, then termination reason = investigation
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - movement_reason_id
+                        - $literal("2") # Intake
+                    - $is_null: order_type_id_list
+                    - $not_null: period_end
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.INVESTIGATION)
+              # if this is an absconder situation
               - $else_if:
                   $and:
                     - $in:
@@ -508,11 +600,7 @@ output:
                           - $literal("90") # Reparoled While on Same Term
                           - $literal("151") # Reinstated on Parole from Absconder Status
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION)
-              - $else_if:
-                  $equal:
-                    - movement_reason_id
-                    - $literal("2") # Intake
-                $then: $literal_enum(StateSupervisionPeriodTerminationReason.INVESTIGATION)
+              # else map based on next_movement_reason_id
               - $else:
                   $enum_mapping:
                     $raw_text: next_movement_reason_id
@@ -555,6 +643,7 @@ output:
                         - "22" # Court Discharged with Time Served
                         - "123" # Discharged Sentenced to Jail Only
                         - "146" # Discharge From Prison Under HYTA Without Probation
+                        - "143" # Discharged After Special Investigation Only
                       StateSupervisionPeriodTerminationReason.EXPIRATION:
                         - "32" # Discharged from Parole
                         - "121" # Discharged from Probation
@@ -563,7 +652,6 @@ output:
                         - "36" # Discharged on the Maximum without Parole
                         - "154" # Sentenced From Delay No Further Sentence Imposed
                       StateSupervisionPeriodTerminationReason.INVESTIGATION:
-                        - "143" # Discharged After Special Investigation Only
                         - "2" # Intake
                       StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
                         - "89" # Reinstated on Parole While at Large
@@ -906,4 +994,7 @@ output:
                         $middle_names: middle_name
                         $surname: last_name
                         $name_suffix: name_suffix
-                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                    agent_type:
+                      $enum_mapping:
+                        $raw_text: position
+                        $custom_parser: us_mi_custom_enum_parsers.parse_agent_type
