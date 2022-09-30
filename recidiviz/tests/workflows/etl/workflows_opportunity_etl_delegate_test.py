@@ -19,6 +19,7 @@ import json
 from unittest import TestCase
 
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
+    CONFIG_BY_STATE,
     WorkflowsOpportunityETLDelegate,
 )
 
@@ -111,3 +112,13 @@ class TestWorkflowsETLDelegate(TestCase):
             EXPECTED_DOCUMENT,
             new_document,
         )
+
+
+class TestWorkflowsETLConfig(TestCase):
+    """Checks constraints on the ETL config"""
+
+    def test_source_filename_format(self) -> None:
+        """Tests that the source_filename parameter ends in .json."""
+        for configs in CONFIG_BY_STATE.values():
+            for config in configs:
+                self.assertEqual(".json", config.source_filename[-5:])
