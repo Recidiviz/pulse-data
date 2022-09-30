@@ -555,16 +555,26 @@ class Datapoint(JusticeCountsBase):
         passive_deletes=True,
     )
 
-    def get_value(self) -> Any:
-        value = self.value
+    def get_value(self, use_value: Optional[str] = None) -> Any:
+        """This function converts the value of a datapoint to it's
+        correct type because all datapoint values are stored as strings
+        within the database.
+
+        if use_value is not None, then get_value will return the value of
+        the use_value parameter, not the datapoint. This functionality is
+        used to cast datapoint history values to their correct type.
+        """
+        value = self.value if use_value is None else use_value
         status = self.report.status if self.report else None
         if value is None:
             return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
             try:
+                if value[-2:] == ".0":
+                    value = int(value[0:-2])
                 value = float(value)
             except ValueError as e:
-                if status == ReportStatus.PUBLISHED:
+                if status == ReportStatus.PUBLISHED and use_value is None:
                     raise ValueError(
                         f"Datapoint represents a float value, but is a string. Datapoint ID: {self.id}, value: {value}",
                     ) from e
