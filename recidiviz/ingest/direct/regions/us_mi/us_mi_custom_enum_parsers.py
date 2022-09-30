@@ -22,3 +22,28 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_mi_custom_enum_parsers.<function name>
 """
+from typing import Optional
+
+from recidiviz.common.constants.state.state_agent import StateAgentType
+
+
+def parse_agent_type(
+    raw_text: str,
+) -> Optional[StateAgentType]:
+    """Parse agent type based on employee position raw text"""
+
+    supervision_officer_positions = [
+        "PAROLE PROBATION",
+        "PAROLE/PRBTN",
+        "PAROLE/PROBATION",
+    ]
+
+    # if position indicates parole/probation, then set as supervision officer
+    if any(position in raw_text.upper() for position in supervision_officer_positions):
+        return StateAgentType.SUPERVISION_OFFICER
+
+    # else if not the above case but position is provided, set as internal unknown
+    if raw_text:
+        return StateAgentType.INTERNAL_UNKNOWN
+
+    return None

@@ -39,7 +39,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 # movement reason ids associated with supervision period starts
-start_movement_reason_ids = "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '28', '27', '90'"
+# 9/20: remove 27, 28 as movement start reasons since these are releases from SAI where they're released from MDOC jurisdiction
+start_movement_reason_ids = "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '90'"
 
 # movement reason ids associated with supervision period ends
 end_movement_reason_ids = "'112', '119', '29', '122', '21', '148', '118', '25', '22', '38', '78', '39', '31', '126', '40', '146', '143', '134', '147', '124', '123', '115', '23', '42', '32', '121', '129', '142', '41', '36', '30', '125', '140', '106', '103', '102', '105', '128', '104', '133', '137', '136', '91', '13', '11', '159', '158', '12', '15', '14', '10', '16', '111', '19', '92', '138', '156', '89', '151', '37', '108', '18', '17', '79', '24', '139', '154', '131', '149', '144', '114', '153', '113', '95'"
@@ -49,6 +50,9 @@ held_in_custody_movement_reason_ids = "'105', '128', '104', '106', '103', '102',
 
 # revocation movement reasons
 revocation_movement_reason_ids = "'17', '129'"
+
+# 9/20: location types that are supervision offices
+supervision_locs = "'221', '7965', '2145', '224'"
 
 ALL_MOVEMENTS_CTE = """
 
@@ -104,8 +108,9 @@ supervision_period_starts as (
     where 
         movement_reason_id in ({start_movement_reason_ids})
         or 
-        -- movement reason is TRANSFER OUT STATE and source location type is STATE
-        (movement_reason_id in ('4') and source_location_type_id='2155')
+        -- movement reason is TRANSFER OUT STATE and source location type is STATE or Outside of MDOC Jurisdiction and destination location type is a supervision office
+        -- 9/20: add Outside of MDOC Jurisdiction (5772) and supervision_locs restraint
+        (movement_reason_id in ('4') and source_location_type_id in ('2155', '5772') and dest_location_type_id in ({supervision_locs}))
 ),
 
 -- Identify all movements that indicate the end of a supervision period
@@ -118,8 +123,9 @@ supervision_period_ends as (
     where 
         movement_reason_id in ({end_movement_reason_ids})
         or 
-        -- movement reason is TRANSFER OUT STATE and destination location type is STATE
-        (movement_reason_id in ('4') and dest_location_type_id='2155')
+        -- movement reason is TRANSFER OUT STATE and destination location type is STATE or Outside of MDOC Jurisdiction
+        -- 9/20: add Outside of MDOC Jurisdiction (5772)
+        (movement_reason_id in ('4') and dest_location_type_id in ('2155', '5772'))
 ),
 
 -- Create supervision periods by stacking all start movements and end movements, creating intervals, and taking all intervals that starts with a supervision start movement
@@ -138,10 +144,11 @@ movement_periods as (
         offender_external_movement_id
     from (
         select *,
-            LEAD(supervision_period_status) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, supervision_period_status ASC, offender_external_movement_id) as next_supervision_period_status,
-            LEAD(movement_datetime) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, supervision_period_status ASC, offender_external_movement_id) as next_movement_date,
-            LEAD(movement_reason_id) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, supervision_period_status ASC, offender_external_movement_id) as next_movement_reason_id,
-            LEAD(movement_reason_id, 2) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, supervision_period_status ASC, offender_external_movement_id) as next_next_movement_reason_id
+            -- 9/20: revise order by to order by offender_external_movement_id (which hopefully is generated in the same order as the movement record is entered) before supervision_period_status
+            LEAD(supervision_period_status) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_supervision_period_status,
+            LEAD(movement_datetime) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_date,
+            LEAD(movement_reason_id) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_reason_id,
+            LEAD(movement_reason_id, 2) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_next_movement_reason_id
         from
         (
             (select * from supervision_period_starts)
@@ -228,15 +235,7 @@ offender_booking_assignment as (
           left join {ADH_LOCATION} loc on emp.default_location_id = loc.location_id
           left join {ADH_REFERENCE_CODE} ref on loc.county_id = ref.reference_code_id
         where
-            -- filter down to only supervision officers (MI only has a text field for position type)
-            ( 
-                upper(position) like '%PAROLE PROBATION%'
-                or 
-                upper(position) like '%PAROLE/PRBTN%'
-                or 
-                upper(position) like '%PAROLE/PROBATION%'
-            )
-            and
+            -- 9/20: remove filter on position type to account for issue where someone used to be a supervision officer but changed positions in later data
             -- ignore records where employee_id = 0 (which is not a real employee ID and MI uses to track internal transfers or something)
             ass.employee_id <> '0'
             -- ignore cases where someone is assigned and closed on the same day (cause I see that some in the data and I think those are errors)
@@ -336,6 +335,7 @@ tiny_spans as (
     select *,
         LEAD(period_start) OVER(PARTITION BY offender_booking_id ORDER BY period_start) as period_end
     from (
+        (
         select 
             distinct
             offender_booking_id,
@@ -409,7 +409,16 @@ tiny_spans as (
         ) unioned
         -- don't include periods in the future
         where dte is not null and dte <= @update_timestamp
-    ) sub
+        )  
+        -- 9/20 revision: realized that the original query was missing same day periods (where two movements happen on the same day) so adding that in here
+        union all 
+        (
+            select offender_booking_id,
+                    movement_start as dte
+            from movement_periods
+            where movement_start = movement_end
+        )
+        ) unioned2
 ),
 
 -- Join movement periods data onto all tiny spans
@@ -554,20 +563,29 @@ spans_all_combos as (
 select 
     offender_number,
     offender_booking_id,
-    ROW_NUMBER() OVER (PARTITION BY offender_number, offender_booking_id ORDER BY period_start) as period_id,
+    -- 9/20 revision: now that we've added same day periods, adding period_end to order by
+    ROW_NUMBER() OVER (PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as period_id,
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
-    LEAD(offender_external_movement_id) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start) as next_offender_external_movement_id,
-    LAG(offender_external_movement_id) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start) as prev_offender_external_movement_id,
+    -- 9/20 revision: adding in prev_movement_reason_id for intake/investigation movement mapping nuances (NOTE: prev_movement_reason_id is not analogous to next_movement_reason_id due to being constructed differently)
+    -- 9/20 revision: now that we've added same day periods, adding period_end to order by
+    LAG(movement_reason_id) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_movement_reason_id,
+    LEAD(offender_external_movement_id) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_offender_external_movement_id,
+    LAG(offender_external_movement_id) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_offender_external_movement_id,
     supervision_level_id,
     order_type_id_list,
+    -- 9/20 add prev_order_type_id_list and next_order_type_id_list to use for intake/investigation movement mapping nuances
+    LAG(order_type_id_list) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_order_type_id_list,
+    LEAD(order_type_id_list) OVER(PARTITION BY offender_number, offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_order_type_id_list,
     special_condition_ids,
     employee_id,
     first_name,
     middle_name,
     last_name,
     name_suffix,
-    employee_county
+    employee_county,
+    -- 9/20 add position to use in new agent type mapping rule
+    position
 from spans_all_combos
 where movement_reason_id is not null
 and offender_number is not null;
