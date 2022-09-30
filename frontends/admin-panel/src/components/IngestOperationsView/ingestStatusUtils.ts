@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { QueueState, GCP_STORAGE_BASE_URL, QueueMetadata } from "./constants";
+import moment from "moment";
+import { GCP_STORAGE_BASE_URL, QueueMetadata, QueueState } from "./constants";
 
 export interface DirectIngestStatusFormattingInfo {
   status: string;
@@ -122,8 +123,23 @@ export const getStatusBoxColor = (status: string): string => {
   return statusFormattingInfo[status].color;
 };
 
-export const getStatusMessage = (status: string): string => {
-  return statusFormattingInfo[status].message;
+// TODO(#15755): Update getStatusMessage so that it always takes timestamp
+export const getStatusMessage = (
+  status: string,
+  timestamp?: string
+): string => {
+  let statusMessage = statusFormattingInfo[status].message;
+  if (timestamp) {
+    const dt = new Date(timestamp);
+    const timeAgo = moment([
+      dt.getFullYear(),
+      dt.getMonth(),
+      dt.getDate(),
+    ]).fromNow();
+    statusMessage = `${statusMessage} (${timeAgo})`;
+  }
+
+  return statusMessage;
 };
 
 export const getStatusSortedOrder = (): string[] => {

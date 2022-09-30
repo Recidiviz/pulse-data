@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines admin panel routes for ingest operations."""
+import datetime
 import logging
 from http import HTTPStatus
 from typing import Dict, List, Optional, Tuple, Union
@@ -723,7 +724,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             get_ingest_operations_store().get_all_current_ingest_instance_statuses()
         )
 
-        all_instance_statuses_strings: Dict[str, Dict[str, Dict[str, str]]] = {}
+        all_instance_statuses_strings: Dict[
+            str, Dict[str, Dict[str, Union[str, datetime.datetime]]]
+        ] = {}
 
         for instance_state_code, instances in all_instance_statuses.items():
 

@@ -110,3 +110,12 @@ export type StateCodeInfo = {
 export type StateIngestQueuesStatuses = {
   [stateCode: string]: QueueState;
 };
+
+export type IngestInstanceStatusTableInfo = {
+  stateCode: string;
+  primary: string;
+  secondary: string;
+  queueInfo: string | undefined;
+  timestampPrimary: string;
+  timestampSecondary: string;
+};
