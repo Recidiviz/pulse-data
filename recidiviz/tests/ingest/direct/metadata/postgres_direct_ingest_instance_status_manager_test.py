@@ -555,3 +555,30 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
                 ],
                 expected_raw_data_source=DirectIngestInstance.PRIMARY,
             )
+
+    def test_ingest_view_materialization_to_done(self) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_primary_manager,
+            [
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                # A transition to UP_TO_DATE would be rare here but possible if the
+                # ingest view did not produce any results.
+                DirectIngestStatus.UP_TO_DATE,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )
+
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                # A transition to READY_TO_FLASH would be rare here but possible if the
+                # ingest view did not produce any results.
+                DirectIngestStatus.READY_TO_FLASH,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )

@@ -119,6 +119,7 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             DirectIngestStatus.FLASH_COMPLETED,
             DirectIngestStatus.STANDARD_RERUN_STARTED,
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         ],
         # PRIMARY specific check for FLASH_IN_PROGRESS. Flashing could start when ingest
@@ -155,6 +156,7 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         + [DirectIngestStatus.READY_TO_FLASH],
         DirectIngestStatus.READY_TO_FLASH: [
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         ],
         DirectIngestStatus.FLASH_CANCELED: [
