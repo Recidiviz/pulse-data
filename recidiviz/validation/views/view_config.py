@@ -50,6 +50,9 @@ from recidiviz.validation.views.external_data.recidivism_person_level import (
 from recidiviz.validation.views.external_data.regions.us_co.incarceration_population_person_level import (
     US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_mi.cb_971_report_supervision_unified import (
+    CB_971_REPORT_SUPERVISION_UNIFIED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_mi.cb_971_report_unified import (
     CB_971_REPORT_UNIFIED_VIEW_BUILDER,
 )
@@ -59,11 +62,17 @@ from recidiviz.validation.views.external_data.regions.us_mi.incarceration_popula
 from recidiviz.validation.views.external_data.regions.us_mi.incarceration_population_person_level import (
     US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_mi.supervision_population_by_type import (
+    US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_oz.incarceration_population_person_level import (
     US_OZ_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.validation.views.external_data.supervision_early_discharge_person_level import (
     SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.supervision_population_by_type import (
+    get_supervision_population_by_type_view_builder,
 )
 from recidiviz.validation.views.external_data.supervision_population_person_level import (
     SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
@@ -192,9 +201,12 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
             SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
+            get_supervision_population_by_type_view_builder(),
             CB_971_REPORT_UNIFIED_VIEW_BUILDER,
+            CB_971_REPORT_SUPERVISION_UNIFIED_VIEW_BUILDER,
             US_MI_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
+            US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
             US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_OZ_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         ]

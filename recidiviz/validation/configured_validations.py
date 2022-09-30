@@ -229,6 +229,9 @@ from recidiviz.validation.views.state.supervision_population_by_district_by_demo
 from recidiviz.validation.views.state.supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.supervision_population_by_type_external_comparison import (
+    SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison import (
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -811,6 +814,16 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
+            comparison_columns=[
+                "external_population_count",
+                "internal_population_count",
+            ],
+            hard_max_allowed_error=0.02,
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_VIEW_BUILDER,
             comparison_columns=[
                 "external_population_count",
                 "internal_population_count",
