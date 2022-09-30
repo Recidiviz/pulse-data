@@ -95,48 +95,39 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         ):
 
                             self.assertEqual(sheet["sheet_name"], "arrests_by_race")
-                            self.assertEqual(
-                                sheet["messages"],
-                                [
-                                    {
-                                        "title": "Missing Column",
-                                        "subtitle": "race/ethnicity",
-                                        "description": "We expected the following column: 'race/ethnicity'. Only the following column names were found in the sheet: year, month, value.",
-                                        "type": "ERROR",
-                                    },
-                                ],
+                            self.assertTrue(
+                                {
+                                    "title": "Missing Column",
+                                    "subtitle": None,
+                                    "type": "ERROR",
+                                }.items()
+                                <= sheet["messages"][0].items()
                             )
                         elif (
                             sheet["display_name"]
                             == filename_to_metricfile["arrests"].display_name
                         ):
                             self.assertEqual(sheet["sheet_name"], "arrests")
-                            self.assertEqual(
-                                sheet["messages"],
-                                [
-                                    {
-                                        "title": "Too Many Rows",
-                                        "subtitle": "6/2021",
-                                        "description": "There should only be a single row containing data for arrests in 6/2021.",
-                                        "type": "ERROR",
-                                    },
-                                ],
+                            self.assertTrue(
+                                {
+                                    "title": "Too Many Rows",
+                                    "subtitle": "6/2021",
+                                    "type": "ERROR",
+                                }.items()
+                                <= sheet["messages"][0].items()
                             )
                         elif (
                             sheet["display_name"]
                             == filename_to_metricfile["arrests_by_type"].display_name
                         ):
                             self.assertEqual(sheet["sheet_name"], "arrests_by_type")
-                            self.assertEqual(
-                                sheet["messages"],
-                                [
-                                    {
-                                        "title": "Missing Total Value",
-                                        "subtitle": None,
-                                        "description": "No totals values were provided for the 'Total Arrests' metric or the totals sheet provided contained errors. The total value for 'Total Arrests' will be shown as the sum of the breakdown values provided in arrests_by_type",
-                                        "type": "WARNING",
-                                    },
-                                ],
+                            self.assertTrue(
+                                {
+                                    "title": "Missing Total Value",
+                                    "subtitle": None,
+                                    "type": "WARNING",
+                                }.items()
+                                <= sheet["messages"][0].items()
                             )
 
                     # 24 total datapoints. 2 for aggregate total (May and June), 10 for gender breakdowns (May-June),
@@ -150,9 +141,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(message["title"], "Missing Metric")
                     self.assertEqual(message["type"], "ERROR")
                     self.assertTrue(
-                        f"No data for the '{metric_definition.display_name}' metric was provided. "
-                        "You did not include any sheets for this metric in your excel workbook. Please provide data "
-                        "in a sheet titled" in message["description"]
+                        f"No data for the {metric_definition.display_name} metric was provided. "
                     )
             self.assertEqual(len(json_response["non_metric_errors"]), 0)
 
@@ -211,9 +200,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(message["title"], "Missing Metric")
                     self.assertEqual(message["type"], "ERROR")
                     self.assertTrue(
-                        f"No data for the '{metric_definition.display_name}' metric was provided. "
-                        "You did not include any sheets for this metric in your excel workbook. Please provide data "
-                        "in a sheet titled" in message["description"]
+                        f"No data for the {metric_definition.display_name} metric was provided. "
+                        in message["description"]
                     )
 
             self.assertEqual(len(json_response["non_metric_errors"]), 0)
@@ -292,9 +280,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.assertEqual(message["title"], "Missing Metric")
                 self.assertEqual(message["type"], "ERROR")
                 self.assertTrue(
-                    f"No data for the '{metric_definition.display_name}' metric was provided. "
-                    "You did not include any sheets for this metric in your excel workbook. Please provide data "
-                    "in a sheet titled" in message["description"]
+                    f"No data for the {metric_definition.display_name} metric was provided. "
+                    in message["description"]
                 )
 
             # 1 non_metric error for invalid sheet names.

@@ -17,8 +17,9 @@
 """Contains the list of custom exceptions used by Justice Counts."""
 
 import enum
+from datetime import date
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 from recidiviz.utils.flask_exception import FlaskException
 
@@ -58,12 +59,15 @@ class JusticeCountsBulkUploadException(Exception):
         title: str,
         description: str,
         message_type: BulkUploadMessageType,
+        time_range: Optional[Tuple[date, date]] = None,
         subtitle: Optional[str] = None,
         sheet_name: Optional[str] = None,
     ):
         super().__init__(description)
         self.title = title
-        self.subtitle = subtitle
+        self.subtitle = subtitle or (
+            f"{time_range[0].month}/{time_range[0].year}" if time_range else None
+        )
         self.description = description
 
         # A JusticeCountsBulkUploadException can be either warnings or errors.
