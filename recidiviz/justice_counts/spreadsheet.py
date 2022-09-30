@@ -39,7 +39,7 @@ from recidiviz.justice_counts.exceptions import (
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
-from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
+from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -261,15 +261,16 @@ class SpreadsheetInterface:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        system: str,
+        metric_definitions: List[MetricDefinition],
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
-        sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system]
-        metric_definitions = METRICS_BY_SYSTEM[system]
         metrics = []
         for metric_definition in metric_definitions:
             if metric_definition.disabled:
                 continue
+            sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
+                metric_definition.system.value
+            ]
             # For each sheet (i.e arrests_by_type) in an excel workbook that raised
             # an exception, jsonify the exception information so that it can be rendered
             # for the user on the bulk upload error page.

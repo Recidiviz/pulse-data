@@ -170,7 +170,6 @@ class BulkUploader:
                     existing_datapoints_dict=existing_datapoints_dict,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
-                    sheet_name_to_metricfile=sheet_name_to_metricfile,
                 )
             except Exception as e:
                 # upload_rows will handle error handling for all JusticeCountsBulkUploadErrors
@@ -409,7 +408,6 @@ class BulkUploader:
         user_account: schema.UserAccount,
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        sheet_name_to_metricfile: Dict[str, MetricFile],
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -420,6 +418,13 @@ class BulkUploader:
         up the rows by system, and then ingest one system at a time."""
         system_to_rows = self._get_system_to_rows(system=system, rows=rows)
         for current_system, current_rows in system_to_rows.items():
+
+            # Redefine this here to properly handle sheets that contain
+            # rows for multiple systems (e.g. a Supervision sheet can
+            # contain rows for Parole and Probation)
+            sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
+                current_system.value
+            ]
 
             # Based on the system and the name of the CSV file, determine which
             # Justice Counts metric this file contains data for

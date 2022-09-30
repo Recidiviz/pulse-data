@@ -30,6 +30,7 @@ import pandas as pd
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
+from recidiviz.justice_counts.metrics.metric_definition import MetricCategory
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -44,7 +45,10 @@ def generate_bulk_upload_template(system: schema.System) -> None:
             metricfile.definition.reporting_frequency
             == schema.ReportingFrequency.ANNUAL
         ):
-            if metricfile.definition.system == schema.System.SUPERVISION:
+            if (
+                metricfile.definition.system == schema.System.SUPERVISION
+                and metricfile.definition.category != MetricCategory.CAPACITY_AND_COST
+            ):
                 for s in ["PAROLE", "PROBATION"]:
                     for year in [2021, 2022]:
                         row = {"year": str(year), "system": s, "value": ""}
@@ -54,7 +58,10 @@ def generate_bulk_upload_template(system: schema.System) -> None:
                     row = {"year": str(year), "value": ""}
                     rows.append(row)
         else:
-            if metricfile.definition.system == schema.System.SUPERVISION:
+            if (
+                metricfile.definition.system == schema.System.SUPERVISION
+                and metricfile.definition.category != MetricCategory.CAPACITY_AND_COST
+            ):
                 for s in ["PAROLE", "PROBATION"]:
                     for year in [2021, 2022]:
                         for month in range(1, 13):
@@ -90,7 +97,7 @@ def generate_bulk_upload_template(system: schema.System) -> None:
         filename_to_rows[metricfile.canonical_filename] = new_rows
 
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-        f"frontends/justice-counts/control-panel/public/assets/{system_enum.name}.xlsx"
+        f"{system_enum.name}.xlsx"
     ) as writer:
         for filename, rows in filename_to_rows.items():
             df = pd.DataFrame.from_dict(rows)

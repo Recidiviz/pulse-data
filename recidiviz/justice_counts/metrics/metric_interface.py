@@ -458,13 +458,23 @@ class MetricInterface:
         ):
             # This agency reports its metrics broken down by parole/probation/post-release,
             # so we should remove all of the generic "supervision" metrics except for the
-            # cost and capacity ones (i.e. budget and staff)
+            # cost and capacity ones (i.e. budget and staff), and we should remove the
+            # cost and capacity ones from parole/probation/post-release.
             metrics = [
                 metric
                 for metric in metrics
                 if not (
                     metric.system == schema.System.SUPERVISION
                     and metric.category != MetricCategory.CAPACITY_AND_COST
+                )
+                and not (
+                    metric.system
+                    in {
+                        schema.System.PAROLE,
+                        schema.System.PROBATION,
+                        schema.System.POST_RELEASE,
+                    }
+                    and metric.category == MetricCategory.CAPACITY_AND_COST
                 )
             ]
 

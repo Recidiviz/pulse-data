@@ -23,6 +23,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -74,7 +75,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                system="LAW_ENFORCEMENT",
+                metric_definitions=MetricInterface.get_metric_definitions(
+                    systems={schema.System.LAW_ENFORCEMENT}
+                ),
             )
             filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
             self.assertEqual(len(json_response["metrics"]), 7)
@@ -184,7 +187,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                system="LAW_ENFORCEMENT",
+                metric_definitions=MetricInterface.get_metric_definitions(
+                    systems={schema.System.LAW_ENFORCEMENT}
+                ),
             )
             self.assertEqual(len(json_response["metrics"]), 7)
             for metric in json_response["metrics"]:
@@ -231,7 +236,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                system="LAW_ENFORCEMENT",
+                metric_definitions=MetricInterface.get_metric_definitions(
+                    systems={schema.System.LAW_ENFORCEMENT}
+                ),
             )
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.annual_budget.key:
@@ -271,7 +278,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                system="PROSECUTION",
+                metric_definitions=MetricInterface.get_metric_definitions(
+                    systems={schema.System.PROSECUTION}
+                ),
             )
             # There should be a missing metric error for each metric in prosecution.
             self.assertEqual(len(json_response["metrics"]), 7)
