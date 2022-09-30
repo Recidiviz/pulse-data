@@ -82,16 +82,29 @@ class IngestDataFreshnessStore(AdminPanelStore):
     """
 
     def __init__(self) -> None:
-        self.data_freshness_results: List[Dict[str, Union[Optional[str], bool]]] = []
+        self._data_freshness_results: List[Dict[str, Union[Optional[str], bool]]] = []
+        self._data_freshness_results_last_calculated: Optional[datetime.datetime] = None
         self.gcs_fs = GcsfsFactory.build()
         self.bq_client: BigQueryClient = BigQueryClientImpl()
 
     def recalculate_store(self) -> None:
-        self.update_data_freshness_results()
+        # Data freshness is too expensive to recalculate every 15 min.
+        pass
 
-    def update_data_freshness_results(self) -> None:
+    @property
+    def data_freshness_results(self) -> List[Dict[str, Union[Optional[str], bool]]]:
         """Refreshes information in the metadata store about freshness of ingested data
         for all states."""
+
+        if self._data_freshness_results_last_calculated:
+            time_since_last_calculated = (
+                datetime.datetime.now() - self._data_freshness_results_last_calculated
+            ).total_seconds()
+
+            if time_since_last_calculated < 15 * 60:
+                # Return cached results if results were calculated in last 15 min
+                return self._data_freshness_results
+
         bq_export_config = CloudSqlToBQConfig.for_schema_type(
             SchemaType.STATE,
             yaml_path=GcsfsFilePath.from_absolute_path(
@@ -126,7 +139,9 @@ class IngestDataFreshnessStore(AdminPanelStore):
                 }
             )
 
-        self.data_freshness_results = latest_upper_bounds
+        self._data_freshness_results = latest_upper_bounds
+        self._data_freshness_results_last_calculated = datetime.datetime.now()
+        return self._data_freshness_results
 
     def get_statuses_for_schema(
         self, schema: SchemaType
