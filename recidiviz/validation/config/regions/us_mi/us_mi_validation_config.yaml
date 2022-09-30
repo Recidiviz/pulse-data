@@ -1,8 +1,43 @@
 # Configuration for which validations to run for region US_ME.
 
 region_code: US_MI
-# TODO(#11850): Enable validations for US_MI.
-dev_mode: True
+dev_mode: False
 exclusions: []
-max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+max_allowed_error_overrides:
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 1.0
+    override_reason: Needs further investigation.
+      There are some facilities in the external data that don't appear in our data.
+      In some cases (like "GUI"), it's not an actual facility in the external data but a category of facilities.
+      In other cases (like "JLS", "ZPF", "ZPM"), they're facilities that we don't consider as part of incarceration
+      but further investigation is required to confirm that they are being excluded in our incarceration periods view.
+      Lastly, there are also some mismatches for facilities that no longer exist ("IRM").
+      As a note, MI has cautioned that the counts they have in the external data are also not entirely consistent.
+  - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison #TODO(#13513)
+    hard_max_allowed_error_override: .1209
+    override_reason: Needs investigation; fails for years 2010-2013. #TODO(#13514)
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: .35
+    override_reason: Needs investigation.  Current failing level as of 9/26 is .302 #TODO(#13880)
+num_allowed_rows_overrides:
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 1500
+    override_reason: Needs investigation.  Current failing level as of 9/26 is 1418 rows #TODO(#13882)
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 1500
+    override_reason:
+      Needs investigation; there's a known issue with incarceration periods (#13336) that might be related?
+      Current failing level as of 9/26 is 1315 rows #TODO(#13516)
+  - validation_name: incarceration_commitments_subset_of_admissions
+    hard_num_allowed_rows_override: 4
+    override_reason: Needs investigation. Current failing level as of 9/26 is 4 rows #TODO(#15586)
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 150000
+    override_reason:
+      Needs further investigation; there's a known issue with incarceration periods (#13336) that might be related?
+      Current failing level as of 9/26 is 145071 rows #TODO(#13518)
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 6000
+    override_reason: Needs further investigation.
+      There's a known issue with overlapping supervision periods that arise when offender bookings overlap
+      but there are a few other scenarios as well.  Currently expected number of failing rows is ~5000 #TODO(#15587)
