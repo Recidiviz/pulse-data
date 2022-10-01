@@ -71,6 +71,17 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
     ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
     PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,
     PopulationSpanMetricType.SUPERVISION_POPULATION_SPAN,
+    IncarcerationMetricType.INCARCERATION_ADMISSION,
+    IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
+    IncarcerationMetricType.INCARCERATION_RELEASE,
+    ProgramMetricType.PROGRAM_PARTICIPATION,
+    ProgramMetricType.PROGRAM_REFERRAL,
+    SupervisionMetricType.SUPERVISION_COMPLIANCE,
+    SupervisionMetricType.SUPERVISION_DOWNGRADE,
+    SupervisionMetricType.SUPERVISION_START,
+    SupervisionMetricType.SUPERVISION_SUCCESS,
+    SupervisionMetricType.SUPERVISION_TERMINATION,
+    ViolationMetricType.VIOLATION,
 ]
 
 # The maximum number days of output that should be stored in a dataflow metrics table

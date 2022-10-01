@@ -31,7 +31,7 @@ from mock import patch
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.calculator import calculation_data_storage_manager
+from recidiviz.calculator import calculation_data_storage_manager, dataflow_config
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
@@ -599,6 +599,49 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         mock_update.assert_called()
+
+
+class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
+    """Tests for calculation_data_storage_manager.py that use the real pipeline config"""
+
+    def setUp(self) -> None:
+
+        self.project_id = "fake-recidiviz-project"
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
+
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.calculator.calculation_data_storage_manager.BigQueryClientImpl"
+        )
+        self.mock_client = self.bq_client_patcher.start().return_value
+
+        self.mock_client.dataset_ref_for_id.return_value = bigquery.DatasetReference(
+            self.project_id, "test_dataflow_dataset"
+        )
+        self.mock_client.list_tables.return_value = [
+            bigquery.TableReference(
+                bigquery.DatasetReference(self.project_id, "test_dataflow_dataset"),
+                table_id,
+            )
+            for table_id, _ in dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES.items()
+        ]
+        self.mock_client.project_id.return_value = self.project_id
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
+
+    def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
+        """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
+        insert into the cold storage table, and calls the client to replace the dataflow table."""
+        calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
+
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.insert_into_table_from_query_async.assert_called()
+        self.mock_client.create_table_from_query_async.assert_called()
 
 
 class MockDataset:
