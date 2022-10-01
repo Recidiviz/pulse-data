@@ -35,16 +35,17 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
 from recidiviz.calculator.pipeline.metrics.incarceration.pipeline import (
     IncarcerationMetricsPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
-)
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -983,7 +984,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
-        assessments: Optional[List[StateAssessment]] = None,
+        assessments: Optional[List[NormalizedStateAssessment]] = None,
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ] = None,
@@ -1237,7 +1238,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        assessments: Optional[List[StateAssessment]] = None,
+        assessments: Optional[List[NormalizedStateAssessment]] = None,
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ] = None,

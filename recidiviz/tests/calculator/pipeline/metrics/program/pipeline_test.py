@@ -46,7 +46,7 @@ from recidiviz.calculator.pipeline.metrics.program.metrics import (
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
@@ -504,11 +504,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2009, 10, 19),
         )
 
-        assessment = entities.StateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = (
@@ -617,11 +619,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             start_date=date(2009, 10, 19),
         )
 
-        assessment = entities.StateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_ND",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = (
@@ -718,11 +722,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        assessment = entities.StateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = (
@@ -890,11 +896,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = entities.StateAssessment.new_with_defaults(
+        assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period_to_agent_map = {"supervision_period_id": "fake_map"}

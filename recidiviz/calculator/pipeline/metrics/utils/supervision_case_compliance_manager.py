@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_complian
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -71,7 +72,7 @@ class StateSupervisionCaseComplianceManager:
         supervision_period: NormalizedStateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_sentences: List[StateIncarcerationSentence],

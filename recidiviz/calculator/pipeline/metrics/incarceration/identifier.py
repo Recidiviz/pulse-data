@@ -41,7 +41,11 @@ from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
@@ -99,7 +103,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
@@ -132,7 +136,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
             ],
-            assessments=identifier_context[StateAssessment.__name__],
+            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
             violation_responses=identifier_context[
                 NormalizedStateSupervisionViolationResponse.base_class_name()
             ],
@@ -155,7 +159,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_period_judicial_district_association: List[Dict[str, Any]],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
@@ -241,7 +245,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_delegate: StateSpecificSupervisionDelegate,
         ip_index: NormalizedIncarcerationPeriodIndex,
         sp_index: NormalizedSupervisionPeriodIndex,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
@@ -449,7 +453,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
@@ -502,7 +506,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
@@ -526,19 +530,29 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 "admission_date and admission_reason."
             )
 
-        (
-            assessment_score,
-            assessment_level,
-            assessment_type,
-        ) = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
-            admission_date,
-            assessments,
-            assessment_class=StateAssessmentClass.RISK,
-            supervision_delegate=supervision_delegate,
+        most_recent_assessment = (
+            assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                cutoff_date=admission_date,
+                assessments=assessments,
+                assessment_class=StateAssessmentClass.RISK,
+                supervision_delegate=supervision_delegate,
+            )
         )
-        assessment_score_bucket = assessment_utils.assessment_score_bucket(
-            assessment_type, assessment_score, assessment_level, supervision_delegate
+        assessment_score = (
+            most_recent_assessment.assessment_score if most_recent_assessment else None
         )
+        assessment_level = (
+            most_recent_assessment.assessment_level if most_recent_assessment else None
+        )
+        assessment_type = (
+            most_recent_assessment.assessment_type if most_recent_assessment else None
+        )
+        assessment_score_bucket = (
+            most_recent_assessment.assessment_score_bucket
+            if most_recent_assessment
+            else DEFAULT_ASSESSMENT_SCORE_BUCKET
+        )
+
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
                 violation_delegate,

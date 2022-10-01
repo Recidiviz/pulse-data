@@ -45,7 +45,11 @@ from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
@@ -105,7 +109,6 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
@@ -144,7 +147,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
             ],
-            assessments=identifier_context[StateAssessment.__name__],
+            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
             violation_responses=identifier_context[
                 NormalizedStateSupervisionViolationResponse.base_class_name()
             ],
@@ -167,7 +170,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_association: List[Dict[str, Any]],
@@ -310,7 +313,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         violation_responses_for_history: List[
             NormalizedStateSupervisionViolationResponse
         ],
@@ -425,6 +428,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessment_score = None
                 assessment_level = None
                 assessment_type = None
+                assessment_score_bucket = DEFAULT_ASSESSMENT_SCORE_BUCKET
 
                 most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
                     event_date,
@@ -437,13 +441,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     assessment_score = most_recent_assessment.assessment_score
                     assessment_level = most_recent_assessment.assessment_level
                     assessment_type = most_recent_assessment.assessment_type
-
-                assessment_score_bucket = assessment_utils.assessment_score_bucket(
-                    assessment_type,
-                    assessment_score,
-                    assessment_level,
-                    supervision_delegate,
-                )
+                    assessment_score_bucket = (
+                        most_recent_assessment.assessment_score_bucket
+                        or DEFAULT_ASSESSMENT_SCORE_BUCKET
+                    )
 
                 violation_history = get_violation_and_response_history(
                     upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
@@ -676,7 +677,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         violation_responses_for_history: List[
             NormalizedStateSupervisionViolationResponse
         ],
@@ -740,16 +741,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 end_assessment_score,
                 end_assessment_level,
                 end_assessment_type,
+                end_assessment_score_bucket,
             ) = self._find_assessment_score_change(
                 assessment_start_date,
                 assessment_termination_date,
                 assessments,
-                supervision_delegate,
-            )
-            end_assessment_score_bucket = assessment_utils.assessment_score_bucket(
-                end_assessment_type,
-                end_assessment_score,
-                end_assessment_level,
                 supervision_delegate,
             )
 
@@ -1279,13 +1275,14 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         self,
         start_date: date,
         termination_date: date,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Tuple[
         Optional[int],
         Optional[int],
         Optional[StateAssessmentLevel],
         Optional[StateAssessmentType],
+        Optional[str],
     ]:
         """Finds the difference in scores between the last assessment that happened between the start_date and
         termination_date (inclusive) and the the first "reliable" assessment that was conducted after the start of
@@ -1351,9 +1348,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                                 last_assessment.assessment_score,
                                 last_assessment.assessment_level,
                                 last_assessment.assessment_type,
+                                last_assessment.assessment_score_bucket,
                             )
 
-        return None, None, None, None
+        return None, None, None, None, DEFAULT_ASSESSMENT_SCORE_BUCKET
 
     def _get_supervision_downgrade_details_if_downgrade_occurred(
         self,

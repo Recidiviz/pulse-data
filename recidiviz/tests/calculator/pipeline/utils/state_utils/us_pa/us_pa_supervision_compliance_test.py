@@ -22,7 +22,11 @@ from typing import List, Optional
 from dateutil.relativedelta import relativedelta
 from parameterized import parameterized
 
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
@@ -66,7 +70,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
@@ -87,32 +90,44 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
 
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
-        assessment_out_of_range = StateAssessment.new_with_defaults(
+        assessment_out_of_range = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
-        assessment_out_of_range_2 = StateAssessment.new_with_defaults(
+        assessment_out_of_range_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 5, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=4,
         )
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
+            assessment_id=1,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
             assessment_date=date(2018, 4, 30),
+            assessment_score_bucket="0-23",
+            sequence_num=2,
         )
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
+            assessment_id=2,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
             assessment_date=date(2018, 4, 30),
+            assessment_score_bucket="39+",
+            sequence_num=3,
         )
-        assessment_no_score = StateAssessment.new_with_defaults(
+        assessment_no_score = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1727,7 +1742,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -1768,7 +1783,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -1810,7 +1825,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -1854,7 +1869,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -1913,7 +1928,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -1957,7 +1972,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2018,7 +2033,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2079,7 +2094,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2136,7 +2151,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2193,7 +2208,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2246,7 +2261,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
 
         assessment_date = date(2018, 4, 2)
         assessment_score = 18
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_PA.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
@@ -2310,8 +2325,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
             supervision_level=supervision_level,
         )
 
-    def _assessment_with_score(self, score: int) -> StateAssessment:
-        return StateAssessment.new_with_defaults(
+    def _assessment_with_score(self, score: int) -> NormalizedStateAssessment:
+        return NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=self.start_of_supervision,
