@@ -50,7 +50,11 @@ from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_complian
 from recidiviz.calculator.pipeline.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
@@ -58,9 +62,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
-)
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -132,7 +133,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
@@ -199,7 +199,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
@@ -216,7 +216,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             StateIncarcerationSentence.__name__: incarceration_sentences,
             StateSupervisionSentence.__name__: supervision_sentences,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
-            StateAssessment.__name__: assessments,
+            NormalizedStateAssessment.base_class_name(): assessments,
             StateSupervisionContact.__name__: supervision_contacts,
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses,
             "supervision_period_to_agent_association": supervision_period_to_agent_association
@@ -299,12 +299,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 1),
+            assessment_score_bucket="HIGH",
+            sequence_num=0,
         )
 
         supervision_sentences = [supervision_sentence]
@@ -402,7 +404,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -484,7 +486,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -590,7 +592,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -698,7 +700,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -803,7 +805,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
@@ -862,7 +864,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
@@ -949,7 +951,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             first_incarceration_period,
             second_incarceration_period,
         ]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1072,7 +1074,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             first_incarceration_period,
             second_incarceration_period,
         ]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1167,7 +1169,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1293,7 +1295,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1386,7 +1388,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1490,7 +1492,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1609,7 +1611,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             first_incarceration_period,
             second_incarceration_period,
         ]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1769,7 +1771,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             first_incarceration_period,
             second_incarceration_period,
         ]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -1903,12 +1905,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             projected_completion_date=date(2018, 5, 10),
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 1),
+            assessment_score_bucket=StateAssessmentLevel.HIGH.value,
+            sequence_num=0,
         )
 
         supervision_sentences = [supervision_sentence]
@@ -2023,7 +2027,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         ]
         supervision_periods = [first_supervision_period, second_supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -2125,7 +2129,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -2211,12 +2215,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ID",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 1),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_sentences = [supervision_sentence]
@@ -2260,7 +2266,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                assessment_score_bucket="30-38",
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 case_compliances=_generate_case_compliances(
@@ -2309,12 +2315,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
             assessment_type=StateAssessmentType.LSIR,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
             assessment_date=date(2018, 3, 1),
+            assessment_score_bucket=StateAssessmentLevel.HIGH.value,
+            sequence_num=0,
         )
 
         supervision_sentences: List[StateSupervisionSentence] = []
@@ -2476,7 +2484,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = [
@@ -2528,12 +2536,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ID",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 1),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_sentences: List[StateSupervisionSentence] = []
@@ -2570,7 +2580,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                assessment_score_bucket="30-38",
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2628,7 +2638,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -2720,7 +2730,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
@@ -2986,7 +2996,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3074,7 +3084,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         )
 
         incarceration_sentences: List[StateIncarcerationSentence] = []
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         supervision_sentences = [supervision_sentence]
@@ -3159,7 +3169,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
         )
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3256,7 +3266,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3338,7 +3348,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3423,7 +3433,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3502,7 +3512,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3578,7 +3588,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3633,20 +3643,24 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             release_date=date(2018, 10, 27),
         )
 
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=StateAssessmentLevel.HIGH.value,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=24,
             assessment_level=StateAssessmentLevel.MEDIUM,
             assessment_date=date(2018, 10, 27),
+            assessment_score_bucket=StateAssessmentLevel.MEDIUM.value,
+            sequence_num=1,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -3735,11 +3749,13 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=24,
             assessment_date=date(2017, 12, 17),
+            assessment_score_bucket="24-29",
+            sequence_num=0,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -3845,7 +3861,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=supervision_periods
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -3932,7 +3948,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=supervision_periods
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
@@ -5214,27 +5230,33 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        first_assessment = StateAssessment.new_with_defaults(
+        first_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         first_reassessment_score = 29
-        first_reassessment = StateAssessment.new_with_defaults(
+        first_reassessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=first_reassessment_score,
             assessment_date=date(2018, 5, 18),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         last_assessment_score = 19
-        last_assessment = StateAssessment.new_with_defaults(
+        last_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=last_assessment_score,
             assessment_date=date(2019, 5, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessments = [first_assessment, first_reassessment, last_assessment]
@@ -5293,7 +5315,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
@@ -5347,11 +5369,13 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        first_assessment = StateAssessment.new_with_defaults(
+        first_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         assessments = [first_assessment]
@@ -5405,7 +5429,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
@@ -5456,34 +5480,42 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        too_early_assessment = StateAssessment.new_with_defaults(
+        too_early_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=38,
             assessment_date=date(2017, 12, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 1, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         assessment_2_score = 29
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=assessment_2_score,
             assessment_date=date(2018, 5, 18),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessment_3_score = 19
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=assessment_3_score,
             assessment_date=date(2019, 11, 21),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=3,
         )
 
         assessments = [too_early_assessment, assessment_1, assessment_2, assessment_3]
@@ -5669,7 +5701,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[first_supervision_period, second_supervision_period]
@@ -5766,7 +5798,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[first_supervision_period, second_supervision_period]
@@ -5845,7 +5877,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         supervision_period_index = default_normalized_sp_index_for_tests(
             supervision_periods=[supervision_period]
@@ -6619,28 +6651,34 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.identifier = identifier.SupervisionIdentifier()
 
     def test_find_assessment_score_change(self) -> None:
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_level=StateAssessmentLevel.MEDIUM,
             assessment_date=date(2016, 1, 13),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessments = [assessment_1, assessment_2, assessment_3]
@@ -6653,6 +6691,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6666,20 +6705,27 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertEqual(assessment_3.assessment_score, end_assessment_score)
         self.assertEqual(assessment_3.assessment_level, end_assessment_level)
         self.assertEqual(assessment_3.assessment_type, end_assessment_type)
+        self.assertEqual(
+            assessment_3.assessment_score_bucket, end_assessment_score_bucket
+        )
 
     def test_find_assessment_score_change_insufficient_assessments(self) -> None:
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         assessments = [assessment_1, assessment_2]
@@ -6692,6 +6738,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6705,6 +6752,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_score)
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+        self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     class SecondAssessmentDelegate(UsXxSupervisionDelegate):
         def get_index_of_first_reliable_supervision_assessment(self) -> int:
@@ -6714,18 +6762,22 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self,
     ) -> None:
 
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         assessments = [assessment_1, assessment_2]
@@ -6738,6 +6790,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6749,27 +6802,36 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertEqual(assessment_2.assessment_score, end_assessment_score)
         self.assertEqual(assessment_2.assessment_level, end_assessment_level)
         self.assertEqual(assessment_2.assessment_type, end_assessment_type)
+        self.assertEqual(
+            assessment_2.assessment_score_bucket, end_assessment_score_bucket
+        )
 
     def test_find_assessment_score_change_different_type(self) -> None:
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=23,
             assessment_date=date(2016, 1, 13),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessments = [assessment_1, assessment_2, assessment_3]
@@ -6782,6 +6844,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6795,27 +6858,34 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_score)
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+        self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     def test_find_assessment_score_change_same_date(self) -> None:
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_date=date(2016, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessments = [assessment_1, assessment_2, assessment_3]
@@ -6828,6 +6898,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6841,9 +6912,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_score)
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+        self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     def test_find_assessment_score_change_no_assessments(self) -> None:
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
 
         start_date = date(2015, 2, 22)
         termination_date = date(2016, 3, 12)
@@ -6853,6 +6925,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6866,27 +6939,34 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_score)
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+        self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
     def test_find_assessment_score_change_outside_boundary(self) -> None:
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2011, 3, 23),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_date=date(2016, 1, 13),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=2,
         )
 
         assessments = [assessment_1, assessment_2, assessment_3]
@@ -6899,6 +6979,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
+            end_assessment_score_bucket,
         ) = self.identifier._find_assessment_score_change(
             start_date,
             termination_date,
@@ -6912,6 +6993,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_score)
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
+        self.assertEqual(end_assessment_score_bucket, DEFAULT_ASSESSMENT_SCORE_BUCKET)
 
 
 class TestTerminationReasonFunctionCoverageCompleteness(unittest.TestCase):
@@ -7043,7 +7125,7 @@ def _generate_case_compliances(
     person: StatePerson,
     start_date: Optional[date],
     supervision_period: NormalizedStateSupervisionPeriod,
-    assessments: Optional[List[StateAssessment]] = None,
+    assessments: Optional[List[NormalizedStateAssessment]] = None,
     face_to_face_contacts: Optional[List[StateSupervisionContact]] = None,
     end_date_override: Optional[date] = None,
     next_recommended_assessment_date: Optional[date] = None,

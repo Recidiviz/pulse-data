@@ -30,7 +30,11 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramParticipationEvent,
     ProgramReferralEvent,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
 )
@@ -54,15 +58,12 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
-from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentClass,
-    StateAssessmentType,
-)
+from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 EXTERNAL_UNKNOWN_VALUE = "EXTERNAL_UNKNOWN"
 
@@ -85,7 +86,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
             ],
-            assessments=identifier_context[StateAssessment.__name__],
+            assessments=identifier_context[NormalizedStateAssessment.base_class_name()],
             supervision_delegate=identifier_context[
                 StateSpecificSupervisionDelegate.__name__
             ],
@@ -98,7 +99,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         self,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         program_assignments: List[NormalizedStateProgramAssignment],
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_period_to_agent_association: List[Dict[str, Any]],
     ) -> List[ProgramEvent]:
@@ -158,7 +159,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     def _find_program_referrals(
         self,
         program_assignment: NormalizedStateProgramAssignment,
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -184,13 +185,9 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_id = EXTERNAL_UNKNOWN_VALUE
 
         if referral_date and program_id:
-            (
-                assessment_score,
-                _,
-                assessment_type,
-            ) = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
-                referral_date,
-                assessments,
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                cutoff_date=referral_date,
+                assessments=assessments,
                 assessment_class=StateAssessmentClass.RISK,
                 supervision_delegate=supervision_delegate,
             )
@@ -205,8 +202,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     program_id,
                     referral_date,
                     program_assignment.participation_status,
-                    assessment_score,
-                    assessment_type,
+                    most_recent_assessment,
                     relevant_supervision_periods,
                     supervision_period_to_agent_associations,
                     supervision_delegate,
@@ -326,8 +322,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         program_id: str,
         referral_date: date,
         participation_status: Optional[StateProgramAssignmentParticipationStatus],
-        assessment_score: Optional[int],
-        assessment_type: Optional[StateAssessmentType],
+        most_recent_assessment: Optional[NormalizedStateAssessment],
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -340,11 +335,16 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         overlap with the referral."""
         program_referrals: List[ProgramReferralEvent] = []
 
-        assessment_score_bucket = assessment_utils.assessment_score_bucket(
-            assessment_type=assessment_type,
-            assessment_score=assessment_score,
-            assessment_level=None,
-            supervision_delegate=supervision_delegate,
+        assessment_score = (
+            most_recent_assessment.assessment_score if most_recent_assessment else None
+        )
+        assessment_type = (
+            most_recent_assessment.assessment_type if most_recent_assessment else None
+        )
+        assessment_score_bucket = (
+            most_recent_assessment.assessment_score_bucket
+            if most_recent_assessment
+            else DEFAULT_ASSESSMENT_SCORE_BUCKET
         )
 
         if supervision_periods:

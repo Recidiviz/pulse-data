@@ -50,13 +50,13 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
-)
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
@@ -1193,7 +1193,8 @@ class TestClassifyEvents(unittest.TestCase):
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 10),
-            assessment_score_bucket="30-38",
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         judicial_district_code = "NORTHEAST"

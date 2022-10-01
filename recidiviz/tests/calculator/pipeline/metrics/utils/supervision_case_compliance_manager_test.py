@@ -25,7 +25,11 @@ from mock import MagicMock, patch
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
@@ -65,7 +69,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
-    StateAssessment,
     StatePerson,
     StateSupervisionContact,
 )
@@ -233,12 +236,14 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2020, 3, 31)
 
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2020, 3, 6),
+                assessment_score_bucket="30-38",
+                sequence_num=0,
             )
         ]
 
@@ -293,12 +298,14 @@ class TestCaseCompliance(unittest.TestCase):
 
         # The assessment is outside the 30 day initial compliance window.
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2020, 12, 10),
+                assessment_score_bucket="30-38",
+                sequence_num=0,
             )
         ]
 
@@ -351,12 +358,14 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 7, 31)
 
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2018, 7, 10),
+                assessment_score_bucket="30-38",
+                sequence_num=0,
             )
         ]
 
@@ -408,12 +417,14 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2018, 3, 10),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                sequence_num=0,
             )
         ]
 
@@ -485,12 +496,14 @@ class TestCaseCompliance(unittest.TestCase):
         case_type = StateSupervisionCaseType.GENERAL
 
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2018, 3, 10),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                sequence_num=0,
             )
         ]
 
@@ -609,12 +622,14 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         assessments = [
-            StateAssessment.new_with_defaults(
+            NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_date=date(2018, 3, 31),
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                sequence_num=0,
             )
         ]
 
@@ -1210,12 +1225,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -1323,12 +1340,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on parole more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1369,12 +1388,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1414,12 +1435,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1462,12 +1485,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level_raw_text="LEVEL 1",
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1510,12 +1535,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1557,12 +1584,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1603,12 +1632,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         start_of_supervision = start_date
@@ -1755,12 +1786,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 10, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on parole more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE ago,
@@ -1801,12 +1834,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 10, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
@@ -1847,12 +1882,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2018, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
@@ -1894,12 +1931,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] + 1,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
@@ -1941,12 +1980,14 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] - 1,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_date=date(2017, 1, 3),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
@@ -2065,9 +2106,11 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
@@ -2108,9 +2151,11 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         # This person started on probation more than LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
@@ -2151,11 +2196,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MAXIMUM,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
             assessment_date=date(2010, 2, 2),
+            assessment_score_bucket="39+",
+            sequence_num=0,
         )
 
         # This person started on probation more than LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE

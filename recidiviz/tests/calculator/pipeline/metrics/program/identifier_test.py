@@ -34,12 +34,13 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
 from recidiviz.calculator.pipeline.metrics.program.pipeline import (
     ProgramMetricsPipelineRunDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
+    DEFAULT_ASSESSMENT_SCORE_BUCKET,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionPeriod,
-)
-from recidiviz.calculator.pipeline.utils.assessment_utils import (
-    DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
@@ -60,7 +61,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
 )
@@ -98,7 +99,7 @@ class TestFindProgramEvents(unittest.TestCase):
     def _test_find_program_events(
         self,
         program_assignments: List[NormalizedStateProgramAssignment],
-        assessments: List[StateAssessment],
+        assessments: List[NormalizedStateAssessment],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         state_code_override: Optional[str] = None,
     ) -> List[ProgramEvent]:
@@ -106,7 +107,7 @@ class TestFindProgramEvents(unittest.TestCase):
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateProgramAssignment.base_class_name(): program_assignments,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
-            StateAssessment.__name__: assessments,
+            NormalizedStateAssessment.base_class_name(): assessments,
             "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         }
         if not state_code_override:
@@ -138,11 +139,13 @@ class TestFindProgramEvents(unittest.TestCase):
             start_date=date(2020, 1, 1),
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2019, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -227,11 +230,13 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -286,7 +291,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessments: List[StateAssessment] = []
+        assessments: List[NormalizedStateAssessment] = []
         supervision_periods: List[NormalizedStateSupervisionPeriod] = []
 
         program_referrals = self.identifier._find_program_referrals(
@@ -310,18 +315,22 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         )
 
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 9, 14),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -371,18 +380,22 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
-        assessment_1 = StateAssessment.new_with_defaults(
+        assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
-        assessment_2 = StateAssessment.new_with_defaults(
+        assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 10, 4),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=1,
         )
 
         assessments = [assessment_1, assessment_2]
@@ -424,11 +437,13 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.PENDING,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -498,11 +513,13 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ND",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            sequence_num=0,
         )
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -723,13 +740,20 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
+        assessment = NormalizedStateAssessment.new_with_defaults(
+            state_code="US_XX",
+            assessment_score=39,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score_bucket="39+",
+            sequence_num=0,
+        )
+
         program_referrals = self.identifier._referrals_for_supervision_periods(
             state_code="US_XX",
             program_id="XXX",
             referral_date=date(2009, 3, 12),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-            assessment_score=39,
-            assessment_type=StateAssessmentType.LSIR,
+            most_recent_assessment=assessment,
             supervision_periods=[supervision_period],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(
@@ -772,6 +796,14 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
+        assessment = NormalizedStateAssessment.new_with_defaults(
+            state_code="US_XX",
+            assessment_score=39,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score_bucket="39+",
+            sequence_num=0,
+        )
+
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         program_referrals = self.identifier._referrals_for_supervision_periods(
@@ -779,8 +811,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             program_id="XXX",
             referral_date=date(2009, 3, 19),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-            assessment_score=39,
-            assessment_type=StateAssessmentType.LSIR,
+            most_recent_assessment=assessment,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(
@@ -833,6 +864,14 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
+        assessment = NormalizedStateAssessment.new_with_defaults(
+            state_code="US_XX",
+            assessment_score=39,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score_bucket="39+",
+            sequence_num=0,
+        )
+
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         program_referrals = self.identifier._referrals_for_supervision_periods(
@@ -840,8 +879,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             program_id="XXX",
             referral_date=date(2009, 3, 19),
             participation_status=StateProgramAssignmentParticipationStatus.DENIED,
-            assessment_score=39,
-            assessment_type=StateAssessmentType.LSIR,
+            most_recent_assessment=assessment,
             supervision_periods=supervision_periods,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(

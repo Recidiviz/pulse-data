@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
     StateSpecificViolationResponseNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateAssessment,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -622,7 +623,7 @@ def get_state_specific_case_compliance_manager(
     supervision_period: NormalizedStateSupervisionPeriod,
     case_type: StateSupervisionCaseType,
     start_of_supervision: date,
-    assessments: List[StateAssessment],
+    assessments: List[NormalizedStateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[NormalizedStateSupervisionViolationResponse],
     incarceration_sentences: List[StateIncarcerationSentence],
