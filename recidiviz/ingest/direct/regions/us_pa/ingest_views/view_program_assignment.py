@@ -23,7 +23,61 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH TrtClassCode_trim AS (
+    WITH program_data as (
+      SELECT * \
+  FROM (
+    SELECT 
+      *, 
+      -- If there is a row in the history table about this parole_count_id, that means this parole stint has been
+      -- terminated and this is the most up to date information about this parole_count_id.
+      ROW_NUMBER() OVER (PARTITION BY ParoleNumber, TreatmentID ORDER BY is_history_row DESC) AS entry_priority
+    FROM (
+      -- These are rows with information on active supervision stints at the time of raw data upload, collected from multiple Release* tables.
+      SELECT
+        t.ParoleNumber, 
+        t.ParoleCountID, 
+        t.TreatmentID,
+        t.TrtStatusCode,
+        t.TrtClassCode,
+        t.TrtProgramDescription,
+        t.TrtProgramCode,
+        t.TrtDo,
+        t.TrtCounty,
+        t.TrtStartDateYear,
+        t.TrtStartDateMonth,
+        t.TrtStartDateDay,
+        t.TrtEndDateYear,
+        t.TrtEndDateMonth,
+        t.TrtEndDateDay,
+        0 AS is_history_row
+    FROM {dbo_Treatment} t
+      UNION ALL
+      -- These are rows with information on historical program data. The Hist_Program table is where info associated 
+      -- with the ParoleCountID goes on the completion of the program, all in one table.
+      SELECT
+        ht.ParoleNumber, 
+        ht.ParoleCountID, 
+        ht.TrtHistoryID as TreatmentID,
+        ht.TrtHistOutcomeStatusCode as TrtStatusCode,
+        NULLIF(SUBSTRING(ht.TrtHistDOCO, 5, 4), '') as TrtClassCode,
+        ht.TrtHistTreatmentDescription as TrtProgramDescription,
+        ht.TrtHistProgramCode as TrtProgramCode,
+        NULLIF(SUBSTRING(ht.TrtHistDOCO, 1, 2), '') as TrtDo,
+        NULLIF(SUBSTRING(ht.TrtHistDOCO, 3, 2), '') as TrtCounty,
+        ht.TrtHistStartDateYear as TrtStartDateYear,
+        ht.TrtHistStartDateMonth as TrtStartDateMonth,
+        ht.TrtHistStartDateDay as TrtStartDateDay,
+        ht.TrtHistEndDateYear as TrtEndDateYear,
+        ht.TrtHistEndDateMonth as TrtEndDateMonth,
+        ht.TrtHistEndDateDay as TrtEndDateDay,
+        1 AS is_history_row
+    FROM {dbo_Hist_Treatment} ht
+    ) as programs
+  ) as programs_with_priority
+  WHERE entry_priority = 1
+),
+
+    TrtClassCode_trim AS (
         # The TrtClassCodes were shortened in the raw data file for simplification purposes so we trim the codes to only include codes (not subcodes)
         # in order to join the raw descriptions table. The TrtClassCode is maintained in the program_id field in order to allow for downstream work to 
         # parse based on subcodes as needed. 
@@ -31,7 +85,7 @@ VIEW_QUERY_TEMPLATE = """
         TrtClassCode,
         CASE WHEN CHAR_LENGTH(TrtClassCode) = 5 THEN LEFT(TrtClassCode,3)
             WHEN CHAR_LENGTH(TrtClassCode) = 4 THEN LEFT(TrtClassCode,2) END AS classification_code
-    FROM {dbo_Treatment}
+    FROM program_data
     ),
     TrtClassCode_decode AS (
         SELECT 
@@ -60,11 +114,10 @@ VIEW_QUERY_TEMPLATE = """
         TrtEndDateYear,
         TrtEndDateMonth,
         TrtEndDateDay
-    FROM {dbo_Treatment}
+    FROM program_data
     LEFT JOIN TrtClassCode_decode USING (TrtClassCode)
     WHERE TrtProgramCode IN ('REF','REFO','SEXO')
 """
-
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
