@@ -395,7 +395,9 @@ columns:
   - name: SEXCRIMEFLAG
     description: |-
       SEXCRMFL code flag indicating if the crime was a sex crime.
-    known_values: []
+    known_values:
+      - value: "Y"
+        description: "Yes"
   - name: OFFENSEENHANCEMENTCODE
     description: |-
       CMOFFENH code indicating if the offense leads to a sentence enhancement.
