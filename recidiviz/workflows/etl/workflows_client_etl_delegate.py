@@ -112,4 +112,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         if "limited_supervision_eligible" in data:
             new_document["LSUEligible"] = data["limited_supervision_eligible"]
 
+        if "past_FTRD_eligible" in data:
+            new_document["pastFTRDEligible"] = data["past_FTRD_eligible"]
+
         return data["person_external_id"], new_document

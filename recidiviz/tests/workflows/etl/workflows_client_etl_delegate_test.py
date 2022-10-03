@@ -223,6 +223,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionStartDate": "2021-03-04",
                     "earnedDischargeEligible": True,
                     "LSUEligible": False,
+                    "pastFTRDEligible": False,
                 },
                 row,
             )

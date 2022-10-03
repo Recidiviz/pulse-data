@@ -42,6 +42,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
             FALSE AS early_termination_eligible,
             FALSE AS earned_discharge_eligible,
             FALSE AS limited_supervision_eligible,
+            FALSE AS past_FTRD_eligible,
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
     )
 """
