@@ -17,9 +17,11 @@
 """Tests for validation_result_storage"""
 import datetime
 import unittest
+from unittest.mock import create_autospec
 
 import pytz
 from freezegun import freeze_time
+from google.cloud import bigquery
 from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
@@ -554,7 +556,8 @@ class TestValidationResultStorage(unittest.TestCase):
         # Arrange
         mock_bigquery_client = mock_bigquery_client_class.return_value
         mock_bigquery_client.insert_rows.return_value = []
-        mock_bigquery_client.get_table.return_value = "table_object"
+        mock_table = create_autospec(bigquery.Table)
+        mock_bigquery_client.get_table.return_value = mock_table
 
         # Act
         store_validation_run_completion_in_big_query(
@@ -566,7 +569,7 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Assert
         mock_bigquery_client.insert_rows.assert_called_once_with(
-            "table_object",
+            mock_table,
             [
                 {
                     "cloud_task_id": "my-task-id",

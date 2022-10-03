@@ -151,7 +151,7 @@ class CheckAssertionsTest(unittest.TestCase):
             "recidiviz/ingest/direct/direct_ingest_control.py",
             "recidiviz/validation/validation_manager.py",
             "docs/endpoints/direct/handle_new_files.md",
-            "docs/endpoints/validation_manager/validate.md",
+            "docs/endpoints/validation_manager/validate/region_code.md",
         ]
         self._run_test(modified_files, [], [])
 

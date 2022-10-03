@@ -180,6 +180,7 @@ def store_validation_results_in_big_query(
 
 CLOUD_TASK_ID_COL = "cloud_task_id"
 VALIDATION_RUN_ID_COL = "run_id"
+REGION_CODE_COL = "region_code"
 SUCCESS_TIMESTAMP_COL = "success_timestamp"
 NUM_VALIDATIONS_RUN_COL = "num_validations_run"
 VALIDATIONS_RUNTIME_SEC_COL = "validations_runtime_sec"
@@ -221,6 +222,11 @@ def store_validation_run_completion_in_big_query(
                 name=VALIDATION_RUN_ID_COL,
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
                 mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=REGION_CODE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
             ),
             bigquery.SchemaField(
                 name=SUCCESS_TIMESTAMP_COL,

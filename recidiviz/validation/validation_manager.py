@@ -93,13 +93,13 @@ monitoring.register_views([failed_validations_view, failed_to_run_validations_vi
 validation_manager_blueprint = Blueprint("validation_manager", __name__)
 
 
-@validation_manager_blueprint.route("/validate", methods=["GET", "POST"])
+@validation_manager_blueprint.route("/validate/<region_code>", methods=["GET", "POST"])
 @requires_gae_auth
-def handle_validation_request() -> Tuple[str, HTTPStatus]:
+def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
     cloud_task_id = get_current_cloud_task_id()
     start_datetime = datetime.datetime.now()
-    run_id, num_validations_run = execute_validation()
+    run_id, num_validations_run = execute_validation(region_code=region_code.upper())
     end_datetime = datetime.datetime.now()
 
     runtime_sec = int((end_datetime - start_datetime).total_seconds())
@@ -115,12 +115,11 @@ def handle_validation_request() -> Tuple[str, HTTPStatus]:
 
 
 def execute_validation(
-    region_code_filter: Optional[str] = None,
+    region_code: str,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> Tuple[str, int]:
-    """Executes all validation checks.
-    If |region_code_filter| is supplied, limits validations to just that region.
+    """Executes validation checks for |region_code|.
     If |validation_name_filter| is supplied, only performs validations on those
     that have a regex match.
     If |sandbox_dataset_prefix| is supplied, performs validation using sandbox dataset
@@ -130,7 +129,7 @@ def execute_validation(
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _get_validations_jobs(
-        region_code_filter=region_code_filter,
+        region_code=region_code,
         validation_name_filter=validation_name_filter,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
@@ -221,7 +220,7 @@ def execute_validation(
 
 
 def _get_validations_jobs(
-    region_code_filter: Optional[str] = None,
+    region_code: str,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJob]:
@@ -235,7 +234,7 @@ def _get_validations_jobs(
 
     # Fetch collection of validation jobs to perform
     return _fetch_validation_jobs_to_perform(
-        region_code_filter=region_code_filter,
+        region_code=region_code,
         validation_name_filter=validation_name_filter,
         address_overrides=sandbox_address_overrides,
     )
@@ -284,7 +283,7 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 
 
 def _fetch_validation_jobs_to_perform(
-    region_code_filter: Optional[str] = None,
+    region_code: str,
     validation_name_filter: Optional[Pattern] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> List[DataValidationJob]:
@@ -305,18 +304,16 @@ def _fetch_validation_jobs_to_perform(
         ):
             continue
 
-        for region_code, region_config in region_configs.items():
-            if region_code_filter and region_code != region_code_filter:
-                continue
-            if check.validation_name not in region_config.exclusions:
-                updated_check = check.updated_for_region(region_config)
-                validation_jobs.append(
-                    DataValidationJob(
-                        validation=updated_check,
-                        region_code=region_code,
-                        address_overrides=address_overrides,
-                    )
+        region_config = region_configs[region_code]
+        if check.validation_name not in region_config.exclusions:
+            updated_check = check.updated_for_region(region_config)
+            validation_jobs.append(
+                DataValidationJob(
+                    validation=updated_check,
+                    region_code=region_code,
+                    address_overrides=address_overrides,
                 )
+            )
 
     return validation_jobs
 

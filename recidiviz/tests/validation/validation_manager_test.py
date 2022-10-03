@@ -62,7 +62,7 @@ from recidiviz.validation.views import view_config as validation_view_config
 def get_test_validations() -> List[DataValidationJob]:
     return [
         DataValidationJob(
-            region_code="US_UT",
+            region_code="US_XX",
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -74,31 +74,7 @@ def get_test_validations() -> List[DataValidationJob]:
             ),
         ),
         DataValidationJob(
-            region_code="US_UT",
-            validation=ExistenceDataValidationCheck(
-                validation_category=ValidationCategory.INVARIANT,
-                view_builder=SimpleBigQueryViewBuilder(
-                    dataset_id="my_dataset",
-                    view_id="test_2",
-                    description="test_2 description",
-                    view_query_template="select * from literally_anything",
-                ),
-            ),
-        ),
-        DataValidationJob(
-            region_code="US_VA",
-            validation=ExistenceDataValidationCheck(
-                validation_category=ValidationCategory.INVARIANT,
-                view_builder=SimpleBigQueryViewBuilder(
-                    dataset_id="my_dataset",
-                    view_id="test_1",
-                    description="test_1 description",
-                    view_query_template="select * from literally_anything",
-                ),
-            ),
-        ),
-        DataValidationJob(
-            region_code="US_VA",
+            region_code="US_XX",
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -115,8 +91,32 @@ def get_test_validations() -> List[DataValidationJob]:
                 validation_category=ValidationCategory.INVARIANT,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
-                    view_id="test_2",
-                    description="test_2 description",
+                    view_id="test_3",
+                    description="test_3 description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        ),
+        DataValidationJob(
+            region_code="US_XX",
+            validation=ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_4",
+                    description="test_4 description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        ),
+        DataValidationJob(
+            region_code="US_XX",
+            validation=ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_5",
+                    description="test_5 description",
                     view_query_template="select * from literally_anything",
                 ),
             ),
@@ -227,7 +227,7 @@ class TestHandleRequest(TestCase):
             ),
         )
 
-        response = self.client.post("/validate", headers=APP_ENGINE_HEADERS)
+        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
 
         self.assertEqual(200, response.status_code)
 
@@ -295,11 +295,11 @@ class TestHandleRequest(TestCase):
             third_failure,
             ValueError("Job failed to run!"),
         ]
-        response = self.client.post("/validate", headers=APP_ENGINE_HEADERS)
+        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
 
         self.assertEqual(200, response.status_code)
 
-        self.assertEqual(5, mock_run_job.call_count)
+        self.assertEqual(len(self._TEST_VALIDATIONS), mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
@@ -373,7 +373,7 @@ class TestHandleRequest(TestCase):
             ),
         ]
 
-        response = self.client.post("/validate", headers=APP_ENGINE_HEADERS)
+        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
 
         self.assertEqual(200, response.status_code)
 
@@ -415,7 +415,7 @@ class TestHandleRequest(TestCase):
     ) -> None:
         mock_fetch_validations.return_value = []
 
-        response = self.client.post("/validate", headers=APP_ENGINE_HEADERS)
+        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
 
         self.assertEqual(200, response.status_code)
 
@@ -454,16 +454,12 @@ class TestFetchValidations(TestCase):
         all_validations = get_all_validations()
         all_region_configs = get_validation_region_configs()
         global_config = get_validation_global_config()
-        all_regions = all_region_configs.keys()
 
-        num_exclusions = sum(
-            len(config.exclusions) for config in all_region_configs.values()
-        ) + len(global_config.disabled) * len(all_regions)
-
-        expected_length = len(all_validations) * len(all_regions) - num_exclusions
-
-        result = _fetch_validation_jobs_to_perform()
-        self.assertEqual(expected_length, len(result))
+        for state_code, config in all_region_configs.items():
+            num_exclusions = len(config.exclusions) + len(global_config.disabled)
+            expected_length = len(all_validations) - num_exclusions
+            result = _fetch_validation_jobs_to_perform(region_code=state_code)
+            self.assertEqual(expected_length, len(result))
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
@@ -475,7 +471,6 @@ class TestFetchValidations(TestCase):
         all_validations = get_all_validations()
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()
-        state_codes_to_validate = region_configs_to_validate.keys()
         launched_state_codes = [
             region
             for region, config in region_configs_to_validate.items()
@@ -490,16 +485,11 @@ class TestFetchValidations(TestCase):
             ["US_CO", "US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"],
         )
 
-        num_exclusions = sum(
-            len(config.exclusions) for config in region_configs_to_validate.values()
-        ) + len(global_config.disabled) * len(state_codes_to_validate)
-
-        expected_length = (
-            len(all_validations) * len(state_codes_to_validate) - num_exclusions
-        )
-
-        result = _fetch_validation_jobs_to_perform()
-        self.assertEqual(expected_length, len(result))
+        for state_code, config in region_configs_to_validate.items():
+            num_exclusions = len(config.exclusions) + len(global_config.disabled)
+            expected_length = len(all_validations) - num_exclusions
+            result = _fetch_validation_jobs_to_perform(region_code=state_code)
+            self.assertEqual(expected_length, len(result))
 
     @patch("recidiviz.validation.validation_manager.get_validation_region_configs")
     @patch("recidiviz.validation.validation_manager.get_all_validations")
@@ -568,7 +558,10 @@ class TestFetchValidations(TestCase):
                 region_configs=region_configs,
             ),
         ]
-        result = _fetch_validation_jobs_to_perform()
+
+        actual_jobs = []
+        for state_code in region_configs:
+            actual_jobs.extend(_fetch_validation_jobs_to_perform(state_code))
 
         expected_jobs = [
             DataValidationJob(
@@ -580,6 +573,21 @@ class TestFetchValidations(TestCase):
                     dev_mode=False,
                     hard_num_allowed_rows=10,
                     soft_num_allowed_rows=10,
+                ),
+                region_code="US_XX",
+            ),
+            DataValidationJob(
+                validation=SamenessDataValidationCheck(
+                    validation_category=ValidationCategory.CONSISTENCY,
+                    view_builder=sameness_builder,
+                    validation_name_suffix=None,
+                    comparison_columns=["col1", "col2"],
+                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+                    dev_mode=False,
+                    hard_max_allowed_error=0.3,
+                    soft_max_allowed_error=0.3,
+                    validation_type=ValidationCheckType.SAMENESS,
+                    region_configs=region_configs,
                 ),
                 region_code="US_XX",
             ),
@@ -601,21 +609,6 @@ class TestFetchValidations(TestCase):
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
                     sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-                    dev_mode=False,
-                    hard_max_allowed_error=0.3,
-                    soft_max_allowed_error=0.3,
-                    validation_type=ValidationCheckType.SAMENESS,
-                    region_configs=region_configs,
-                ),
-                region_code="US_XX",
-            ),
-            DataValidationJob(
-                validation=SamenessDataValidationCheck(
-                    validation_category=ValidationCategory.CONSISTENCY,
-                    view_builder=sameness_builder,
-                    validation_name_suffix=None,
-                    comparison_columns=["col1", "col2"],
-                    sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
                     dev_mode=True,
                     hard_max_allowed_error=0.02,
                     soft_max_allowed_error=0.02,
@@ -625,7 +618,7 @@ class TestFetchValidations(TestCase):
                 region_code="US_YY",
             ),
         ]
-        self.assertEqual(expected_jobs, result)
+        self.assertEqual(expected_jobs, actual_jobs)
 
     def test_all_validations_no_overlapping_names(self) -> None:
         all_validations = get_all_validations()
