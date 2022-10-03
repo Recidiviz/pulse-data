@@ -124,9 +124,10 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             CAST(NULL AS STRING) AS district,
             CAST(NULL AS STRING) AS compliant_reporting_eligible,
-            IFNULL(early_termination_eligible, FALSE),
+            IFNULL(early_termination_eligible, FALSE) AS early_terminiation_eligible,
             FALSE AS earned_discharge_eligible,
             FALSE AS limited_supervision_eligible,
+            FALSE AS past_FTRD_eligible,
         FROM join_nd_clients
         LEFT JOIN nd_eligibility USING(person_external_id)
     )

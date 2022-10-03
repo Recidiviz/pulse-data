@@ -115,6 +115,12 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             TRUE AS earned_discharge_eligible,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
     ),
+    id_past_FTRD_eligibility AS (
+        SELECT
+            external_id AS person_external_id,
+            TRUE AS past_FTRD_eligible,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_full_term_discharge_from_supervision_request_record_materialized`
+    ),
     id_clients AS (
         # Values set to NULL are not applicable for this state
         SELECT
@@ -137,10 +143,12 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS STRING) AS district,
             CAST(NULL AS STRING) AS compliant_reporting_eligible,
             FALSE AS early_termination_eligible,
-            IFNULL(earned_discharge_eligible, FALSE),
-            IFNULL(limited_supervision_eligible, FALSE),
+            IFNULL(earned_discharge_eligible, FALSE) AS earned_discharge_eligible,
+            IFNULL(limited_supervision_eligible, FALSE) AS limited_supervision_eligibile,
+            IFNULL(past_FTRD_eligible, FALSE) AS past_FTRD_eligible,
         FROM join_id_clients
         LEFT JOIN id_earned_discharge_eligibility USING(person_external_id)
         LEFT JOIN id_lsu_eligibility USING (person_external_id)
+        LEFT JOIN id_past_FTRD_eligibility USING (person_external_id)
     )
 """
