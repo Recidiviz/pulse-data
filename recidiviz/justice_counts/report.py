@@ -264,8 +264,8 @@ class ReportInterface:
         The only exception to the above is if `use_existing_aggregate_value`
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
-        is specified, we validate that it matches what is already in the db.
-        If nothing is in the DB, we save the new aggregate value.
+        is specified, prefer the existing value in the db, unless there isn't one,
+        in which case we save the incoming value.
         """
         existing_datapoints_dict = (
             existing_datapoints_dict
@@ -280,7 +280,8 @@ class ReportInterface:
         # If we're not supposed to use the existing aggregate value, then we should
         # definitely perform the add/update. If we're supposed to use the existing
         # value but the incoming datapoint has its own value, we should still go
-        # into this method to validate that the two values are the same.
+        # into this method, because if there is no existing value in the DB,
+        # we should save the incoming one.
         if not use_existing_aggregate_value or report_metric.value is not None:
             datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
@@ -356,11 +357,12 @@ class ReportInterface:
     ) -> Dict[DatapointUniqueKey, schema.Datapoint]:
         """Fetches all datapoints from the given list of reports. Returns a
         dictionary of these datapoints keyed by their unique ID, which is a tuple of
-        <report ID, metric definition, context key, disaggregations>
+        <report time range, metric definition, context key, disaggregations>
         """
         return {
             (
-                report.id,
+                report.date_range_start,
+                report.date_range_end,
                 datapoint.metric_definition_key,
                 datapoint.context_key,
                 datapoint.dimension_identifier_to_member
