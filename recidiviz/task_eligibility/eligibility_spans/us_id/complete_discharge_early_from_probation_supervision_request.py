@@ -25,8 +25,8 @@ from recidiviz.task_eligibility.criteria.general import (
     negative_ua_within_90_days,
     no_felony_within_24_months,
     no_violent_misdemeanor_within_12_months,
+    on_probation_at_least_one_year,
     supervision_not_past_full_term_completion_date,
-    supervision_past_minimum_sentence_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_id import (
     income_verified_within_3_months,
@@ -48,7 +48,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        supervision_past_minimum_sentence_date.VIEW_BUILDER,
+        on_probation_at_least_one_year.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         negative_ua_within_90_days.VIEW_BUILDER,
         lsir_level_low_moderate_for_x_days.VIEW_BUILDER,
