@@ -18,6 +18,7 @@
 Unit test to test the calculation pipeline DAG logic.
 """
 import os
+import re
 import unittest
 from typing import Set
 from unittest.mock import patch
@@ -43,8 +44,8 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
-_TRIGGER_VALIDATIONS_TASK_ID = "trigger_validations_task"
-_WAIT_FOR_VALIDATIONS_TASK_ID = "wait_for_validations_completion"
+_TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
+_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = r"wait_for_(us_[a-z]{2})_validations_completion"
 
 
 @patch(
@@ -167,10 +168,25 @@ class TestCalculationPipelineDags(unittest.TestCase):
                 0, len(wait_for_materialization_downstream_dag.task_ids)
             )
 
-            self.assertIn(
-                _TRIGGER_VALIDATIONS_TASK_ID,
-                wait_for_materialization_downstream_dag.task_ids,
+            found_downstream = False
+            for upstream_task_id in wait_for_materialization_downstream_dag.task_ids:
+                if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                    found_downstream = True
+
+            self.assertTrue(found_downstream)
+
+            wait_for_materialization_upstream_dag = dag.partial_subset(
+                task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
+                include_downstream=False,
+                include_upstream=True,
             )
+
+            found_upstream = False
+            for upstream_task_id in wait_for_materialization_upstream_dag.task_ids:
+                if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                    found_upstream = True
+
+            self.assertFalse(found_upstream)
 
     def test_trigger_validations_upstream_of_wait(self) -> None:
         """Tests that the validations trigger happens directly before we wait
@@ -182,16 +198,19 @@ class TestCalculationPipelineDags(unittest.TestCase):
             self.assertNotEqual(0, len(dag.task_ids))
 
             wait_subdag = dag.partial_subset(
-                task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID,
+                task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX,
                 include_downstream=False,
                 include_upstream=True,
             )
-            wait_task = one(wait_subdag.leaves)
-
-            self.assertEqual(_WAIT_FOR_VALIDATIONS_TASK_ID, wait_task.task_id)
-            self.assertEqual(
-                {_TRIGGER_VALIDATIONS_TASK_ID}, wait_task.upstream_task_ids
-            )
+            self.assertNotEqual(0, len(wait_subdag.leaves))
+            for wait_task in wait_subdag.leaves:
+                match = re.match(_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX, wait_task.task_id)
+                if not match:
+                    raise ValueError(f"Found unexpected leaf node: {wait_task.task_id}")
+                self.assertEqual(
+                    {f"trigger_{match.group(1)}_validations_task"},
+                    wait_task.upstream_task_ids,
+                )
 
     def test_rematerialization_downstream_of_all_pipelines(
         self,
@@ -269,7 +288,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         for dag_id in self.calc_pipeline_dag_ids:
             dag = dag_bag.dags[dag_id]
-            trigger_cloud_task_task = dag.get_task(_TRIGGER_VALIDATIONS_TASK_ID)
+            trigger_cloud_task_task = dag.get_task("trigger_us_nd_validations_task")
 
             if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
                 raise ValueError(
@@ -281,5 +300,5 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
             self.assertEqual(
                 trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-                "/validation_manager/validate",
+                "/validation_manager/validate/US_ND",
             )

@@ -83,6 +83,7 @@ module "validations-queue" {
   queue_name         = "validations"
   region             = var.app_engine_region
   max_retry_attempts = 1
+  max_concurrent_dispatches = 50
 }
 
 # Queue used to process tasks that import data into the pathways DB.

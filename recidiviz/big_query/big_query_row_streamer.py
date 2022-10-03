@@ -40,14 +40,14 @@ class BigQueryRowStreamer:
         """Streams the provided rows into the streamer's table, creating the table first
         if it does not exist.
         """
-        self._create_table_if_necessary()
+        self._create_or_update_table_if_necessary()
         self.bq_client.stream_into_table(
             self.bq_client.dataset_ref_for_id(self.table_address.dataset_id),
             self.table_address.table_id,
             rows,
         )
 
-    def _create_table_if_necessary(self) -> None:
+    def _create_or_update_table_if_necessary(self) -> None:
         dataset_ref = self.bq_client.dataset_ref_for_id(self.table_address.dataset_id)
         self.bq_client.create_dataset_if_necessary(dataset_ref)
         if not self.bq_client.table_exists(dataset_ref, self.table_address.table_id):
@@ -55,4 +55,11 @@ class BigQueryRowStreamer:
                 dataset_ref.dataset_id,
                 self.table_address.table_id,
                 schema_fields=self.table_schema,
+            )
+        else:
+            self.bq_client.update_schema(
+                dataset_ref.dataset_id,
+                self.table_address.table_id,
+                desired_schema_fields=self.table_schema,
+                allow_field_deletions=False,
             )

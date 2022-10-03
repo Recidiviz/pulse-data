@@ -26,7 +26,7 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.run_validations \
     --project-id recidiviz-staging \
-    --region-code-filter [region_code] \
+    --state-code [state_code] \
     --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
     --validation-name-filter [regex]
 """
@@ -35,6 +35,7 @@ import logging
 import re
 from typing import Optional
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_manager import execute_validation
@@ -50,9 +51,11 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--region-code-filter",
-        default=None,
-        help="Region code filter - when set, will only limit validations to the specified region.",
+        "--state-code",
+        required=True,
+        type=StateCode,
+        choices=list(StateCode),
+        help="Validations will run for this region.",
     )
     parser.add_argument(
         "--sandbox_dataset_prefix",
@@ -71,14 +74,14 @@ def create_parser() -> argparse.ArgumentParser:
 
 def main(
     sandbox_dataset_prefix: str,
-    region_code_filter: Optional[str],
+    state_code: StateCode,
     validation_name_filter: Optional[str],
 ) -> None:
     validation_regex = (
         re.compile(validation_name_filter) if validation_name_filter else None
     )
     execute_validation(
-        region_code_filter=region_code_filter,
+        region_code=state_code.value,
         validation_name_filter=validation_regex,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
@@ -91,6 +94,6 @@ if __name__ == "__main__":
     with local_project_id_override(args.project_id):
         main(
             args.sandbox_dataset_prefix,
-            args.region_code_filter,
+            args.state_code,
             args.validation_name_filter,
         )

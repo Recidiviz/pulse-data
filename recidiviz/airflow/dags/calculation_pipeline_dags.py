@@ -180,7 +180,7 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
     )
 
 
-def trigger_validations_operator() -> CloudTasksTaskCreateOperator:
+def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "validations"
     task_path = CloudTasksClient.task_path(
@@ -193,12 +193,12 @@ def trigger_validations_operator() -> CloudTasksTaskCreateOperator:
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            "relative_uri": "/validation_manager/validate",
+            "relative_uri": f"/validation_manager/validate/{state_code}",
             "body": json.dumps({}).encode(),
         },
     )
     return CloudTasksTaskCreateOperator(
-        task_id="trigger_validations_task",
+        task_id=f"trigger_{state_code.lower()}_validations_task",
         location=queue_location,
         queue_name=queue_name,
         task=task,
@@ -242,25 +242,7 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
         timeout=(60 * 60 * 4),
     )
 
-    trigger_validations = trigger_validations_operator()
-
-    wait_for_validations = BQResultSensor(
-        task_id="wait_for_validations_completion",
-        query_generator=FinishedCloudTaskQueryGenerator(
-            project_id=project_id,
-            cloud_task_create_operator_task_id=trigger_validations.task_id,
-            tracker_dataset_id="validation_results",
-            tracker_table_id="validations_completion_tracker",
-        ),
-    )
-
-    (
-        update_normalized_state
-        >> trigger_view_rematerialize
-        >> wait_for_rematerialize
-        >> trigger_validations
-        >> wait_for_validations
-    )
+    update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 
     # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
     #  calculation month counts
@@ -324,6 +306,24 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
             )
 
             supplemental_pipeline_operator >> trigger_view_rematerialize
+
+    for state_code in metric_pipelines_by_state:
+        trigger_state_validations = trigger_validations_operator(state_code)
+
+        wait_for_state_validations = BQResultSensor(
+            task_id=f"wait_for_{state_code.lower()}_validations_completion",
+            query_generator=FinishedCloudTaskQueryGenerator(
+                project_id=project_id,
+                cloud_task_create_operator_task_id=trigger_state_validations.task_id,
+                tracker_dataset_id="validation_results",
+                tracker_table_id="validations_completion_tracker",
+            ),
+        )
+        (
+            wait_for_rematerialize
+            >> trigger_state_validations
+            >> wait_for_state_validations
+        )
 
     if should_trigger_exports:
         states_to_trigger = {
