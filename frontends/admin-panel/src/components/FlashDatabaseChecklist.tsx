@@ -317,18 +317,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set status to FLASH_CANCELLATION_IN_PROGRESS"
             description={
-              isReadyToFlash ? (
-                <p>
-                  Cancellation of flash can proceed. Set ingest status to
-                  FLASH_CANCELLATION_IN_PROGRESS in SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Secondary instance status is not READY_TO_FLASH. Cannot
-                  proceed with cancellation.
-                </p>
-              )
+              <p>
+                Set ingest status to FLASH_CANCELLATION_IN_PROGRESS in SECONDARY
+                in &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonTitle="Update Ingest Instance Status"
             actionButtonEnabled={isReadyToFlash}
@@ -396,15 +389,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set SECONDARY status to FLASH_CANCELED"
             description={
-              isFlashCancellationInProgress ? (
-                <p>
-                  Cancellation of flash has completed. Set ingest status to
-                  FLASH_CANCELED in SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>Cannot set status to FLASH_CANCELED.</p>
-              )
+              <p>
+                Set ingest status to FLASH_CANCELED in SECONDARY in &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonEnabled={isFlashCancellationInProgress}
             actionButtonTitle="Update Ingest Instance Status"
@@ -419,18 +407,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set status to NO_RERUN_IN_PROGRESS"
             description={
-              isFlashCanceled ? (
-                <p>
-                  Cancellation Flash to primary has completed. Set ingest status
-                  to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Cannot set status to NO_RERUN_IN_PROGRESS. Current status in
-                  SECONDARY is not FLASH_CANCELED.
-                </p>
-              )
+              <p>
+                Set ingest status to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonEnabled={isFlashCanceled}
             actionButtonTitle="Update Ingest Instance Status"
@@ -533,18 +513,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set status to FLASH_IN_PROGRESS"
             description={
-              isReadyToFlash ? (
-                <p>
-                  Flash to primary can proceed. Set ingest status to
-                  FLASH_IN_PROGRESS in PRIMARY and SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Secondary instance status is not READY_TO_FLASH. Cannot
-                  &nbsp;proceed.
-                </p>
-              )
+              <p>
+                Set ingest status to FLASH_IN_PROGRESS in PRIMARY and SECONDARY
+                in &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonTitle="Update Ingest Instance Status"
             actionButtonEnabled={isReadyToFlash}
@@ -777,18 +750,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set status to FLASH_COMPLETED"
             description={
-              isFlashInProgress ? (
-                <p>
-                  Flash to primary has completed. Set ingest status to
-                  FLASH_COMPLETED in PRIMARY and SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Cannot set status to FLASH_COMPLETED. Current status in both
-                  &nbsp;PRIMARY and SECONDARY is not FLASH_IN_PROGRESS.
-                </p>
-              )
+              <p>
+                Set ingest status to FLASH_COMPLETED in PRIMARY and SECONDARY in
+                &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonEnabled={isFlashInProgress}
             actionButtonTitle="Update Ingest Instance Status"
@@ -799,18 +765,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Set status to NO_RERUN_IN_PROGRESS"
             description={
-              isFlashCompleted ? (
-                <p>
-                  Flash to primary has completed. Set ingest status to
-                  NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
-                  {stateCode}.
-                </p>
-              ) : (
-                <p>
-                  Cannot set status to NO_RERUN_IN_PROGRESS. Current status in
-                  SECONDARY is not FLASH_COMPLETED.
-                </p>
-              )
+              <p>
+                Set ingest status to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                {stateCode}.
+              </p>
             }
             actionButtonEnabled={isFlashCompleted}
             actionButtonTitle="Update Ingest Instance Status"
