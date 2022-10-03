@@ -36,7 +36,6 @@ from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
-    BulkUploadSheetNameError,
     JusticeCountsBulkUploadException,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
@@ -132,7 +131,6 @@ class BulkUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ] = defaultdict(list)
-        invalid_sheet_names: List[str] = []
         sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
 
         expected_breakdown_sheet_names: Set[str] = {
@@ -142,15 +140,14 @@ class BulkUploader:
         }
 
         # 2. Sort sheet_names so that we process by aggregate sheets first
-        # e.g. caseloads before caseloads_by_gender. This is important
-        # because it allows us to remove the requirement that caseloads_by_gender
-        # includes the aggregate metric value.
-        actual_sheet_names = sorted(
-            xls.sheet_names,
-            key=lambda x: 1 if x in expected_breakdown_sheet_names else 0,
-        )
+        # e.g. caseloads before caseloads_by_gender. This ensures we don't
+        # infer an aggregate value when one is explicitly given.
+        # Note that the regular sorting will work for this case, since
+        # foobar will always come before foobar_by_xxx alphabetically.
+        actual_sheet_names = sorted(xls.sheet_names)
 
         # 3. Now run through all sheets and process each in turn.
+        invalid_sheetnames: List[str] = []
         sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
         for sheet_name in actual_sheet_names:
             logging.info("Uploading %s", sheet_name)
@@ -159,36 +156,22 @@ class BulkUploader:
             df = df.dropna(axis=0, how="any", subset="value")
             # Convert dataframe to a list of dictionaries
             rows = df.to_dict("records")
-            try:
-                metric_key_to_datapoint_jsons, metric_key_to_errors = self._upload_rows(
-                    session=session,
-                    system=system,
-                    rows=rows,
-                    sheet_name=sheet_name,
-                    agency_id=agency_id,
-                    user_account=user_account,
-                    reports_by_time_range=reports_by_time_range,
-                    existing_datapoints_dict=existing_datapoints_dict,
-                    metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                    metric_key_to_errors=metric_key_to_errors,
-                )
-            except Exception as e:
-                # upload_rows will handle error handling for all JusticeCountsBulkUploadErrors
-                # except for the invalid sheet name error. A KeyError will be surfaced if the
-                # sheet name is invalid.
-                if isinstance(e, BulkUploadSheetNameError):
-                    invalid_sheet_names.append(e.sheet_name)
-                else:
-                    curr_metricfile = sheet_name_to_metricfile[sheet_name]
-                    metric_key_to_errors[curr_metricfile.definition.key].append(
-                        self._handle_error(
-                            e,
-                            sheet_name=sheet_name,
-                        )
-                    )
+            metric_key_to_datapoint_jsons, metric_key_to_errors = self._upload_rows(
+                session=session,
+                system=system,
+                rows=rows,
+                sheet_name=sheet_name,
+                agency_id=agency_id,
+                user_account=user_account,
+                reports_by_time_range=reports_by_time_range,
+                existing_datapoints_dict=existing_datapoints_dict,
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+                invalid_sheetnames=invalid_sheetnames,
+            )
 
         metric_key_to_errors = self._add_invalid_sheet_name_error(
-            invalid_sheet_names=invalid_sheet_names,
+            invalid_sheet_names=invalid_sheetnames,
             metric_key_to_errors=metric_key_to_errors,
             sheet_name_to_metricfile=sheet_name_to_metricfile,
         )
@@ -408,6 +391,7 @@ class BulkUploader:
         user_account: schema.UserAccount,
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+        invalid_sheetnames: List[str],
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -431,12 +415,13 @@ class BulkUploader:
             metricfile = self._get_metricfile(
                 sheet_name=sheet_name, system=current_system
             )
+            if not metricfile:
+                invalid_sheetnames.append(sheet_name)
+                return metric_key_to_datapoint_jsons, metric_key_to_errors
+
+            metric_datapoints = metric_key_to_datapoint_jsons[metricfile.definition.key]
 
             try:
-                metric_datapoints = metric_key_to_datapoint_jsons[
-                    metricfile.definition.key
-                ]
-
                 datapoint_json_list = self._upload_rows_for_metricfile(
                     session=session,
                     rows=current_rows,
@@ -445,43 +430,45 @@ class BulkUploader:
                     user_account=user_account,
                     reports_by_time_range=reports_by_time_range,
                     existing_datapoints_dict=existing_datapoints_dict,
+                    metric_key_to_errors=metric_key_to_errors,
                 )
-
-                metric_key_to_datapoint_jsons[metricfile.definition.key] = (
-                    metric_datapoints + datapoint_json_list
-                )
-
-                if (
-                    metricfile.disaggregation is not None
-                    and len(metric_datapoints) == 0
-                    and len(datapoint_json_list) > 0
-                ):
-                    metric_key_to_errors = self._add_missing_total_warning(
-                        metric_definition=metricfile.definition,
-                        sheet_name=sheet_name,
-                        metric_key_to_errors=metric_key_to_errors,
-                    )
-                elif (
-                    len(datapoint_json_list) == 0
-                    and len(metric_datapoints) > 0
-                    and metricfile.disaggregation is not None
-                ):
-                    # If the current sheet is a breakdown sheet and there are no datapoints associated
-                    # with the sheet, the uploaded breakdown sheet is empty.
-                    metric_key_to_errors = self._add_missing_breakdowns_error(
-                        sheet_name,
-                        metric_definition=metricfile.definition,
-                        metric_key_to_errors=metric_key_to_errors,
-                        is_sheet_provided=True,
-                        disaggregation=metricfile.disaggregation,
-                    )
             except Exception as e:
+                datapoint_json_list = []
                 curr_metricfile = sheet_name_to_metricfile[sheet_name]
                 metric_key_to_errors[curr_metricfile.definition.key].append(
                     self._handle_error(
                         e=e,
                         sheet_name=sheet_name,
                     )
+                )
+
+            metric_key_to_datapoint_jsons[metricfile.definition.key] = (
+                metric_datapoints + datapoint_json_list
+            )
+
+            if (
+                metricfile.disaggregation is not None
+                and len(metric_datapoints) == 0
+                and len(datapoint_json_list) > 0
+            ):
+                metric_key_to_errors = self._add_missing_total_warning(
+                    metric_definition=metricfile.definition,
+                    sheet_name=sheet_name,
+                    metric_key_to_errors=metric_key_to_errors,
+                )
+            elif (
+                len(datapoint_json_list) == 0
+                and len(metric_datapoints) > 0
+                and metricfile.disaggregation is not None
+            ):
+                # If the current sheet is a breakdown sheet and there are no datapoints associated
+                # with the sheet, the uploaded breakdown sheet is empty.
+                metric_key_to_errors = self._add_missing_breakdowns_error(
+                    sheet_name,
+                    metric_definition=metricfile.definition,
+                    metric_key_to_errors=metric_key_to_errors,
+                    is_sheet_provided=True,
+                    disaggregation=metricfile.disaggregation,
                 )
 
         return metric_key_to_datapoint_jsons, metric_key_to_errors
@@ -525,6 +512,9 @@ class BulkUploader:
         user_account: schema.UserAccount,
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
     ) -> List[Dict[str, Any]]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -582,34 +572,38 @@ class BulkUploader:
                 )
                 reports_by_time_range[time_range] = [report]
 
-            report_metric = self._get_report_metric(
-                metricfile=metricfile,
-                time_range=time_range,
-                rows_for_this_time_range=rows_for_this_time_range,
-            )
+            try:
+                report_metric = self._get_report_metric(
+                    metricfile=metricfile,
+                    time_range=time_range,
+                    rows_for_this_time_range=rows_for_this_time_range,
+                )
 
-            datapoint_jsons_list += ReportInterface.add_or_update_metric(
-                session=session,
-                report=report,
-                report_metric=report_metric,
-                user_account=user_account,
-                # TODO(#15499) Infer aggregate value only if total sheet was not provided.
-                use_existing_aggregate_value=metricfile.disaggregation is not None,
-                existing_datapoints_dict=existing_datapoints_dict,
-            )
+                datapoint_jsons_list += ReportInterface.add_or_update_metric(
+                    session=session,
+                    report=report,
+                    report_metric=report_metric,
+                    user_account=user_account,
+                    # TODO(#15499) Infer aggregate value only if total sheet was not provided.
+                    use_existing_aggregate_value=metricfile.disaggregation is not None,
+                    existing_datapoints_dict=existing_datapoints_dict,
+                )
+            except Exception as e:
+                metric_key_to_errors[metricfile.definition.key].append(
+                    self._handle_error(
+                        e=e,
+                        sheet_name=metricfile.canonical_filename,
+                    )
+                )
 
         return datapoint_jsons_list
 
-    def _get_metricfile(self, sheet_name: str, system: schema.System) -> MetricFile:
-
+    def _get_metricfile(
+        self, sheet_name: str, system: schema.System
+    ) -> Optional[MetricFile]:
         stripped_sheet_name = sheet_name.split("/")[-1].split(".")[0].strip()
         filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-
-        # Return a BulkUploadKeyError if the stripped_sheet_name is an invalid
-        # sheet name for an agency's metrics.
-        if stripped_sheet_name not in filename_to_metricfile:
-            raise BulkUploadSheetNameError(sheet_name=stripped_sheet_name)
-        return filename_to_metricfile[stripped_sheet_name]
+        return filename_to_metricfile.get(stripped_sheet_name)
 
     def _get_rows_by_time_range(
         self,

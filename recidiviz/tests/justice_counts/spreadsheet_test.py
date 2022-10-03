@@ -87,7 +87,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         metric["display_name"],
                         law_enforcement.total_arrests.display_name,
                     )
-                    self.assertEqual(len(metric["metric_errors"]), 3)
+                    self.assertEqual(len(metric["metric_errors"]), 2)
                     for sheet in metric["metric_errors"]:
                         if (
                             sheet["display_name"]
@@ -132,7 +132,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
 
                     # 24 total datapoints. 2 for aggregate total (May and June), 10 for gender breakdowns (May-June),
                     # 10 for arrest_by_type breakdowns (May - June).
-                    self.assertEqual(len(metric["datapoints"]), 24)
+                    self.assertEqual(len(metric["datapoints"]), 22)
                 else:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
                     self.assertEqual(len(metric["metric_errors"]), 1)

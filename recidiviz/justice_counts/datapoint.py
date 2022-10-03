@@ -45,7 +45,9 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 
 # Datapoints are unique by a tuple of:
 # <report ID, metric definition, context key, disaggregations>
-DatapointUniqueKey = Tuple[int, str, Optional[str], Optional[str]]
+DatapointUniqueKey = Tuple[
+    datetime.date, datetime.date, str, Optional[str], Optional[str]
+]
 
 
 class DatapointInterface:
@@ -296,8 +298,8 @@ class DatapointInterface:
         The only exception to the above is if `use_existing_aggregate_value`
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
-        is specified, we validate that it matches what is already in the db.
-        If nothing is in the DB, we save the new aggregate value.
+        is specified, prefer the existing value in the db, unless there isn't one,
+        in which case we save the incoming value.
         """
 
         # Don't save invalid datapoint values when publishing
@@ -321,7 +323,8 @@ class DatapointInterface:
         # or if we need to create a new one. Datapoints are unique by a tuple of:
         # <report, metric definition, context key, disaggregations>
         datapoint_key = (
-            report.id,
+            report.date_range_start,
+            report.date_range_end,
             metric_definition_key,
             context_key.value if context_key else None,
             json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
@@ -344,7 +347,7 @@ class DatapointInterface:
                     value,
                     existing_datapoint.value,
                 )
-                value = existing_datapoint.value
+                return None
 
         new_datapoint = schema.Datapoint(
             value=str(value) if value is not None else value,
@@ -362,19 +365,30 @@ class DatapointInterface:
             else None,
         )
 
+        # Store the new datapoint in this dict, so that it can be
+        # referenced later, e.g. an explicit aggregate total
+        # will later be referenced by an inferred aggregate
+        existing_datapoints_dict[datapoint_key] = new_datapoint
+
+        # Creating the new datapoint might have added it to the session;
+        # to avoid constraint violation errors, remove it before adding
+        # it back later in this method.
         expunge_existing(session, new_datapoint)
 
-        # save existing datapoint value since it will get overwritten in session.merge
-        existing_datapoint_value = (
-            existing_datapoint.value if existing_datapoint is not None else None
-        )
-
         if existing_datapoint is None:
+            existing_datapoint_value = None
+            equal_to_existing = False
             session.add(new_datapoint)
         else:
+            # Save existing datapoint value before it gets overwritten in merge
+            existing_datapoint_value = existing_datapoint.value
+            # Compare values using `get_value` so e.g. 3 == 3.0
+            equal_to_existing = (
+                new_datapoint.get_value() == existing_datapoint.get_value()
+            )
             new_datapoint.id = existing_datapoint.id
             new_datapoint = session.merge(new_datapoint)
-            if existing_datapoint_value != new_datapoint.value:
+            if not equal_to_existing:
                 session.add(
                     schema.DatapointHistory(
                         datapoint_id=existing_datapoint.id,
@@ -392,10 +406,7 @@ class DatapointInterface:
                 datapoint=new_datapoint,
                 is_published=report.status == schema.ReportStatus.PUBLISHED,
                 frequency=schema.ReportingFrequency[report.type],
-                old_value=existing_datapoint_value
-                if existing_datapoint is not None
-                and existing_datapoint_value != new_datapoint.value
-                else None,
+                old_value=existing_datapoint_value if not equal_to_existing else None,
             )
             if new_datapoint is not None
             else None

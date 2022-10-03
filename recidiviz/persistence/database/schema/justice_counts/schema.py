@@ -572,7 +572,8 @@ class Datapoint(JusticeCountsBase):
             try:
                 if value[-2:] == ".0":
                     value = int(value[0:-2])
-                value = float(value)
+                else:
+                    value = float(value)
             except ValueError as e:
                 if status == ReportStatus.PUBLISHED and use_value is None:
                     raise ValueError(
