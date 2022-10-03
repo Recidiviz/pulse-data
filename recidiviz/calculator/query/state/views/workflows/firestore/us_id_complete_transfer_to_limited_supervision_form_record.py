@@ -130,17 +130,49 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
     ),
     latest_treatment_discharge AS(
       SELECT 
-        p.state_code,
-        p.person_id,
-        p.discharge_date,
+        a.state_code,
+        a.person_id,
+        a.create_dt AS discharge_date,
         cn.agnt_note_title AS note_title,
         cn.agnt_note_txt AS note_body,
-      FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` p
+      FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
       LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
-          ON cn.agnt_case_updt_id = SPLIT((p.external_id), '-')[SAFE_OFFSET(1)]
+        USING(agnt_case_updt_id)
       --only select treatment completion records
-      WHERE p.discharge_date IS NOT NULL
+      WHERE any_treatment AND treatment_complete
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY discharge_date DESC)=1
+    ),
+    #TODO(#14923) replace once state person is hydrated with phone and email
+    latest_phone_number AS (
+      SELECT
+        pei.person_id,
+        c.phonenumber,
+      FROM `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_personphonenumber_latest` a
+      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_codephonenumbertype_latest` b
+        ON a.codephonenumbertypeid = b.id
+      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_phonenumber_latest` c
+        ON a.phonenumberid = c.id
+      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_offenderphonenumber_latest` d
+        ON a.id = d.id
+      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_offender_latest` e
+        ON a.personid = e.id
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON e.offendernumber = pei.external_id
+      WHERE b.active = 'T'
+        AND a.primaryphone = 'T'
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id ORDER BY d.startdate DESC)=1
+    ),
+    latest_email AS (
+      SELECT
+        pei.person_id,
+        a.email,
+      FROM {{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_personemailaddress_latest a
+      LEFT JOIN {{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.cis_offender_latest b
+        ON a.personid = b.id
+      INNER JOIN {{project_id}}.{{normalized_state_dataset}}.state_person_external_id pei
+        ON b.offendernumber = pei.external_id
+      WHERE a.iscurrent = "T"
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id ORDER BY a.insdate DESC)=1
     ),
    notes AS(
     --violations
@@ -161,19 +193,6 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON cn.agnt_case_updt_id = SPLIT((v.external_id), '-')[SAFE_OFFSET(1)]
       WHERE (violation_type NOT IN ('TECHNICAL') OR violation_type IS NULL)
         AND DATE_ADD(COALESCE(vr.response_date,v.violation_date), INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-    --treatment 
-      UNION ALL 
-      SELECT 
-        p.external_id,
-        p.state_code,
-        p.person_id,
-        GREATEST(COALESCE(p.discharge_date, p.start_date)) AS event_date,
-        cn.agnt_note_title AS note_title,
-        cn.agnt_note_txt AS note_body,
-        "Treatment" AS criteria
-      FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` p
-      LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
-        ON cn.agnt_case_updt_id = SPLIT((p.external_id), '-')[SAFE_OFFSET(1)]
     --ncic/ilets and new crime violations
       UNION ALL
       SELECT 
@@ -194,7 +213,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE (ncic_ilets_nco_check OR new_crime)
       --only select ncic checks and new crime within the past 90 days
         AND DATE_ADD(a.create_dt, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-    --Community service, Interlock, Special Conditions 
+    --Community service, Interlock, Special Conditions, Treatment
       UNION ALL
       SELECT 
         a.agnt_case_updt_id AS external_id,
@@ -207,6 +226,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
             WHEN community_service THEN "Community service"
             WHEN case_plan THEN "Special Conditions"
             WHEN interlock THEN "Interlock"
+            WHEN (any_treatment OR treatment_complete) THEN "Treatment"
             ELSE NULL
         END AS criteria
       FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
@@ -215,6 +235,8 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE community_service
         OR case_plan
         OR interlock
+        OR any_treatment 
+        OR treatment_complete
     --DUI notes
       UNION ALL
       SELECT 
@@ -233,6 +255,19 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
          --only include DUI notes within the past 12 months 
         AND DATE_ADD(a.create_dt, INTERVAL 12 MONTH) >= CURRENT_DATE('US/Pacific')
     ),
+    latest_notes AS(
+    SELECT
+        n.state_code,
+        n.person_id,
+        TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
+    FROM notes n
+    --only select notes during the current supervision session
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
+        ON n.person_id = ses.person_id
+        AND CURRENT_DATE('US/Pacific') BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+        AND n.event_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+    GROUP BY 1,2
+    ),
     form AS (
       SELECT
           pei.external_id,
@@ -241,10 +276,12 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           ses.start_date AS supervision_start_date,
           DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
           --aggregate all relevant charge descriptions 
-          ARRAY_AGG(charge.description IGNORE NULLS) AS form_information_charge_descriptions,
+          ARRAY_AGG(DISTINCT charge.description IGNORE NULLS) AS form_information_charge_descriptions,
           pi.current_address AS form_information_current_address,
-          pi.current_phone_number AS form_information_current_phone_number,
-          pi.current_email_address AS form_information_email_address,
+          ph.phonenumber AS form_information_current_phone_number,
+          #TODO(#14923) replace with state person once hydrated 
+          --pi.current_phone_number AS form_information_current_phone_number,
+          e.email AS form_information_email_address,
           score.assessment_date AS form_information_assessment_date,
           score.assessment_score AS form_information_assessment_score,
           ei.name AS form_information_employer_name,
@@ -260,9 +297,9 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           tx.note_title AS form_information_tx_note_title,
           tx.note_body AS form_information_tx_note_body,
           ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
-          TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
+          ARRAY_AGG(n.case_notes IGNORE NULLS ORDER BY ses.start_date)[ORDINAL(1)] AS case_notes,
       FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_limited_supervision_form_materialized` tes
-      INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
+      INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
         ON tes.state_code = ses.state_code
         AND tes.person_id = ses.person_id 
         AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
@@ -275,21 +312,21 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON proj.state_code = ses.state_code
         AND proj.person_id = ses.person_id
         --use the projected completion date from the current span
-        AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND proj.end_date
+        AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_clause('proj.end_date')}
       LEFT JOIN sentence_charge_description charge
         ON tes.state_code = charge.state_code
         AND tes.person_id = charge.person_id
-        --select charges that were imposed before the relevant supervision session and that 
-        --expire after the eligible period has started
-        AND ses.start_date >= charge.date_imposed 
-        AND tes.start_date <= COALESCE(charge.projected_completion_date_max, "9999-12-31")
+      LEFT JOIN latest_phone_number ph
+        ON tes.person_id = ph.person_id
+      LEFT JOIN latest_email e
+        ON tes.person_id = e.person_id
       LEFT JOIN person_info pi
         ON tes.state_code = pi.state_code
         AND tes.person_id = pi.person_id
       LEFT JOIN latest_assessment_score score
         ON tes.state_code = score.state_code
         AND tes.person_id = score.person_id
-        --join all latest? or only latest when assessment_score_date <= ses.start_date
+        AND ses.start_date <= score.assessment_date 
       LEFT JOIN latest_employment_info ei
         ON tes.state_code = ei.state_code
         AND tes.person_id = ei.person_id
@@ -297,7 +334,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       LEFT JOIN latest_drug_screen ds
         ON tes.state_code = ds.state_code
         AND tes.person_id = ds.person_id
-        --join all latest? or only latest when drug_screen_date <= ses.start_date
+        AND ses.start_date <= ds.drug_screen_date
       LEFT JOIN latest_ncic_ilets_check ncic
         ON tes.state_code = ncic.state_code
         AND tes.person_id = ncic.person_id
@@ -306,12 +343,10 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON tes.state_code = tx.state_code
         AND tes.person_id = tx.person_id
         --select only treatment discharges that occured within the last supervision session
-        AND tx.discharge_date BETWEEN ses.start_date AND (COALESCE(ses.end_date, "9999-12-31"))
-      LEFT JOIN notes n
+        AND tx.discharge_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+      LEFT JOIN latest_notes n
         ON tes.state_code = n.state_code
         AND tes.person_id = n.person_id
-        --select notes that occur within that supervision session
-        AND n.event_date >= ses.start_date
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
         AND tes.is_eligible
         AND tes.state_code = 'US_ID'

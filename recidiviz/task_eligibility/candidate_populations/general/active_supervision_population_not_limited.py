@@ -26,10 +26,10 @@ from recidiviz.task_eligibility.utils.candidate_population_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION"
+_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION_NOT_LIMITED"
 
-_DESCRIPTION = """Selects all spans of time in which a person is actively supervised,
-as tracked by data in our `sessions` dataset. "Actively supervised" indicates the client
+_DESCRIPTION = """Selects all spans of time in which a person is actively supervised, and not
+on limited supervision, as tracked by data in our `sessions` dataset. "Actively supervised" indicates the client
 has a supervision type that requires a supervision officer.
 """
 
@@ -38,6 +38,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     description=_DESCRIPTION,
     additional_filters=[
         'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
+        'attr.correctional_level != "LIMITED"',
     ],
 )
 

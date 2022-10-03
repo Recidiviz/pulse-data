@@ -89,8 +89,9 @@ _QUERY_TEMPLATE = f"""
         end_date,
         --have TRUE tests take precendence over FALSE tests (ie. if a result is TRUE, there will be a 90 day span
         --where is_positive is TRUE, regardless of subsequent testing
+        --any true test will make meets_criteria False
+        --spans with no drug tests will result in needs_ua_check as True and meets_criteria as False
         (NOT LOGICAL_AND(needs_ua_check) AND NOT LOGICAL_OR(is_positive_result)) AS meets_criteria,
-        #TODO(#15398) update reasons according to info from state regarding positive ua
         --include all ua results in the past 90 days
         TO_JSON(STRUCT(ARRAY_AGG(is_positive_result IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_results,
                     ARRAY_AGG(drug_screen_date IGNORE NULLS ORDER BY drug_screen_date, is_positive_result) AS latest_ua_dates)) AS reason

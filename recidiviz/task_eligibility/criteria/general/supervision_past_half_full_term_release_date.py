@@ -14,18 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone is past
-their probation supervision early discharge date, computed from the supervision
-sentence minimum length days.
+"""Defines a criteria span view that shows spans of time during which someone
+has completed half their full term sentence.
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
-from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
-)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -35,11 +32,12 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_PAST_MINIMUM_SENTENCE_DATE"
+STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [StateCode.US_ND]
+
+_CRITERIA_NAME = "SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone is past their supervision minimum sentence date, computed from the supervision
-sentence minimum length days."""
+someone has completed half their full term sentence"""
 
 _QUERY_TEMPLATE = f"""
 WITH critical_date_spans AS (
@@ -48,17 +46,23 @@ WITH critical_date_spans AS (
         span.person_id,
         span.start_date AS start_datetime,
         span.end_date AS end_datetime,
-        -- Compute the supervision min sentence date from the min length days
-        MAX(
-            SAFE.DATE_ADD(
-                sent.effective_date,
-                INTERVAL sent.min_sentence_length_days_calculated DAY
-            )
-        ) AS critical_date,
+        (DATE_ADD(MAX(sent.date_imposed),INTERVAL
+            CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.date_imposed),DAY))/2 AS INT64) DAY)) AS critical_date
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
       USING (state_code, person_id, sentences_preprocessed_id)
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
+        ON span.state_code = sess.state_code
+        AND span.person_id = sess.person_id
+        --only calculate minimum sentence for supervision sessions
+        AND sess.compartment_level_2 in ("PROBATION", "PAROLE", "DUAL", "COMMUNITY_CONFINEMENT", "INFORMAL_PROBATION")
+        -- Use less than or equal to for sessions inclusive end_date but strictly less
+        -- than for sentence spans exclusive end_date
+        AND span.start_date <= {nonnull_end_date_clause('sess.end_date')}
+        AND sess.start_date < {nonnull_end_date_clause('span.end_date')}
+        --not past full term completion date
+        AND sess.start_date < sent.projected_completion_date_max
     WHERE
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
@@ -97,8 +101,8 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         excluded_incarceration_states='", "'.join(
             [
                 state.name

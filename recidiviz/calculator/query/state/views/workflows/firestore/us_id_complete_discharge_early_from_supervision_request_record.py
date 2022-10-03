@@ -66,19 +66,6 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 ON cn.agnt_case_updt_id = SPLIT((v.external_id), '-')[SAFE_OFFSET(1)]
         WHERE (violation_type NOT IN ('TECHNICAL') OR violation_type IS NULL)
         AND DATE_ADD(COALESCE(vr.response_date,v.violation_date), INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-        --treatment 
-        UNION ALL 
-        SELECT 
-            p.external_id,
-            p.state_code,
-            p.person_id,
-            GREATEST(COALESCE(p.discharge_date, p.start_date)) AS event_date,
-            cn.agnt_note_title AS note_title,
-            cn.agnt_note_txt AS note_body,
-            "Treatment" AS criteria
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_program_assignment` p
-        LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
-            ON cn.agnt_case_updt_id = SPLIT((p.external_id), '-')[SAFE_OFFSET(1)]
         --ncic/ilets and new crime violations
         UNION ALL
         SELECT 
@@ -99,7 +86,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         WHERE ((ncic_ilets_nco_check AND NOT nco_check) OR new_crime)
         --only select ncic checks and new crime within the past 90 days
         AND DATE_ADD(a.create_dt, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-        --Community service, Interlock, Special Conditions 
+        --Community service, Interlock, Special Conditions, Treatment
         UNION ALL
         SELECT 
             a.agnt_case_updt_id AS external_id,
@@ -112,14 +99,18 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 WHEN community_service THEN "Community service"
                 WHEN case_plan THEN "Special Conditions"
                 WHEN interlock THEN "Interlock"
+                WHEN (any_treatment OR treatment_complete) THEN "Treatment"
                 ELSE NULL
             END AS criteria
         FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
         LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
             USING(agnt_case_updt_id)
-        WHERE community_service
+        --only include notes that are created during the current supervision session
+         WHERE community_service
             OR case_plan
             OR interlock
+            OR any_treatment 
+            OR treatment_complete
         UNION ALL
         --DUI notes
         SELECT 
@@ -138,6 +129,19 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             --only include DUI notes within the past 12 months 
             AND DATE_ADD(a.create_dt, INTERVAL 12 MONTH) >= CURRENT_DATE('US/Pacific')
     ),
+    latest_notes AS(
+    SELECT
+        n.state_code,
+        n.person_id,
+        TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
+    FROM notes n
+    --only select notes during the current supervision session
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
+        ON n.person_id = ses.person_id
+        AND CURRENT_DATE('US/Pacific') BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+        AND n.event_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+    GROUP BY 1,2
+    ),
     client_notes AS (
         SELECT 
             pei.external_id,
@@ -146,9 +150,9 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ses.start_date AS supervision_start_date,
             DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
             ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
-            TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
+            ARRAY_AGG(n.case_notes IGNORE NULLS ORDER BY ses.start_date)[ORDINAL(1)] AS case_notes,
         FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes 
-        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
             ON tes.state_code = ses.state_code
             AND tes.person_id = ses.person_id
             AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
@@ -160,12 +164,10 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ON proj.state_code = ses.state_code
             AND proj.person_id = ses.person_id
             --use the projected completion date from the current span
-            AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND proj.end_date
-        LEFT JOIN notes n
+            AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_clause('proj.end_date')}
+        LEFT JOIN latest_notes n
             ON ses.state_code = n.state_code
             AND ses.person_id = n.person_id
-            --select notes that occur within that supervision session
-            AND n.event_date >= ses.start_date
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON ses.state_code = pei.state_code 
             AND ses.person_id = pei.person_id
