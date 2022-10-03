@@ -41,10 +41,10 @@ resource "google_project_iam_member" "bigquery_scheduled_queries_permissions" {
   role    = "roles/iam.serviceAccountShortTermTokenMinter"
   member  = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-bigquerydatatransfer.iam.gserviceaccount.com"
 }
-resource "google_project_iam_binding" "bigquery_datatransfer_admin" {
+resource "google_project_iam_member" "bigquery_datatransfer_admin" {
   project = var.project_id
   role    = "roles/bigquery.admin"
-  members = ["serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"]
+  member = "serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"
 }
 
 # Create a dataset
