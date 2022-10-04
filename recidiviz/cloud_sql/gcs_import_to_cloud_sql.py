@@ -16,10 +16,12 @@
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from http import HTTPStatus
+from typing import Any, Dict, List, Optional
 
 import attr
-from google.api_core import exceptions, retry
+from google.api_core import retry
+from googleapiclient import errors
 from sqlalchemy import Table, create_mock_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.ddl import (
@@ -64,11 +66,12 @@ ADDITIONAL_DDL_QUERIES_BY_MODEL = {
 }
 
 
-def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """ "A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(
-        exceptions.Conflict
-    )(exception)
+def retry_predicate(exception: Exception) -> bool:
+    """A function that will determine whether we should retry a given Google exception."""
+    return (
+        isinstance(exception, errors.HttpError)
+        and exception.status_code == HTTPStatus.CONFLICT
+    )
 
 
 def build_temporary_sqlalchemy_table(table: Table) -> Table:

@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for gcs_import_to_cloud_sql.py"""
+from http import HTTPStatus
 from typing import Any, List, Optional
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from google.api_core import exceptions
+from googleapiclient.errors import HttpError, InvalidJsonError
+from httplib2 import Response
 from sqlalchemy import Column, Index, Integer, String, Table, Text
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.ddl import CreateIndex, CreateTable, DDLElement, SetColumnComment
@@ -377,7 +379,7 @@ class TestGCSImportToCloudSQL(TestCase):
     def test_retry(self) -> None:
         # Client first raises a Conflict error, then returns a successful operation ID.
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
-            exceptions.Conflict("This will retry"),
+            HttpError(Response({"status": HTTPStatus.CONFLICT}), b"This will retry"),
             "op_id",
         ]
 
@@ -394,13 +396,13 @@ class TestGCSImportToCloudSQL(TestCase):
         self.mock_cloud_sql_client.wait_until_operation_completed.assert_called()
 
     def test_retry_with_fatal_error(self) -> None:
-        # Client first raises a Conflict error, then on retry will raise a ValueError
+        # Client first raises a Conflict error, then on retry will raise a InvalidJsonError
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = [
-            exceptions.Conflict("This will retry"),
-            ValueError("This will crash"),
+            HttpError(Response({"status": HTTPStatus.CONFLICT}), b"This will retry"),
+            InvalidJsonError((), b"This will fail"),
         ]
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidJsonError):
             import_gcs_csv_to_cloud_sql(
                 database_key=self.database_key,
                 model=FakeModel,
