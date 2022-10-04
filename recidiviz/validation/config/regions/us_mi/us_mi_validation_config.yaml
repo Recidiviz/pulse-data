@@ -17,8 +17,8 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .1209
     override_reason: Needs investigation; fails for years 2010-2013. #TODO(#13514)
   - validation_name: incarceration_population_person_level_external_comparison
-    hard_max_allowed_error_override: .35
-    override_reason: Needs investigation.  Current failing level as of 9/26 is .302 #TODO(#13880)
+    hard_max_allowed_error_override: .035
+    override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 1500
