@@ -15,3 +15,4 @@ columns:
     description: |-
       Flag for whether this need is active
   - name: SORT_ORDER
+always_historical_export: True

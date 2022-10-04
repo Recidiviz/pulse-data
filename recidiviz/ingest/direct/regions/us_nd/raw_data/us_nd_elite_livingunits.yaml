@@ -35,3 +35,4 @@ columns:
   - name: ACTIVE_FLAG
     description: |-
       Whether this living unit/location is still in active use.
+always_historical_export: True

@@ -20,3 +20,4 @@ columns:
   - name: ACTIVE
     description: |-
       Flag for whether program is active
+always_historical_export: True
