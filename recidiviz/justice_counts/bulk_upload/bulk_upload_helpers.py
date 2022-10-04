@@ -21,13 +21,29 @@ from typing import List, Optional, Tuple
 
 from thefuzz import fuzz
 
-from recidiviz.common.text_analysis import TextAnalyzer
+from recidiviz.common.text_analysis import (
+    REMOVE_MULTIPLE_WHITESPACES,
+    REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS,
+    REMOVE_WORDS_WITH_NON_CHARACTERS,
+    Normalizer,
+    TextAnalyzer,
+)
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
 
 FUZZY_MATCHING_SCORE_CUTOFF = 90
+NORMALIZERS: List[Normalizer] = [
+    # hyphens with whitespace
+    ("-", ""),
+    # words with a number, "@", website, or encoding string
+    REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS,
+    # all non characters (numbers, punctuation, non-spaces)
+    REMOVE_WORDS_WITH_NON_CHARACTERS,  # remove anything not a character or space
+    # multiple whitespaces
+    REMOVE_MULTIPLE_WHITESPACES,
+]
 
 
 def fuzzy_match_against_options(
@@ -44,8 +60,8 @@ def fuzzy_match_against_options(
     """
     option_to_score = {
         option: fuzz.token_set_ratio(
-            analyzer.normalize_text(text, stem_tokens=True),
-            analyzer.normalize_text(option, stem_tokens=True),
+            analyzer.normalize_text(text, stem_tokens=True, normalizers=NORMALIZERS),
+            analyzer.normalize_text(option, stem_tokens=True, normalizers=NORMALIZERS),
         )
         for option in options
     }
