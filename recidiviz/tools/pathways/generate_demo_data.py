@@ -31,14 +31,23 @@ import sys
 import tempfile
 from datetime import date, timedelta
 from itertools import product
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+
+from dateutil.relativedelta import relativedelta
+from sqlalchemy.inspection import inspect
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.persistence.database.schema_utils import get_pathways_table_classes
+from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
+from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
+from recidiviz.persistence.database.schema_utils import (
+    get_pathways_database_entities,
+    get_pathways_table_classes,
+)
 
 dimension_possible_values: Dict[str, Sequence] = {
+    "admission_reason": ["NEW_ADMISSION", "REVOCATION", "TRANSFER"],
     "age_group": ["<25", "25-29", "30-34", "60+"],
     "facility": ["FACILITY_1", "FACILITY_2", "FACILITY_3", "FACILITY_4", "FACILITY_5"],
     "gender": ["MALE", "FEMALE"],
@@ -61,7 +70,6 @@ dimension_possible_values: Dict[str, Sequence] = {
     ],
     "supervision_level": ["MINIMUM", "MAXIMUM"],
     "supervision_type": ["PAROLE", "PROBATION"],
-    "time_period": ["months_0_6", "months_7_12", "months_13_24", "months_25_60"],
 }
 
 first_names = [
@@ -114,20 +122,52 @@ random_value_columns = {
     "supervising_officer": lambda: str(random.randint(1, 999)).zfill(3),
 }
 
+# Calculate time periods based on the first day of the last month of available data so we don't end
+# up with an empty month at the left side of a chart.
+NOW_DATE = date(2021, 12, 1)
+
+
+def get_time_period(relative_date: date) -> str:
+    if relative_date >= NOW_DATE - relativedelta(months=6):
+        return "months_0_6"
+    if relative_date >= NOW_DATE - relativedelta(months=12):
+        return "months_7_12"
+    if relative_date >= NOW_DATE - relativedelta(months=24):
+        return "months_13_24"
+    return "months_25_60"
+
 
 def generate_row(
-    year: int, month: int, state_code: str, dimensions: Dict, db_columns: List
+    state_code: str,
+    table_name: str,
+    dimensions: Dict,
+    db_columns: List,
+    month_year: Optional[date] = None,
 ) -> Dict:
-    # Pick a random valid date for the month, it doesn't really matter what they are
-    # so just limit to days 1-28 so we don't have to use logic to determine how many
-    # days are in the month we're choosing.
-    transition_date = date(year, month, random.randint(1, 28))
-    row = {
-        "year": year,
-        "month": month,
-        "transition_date": transition_date,
+    """Generates a single row with all columns filled out."""
+    row: Dict[str, Union[str, int, date]] = {
         "state_code": state_code,
     } | dimensions
+
+    if month_year:
+        generated_date = (
+            month_year
+            if table_name.endswith("_over_time")
+            else date(month_year.year, month_year.month, random.randint(1, 28))
+        )
+        potential_row: Dict[str, Union[str, int, date]] = {
+            "year": generated_date.year,
+            "month": generated_date.month,
+            "transition_date": generated_date,
+            "date_in_population": generated_date,
+            "supervision_start_date": generated_date
+            - timedelta(days=random.randint(1, 3650)),
+            "time_period": get_time_period(generated_date),
+        }
+
+        row.update(
+            {key: value for key, value in potential_row.items() if key in db_columns}
+        )
 
     for column, fn in random_value_columns.items():
         if column in db_columns:
@@ -136,15 +176,18 @@ def generate_row(
     if "age" in db_columns:
         row["age"] = random.choice(ages_for_age_groups[dimensions["age_group"]])
 
-    if "supervision_start_date" in db_columns:
-        row["supervision_start_date"] = transition_date - timedelta(
-            days=random.randint(1, 3650)
-        )
-
     return row
 
 
-def generate_rows(state_code: str, columns: List[str], year: int, month: int) -> List:
+def generate_rows(
+    state_code: str,
+    table_name: str,
+    columns: List[str],
+    primary_keys: List[str],
+    month_year: Optional[date] = None,
+) -> List:
+    """Generates rows for this metric in the given month, with 0-2 entries for each permutation
+    of dimensions"""
     rows = []
 
     # Figure out which dimensions are applicable for this DB and get all possible permutations
@@ -152,11 +195,11 @@ def generate_rows(state_code: str, columns: List[str], year: int, month: int) ->
         key: value for key, value in dimension_possible_values.items() if key in columns
     }
 
-    # Store a set of used days/person IDs to avoid duplicate primary keys. The chances of a run of
-    # the script encountering a duplicate is surprisingly high due to the birthday problem, and
+    # Store a set of used primary keys to avoid duplicate primary keys. The chances of a run of
+    # the script encountering a duplicate ID is surprisingly high due to the birthday problem, and
     # though we could just generate more random bits, this brings the probability to zero instead of
     # low.
-    used_keys: Set[Tuple[int, int]] = set()
+    used_keys: Set[Tuple] = set()
 
     for combo in (
         dict(zip(dimension_values, x)) for x in product(*dimension_values.values())
@@ -164,63 +207,102 @@ def generate_rows(state_code: str, columns: List[str], year: int, month: int) ->
         # Create between 0 and 2 rows for that dimension
         for _ in range(0, random.randint(0, 2)):
             while True:
-                row = generate_row(year, month, state_code, combo, columns)
+                row = generate_row(state_code, table_name, combo, columns, month_year)
                 # Check if we've found one that hasn't been used yet.
-                row_key = (row["transition_date"], row["person_id"])
+                row_key = tuple(row[key] for key in primary_keys)
                 if row_key not in used_keys:
                     break
             used_keys.add(row_key)
-            rows.append(row)
+            rows.append(row.copy())
 
     return rows
 
 
-def generate_demo_data(state_code: str, columns: List[str]) -> List:
+def generate_demo_data(
+    state_code: str, table_name: str, columns: List[str], primary_keys: List[str]
+) -> List:
     """Generates demo data for the new Pathways backend.
     For each year and month over 5 years, we loop through all possible permutations of dimension values.
     For each permutation, we choose a random number of rows to create with those values.
     For non-dimension columns, we pick a realistic random value.
     """
     rows = []
-    # Loop over each month from Jan 2017 to Dec 2021
-    for year in range(2017, 2022):
-        for month in range(1, 13):
-            rows += generate_rows(state_code, columns, year, month)
+
+    if "transition_date" in columns or "date_in_population" in columns:
+        # Loop over each month from Jan 2017 to Dec 2021
+        for year in range(2017, 2022):
+            for month in range(1, 13):
+                # the actual day of the month will be redefined later
+                rows += generate_rows(
+                    state_code, table_name, columns, primary_keys, date(year, month, 1)
+                )
+    else:
+        rows = generate_rows(state_code, table_name, columns, primary_keys)
 
     return rows
 
 
+def generate_demo_metric_metadata(tables: List[SQLAlchemyModelType]) -> List:
+    last_updated_date = date(2022, 1, 1)
+    rows = []
+    for table in tables:
+        if table.get_entity_name() == "metric_metadata":
+            continue
+        rows.append({"metric": table.__name__, "last_updated": last_updated_date})
+        last_updated_date += timedelta(days=1)
+    return rows
+
+
 def main(
-    state_codes: List[str], views: Optional[List[str]], bucket: Optional[str]
+    state_codes: List[str],
+    views: Optional[List[str]],
+    bucket: Optional[str],
+    headers: Optional[bool],
 ) -> None:
     """Generates demo Pathways data for the specified states and views and writes the result to a
     local file or GCS bucket."""
     gcsfs = GcsfsFactory.build()
 
     tables = (
-        [table for table in get_pathways_table_classes() if table.name in views]
+        [
+            table
+            for table in get_pathways_database_entities()
+            if table.get_entity_name() in views
+        ]
         if views
-        else get_pathways_table_classes()
+        else [
+            table
+            for table in get_pathways_database_entities()
+            if not table.get_entity_name().endswith("projection")
+        ]
     )
 
     for state_code in state_codes:
         for table in tables:
+            table_name = table.get_entity_name()
             logging.info(
                 "Generating demo data for state '%s', view '%s'",
                 state_code,
-                table.name,
+                table_name,
             )
-            columns = [column.name for column in table.columns]
-            rows = generate_demo_data(state_code, columns)
+            columns = [column.name for column in inspect(table).c]
+            primary_keys = [column.name for column in inspect(table).primary_key]
+            rows = (
+                generate_demo_metric_metadata(tables)
+                if table == MetricMetadata
+                else generate_demo_data(state_code, table_name, columns, primary_keys)
+            )
             if bucket:
                 with tempfile.NamedTemporaryFile(mode="r+") as f:
                     logging.info("Writing output to temporary file %s", f.name)
                     writer = csv.DictWriter(f, columns)
+                    if headers:
+                        writer.writeheader()
                     writer.writerows(rows)
 
                     # Rewind for uploading
                     f.seek(0)
-                    object_name = f"{state_code}/{table.name}.csv"
+                    object_name = f"{state_code}/{table_name}.csv"
                     logging.info("Uploading to %s/%s", bucket, object_name)
                     gcsfs.upload_from_contents_handle_stream(
                         path=GcsfsFilePath(bucket_name=bucket, blob_name=object_name),
@@ -231,7 +313,7 @@ def main(
                         timeout=300,
                     )
             else:
-                with open(f"{state_code}_{table.name}.csv", "w", encoding="utf-8") as f:
+                with open(f"{state_code}_{table_name}.csv", "w", encoding="utf-8") as f:
                     logging.info("Writing output to %s", f.name)
                     writer = csv.DictWriter(f, columns)
                     writer.writerows(rows)
@@ -253,7 +335,11 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         "--views",
         help="Space-separated views to generate demo data for. If empty, generates for all pathways event-level views.",
         type=str,
-        choices=[table.name for table in get_pathways_table_classes()],
+        choices=[
+            table.name
+            for table in get_pathways_table_classes()
+            if not table.name.endswith("projection")
+        ],
         nargs="*",
         required=False,
     )
@@ -264,10 +350,23 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         required=False,
     )
 
+    parser.add_argument(
+        "--headers",
+        help="Whether to write headers into the CSV file. Defaults to True.",
+        type=bool,
+        default=True,
+        required=False,
+    )
+
     return parser.parse_known_args(argv)
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
-    main(known_args.state_codes, known_args.views, known_args.gcs_bucket)
+    main(
+        known_args.state_codes,
+        known_args.views,
+        known_args.gcs_bucket,
+        known_args.headers,
+    )
