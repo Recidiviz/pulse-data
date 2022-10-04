@@ -27,6 +27,7 @@ COPY ./recidiviz/cloud_storage/ cloud_storage/
 COPY ./recidiviz/common/ common/
 COPY ./recidiviz/persistence/ persistence/
 COPY ./recidiviz/tools/deploy/terraform/config/ tools/deploy/terraform/config/
+COPY ./recidiviz/tools/pathways/ tools/pathways/
 COPY ./recidiviz/tools/utils/ tools/utils/
 COPY ./recidiviz/utils/ utils/
 

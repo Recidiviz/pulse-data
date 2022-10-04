@@ -26,6 +26,7 @@ This can be run with the following command:
 import argparse
 import csv
 import logging
+import os
 import random
 import sys
 import tempfile
@@ -258,10 +259,10 @@ def main(
     views: Optional[List[str]],
     bucket: Optional[str],
     headers: Optional[bool],
+    output_directory: Optional[str],
 ) -> None:
     """Generates demo Pathways data for the specified states and views and writes the result to a
     local file or GCS bucket."""
-    gcsfs = GcsfsFactory.build()
 
     tables = (
         [
@@ -293,6 +294,7 @@ def main(
                 else generate_demo_data(state_code, table_name, columns, primary_keys)
             )
             if bucket:
+                gcsfs = GcsfsFactory.build()
                 with tempfile.NamedTemporaryFile(mode="r+") as f:
                     logging.info("Writing output to temporary file %s", f.name)
                     writer = csv.DictWriter(f, columns)
@@ -313,13 +315,24 @@ def main(
                         timeout=300,
                     )
             else:
-                with open(f"{state_code}_{table_name}.csv", "w", encoding="utf-8") as f:
+                filename = (
+                    f"{table_name}.csv"
+                    if len(state_codes) == 1
+                    else f"{state_code}_{table_name}.csv"
+                )
+                with open(
+                    os.path.join(output_directory or ".", filename),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
                     logging.info("Writing output to %s", f.name)
                     writer = csv.DictWriter(f, columns)
+                    if headers:
+                        writer.writeheader()
                     writer.writerows(rows)
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments(argv: List[str]) -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
@@ -358,15 +371,26 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         required=False,
     )
 
-    return parser.parse_known_args(argv)
+    parser.add_argument(
+        "--output_directory",
+        help="""The local directory to write files to. If empty and gcs_bucket is not set to True,
+        writes to the directory the script is run from.""",
+        required=False,
+    )
+
+    known_args, _ = parser.parse_known_args(argv)
+    if known_args.gcs_bucket and known_args.output_directory:
+        parser.error("Cannot set both --gcs_bucket and --output_directory")
+    return known_args
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments(sys.argv)
     main(
-        known_args.state_codes,
-        known_args.views,
-        known_args.gcs_bucket,
-        known_args.headers,
+        args.state_codes,
+        args.views,
+        args.gcs_bucket,
+        args.headers,
+        args.output_directory,
     )
