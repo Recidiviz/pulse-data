@@ -144,8 +144,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         f"No data for the {metric_definition.display_name} metric was provided. "
                     )
             self.assertEqual(len(json_response["non_metric_errors"]), 0)
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
-    def test_ingest_json_response_annual_budget_no_errors(self) -> None:
+    def test_ingest_json_response_annual_budget_missing_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = self.test_schema_objects.test_user_A
             agency = self.test_schema_objects.test_agency_A
@@ -205,6 +207,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     )
 
             self.assertEqual(len(json_response["non_metric_errors"]), 0)
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
             # Uploading the spreadsheet with changes will result in datapoints
             # with non-None old_value values.
             file = (
@@ -234,6 +238,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(len(metric["datapoints"]), 3)
                     for datapoint in metric["datapoints"]:
                         self.assertIsNotNone(datapoint["old_value"])
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
     def test_ingest_json_response_arrests_wrong_system(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -293,3 +299,50 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 "The following sheet names do not correspond to a metric for"
                 in error["description"]
             )
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+
+    def test_ingest_json_response_success(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            user = self.test_schema_objects.test_user_A
+            agency = self.test_schema_objects.test_agency_A
+            session.add_all([user, agency])
+            session.commit()
+            session.refresh(user)
+            session.refresh(agency)
+            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+                system=schema.System.LAW_ENFORCEMENT,
+                user_id=user.auth0_user_id,
+                agency_id=agency.id,
+            )
+            session.add(spreadsheet)
+            file = (
+                self.bulk_upload_test_files
+                / "law_enforcement/law_enforcement_success.xlsx"
+            ).open("rb")
+            (
+                metric_key_to_datapoint_jsons,
+                metric_key_to_errors,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
+                session=session,
+                xls=pd.ExcelFile(file),
+                spreadsheet=spreadsheet,
+                auth0_user_id=user.auth0_user_id,
+                agency_id=agency.id,
+            )
+            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_definitions=MetricInterface.get_metric_definitions(
+                    systems={schema.System.LAW_ENFORCEMENT}
+                ),
+            )
+            self.assertEqual(len(json_response["metrics"]), 7)
+            for metric in json_response["metrics"]:
+                if metric["key"] == law_enforcement.annual_budget.key:
+                    self.assertEqual(metric["metric_errors"], [])
+                    self.assertTrue(len(metric["datapoints"]) > 0)
+
+            self.assertEqual(len(json_response["non_metric_errors"]), 0)
+            spreadsheet = session.query(schema.Spreadsheet).one()
+            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)

@@ -33,6 +33,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.exceptions import (
+    BulkUploadMessageType,
     JusticeCountsBulkUploadException,
     JusticeCountsServerError,
 )
@@ -214,16 +215,10 @@ class SpreadsheetInterface:
             system=spreadsheet.system,
             user_account=user_account,
         )
-
-        is_ingest_successful = (
-            any(  # pylint: disable=use-a-generator
-                [
-                    isinstance(e, JusticeCountsBulkUploadException)
-                    and e.message_type == "ERROR"
-                    for e in itertools.chain(metric_key_to_errors.values())
-                ]
-            )
-            or len(metric_key_to_errors) == 0
+        is_ingest_successful = all(
+            isinstance(e, JusticeCountsBulkUploadException)
+            and e.message_type != BulkUploadMessageType.ERROR
+            for e in itertools.chain(*metric_key_to_errors.values())
         )
         # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
         if not is_ingest_successful:
