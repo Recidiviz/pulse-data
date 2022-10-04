@@ -211,6 +211,7 @@ class TestGenerateDemoData(TestCase):
             views=["liberty_to_prison_transitions"],
             bucket="fake-bucket",
             headers=False,
+            output_directory=None,
         )
 
         expected_file_path = GcsfsFilePath.from_absolute_path(
