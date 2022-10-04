@@ -17,8 +17,8 @@
 """Assessment scores with range of dates for each score"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -42,20 +42,15 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
         assessment_score,
         assessment_level,
         assessment_level_raw_text,
+        assessment_score_bucket,
     FROM
         (
         SELECT *,
-            -- This ordering is needed in instances where there are multiple assessments in a given day
-            -- (likely because the data sources that we get our info from create a new row every time an
-            -- assessment is "saved"). We pick the one with the highest id because we have no better way
-            -- to sort, and there is likely a correlation between higher external id and more recently saved.
-            -- This ordering also bakes in the assumption that all assessment ids are fewer than 128
-            -- characters long and assumes that longer ids always come after shorter ones in our sorting.
             ROW_NUMBER() OVER(
                 PARTITION BY person_id, assessment_date
-                ORDER BY FORMAT('%128s', external_id) DESC
+                ORDER BY sequence_num DESC
             ) AS rn
-        FROM `{project_id}.{base_dataset}.state_assessment`
+        FROM `{project_id}.{normalized_state_dataset}.state_assessment`
         WHERE assessment_date IS NOT NULL
             AND (assessment_type IN ('LSIR','STRONG_R') OR assessment_type LIKE 'ORAS%')
         )
@@ -67,7 +62,7 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=ASSESSMENT_SCORE_SESSIONS_VIEW_NAME,
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
