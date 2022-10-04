@@ -145,9 +145,10 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
         GROUP BY {index_cols}, start_date"""
         level_dependent_metrics = f"""-- number of officers in each {level_name}
     MIN(primary_officers) AS primary_officers,
-    AVG(avg_daily_caseload_officer) AS avg_daily_caseload_officer,
-    AVG(clients_assigned_officer) AS avg_clients_assigned_officer,
-    AVG(officer_tenure_days) AS avg_officer_tenure_days"""
+    -- other officer-level attributes
+    MIN(avg_daily_caseload_officer) AS avg_daily_caseload_officer,
+    MIN(avg_clients_assigned_officer) AS avg_clients_assigned_officer,
+    MIN(avg_officer_tenure_days) AS avg_officer_tenure_days"""
 
         officer_level_metrics_join_vars = "start_date, end_date, state_code"
         if level_name in ["office", "district"]:
@@ -156,11 +157,12 @@ All end_dates are exclusive, i.e. the metric is for the range [start_date, end_d
     SELECT
         {officer_level_metrics_join_vars},
         {level_specific_name} AS {level_name},
-        avg_daily_population AS avg_daily_caseload_officer,
-        clients_assigned AS clients_assigned_officer,
-        officer_tenure_days,
+        AVG(avg_daily_population) AS avg_daily_caseload_officer,
+        AVG(clients_assigned) AS avg_clients_assigned_officer,
+        AVG(officer_tenure_days) AS avg_officer_tenure_days,
     FROM
         `{{project_id}}.{{analyst_dataset}}.supervision_officer_metrics`
+    GROUP BY {officer_level_metrics_join_vars}, {level_specific_name}
 ) c
 USING
     ({officer_level_metrics_join_vars}, {level_name})
@@ -169,11 +171,12 @@ USING
             officer_level_metrics_join = f"""LEFT JOIN (
     SELECT
         {officer_level_metrics_join_vars},
-        avg_daily_population AS avg_daily_caseload_officer,
-        clients_assigned AS clients_assigned_officer,
-        officer_tenure_days,
+        AVG(avg_daily_population) AS avg_daily_caseload_officer,
+        AVG(clients_assigned) AS avg_clients_assigned_officer,
+        AVG(officer_tenure_days) AS avg_officer_tenure_days,
     FROM
         `{{project_id}}.{{analyst_dataset}}.supervision_officer_metrics`
+    GROUP BY {officer_level_metrics_join_vars}
 )
 USING
     ({officer_level_metrics_join_vars})
