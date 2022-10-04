@@ -16,10 +16,11 @@
 // =============================================================================
 import { Card, Col, Descriptions, Spin } from "antd";
 import Title from "antd/lib/typography/Title";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
+import { isAbortException } from "../Utilities/exceptions";
 import { scrollToAnchor } from "../Utilities/GeneralUtilities";
 import {
   GCP_STORAGE_BASE_URL,
@@ -54,6 +55,8 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
   const { hash } = useLocation();
+  // Uses useRef so abort controller not re-initialized every render cycle.
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -68,12 +71,24 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = undefined;
+    }
     if (instance === DirectIngestInstance.PRIMARY) {
-      const primaryResponse = await getIngestRawFileProcessingStatus(
-        stateCode,
-        instance
-      );
-      setIngestRawFileProcessingStatus(await primaryResponse.json());
+      abortControllerRef.current = new AbortController();
+      try {
+        const primaryResponse = await getIngestRawFileProcessingStatus(
+          stateCode,
+          instance,
+          abortControllerRef.current
+        );
+        setIngestRawFileProcessingStatus(await primaryResponse.json());
+      } catch (err) {
+        if (!isAbortException(err)) {
+          throw err;
+        }
+      }
     } else {
       // TODO(#12387): Update this to also pull from endpoint if the current secondary rerun is using raw data in secondary.
       setIngestRawFileProcessingStatus([]);
