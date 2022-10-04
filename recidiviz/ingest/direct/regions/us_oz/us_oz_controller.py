@@ -45,4 +45,5 @@ class UsOzController(BaseDirectIngestController):
             "internDS_table",
             "vfds_person",
             "vfds_periods",
+            "nd_person_details",
         ]
