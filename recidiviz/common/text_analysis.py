@@ -37,7 +37,7 @@ Normalizer = Tuple[str, str]
 
 DEFAULT_MATCHING_SCORE_CUTOFF = 90
 
-REMOVE_HYPHENS: Normalizer = ("-", "")
+REMOVE_HYPHENS: Normalizer = ("-", " ")
 REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS: Normalizer = (
     r"\S*(\d|@|http|www|\ufffd)\S*",
     " ",
