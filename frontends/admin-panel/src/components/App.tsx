@@ -121,9 +121,10 @@ const App = (): JSX.Element => {
 
   const routeClass = classNames({
     "main-content": true,
-    "main-content-padding": !history.location.pathname.includes(
-      IngestOperations.INGEST_ACTIONS_ROUTE
-    ),
+    "main-content-padding": ![
+      DatasetMetadata.VALIDATION_STATUS_ROUTE,
+      IngestOperations.INGEST_ACTIONS_ROUTE,
+    ].filter((x) => history.location.pathname.includes(x)).length,
   });
 
   return (
@@ -138,6 +139,7 @@ const App = (): JSX.Element => {
           mode="inline"
           selectedKeys={selectedMenuKeys(location.pathname)}
           items={items}
+          defaultOpenKeys={selectedMenuKeys(location.pathname)}
         />
       </Layout.Sider>
       <div className={routeClass}>

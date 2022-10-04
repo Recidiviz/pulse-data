@@ -122,8 +122,12 @@ const IngestStateSpecificMetadata = (): JSX.Element => {
             style={{ marginTop: "5px" }}
             onClick={onClick}
             mode="inline"
-            selectedKeys={[location.pathname.replace(stateCode, ":stateCode")]}
+            selectedKeys={[
+              location.pathname.replace(stateCode, ":stateCode") +
+                location.hash,
+            ]}
             items={items}
+            defaultOpenKeys={items.map((x) => x?.key?.toString() || "")}
           />
         </Sider>
         <Layout className="main-content">

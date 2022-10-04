@@ -17,23 +17,29 @@
 
 import { InfoCircleOutlined } from "@ant-design/icons";
 import {
-  Anchor,
-  Breadcrumb,
+  Layout,
   List,
+  Menu,
+  MenuProps,
   PageHeader,
-  Spin,
   Table,
   Tooltip,
   Typography,
 } from "antd";
 import { ColumnsType, ColumnType } from "antd/es/table";
+import { Content } from "antd/lib/layout/layout";
+import Sider from "antd/lib/layout/Sider";
 import classNames from "classnames";
 import { History } from "history";
-import { useHistory } from "react-router-dom";
+import { useEffect } from "react";
+import { useHistory, useLocation } from "react-router-dom";
 import { MouseEventHandler } from "react-router/node_modules/@types/react";
 import { fetchValidationStatus } from "../../AdminPanelAPI";
 import { useFetchedDataProtobuf } from "../../hooks";
-import { routeForValidationDetail } from "../../navigation/DatasetMetadata";
+import {
+  routeForValidationDetail,
+  VALIDATION_STATUS_ROUTE,
+} from "../../navigation/DatasetMetadata";
 import {
   ValidationStatusRecord,
   ValidationStatusRecords,
@@ -42,9 +48,16 @@ import {
   getUniqueValues,
   optionalNumberSort,
   optionalStringSort,
+  scrollToAnchor,
 } from "../Utilities/GeneralUtilities";
 import uniqueStates from "../Utilities/UniqueStates";
-import { RecordStatus } from "./constants";
+import {
+  ANCHOR_VALIDATION_FULL_RESULTS,
+  ANCHOR_VALIDATION_HARD_FAILURES,
+  ANCHOR_VALIDATION_SOFT_FAILURES,
+  ANCHOR_VALIDATION_SUMMARY_FAILURES,
+  RecordStatus,
+} from "./constants";
 import {
   chooseIdNameForCategory,
   formatDatetime,
@@ -64,8 +77,60 @@ interface MetadataItem {
   value?: string;
 }
 
+type MenuItem = Required<MenuProps>["items"][number];
+
+function getItem(
+  label: React.ReactNode,
+  key: React.Key,
+  icon?: React.ReactNode,
+  children?: MenuItem[],
+  type?: "group"
+): MenuItem {
+  return {
+    key,
+    icon,
+    children,
+    label,
+    type,
+  } as MenuItem;
+}
+
+const getMenuItems: (categoryIds: string[]) => MenuProps["items"] = (
+  categoryIds: string[]
+) => {
+  return [
+    getItem(
+      "Summary Failures",
+      `${VALIDATION_STATUS_ROUTE}#${ANCHOR_VALIDATION_SUMMARY_FAILURES}`,
+      null,
+      [
+        getItem(
+          "Hard Failures",
+          `${VALIDATION_STATUS_ROUTE}#${ANCHOR_VALIDATION_HARD_FAILURES}`
+        ),
+        getItem(
+          "Soft Failures",
+          `${VALIDATION_STATUS_ROUTE}#${ANCHOR_VALIDATION_SOFT_FAILURES}`
+        ),
+      ]
+    ),
+    getItem(
+      "Full Results",
+      `${VALIDATION_STATUS_ROUTE}#${ANCHOR_VALIDATION_FULL_RESULTS}`,
+      null,
+      categoryIds.map((categoryId) => {
+        return getItem(
+          readableNameForCategoryId(categoryId),
+          `${VALIDATION_STATUS_ROUTE}#${categoryId}`
+        );
+      })
+    ),
+  ];
+};
+
 const ValidationStatusView = (): JSX.Element => {
   const history = useHistory();
+  const { pathname, hash } = useLocation();
 
   const { loading, data } = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchValidationStatus,
@@ -338,94 +403,86 @@ const ValidationStatusView = (): JSX.Element => {
     { key: "System Version", value: initialRecord?.getSystemVersion() },
   ];
 
+  useEffect(() => {
+    scrollToAnchor(hash);
+  }, [hash, data]);
+
+  const onClick: MenuProps["onClick"] = (e) => {
+    history.push(e.key);
+  };
+
   return (
-    <>
-      <Breadcrumb>
-        <Breadcrumb.Item>Validation Status</Breadcrumb.Item>
-      </Breadcrumb>
+    <Layout style={{ height: "100%", width: "100%" }}>
       <PageHeader
         title="Validation Status"
         subTitle="Shows the current status of each validation for each state."
       />
-      <List
-        size="small"
-        dataSource={metadata}
-        loading={loading}
-        renderItem={(item: MetadataItem) => (
-          <List.Item>
-            {item.key}: {item.value}
-          </List.Item>
-        )}
-      />
-      <Title level={3}>Table of Contents</Title>
-      <Anchor affix={false}>
-        <div className="validation-anchor-link">
-          <Anchor.Link href="#summary-failures" title="Failure Summary" />
-        </div>
-        <div className="validation-anchor-link-child validation-anchor-link">
-          <Anchor.Link href="#hard-failures" title="Hard Failures" />
-        </div>
-        <div className="validation-anchor-link-child validation-anchor-link">
-          <Anchor.Link href="#soft-failures" title="Soft Failures" />
-        </div>
-
-        <div className="validation-anchor-link">
-          <Anchor.Link href="#full-results" title="Full Results" />
-        </div>
-        {loading ? (
-          <Spin />
-        ) : (
-          categoryIds.map((categoryId) => {
-            return (
-              <div className="validation-anchor-link-child validation-anchor-link">
-                <Anchor.Link
-                  href={`#${categoryId}`}
-                  title={readableNameForCategoryId(categoryId)}
-                />
-              </div>
-            );
-          })
-        )}
-      </Anchor>
-
-      <Title id="summary-failures" level={1}>
-        Failure Summary
-      </Title>
-      <Title id="hard-failures" level={2}>
-        Hard Failures
-      </Title>
-      {getFailureTable([RecordStatus.FAIL_HARD, RecordStatus.BROKEN])}
-      <Title id="soft-failures" level={2}>
-        Soft Failures
-      </Title>
-      {getFailureTable([RecordStatus.FAIL_SOFT])}
-      <Title id="full-results" level={1}>
-        Full Results
-      </Title>
-      {categoryIds.sort().map((categoryId) => {
-        return (
-          <>
-            <Title id={categoryId} level={2}>
-              {readableNameForCategoryId(categoryId)}
-            </Title>
-            <Table
-              className="validation-table"
-              columns={getLabelColumns(categoryId)}
+      <Layout style={{ flexDirection: "row" }}>
+        <Sider width={200}>
+          <Menu
+            style={{ marginTop: "5px" }}
+            onClick={onClick}
+            mode="inline"
+            selectedKeys={[pathname + hash]}
+            items={getMenuItems(categoryIds)}
+            defaultOpenKeys={getMenuItems([])?.map(
+              (x) => x?.key?.toString() || ""
+            )}
+          />
+        </Sider>
+        <Layout className="main-content" style={{ padding: "0 24px 24px" }}>
+          <Content>
+            <List
+              size="small"
+              dataSource={metadata}
               loading={loading}
-              dataSource={dictOfCategoryIdsToRecords[categoryId]}
-              pagination={{
-                hideOnSinglePage: true,
-                showSizeChanger: true,
-                pageSize: 50,
-                size: "small",
-              }}
-              rowClassName="validation-table-row"
-              rowKey="validation"
+              renderItem={(item: MetadataItem) => (
+                <List.Item>
+                  {item.key}: {item.value}
+                </List.Item>
+              )}
             />
-          </>
-        );
-      })}
-    </>
+            <Title id={ANCHOR_VALIDATION_SUMMARY_FAILURES} level={1}>
+              Failure Summary
+            </Title>
+            <Title id={ANCHOR_VALIDATION_HARD_FAILURES} level={2}>
+              Hard Failures
+            </Title>
+            {getFailureTable([RecordStatus.FAIL_HARD, RecordStatus.BROKEN])}
+            <Title id={ANCHOR_VALIDATION_SOFT_FAILURES} level={2}>
+              Soft Failures
+            </Title>
+            {getFailureTable([RecordStatus.FAIL_SOFT])}
+            <Title id={ANCHOR_VALIDATION_FULL_RESULTS} level={1}>
+              Full Results
+            </Title>
+            {categoryIds.sort().map((categoryId) => {
+              return (
+                <>
+                  <Title id={categoryId} level={2}>
+                    {readableNameForCategoryId(categoryId)}
+                  </Title>
+                  <Table
+                    className="validation-table"
+                    columns={getLabelColumns(categoryId)}
+                    loading={loading}
+                    dataSource={dictOfCategoryIdsToRecords[categoryId]}
+                    pagination={{
+                      hideOnSinglePage: true,
+                      showSizeChanger: true,
+                      pageSize: 50,
+                      size: "small",
+                    }}
+                    rowClassName="validation-table-row"
+                    rowKey="validation"
+                  />
+                </>
+              );
+            })}
+          </Content>
+        </Layout>
+      </Layout>
+    </Layout>
   );
 };
 
