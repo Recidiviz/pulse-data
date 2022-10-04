@@ -31,6 +31,19 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     step {
       name = "gcr.io/kaniko-project/executor:v1.8.1"
       args = ["--destination=us.gcr.io/$PROJECT_ID/appengine/build:$COMMIT_SHA", "--cache=true"]
+      id   = "recidiviz"
+    }
+    step {
+      name     = "gcr.io/kaniko-project/executor:v1.8.1"
+      args     = ["--destination=us.gcr.io/$PROJECT_ID/recidiviz-base:latest", "--cache=true", "--dockerfile=Dockerfile.recidiviz-base"]
+      id       = "recidiviz-base"
+      wait_for = ["-"] # Run this step in parallel with the previous one
+    }
+    step {
+      name     = "gcr.io/kaniko-project/executor:v1.8.1"
+      args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/case-triage-pathways:latest", "--cache=true", "--dockerfile=Dockerfile.case-triage-pathways"]
+      id       = "case-triage-pathways"
+      wait_for = ["recidiviz-base"]
     }
     options {
       machine_type = "N1_HIGHCPU_32"
