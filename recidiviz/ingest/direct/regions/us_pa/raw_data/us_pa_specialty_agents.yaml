@@ -4,6 +4,7 @@ file_description: |-
   A table containing a list of Agents in Pennsylvania with information such as name and district office.
 data_classification: source
 primary_key_cols:
+  - external_id
   - AgentName
   - DistrictOffice
 columns:
@@ -32,3 +33,7 @@ columns:
     is_pii: True
     description: |-
       Notes related to Agent
+  - name: external_id
+    is_pii: True
+    description: |-
+      Unique ID for each Agent
