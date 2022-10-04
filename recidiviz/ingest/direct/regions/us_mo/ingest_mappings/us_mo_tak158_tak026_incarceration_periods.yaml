@@ -15,7 +15,8 @@ input_columns:
   - SQN
   - START_SCD_CODES
   - END_SCD_CODES
-unused_columns: []
+unused_columns:
+  - START_STATUS_SEQ_NUM
 variables:
   - incarceration_period_external_id:
       $concat:
@@ -23,7 +24,6 @@ variables:
           - DOC
           - CYC
           - SQN
-          - START_STATUS_SEQ_NUM
 output:
   StatePerson:
     external_ids:
