@@ -1168,6 +1168,9 @@ class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
     is_sex_offense = Column(
         Boolean, comment="Whether or not the violation involved a sex offense."
     )
+    is_drug = Column(
+        Boolean, comment="Whether this charge was for a drug-related crime or not."
+    )
     counts = Column(
         Integer,
         comment="The number of counts of this charge which are being brought against the person.",

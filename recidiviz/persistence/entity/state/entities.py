@@ -404,6 +404,9 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     is_sex_offense: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
+    is_drug: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
 
     counts: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
     charge_notes: Optional[str] = attr.ib(
