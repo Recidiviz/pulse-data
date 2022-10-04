@@ -1242,7 +1242,10 @@ for level_string in SUPERVISION_METRICS_SUPPORTED_LEVELS:
             analyst_dataset=ANALYST_VIEWS_DATASET,
             sessions_dataset=SESSIONS_DATASET,
             clustering_fields=clustering_fields,
-            should_materialize=False,  # materialize in an unmanaged dataset instead
+            # This view is too expensive to materialize as part of our regular view
+            # deploy. We materialize this to the `unmanaged_views` dataset via a BQ
+            # Scheduled Query (defined in bigquery-scheduled-queries.tf).
+            should_materialize=False,
         )
     )
 
