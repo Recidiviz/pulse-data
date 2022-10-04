@@ -92,37 +92,46 @@ class ResultDetailsTypes(Enum):
         raise ValueError(f"type {self} not mapped to class")
 
 
-def results_query(project_id: str, validation_result_address: BigQueryAddress) -> str:
+def results_query(
+    project_id: str,
+    validation_result_address: BigQueryAddress,
+    most_recent_run_only: bool,
+) -> str:
+    """Returns all validation results across all states, augmented with info about
+    the most recent successful run. If |most_recent_run_only|, returns validation results
+    only from the most recent validation run for a given state.
+    """
+    if most_recent_run_only:
+        results_filter_join_clause = """INNER JOIN (
+        SELECT *
+        FROM `recidiviz-staging.validation_results.validation_results`
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY region_code ORDER BY run_datetime DESC) = 1
+     )
+    USING (run_id, region_code)"""
+    else:
+        results_filter_join_clause = ""
+
     return f"""
-SELECT
-    run_id,
-    run_datetime,
-    system_version,
-    validation_name,
-    validation_category,
-    region_code,
-    did_run,
-    validation_result_status,
-    was_successful,
-    failure_description,
-    result_details_type,
-    result_details,
-    last_better_status_run_id,
-    last_better_status_run_datetime,
-    last_better_status_run_result_status,
-    trace_id,
-    exception_log,
-FROM (
     SELECT
-    result.*,
+    result.run_id,
+    result.run_datetime,
+    result.system_version,
+    result.validation_name,
+    result.validation_category,
+    result.region_code,
+    result.did_run,
+    result.validation_result_status,
+    result.was_successful,
+    result.failure_description,
+    result.result_details_type,
+    result.result_details,
     last_better_status_run.run_id as last_better_status_run_id,
     last_better_status_run.run_datetime as last_better_status_run_datetime,
     last_better_status_run.validation_result_status as last_better_status_run_result_status,
-    ROW_NUMBER() OVER (
-        PARTITION BY result.run_id, result.validation_name, result.region_code
-        -- Orders by recency of the compared data
-        ORDER BY last_better_status_run.run_datetime DESC) as ordinal
+    result.trace_id,
+    result.exception_log,
     FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}` result
+    {results_filter_join_clause}
     -- Explodes to all prior better runs
     LEFT JOIN `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}` last_better_status_run
     ON (result.validation_name = last_better_status_run.validation_name
@@ -133,22 +142,11 @@ FROM (
                 ELSE last_better_status_run.validation_result_status = "SUCCESS"
             END
     )
-)
--- Get the row with the most recent better run
-WHERE ordinal = 1
-"""
-
-
-def recent_run_results_query(
-    project_id: str, validation_result_address: BigQueryAddress
-) -> str:
-    return f"""
-{results_query(project_id, validation_result_address)}
-AND run_id = (
-    SELECT run_id
-    FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
-    ORDER BY run_datetime desc LIMIT 1
-)
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY result.run_id, result.validation_name, result.region_code
+        -- Orders by recency of the compared data
+        ORDER BY last_better_status_run.run_datetime DESC
+    ) = 1
 """
 
 
@@ -160,7 +158,7 @@ def validation_history_results_query(
     days_to_include: int = 14,
 ) -> str:
     return f"""
-{results_query(project_id, validation_result_address)}
+{results_query(project_id, validation_result_address, most_recent_run_only=False)}
 AND validation_name = "{validation_name}"
 AND region_code = "{region_code}"
 AND run_datetime >= DATETIME_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {days_to_include} DAY)
@@ -409,8 +407,10 @@ class ValidationStatusStore(AdminPanelStore):
     def recalculate_store(self) -> None:
         """Recalculates validation data by querying the validation data store"""
         query_job = self.bq_client.run_query_async(
-            query_str=recent_run_results_query(
-                metadata.project_id(), VALIDATION_RESULTS_BIGQUERY_ADDRESS
+            query_str=results_query(
+                metadata.project_id(),
+                VALIDATION_RESULTS_BIGQUERY_ADDRESS,
+                most_recent_run_only=True,
             ),
             use_query_cache=True,
             query_parameters=[],
@@ -418,19 +418,13 @@ class ValidationStatusStore(AdminPanelStore):
 
         # Build up new results
         records: List[ValidationStatusRecord_pb2] = []
-        run_id: Optional[str] = None
 
-        row: Row
         for row in query_job:
-            if run_id is not None and run_id != row.get("run_id"):
-                raise ValueError(
-                    f"Expected single run id but got '{run_id}' and '{row.get('run_id')}'."
-                )
-            run_id = row.get("run_id")
             records.append(_validation_status_record_from_row(row))
 
-        if run_id is None:
+        if not records:
             # No validation results exist.
+            self.records = None
             return
 
         # Swap results
