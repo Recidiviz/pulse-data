@@ -79,7 +79,8 @@ export const getIngestQueuesState = async (
 // Get ingest instance summary
 export const getIngestInstanceSummary = async (
   regionCode: string,
-  ingestInstance: DirectIngestInstance
+  ingestInstance: DirectIngestInstance,
+  controller: AbortController
 ): Promise<Response> => {
   return fetch(
     `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_summary/${ingestInstance}`,
@@ -87,6 +88,7 @@ export const getIngestInstanceSummary = async (
       headers: {
         "Content-Type": "application/json",
       },
+      signal: controller.signal,
     }
   );
 };
@@ -94,7 +96,8 @@ export const getIngestInstanceSummary = async (
 // Get ingest raw file processing status
 export const getIngestRawFileProcessingStatus = async (
   regionCode: string,
-  ingestInstance: DirectIngestInstance
+  ingestInstance: DirectIngestInstance,
+  controller: AbortController
 ): Promise<Response> => {
   return fetch(
     `/admin/api/ingest_operations/${regionCode}/get_ingest_raw_file_processing_status/${ingestInstance}`,
@@ -102,6 +105,7 @@ export const getIngestRawFileProcessingStatus = async (
       headers: {
         "Content-Type": "application/json",
       },
+      signal: controller.signal,
     }
   );
 };
