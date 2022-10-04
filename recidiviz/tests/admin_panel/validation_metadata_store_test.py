@@ -174,7 +174,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         )
 
     @patch("recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl")
-    def test_multiple_run_ids_fails(
+    def test_multiple_states_different_run_ids_succeeds(
         self, mock_bigquery_client_class: MagicMock
     ) -> None:
         mock_bigquery_client = mock_bigquery_client_class.return_value
@@ -201,11 +201,70 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "did_run": True,
                 "validation_result_status": "FAIL_HARD",
                 "result_details_type": "SamenessPerViewValidationResultDetails",
-                "result_details": '{"num_error_rows": 99, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
+                "result_details": '{"num_error_rows": 999, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
                 "failure_description": "",
             },
         ]
 
         store = ValidationStatusStore()
-        with self.assertRaisesRegex(ValueError, "Expected single run id"):
-            store.recalculate_store()
+        store.recalculate_store()
+        results = store.get_most_recent_validation_results()
+
+        timestamp = Timestamp()
+        timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
+
+        self.assertEqual(
+            ValidationStatusRecords(
+                records=[
+                    ValidationStatusRecord(
+                        run_id="abc123",
+                        run_datetime=timestamp,
+                        system_version="v1.0.0",
+                        name="test_view",
+                        category=ValidationStatusRecord.ValidationCategory.EXTERNAL_INDIVIDUAL,
+                        is_percentage=True,
+                        state_code="US_XX",
+                        did_run=True,
+                        has_data=True,
+                        dev_mode=False,
+                        hard_failure_amount=0.02,
+                        soft_failure_amount=0.02,
+                        result_status=ValidationStatusRecord.ValidationResultStatus.SUCCESS,
+                        error_amount=0.012,
+                        failure_description=None,
+                        existence=None,
+                        sameness_per_row=None,
+                        sameness_per_view=SamenessPerViewValidationResultDetails(
+                            num_error_rows=12,
+                            total_num_rows=1000,
+                            non_null_counts_per_column_per_partition=[],
+                        ),
+                    ),
+                    ValidationStatusRecord(
+                        run_id="def456",
+                        run_datetime=timestamp,
+                        system_version="v1.0.0",
+                        name="test_view",
+                        category=ValidationStatusRecord.ValidationCategory.EXTERNAL_INDIVIDUAL,
+                        is_percentage=True,
+                        state_code="US_YY",
+                        did_run=True,
+                        has_data=True,
+                        dev_mode=False,
+                        hard_failure_amount=0.02,
+                        soft_failure_amount=0.02,
+                        result_status=ValidationStatusRecord.ValidationResultStatus.FAIL_HARD,
+                        error_amount=0.999,
+                        failure_description="",
+                        existence=None,
+                        sameness_per_row=None,
+                        sameness_per_view=SamenessPerViewValidationResultDetails(
+                            num_error_rows=999,
+                            total_num_rows=1000,
+                            non_null_counts_per_column_per_partition=[],
+                        ),
+                    ),
+                ]
+            ),
+            results,
+        )
