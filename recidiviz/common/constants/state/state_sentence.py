@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 #  migrated to v2 mappings.
 @unique
 class StateSentenceStatus(StateEntityEnum):
+    AMENDED = state_enum_strings.state_sentence_status_amended
     COMMUTED = state_enum_strings.state_sentence_status_commuted
     COMPLETED = state_enum_strings.state_sentence_status_completed
     PARDONED = state_enum_strings.state_sentence_status_pardoned
@@ -54,6 +55,12 @@ class StateSentenceStatus(StateEntityEnum):
 
 
 _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateSentenceStatus.AMENDED: "Describes a sentence that has been amended. This usually"
+    " happens when a sentence has been extended or otherwise modified, and the original "
+    "sentence record is closed and a new amended sentence record is created.  It is also"
+    " possible that a sentence is successively amended multiple times and multiple new "
+    "amended sentence records created, so this value should be used for all of the "
+    "earlier sentence records that are closed due to sentence modification.",
     StateSentenceStatus.COMMUTED: "Describes a sentence that has been commuted. "
     "“Commutation” is a reduction of a sentence to a lesser period of time. This is "
     "different than `PARDONED` because the conviction has not been cleared from the "
@@ -91,6 +98,7 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 # space. Add mappings here using a single space between words and numbers.
 # For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
 _STATE_SENTENCE_STATUS_MAP = {
+    "AMENDED": StateSentenceStatus.AMENDED,
     "COMMUTED": StateSentenceStatus.COMMUTED,
     "COMPLETED": StateSentenceStatus.COMPLETED,
     "EXTERNAL UNKNOWN": StateSentenceStatus.EXTERNAL_UNKNOWN,

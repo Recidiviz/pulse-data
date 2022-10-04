@@ -141,6 +141,7 @@ state_assessment_level = Enum(
 )
 
 state_sentence_status = Enum(
+    state_enum_strings.state_sentence_status_amended,
     state_enum_strings.state_sentence_status_commuted,
     state_enum_strings.state_sentence_status_completed,
     state_enum_strings.state_sentence_status_pardoned,

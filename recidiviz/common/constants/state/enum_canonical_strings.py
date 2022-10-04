@@ -238,6 +238,7 @@ state_residency_status_permanent = "PERMANENT"
 state_residency_status_transient = "TRANSIENT"
 
 # state_sentence.py
+state_sentence_status_amended = "AMENDED"
 state_sentence_status_commuted = "COMMUTED"
 state_sentence_status_completed = "COMPLETED"
 state_sentence_status_pardoned = "PARDONED"
