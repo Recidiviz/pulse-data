@@ -60,9 +60,9 @@ WITH
   FROM (
     SELECT
       *,
-      ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, FORMAT('%128s', external_id) DESC ) AS rn
+      ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, sequence_num DESC ) AS rn
     FROM
-      `{project_id}.{state_dataset}.state_assessment`
+      `{project_id}.{normalized_state_dataset}.state_assessment`
     WHERE
       assessment_date IS NOT NULL
       AND assessment_type = 'LSIR' OR assessment_type LIKE 'ORAS%')

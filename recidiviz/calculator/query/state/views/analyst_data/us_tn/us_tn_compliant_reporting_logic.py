@@ -19,6 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
@@ -601,7 +602,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             SELECT person_id,
                     assessment_date, 
                     MAX(CASE WHEN COALESCE(REPLACE(JSON_EXTRACT(assessment_metadata, "$.ALCOHOL_DRUG_NEED_LEVEL"), '"',''), 'MISSING') IN ('MOD','HIGH') THEN 1 ELSE 0 END) AS high_ad_client
-            FROM `{project_id}.{base_dataset}.state_assessment`
+            FROM `{project_id}.{normalized_state_dataset}.state_assessment`
             WHERE state_code = 'US_TN'
             GROUP BY 1,2
         )
@@ -904,6 +905,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE,
