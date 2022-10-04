@@ -83,7 +83,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
         LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
             USING(agnt_case_updt_id)
-        WHERE ((ncic_ilets_nco_check AND NOT nco_check) OR new_crime)
+        WHERE (ncic_ilets_nco_check OR new_crime)
         --only select ncic checks and new crime within the past 90 days
         AND DATE_ADD(a.create_dt, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
         --Community service, Interlock, Special Conditions, Treatment, LSU, Specialty court
@@ -101,6 +101,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 WHEN transfer_chrono THEN "Transfer chrono"
                 WHEN interlock THEN "Interlock"
                 WHEN any_treatment THEN "Treatment"
+                #TODO(#15799) uncomment when flags are hydrated in supplemental data
                 #WHEN (specialty_court AND court AND NOT psi) THEN "Specialty court"
                 WHEN lsu THEN "Previous LSU notes"
                 ELSE NULL
@@ -113,6 +114,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             OR transfer_chrono
             OR interlock
             OR any_treatment
+            #TODO(#15799) uncomment when flags are hydrated in supplemental data
             #OR (specialty_court AND court AND NOT psi)
             OR lsu
         UNION ALL
