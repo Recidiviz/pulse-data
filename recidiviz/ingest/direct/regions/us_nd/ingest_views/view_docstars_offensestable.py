@@ -23,8 +23,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT *
-FROM {docstars_offensestable}
+SELECT ot.*, oc.JUDGE
+FROM {docstars_offensestable} ot
+LEFT JOIN {docstars_offendercasestable} oc
+USING (CASE_NUMBER)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
