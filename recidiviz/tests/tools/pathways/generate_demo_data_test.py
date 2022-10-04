@@ -45,11 +45,18 @@ class TestGenerateDemoData(TestCase):
 
     def test_generate_row(self) -> None:
         row = generate_row(
-            year=2020,
-            month=1,
             state_code="US_XX",
+            table_name="supervision_to_prison_transitions",
             dimensions={"gender": "FEMALE"},
-            db_columns=["supervision_start_date", "person_id"],
+            db_columns=[
+                "supervision_start_date",
+                "person_id",
+                "year",
+                "month",
+                "transition_date",
+                "gender",
+            ],
+            month_year=date(year=2020, month=1, day=1),
         )
 
         self.assertCountEqual(
@@ -77,29 +84,68 @@ class TestGenerateDemoData(TestCase):
             },
         )
 
+    def test_generate_row_without_date(self) -> None:
+        row = generate_row(
+            state_code="US_XX",
+            table_name="supervision_to_prison_transitions",
+            dimensions={"gender": "FEMALE"},
+            db_columns=[
+                "supervision_start_date",
+                "person_id",
+                "year",
+                "month",
+                "transition_date",
+                "gender",
+            ],
+        )
+
+        self.assertCountEqual(
+            row.keys(),
+            [
+                "state_code",
+                "gender",
+                "person_id",
+            ],
+        )
+
+        # Assert on the contents for the non-random values
+        self.assertEqual(
+            row,
+            row
+            | {
+                "state_code": "US_XX",
+                "gender": "FEMALE",
+            },
+        )
+
     @patch("recidiviz.tools.pathways.generate_demo_data.random.randint")
     def test_generate_rows(self, mock_randint: MagicMock) -> None:
         first_month_day = 2
         second_month_day = 3
         person_id = 4
+        supervision_delta = 100
         expected_random_values = [
             1,  # create one row for MALE
             first_month_day,  # day of month
+            supervision_delta,
             person_id,  # person ID
             1,  # create one row for FEMALE
             first_month_day,  # day of month
+            supervision_delta,
             person_id,  # person ID
             # Now we've hit a duplicate and need to try again
             second_month_day,  # try a different day of the month
+            supervision_delta,
             person_id,  # person ID
         ]
         mock_randint.side_effect = expected_random_values
 
         rows = generate_rows(
-            year=2020,
-            month=1,
             state_code="US_XX",
-            columns=["gender", "person_id"],
+            table_name="liberty_to_prison_transitions",
+            columns=["gender", "person_id", "transition_date", "year", "month"],
+            primary_keys=["person_id", "transition_date"],
+            month_year=date(year=2020, month=1, day=1),
         )
 
         self.assertEqual(mock_randint.call_count, len(expected_random_values))
@@ -164,6 +210,7 @@ class TestGenerateDemoData(TestCase):
             state_codes=["US_XX"],
             views=["liberty_to_prison_transitions"],
             bucket="fake-bucket",
+            headers=False,
         )
 
         expected_file_path = GcsfsFilePath.from_absolute_path(
