@@ -43,3 +43,4 @@ columns:
   - name: CELL_PHONE
     description: |-
       Additional phone number for the FTR Provider, typically empty.
+always_historical_export: True

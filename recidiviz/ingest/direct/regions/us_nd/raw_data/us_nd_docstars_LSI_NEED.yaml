@@ -18,3 +18,4 @@ columns:
     description: |-
       Goal of identifying this need
   - name: INACTIVEDATE
+always_historical_export: True

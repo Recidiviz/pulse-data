@@ -32,3 +32,4 @@ columns:
       Yes/No for whether funding is targeted at specific populations (e.g. multi-county
       reservation areas or rural areas that have a lack of mental health or substance
       use treatment can be designated as underserved).
+always_historical_export: True

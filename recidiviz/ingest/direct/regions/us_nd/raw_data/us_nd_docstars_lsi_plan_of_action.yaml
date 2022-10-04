@@ -36,3 +36,4 @@ columns:
   - name: STATUS
     description: |-
       Status of plan
+always_historical_export: True

@@ -34,3 +34,4 @@ columns:
   - name: LOGINNAME
     description: |-
       System login name of the officer.
+always_historical_export: True
