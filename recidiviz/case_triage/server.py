@@ -149,17 +149,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
         raise auth_error
 
 
-auth0_configuration = get_secret("case_triage_auth0")
-
-if not auth0_configuration:
-    raise ValueError("Missing Case Triage Auth0 configuration secret")
-
 authorization_store = AuthorizationStore()
-authorization_config = Auth0Config.from_config_json(json.loads(auth0_configuration))
-requires_authorization = build_auth0_authorization_decorator(
-    authorization_config, on_successful_authorization
-)
-
 store_refresh = RepeatedTimer(
     15 * 60,
     authorization_store.refresh,
@@ -227,36 +217,45 @@ segment_client = CaseTriageSegmentClient(write_key)
 
 
 # Routes & Blueprints
-api_blueprint = create_api_blueprint(segment_client, requires_authorization)
 pathways_api_blueprint = create_pathways_api_blueprint()
-auth_blueprint = create_auth_blueprint(authorization_config)
-
-app.register_blueprint(api_blueprint, url_prefix="/api")
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
-app.register_blueprint(auth_blueprint, url_prefix="/auth")
-app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
+# Only the pathways endpoints are accessible in offline mode
+if not in_offline_mode():
+    auth0_configuration = get_secret("case_triage_auth0")
 
-app.add_url_rule(
-    "/refresh_auth_store",
-    view_func=RefreshAuthStore.as_view(
-        "refresh_auth_store",
-        redirect_url="/",
-        authorization_store=authorization_store,
-        authorization_decorator=requires_authorization,
-    ),
-)
+    if not auth0_configuration:
+        raise ValueError("Missing Case Triage Auth0 configuration secret")
 
+    authorization_config = Auth0Config.from_config_json(json.loads(auth0_configuration))
+    requires_authorization = build_auth0_authorization_decorator(
+        authorization_config, on_successful_authorization
+    )
+    api_blueprint = create_api_blueprint(segment_client, requires_authorization)
+    auth_blueprint = create_auth_blueprint(authorization_config)
 
-@app.route("/auth0_public_config.js")
-def auth0_public_config() -> str:
-    # Expose ONLY the necessary variables to configure our Auth0 frontend
-    return f"window.AUTH0_CONFIG = {authorization_config.as_public_config()};"
+    app.register_blueprint(api_blueprint, url_prefix="/api")
+    app.register_blueprint(auth_blueprint, url_prefix="/auth")
+    app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
 
+    app.add_url_rule(
+        "/refresh_auth_store",
+        view_func=RefreshAuthStore.as_view(
+            "refresh_auth_store",
+            redirect_url="/",
+            authorization_store=authorization_store,
+            authorization_decorator=requires_authorization,
+        ),
+    )
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def index(path: str = "") -> Response:
-    if path != "" and os.path.exists(os.path.join(static_folder, path)):
-        return send_from_directory(static_folder, path)
+    @app.route("/auth0_public_config.js")
+    def auth0_public_config() -> str:
+        # Expose ONLY the necessary variables to configure our Auth0 frontend
+        return f"window.AUTH0_CONFIG = {authorization_config.as_public_config()};"
 
-    return send_from_directory(static_folder, "index.html")
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def index(path: str = "") -> Response:
+        if path != "" and os.path.exists(os.path.join(static_folder, path)):
+            return send_from_directory(static_folder, path)
+
+        return send_from_directory(static_folder, "index.html")
