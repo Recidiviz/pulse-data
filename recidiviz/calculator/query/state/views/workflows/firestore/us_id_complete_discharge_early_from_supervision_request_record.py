@@ -76,7 +76,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             cn.agnt_note_title AS note_title, 
             cn.agnt_note_txt AS note_body, 
             CASE 
-                WHEN (ncic_ilets_nco_check AND NOT nco_check) THEN "No new criminal activity check"
+                WHEN ncic_ilets_nco_check THEN "No new criminal activity check"
                 WHEN new_crime THEN "Violations"
                 ELSE NULL
             END AS criteria
@@ -86,7 +86,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         WHERE ((ncic_ilets_nco_check AND NOT nco_check) OR new_crime)
         --only select ncic checks and new crime within the past 90 days
         AND DATE_ADD(a.create_dt, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-        --Community service, Interlock, Special Conditions, Treatment
+        --Community service, Interlock, Special Conditions, Treatment, LSU, Specialty court
         UNION ALL
         SELECT 
             a.agnt_case_updt_id AS external_id,
@@ -96,21 +96,25 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             cn.agnt_note_title AS note_title, 
             cn.agnt_note_txt AS note_body,
             CASE 
-                WHEN community_service THEN "Community service"
+                WHEN (community_service AND NOT not_cs AND NOT agents_warning) THEN "Community service"
                 WHEN case_plan THEN "Special Conditions"
+                WHEN transfer_chrono THEN "Transfer chrono"
                 WHEN interlock THEN "Interlock"
-                WHEN (any_treatment OR treatment_complete) THEN "Treatment"
+                WHEN any_treatment THEN "Treatment"
+                #WHEN (specialty_court AND court AND NOT psi) THEN "Specialty court"
+                WHEN lsu THEN "Previous LSU notes"
                 ELSE NULL
             END AS criteria
         FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
         LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
             USING(agnt_case_updt_id)
-        --only include notes that are created during the current supervision session
-         WHERE community_service
+        WHERE (community_service AND NOT not_cs AND NOT agents_warning)
             OR case_plan
+            OR transfer_chrono
             OR interlock
-            OR any_treatment 
-            OR treatment_complete
+            OR any_treatment
+            #OR (specialty_court AND court AND NOT psi)
+            OR lsu
         UNION ALL
         --DUI notes
         SELECT 
