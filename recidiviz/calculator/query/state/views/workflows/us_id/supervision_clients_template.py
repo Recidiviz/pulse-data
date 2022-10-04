@@ -150,5 +150,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         LEFT JOIN id_earned_discharge_eligibility USING(person_external_id)
         LEFT JOIN id_lsu_eligibility USING (person_external_id)
         LEFT JOIN id_past_FTRD_eligibility USING (person_external_id)
+        # TODO(#15809): Remove this condition after we figure out why clients are missing person details
+        WHERE person_name IS NOT NULL
     )
 """
