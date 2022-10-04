@@ -20,6 +20,7 @@ input_columns:
   - REQUIRES_REGISTRATION
   - Common_Statute_NCIC_Code
   - Common_Statute_Number
+  - JUDGE
 unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
@@ -75,3 +76,6 @@ output:
                     $function: us_nd_custom_parsers.normalize_county_code
                     $args:
                       county_code: COUNTY
+                judge_full_name:
+                  $person_name:
+                    $full_name: JUDGE
