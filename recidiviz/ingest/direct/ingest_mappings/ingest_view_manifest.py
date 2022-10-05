@@ -22,6 +22,7 @@ tree.
 import abc
 import json
 import re
+from ast import literal_eval
 from enum import Enum
 from typing import (
     Any,
@@ -662,6 +663,33 @@ class DirectMappingFieldManifest(ManifestNode[str]):
 
     def columns_referenced(self) -> Set[str]:
         return {self.mapped_column}
+
+
+@attr.s(kw_only=True)
+class BooleanLiteralFieldManifest(ManifestNode[bool]):
+    """Manifest describing a flat field that will be hydrated with a boolean literal
+    value (True or False) for all input rows."""
+
+    # Boolean literals are denoted like $literal_bool(True) or $literal_bool(False)
+    BOOLEAN_LITERAL_VALUE_REGEX = re.compile(r"^\$literal_bool\((True|False)\)$")
+
+    literal_value: Optional[bool] = attr.ib()
+
+    @property
+    def result_type(self) -> Type[bool]:
+        return bool
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[bool]:
+        return self.literal_value
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
+
+    def columns_referenced(self) -> Set[str]:
+        return set()
 
 
 @attr.s(kw_only=True)
@@ -2049,6 +2077,14 @@ def build_manifest_from_raw(
         if match:
             return EnumLiteralFieldManifest.from_raw_manifest(
                 raw_manifest=raw_field_manifest, delegate=delegate
+            )
+
+        match = re.match(
+            BooleanLiteralFieldManifest.BOOLEAN_LITERAL_VALUE_REGEX, raw_field_manifest
+        )
+        if match:
+            return BooleanLiteralFieldManifest(
+                literal_value=literal_eval(match.group(1))
             )
 
         match = re.match(VARIABLE_EXPRESSION_REGEX, raw_field_manifest)

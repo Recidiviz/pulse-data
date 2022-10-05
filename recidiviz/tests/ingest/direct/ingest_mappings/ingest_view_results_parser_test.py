@@ -392,6 +392,15 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_boolean_literal(self) -> None:
+        expected_output = [
+            FakePerson(fake_state_code="US_XX", name="ALICE", is_dead=False)
+        ]
+
+        parsed_output = self._run_parse_for_ingest_view("boolean_literal")
+
+        self.assertEqual(expected_output, parsed_output)
+
     def test_unpack_list_into_field(self) -> None:
         # Arrange
         expected_output = [
