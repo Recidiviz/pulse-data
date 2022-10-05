@@ -66,6 +66,7 @@ output:
                 - TrtStartDateYear
                 - TrtStartDateMonth
                 - TrtStartDateDay
+              $include_nulls: False
           discharge_date:
             $concat:
               $values:
