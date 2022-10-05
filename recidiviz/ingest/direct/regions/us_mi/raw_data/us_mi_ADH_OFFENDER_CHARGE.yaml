@@ -79,6 +79,7 @@ columns:
         description: Presentence
   - name: firearms_involved_flag
   - name: attempted_id
+    description: Reference code for whether charge was an attempted offense (references ADH_REFERENCE_CODE)
     known_values:
       - value: "11781"
         description: Attempt Cont. Sub. Violation

@@ -1,0 +1,436 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_number
+  - offender_sentence_id
+  - sentence_status_id
+  - sentence_closing_reason_code
+  - legal_closing_reason_code
+  - sentence_type_id
+  - sentenced_date
+  - effective_date
+  - closing_date
+  - expiration_date
+  - county
+  - min_length_days
+  - min_length_months
+  - min_length_years
+  - max_length_days
+  - max_length_months
+  - max_length_years
+  - original_offender_sentence_id
+  - special_condition_id_list
+  - jail_credit_days
+  - min_life_flag
+  - max_life_flag
+  - attempted_id
+  - offense_code
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_number
+          id_type: $literal("US_MI_DOC")
+    supervision_sentences:
+      # Populate supervision sentence if sentence type is probation
+      - $conditional:
+          - $if:
+              $equal:
+                - sentence_type_id
+                - $literal("431") # Probation
+            $then:
+              StateSupervisionSentence:
+                external_id: offender_sentence_id
+                status:
+                  $conditional:
+                    # If the sentence status is equal to "Active", then set status as SERVING
+                    - $if:
+                        $equal:
+                          - sentence_status_id
+                          - $literal("1662") # Active
+                      $then: $literal_enum(StateSentenceStatus.SERVING)
+                    # else if the sentence status = "Closed" & sentence closing reason = "Closed Offender Charge" or NULL,
+                    # then map based on legal order closing reason
+                    - $else_if:
+                        $and:
+                          - $equal:
+                              - sentence_status_id
+                              - $literal("1661") # Closed
+                          - $or:
+                              - $equal:
+                                  - sentence_closing_reason_code
+                                  - $literal("5467") # Closed Offender Charge
+                              # very rarely null but just in case
+                              - $is_null: sentence_closing_reason_code
+                      $then:
+                        $enum_mapping:
+                          $raw_text: legal_closing_reason_code
+                          $mappings:
+                            StateSentenceStatus.COMMUTED:
+                              - "5241" # Commuted
+                            StateSentenceStatus.COMPLETED:
+                              - "5463" # Offender Discharge
+                              - "5251" # Completed Satisfactorily
+                              - "9941" # Administrative Discharge from Probation
+                              - "5248" # Discharged Without Improvement
+                              - "19488" # Court Discharged with Time Served
+                              - "5250" # Early Discharge
+                              - "5239" # Discharged While Escapee or Absconder
+                              # MI says 10380 is most likely used when a person sentenced in another state is being discharged
+                              - "10380" # Interest Closed for Interstate Order
+                              # Not sure why these (7210, 5235) appear on probation legal orders but happen rarely
+                              - "7210" # Release from SAI - Complete
+                              - "5235" # Administrative Discharge from Parole
+                              - "5249" # Death
+                            StateSentenceStatus.INTERNAL_UNKNOWN:
+                              # Not sure how to categorize these
+                              #   Note: sentencing from delay means that sentencing is delayed at first and the person is
+                              #         effectively on probation and supervised and then if they mess up they may be sentenced
+                              #         for real but it's also possible they never get sentenced to anything and are just let go
+                              - "5240" # Out of State Case Transferred out of Michigan
+                              - "8002" # Sentenced From Delay To Probation
+                              - "5691" # Sentence Reduced to Misdemeanor
+                              - "7296" # Sentenced to Jail Only
+                              - "7470" # Sentenced From Delay To A Jail Only Sentence
+                              # Note: very seldom used so ignoring for now
+                              - "12260" # Resentenced on Appeal
+                              - "11812" # Sentenced to Prison While in Custody of Outside Jurisdiction
+                              - "5693" # Out of State Parolee Receiving Sentence In Michigan
+                              - "7915" # Failure To Appear For Sentencing
+                              - "7136" # Technical Violation Sustained
+                              - "11675" # Resentenced on Appeal to Jail Only
+                              - "7603" # Sentenced to a Monetary Sentence Only
+                              - "5692" # Out of State Parolee Receiving Sentence Out of State
+                              - "19461" # Conviction Reversed by Court
+                              - "12276" # Supervision Transferred to District Court
+                              - "11813" # Sentenced to Family Independence Agency (DSS)
+                              - "10003" # Sentenced to Community Service Only
+                              - "19489" # Termination for Classification
+                              - "5236" # Discharged by Transfer to Foreign Country
+                              - "9869" # Sentenced to Prison under HYTA
+                              - "7580" # Plea Withdrawn
+                              - "7133" # Order Terminated, Continued on Additional Order(s)
+                              - "7471" # Sentenced From Delay To Prison
+                              - "5690" # Court Resentenced to Probation
+                              - "7211" # Release from SAI - Incomplete
+                              - "5238" # Client Number Reassignment
+                            StateSentenceStatus.PARDONED:
+                              - "5242" # Pardoned
+                              # Not 100% sure these go here
+                              - "12558" # Sentenced From Delay No Further Sentence Imposed
+                              - "7472" # Sentenced From Delay To A Monetary Only Sentence
+                            StateSentenceStatus.SUSPENDED:
+                              - "7624" # Suspended Sentence
+                            StateSentenceStatus.REVOKED:
+                              - "8001" # 7411 Probation Revoked
+                              - "8000" # HYTA Probation Revoked
+                              - "12254" # Drug Court Probation Revoked
+                              - "7137" # New Commitment While Under Sentence
+                              - "5246" # Parole Violator New Sentence
+                              - "5244" # Probation Violator New Sentence
+                              - "5243" # Probation Violator Technical Violation
+                              - "5245" # Parole Violator Technical Violation
+                            StateSentenceStatus.VACATED:
+                              - "5252" # Vacated
+                              - "5237" # Discharged by Court, Nollo Prosequi
+                              - "5689" # Order Entered in Error
+                              - "9670" # Dismissed by Court
+                              - "5247" # Reversal on Appeal
+                    # else if sentence closing reason is sentence term modified / sentence extended, map accordingly
+                    - $else_if:
+                        $in:
+                          $value: sentence_closing_reason_code
+                          $options:
+                            - $literal("5287") # Sentence Term Modified
+                            - $literal("5283") # Sentence Extended
+                      $then:
+                        $enum_mapping:
+                          $raw_text: sentence_closing_reason_code
+                          $mappings:
+                            StateSentenceStatus.AMENDED:
+                              - "5287" # Sentence Term Modified
+                              - "5283" # Sentence Extended
+                    # else this means sentence status = "Closed" & sentence closing reason <> "Closed Offender Charge" and <> NULL,
+                    # then map based on sentence closing reason
+                    - $else_if:
+                        $equal:
+                          - sentence_status_id
+                          - $literal("1661") # Closed
+                      $then:
+                        $enum_mapping:
+                          $raw_text: sentence_closing_reason_code
+                          $mappings:
+                            StateSentenceStatus.COMMUTED:
+                              - "5277" # Commuted
+                            StateSentenceStatus.COMPLETED:
+                              - "5290" # Completed Satisfactorily
+                              - "5286" # Discharged Without Improvement
+                              - "5289" # Early Discharge
+                              - "5288" # Death
+                            StateSentenceStatus.INTERNAL_UNKNOWN:
+                              # Note: vary rarely used so ignoring for now
+                              - "5284" # Resentenced on Appeal
+                              - "7473" # Sentenced From Delay To Probation
+                              - "5276" # Other
+                              - "7201" # Parole Term Extended
+                            StateSentenceStatus.PARDONED:
+                              - "5278" # Pardoned
+                            StateSentenceStatus.REVOKED:
+                              - "11789" # HYTA Probation Revoked
+                              - "11790" # 7411 Probation Revoked
+                              - "5282" # Parole Violation New Sentence
+                              - "5279" # Probation Violation Technical Violation
+                              - "5281" # Probation Violation New Sentence
+                              - "5280" # Parole Violation Technical Violation
+                            StateSentenceStatus.SUSPENDED:
+                              - "12021" # Sentence Suspended
+                            StateSentenceStatus.VACATED:
+                              - "7297" # Vacated
+                              - "5285" # Reversal on Appeal
+                supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
+                date_imposed: sentenced_date
+                start_date: effective_date
+                projected_completion_date: expiration_date
+                completion_date: closing_date
+                county_code: county
+                min_length_days:
+                  $conditional:
+                    - $if:
+                        $or:
+                          - $not_null: min_length_years
+                          - $not_null: min_length_months
+                          - $not_null: min_length_days
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.max_and_min_lengths_days
+                          $args:
+                            years_str: min_length_years
+                            months_str: min_length_months
+                            days_str: min_length_days
+                max_length_days:
+                  $conditional:
+                    - $if:
+                        $or:
+                          - $not_null: max_length_years
+                          - $not_null: max_length_months
+                          - $not_null: max_length_days
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.max_and_min_lengths_days
+                          $args:
+                            years_str: max_length_years
+                            months_str: max_length_months
+                            days_str: max_length_days
+                sentence_metadata:
+                  $json_dict:
+                    original_sentence_id: original_offender_sentence_id
+                conditions: special_condition_id_list
+    incarceration_sentences:
+      - $conditional:
+          - $if:
+              $equal:
+                - sentence_type_id
+                - $literal("430") # Prison
+            $then:
+              StateIncarcerationSentence:
+                external_id: offender_sentence_id
+                status:
+                  $conditional:
+                    # If the sentence status is equal to "Active", then set status as SERVING
+                    - $if:
+                        $equal:
+                          - sentence_status_id
+                          - $literal("1662") # Active
+                      $then: $literal_enum(StateSentenceStatus.SERVING)
+                    # else if the sentence status = "Closed" & sentence closing reason = "Closed Offender Charge" or NULL,
+                    # then map based on legal order closing reason
+                    - $else_if:
+                        $and:
+                          - $equal:
+                              - sentence_status_id
+                              - $literal("1661") # Closed
+                          - $or:
+                              - $equal:
+                                  - sentence_closing_reason_code
+                                  - $literal("5467")
+                              # very rarely null but just in case
+                              - $is_null: sentence_closing_reason_code
+                      $then:
+                        $enum_mapping:
+                          $raw_text: legal_closing_reason_code
+                          $mappings:
+                            StateSentenceStatus.COMMUTED:
+                              - "5241" # Commuted
+                            StateSentenceStatus.COMPLETED:
+                              - "5463" # Offender Discharge
+                              - "5251" # Completed Satisfactorily
+                              - "9941" # Administrative Discharge from Probation
+                              - "5248" # Discharged Without Improvement
+                              - "19488" # Court Discharged with Time Served
+                              - "5250" # Early Discharge
+                              - "5239" # Discharged While Escapee or Absconder
+                              - "7210" # Release from SAI - Complete
+                              - "5235" # Administrative Discharge from Parole
+                              - "7133" # Order Terminated, Continued on Additional Order(s)
+                              - "10380" # Interest Closed for Interstate Order
+                              - "5249" # Death
+                            StateSentenceStatus.INTERNAL_UNKNOWN:
+                              # Not sure where to put these
+                              - "5691" # Sentence Reduced to Misdemeanor
+                              - "5690" # Court Resentenced to Probation
+                              - "5240" # Out of State Case Transferred out of Michigan
+                              # Note: very seldom used so ignoring for now
+                              - "11675" # Resentenced on Appeal to Jail Only
+                              - "7296" # Sentenced to Jail Only
+                              - "12260" # Resentenced on Appeal
+                              - "11812" # Sentenced to Prison While in Custody of Outside Jurisdiction
+                              - "5693" # Out of State Parolee Receiving Sentence In Michigan
+                              - "7915" # Failure To Appear For Sentencing
+                              - "7136" # Technical Violation Sustained
+                              - "5692" # Out of State Parolee Receiving Sentence Out of State
+                              - "11813" # Sentenced to Family Independence Agency (DSS)
+                              - "19489" # Termination for Classification
+                              - "5236" # Discharged by Transfer to Foreign Country
+                              - "9869" # Sentenced to Prison under HYTA
+                              - "7580" # Plea Withdrawn
+                              - "7211" # Release from SAI - Incomplete
+                              - "5238" # Client Number Reassignment
+                            StateSentenceStatus.PARDONED:
+                              - "5242" # Pardoned
+                            StateSentenceStatus.SUSPENDED:
+                              - "7624" # Suspended Sentence
+                            StateSentenceStatus.REVOKED:
+                              - "8000" # HYTA Probation Revoked
+                              - "7137" # New Commitment While Under Sentence
+                              - "5246" # Parole Violator New Sentence
+                              - "5244" # Probation Violator New Sentence
+                              - "5243" # Probation Violator Technical Violation
+                              - "5245" # Parole Violator Technical Violation
+                            StateSentenceStatus.VACATED:
+                              - "5252" # Vacated
+                              - "5237" # Discharged by Court, Nollo Prosequi
+                              - "5689" # Order Entered in Error
+                              - "9670" # Dismissed by Court
+                              - "19461" # Conviction Reversed by Court
+                              - "5247" # Reversal on Appeal
+                    # else this means sentence status = "Closed" & sentence closing reason <> "Closed Offender Charge" and <> NULL,
+                    # then map based on sentence closing reason
+                    - $else_if:
+                        $equal:
+                          - sentence_status_id
+                          - $literal("1661") # Closed
+                      $then:
+                        $enum_mapping:
+                          $raw_text: sentence_closing_reason_code
+                          $mappings:
+                            StateSentenceStatus.COMMUTED:
+                              - "5277" # Commuted
+                            StateSentenceStatus.COMPLETED:
+                              - "5290" # Completed Satisfactorily
+                              - "5289" # Early Discharge
+                              - "5288" # Death
+                            StateSentenceStatus.INTERNAL_UNKNOWN:
+                              # Q: Not sure where these should go
+                              - "5284" # Resentenced on Appeal
+                              # Note: vary rarely used so ignoring for now
+                              - "5276" # Other
+                              # Note: very rarely happen (these 3 closing statuses only occur 5 times ever)
+                              #       and not treating like term amendments in probation because it's hard to
+                              #       identify which sentences are related in these cases
+                              - "5287" # Sentence Term Modified
+                              - "5283" # Sentence Extended
+                              - "7201" # Parole Term Extended
+                            StateSentenceStatus.PARDONED:
+                              - "5278" # Pardoned
+                            StateSentenceStatus.REVOKED:
+                              # Note: doesn't really make sense as a closing reason on an incarceration sentence but super rare (n=2)
+                              - "11789" # HYTA Probation Revoked
+                            StateSentenceStatus.SUSPENDED:
+                              - "12021" # Sentence Suspended
+                            StateSentenceStatus.VACATED:
+                              - "7297" # Vacated
+                              - "5285" # Reversal on Appeal
+                incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+                date_imposed: sentenced_date
+                start_date: effective_date
+                projected_min_release_date: expiration_date
+                completion_date: closing_date
+                parole_eligibility_date:
+                  $conditional:
+                    - $if:
+                        $or:
+                          - $not_null: min_length_years
+                          - $not_null: min_length_months
+                          - $not_null: min_length_days
+                      $then:
+                        $custom:
+                          # calculate parole eligibility date by taking the effective date and adding on the minimum term length
+                          $function: us_mi_custom_parsers.calc_parole_elibility_date
+                          $args:
+                            years_str: min_length_years
+                            months_str: min_length_months
+                            days_str: min_length_days
+                            start_date_str: effective_date
+                county_code: county
+                min_length_days:
+                  $custom:
+                    $function: us_mi_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: min_length_years
+                      months_str: min_length_months
+                      days_str: min_length_days
+                max_length_days:
+                  $custom:
+                    $function: us_mi_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: max_length_years
+                      months_str: max_length_months
+                      days_str: max_length_days
+                is_life:
+                  # So technically for a sentence, the only possible combinations for a life sentence should be that
+                  # either both flags equal 0, both flags equal 1, or min_life_flag=0 but max_life_flag=1 (which means
+                  # the maximum sentence length possible is a life sentence but it's possible it doesn't end up being
+                  # a life sentence). When the min or max life flags are set as 1, the corresponding days columns
+                  # should be null. However, MI data systems also do a thing where they set these flag not just for
+                  # the sentence it's attached to, but for related sentences as well in the same sentencing. So if
+                  # sentence A for charge A is a life sentence (min_life_flag and max_life_flag are both 1), but
+                  # sentence A came with sentence B for charge B since it was on the same set of charges, then even
+                  # if sentence B is not a life sentence (and has valued days fields), the system will overwrite
+                  # sentence B's min_life_flag and max_life_flag to match sentence A (the controlling sentence).
+                  # Therefore, MI told me that the best way to identify actual life sentences it to look for cases
+                  # where both life flags are set to 1 and all days fields are null.
+                  $and:
+                    - $is_null: min_length_days
+                    - $is_null: min_length_months
+                    - $is_null: min_length_years
+                    - $is_null: max_length_days
+                    - $is_null: max_length_months
+                    - $is_null: max_length_years
+                    - $equal:
+                        - min_life_flag
+                        - $literal("1")
+                    - $equal:
+                        - max_life_flag
+                        - $literal("1")
+                # MI doesn't do capital punishment so setting it to false always
+                is_capital_punishment: $literal_bool(False)
+                parole_possible:
+                  $conditional:
+                    - $if:
+                        $not_null: offense_code
+                      $then:
+                        $custom:
+                          $function: us_mi_custom_parsers.parole_possible
+                          $args:
+                            min_life: min_life_flag
+                            attempt: attempted_id
+                            mcl: offense_code
+                initial_time_served_days: jail_credit_days
+                # MI doesn't do good time or earned time
+                sentence_metadata:
+                  $json_dict:
+                    original_sentence_id: original_offender_sentence_id
+                conditions: special_condition_id_list
