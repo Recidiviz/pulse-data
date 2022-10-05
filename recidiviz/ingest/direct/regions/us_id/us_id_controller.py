@@ -347,11 +347,13 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "ICE DETAINER",
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
+            "ABSCONDER",
             "DOSAGE",  # TODO(#3749): Remap to separate enum
             "DOSAGE ELIGIBLE",
             "D7 DUI COURT",
             "EXPANDED CRC",
             "BENCH WARRANT",  # SupervisionType, not SupervisionLevel
+            "PAROLE VIOLATOR",
             "PROBATION VIOLATOR",  # SupervisionType, not SupervisionLevel
             "ADMINISTRATIVE",  # Used for a non-standardized set of situations.
             "GOLD SEAL PENDING",  # Pending supervision termination (after parole board has approved termination)
