@@ -31,6 +31,11 @@ normalization_pipelines:
     state_code: US_ND
     region: us-west1
   - pipeline: comprehensive_normalization
+    job_name: us-oz-normalization
+    state_code: US_OZ
+    region: us-east1
+    staging_only: True
+  - pipeline: comprehensive_normalization
     job_name: us-pa-normalization
     state_code: US_PA
     region: us-west3
@@ -317,6 +322,14 @@ incremental_metric_pipelines:
     metric_types: SUPERVISION_POPULATION
     calculation_month_count: 36
     region: us-west3
+
+  # Full US_OZ calculations with no time limit
+  - pipeline: population_span_metrics
+    job_name: full-us-oz-population-span-metrics
+    state_code: US_OZ
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+    staging_only: True
 
 historical_metric_pipelines:
   # TODO(#15541) Remove when downstream views are switched to population spans.
