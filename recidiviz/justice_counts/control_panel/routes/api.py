@@ -417,12 +417,7 @@ def get_api_blueprint(
             auth0_user_id=auth0_user_id,
             system=system,
         )
-        # Ingest if the user is a Recidiviz Admin and ingest on upload has been specified
-        permissions = g.user_context.permissions if "user_context" in g else []
-        if (
-            ingest_on_upload == "True"
-            and ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions
-        ):
+        if ingest_on_upload == "True":
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
