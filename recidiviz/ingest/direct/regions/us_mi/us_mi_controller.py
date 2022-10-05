@@ -38,4 +38,9 @@ class UsMiController(BaseDirectIngestController):
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
-        return ["state_persons", "incarceration_periods", "supervision_periods"]
+        return [
+            "state_persons",
+            "incarceration_periods",
+            "supervision_periods",
+            "sentences",
+        ]

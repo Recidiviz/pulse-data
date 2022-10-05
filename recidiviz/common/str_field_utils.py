@@ -25,7 +25,7 @@ import locale
 import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import dateparser
 from dateutil.relativedelta import relativedelta
@@ -129,6 +129,21 @@ def safe_parse_days_from_duration_pieces(
         return None
 
 
+def parse_duration_pieces(
+    years_str: Optional[str] = None,
+    months_str: Optional[str] = None,
+    days_str: Optional[str] = None,
+) -> Tuple[int, int, int]:
+    if not any((years_str, months_str, days_str)):
+        raise ValueError("One of (years_str, months_str, days_str) must be nonnull")
+
+    years = parse_int(years_str) if years_str else 0
+    months = parse_int(months_str) if months_str else 0
+    days = parse_int(days_str) if days_str else 0
+
+    return years, months, days
+
+
 def parse_days_from_duration_pieces(
     years_str: Optional[str] = None,
     months_str: Optional[str] = None,
@@ -152,15 +167,9 @@ def parse_days_from_duration_pieces(
     Raises:
         ValueError: If one of the provided strings cannot be properly parsed.
     """
+    years, months, days = parse_duration_pieces(years_str, months_str, days_str)
 
-    if not any((years_str, months_str, days_str)):
-        raise ValueError("One of (years_str, months_str, days_str) must be nonnull")
-
-    years = parse_int(years_str) if years_str else 0
-    months = parse_int(months_str) if months_str else 0
-    days = parse_int(days_str) if days_str else 0
-
-    if start_dt_str and not is_str_field_none(start_dt_str):
+    if start_dt_str:
         start_dt = parse_datetime(start_dt_str)
         if start_dt:
             end_dt = start_dt + relativedelta(years=years, months=months, days=days)
