@@ -48,6 +48,15 @@ resource "google_project_iam_member" "bigquery_datatransfer_admin" {
 }
 
 # Create a dataset
+module "unmanaged_metrics_dataset" {
+  source      = "./modules/big_query_dataset"
+  dataset_id  = "unmanaged_metrics"
+  description = "This dataset contains materialized metrics tables that are managed by scheduled queries instead of our typical view materialization."
+
+  depends_on = [google_project_iam_member.bigquery_scheduled_queries_permissions]
+}
+
+# Create a dataset for compartment_sessions_unnested that will eventually be removed
 module "unmanaged_views_dataset" {
   source      = "./modules/big_query_dataset"
   dataset_id  = "unmanaged_views"
@@ -80,7 +89,7 @@ resource "google_bigquery_data_transfer_config" "supervision_district_metrics_ma
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.unmanaged_views_dataset.dataset_id
+  destination_dataset_id = module.unmanaged_metrics_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_district_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
@@ -96,7 +105,7 @@ resource "google_bigquery_data_transfer_config" "supervision_office_metrics_mate
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.unmanaged_views_dataset.dataset_id
+  destination_dataset_id = module.unmanaged_metrics_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_office_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
@@ -112,7 +121,7 @@ resource "google_bigquery_data_transfer_config" "supervision_officer_metrics_mat
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.unmanaged_views_dataset.dataset_id
+  destination_dataset_id = module.unmanaged_metrics_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_officer_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
@@ -128,7 +137,7 @@ resource "google_bigquery_data_transfer_config" "supervision_state_metrics_mater
   data_source_id         = "scheduled_query"
   schedule               = "every day 08:00" # In UTC
   service_account_name   = google_service_account.bigquery_scheduled_queries.email
-  destination_dataset_id = module.unmanaged_views_dataset.dataset_id
+  destination_dataset_id = module.unmanaged_metrics_dataset.dataset_id
   params = {
     destination_table_name_template = "supervision_state_metrics_materialized"
     write_disposition               = "WRITE_TRUNCATE"
