@@ -108,12 +108,24 @@ VIEW_QUERY_TEMPLATE = """
         TrtProgramCode,
         TrtDo,
         TrtCounty,
-        NULLIF(TrtStartDateYear, '**') AS TrtStartDateYear,
-        NULLIF(TrtStartDateMonth, '**') AS TrtStartDateMonth,
-        NULLIF(TrtStartDateDay, '**') AS TrtStartDateDay,
-        NULLIF(TrtEndDateYear, '**') AS TrtEndDateYear,
-        NULLIF(TrtEndDateMonth, '**') AS TrtEndDateMonth,
-        NULLIF(TrtEndDateDay, '**') AS TrtEndDateDay
+        CASE WHEN 
+            TrtStartDateYear LIKE '%%*%%' THEN Null ELSE TrtStartDateYear
+        END AS TrtStartDateYear,
+        CASE WHEN
+            TrtStartDateMonth LIKE '%%*%%' THEN Null ELSE TrtStartDateMonth 
+        END AS TrtStartDateMonth,
+        CASE WHEN 
+            TrtStartDateDay LIKE '%%*%%' THEN Null ELSE TrtStartDateDay
+        END AS TrtStartDateDay,
+        CASE WHEN 
+            TrtEndDateYear LIKE '%%*%%' THEN Null ELSE TrtEndDateYear
+        END AS TrtEndDateYear,
+        CASE WHEN
+            TrtEndDateMonth LIKE '%%*%%' THEN Null ELSE TrtEndDateMonth
+        END AS TrtEndDateMonth,
+        CASE WHEN 
+            TrtEndDateDay LIKE '%%*%%' THEN Null ELSE TrtEndDateDay
+        END AS TrtEndDateDay
     FROM program_data
     LEFT JOIN TrtClassCode_decode USING (TrtClassCode)
     WHERE TrtProgramCode IN ('REF','REFO','SEXO')
