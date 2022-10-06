@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Layout, Menu, MenuProps, Typography } from "antd";
+import { Avatar, Layout, Menu, MenuProps, Segmented, Typography } from "antd";
+import { SegmentedLabeledOption, SegmentedValue } from "antd/lib/segmented";
 import classNames from "classnames";
 import {
   Redirect,
@@ -67,6 +68,38 @@ function getItem(
   } as MenuItem;
 }
 
+interface EnvironmentOption {
+  baseUrl: string;
+  title: string;
+}
+
+const ENVIRONMENT_OPTIONS: Map<
+  "development" | "staging" | "production",
+  EnvironmentOption
+> = new Map([
+  [
+    "development",
+    {
+      title: "Development",
+      baseUrl: "http://localhost:3030",
+    },
+  ],
+  [
+    "staging",
+    {
+      title: "Staging",
+      baseUrl: "https://recidiviz-staging.ue.r.appspot.com",
+    },
+  ],
+  [
+    "production",
+    {
+      title: "Production",
+      baseUrl: "https://recidiviz-123.ue.r.appspot.com",
+    },
+  ],
+]);
+
 const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
     getItem("Ingest Status", IngestOperations.INGEST_ACTIONS_ROUTE),
@@ -112,9 +145,8 @@ const items: MenuProps["items"] = [
 
 const App = (): JSX.Element => {
   const location = useLocation();
-  const title = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
+  const title = "Admin Panel";
   const history = useHistory();
-
   const onClick: MenuProps["onClick"] = (e) => {
     history.push(e.key);
   };
@@ -127,13 +159,28 @@ const App = (): JSX.Element => {
     ].filter((x) => history.location.pathname.includes(x)).length,
   });
 
+  const onEnvironmentChange = (value: SegmentedValue) => {
+    window.open(value.toString().concat(window.location.search), "_blank");
+  };
+
   return (
     <Layout style={{ height: "100%" }}>
       <Layout.Sider width={256}>
-        <Typography.Title level={4} style={{ margin: 23 }}>
-          {title.toUpperCase()}
-          <img src={Nelly} id="adminPanelNelly" alt="Nelly" />
-        </Typography.Title>
+        <div className="title-header">
+          <Typography.Title level={3}>{title}</Typography.Title>
+          <Avatar
+            shape="square"
+            style={{ backgroundColor: "bisque", padding: "2px" }}
+            icon={<img src={Nelly} id="adminPanelNelly" alt="Nelly" />}
+          />
+        </div>
+
+        <Segmented
+          block
+          options={getEnvLinkOptions(location.pathname)}
+          onChange={onEnvironmentChange}
+          value={window.location.origin.concat(location.pathname)}
+        />
         <Menu
           onClick={onClick}
           mode="inline"
@@ -267,3 +314,29 @@ function selectedMenuKeys(pathname: string): string[] {
 }
 
 export default App;
+
+function getEnvironmentSegmentedLabelOption(
+  env: "production" | "staging" | "development",
+  pathname: string
+): SegmentedLabeledOption {
+  const environmentOption = ENVIRONMENT_OPTIONS.get(env);
+  return {
+    value: environmentOption?.baseUrl.concat(pathname) || "",
+    label: environmentOption?.title,
+  };
+}
+
+function getEnvLinkOptions(pathname: string): SegmentedLabeledOption[] {
+  const env = window.RUNTIME_GCP_ENVIRONMENT; // production, staging, development
+  if (env === "staging" || env === "production") {
+    return [
+      getEnvironmentSegmentedLabelOption("staging", pathname),
+      getEnvironmentSegmentedLabelOption("production", pathname),
+    ];
+  }
+
+  return [
+    getEnvironmentSegmentedLabelOption("development", pathname),
+    getEnvironmentSegmentedLabelOption("staging", pathname),
+  ];
+}
