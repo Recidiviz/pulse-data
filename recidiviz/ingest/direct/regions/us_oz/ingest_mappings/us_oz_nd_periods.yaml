@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_nd_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - entry_id
+  - person_id
+  - start_date
+  - end_date
+  - person_location
+  - country
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: person_id
+          id_type: $literal("US_OZ_ND")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ND")
+                - entry_id
+          admission_date: start_date
+          release_date: end_date
+          facility: country
+          housing_unit: person_location
