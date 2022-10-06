@@ -16,13 +16,17 @@
 // =============================================================================
 
 import { PageHeader, Popover, Tag } from "antd";
-import { useEffect, useState } from "react";
+import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
+import { useFetchedDataJSON } from "../../../hooks";
 import {
   RegionAction,
   regionActionNames,
 } from "../../Utilities/ActionRegionConfirmationForm";
-import { fetchCurrentIngestInstanceStatus } from "../../Utilities/IngestInstanceUtilities";
-import { DirectIngestInstance, IngestInstanceSummary } from "../constants";
+import {
+  DirectIngestInstance,
+  IngestInstanceStatusInfo,
+  IngestInstanceSummary,
+} from "../constants";
 import { getStatusMessage, removeUnderscore } from "../ingestStatusUtils";
 import IngestActionButton from "./IngestActionButton";
 
@@ -40,18 +44,17 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
       ? RegionAction.UnpauseIngestInstance
       : RegionAction.PauseIngestInstance;
 
-    const [ingestInstanceStatus, setIngestInstanceStatus] =
-      useState<string | undefined>(undefined);
-
-    useEffect(() => {
-      fetchCurrentIngestInstanceStatus(stateCode, instance).then((value) =>
-        setIngestInstanceStatus(value)
-      );
-    }, [stateCode, instance]);
+    const { data: statusInfo } = useFetchedDataJSON<IngestInstanceStatusInfo>(
+      () => {
+        return getCurrentIngestInstanceStatusInformation(stateCode, instance);
+      }
+    );
 
     const IngestInstanceStatusPopoverContent = (
       <div>
-        {ingestInstanceStatus ? getStatusMessage(ingestInstanceStatus) : null}
+        {statusInfo
+          ? getStatusMessage(statusInfo.status, statusInfo.timestamp)
+          : null}
       </div>
     );
 
@@ -59,10 +62,9 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
       <PageHeader
         title={instance}
         tags={
-          ingestInstanceStatus ? (
+          statusInfo ? (
             <Popover content={IngestInstanceStatusPopoverContent}>
-              {/* TODO(#15717): Match tag color to status color in summary page */}
-              <Tag color="blue">{removeUnderscore(ingestInstanceStatus)}</Tag>
+              <Tag color="blue">{removeUnderscore(statusInfo.status)}</Tag>
             </Popover>
           ) : (
             <></>

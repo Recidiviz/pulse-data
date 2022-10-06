@@ -764,6 +764,37 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route(
+        "/api/ingest_operations/get_current_ingest_instance_status_information",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _get_current_ingest_instance_status_information() -> Tuple[
+        Union[str, Response], HTTPStatus
+    ]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        status_manager = PostgresDirectIngestInstanceStatusManager(
+            state_code.value, ingest_instance
+        )
+        current_status = status_manager.get_current_status_info()
+        return (
+            jsonify(
+                {
+                    "status": current_status.status.value,
+                    "timestamp": current_status.timestamp.isoformat(),
+                }
+            ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
         "/api/ingest_operations/change_ingest_instance_status",
         methods=["POST"],
     )

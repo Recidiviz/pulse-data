@@ -324,6 +324,20 @@ export const getCurrentIngestInstanceStatus = async (
   );
 };
 
+// Get current ingest instance status and associated information
+export const getCurrentIngestInstanceStatusInformation = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/get_current_ingest_instance_status_information",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
 // Set the specified instance status
 export const changeIngestInstanceStatus = async (
   stateCode: string,
