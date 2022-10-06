@@ -224,24 +224,31 @@ individual_sentence_ranks AS (
 )
 
 SELECT 
-person_external_id AS external_id,
-state_code,
-client_name AS form_information_client_name,
-conviction_county AS form_information_conviction_county,
-judicial_district_code AS form_information_judicial_district_code,
-criminal_number AS form_information_criminal_number,
-judge AS form_information_judge_name,
-prior_court_date AS form_information_prior_court_date,
-sentence_years AS form_information_sentence_length_years,
-crime_names AS form_information_crime_names,
-probation_expiration_date AS form_information_probation_expiration_date,
-probation_officer_full_name AS form_information_probation_officer_full_name,
-reasons,
-number_of_sentences > 1 AS metadata_multiple_sentences,
-supervision_type = "IC PROBATION" AS metadata_out_of_state,
-supervision_level = "INTERSTATE_COMPACT" AS metadata_IC_OUT,
-FROM individual_sentence_ranks
+    person_external_id AS external_id,
+    state_code,
+    client_name AS form_information_client_name,
+    conviction_county AS form_information_conviction_county,
+    judicial_district_code AS form_information_judicial_district_code,
+    criminal_number AS form_information_criminal_number,
+    judge AS form_information_judge_name,
+    prior_court_date AS form_information_prior_court_date,
+    sentence_years AS form_information_sentence_length_years,
+    crime_names AS form_information_crime_names,
+    probation_expiration_date AS form_information_probation_expiration_date,
+    probation_officer_full_name AS form_information_probation_officer_full_name,
+    CONCAT(sa.address_line_1, " ", COALESCE(sa.address_line_2, ""), "\\n", sa.city, ", ", sa.state, " ", sa.zip) AS form_information_states_attorney_mailing_address,
+    sa.phone_office as form_information_states_attorney_phone_number,
+    sa.email_1 as form_information_states_attorney_email_address,
+    reasons,
+    number_of_sentences > 1 AS metadata_multiple_sentences,
+    supervision_type = "IC PROBATION" AS metadata_out_of_state,
+    supervision_level = "INTERSTATE_COMPACT" AS metadata_IC_OUT,
+FROM individual_sentence_ranks isr
+LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_state_attorney_latest` sa
+  ON isr.conviction_county = sa.county
 WHERE sentence_rank = 1 --only choose one sentence 
+--only select one state attorney per county, so that there is only one record per client 
+QUALIFY ROW_NUMBER() OVER (PARTITION BY person_external_id ORDER BY sa.full_name)=1
 ORDER BY person_external_id
 """
 
