@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ref_Employee
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - EmployeeId
+columns:
+  - name: EmployeeId
+  - name: FirstName
+  - name: MiddleName
+  - name: LastName
+  - name: Email
+  - name: MSG_VIEWED_DATE
+  - name: HRIS_NUMBER_TX
+  - name: FW_MESSAGE_TO_USER_ID
+  - name: StartDate
+  - name: EndDate
+  - name: CANTEEN_BALANCE_NUM
+  - name: LocationId
+  - name: SecondaryLocationId
+  - name: EmployeeTypeId
+  - name: SYS_ROW_IND
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.
+  - name: ReviewerId
+  - name: SecondaryReviewerId
+  - name: Suffix
+  - name: StaffId
+  - name: DisplayName
+  - name: Signature
+  - name: DefaultLocationId
+  - name: IsSuperUser
+  - name: IsIntegrationUser
+  - name: OrganizationalUnitId
+  - name: UseDefaultSecurityProfile
+  - name: EmployeeStatusId
+  - name: Inactive
+  - name: IsCustom
+  - name: Comment

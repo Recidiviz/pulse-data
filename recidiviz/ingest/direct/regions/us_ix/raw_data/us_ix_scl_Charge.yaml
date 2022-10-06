@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Charge
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - ChargeId
+columns:
+  - name: ChargeId
+    description: Unique identifier for each row in table.
+  - name: OffenderId
+    is_pii: True
+  - name: Docket
+  - name: InformationSource
+  - name: WarrantDate
+    is_datetime: True
+  - name: ArrestDate
+    is_datetime: True
+  - name: CourtId
+  - name: StateId
+  - name: OtherCourt
+  - name: ChargeStatusId
+  - name: ChargePleaId
+  - name: Comments
+  - name: ChargedOffenseId
+  - name: VictimId
+    is_pii: True
+  - name: NextCourtDateTime
+    is_datetime: True
+  - name: NextCourtComments
+  - name: OutcomeDate
+    is_datetime: True
+  - name: HasPleaAgreement
+  - name: ChargeOutcomeTypeId
+  - name: OtherOutcomeType
+  - name: AmendedOffenseTypeId
+  - name: AmendedOffenseComments
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.

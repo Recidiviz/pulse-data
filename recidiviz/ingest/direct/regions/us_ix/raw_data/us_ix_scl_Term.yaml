@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Term
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - TermId
+columns:
+  - name: TermId
+    description: Unique identifier for each row in table.
+  - name: MasterTermId
+  - name: AliasNameId
+  - name: InmateNumber
+    is_pii: True
+    description: Identifying number of inmate.
+  - name: SpnrNum
+  - name: DrcDate
+    is_datetime: True
+  - name: DrcOverrideDate
+    is_datetime: True
+  - name: DrcOverrideApprovedDate
+    is_datetime: True
+  - name: DpedApprovedDate
+    is_datetime: True
+  - name: DpedPendingDate
+    is_datetime: True
+  - name: MprdApprovedDate
+    is_datetime: True
+  - name: MprdPendingDate
+    is_datetime: True
+  - name: MaxprdApprovedDate
+    is_datetime: True
+  - name: MaxprdPendingDate
+    is_datetime: True
+  - name: GtrdApprovedDate
+    is_datetime: True
+  - name: GtrdPendingDate
+    is_datetime: True
+  - name: FtrdApprovedDate
+    is_datetime: True
+  - name: FtrdPendingDate
+    is_datetime: True
+  - name: AdoOverride
+  - name: AdoOverrideDays
+  - name: AdjustedDaysApplied
+  - name: AdjustedDaysAppliedTo
+  - name: DpedInelgible
+  - name: FtoOverrideLevel
+  - name: FtoOverrideEffectDate
+    is_datetime: True
+  - name: LastCalculateDate
+    is_datetime: True
+  - name: ApprovalDate
+    is_datetime: True
+  - name: Inactive
+  - name: ActiveDetainer
+  - name: CsoOverrideTypeId
+  - name: TermStatusId
+  - name: LastCalculateById
+    is_pii: True
+    description: ID of person who last calculated term.
+  - name: ApprovalStateId
+  - name: ApprovalEmployeeId
+    is_pii: True
+    description: ID of approving employee.
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.
+  - name: LocStatusEffDate
+    is_datetime: True
+  - name: LocationId
+  - name: OffenderStatusId
+  - name: LastPendingDate
+    is_datetime: True
+  - name: Pending
+  - name: PendingTotalSentenceYears
+  - name: PendingTotalSentenceMonths
+  - name: PendingTotalSentenceDays
+  - name: ApprovedTotalSentenceYears
+  - name: ApprovedTotalSentenceMonths
+  - name: ApprovedTotalSentenceDays
+  - name: PendingTotalSentenceLifeDeathTx
+  - name: PendingStateResponsible
+  - name: PendingLocalResponsible
+  - name: PendingMostSeriousOffenseId
+  - name: ApprovedTotalSentenceLifeDeathTx
+  - name: ApprovedStateResponsible
+  - name: ApprovedLocalResponsible
+  - name: ApprovedMostSeriousOffenseId
+  - name: ReleaseDate
+    is_datetime: True
+  - name: OffenderId
+    is_pii: True
+    description: ID for offender.
+  - name: TermStartDate
+    is_datetime: True
+  - name: TentativeParoleDate
+    is_datetime: True
+  - name: NextHearingDate
+    is_datetime: True
+  - name: TermSentenceDate
+    is_datetime: True
+  - name: SegmentStartDate
+    is_datetime: True
+  - name: IndeterminateStartDate
+    is_datetime: True
+  - name: IndeterminateEndDate
+    is_datetime: True
+  - name: ProbationStartDate
+    is_datetime: True
+  - name: ProbationExpirationDate
+    is_datetime: True
+  - name: ProbationCalculationStatusId
+  - name: ProbationCalculationDate
+    is_datetime: True
+  - name: ProbationCalculationEmployeeId
+    is_pii: True
+  - name: RiderCalculationStatusId
+  - name: RiderStartDate
+    is_datetime: True
+  - name: RiderExpiryDate
+    is_datetime: True
+  - name: InitialParoleHearingDate
+    is_datetime: True

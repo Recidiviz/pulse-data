@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: sup_SupervisionAssignment
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - SupervisionAssignmentId
+columns:
+  - name: SupervisionAssignmentId
+    description: Unique identifier for each row in table.
+  - name: MasterTermId
+  - name: StartDate
+    is_datetime: True
+    description: Timestamp indicated the start of current supervision assignment.
+  - name: EndDate
+    is_datetime: True
+    description: Timestamp indicated the end of current supervision assignment.
+  - name: LocationId
+  - name: EmployeeId
+    is_pii: True
+    description: ID of employee involved with supervision assignemnt.
+  - name: SupervisionAssignmentTypeId
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.

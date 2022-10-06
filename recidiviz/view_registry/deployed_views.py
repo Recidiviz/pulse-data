@@ -132,6 +132,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "us_ca_raw_data_up_to_date_views",
     "us_co_raw_data_up_to_date_views",
     "us_id_raw_data_up_to_date_views",
+    "us_ix_raw_data_up_to_date_views",
     "us_mo_raw_data_up_to_date_views",
     "us_nd_raw_data_up_to_date_views",
     "us_pa_raw_data_up_to_date_views",
