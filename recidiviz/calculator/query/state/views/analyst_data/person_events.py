@@ -765,6 +765,17 @@ FROM
     `{project_id}.{state_base_dataset}.state_program_assignment`
 GROUP BY 1, 2, 3, 4, program_id, referring_agent_id, referral_metadata, participation_status
 
+UNION ALL
+
+-- task completed events
+SELECT
+    state_code,
+    person_id,
+    "TASK_COMPLETED" AS event,
+    event_date,
+    TO_JSON_STRING(STRUCT(task_type)) AS event_attributes,
+FROM
+    `{project_id}.{analyst_dataset}.task_events_materialized`
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
