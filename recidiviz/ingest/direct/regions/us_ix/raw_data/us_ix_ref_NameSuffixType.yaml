@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ref_NameSuffixType
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - NameSuffixTypeId
+columns:
+  - name: NameSuffixTypeId
+    known_values:
+      - value: "1"
+        description: "Jr."
+      - value: "2"
+        description: "Sr."
+      - value: "3"
+        description: "I"
+      - value: "4"
+        description: "II"
+      - value: "5"
+        description: "III"
+      - value: "6"
+        description: "IV"
+      - value: "7"
+        description: "V"
+      - value: "8"
+        description: "VI"
+      - value: "9"
+        description: "VII"
+  - name: NameSuffixTypeDesc
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.
+  - name: IsCustom

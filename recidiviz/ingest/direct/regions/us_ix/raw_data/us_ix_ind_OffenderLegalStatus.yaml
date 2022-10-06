@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_OffenderLegalStatus
+file_description: |-
+  Contains a record for each period of time during which a given legal status applied to a person under IDOC
+  jurisdiction, either supervised or incarcerated.
+data_classification: source
+primary_key_cols:
+  - OffenderLegalStatusId
+columns:
+  - name: OffenderLegalStatusId
+    description: ID for this legal status period.
+  - name: LegalStatusId
+    description: Code for this legal status, joins to ind_LegalStatus.LegalStatusId.
+  - name: LegalStatusChangeReasonId
+    description: Code for the reason why the legal status changed, joins to ind_LegalStatusChangeReason.LegalStatusChangeReasonId.
+  - name: PreviousEndDate
+    is_datetime: True
+    description: End date of previous legal status period.
+  - name: StartDate
+    is_datetime: True
+    description: Start date for this legal status period.
+  - name: EndDate
+    is_datetime: True
+    description: End date for this legal status period.
+  - name: Comment
+    is_pii: True
+  - name: Locking
+  - name: InsertUserId
+    is_pii: True
+    description: ID of the user who created this record.
+  - name: InsertDate
+    is_datetime: True
+    description: Timestamp for record creation.
+  - name: UpdateUserId
+    is_pii: True
+    description: ID of the user who most recently modified this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: Timestamp for record modification.
+  - name: LegalStatusClassId
+  - name: LegalStatusClassCode
+  - name: LegalStatusObjectId
+  - name: IsSystemCreated
