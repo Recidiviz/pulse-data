@@ -112,6 +112,14 @@ tr.metadata-table-row > td.ant-table-cell > div {
     background-color: inherit;
   }
 }
+
+/* Site Side Panel */
+.title-header {
+  display: flex;
+  margin: 23px;
+  justify-content: space-around;
+}
+
 /* Actions and Summaries*/
 
 .ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow, .queue-status-running, .queue-status-not-running {
