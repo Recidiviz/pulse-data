@@ -209,6 +209,10 @@ class DirectIngestInstanceStatusManager:
     def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""
 
+    @abc.abstractmethod
+    def get_current_status_info(self) -> DirectIngestInstanceStatus:
+        """Get current status and associated information."""
+
     @environment.test_only
     @abc.abstractmethod
     def add_instance_status(self, status: DirectIngestStatus) -> None:

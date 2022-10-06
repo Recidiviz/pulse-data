@@ -123,23 +123,14 @@ export const getStatusBoxColor = (status: string): string => {
   return statusFormattingInfo[status].color;
 };
 
-// TODO(#15755): Update getStatusMessage so that it always takes timestamp
-export const getStatusMessage = (
-  status: string,
-  timestamp?: string
-): string => {
-  let statusMessage = statusFormattingInfo[status].message;
-  if (timestamp) {
-    const dt = new Date(timestamp);
-    const timeAgo = moment([
-      dt.getFullYear(),
-      dt.getMonth(),
-      dt.getDate(),
-    ]).fromNow();
-    statusMessage = `${statusMessage} (${timeAgo})`;
-  }
-
-  return statusMessage;
+export const getStatusMessage = (status: string, timestamp: string): string => {
+  const dt = new Date(timestamp);
+  const timeAgo = moment([
+    dt.getFullYear(),
+    dt.getMonth(),
+    dt.getDate(),
+  ]).fromNow();
+  return `${statusFormattingInfo[status].message} (${timeAgo})`;
 };
 
 export const getStatusSortedOrder = (): string[] => {
