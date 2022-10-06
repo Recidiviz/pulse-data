@@ -145,6 +145,18 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         LEFT OUTER JOIN
             `{project_id}.{external_reference_dataset}.us_id_supervision_district_names`
         USING (level_2_supervision_location_external_id)
+    ),
+    mi_location_names AS (        
+        SELECT
+            DISTINCT
+                'US_MI' AS state_code,
+                REGION_ID AS level_3_supervision_location_external_id,
+                REGION_NAME AS level_3_supervision_location_name,
+                COUNTY_ID AS level_2_supervision_location_external_id,
+                COUNTY_NAME AS level_2_supervision_location_name,
+                SUPERVISION_SITE AS level_1_supervision_location_external_id,
+                SUPERVISION_SITE AS level_1_supervision_location_name,
+        FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     )
     SELECT * FROM me_location_names
     UNION ALL
@@ -156,7 +168,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     UNION ALL
     SELECT * FROM tn_location_names
     UNION ALL
-    SELECT * FROM id_location_names;
+    SELECT * FROM id_location_names
+    UNION ALL
+    SELECT * FROM mi_location_names;
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -176,6 +190,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         StateCode.US_ME.value
+    ),
+    us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_MI.value
     ),
 )
 
