@@ -49,7 +49,7 @@ days_with_po AS (
   SELECT
     person_id,
     state_code,
-    DATE_DIFF(CURRENT_DATE, start_date, DAY) AS days_with_current_po
+    DATE_DIFF(CURRENT_DATE('US/Eastern'), start_date, DAY) AS days_with_current_po
   FROM
     `{project_id}.{analyst_views_dataset}.supervision_officer_sessions_materialized`
   WHERE
@@ -59,7 +59,7 @@ days_on_supervision_level AS (
   SELECT
     person_id,
     state_code,
-    DATE_DIFF(CURRENT_DATE, start_date, DAY) AS days_on_current_supervision_level
+    DATE_DIFF(CURRENT_DATE('US/Eastern'), start_date, DAY) AS days_on_current_supervision_level
   FROM
     `{project_id}.{analyst_views_dataset}.supervision_level_sessions_materialized`
   WHERE
@@ -92,7 +92,10 @@ latest_contacts AS (
     `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
     person_external_id IS NOT NULL
-    AND date_of_evaluation = CURRENT_DATE
+    AND date_of_evaluation = (
+      SELECT MAX(date_of_evaluation)
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
+    )
   GROUP BY person_id, state_code
 ),
 latest_employment AS (

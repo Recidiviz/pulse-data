@@ -49,7 +49,10 @@ WITH overdue_downgrades AS (
     `{{project_id}}.{{case_triage_dataset}}.etl_clients_materialized` clients
   USING (person_external_id, state_code)
   WHERE
-    date_of_supervision = CURRENT_DATE
+    date_of_supervision = (
+      SELECT MAX(date_of_supervision)
+      FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized`
+    )
     AND recommended_supervision_downgrade_level IS NOT NULL
 ),
 earned_discharge_eligible AS (
