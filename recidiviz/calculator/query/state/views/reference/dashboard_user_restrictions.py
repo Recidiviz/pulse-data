@@ -92,7 +92,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                         system_prisonToSupervision,
                         system_supervision,
                         system_supervisionToLiberty,
-                        system_supervisionToPrison
+                        system_supervisionToPrison,
+                        workflows
                     ))
                 ELSE TO_JSON_STRING(NULL)
             END AS routes,
