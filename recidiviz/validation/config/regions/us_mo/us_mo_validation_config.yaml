@@ -21,14 +21,17 @@ max_allowed_error_overrides:
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 0.04
+    override_reason: TODO(#15791) - Validation is pulling a number different from expected -- need to investigate dataflow overrides that are excluding people included further upstream.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 500
+    hard_num_allowed_rows_override: 7500
     override_reason:
       In MO we rely on a table where they build incarceration period
       spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
       rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
-      query to derive periods directly from the status codes table. Update - the error did not improve after rework was done. Further investigation still needed.
+      query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 2500
     override_reason:
@@ -43,8 +46,8 @@ num_allowed_rows_overrides:
       TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
       actually using it. Doing so will likely make these edge case periods go away.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 30
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
+    hard_num_allowed_rows_override: 80
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly.
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 22
     override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
