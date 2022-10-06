@@ -15,12 +15,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_OZ implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+from typing import List, Optional
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.persistence.entity.entity_utils import deep_entity_update
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsOzIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_OZ implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def normalize_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+    ) -> StateIncarcerationPeriod:
+
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
+
+        # ADMITTED_FROM_SUPERVISION is ingest only so the pipeline will fail if we let
+        # it through. In OZ we can just always map them to sanctions.
+        return deep_entity_update(
+            incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
