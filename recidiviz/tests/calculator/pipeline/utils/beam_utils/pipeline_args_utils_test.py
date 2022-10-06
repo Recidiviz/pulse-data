@@ -66,7 +66,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         person_id_filter_set=None,
         reference_dataset="reference_views",
         static_reference_dataset="static_reference_tables",
-        calculation_month_count=1,
+        calculation_month_count=-1,
         calculation_end_month=None,
         job_name="incarceration-args-test",
         region="us-west1",

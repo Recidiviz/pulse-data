@@ -205,7 +205,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
                 help="The number of months (including this one) to limit the monthly "
                 "calculation output to. If set to -1, does not limit the "
                 "calculations.",
-                default=1,
+                default=-1,
             )
 
             parser.add_argument(
