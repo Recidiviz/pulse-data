@@ -140,7 +140,7 @@ def generate_metric_export_configs(
         assessment_score_bucket,
         assessment_type,
         supervising_officer_external_id,
-        supervising_district_external_id,
+        level_1_supervision_location_external_id AS supervising_district_external_id,
         age,
         prioritized_race_or_ethnicity,
         gender,
