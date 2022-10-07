@@ -16,7 +16,8 @@
 // =============================================================================
 
 import { SyncOutlined } from "@ant-design/icons";
-import { Button, PageHeader, Tag } from "antd";
+import { Button, PageHeader } from "antd";
+import classNames from "classnames";
 import {
   RegionAction,
   regionActionNames,
@@ -24,6 +25,7 @@ import {
 import { QueueMetadata } from "../constants";
 import {
   getIngestQueuesCumalativeState,
+  getQueueColor,
   removeUnderscore,
 } from "../ingestStatusUtils";
 import IngestActionButton from "./IngestActionButton";
@@ -78,9 +80,12 @@ const IngestQueuesActionsPageHeader: React.FC<IngestQueuesActionsPageHeaderProps
 export default IngestQueuesActionsPageHeader;
 
 function createIngestQueueStatusTag(queueStates: QueueMetadata[]): JSX.Element {
+  const queueState = getIngestQueuesCumalativeState(queueStates).toString();
   return (
-    <Tag color="blue">
-      {removeUnderscore(getIngestQueuesCumalativeState(queueStates).toString())}
-    </Tag>
+    <div
+      className={classNames("tag", "tag-with-color", getQueueColor(queueState))}
+    >
+      {removeUnderscore(queueState)}
+    </div>
   );
 }

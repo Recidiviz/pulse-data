@@ -122,7 +122,35 @@ tr.metadata-table-row > td.ant-table-cell > div {
 
 /* Actions and Summaries*/
 
-.ingest-status-cell-green, .ingest-status-cell-grey, .ingest-status-cell-yellow, .queue-status-running, .queue-status-not-running {
+.tag {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  font-variant: tabular-nums;
+  line-height: 1.5715;
+  list-style: none;
+  font-feature-settings: 'tnum', "tnum";
+  display: inline-block;
+  height: auto;
+  margin-right: 8px;
+  padding: 0 7px;
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  opacity: 1;
+  transition: all 0.3s;
+}
+
+.tag-with-color {
+  border: none;
+}
+
+.ingest-status-cell {
   height: 60px;
   width: 450px;
   padding: 10px;

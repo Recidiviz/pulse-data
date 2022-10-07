@@ -15,7 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader, Popover, Tag } from "antd";
+import { PageHeader, Popover } from "antd";
+import classNames from "classnames";
 import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../../hooks";
 import {
@@ -27,7 +28,11 @@ import {
   IngestInstanceStatusInfo,
   IngestInstanceSummary,
 } from "../constants";
-import { getStatusMessage, removeUnderscore } from "../ingestStatusUtils";
+import {
+  getStatusBoxColor,
+  getStatusMessage,
+  removeUnderscore,
+} from "../ingestStatusUtils";
 import IngestActionButton from "./IngestActionButton";
 
 interface IngestActionsPageHeaderProps {
@@ -64,7 +69,15 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
         tags={
           statusInfo ? (
             <Popover content={IngestInstanceStatusPopoverContent}>
-              <Tag color="blue">{removeUnderscore(statusInfo.status)}</Tag>
+              <div
+                className={classNames(
+                  "tag",
+                  "tag-with-color",
+                  getStatusBoxColor(statusInfo.status)
+                )}
+              >
+                {removeUnderscore(statusInfo.status)}
+              </div>
             </Popover>
           ) : (
             <></>
