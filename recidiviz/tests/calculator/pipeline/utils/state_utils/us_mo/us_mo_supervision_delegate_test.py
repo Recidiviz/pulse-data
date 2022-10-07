@@ -31,7 +31,7 @@ class TestUsMoSupervisionDelegate(unittest.TestCase):
     """Unit tests for UsMoSupervisionDelegate"""
 
     def setUp(self) -> None:
-        self.delegate = UsMoSupervisionDelegate([])
+        self.delegate = UsMoSupervisionDelegate([], [])
 
     def test_get_supervising_officer_external_id_for_supervision_period(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -44,7 +44,7 @@ class TestUsMoSupervisionDelegate(unittest.TestCase):
             supervision_type=None,
         )
 
-        supervision_period_to_agent_associations = {
+        self.delegate.supervision_period_to_agent_associations = {
             1: {
                 "agent_id": 111,
                 "agent_external_id": "111",
@@ -59,7 +59,6 @@ class TestUsMoSupervisionDelegate(unittest.TestCase):
         results = (
             self.delegate.get_supervising_officer_external_id_for_supervision_period(
                 supervision_period,
-                supervision_period_to_agent_associations,
             )
         )
         self.assertEqual(expected_agent_id, results)
@@ -77,7 +76,7 @@ class TestUsMoSupervisionDelegate(unittest.TestCase):
             supervision_type=None,
         )
 
-        supervision_period_to_agent_associations = {
+        self.delegate.supervision_period_to_agent_associations = {
             1: {
                 "agent_id": 111,
                 "agent_external_id": "111",
@@ -99,7 +98,6 @@ class TestUsMoSupervisionDelegate(unittest.TestCase):
         results = (
             self.delegate.get_supervising_officer_external_id_for_supervision_period(
                 supervision_period,
-                supervision_period_to_agent_associations,
             )
         )
         self.assertEqual(expected_agent_id, results)

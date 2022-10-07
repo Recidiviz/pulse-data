@@ -122,7 +122,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         supervision_period_judicial_district_association: Optional[
             List[Dict[str, Any]]
         ] = None,
-        supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
@@ -134,15 +133,14 @@ class TestFindPopulationSpans(unittest.TestCase):
             or [],
             "supervision_period_judicial_district_association": supervision_period_judicial_district_association
             or _DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
-            "supervision_period_to_agent_association": supervision_period_to_agent_association
-            or _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
         }
         required_delegates: Dict[str, StateSpecificDelegate] = {
             "StateSpecificIncarcerationDelegate": incarceration_delegate
             or UsXxIncarcerationDelegate(),
             "StateSpecificSupervisionDelegate": supervision_delegate
             or UsXxSupervisionDelegate(
-                _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS
+                _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS,
+                _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
             ),
         }
 
@@ -992,7 +990,8 @@ class TestFindPopulationSpans(unittest.TestCase):
 
         spans = self._run_find_population_spans(
             supervision_delegate=self.TestsXxSupervisionDelegate(
-                _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS
+                _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS,
+                _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
             ),
             incarceration_periods=[],
             supervision_periods=[

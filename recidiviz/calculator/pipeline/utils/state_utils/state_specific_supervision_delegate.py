@@ -55,13 +55,18 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     """Interface for state-specific decisions involved in categorizing various attributes of supervision."""
 
     def __init__(
-        self, supervision_locations_to_names_list: List[Dict[str, Any]]
+        self,
+        supervision_locations_to_names_list: List[Dict[str, Any]],
+        supervision_period_to_agent_list: List[Dict[str, Any]],
     ) -> None:
         self.level_1_supervision_location_info: Dict[
             str, Dict[str, Any]
         ] = list_of_dicts_to_dict_with_keys(
             supervision_locations_to_names_list,
             key="level_1_supervision_location_external_id",
+        )
+        self.supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
+            supervision_period_to_agent_list, key="supervision_period_id"
         )
 
     def supervision_types_mutually_exclusive(self) -> bool:
@@ -154,13 +159,12 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     def get_supervising_officer_external_id_for_supervision_period(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
     ) -> Optional[str]:
         """Retrieves the supervising officer associated with the supervision period."""
         if not supervision_period.supervision_period_id:
             raise ValueError("Unexpected null supervision period id")
 
-        agent_info = supervision_period_to_agent_associations.get(
+        agent_info = self.supervision_period_to_agent_associations.get(
             supervision_period.supervision_period_id
         )
 

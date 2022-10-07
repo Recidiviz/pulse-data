@@ -93,6 +93,34 @@ _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS: Dict[str, Dict[str, Any]] 
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST: List[Dict[str, Any]] = list(
     _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS.values()
 )
+_DEFAULT_SUPERVISION_PERIOD_ID = 999
+_DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION: Dict[int, Dict[str, Any]] = {
+    _DEFAULT_SUPERVISION_PERIOD_ID: {
+        "agent_id": 000,
+        "agent_external_id": "XXX",
+        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
+    },
+    111: {
+        "agent_id": 1010,
+        "person_id": 12345,
+        "agent_external_id": "OFFICER0009",
+        "supervision_period_id": 111,
+    },
+    1111: {
+        "agent_id": 1010,
+        "person_id": 12345,
+        "agent_external_id": "OFFICER0009",
+        "supervision_period_id": 1111,
+    },
+    2222: {
+        "person_id": 12345,
+        "agent_external_id": "OFFICER 1",
+        "supervision_period_id": 2222,
+    },
+}
+DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST: List[Dict[str, Any]] = list(
+    _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION.values()
+)
 
 # The state-specific delegates that should be used in state-agnostic tests
 STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
@@ -104,7 +132,8 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificViolationDelegate": UsXxViolationDelegate(),
     "StateSpecificIncarcerationDelegate": UsXxIncarcerationDelegate(),
     "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(
-        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+        DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
     ),
     "StateSpecificAssessmentNormalizationDelegate": UsXxAssessmentNormalizationDelegate(),
 }
@@ -130,6 +159,7 @@ def test_get_required_state_specific_delegates() -> None:
                     StatePerson.new_with_defaults(state_code=state.value)
                 ],
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
             },
         )
 
@@ -152,6 +182,7 @@ def test_get_required_state_specific_delegates() -> None:
             state.value,
             entity_kwargs={
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
             },
         )
 

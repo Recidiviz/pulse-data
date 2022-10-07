@@ -17,7 +17,7 @@
 """US_MO implementation of the supervision delegate"""
 # pylint: disable=unused-argument
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
@@ -51,13 +51,12 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
     def get_supervising_officer_external_id_for_supervision_period(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
     ) -> Optional[str]:
         """In US_MO, because supervision periods may not necessarily have persisted
         supervision period ids, we do a date-range based mapping back to original
         ingested periods."""
         most_recent_agent_association = None
-        for agent_dict in supervision_period_to_agent_associations.values():
+        for agent_dict in self.supervision_period_to_agent_associations.values():
             start_date: Optional[date] = agent_dict["agent_start_date"]
             end_date: Optional[date] = agent_dict["agent_end_date"]
 
