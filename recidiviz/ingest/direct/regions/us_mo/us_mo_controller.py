@@ -79,7 +79,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StateIncarcerationPeriod
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.utils import environment
 
 
 # TODO(#8899): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
@@ -272,29 +271,17 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
-        return (
-            [
-                # SQL Preprocessing View
-                "tak001_offender_identification",
-                "oras_assessments_weekly_v2",
-                "offender_sentence_institution",
-                "offender_sentence_supervision",
-            ]
-            + (
-                ["tak158_tak026_incarceration_periods"]
-                if not environment.in_gcp_production()
-                or self.ingest_instance == DirectIngestInstance.SECONDARY
-                else [
-                    "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
-                    "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
-                ]
-            )
-            + [
-                "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
-                "tak028_tak042_tak076_tak024_violation_reports",
-                "tak291_tak292_tak024_citations",
-            ]
-        )
+        return [
+            # SQL Preprocessing View
+            "tak001_offender_identification",
+            "oras_assessments_weekly_v2",
+            "offender_sentence_institution",
+            "offender_sentence_supervision",
+            "tak158_tak026_incarceration_periods",
+            "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
+            "tak028_tak042_tak076_tak024_violation_reports",
+            "tak291_tak292_tak024_citations",
+        ]
 
     # TODO(#8899): Delete LegacyIngestViewProcessorDelegate methods when we have fully
     #  migrated this state to new ingest mappings version.
