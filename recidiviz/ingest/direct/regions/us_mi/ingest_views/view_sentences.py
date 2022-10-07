@@ -77,7 +77,9 @@ sentence_records as (
       ORDER BY sentenced_date, sentence.closing_date
       RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS first_offender_sentence_id
   FROM {ADH_OFFENDER_SENTENCE} sentence
-    LEFT JOIN {ADH_OFFENDER} off ON sentence.offender_id = off.offender_id
+    -- 10/7 update: revise to use inner join so that we won't be left with null offender_numbers ever 
+    -- (which would occur as a result of data quality issues or data pruning timing)
+    INNER JOIN {ADH_OFFENDER} off ON sentence.offender_id = off.offender_id
     LEFT JOIN {ADH_LEGAL_ORDER} legal on sentence.legal_order_id = legal.legal_order_id
     LEFT JOIN supervision_conditions_per_order cond on sentence.legal_order_id = cond.legal_order_id
     LEFT JOIN {ADH_REFERENCE_CODE} ref5 on legal.county_code_id = ref5.reference_code_id
