@@ -223,6 +223,10 @@ class DirectIngestInstanceStatusManager:
     def get_all_statuses(self) -> List[DirectIngestInstanceStatus]:
         """Returns all statuses. Used for testing purposes."""
 
+    @abc.abstractmethod
+    def get_current_status_info(self) -> DirectIngestInstanceStatus:
+        """Get current status and associated information."""
+
     def validate_transition(
         self,
         ingest_instance: DirectIngestInstance,

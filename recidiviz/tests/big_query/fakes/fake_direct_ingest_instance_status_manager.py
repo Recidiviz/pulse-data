@@ -86,3 +86,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             status=status,
         )
         self.statuses.append(new_ingest_instance_status)
+
+    def get_current_status_info(self) -> DirectIngestInstanceStatus:
+        """Get current status and associated information."""
+        return self.statuses[-1]
