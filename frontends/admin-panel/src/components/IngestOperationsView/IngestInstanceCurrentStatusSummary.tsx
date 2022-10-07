@@ -144,7 +144,9 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     const statusMessage = getStatusMessage(status, timestamp);
 
     return (
-      <div className={classNames(statusColorClassName)}>{statusMessage}</div>
+      <div className={classNames("ingest-status-cell", statusColorClassName)}>
+        {statusMessage}
+      </div>
     );
   };
 
