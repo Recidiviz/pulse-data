@@ -19,8 +19,14 @@ as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,6 +41,7 @@ STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [StateCode.US_ND]
 
 _QUERY_TEMPLATE = f"""
     /*{{description}}*/
+WITH all_states_spans AS (
     SELECT
         span.state_code,
         span.person_id,
@@ -60,6 +67,28 @@ _QUERY_TEMPLATE = f"""
         -- separately in supervision sentences
         (sent.state_code NOT IN ("{{excluded_incarceration_states}}") OR sent.sentence_type = "SUPERVISION")
     GROUP BY 1, 2, 3, 4
+),
+#TODO(#15410) remove piping of raw data once validation issues are addressed
+id_max_date AS ( 
+  SELECT 
+  "US_ID" AS state_code,
+  pei.person_id,
+  SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sent_ftrd_dt) AS DATE) AS projected_completion_date_external,
+FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.summary_ofndr_ftrd_dt_recidiviz_latest` ftrd
+INNER JOIN `{{project_id}}.{{normalized_dataset}}.state_person_external_id` pei
+  ON ftrd.ofndr_num = pei.external_id
+  AND pei.state_code = 'US_ID'
+)
+SELECT 
+    a.state_code,
+    a.person_id,
+    a.start_date,
+    a.end_date,
+    COALESCE(id.projected_completion_date_external, a.projected_completion_date_max) AS projected_completion_date_max,
+FROM all_states_spans a
+LEFT JOIN id_max_date id
+    ON id.person_id = a.person_id 
+    AND id.state_code = a.state_code
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -68,6 +97,8 @@ SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    normalized_dataset=NORMALIZED_STATE_DATASET,
+    raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
     excluded_incarceration_states='", "'.join(
         [state.name for state in STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION]
     ),
