@@ -48,7 +48,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_DESCRIPTION = """
 US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = f"""
  /*{{description}}*/
    WITH notes AS(
-      --violations
+    --violations
         SELECT 
             v.external_id,
             v.state_code,
@@ -66,7 +66,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 ON cn.agnt_case_updt_id = SPLIT((v.external_id), '-')[SAFE_OFFSET(1)]
         WHERE (violation_type NOT IN ('TECHNICAL') OR violation_type IS NULL)
         AND DATE_ADD(COALESCE(vr.response_date,v.violation_date), INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-        --ncic/ilets and new crime violations
+    --ncic/ilets and new crime violations
         UNION ALL
         SELECT 
             a.agnt_case_updt_id AS external_id,
@@ -86,7 +86,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         WHERE (ncic_ilets_nco_check OR new_crime)
         --only select ncic checks and new crime within the past 90 days
         AND DATE_ADD(a.create_dt, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
-        --Community service, Interlock, Special Conditions, Treatment, LSU, Specialty court
+    --Community service,Special conditions, Interlock, Treatment, Specialty court, Transfer chrono
         UNION ALL
         SELECT 
             a.agnt_case_updt_id AS external_id,
@@ -98,27 +98,23 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             CASE 
                 WHEN (community_service AND NOT not_cs AND NOT agents_warning) THEN "Community service"
                 WHEN case_plan THEN "Special Conditions"
-                WHEN transfer_chrono THEN "Transfer chrono"
                 WHEN interlock THEN "Interlock"
                 WHEN any_treatment THEN "Treatment"
-                #TODO(#15799) uncomment when flags are hydrated in supplemental data
-                #WHEN (specialty_court AND court AND NOT psi) THEN "Specialty court"
-                WHEN lsu THEN "Previous LSU notes"
+                WHEN (specialty_court AND court AND NOT psi) THEN "Specialty court"
+                WHEN transfer_chrono THEN "Transfer chrono"
                 ELSE NULL
             END AS criteria
-        FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
-        LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
+          FROM `{{project_id}}.{{supplemental_dataset}}.us_id_case_note_matched_entities` a
+          LEFT JOIN `{{project_id}}.{{us_id_raw_data_up_to_date_dataset}}.agnt_case_updt_latest` cn
             USING(agnt_case_updt_id)
-        WHERE (community_service AND NOT not_cs AND NOT agents_warning)
-            OR case_plan
-            OR transfer_chrono
-            OR interlock
-            OR any_treatment
-            #TODO(#15799) uncomment when flags are hydrated in supplemental data
-            #OR (specialty_court AND court AND NOT psi)
-            OR lsu
+          WHERE (community_service AND NOT not_cs AND NOT agents_warning)
+                OR case_plan
+                OR interlock
+                OR any_treatment
+                OR (specialty_court AND court AND NOT psi)
+                OR (transfer_chrono AND DATE_ADD(a.create_dt, INTERVAL 1 YEAR) >= CURRENT_DATE('US/Pacific'))
+    --DUI notes
         UNION ALL
-        --DUI notes
         SELECT 
             a.agnt_case_updt_id AS external_id,
             a.state_code,
