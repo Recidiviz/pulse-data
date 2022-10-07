@@ -330,6 +330,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervising_officer_external_id="OFFICER0009",
                 successful_completion=True,
                 incarcerated_during_sentence=False,
             ),
@@ -345,10 +346,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -362,6 +365,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -414,11 +418,13 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -433,6 +439,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -499,6 +506,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -507,6 +515,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -523,6 +532,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -536,6 +546,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=second_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id=None,
             )
         )
 
@@ -605,6 +616,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -613,6 +625,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -628,6 +641,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -713,6 +727,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -721,6 +736,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -737,6 +753,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -964,6 +981,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -972,6 +990,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -988,6 +1007,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1086,9 +1106,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1102,6 +1124,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1182,6 +1205,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_incarceration_population_on_date=True,
                 supervision_type=first_supervision_type,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1190,6 +1214,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1209,6 +1234,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1309,13 +1335,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=first_supervision_type,
                 in_incarceration_population_on_date=False,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_event_from_period(first_supervision_period),
+            create_start_event_from_period(
+                first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
+            ),
             create_start_event_from_period(
                 second_supervision_period,
                 in_incarceration_population_on_date=False,
@@ -1328,6 +1358,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_type,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1401,6 +1432,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1409,6 +1441,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1425,6 +1458,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1624,9 +1658,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=supervision_type,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1641,6 +1677,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1657,6 +1694,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1672,6 +1710,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1784,6 +1823,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1792,6 +1832,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1808,6 +1849,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1824,6 +1866,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1839,6 +1882,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=second_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1938,10 +1982,12 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1955,6 +2001,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2040,6 +2087,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -2048,6 +2096,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -2064,6 +2113,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2141,9 +2191,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_period,
                 supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2156,6 +2208,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2238,7 +2291,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsIdSupervisionDelegate([]),
+                UsIdSupervisionDelegate(
+                    [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+                ),
                 supervising_district_external_id="DISTRICT_1",
             ),
             SupervisionTerminationEvent(
@@ -2349,7 +2404,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                UsPaSupervisionDelegate([]),
+                UsPaSupervisionDelegate(
+                    [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+                ),
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
@@ -2556,7 +2613,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         expected_events = [
             create_start_event_from_period(
-                supervision_period, UsIdSupervisionDelegate([])
+                supervision_period,
+                UsIdSupervisionDelegate(
+                    [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+                ),
             ),
             SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
@@ -2649,6 +2709,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events: List[SupervisionEvent] = [
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2663,6 +2724,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                     end_date_override=date(2019, 9, 3),
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2747,9 +2809,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2763,6 +2827,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2875,9 +2940,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
                 in_supervision_population_on_date=True,
+                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
+                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2886,6 +2953,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_period,
                 supervision_type,
                 end_date=violation_report_1.response_date,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2901,6 +2969,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2916,6 +2985,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=2,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2927,6 +2997,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
+                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -3014,10 +3085,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3113,10 +3184,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3216,10 +3287,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3297,10 +3368,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3393,10 +3464,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3472,10 +3543,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3551,10 +3622,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3606,10 +3677,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_reports,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3723,10 +3794,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3807,10 +3878,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3894,10 +3965,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -3964,10 +4035,10 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 assessments,
                 violation_responses,
                 supervision_contacts,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
                 violation_delegate=UsXxViolationDelegate(),
                 supervision_delegate=UsXxSupervisionDelegate(
-                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                    DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
                 ),
             )
         )
@@ -4034,9 +4105,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4114,9 +4185,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 incarceration_periods=incarceration_periods
             ),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4196,9 +4267,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4295,9 +4366,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4411,9 +4482,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4508,9 +4579,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                list(supervision_period_agent_association.values()),
             ),
-            supervision_period_agent_association,
             supervision_period_to_judicial_district_associations,
         )
 
@@ -4591,9 +4662,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                list(supervision_period_agent_association.values()),
             ),
-            supervision_period_agent_association,
             supervision_period_to_judicial_district_associations,
         )
         self.assertEqual(1, len(projected_completion_events))
@@ -4662,9 +4733,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4727,9 +4798,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4770,9 +4841,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4814,9 +4885,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4871,9 +4942,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 incarceration_periods=incarceration_periods
             ),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -4937,9 +5008,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -5002,9 +5073,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -5045,9 +5116,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -5089,9 +5160,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -5168,9 +5239,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ),
             default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             self.default_supervision_period_to_judicial_district_associations,
         )
 
@@ -5275,10 +5346,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5331,10 +5402,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5394,10 +5465,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5445,10 +5516,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5534,10 +5605,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5587,10 +5658,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             assessments=[],
             violation_responses_for_history=[],
-            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5717,10 +5788,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5814,10 +5885,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -5895,10 +5966,10 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             incarceration_period_index,
             assessments,
             violation_responses,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             violation_delegate=UsXxViolationDelegate(),
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6048,9 +6119,9 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_period_index,
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            {},
             None,
         )
 
@@ -6134,9 +6205,9 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_period_index,
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            {},
             None,
         )
 
@@ -6206,9 +6277,9 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
             supervision_period_index,
             incarceration_period_index,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            {},
             None,
         )
 
@@ -6697,7 +6768,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6744,7 +6816,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6795,7 +6868,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             start_date,
             termination_date,
             assessments,
-            self.SecondAssessmentDelegate([]),
+            self.SecondAssessmentDelegate([], []),
         )
 
         self.assertEqual(-4, assessment_score_change)
@@ -6850,7 +6923,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6904,7 +6978,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6931,7 +7006,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -6985,7 +7061,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             termination_date,
             assessments,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -7023,19 +7100,19 @@ class TestTerminationReasonFunctionCoverageCompleteness(unittest.TestCase):
 def create_start_event_from_period(
     period: NormalizedStateSupervisionPeriod,
     supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+        DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
     ),
     **kwargs: Any,
 ) -> SupervisionStartEvent:
     """Creates the SupervisionStartEvent we expect to be created from the given
     period."""
     (
-        _supervising_officer_external_id,
+        supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
     ) = supervising_officer_and_location_info(
         period,
-        {},
         supervision_delegate,
     )
 
@@ -7055,6 +7132,7 @@ def create_start_event_from_period(
         event_date=period.start_date,
         supervision_type=period.supervision_type,
         supervision_level_raw_text=period.supervision_level_raw_text,
+        supervising_officer_external_id=supervising_officer_external_id,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
@@ -7071,19 +7149,19 @@ def create_start_event_from_period(
 def create_termination_event_from_period(
     period: NormalizedStateSupervisionPeriod,
     supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+        DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+        DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
     ),
     **kwargs: Any,
 ) -> SupervisionTerminationEvent:
     """Creates the SupervisionTerminationEvent we expect to be created from the given
     period."""
     (
-        _supervising_officer_external_id,
+        supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
     ) = supervising_officer_and_location_info(
         period,
-        {},
         supervision_delegate,
     )
 
@@ -7111,6 +7189,7 @@ def create_termination_event_from_period(
         supervision_level=period.supervision_level,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,
+        supervising_officer_external_id=supervising_officer_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         case_type=StateSupervisionCaseType.GENERAL,
@@ -7173,7 +7252,8 @@ def _generate_case_compliances(
         supervision_delegate=(
             supervision_delegate
             or UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             )
         ),
     )

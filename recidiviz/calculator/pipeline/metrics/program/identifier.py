@@ -17,7 +17,7 @@
 """Identifies instances of interaction with a program."""
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
@@ -45,18 +45,12 @@ from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    list_of_dicts_to_dict_with_keys,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     supervising_officer_and_location_info,
     supervision_periods_overlapping_with_date,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -90,9 +84,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             supervision_delegate=identifier_context[
                 StateSpecificSupervisionDelegate.__name__
             ],
-            supervision_period_to_agent_association=identifier_context[
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
-            ],
         )
 
     def _find_program_events(
@@ -101,7 +92,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         program_assignments: List[NormalizedStateProgramAssignment],
         assessments: List[NormalizedStateAssessment],
         supervision_delegate: StateSpecificSupervisionDelegate,
-        supervision_period_to_agent_association: List[Dict[str, Any]],
     ) -> List[ProgramEvent]:
         """Finds instances of interaction with a program.
 
@@ -112,9 +102,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             - program_assignments: All of the person's StateProgramAssignments
             - assessments: All of the person's recorded StateAssessments
             - supervision_periods: All of the person's supervision_periods
-            - supervision_period_to_agent_associations: dictionary associating
-                StateSupervisionPeriod ids to information about the corresponding
-                StateAgent
 
         Returns:
             A list of ProgramEvents for the person.
@@ -128,11 +115,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             program_assignments
         )
 
-        supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
-            supervision_period_to_agent_association,
-            NormalizedStateSupervisionPeriod.get_class_id_name(),
-        )
-
         sp_index = NormalizedSupervisionPeriodIndex(
             sorted_supervision_periods=supervision_periods
         )
@@ -142,7 +124,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                 program_assignment,
                 assessments,
                 sp_index.sorted_supervision_periods,
-                supervision_period_to_agent_associations,
                 supervision_delegate,
             )
 
@@ -161,7 +142,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         program_assignment: NormalizedStateProgramAssignment,
         assessments: List[NormalizedStateAssessment],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
         """Finds instances of being referred to a program.
@@ -204,7 +184,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     program_assignment.participation_status,
                     most_recent_assessment,
                     relevant_supervision_periods,
-                    supervision_period_to_agent_associations,
                     supervision_delegate,
                 )
             )
@@ -324,7 +303,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         participation_status: Optional[StateProgramAssignmentParticipationStatus],
         most_recent_assessment: Optional[NormalizedStateAssessment],
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProgramReferralEvent]:
         """Builds ProgramReferralEvents with data from the relevant supervision periods
@@ -356,7 +334,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     level_2_supervision_location_external_id,
                 ) = supervising_officer_and_location_info(
                     supervision_period,
-                    supervision_period_to_agent_associations,
                     supervision_delegate,
                 )
 

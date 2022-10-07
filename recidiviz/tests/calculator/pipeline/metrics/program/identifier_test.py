@@ -256,9 +256,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -298,9 +298,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -349,8 +349,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
-            UsXxSupervisionDelegate([]),
+            UsXxSupervisionDelegate(
+                [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
+            ),
         )
 
         assert program_assignment.program_id is not None
@@ -405,9 +406,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -471,9 +472,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -548,8 +549,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            supervision_period_agent_associations,
-            UsXxSupervisionDelegate([]),
+            UsXxSupervisionDelegate(
+                [], list(supervision_period_agent_associations.values())
+            ),
         )
 
         assert program_assignment.program_id is not None
@@ -755,9 +757,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             most_recent_assessment=assessment,
             supervision_periods=[supervision_period],
-            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -813,9 +815,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             most_recent_assessment=assessment,
             supervision_periods=supervision_periods,
-            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -881,9 +883,9 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             participation_status=StateProgramAssignmentParticipationStatus.DENIED,
             most_recent_assessment=assessment,
             supervision_periods=supervision_periods,
-            supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             supervision_delegate=UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 

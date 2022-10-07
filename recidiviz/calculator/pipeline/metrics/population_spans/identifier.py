@@ -59,9 +59,6 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -105,9 +102,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             ],
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
-            ],
-            supervision_period_to_agent_association=identifier_context[
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
             ],
             supervision_period_judicial_district_association=identifier_context[
                 SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
@@ -183,7 +177,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         self,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-        supervision_period_to_agent_association: List[Dict[str, Any]],
         supervision_period_judicial_district_association: List[Dict[str, Any]],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
@@ -205,13 +198,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             int, Dict[str, Any]
         ] = list_of_dicts_to_dict_with_keys(
             supervision_period_judicial_district_association,
-            key=NormalizedStateSupervisionPeriod.get_class_id_name(),
-        )
-
-        supervision_period_to_agent: Dict[
-            int, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            supervision_period_to_agent_association,
             key=NormalizedStateSupervisionPeriod.get_class_id_name(),
         )
 
@@ -294,7 +280,7 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 )
             )
             supervising_officer_external_id = supervision_delegate.get_supervising_officer_external_id_for_supervision_period(
-                supervision_period, supervision_period_to_agent
+                supervision_period
             )
             case_type = identify_most_severe_case_type(supervision_period)
             judicial_district_code = self._get_judicial_district_code_for_period(

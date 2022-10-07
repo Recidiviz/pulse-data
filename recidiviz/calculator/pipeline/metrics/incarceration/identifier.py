@@ -90,9 +90,6 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -146,9 +143,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             persons_to_recent_county_of_residence=identifier_context[
                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
             ],
-            supervision_period_to_agent_association=identifier_context[
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
-            ],
         )
 
     def _find_incarceration_events(
@@ -163,7 +157,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         incarceration_period_judicial_district_association: List[Dict[str, Any]],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
-        supervision_period_to_agent_association: List[Dict[str, Any]],
     ) -> List[IncarcerationEvent]:
         """Finds instances of various events related to incarceration.
         Transforms the person's StateIncarcerationPeriods into various
@@ -188,11 +181,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         ] = list_of_dicts_to_dict_with_keys(
             incarceration_period_judicial_district_association,
             key=NormalizedStateIncarcerationPeriod.get_class_id_name(),
-        )
-
-        supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
-            supervision_period_to_agent_association,
-            NormalizedStateSupervisionPeriod.get_class_id_name(),
         )
 
         normalized_violation_responses = sort_normalized_entities_by_sequence_num(
@@ -220,7 +208,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             sp_index=sp_index,
             assessments=assessments,
             sorted_violation_responses=normalized_violation_responses,
-            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
         )
 
@@ -247,7 +234,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         sp_index: NormalizedSupervisionPeriodIndex,
         assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
     ) -> Tuple[
         List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]],
@@ -275,7 +261,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 supervision_period_index=sp_index,
                 assessments=assessments,
                 sorted_violation_responses=sorted_violation_responses,
-                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                 county_of_residence=county_of_residence,
             )
 
@@ -455,7 +440,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
     ) -> Optional[IncarcerationAdmissionEvent]:
         """Returns an IncarcerationAdmissionEvent if this incarceration period represents an
@@ -478,7 +462,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     supervision_period_index=supervision_period_index,
                     assessments=assessments,
                     sorted_violation_responses=sorted_violation_responses,
-                    supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                     county_of_residence=county_of_residence,
                     commitment_from_supervision_delegate=commitment_from_supervision_delegate,
                     violation_delegate=violation_delegate,
@@ -508,7 +491,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
         violation_delegate: StateSpecificViolationDelegate,
@@ -612,7 +594,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             supervision_delegate=supervision_delegate,
         )
 

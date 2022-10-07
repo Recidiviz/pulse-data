@@ -135,13 +135,17 @@ class TestGetCommitmentDetails(unittest.TestCase):
         ] = None,
         supervision_locations_to_names: Optional[Dict[str, Dict[str, Any]]] = None,
         supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
-            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
+            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
+            list(DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()),
         ),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
         supervision_period_to_agent_associations = (
             supervision_period_to_agent_associations
             or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        )
+        supervision_delegate.supervision_period_to_agent_associations = (
+            supervision_period_to_agent_associations
         )
         supervision_locations_to_names = (
             supervision_locations_to_names or DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES
@@ -163,7 +167,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_period_index=supervision_period_index,
             commitment_from_supervision_delegate=UsXxCommitmentFromSupervisionDelegate(),
             supervision_delegate=supervision_delegate,
-            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
         )
 
     def test_get_commitment_from_supervision_details(self) -> None:
@@ -472,7 +475,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
             supervision_delegate=UsPaSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST, []
             ),
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,

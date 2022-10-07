@@ -519,6 +519,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_violations_dele
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
+    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
@@ -987,31 +990,60 @@ def get_state_specific_supervision_delegate(
         for a in entity_kwargs[SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME]
         if isinstance(a, dict)
     ]
+    supervision_period_to_agents: List[TableRow] = [
+        a
+        for a in entity_kwargs[SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME]
+        if isinstance(a, dict)
+    ]
     if state_code == StateCode.US_CA.value:
-        return UsCaSupervisionDelegate(supervision_location_to_names)
+        return UsCaSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_CO.value:
-        return UsCoSupervisionDelegate(supervision_location_to_names)
+        return UsCoSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_ID.value:
-        return UsIdSupervisionDelegate(supervision_location_to_names)
+        return UsIdSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_ME.value:
-        return UsMeSupervisionDelegate(supervision_location_to_names)
+        return UsMeSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_MI.value:
-        return UsMiSupervisionDelegate(supervision_location_to_names)
+        return UsMiSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_MO.value:
-        return UsMoSupervisionDelegate(supervision_location_to_names)
+        return UsMoSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_ND.value:
-        return UsNdSupervisionDelegate(supervision_location_to_names)
+        return UsNdSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_OR.value:
-        return UsOrSupervisionDelegate(supervision_location_to_names)
+        return UsOrSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_PA.value:
-        return UsPaSupervisionDelegate(supervision_location_to_names)
+        return UsPaSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_TN.value:
-        return UsTnSupervisionDelegate(supervision_location_to_names)
+        return UsTnSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     if state_code == StateCode.US_OZ.value:
-        return UsOzSupervisionDelegate(supervision_location_to_names)
+        return UsOzSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
-        return UsIxSupervisionDelegate(supervision_location_to_names)
+        return UsIxSupervisionDelegate(
+            supervision_location_to_names, supervision_period_to_agents
+        )
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 

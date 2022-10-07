@@ -589,8 +589,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         violation_responses: List[entities.StateSupervisionViolationResponse] = None,
         assessments: List[entities.StateAssessment] = None,
         ip_to_judicial_district_kv: List[Dict[Any, Any]] = None,
-        supervision_period_to_agent_associations_as_kv: List[Dict[Any, Any]] = None,
-        supervision_locations_to_names_associations_kv: List[Dict[Any, Any]] = None,
         person_id_to_county_kv: List[Dict[Any, Any]] = None,
     ) -> Dict[str, List]:
         return {
@@ -607,11 +605,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             else [],
             "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
             or [],
-            "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv
-            or [],
             "persons_to_recent_county_of_residence": person_id_to_county_kv or [],
-            "supervision_location_ids_to_names": supervision_locations_to_names_associations_kv
-            or [],
         }
 
     def testClassifyIncarcerationEvents(self) -> None:
@@ -665,19 +659,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             "person_id": fake_person_id,
             "incarceration_period_id": 123,
             "judicial_district_code": "NW",
-        }
-
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
-        supervision_location_to_name_map = {
-            "state_code": incarceration_period.state_code,
-            "level_1_supervision_location_external_id": "level 1",
-            "level_2_supervision_location_external_id": "level 2",
         }
 
         assert incarceration_period.admission_date is not None
@@ -738,12 +719,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             supervision_periods=[supervision_period],
             ip_to_judicial_district_kv=[
                 fake_incarceration_period_judicial_district_association_result
-            ],
-            supervision_period_to_agent_associations_as_kv=[
-                supervision_period_to_agent_map
-            ],
-            supervision_locations_to_names_associations_kv=[
-                supervision_location_to_name_map
             ],
             person_id_to_county_kv=[fake_person_id_to_county_query_result],
         )

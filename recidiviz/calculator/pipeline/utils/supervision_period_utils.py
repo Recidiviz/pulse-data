@@ -17,7 +17,7 @@
 """Utils for validating and manipulating supervision periods for use in calculations."""
 import datetime
 import sys
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -167,7 +167,6 @@ def filter_out_supervision_period_types_excluded_from_pre_admission_search(
 
 def supervising_officer_and_location_info(
     supervision_period: StateSupervisionPeriod,
-    supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
@@ -185,7 +184,7 @@ def supervising_officer_and_location_info(
 
     supervising_officer_external_id = (
         supervision_delegate.get_supervising_officer_external_id_for_supervision_period(
-            supervision_period, supervision_period_to_agent_associations
+            supervision_period
         )
     )
 

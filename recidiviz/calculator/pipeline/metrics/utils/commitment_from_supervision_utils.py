@@ -17,7 +17,7 @@
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
 import datetime
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional
 
 from dateutil.relativedelta import relativedelta
 
@@ -91,7 +91,6 @@ def get_commitment_from_supervision_details(
     supervision_period_index: NormalizedSupervisionPeriodIndex,
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
     supervision_delegate: StateSpecificSupervisionDelegate,
-    supervision_period_to_agent_associations: Optional[Dict[int, Dict[Any, Any]]],
 ) -> CommitmentDetails:
     """Identifies various attributes of the commitment to incarceration from
     supervision.
@@ -109,14 +108,13 @@ def get_commitment_from_supervision_details(
         )
     )
 
-    if pre_commitment_supervision_period and supervision_period_to_agent_associations:
+    if pre_commitment_supervision_period:
         (
             supervising_officer_external_id,
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
         ) = supervising_officer_and_location_info(
             pre_commitment_supervision_period,
-            supervision_period_to_agent_associations,
             supervision_delegate,
         )
 
