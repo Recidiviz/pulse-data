@@ -14,20 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Breadcrumb, PageHeader, Spin } from "antd";
+import { Breadcrumb, Spin } from "antd";
 import { useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { fetchObjectCountsByTable } from "../AdminPanelAPI";
-import { useFetchedDataJSON } from "../hooks";
-import MetadataDataset from "../models/MetadataDatasets";
-import * as DatasetMetadata from "../navigation/DatasetMetadata";
-import MetadataTable from "./MetadataTable";
+import { fetchObjectCountsByTable } from "../../AdminPanelAPI";
+import { useFetchedDataJSON } from "../../hooks";
+import MetadataDataset from "../../models/MetadataDatasets";
+import * as DatasetMetadata from "../../navigation/DatasetMetadata";
+import MetadataTable from "../MetadataTable";
 
 interface MatchParams {
   dataset: MetadataDataset;
 }
 
-const DatasetView = (): JSX.Element => {
+const DatasetOverviewView = (): JSX.Element => {
   const { dataset: metadataDataset } = useParams<MatchParams>();
 
   const fetchValues = useCallback(async (): Promise<Response> => {
@@ -51,7 +51,6 @@ const DatasetView = (): JSX.Element => {
       <Breadcrumb>
         <Breadcrumb.Item>{topBreadCrumbLabel}</Breadcrumb.Item>
       </Breadcrumb>
-      <PageHeader title="Dataset View" />
       <MetadataTable
         data={data}
         initialColumnTitle="Tables"
@@ -63,4 +62,4 @@ const DatasetView = (): JSX.Element => {
   );
 };
 
-export default DatasetView;
+export default DatasetOverviewView;

@@ -36,6 +36,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   padding-right: 5%;
 }
 
+.content-side-padding {
+  padding: 0 24px;
+}
+
 .buffer {
   padding-top: 16px;
   padding-bottom: 16px;

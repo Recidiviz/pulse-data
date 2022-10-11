@@ -39,7 +39,7 @@ import {
   StateCodeInfo,
   StateIngestQueuesStatuses,
 } from "./constants";
-import IngestPageHeader from "./IngestPageHeader";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
   getIngestQueuesCumalativeState,
   getQueueColor,
@@ -218,8 +218,11 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
 
   return (
     <>
-      <IngestPageHeader onChange={stateCodeChange} />
-      <Layout style={{ padding: "0 24px 24px" }}>
+      <StateSelectorPageHeader
+        title="Ingest Status Summary"
+        onChange={stateCodeChange}
+      />
+      <Layout className="content-side-padding">
         <Alert
           message="Select a region to view region-specific ingest details"
           type="warning"

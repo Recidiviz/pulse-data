@@ -33,9 +33,8 @@ import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
-import ColumnView from "./ColumnView";
 import DataFreshnessView from "./DataFreshnessView";
-import DatasetView from "./DatasetView";
+import DatasetView from "./Datasets/DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
@@ -44,7 +43,6 @@ import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
-import TableView from "./TableView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
 import ValidationDetailView from "./Validation/ValidationDetailView";
@@ -156,6 +154,8 @@ const App = (): JSX.Element => {
     "main-content-padding": ![
       DatasetMetadata.VALIDATION_STATUS_ROUTE,
       IngestOperations.INGEST_ACTIONS_ROUTE,
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.VALIDATION),
+      DatasetMetadata.routeForMetadataDataset(MetadataDataset.INGEST),
     ].filter((x) => history.location.pathname.includes(x)).length,
   });
 
@@ -191,14 +191,6 @@ const App = (): JSX.Element => {
       </Layout.Sider>
       <div className={routeClass}>
         <Switch>
-          <Route
-            path={DatasetMetadata.METADATA_COLUMN_ROUTE_TEMPLATE}
-            component={ColumnView}
-          />
-          <Route
-            path={DatasetMetadata.METADATA_TABLE_ROUTE_TEMPLATE}
-            component={TableView}
-          />
           <Route
             path={DatasetMetadata.METADATA_DATASET_ROUTE_TEMPLATE}
             component={DatasetView}
