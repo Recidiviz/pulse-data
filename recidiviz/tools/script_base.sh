@@ -98,8 +98,8 @@ function sort_versions {
 function version_less_than {
     min_version=$(echo -e "$1\n$2" | sort_versions | head -n1) || exit_on_fail
     if [[ "$1" = "$2" ]]; then
-      return 1
-    elif [[ "$1" = "$min_version" ]]; then
+      return 0
+    elif [[ "$2" = "$min_version" ]]; then
       return 1
     fi
 
