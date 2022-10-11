@@ -22,14 +22,13 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder, BigQueryViewType
 
 
-class FakeBigQueryViewBuilder(BigQueryViewBuilder):
+class FakeBigQueryViewBuilder(BigQueryViewBuilder[BigQueryViewType]):
     def __init__(self, view: BigQueryViewType):
         self.view = view
 
         self.dataset_id = view.address.dataset_id
         self.view_id = view.address.table_id
 
-    # pylint: disable=unused-argument
     def _build(
         self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryViewType:

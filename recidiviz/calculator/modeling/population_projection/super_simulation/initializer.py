@@ -282,7 +282,7 @@ class Initializer:
         )
         time_range_per_compartment = time_range_per_compartment.explode("time_step")[
             ["time_step"]
-        ]
+        ].astype(dtype="int64")
 
         fully_hydrated_data = time_range_per_compartment.merge(
             outflows_data[fully_hydrated_columns + ["time_step", "total_population"]],

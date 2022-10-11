@@ -40,7 +40,7 @@ installed=$(pipenv run pip freeze | tr _ - | tr A-Z a-z | sort) || exit_on_fail
 # error.
 ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
 ACCEPTABLE_RETURN_CODES=(0 1)
-differences=$(diff <(echo "$expected") <(echo "${installed}")) || exit_on_fail
+differences=$(diff <(echo "$expected") <(echo "${installed}") --ignore-space-change) || exit_on_fail
 ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
 
 # If there are packages from the lock file that are not installed, print an error and fail.

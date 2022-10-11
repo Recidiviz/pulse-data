@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """outflow calculating object for ShellCompartments"""
-
 from enum import Enum, auto
 from typing import Dict, Tuple
 
@@ -246,7 +245,8 @@ class PredictedAdmissions:
                 predictions_df_sub = pd.DataFrame(
                     index=range(start_period, end_period + 1),
                     columns=["predictions"],
-                ).sort_index()
+                )
+                predictions_df_sub.sort_index(inplace=True)
                 predictions_df_sub.loc[
                     predictions_df_sub.index < int(self.historical_data.columns.min()),
                     "predictions",

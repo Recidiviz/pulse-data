@@ -62,7 +62,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                         self.assertEqual(
                             pipfile_dependency,
                             dependency_with_version,
-                            "Try verifying the package's version in dataflow_template_setup.py or running pipenv sync "
+                            "Try verifying the package's version in dataflow_setup.py or running pipenv sync "
                             "--dev before running this test again.",
                         )
 

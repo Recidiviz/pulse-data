@@ -49,7 +49,7 @@ REQUIRED_PACKAGES = [
     "opencensus-correlation",
     "opencensus-ext-stackdriver",
     # Must stay up-to-date with latest protobuf version in the Pipfile
-    "protobuf==3.20.2",
+    "protobuf==3.20.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
     "SQLAlchemy",
