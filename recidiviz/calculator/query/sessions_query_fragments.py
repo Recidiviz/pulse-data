@@ -17,6 +17,8 @@
 """Helper functions for building BQ sessions views."""
 # pylint: disable=line-too-long
 
+from typing import List, Optional, Union
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
@@ -154,4 +156,114 @@ sub_sessions_with_attributes AS (
         AND single_day.start_date BETWEEN all_periods.start_date AND all_periods.end_date
     WHERE single_day.start_date = single_day.end_date
 )
+"""
+
+
+def aggregate_adjacent_spans(
+    table_name: str,
+    attribute: Optional[Union[str, List[str]]] = None,
+    session_id_output_name: Optional[str] = "session_id",
+    is_struct: Optional[bool] = False,
+) -> str:
+    """
+    Function that aggregates together temporally adjacent spans for which the specified attribute(s) do not
+    change. Sessions must be end-date exclusive such that the end date of one session is equal
+    to the start date of the adjacent session.
+
+    The |table_name| must have the following columns: person_id, state_code, start_date, end_date.
+
+    Params:
+    ------
+    table_name : str
+        Name of the CTE of spans to be sessionized
+
+    attribute : Optional[Union[str, List[str]]], default None
+        The name of the column(s) for which a change in value triggers a new session. This parameter can be
+        (1) a string representing a column name, (2) a list of strings representing column names for which a
+        change in *any* column triggers a new session, (3) a string representing the name of a struct of ordered
+        values for which a string representation of the struct is compared across adjacent sessions.
+
+        If the string specified here represents a struct, the `is_struct` function parameter needs to be set
+        to TRUE. If specifying a struct, there can only be one string `attribute` value (this function does not
+        support sessionizing on both a struct and a non-struct column).
+
+        If this value is not specified, adjacent spans will be aggregated solely based on date adjacency.
+
+    session_id_output_name : Optional[str], default "session_id"
+        Desired name of the output field that contains ids for each session. If not specified, the output
+        will be `session_id`
+
+    is_struct : Optional[bool], default False
+        Boolean indicating whether or not the string specified in the `attribute` parameter represents a
+        struct in the view. If this flag is True, there can only be one value specified in the `attribute`
+        parameter.
+    """
+
+    if attribute:
+
+        # If only one attribute is specified, turn it into a single-element list. This is done to reduce
+        # repeated logic below to handle both situations separately.
+        attribute_list = [attribute] if not isinstance(attribute, List) else attribute
+
+        if len(attribute_list) > 1 and is_struct:
+            raise ValueError("Sessionization on struct only allows one attribute value")
+
+            # Create a string from the column names in the list to be used in the query
+        attribute_col_str = ", ".join(attribute_list)
+
+        # Create a string specifying how attributes will be aggregated together in the final sessionized view.
+        # Because the session_id field is incremented every time one of these attribute values changes,
+        # all attribute values within a given person_id, state_code, and session_id will by definition have the
+        # same value. This is why the ANY_VALUE aggregation function is used. Note, that this would be identical
+        # to just including the attribute column names in the GROUP BY, but this approach is slightly more
+        # generalizable and also works with structs (structs cannot be grouped by)
+        aggregation_str = ", ".join(
+            [f"ANY_VALUE({att}) AS {att}" for att in attribute_list]
+        )
+
+        # Different logic exists for whether we are comparing columns or a struct.
+        if not is_struct:
+            # Look for a change in the value of the concatenation of the attribute column(s). That value is
+            # COALESCED so that adjacent sessions with NULL values will be aggregated together.
+            attribute_change_str = f"COALESCE(CONCAT({attribute_col_str}),'') != LAG(COALESCE(CONCAT({attribute_col_str}),'')) OVER w AS attribute_change,"
+        else:
+            # If a struct is specified, look for a change in the string representation of that struct
+            attribute_change_str = f"TO_JSON_STRING({attribute}) != LAG(TO_JSON_STRING({attribute})) OVER w AS attribute_change,"
+    # If no attribute is specified, the attribute column string and the attribute aggregation strings are left blank.
+    # The string that creates the boolean in SQL indicating whether the attribute has changed is set to FALSE (since
+    # there is no attribute change that should result in a new session being created)
+    else:
+        attribute_col_str = ""
+        aggregation_str = ""
+        attribute_change_str = "FALSE AS attribute_change,"
+
+    return f"""
+    SELECT
+        person_id,
+        state_code,
+        {session_id_output_name},
+        MIN(start_date) AS start_date,
+        {revert_nonnull_end_date_clause('MAX(end_date)')} AS end_date,
+        {aggregation_str}
+    FROM
+        (
+        SELECT 
+            *,
+            SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY person_id, state_code
+                ORDER BY start_date, end_date) AS {session_id_output_name}
+        FROM
+            (
+            SELECT
+                person_id,
+                state_code,
+                start_date,
+                {nonnull_end_date_clause('end_date')} AS end_date,
+                COALESCE(LAG(end_date) OVER w != start_date, TRUE) AS date_gap,
+                {attribute_change_str}
+                {attribute_col_str}
+            FROM {table_name}
+            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, {nonnull_end_date_clause('end_date')})
+            )
+        )
+        GROUP BY 1,2,3
 """

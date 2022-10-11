@@ -17,8 +17,8 @@
 """Sessionized view of each continuous period of dates with the same population attributes inherited from dataflow metrics"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -189,11 +189,10 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     sub_sessions_with_attributes_dedup AS
     (
     SELECT
-        p.person_id,
-        p.start_date,
-        p.end_date,
-        p.state_code,
-        last_day_of_data,
+        person_id,
+        start_date,
+        end_date,
+        state_code,
         ARRAY_AGG(
             STRUCT(
                 metric_source,
@@ -223,39 +222,34 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 case_type,
                 judicial_district_code
             ) AS session_attributes,
-    FROM sub_sessions_with_attributes p
-    JOIN last_day_of_data_by_state
-        USING(state_code)
-    GROUP BY 1,2,3,4,5
+    FROM sub_sessions_with_attributes
+    WHERE start_date != end_date
+    GROUP BY 1,2,3,4
     )
+    ,
+    sessionized_cte AS
     /*
     Final sessionization step that aggregates together any adjacent sessions that have identical attributes
     */
-    SELECT
+    (
+    {aggregate_adjacent_spans(
+                        table_name='sub_sessions_with_attributes_dedup',
+                        attribute='session_attributes',
+                        session_id_output_name='dataflow_session_id',
+                        is_struct=True
+                    )}
+    )
+    SELECT 
         person_id,
         dataflow_session_id,
         state_code,
-        MIN(start_date) AS start_date,
-        DATE_SUB({revert_nonnull_end_date_clause('MAX(end_date)')}, INTERVAL 1 DAY) AS end_date,
-        ANY_VALUE(session_attributes) session_attributes,
-        last_day_of_data
-    FROM 
-        (
-        SELECT 
-            *,
-            SUM(IF(attribute_change OR date_gap,1,0)) OVER(PARTITION BY person_id ORDER BY start_date, end_date) AS dataflow_session_id
-        FROM 
-            (
-            SELECT 
-                *,
-                COALESCE(LAG(TO_JSON_STRING(session_attributes)) OVER w != TO_JSON_STRING(session_attributes),TRUE) AS attribute_change,
-                COALESCE(LAG(end_date) OVER w != start_date, TRUE) AS date_gap,
-            FROM sub_sessions_with_attributes_dedup
-            WHERE start_date!=end_date
-            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, end_date)
-            )
-        )
-    GROUP BY 1,2,3,7
+        start_date,
+        DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date,
+        session_attributes,
+        last_day_of_data,
+    FROM sessionized_cte
+    JOIN last_day_of_data_by_state
+        USING(state_code)
 """
 
 DATAFLOW_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
