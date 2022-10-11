@@ -17,10 +17,7 @@
 """Sessionization of housing stays to confinement type"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    revert_nonnull_end_date_clause,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,30 +30,15 @@ US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_DESCRIPTION = (
 
 US_MO_CONFINEMENT_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
     /* {{description}} */
-    SELECT
-        person_id,
-        state_code,
-        confinement_type_session_id,
-        MIN(start_date) AS start_date,
-        {revert_nonnull_end_date_clause('MAX(end_date)')} AS end_date,
-        confinement_type,
-        FROM
-            (
-            SELECT 
-                *,
-                SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY person_id ORDER BY start_date, end_date) AS confinement_type_session_id
-            FROM
-                (
-                SELECT
-                    * EXCEPT(end_date),
-                    {nonnull_end_date_clause('end_date')} AS end_date,
-                    COALESCE(confinement_type != LAG(confinement_type) OVER w, TRUE) AS attribute_change,
-                    COALESCE(LAG(end_date) OVER w != start_date, TRUE) AS date_gap
-                FROM `{{project_id}}.{{sessions_dataset}}.us_mo_housing_stay_sessions_materialized`
-                WINDOW w AS (PARTITION BY person_id ORDER BY start_date, {nonnull_end_date_clause('end_date')})
-                )
-            )
-        GROUP BY 1,2,3,6
+    WITH housing_stay_cte AS
+    (
+    SELECT 
+        *
+    FROM `{{project_id}}.{{sessions_dataset}}.us_mo_housing_stay_sessions_materialized`
+    )
+   {aggregate_adjacent_spans(table_name='housing_stay_cte',
+                       attribute='confinement_type',
+                       session_id_output_name='confinement_type_session_id')}
 """
 
 US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

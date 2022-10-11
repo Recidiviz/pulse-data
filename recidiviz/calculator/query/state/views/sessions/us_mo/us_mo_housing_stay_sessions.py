@@ -17,8 +17,8 @@
 """Sessionization and deduplication of MO housing stays"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import revert_nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -97,32 +97,9 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
     At this point we now have non-overlapping sessions and can just use our standard sessionization logic to aggregate
     together temporally adjacent sessions with identical attributes.
     */
-    SELECT
-        person_id,
-        state_code,
-        housing_stay_session_id,
-        MIN(start_date) AS start_date,
-        {revert_nonnull_end_date_clause('MAX(end_date)')} AS end_date,
-        facility_code,
-        stay_type,
-        confinement_type,
-    FROM
-        (
-        SELECT 
-            *,
-            SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY person_id ORDER BY start_date, end_date) AS housing_stay_session_id,
-        FROM
-        (
-        SELECT
-            *,
-            COALESCE(CONCAT(facility_code, stay_type, confinement_type) 
-              != LAG(CONCAT(facility_code, stay_type, confinement_type)) OVER w, TRUE) AS attribute_change,
-            COALESCE(LAG(end_date) OVER w != start_date,TRUE) AS date_gap
-        FROM sessions_with_attributes_dedup
-        WINDOW w AS (PARTITION BY person_id ORDER BY start_date, end_date)
-        )
-      )
-    GROUP BY 1,2,3,6,7,8
+    {aggregate_adjacent_spans(table_name='sessions_with_attributes_dedup',
+                       attribute=['facility_code','stay_type','confinement_type'],
+                       session_id_output_name='housing_stay_session_id')}
 """
 
 US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
