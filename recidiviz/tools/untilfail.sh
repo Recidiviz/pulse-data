@@ -7,6 +7,6 @@
 count=0
 while "$@"; do (( count++ )); done
 echo "*****************************"
-echo Failed after ${count} iterations
+echo "Failed after ${count} iterations"
 echo "*****************************"
 

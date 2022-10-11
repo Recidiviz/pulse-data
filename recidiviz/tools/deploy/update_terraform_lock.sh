@@ -30,8 +30,9 @@
 # be if someone installs a version of Terraform that changed the contents of the file without making
 # other code changes.
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/deploy_helpers.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
+source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 
 check_terraform_installed
 

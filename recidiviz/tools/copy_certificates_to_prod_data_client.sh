@@ -18,11 +18,12 @@
 # TODO(#14874): Remove this script when prod-data-client has been deprecated
 set -e
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/script_base.sh"
 
-read -p "Staging project name: " STAGING_PROJECT
-read -p "Production project name: " PRODUCTION_PROJECT
+read -r -p "Staging project name: " STAGING_PROJECT
+read -r -p "Production project name: " PRODUCTION_PROJECT
 script_prompt "Importing secrets for staging[${STAGING_PROJECT}] and production[${PRODUCTION_PROJECT}]. Continue?"
 
 function scp_to_data_client() {
@@ -31,7 +32,7 @@ function scp_to_data_client() {
   file=$2
   echo "Creating $directory and $file on prod-data-client"
   cat | gcloud compute ssh prod-data-client \
-    --project $PRODUCTION_PROJECT \
+    --project "$PRODUCTION_PROJECT" \
     --zone="us-east4-c" \
     --command="cat | sudo tee $directory/$file > /dev/null"
 }
@@ -44,66 +45,66 @@ function copy_secret() {
 
   echo "[$project] Downloading $secret secret data"
 
-  secret_version_uri=$(gcloud secrets versions list $secret --project $project --filter=enabled --limit 1 --uri) || exit $?
-  secret_data=$(gcloud secrets versions access $secret_version_uri) || exit $?
+  secret_version_uri=$(gcloud secrets versions list "$secret" --project "$project" --filter=enabled --limit 1 --uri) || exit $?
+  secret_data=$(gcloud secrets versions access "$secret_version_uri") || exit $?
 
-  echo "$secret_data" | scp_to_data_client $directory $file
+  echo "$secret_data" | scp_to_data_client "$directory" "$file"
 }
 
 # Case Triage certs:
-copy_secret $STAGING_PROJECT case_triage_db_client_key "private" "dev-case-triage-client-key.pem"
-copy_secret $STAGING_PROJECT case_triage_db_server_cert "certs" "dev-case-triage-server-ca.pem"
-copy_secret $STAGING_PROJECT case_triage_db_client_cert "certs" "dev-case-triage-client-cert.pem"
+copy_secret "$STAGING_PROJECT" case_triage_db_client_key "private" "dev-case-triage-client-key.pem"
+copy_secret "$STAGING_PROJECT" case_triage_db_server_cert "certs" "dev-case-triage-server-ca.pem"
+copy_secret "$STAGING_PROJECT" case_triage_db_client_cert "certs" "dev-case-triage-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT case_triage_db_client_key  "private" "case-triage-client-key.pem"
-copy_secret $PRODUCTION_PROJECT case_triage_db_server_cert "certs"   "case-triage-server-ca.pem"
-copy_secret $PRODUCTION_PROJECT case_triage_db_client_cert "certs"   "case-triage-client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" case_triage_db_client_key  "private" "case-triage-client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" case_triage_db_server_cert "certs"   "case-triage-server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" case_triage_db_client_cert "certs"   "case-triage-client-cert.pem"
 
 # Jails certs:
-copy_secret $STAGING_PROJECT jails_v2_db_client_key "private" "dev-client-key.pem"
-copy_secret $STAGING_PROJECT jails_v2_db_server_cert "certs" "dev-server-ca.pem"
-copy_secret $STAGING_PROJECT jails_v2_db_client_cert "certs" "dev-client-cert.pem"
+copy_secret "$STAGING_PROJECT" jails_v2_db_client_key "private" "dev-client-key.pem"
+copy_secret "$STAGING_PROJECT" jails_v2_db_server_cert "certs" "dev-server-ca.pem"
+copy_secret "$STAGING_PROJECT" jails_v2_db_client_cert "certs" "dev-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT jails_v2_db_client_key   "private" "client-key.pem"
-copy_secret $PRODUCTION_PROJECT jails_v2_db_server_cert  "certs"   "server-ca.pem"
-copy_secret $PRODUCTION_PROJECT jails_v2_db_client_cert  "certs"   "client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" jails_v2_db_client_key   "private" "client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" jails_v2_db_server_cert  "certs"   "server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" jails_v2_db_client_cert  "certs"   "client-cert.pem"
 
 
 # Justice Counts certs:
-copy_secret $STAGING_PROJECT justice_counts_db_client_key   "private" "dev-justice-counts-client-key.pem"
-copy_secret $STAGING_PROJECT justice_counts_db_server_cert  "certs" "dev-justice-counts-server-ca.pem"
-copy_secret $STAGING_PROJECT justice_counts_db_client_cert  "certs" "dev-justice-counts-client-cert.pem"
+copy_secret "$STAGING_PROJECT" justice_counts_db_client_key   "private" "dev-justice-counts-client-key.pem"
+copy_secret "$STAGING_PROJECT" justice_counts_db_server_cert  "certs" "dev-justice-counts-server-ca.pem"
+copy_secret "$STAGING_PROJECT" justice_counts_db_client_cert  "certs" "dev-justice-counts-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT justice_counts_db_client_key   "private" "justice-counts-client-key.pem"
-copy_secret $PRODUCTION_PROJECT justice_counts_db_server_cert  "certs"   "justice-counts-server-ca.pem"
-copy_secret $PRODUCTION_PROJECT justice_counts_db_client_cert  "certs"   "justice-counts-client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" justice_counts_db_client_key   "private" "justice-counts-client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" justice_counts_db_server_cert  "certs"   "justice-counts-server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" justice_counts_db_client_cert  "certs"   "justice-counts-client-cert.pem"
 
 
 # Operations certs:
-copy_secret $STAGING_PROJECT operations_v2_db_client_key   "private" "dev-operations-client-key.pem"
-copy_secret $STAGING_PROJECT operations_v2_db_server_cert  "certs" "dev-operations-server-ca.pem"
-copy_secret $STAGING_PROJECT operations_v2_db_client_cert  "certs" "dev-operations-client-cert.pem"
+copy_secret "$STAGING_PROJECT" operations_v2_db_client_key   "private" "dev-operations-client-key.pem"
+copy_secret "$STAGING_PROJECT" operations_v2_db_server_cert  "certs" "dev-operations-server-ca.pem"
+copy_secret "$STAGING_PROJECT" operations_v2_db_client_cert  "certs" "dev-operations-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT operations_v2_db_client_key   "private" "operations-client-key.pem"
-copy_secret $PRODUCTION_PROJECT operations_v2_db_server_cert  "certs"   "operations-server-ca.pem"
-copy_secret $PRODUCTION_PROJECT operations_v2_db_client_cert  "certs"   "operations-client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" operations_v2_db_client_key   "private" "operations-client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" operations_v2_db_server_cert  "certs"   "operations-server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" operations_v2_db_client_cert  "certs"   "operations-client-cert.pem"
 
 
 # State certs:
-copy_secret $STAGING_PROJECT state_v2_db_client_key   "private" "dev-state-client-key.pem"
-copy_secret $STAGING_PROJECT state_v2_db_server_cert  "certs" "dev-state-server-ca.pem"
-copy_secret $STAGING_PROJECT state_v2_db_client_cert  "certs" "dev-state-client-cert.pem"
+copy_secret "$STAGING_PROJECT" state_v2_db_client_key   "private" "dev-state-client-key.pem"
+copy_secret "$STAGING_PROJECT" state_v2_db_server_cert  "certs" "dev-state-server-ca.pem"
+copy_secret "$STAGING_PROJECT" state_v2_db_client_cert  "certs" "dev-state-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT state_v2_db_client_key   "private" "state-client-key.pem"
-copy_secret $PRODUCTION_PROJECT state_v2_db_server_cert  "certs"   "state-server-ca.pem"
-copy_secret $PRODUCTION_PROJECT state_v2_db_client_cert  "certs"   "state-client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" state_v2_db_client_key   "private" "state-client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" state_v2_db_server_cert  "certs"   "state-server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" state_v2_db_client_cert  "certs"   "state-client-cert.pem"
 
 
 # Pathways certs:
-copy_secret $STAGING_PROJECT pathways_db_client_key   "private" "dev-pathways-client-key.pem"
-copy_secret $STAGING_PROJECT pathways_db_server_cert  "certs" "dev-pathways-server-ca.pem"
-copy_secret $STAGING_PROJECT pathways_db_client_cert  "certs" "dev-pathways-client-cert.pem"
+copy_secret "$STAGING_PROJECT" pathways_db_client_key   "private" "dev-pathways-client-key.pem"
+copy_secret "$STAGING_PROJECT" pathways_db_server_cert  "certs" "dev-pathways-server-ca.pem"
+copy_secret "$STAGING_PROJECT" pathways_db_client_cert  "certs" "dev-pathways-client-cert.pem"
 
-copy_secret $PRODUCTION_PROJECT pathways_db_client_key   "private" "pathways-client-key.pem"
-copy_secret $PRODUCTION_PROJECT pathways_db_server_cert  "certs"   "pathways-server-ca.pem"
-copy_secret $PRODUCTION_PROJECT pathways_db_client_cert  "certs"   "pathways-client-cert.pem"
+copy_secret "$PRODUCTION_PROJECT" pathways_db_client_key   "private" "pathways-client-key.pem"
+copy_secret "$PRODUCTION_PROJECT" pathways_db_server_cert  "certs"   "pathways-server-ca.pem"
+copy_secret "$PRODUCTION_PROJECT" pathways_db_client_cert  "certs"   "pathways-client-cert.pem"

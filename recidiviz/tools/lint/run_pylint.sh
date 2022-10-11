@@ -20,8 +20,9 @@
 #
 #
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
 
 merge_base_hash=$(git merge-base origin/main HEAD)|| exit_on_fail
 current_head_hash=$(git rev-parse HEAD)|| exit_on_fail
@@ -29,7 +30,6 @@ current_head_branch_name=$(git rev-parse --abbrev-ref HEAD)|| exit_on_fail
 
 # Returns all files with updates that are not deletions
 changed_files_cmd="git diff --diff-filter=d --name-only $(git merge-base HEAD origin/main)" || exit_on_fail
-changed_files=$(${changed_files_cmd}) || exit_on_fail
 
 # Look for changes in Pipfile.lock and .pylintrc - changes in these files could mean that python files that have not
 # been touched now have new lint errors.
@@ -46,7 +46,7 @@ fi
 exit_code=0
 
 # Pylint check
-if [[ ${merge_base_hash} == ${current_head_hash} || ${pylint_config_may_have_changed} == true ]]
+if [[ ${merge_base_hash} == "${current_head_hash}" || ${pylint_config_may_have_changed} == true ]]
 then
     echo "Running FULL pylint for branch $current_head_branch_name. Pylint config changed=[$pylint_config_may_have_changed]";
     pylint recidiviz
@@ -60,7 +60,7 @@ else
         echo "Changed files:"
         echo "${changed_python_files}"
 
-        pylint ${changed_python_files}
+        pylint "${changed_python_files}"
     fi
 fi
 exit_code=$((exit_code + $?))
@@ -157,4 +157,4 @@ else
     echo "No invalid uses of id()."
 fi
 
-exit $exit_code
+exit "$exit_code"

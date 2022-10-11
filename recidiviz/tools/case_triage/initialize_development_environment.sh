@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
 
 function write_to_file {
   echo "\"$1\" > $2" | indent_output
-  echo $1 > $2
+  echo "$1" > "$2"
 }
 
-read -p "Enter your email: " USER_EMAIL
+read -r -p "Enter your email: " USER_EMAIL
 run_cmd mkdir -p recidiviz/case_triage/local/gcs/case-triage-data/ recidiviz/local/gsm/
 
 # Load staging Case Triage Auth0 configuration. Uses subshell to remove additional output from gcloud util
@@ -19,10 +20,10 @@ DASHBOARD_AUTH0_CONFIGURATION=$(get_secret recidiviz-staging dashboard_auth0)
 write_to_file "$DASHBOARD_AUTH0_CONFIGURATION" recidiviz/local/gsm/dashboard_auth0
 
 # Load staging INTERCOM_APP_KEY. Uses subshell to remove additional output from gcloud util
-INTERCOM_APP_KEY=$(get_secret recidiviz-staging case_triage_intercom_app_key))
+INTERCOM_APP_KEY=$(get_secret recidiviz-staging case_triage_intercom_app_key)
 write_to_file "$INTERCOM_APP_KEY" recidiviz/local/gsm/case_triage_intercom_app_key
 
-write_to_file $(python -c 'import uuid; print(uuid.uuid4().hex)') recidiviz/local/gsm/case_triage_secret_key
+write_to_file "$(python -c 'import uuid; print(uuid.uuid4().hex)')" recidiviz/local/gsm/case_triage_secret_key
 
 # References hostname specified in `services.case_triage_backend.links` from `docker-compose.case-triage.yml`
 write_to_file 'rate_limit_cache' recidiviz/local/gsm/case_triage_rate_limiter_redis_host
@@ -54,5 +55,5 @@ write_to_file '5432' recidiviz/local/gsm/pathways_db_port
 
 
 # Set up application-specific configuration in GCS
-write_to_file $(eval printf "%s" '[{\"email\": \"$USER_EMAIL\", \"is_admin\": true}]') recidiviz/case_triage/local/gcs/case-triage-data/allowlist_v2.json
+write_to_file "[{\"email\": \"${USER_EMAIL}\", \"is_admin\": true}]" recidiviz/case_triage/local/gcs/case-triage-data/allowlist_v2.json
 write_to_file '{}' recidiviz/case_triage/local/gcs/case-triage-data/feature_variants.json

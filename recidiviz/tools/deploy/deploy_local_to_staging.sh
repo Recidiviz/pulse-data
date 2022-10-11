@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
-source ${BASH_SOURCE_DIR}/deploy_helpers.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
+# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
+source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 
 DEBUG_BUILD_NAME=''
 PROJECT_ID='recidiviz-staging'
@@ -28,8 +30,10 @@ if [[ -z ${DEBUG_BUILD_NAME} ]]; then
     run_cmd exit 1
 fi
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
+
 
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags
@@ -37,15 +41,15 @@ run_cmd git fetch --all --tags --prune --prune-tags
 LAST_VERSION_TAG_ON_CURRENT_BRANCH=$(last_version_tag_on_branch HEAD)
 LAST_VERSION_TAG_ON_MAIN=$(last_version_tag_on_branch main)
 
-if [[ ${LAST_VERSION_TAG_ON_CURRENT_BRANCH} != ${LAST_VERSION_TAG_ON_MAIN} ]]; then
+if [[ "${LAST_VERSION_TAG_ON_CURRENT_BRANCH}" != "${LAST_VERSION_TAG_ON_MAIN}" ]]; then
     echo_error "Current branch does not contain latest version tag on main [$LAST_VERSION_TAG_ON_MAIN] - please rebase."
     run_cmd exit 1
 fi
 
-VERSION_TAG=$(next_alpha_version ${LAST_VERSION_TAG_ON_MAIN}) || exit_on_fail
+VERSION_TAG=$(next_alpha_version "${LAST_VERSION_TAG_ON_MAIN}") || exit_on_fail
 
 # Deploys a debug version to staging without promoting traffic to it
 COMMIT_HASH=$(git rev-parse HEAD) || exit_on_fail
-${BASH_SOURCE_DIR}/base_deploy_to_staging.sh -v ${VERSION_TAG} -c ${COMMIT_HASH} -d ${DEBUG_BUILD_NAME} -n  -r ${PROJECT_ID}|| exit_on_fail
+"${BASH_SOURCE_DIR}"/base_deploy_to_staging.sh -v "${VERSION_TAG}" -c "${COMMIT_HASH}" -d "${DEBUG_BUILD_NAME}" -n  -r "${PROJECT_ID}"|| exit_on_fail
 
 echo "Local to staging deploy complete."

@@ -65,6 +65,7 @@ Faker = "*"
 # TODO(https://github.com/getsentry/responses/issues/556): Unpin this version once the
 #  responses package ships a version that doesn't break mypy.
 responses = "==0.20.0"
+shellcheck-py = "*"
 
 [packages]
 callee = "*"

@@ -25,11 +25,11 @@ ACCEPTABLE_RETURN_CODES=(0)
 
 # Prints a message to stderr, pre-pending the file number and line number of the caller.
 function echo_error {
-    CALLER_INFO=($(caller))
+    declare -a CALLER_INFO
+    read -r -a CALLER_INFO < <(caller)
     CALLER_LINE_NUMBER=${CALLER_INFO[0]}
     CALLER_FILE=${CALLER_INFO[1]}
-    ECHO_ARGS=$@
-    echo "[$CALLER_FILE:$CALLER_LINE_NUMBER] $ECHO_ARGS" 1>&2;
+    echo "[$CALLER_FILE:$CALLER_LINE_NUMBER] $*" 1>&2;
 }
 
 # Checks the return code of the most recent command and prints a message then exits with that return code if it is
@@ -39,7 +39,7 @@ function exit_on_fail {
     # Gets the return code from the previous pipeline of commands (will be non-zero if any fail).
     ret_code=$?
     # Check if return code is in set of acceptable return codes
-    if [[ ! " ${ACCEPTABLE_RETURN_CODES[@]} " =~ " ${ret_code} " ]]; then
+    if [[ ! " ${ACCEPTABLE_RETURN_CODES[*]} " == *" ${ret_code} "* ]]; then
         echo "Failed with exit code $ret_code" 1>&2
         exit ${ret_code}
     fi
@@ -51,7 +51,7 @@ function exit_on_fail {
 # order of operations can be tricky to get right.
 function run_cmd {
     # Runs the full array of arguments passed to `run_cmd` as a command, piping output to stdout so we can indent it.
-    $@ 2>&1 | indent_output
+    "$@" 2>&1 | indent_output
 
     exit_on_fail
 }
@@ -59,7 +59,7 @@ function run_cmd {
 # This is very similar to run_cmd except it allows for the user to decide how to exit when the command fails.
 function run_cmd_no_exiting {
     # Runs the full array of arguments passed (similar to `run_cmd`) as a command, piping output to stdout so we can indent it.
-    $@ 2>&1 | indent_output
+    "$@" 2>&1 | indent_output
 }
 
 # Prompts the user for a Y/N answer and exits if they respond with 'N' (case insensitive).
@@ -97,11 +97,17 @@ function sort_versions {
 # https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
 function version_less_than {
     min_version=$(echo -e "$1\n$2" | sort_versions | head -n1) || exit_on_fail
-    [[ "$1" = "$2" ]] && return 1 || [[  "$1" = "$min_version" ]]
+    if [[ "$1" = "$2" ]]; then
+      return 1
+    elif [[ "$1" = "$min_version" ]]; then
+      return 1
+    fi
+
+    return 0
 }
 
 function verify_clean_git_status {
-    if [[ ! -z "$(git status --porcelain)" ]]; then
+    if [[ -n "$(git status --porcelain)" ]]; then
         echo_error "Git status not clean - please stash changes before retrying."
         echo_error "If you have made a local change to fix a deploy issue that cannot be solved by reverting a recent "
         echo_error "commit (e.g. if you have found an old bug in the script itself) AND you need to deploy "
@@ -118,16 +124,16 @@ function safe_git_checkout_remote_branch {
     verify_clean_git_status
 
     echo "Checking out [$BRANCH]"
-    if ! git checkout -t origin/${BRANCH}
+    if ! git checkout -t "origin/${BRANCH}"
     then
         echo "Branch [$BRANCH] already exists - reusing"
-        run_cmd git checkout ${BRANCH}
+        run_cmd git checkout "${BRANCH}"
 
         echo "Checking local commit exists on origin/${BRANCH}"
         # Queries for branches that contain the commit at HEAD, then searches for the remote branch in that list
-        HEAD_EXISTS_ON_REMOTE_RESULT=$(git branch --remotes --contains HEAD | grep origin/${BRANCH})
+        HEAD_EXISTS_ON_REMOTE_RESULT=$(git branch --remotes --contains HEAD | grep "origin/${BRANCH}")
         if [[ -z ${HEAD_EXISTS_ON_REMOTE_RESULT} ]]; then
-            echo origin/${BRANCH} does not contain HEAD
+            echo "origin/${BRANCH}" does not contain HEAD
             echo_error "Remote branch origin/${BRANCH} does not contain the commit at HEAD."
             echo_error "Please revert any local commit history before continuing."
             echo_error "!! DO NOT COMMENT OUT THIS BLOCK. IF YOU RUN THIS SCRIPT ON A COMMIT THAT IS NOT IN THE MAIN "
@@ -146,13 +152,13 @@ function safe_git_checkout_remote_branch {
 function check_for_tags_at_branch_tip {
     BRANCH=$1
     ALLOW_ALPHA=${2-}  # Optional argument
-    if [[ ! -z ${ALLOW_ALPHA} ]]; then
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at ${BRANCH} | grep -v alpha || echo "") || exit_on_fail
+    if [[ -n ${ALLOW_ALPHA} ]]; then
+        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep -v alpha || echo "") || exit_on_fail
     else
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at ${BRANCH}) || exit_on_fail
+        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}") || exit_on_fail
     fi
 
-    if [[ ! -z ${TAGS_AT_TIP_OF_BRANCH} ]]; then
+    if [[ -n ${TAGS_AT_TIP_OF_BRANCH} ]]; then
         echo_error "The tip of branch [$BRANCH] is already tagged - exiting."
         echo_error "Tags: ${TAGS_AT_TIP_OF_BRANCH}"
         echo_error "If you believe this tag exists due a previously failed deploy attempt and you want to retry the "
@@ -173,8 +179,7 @@ function check_docker_running {
         exit 1
     fi
 
-    docker info > /dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
+    if ! docker info > /dev/null 2>&1; then
         echo_error "The docker daemon doesn't seem to be running. Please start it before continuing the script."
         exit 1
     fi
@@ -197,7 +202,7 @@ function verify_hash {
 function get_secret () {
   PROJECT_ID=$1
   SECRET_NAME=$2
-  gcloud secrets versions access latest --project=$1 --secret=$2 || exit_on_fail
+  gcloud secrets versions access latest --project="${PROJECT_ID}" --secret="${SECRET_NAME}" || exit_on_fail
 }
 
 
@@ -215,5 +220,5 @@ function select_one () {
     fi
   done
 
-  echo $SELECTED
+  echo "${SELECTED}"
 }

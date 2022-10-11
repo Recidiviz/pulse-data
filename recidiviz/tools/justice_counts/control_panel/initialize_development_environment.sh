@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../../script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../../script_base.sh"
 
 function write_to_file {
   echo "\"$1\" > $2" | indent_output
-  echo $1 > $2
+  echo "$1" > "$2"
 }
 
 run_cmd mkdir -p recidiviz/local/gsm/
@@ -22,8 +23,8 @@ write_to_file "$AUTH0_CLIENT_ID" recidiviz/local/gsm/justice_counts_auth0_api_cl
 write_to_file "$AUTH0_CLIENT_SECRET" recidiviz/local/gsm/justice_counts_auth0_api_client_secret
 
 # Load the Segment analytics public key so the Control Panel frontend can send analytics to the right destination
-SEGMENT_KEY=$(echo $(gcloud secrets versions access latest --secret=justice_counts_segment_key --project recidiviz-staging))
-write_to_file "$AUTH0_CONFIGURATION" recidiviz/local/gsm/justice_counts_segment_key
+SEGMENT_KEY=$(get_secret recidiviz-staging justice_counts_segment_key)
+write_to_file "$SEGMENT_KEY" recidiviz/local/gsm/justice_counts_segment_key
 
 # Database secrets
 write_to_file 'justice_counts' recidiviz/local/gsm/justice_counts_cloudsql_instance_id
@@ -32,4 +33,4 @@ write_to_file 'justice_counts_user' recidiviz/local/gsm/justice_counts_db_user
 write_to_file 'example' recidiviz/local/gsm/justice_counts_db_password
 write_to_file '5432' recidiviz/local/gsm/justice_counts_db_port
 
-write_to_file $(python -c 'import uuid; print(uuid.uuid4().hex)') recidiviz/local/gsm/justice_counts_secret_key
+write_to_file "$(python -c 'import uuid; print(uuid.uuid4().hex)')" recidiviz/local/gsm/justice_counts_secret_key

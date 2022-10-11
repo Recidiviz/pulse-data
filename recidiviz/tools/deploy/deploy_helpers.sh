@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
-source ${BASH_SOURCE_DIR}/../postgres/script_helpers.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
+# shellcheck source=recidiviz/tools/postgres/script_helpers.sh
+source "${BASH_SOURCE_DIR}/../postgres/script_helpers.sh"
 
 VERSION_REGEX="^v([0-9]+)\.([0-9]+)\.([0-9]+)(-alpha.([0-9]+))?$"
 SLACK_CHANNEL_ENG="GJDCVR2AY"
@@ -67,35 +69,36 @@ function parse_version {
         exit 1
     fi
 
-    echo ${BASH_REMATCH[@]}
+    echo "${BASH_REMATCH[@]}"
 }
 
 # Returns the last version tag on the given branch. Fails if that tag does not match the acceptable version regex.
 function last_version_tag_on_branch {
     BRANCH=$1
 
-    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged ${BRANCH} | sort_versions | tail -n 1) || exit_on_fail
+    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "${BRANCH}" | sort_versions | tail -n 1) || exit_on_fail
 
     # Check that the version parses
-    _=$(parse_version ${LAST_VERSION_TAG_ON_BRANCH}) || exit_on_fail
+    _=$(parse_version "${LAST_VERSION_TAG_ON_BRANCH}") || exit_on_fail
 
-    echo ${LAST_VERSION_TAG_ON_BRANCH}
+    echo "${LAST_VERSION_TAG_ON_BRANCH}"
 }
 
 # Returns the last deployed version tag in a given project
 function last_deployed_version_tag {
     PROJECT_ID=$1
     # Get tag and strip surrounding quotes.
-    UNNORMALIZED_TAG=$(gcloud app versions list --project=$PROJECT_ID --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \") || exit_on_fail
+    UNNORMALIZED_TAG=$(gcloud app versions list --project="$PROJECT_ID" --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \") || exit_on_fail
     # Deployed version tags have all periods replaced with dashes, re-format to match git version tag format.
-    LAST_DEPLOYED_GIT_VERSION_TAG=$(echo $UNNORMALIZED_TAG | tr '-' '.' | sed 's/.alpha/-alpha/g') || exit_on_fail
+    LAST_DEPLOYED_GIT_VERSION_TAG=$(echo "$UNNORMALIZED_TAG" | tr '-' '.' | sed 's/.alpha/-alpha/g') || exit_on_fail
 
-    echo ${LAST_DEPLOYED_GIT_VERSION_TAG}
+    echo "${LAST_DEPLOYED_GIT_VERSION_TAG}"
 }
 
 function next_alpha_version {
     PREVIOUS_VERSION=$1
-    PREVIOUS_VERSION_PARTS=($(parse_version ${PREVIOUS_VERSION})) || exit_on_fail
+    declare -a PREVIOUS_VERSION_PARTS
+    read -r -a PREVIOUS_VERSION_PARTS < <(parse_version "${PREVIOUS_VERSION}") || exit_on_fail
 
     MAJOR=${PREVIOUS_VERSION_PARTS[1]}
     MINOR=${PREVIOUS_VERSION_PARTS[2]}
@@ -105,13 +108,13 @@ function next_alpha_version {
 
     if [[ -z ${ALPHA} ]]; then
         # If the previous version was a release version, bump the minor version and build a fresh alpha version
-        NEW_VERSION="v$MAJOR.$(($MINOR + 1)).0-alpha.0"
+        NEW_VERSION="v$MAJOR.$((MINOR + 1)).0-alpha.0"
     else
         # If the previous version was an alpha version, just increment alpha version
-        NEW_VERSION="v$MAJOR.$MINOR.$PATCH-alpha.$(($ALPHA_VERSION + 1))"
+        NEW_VERSION="v$MAJOR.$MINOR.$PATCH-alpha.$((ALPHA_VERSION + 1))"
     fi
 
-    echo ${NEW_VERSION}
+    echo "${NEW_VERSION}"
 }
 
 # If there have been migrations since the last deploy, returns 1.
@@ -128,9 +131,9 @@ function migration_changes_since_last_deploy {
         exit 1
     fi
 
-    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations) || exit_on_fail
+    MIGRATION_CHANGES=$(git diff "tags/${LAST_VERSION_TAG}" -- "${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations") || exit_on_fail
 
-    if [[ ! -z $MIGRATION_CHANGES ]]; then
+    if [[ -n $MIGRATION_CHANGES ]]; then
       MIGRATION_CHANGES_SINCE_LAST_DEPLOY=1
     else
       MIGRATION_CHANGES_SINCE_LAST_DEPLOY=0
@@ -154,14 +157,14 @@ function calculation_pipeline_changes_since_last_deploy {
         exit 1
     fi
 
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy $PROJECT)
+    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy "$PROJECT")
 
     if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        echo $MIGRATION_CHANGES_SINCE_LAST_DEPLOY
+        echo "$MIGRATION_CHANGES_SINCE_LAST_DEPLOY"
     else
-        CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator) || exit_on_fail
+        CALCULATOR_CHANGES=$(git diff "tags/${LAST_VERSION_TAG}" -- "${BASH_SOURCE_DIR}/../../../recidiviz/calculator") || exit_on_fail
 
-        if [[ ! -z $CALCULATOR_CHANGES ]]; then
+        if [[ -n $CALCULATOR_CHANGES ]]; then
           CALC_CHANGES_SINCE_LAST_DEPLOY=1
         else
           CALC_CHANGES_SINCE_LAST_DEPLOY=0
@@ -179,49 +182,49 @@ function pre_deploy_configure_infrastructure {
     COMMIT_HASH=$3
 
     echo "Deploying terraform"
-    verify_hash $COMMIT_HASH
+    verify_hash "$COMMIT_HASH"
     # Terraform determines certain resources by looking at the directory structure,
     # so give our shell the ability to open plenty of file descriptors.
     ulimit -n 1024 || exit_on_fail
-    deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
+    deploy_terraform_infrastructure "${PROJECT}" "${COMMIT_HASH}" "${DOCKER_IMAGE_TAG}" || exit_on_fail
 
-    deploy_migrations ${PROJECT} ${COMMIT_HASH}
+    deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
 
     echo "Deploying cron.yaml"
-    verify_hash $COMMIT_HASH
-    run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
+    verify_hash "$COMMIT_HASH"
+    run_cmd gcloud -q app deploy cron.yaml --project="${PROJECT}"
 
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy $PROJECT)
+    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy "$PROJECT")
 
     if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
         # Update the table schemas in BigQuery
         echo "Updating the BigQuery table schemas to match the versions being deployed"
-        verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.persistence.database.bq_refresh.big_query_table_manager --project_id ${PROJECT}
+        verify_hash "$COMMIT_HASH"
+        run_cmd pipenv run python -m recidiviz.persistence.database.bq_refresh.big_query_table_manager --project_id "${PROJECT}"
     fi
 
     # Update the raw data output table schemas.
     echo "Updating the BigQuery raw data table schemas to match the raw data configs in source."
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_manager --project_id ${PROJECT}
+    verify_hash "$COMMIT_HASH"
+    run_cmd pipenv run python -m recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_manager --project_id "${PROJECT}"
 
     # Update the Dataflow output table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow output table schemas to match the corresponding classes"
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id ${PROJECT}
+    verify_hash "$COMMIT_HASH"
+    run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id "${PROJECT}"
 
     echo "Deploying views to test schema"
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT} --test-schema-only
+    verify_hash "$COMMIT_HASH"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id "${PROJECT}" --test-schema-only
 
     # TODO(#11437): Remove this step once we have view updates in the DAG. Instead,
     #  update all reference views in the DAG before pipelines run.
     echo "Deploying reference_views and ancestors"
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id ${PROJECT} --dataset-ids-to-load reference_views
+    verify_hash "$COMMIT_HASH"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id "${PROJECT}" --dataset-ids-to-load reference_views
 
     echo "Deploying calculation pipelines to templates in ${PROJECT}."
-    deploy_pipeline_templates ${PROJECT} || exit_on_fail
+    deploy_pipeline_templates "${PROJECT}" || exit_on_fail
 }
 
 function check_running_in_pipenv_shell {
@@ -234,7 +237,7 @@ function check_running_in_pipenv_shell {
 function check_python_version {
   PYTHON_VERSION=$(python -V | grep "Python " | cut -d ' ' -f 2)
   # Fetch the required Python version from the Pipfile
-  PYTHON_SCRIPT=$(cat <<- EOM
+  PYTHON_SCRIPT=$(cat << EOM
 import toml
 with open("Pipfile", "r", encoding="utf-8") as f:
   config = toml.loads(f.read())
@@ -244,7 +247,7 @@ EOM
   MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python)
   PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}
 
-  if [[ $MIN_REQUIRED_PYTHON_VERSION != $PYTHON_MAJOR_MINOR_VERSION ]]; then
+  if [[ "${MIN_REQUIRED_PYTHON_VERSION}" != "${PYTHON_MAJOR_MINOR_VERSION}" ]]; then
     echo_error "Installed Python version [v${PYTHON_VERSION}] must be at least [v${MIN_REQUIRED_PYTHON_VERSION}]."
     echo_error "Please install [v$MIN_REQUIRED_PYTHON_VERSION]. "
     echo_error "See instructions at go/backend-eng-setup for how to upgrade to [$MIN_REQUIRED_PYTHON_VERSION]."
@@ -275,7 +278,7 @@ function check_terraform_installed {
     TERRAFORM_VERSION=$(terraform --version | grep "^Terraform v" | cut -d ' ' -f 2 | sed 's/v//')
     MIN_REQUIRED_TERRAFORM_VERSION="1.1.9"
 
-    if version_less_than ${TERRAFORM_VERSION} ${MIN_REQUIRED_TERRAFORM_VERSION}; then
+    if version_less_than "${TERRAFORM_VERSION}" "${MIN_REQUIRED_TERRAFORM_VERSION}"; then
       echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
       echo_error "Please install [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
       echo_error "See instructions at go/terraform for how to upgrade to [$MIN_REQUIRED_TERRAFORM_VERSION]."
@@ -298,7 +301,7 @@ function check_for_too_many_serving_versions {
     PROJECT_ID=$1
 
     # Query for the serving versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    SERVING_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    SERVING_VERSIONS=$(gcloud app versions list --project="${PROJECT_ID}" --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
 
     # Note: if we adjust the number of serving versions upward, we may
     # have to adjust the number of max connections in our postgres instances.
@@ -329,7 +332,7 @@ function check_for_too_many_deployed_versions {
     PROJECT_ID=$1
 
     # Query for the deployed versions in YAML format, select the IDs, count the number of lines and trim whitespace
-    DEPLOYED_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    DEPLOYED_VERSIONS=$(gcloud app versions list --project="${PROJECT_ID}" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
     # Our actual limit is 210 versions, but we safeguard against other versions being deployed before this deploy succeeds
     MAX_ALLOWED_DEPLOYED_VERSIONS=200
     if [[ "$DEPLOYED_VERSIONS" -ge "$MAX_ALLOWED_DEPLOYED_VERSIONS" ]]; then
@@ -363,28 +366,28 @@ function verify_can_deploy {
     run_cmd check_terraform_installed
 
     echo "Checking for too many deployed versions"
-    run_cmd check_for_too_many_deployed_versions ${PROJECT_ID}
+    run_cmd check_for_too_many_deployed_versions "${PROJECT_ID}"
 
     echo "Checking for too many currently serving versions"
-    run_cmd check_for_too_many_serving_versions ${PROJECT_ID}
+    run_cmd check_for_too_many_serving_versions "${PROJECT_ID}"
 
     echo "Checking pipenv is synced"
-    ${BASH_SOURCE_DIR}/../diff_pipenv.sh || exit_on_fail
+    "${BASH_SOURCE_DIR}"/../diff_pipenv.sh || exit_on_fail
 }
 
 function reconfigure_terraform_backend {
   PROJECT_ID=$1
   echo "Reconfiguring Terraform backend..."
-  rm -rf ${BASH_SOURCE_DIR}/.terraform/
-  run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" -reconfigure
+  rm -rf "${BASH_SOURCE_DIR}/.terraform/"
+  run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" init -backend-config "bucket=${PROJECT_ID}-tf-state" -reconfigure
 }
 
 function deploy_pipeline_templates {
     PROJECT_ID=$1
     while true
     do
-        verify_hash $COMMIT_HASH
-        pipenv run python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id ${PROJECT_ID}
+        verify_hash "$COMMIT_HASH"
+        pipenv run python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id "${PROJECT_ID}"
         return_code=$?
 
         if [[ $return_code -eq 0 ]]; then
@@ -404,16 +407,16 @@ function deploy_terraform_infrastructure {
 
     while true
     do
-        reconfigure_terraform_backend $PROJECT_ID
-        run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
+        reconfigure_terraform_backend "$PROJECT_ID"
+        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         CURRENT_TIME=$(date +'%s')
         PLAN_FILE_NAME=${DOCKER_IMAGE_TAG}-${GIT_HASH}-${CURRENT_TIME}.tfplan
         PLAN_FILE_PATH=gs://${PROJECT_ID}-tf-state/tf-plans/${PLAN_FILE_NAME}
         echo "Storing plan to ${PLAN_FILE_PATH} for posterity..."
-        run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform show tfplan > ${BASH_SOURCE_DIR}/terraform/tfplan.json
-        run_cmd gsutil cp ${BASH_SOURCE_DIR}/terraform/tfplan.json $PLAN_FILE_PATH
+        run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" show tfplan > "${BASH_SOURCE_DIR}/terraform/tfplan.json"
+        run_cmd gsutil cp "${BASH_SOURCE_DIR}/terraform/tfplan.json" "$PLAN_FILE_PATH"
 
         echo "Applying the terraform plan..."
         # not using run_cmd because we don't want to exit_on_fail
@@ -436,8 +439,8 @@ function deployment_bot_message {
   local PROJECT_ID=$1
   local CHANNEL=$2
   local MESSAGE=$3
-
-  local AUTHORIZATION_TOKEN=$(get_secret $PROJECT_ID deploy_slack_bot_authorization_token)
+  local AUTHORIZATION_TOKEN
+  AUTHORIZATION_TOKEN=$(get_secret "${PROJECT_ID}" deploy_slack_bot_authorization_token)
 
   declare -a CURL_ARGS
   local CURL_ARGS=(
@@ -516,7 +519,7 @@ function post_deploy_triggers {
 
     echo "Triggering post-deploy tasks"
 
-    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id ${PROJECT} --trigger-historical-dag ${CALC_CHANGES_SINCE_LAST_DEPLOY}
+    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}" --trigger-historical-dag "${CALC_CHANGES_SINCE_LAST_DEPLOY}"
 }
 
 
@@ -563,6 +566,8 @@ function update_deployment_status {
     deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}" > /dev/null
 
     # Register exit hook in case the deploy fails midway
+    # In this case, we want to expand (interpolate) the local variables into the trap command. Disabling SC2064
+    # shellcheck disable=SC2064
     trap "on_deploy_exited '${PROJECT_ID}' '${COMMIT_HASH}' '${RELEASE_VERSION_TAG}'" EXIT
   elif [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_SUCCEEDED}" ]; then
       MINUTES=$((SECONDS / 60))
