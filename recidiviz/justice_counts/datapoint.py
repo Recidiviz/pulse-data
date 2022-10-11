@@ -71,6 +71,48 @@ class DatapointInterface:
         )
 
     @staticmethod
+    def is_metric_disabled(
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key: str,
+        dimension_id: Optional[str] = None,
+    ) -> bool:
+        """This function returns true if a metric or disaggregation is turned off by
+        an agency."""
+        agency_datapoints = metric_key_to_agency_datapoints.get(metric_key, [])
+
+        if len(agency_datapoints) == 0:
+            return False
+
+        member_set = (
+            {d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]}
+            if dimension_id is not None
+            else set()
+        )
+
+        for datapoint in agency_datapoints:
+            # If a whole metric is disabled, then there is a disabled agency metric
+            # with both context key and dimension_identifier_to_member
+            # as None.
+            if (
+                datapoint.enabled is False
+                and datapoint.context_key is None
+                and datapoint.dimension_identifier_to_member is None
+            ):
+                return True
+
+            dimension_member = datapoint.get_dimension_member()
+            if (
+                datapoint.context_key is None
+                and dimension_member is not None
+                and dimension_member in member_set
+            ):
+                member_set.remove(dimension_member)
+
+        # If a whole disaggregation is disabled, then there is a disabled
+        # agency datapoint for each breakdown.
+        return dimension_id is not None and len(member_set) == 0
+
+    @staticmethod
     def get_datapoints_with_report_ids(
         session: Session, report_ids: List[int], include_contexts: bool = True
     ) -> List[schema.Datapoint]:

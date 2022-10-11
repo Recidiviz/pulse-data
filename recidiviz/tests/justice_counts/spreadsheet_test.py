@@ -71,6 +71,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
+                metric_key_to_agency_datapoints={},
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -174,6 +175,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
+                metric_key_to_agency_datapoints={},
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -224,6 +226,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
+                metric_key_to_agency_datapoints={},
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -268,6 +271,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
+                metric_key_to_agency_datapoints={},
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
@@ -329,6 +333,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
+                metric_key_to_agency_datapoints={},
             )
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,

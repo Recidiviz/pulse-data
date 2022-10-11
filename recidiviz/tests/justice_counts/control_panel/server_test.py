@@ -1259,6 +1259,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             agency_id=agency_id,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
+            metric_key_to_agency_datapoints={},
         )
         self.session.commit()
 
