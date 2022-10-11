@@ -17,11 +17,11 @@
 import { Breadcrumb, PageHeader, Spin } from "antd";
 import { useCallback } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
-import { fetchTableNonNullCountsByColumn } from "../AdminPanelAPI";
-import { useFetchedDataJSON } from "../hooks";
-import MetadataDataset from "../models/MetadataDatasets";
-import * as DatasetMetadata from "../navigation/DatasetMetadata";
-import MetadataTable from "./MetadataTable";
+import { fetchTableNonNullCountsByColumn } from "../../AdminPanelAPI";
+import { useFetchedDataJSON } from "../../hooks";
+import MetadataDataset from "../../models/MetadataDatasets";
+import * as DatasetMetadata from "../../navigation/DatasetMetadata";
+import MetadataTable from "../MetadataTable";
 
 interface MatchParams {
   table: string;

@@ -97,8 +97,8 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
       ) : null}
 
       <div
-        style={{ height: "95%", padding: "0 24px" }}
-        className="main-content"
+        style={{ height: "95%" }}
+        className="main-content content-side-padding"
       >
         <IngestInstanceCard
           instance={directInstance}

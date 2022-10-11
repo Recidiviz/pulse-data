@@ -41,7 +41,7 @@ import {
   ANCHOR_INGEST_VIEWS,
   StateCodeInfo,
 } from "./constants";
-import IngestPageHeader from "./IngestPageHeader";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import IngestStateSpecificInstanceMetadata from "./IngestStateSpecificInstanceMetadata";
 import StateSpecificIngestQueues from "./StateSpecificIngestIngestQueues";
 
@@ -115,7 +115,11 @@ const IngestStateSpecificMetadata = (): JSX.Element => {
 
   return (
     <>
-      <IngestPageHeader onChange={stateCodeChange} stateCode={stateCode} />
+      <StateSelectorPageHeader
+        title="Ingest Status"
+        onChange={stateCodeChange}
+        stateCode={stateCode}
+      />
       <Layout style={{ flexDirection: "row" }}>
         <Sider width={200}>
           <Menu

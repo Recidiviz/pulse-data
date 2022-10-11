@@ -54,8 +54,8 @@ const StateSpecificIngestQueues = (): JSX.Element => {
         onRefreshQueuesData={getData}
       />
       <div
-        style={{ height: "90%", padding: "0 24px" }}
-        className="main-content"
+        style={{ height: "90%" }}
+        className="main-content content-side-padding"
       >
         <IngestQueuesTable
           projectId={projectId}

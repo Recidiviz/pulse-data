@@ -430,7 +430,7 @@ const ValidationStatusView = (): JSX.Element => {
             )}
           />
         </Sider>
-        <Layout className="main-content" style={{ padding: "0 24px 24px" }}>
+        <Layout className="main-content content-side-padding">
           <Content>
             <List
               size="small"

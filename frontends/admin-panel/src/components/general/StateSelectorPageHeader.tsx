@@ -18,20 +18,22 @@
 import { PageHeader } from "antd";
 import { fetchIngestStateCodes } from "../../AdminPanelAPI";
 import StateSelector from "../Utilities/StateSelector";
-import { StateCodeInfo } from "./constants";
+import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface IngestPageHeaderProps {
+  title: string;
   stateCode?: string;
   onChange: (stateCode: StateCodeInfo) => void;
 }
 
-const IngestPageHeader: React.FC<IngestPageHeaderProps> = ({
+const StateSelectorPageHeader: React.FC<IngestPageHeaderProps> = ({
+  title,
   stateCode,
   onChange,
 }) => {
   return (
     <PageHeader
-      title="Ingest Status"
+      title={title}
       extra={[
         <StateSelector
           fetchStateList={fetchIngestStateCodes}
@@ -43,4 +45,4 @@ const IngestPageHeader: React.FC<IngestPageHeaderProps> = ({
   );
 };
 
-export default IngestPageHeader;
+export default StateSelectorPageHeader;
