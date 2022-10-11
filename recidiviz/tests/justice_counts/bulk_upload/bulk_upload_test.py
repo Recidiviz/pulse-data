@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
+import itertools
 import os
 from typing import Dict, List
 
@@ -23,6 +24,7 @@ import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonPopulationType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
@@ -78,6 +80,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             os.path.dirname(__file__),
             "bulk_upload_fixtures/law_enforcement/law_enforcement_missing_metrics.xlsx",
         )
+        self.law_enforcement_empty_template = os.path.join(
+            os.path.dirname(__file__),
+            "bulk_upload_fixtures/law_enforcement/law_enforcement_empty_template.xlsx",
+        )
         self.supervision_excel = os.path.join(
             os.path.dirname(__file__),
             "bulk_upload_fixtures/supervision/supervision_metrics.xlsx",
@@ -127,6 +133,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
             self.assertEqual(len(metric_key_to_errors), 7)
             invalid_file_name_error = metric_key_to_errors.get(None, []).pop()
@@ -162,6 +169,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.prison_agency_id,
                 system=schema.System.PRISONS,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -204,6 +212,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -227,6 +236,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.law_enforcement_agency_id,
                 system=schema.System.LAW_ENFORCEMENT,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -251,6 +261,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.supervision_agency_id,
                 system=schema.System.SUPERVISION,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -447,6 +458,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.law_enforcement_agency_id,
                 system=schema.System.LAW_ENFORCEMENT,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -506,6 +518,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency_id=self.law_enforcement_agency_id,
                 system=schema.System.LAW_ENFORCEMENT,
                 user_account=user_account,
+                metric_key_to_agency_datapoints={},
             )
 
             self.assertEqual(len(metric_key_to_errors), 2)
@@ -533,3 +546,57 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 "No data for the Use of Force Incidents metric was provided. "
                 in use_of_force_error.description,
             )
+
+    def test_missing_metrics_disabled_metrics(
+        self,
+    ) -> None:
+        """Checks that we do not raise Missing Metric errors if
+        the metric is disabled."""
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            session.add(agency)
+
+            # Turn off calls for service metric.
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                is_metric_enabled=False
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric, agency=agency, session=session
+            )
+
+            # Get agency metric and construct metric_key_to_agency_datapoints dict.
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=session, agency_id=agency.id
+            )
+            agency_datapoints_sorted_by_metric_key = sorted(
+                agency_datapoints, key=lambda d: d.metric_definition_key
+            )
+            metric_key_to_agency_datapoints = {
+                k: list(v)
+                for k, v in itertools.groupby(
+                    agency_datapoints_sorted_by_metric_key,
+                    key=lambda d: d.metric_definition_key,
+                )
+            }
+
+            # Upload empty spreadsheet.
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            _, metric_key_to_errors = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(self.law_enforcement_empty_template),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user_account,
+                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            )
+            # There should be 6 missing metric warnings, one for each enabled
+            # metric that is NOT Calls For Service. Since Calls For Service
+            # is turned off, there should not be a Missing Metric or Missing
+            # Breakdown error.
+            self.assertEqual(len(metric_key_to_errors), 6)
+            for metric_key, errors in metric_key_to_errors.items():
+                self.assertNotEqual(metric_key, law_enforcement.calls_for_service.key)
+                self.assertEqual(len(errors), 1)
+                self.assertEqual(errors[0].title, "Missing Metric")

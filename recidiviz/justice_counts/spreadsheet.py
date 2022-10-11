@@ -197,6 +197,7 @@ class SpreadsheetInterface:
         spreadsheet: schema.Spreadsheet,
         auth0_user_id: str,
         agency_id: int,
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -214,6 +215,7 @@ class SpreadsheetInterface:
             agency_id=spreadsheet.agency_id,
             system=spreadsheet.system,
             user_account=user_account,
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
@@ -261,8 +263,11 @@ class SpreadsheetInterface:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
         for metric_definition in metric_definitions:
+            # Do not add metric to response if the metric definition has
+            # been disabled by JC.
             if metric_definition.disabled:
                 continue
+
             sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
                 metric_definition.system.value
             ]

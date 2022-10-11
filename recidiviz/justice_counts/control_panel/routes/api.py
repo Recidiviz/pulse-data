@@ -17,6 +17,7 @@
 """Implements API routes for the Justice Counts Control Panel backend API."""
 import logging
 from http import HTTPStatus
+from itertools import groupby
 from typing import Callable, Optional
 
 import pandas as pd
@@ -418,6 +419,19 @@ def get_api_blueprint(
             system=system,
         )
         if ingest_on_upload == "True":
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=current_session, agency_id=agency_id
+            )
+            agency_datapoints_sorted_by_metric_key = sorted(
+                agency_datapoints, key=lambda d: d.metric_definition_key
+            )
+            metric_key_to_agency_datapoints = {
+                k: list(v)
+                for k, v in groupby(
+                    agency_datapoints_sorted_by_metric_key,
+                    key=lambda d: d.metric_definition_key,
+                )
+            }
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
@@ -427,6 +441,7 @@ def get_api_blueprint(
                 auth0_user_id=auth0_user_id,
                 xls=pd.ExcelFile(file),
                 agency_id=agency_id,
+                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             )
 
             current_session.commit()

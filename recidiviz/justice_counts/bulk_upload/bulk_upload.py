@@ -32,7 +32,7 @@ from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfigurati
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
-from recidiviz.justice_counts.datapoint import DatapointUniqueKey
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -98,6 +98,7 @@ class BulkUploader:
         agency_id: int,
         system: schema.System,
         user_account: schema.UserAccount,
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -168,6 +169,7 @@ class BulkUploader:
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 invalid_sheetnames=invalid_sheetnames,
+                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             )
 
         metric_key_to_errors = self._add_invalid_sheet_name_error(
@@ -191,6 +193,7 @@ class BulkUploader:
             metric_definitions=METRICS_BY_SYSTEM[system.value],
             actual_sheet_names=actual_sheet_names,
             sheet_name_to_metricfile=sheet_name_to_metricfile,
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
 
         actual_breakdown_sheet_names: Set[str] = {
@@ -203,6 +206,7 @@ class BulkUploader:
             expected_breakdown_sheet_names=expected_breakdown_sheet_names,
             actual_breakdown_sheet_names=actual_breakdown_sheet_names,
             sheet_name_to_metricfile=sheet_name_to_metricfile,
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
 
         return metric_key_to_datapoint_jsons, metric_key_to_errors
@@ -242,6 +246,7 @@ class BulkUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         metric_definitions: List[MetricDefinition],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
         """This function adds an Missing Metric error to the metric_key_to_errors
         dictionary if the user has not included rows in their Excel workbook
@@ -254,6 +259,10 @@ class BulkUploader:
                 len(metric_key_to_datapoint_jsons.get(metric_definition.key, [])) == 0
                 and len(metric_key_to_errors.get(metric_definition.key, [])) == 0
                 and metric_definition.disabled is not True
+                and not DatapointInterface.is_metric_disabled(
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                    metric_key=metric_definition.key,
+                )
             ):
                 files_without_rows = [
                     sheet_name
@@ -295,6 +304,7 @@ class BulkUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         sheet_name_to_metricfile: Dict[str, MetricFile],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
         """This function adds an Missing Breakdown Sheet error to the metric_key_to_errors
         dictionary if the user has not included a sheet in their Excel workbook
@@ -328,6 +338,7 @@ class BulkUploader:
                     is_sheet_provided=False,
                     # we know metricfile.disaggreation will be non-None, so it's
                     # safe to silence mypy
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                     disaggregation=metricfile.disaggregation,  # type: ignore[arg-type]
                 )
         return metric_key_to_errors
@@ -341,7 +352,14 @@ class BulkUploader:
         metric_definition: MetricDefinition,
         is_sheet_provided: bool,
         disaggregation: Type[DimensionBase],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
+        if DatapointInterface.is_metric_disabled(
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key=metric_definition.key,
+            dimension_id=disaggregation.dimension_identifier(),
+        ):
+            return metric_key_to_errors
         description_suffix = f"Please provide data in a sheet named {sheet_name}."
         if is_sheet_provided is True:
             description_suffix = f"The sheet named {sheet_name} was empty."
@@ -362,9 +380,16 @@ class BulkUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
         # Add a warning for missing total value only if datapoints
         # were successfully ingested from the breakdown sheet.
+        if DatapointInterface.is_metric_disabled(
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key=metric_definition.key,
+        ):
+            return metric_key_to_errors
+
         missing_total_error = JusticeCountsBulkUploadException(
             title="Missing Total Value",
             message_type=BulkUploadMessageType.WARNING,
@@ -392,6 +417,7 @@ class BulkUploader:
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         invalid_sheetnames: List[str],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -455,6 +481,7 @@ class BulkUploader:
                     metric_definition=metricfile.definition,
                     sheet_name=sheet_name,
                     metric_key_to_errors=metric_key_to_errors,
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
             elif (
                 len(datapoint_json_list) == 0
@@ -469,6 +496,7 @@ class BulkUploader:
                     metric_key_to_errors=metric_key_to_errors,
                     is_sheet_provided=True,
                     disaggregation=metricfile.disaggregation,
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
 
         return metric_key_to_datapoint_jsons, metric_key_to_errors
