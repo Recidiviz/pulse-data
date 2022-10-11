@@ -220,7 +220,7 @@ agent_update_dates AS (
         supervising_officer_name, 
         supervising_officer_id,
         EXTRACT(DATE FROM po_modified_time) AS po_modified_date, 
-        SAFE_CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS supervision_location_org_code,
+        CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS supervision_location_org_code,
         ROW_NUMBER() OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY po_modified_time) AS update_rank
       FROM agent_history_base
   ) as updated_agent_history_base
@@ -249,7 +249,7 @@ agent_update_edges_with_district AS (
     FROM agent_update_dates
     LEFT OUTER JOIN
     {RECIDIVIZ_REFERENCE_supervision_location_ids}
-    ON SAFE_CAST(Org_cd AS INT64) = supervision_location_org_code
+    ON CAST(Org_cd AS INT64) = supervision_location_org_code
 ),
 all_update_dates AS (
   -- Collects one row per critical date for building supervision periods for this person. This includes the start and
