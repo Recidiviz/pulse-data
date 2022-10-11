@@ -22,6 +22,12 @@ repos:
       - id: isort
         name: isort (pyi)
         types: [pyi]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.8.0.4
+    hooks:
+      - id: shellcheck
+        # Also validate any `source`d files
+        args: [-x]
   - repo: local
     hooks:
       - id: generate_docs_for_region

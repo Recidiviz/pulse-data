@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # TODO(#14842): Remove this once prod-data-client is deprecated
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/../script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/../script_base.sh"
 
 echo 'Running migrations against all databases.'
 

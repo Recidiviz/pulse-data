@@ -3,8 +3,9 @@
 # This checks to ensure your pipenv is in sync with the lock file.
 # 'initial_pipenv_setup_mac' sets this up to run every time you pull a new version on main or checkout a branch.
 
-BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
-source ${BASH_SOURCE_DIR}/script_base.sh
+BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+# shellcheck source=recidiviz/tools/script_base.sh
+source "${BASH_SOURCE_DIR}/script_base.sh"
 
 # To get the expected packages, we perform the following transformations on the packages
 # from the lock file:
@@ -34,7 +35,7 @@ expected=$( (pipenv requirements --dev || pipenv lock -r --dev) \
 #     https://github.com/pypa/setuptools/blob/main/pkg_resources/__init__.py#L1314)
 # - Make everything lower case
 # - Sort, in case the above affected the sort order
-installed=$(pipenv run pip freeze | tr _ - | tr A-Z a-z | sort) || exit_on_fail
+installed=$(pipenv run pip freeze | tr _ - | tr "[:upper:]" "[:lower:]" | sort) || exit_on_fail
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
