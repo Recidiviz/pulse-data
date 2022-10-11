@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Test decorator for mocking secrets """
 import functools
-from typing import Any, Callable, Dict, List, Type, Union, overload
+from typing import Any, Callable, Dict, List, Type, Union
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -38,15 +38,7 @@ def decorate_with_secrets(test: Callable, secrets: Dict[str, Any]) -> Callable:
 
 
 def with_secrets(secrets: Dict[str, Any]) -> Callable:
-    @overload
-    def wrapped(test: Callable) -> Callable:
-        ...
-
-    @overload
     def wrapped(test: Type[TestCase]) -> Type[TestCase]:
-        ...
-
-    def wrapped(test: Any) -> Any:
         if isinstance(test, type) and issubclass(test, TestCase):
             test_method_names = [attr for attr in dir(test) if attr.startswith("test_")]
 
