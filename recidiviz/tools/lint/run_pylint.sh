@@ -37,7 +37,7 @@ pylint_config_files_in_change_list=$(${changed_files_cmd} | grep -e Pipfile.lock
 
 if [[ -n "${pylint_config_files_in_change_list}" ]]
 then
-    pylint_config_may_have_changed=true
+    pylint_config_may_have_changed=false
 else
     pylint_config_may_have_changed=false
 fi
@@ -51,16 +51,19 @@ then
     echo "Running FULL pylint for branch $current_head_branch_name. Pylint config changed=[$pylint_config_may_have_changed]";
     pylint recidiviz
 else
-    changed_python_files=$(${changed_files_cmd} | grep '.*\.py$')
-    if [[ -z ${changed_python_files} ]]
+
+    declare -a changed_python_files
+    read -r -a changed_python_files < <(${changed_files_cmd} | grep '.*\.py$' | tr '\n' ' ')
+
+    if [[ -z "${changed_python_files+x}" ]]
     then
         echo "Found no python files changed - not running pylint."
     else
         echo "Running differential pylint for branch [$current_head_branch_name]";
         echo "Changed files:"
-        echo "${changed_python_files}"
+        echo "${changed_python_files[@]}" | tr ' ' '\n'
 
-        pylint "${changed_python_files}"
+        pylint "${changed_python_files[@]}"
     fi
 fi
 exit_code=$((exit_code + $?))
