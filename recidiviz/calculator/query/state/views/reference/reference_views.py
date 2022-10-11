@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.sentence_judicial_district_association import (
     SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
@@ -76,4 +79,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_TN_REIDENTIFIED_USERS_VIEW_BUILDER,
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
+    STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
 ]
