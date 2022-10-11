@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
+    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -218,6 +221,7 @@ from recidiviz.calculator.query.state.views.sessions.violation_responses import 
 )
 
 SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
+    ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,

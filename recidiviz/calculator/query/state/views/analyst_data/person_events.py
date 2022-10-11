@@ -361,35 +361,13 @@ UNION ALL
 
 -- absconsions
 SELECT
-    *,
+    state_code,
+    person_id,
+    "ABSCONSION_BENCH_WARRANT" AS event,
+    start_date AS event_date,
     CAST(NULL AS STRING) AS event_attributes,
-FROM (SELECT DISTINCT *
-FROM (
-    -- via compartment change
-    SELECT
-        state_code,
-        person_id,
-        "ABSCONSION_BENCH_WARRANT" AS event,
-        start_date AS event_date,
-    FROM
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
-    WHERE
-        compartment_level_1 = "SUPERVISION"
-        AND compartment_level_2 IN ("ABSCONSION", "BENCH_WARRANT")
-        
-    UNION ALL
-    
-    -- via supervision level change
-    SELECT
-        state_code,
-        person_id,
-        "ABSCONSION_BENCH_WARRANT" AS event,
-        start_date AS event_date,
-    FROM
-        `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` a
-    WHERE
-        supervision_level IN ("ABSCONDED", "WARRANT")
-))
+FROM 
+    `{project_id}.{sessions_dataset}.absconsion_bench_warrant_sessions_materialized`
 
 UNION ALL
 
