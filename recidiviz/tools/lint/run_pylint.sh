@@ -37,7 +37,7 @@ pylint_config_files_in_change_list=$(${changed_files_cmd} | grep -e Pipfile.lock
 
 if [[ -n "${pylint_config_files_in_change_list}" ]]
 then
-    pylint_config_may_have_changed=false
+    pylint_config_may_have_changed=true
 else
     pylint_config_may_have_changed=false
 fi
