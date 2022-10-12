@@ -610,18 +610,12 @@ output:
                         - "119" # Absconder from Probation
                       StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
                         - "13" # New Commitment (Reception Center Only)
-                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
                         - "159" # New Commitment - HYTA Prisoner
-                        - "158" # New Commitment - HYTA Probationer
-                        - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
-                        - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
-                        - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
                         - "10" # New Commitment - While Under Sentence (Rec Ctr Only)
                         - "16" # New Commitment, (SAI Only)
                         - "149" # Sentenced to Prison While in Custody of Outside Jurisdiction
                         - "144" # Sentenced to Prison under HYTA
                         - "131" # Sentenced to Prison
-                        - "18" # Returned While on Parole Sentenced In Michigan
                       StateSupervisionPeriodTerminationReason.COMMUTED:
                         - "24" # Sentence Reduced to Misdemeanor
                       StateSupervisionPeriodTerminationReason.DEATH:
@@ -657,8 +651,14 @@ output:
                         - "89" # Reinstated on Parole While at Large
                         - "151" # Reinstated on Parole from Absconder Status
                       StateSupervisionPeriodTerminationReason.REVOCATION:
+                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
+                        - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+                        - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+                        - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
                         - "17" # Returned as Parole Technical Rule Violator
+                        - "18" # Returned While on Parole Sentenced In Michigan
                         - "129" # Discharged from Probation - Probation Revoked
+                        - "158" # New Commitment - HYTA Probationer
                       StateSupervisionPeriodTerminationReason.SUSPENSION:
                         - "92" # Parole Furlough
                         - "139" # Sentence Suspended by the Court
