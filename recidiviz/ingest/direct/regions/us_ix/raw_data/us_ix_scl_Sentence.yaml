@@ -3,78 +3,225 @@ file_tag: scl_Sentence
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SentenceId
 columns:
   - name: SentenceId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtOrderSignedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtOrderReceivedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OrigCourtFindingDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtFindingDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EstSentStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TerminateOverrideDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AmendedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AmendedComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceSequence
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Docket
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Count
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TerminateOverrideNotes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherCourt
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CostAmount
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CostComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FineAmount
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FineDueDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FineSuspAmount
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FinePmtSchd
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FineComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FinePaid
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FinePaidDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FinePaidNotBy
+    description: |-
+      TODO(#15329): Fill in column description
   - name: VictimCompFee
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentDetnDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentDetnGoodTimeDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CswHours
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CswDueDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CswSuspHours
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CswTotalHours
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CswComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Ttl
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EnableConsecTo
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TerminateOverride
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovalDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Stayed
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MasterTermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ConsecSentenceId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FtiLevelTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceRelationshipId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtOrderTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovalStateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovalEmployeeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: GoodTimeTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CostsUnknown
+    description: |-
+      TODO(#15329): Fill in column description
   - name: JudgeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Appealed
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AliasNameId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RevocationOffenseTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DocumentControlNumber
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseTrackingNumber
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ExtendedOffenseDesc
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EarlyDischargeLetter
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EarlyDischargeDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DischargeDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DischargeUpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DischargeUpdateByEmployeeId
+    description: |-
+      TODO(#15329): Fill in column description

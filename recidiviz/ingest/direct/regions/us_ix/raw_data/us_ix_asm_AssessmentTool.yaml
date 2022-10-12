@@ -14,14 +14,34 @@ columns:
       Text description of the assessment tool, corresponding to 
       AssessmentToolId.
   - name: Score
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ScoreSheet
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description

@@ -14,40 +14,64 @@ columns:
     description: |-
       The ID for the address associated with the period of residence
   - name: OffenderId
-    is_pii: True
     description: |-
       The IDOC identifier for the individual associated with the period of residence.
+    is_pii: True
   - name: PrimaryAddress
     description: |-
       A boolean for whether this address is considered the individual's primary address
   - name: ResidingWith
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: RelationshipQualifierTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RelationshipTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StartDate
-    is_datetime: True
     description: |-
       The starting date of the period of residence
-  - name: EndDate
     is_datetime: True
+  - name: EndDate
     description: |-
       The ending date of the period of residence
+    is_datetime: True
   - name: ReportedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ValidatedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AddressTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: ReleasePlanTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderPhoneId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HomelessTypeId
+    description: |-
+      TODO(#15329): Fill in column description

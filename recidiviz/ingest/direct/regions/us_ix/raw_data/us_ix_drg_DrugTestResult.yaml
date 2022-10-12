@@ -3,41 +3,114 @@ file_tag: drg_DrugTestResult
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - DrugTestResultId
 columns:
   - name: DrugTestResultId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CollectionDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ColorGroupId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: NoShow
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ExcusedException
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UnableToProvide
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AllNegative
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Bac
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PrimaryOfficerId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PostedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CollectedById
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TestingMethodId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacTestReasonId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsDrugTestFacility
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Cancelled
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SampleRejected
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AbnormalResult
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RefusalToSubmit
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TakingMedications
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Medication
+    description: |-
+      TODO(#15329): Fill in column description
   - name: VerifiedByMedicalDepartment
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RejectionOrAbnormalComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: GCMSComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DateSentToEx
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DateReturnedFromEx
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SampleNumber
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacTestResultId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentForConfirmation
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TestCancellationReasonId
+    description: |-
+      TODO(#15329): Fill in column description

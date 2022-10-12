@@ -8,63 +8,117 @@ primary_key_cols:
   - TransferId
 columns:
   - name: TransferId
-    description: ID of this transfer.
+    description: |-
+      ID of this transfer.
   - name: OffenderId
+    description: |-
+      ID of incarcerated/supervised individual transferred.
     is_pii: True
-    description: ID of incarcerated/supervised individual transferred.
   - name: TransferDate
+    description: |-
+      Datetime of transfer.
     is_datetime: True
-    description: Datetime of transfer.
   - name: TransferTypeId
-    description: Code for transfer type, joins to com_TransferType.TransferTypeId.
+    description: |-
+      Code for transfer type, joins to com_TransferType.TransferTypeId.
   - name: TransferReasonId
-    description: Code for transfer reason, joins to com_TransferReason.TransferReasonId.
+    description: |-
+      Code for transfer reason, joins to com_TransferReason.TransferReasonId.
   - name: DOCLocationFromId
-    description: Code for origin location within IDOC. Joins to ref_Location.LocationId.
+    description: |-
+      Code for origin location within IDOC. Joins to ref_Location.LocationId.
   - name: DOCLocationToId
-    description: Code for destination location within IDOC. Joins to ref_Location.LocationId.
+    description: |-
+      Code for destination location within IDOC. Joins to ref_Location.LocationId.
   - name: JurisdictionFromId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: JurisdictionToId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Notes
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: OfficerName
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: OfficerLocation
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OfficerTelephone
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: CustodyReleaseDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: SupervisionReleaseDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: HearingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ScheduledDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: CancelledReason
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ScheduledFor
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedBy
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: TransferStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CancellationDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: TermId
-    description: ID of the sentence term to which this transfer applies, joins to scl_Term.TermId.
+    description: |-
+      ID of the sentence term to which this transfer applies, joins to scl_Term.TermId.
   - name: BedTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: KeepSeparateReason
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TransferApprovalId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmergencyTransfer
+    description: |-
+      TODO(#15329): Fill in column description

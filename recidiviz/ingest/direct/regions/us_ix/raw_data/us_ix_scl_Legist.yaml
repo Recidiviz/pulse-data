@@ -3,24 +3,63 @@ file_tag: scl_Legist
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - LegistId
 columns:
   - name: LegistId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Code
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Adult
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Juvenile
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FirstName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MiddleName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LastName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: NameSuffix
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DisplayName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmailAddress
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LegistTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description

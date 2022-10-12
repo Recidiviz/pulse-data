@@ -3,12 +3,28 @@ file_tag: hsn_Facility_SecurityLevel
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - FacilityId
+  - SecuritylevelId
 columns:
   - name: FacilityId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SecuritylevelId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description

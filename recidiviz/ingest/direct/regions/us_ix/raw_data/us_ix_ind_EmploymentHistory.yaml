@@ -3,27 +3,72 @@ file_tag: ind_EmploymentHistory
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - EmploymentHistoryId
 columns:
   - name: EmploymentHistoryId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MonthlySalary
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmployerId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: JobTitle
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Shift
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmploymentStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PrimaryEmployment
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ActualProposedId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Wage
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmploymentWageFrequencyId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HoursPerWeek
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisorName
+    description: |-
+      TODO(#15329): Fill in column description

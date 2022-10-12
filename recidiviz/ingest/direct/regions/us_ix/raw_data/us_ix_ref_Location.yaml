@@ -7,42 +7,102 @@ primary_key_cols:
   - LocationId
 columns:
   - name: LocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationCode
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Capacity
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Notes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisorId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RegionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationSubTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SYSTEM_REF_TX
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: VideoConferencingAvailable
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationReEntryCouncilId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IRPLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CommissarySpendingAccountTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CommissarySpendingTransactionTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CommissaryRefundTransactionTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TrustGeneralLedgerGroupId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CommissaryGeneralLedgerGroupId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AgentNumber
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DistrictId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentCountyId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentCountyCityId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RestitutionGeneralLedgerGroupId
+    description: |-
+      TODO(#15329): Fill in column description

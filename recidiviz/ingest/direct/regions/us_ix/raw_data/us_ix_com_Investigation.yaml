@@ -10,9 +10,9 @@ columns:
     description: |-
       Unique identifier for each investigation.
   - name: RequestDate
-    is_datetime: True
     description: |-
       The date on which the investigation was requested.
+    is_datetime: True
   - name: RequestingAgencyId
     description: |-
       Identifier for the agency requesting the investigation; can be a number, 
@@ -22,33 +22,81 @@ columns:
       Identifier for the type of investigation conducted. Can be joined to
       `com_InvestigationType.InvestigationTypeId`.
   - name: RequestingStaffId
-    is_pii: True
     description: |-
       Identifier for the staff requesting the investigation.
+    is_pii: True
   - name: ReceivingDOCLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TransferReasonId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RequestNotes
     description: |-
       Notes regarding the investigation request; can be raw text or a number.
   - name: AssignedById
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AssignedToId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AssignedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DueDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CompletionDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AssociatedReportId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Accepted
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Cancelled
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ResponseNotes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProposedOffenderAddressId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherDOCLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherAssignedById
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherAssignedToId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherAssignedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherDueDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InvestigationStatusId
+    description: |-
+      TODO(#15329): Fill in column description

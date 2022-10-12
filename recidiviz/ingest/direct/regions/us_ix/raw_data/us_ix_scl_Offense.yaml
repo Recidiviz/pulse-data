@@ -3,23 +3,60 @@ file_tag: scl_Offense
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenseId
 columns:
   - name: OffenseId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseLawId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LatestOffenseDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SubstanceTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Count
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseSortingOrder
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OutOfStateOffenseDesc
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsNoContactOrder
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsExemptedRegSexOffense
+    description: |-
+      TODO(#15329): Fill in column description

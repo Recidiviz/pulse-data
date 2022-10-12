@@ -16,16 +16,40 @@ columns:
       Text description of the assessment type, corresponding to 
       AssessmentTypeId.
   - name: Assessment
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Program
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Community
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Custody
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description

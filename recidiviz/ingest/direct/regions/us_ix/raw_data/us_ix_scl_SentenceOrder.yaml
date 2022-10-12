@@ -3,40 +3,111 @@ file_tag: scl_SentenceOrder
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SentenceOrderId
 columns:
   - name: SentenceOrderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentSentenceOrderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CountyId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Sequence
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EffectiveDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: JudgeLegistId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DefendantAliasNameId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProsecutingAuthorityLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReceiveDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comment
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DefendantAttorney
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DistrictAttorney
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ChargeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderEventTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsApproved
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CorrectionsCompactStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CorrectionsCompactEndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderReasonId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCalculated
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsStartUponTransferToDOC
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HistoricalLegalStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RJRelinquishedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HistoricalDocket
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HistoricalChargeOutcomeTypeId
+    description: |-
+      TODO(#15329): Fill in column description

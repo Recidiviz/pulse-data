@@ -3,55 +3,156 @@ file_tag: scl_SentenceDetail
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SentenceDetailId
 columns:
   - name: SentenceDetailId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentEndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentYears
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentMonths
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentGoodTimeRelDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentFullTimeRelDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentDiscrEndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentProbEndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentMaxPrlRelDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentDaysServed
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSgtEarned
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSgtProjected
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSgtLost
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSgtRestored
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSpecialAward
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSentReduction
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Detention
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Diversion
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherConfine
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProbationStartId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProbExpectStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProbSpecificStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtOrderedMED
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ForLife
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DeterminedByMaxSentence
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceDetailTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceDetailRelationshipId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceDetailStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentMaxYears
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentMaxMonths
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentMaxDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenseSentenceTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentPED
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentIndeterminateStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentIndeterminateEndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentSatisfactionDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentDeterminateCredit
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SegmentIndeterminateCredit
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CalculationRequired
+    description: |-
+      TODO(#15329): Fill in column description
   - name: GapCredit
+    description: |-
+      TODO(#15329): Fill in column description
