@@ -99,6 +99,7 @@ class BulkUploader:
         system: schema.System,
         user_account: schema.UserAccount,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_definitions: Optional[List[MetricDefinition]] = None,
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -190,9 +191,8 @@ class BulkUploader:
         metric_key_to_errors = self._add_missing_metric_errors(
             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
             metric_key_to_errors=metric_key_to_errors,
-            metric_definitions=METRICS_BY_SYSTEM[system.value],
+            metric_definitions=metric_definitions or METRICS_BY_SYSTEM[system.value],
             actual_sheet_names=actual_sheet_names,
-            sheet_name_to_metricfile=sheet_name_to_metricfile,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
 
@@ -240,7 +240,6 @@ class BulkUploader:
     def _add_missing_metric_errors(
         self,
         actual_sheet_names: List[str],
-        sheet_name_to_metricfile: Dict[str, MetricFile],
         metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -252,6 +251,10 @@ class BulkUploader:
         dictionary if the user has not included rows in their Excel workbook
         for a metric that is required for their agency."""
         for metric_definition in metric_definitions:
+            sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
+                metric_definition.system.value
+            ]
+
             # If no datapoints were ingested for a metric and no errors are associated with the
             # metric (i.e there was no error in the sheet that prevented ingest), then the
             # metric is missing.
@@ -426,7 +429,12 @@ class BulkUploader:
         of supervision, the file could contain metrics for supervision, parole, or
         probation. This is indicated by the `system` column. In this case, we break
         up the rows by system, and then ingest one system at a time."""
-        system_to_rows = self._get_system_to_rows(system=system, rows=rows)
+        system_to_rows = self._get_system_to_rows(
+            system=system,
+            rows=rows,
+            sheet_name=sheet_name,
+            metric_key_to_errors=metric_key_to_errors,
+        )
         for current_system, current_rows in system_to_rows.items():
 
             # Redefine this here to properly handle sheets that contain
@@ -502,7 +510,13 @@ class BulkUploader:
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
     def _get_system_to_rows(
-        self, system: schema.System, rows: List[Dict[str, Any]]
+        self,
+        system: schema.System,
+        rows: List[Dict[str, Any]],
+        sheet_name: str,
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
     ) -> Dict[schema.System, List[Dict[str, Any]]]:
         """Groups the rows in the file by the value of the `system` column.
         Returns a dictionary mapping each system to its list of rows."""
@@ -516,6 +530,7 @@ class BulkUploader:
                 )
             }
             normalized_system_value_to_system = {
+                "supervision": schema.System.SUPERVISION,
                 "both": schema.System.SUPERVISION,
                 "parole": schema.System.PAROLE,
                 "probation": schema.System.PROBATION,
@@ -523,6 +538,19 @@ class BulkUploader:
             }
             for system_value, system_rows in system_value_to_rows.items():
                 normalized_system_value = system_value.lower().strip()
+                if normalized_system_value not in normalized_system_value_to_system:
+                    metric_key_to_errors[None].append(
+                        JusticeCountsBulkUploadException(
+                            title="System Not Recognized",
+                            description=(
+                                f'"{system_value}" is not a valid value for the System column. '
+                                f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
+                            ),
+                            message_type=BulkUploadMessageType.ERROR,
+                            sheet_name=sheet_name,
+                        )
+                    )
+                    continue
                 mapped_system = normalized_system_value_to_system[
                     normalized_system_value
                 ]

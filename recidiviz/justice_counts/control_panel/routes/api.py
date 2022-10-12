@@ -419,6 +419,9 @@ def get_api_blueprint(
             system=system,
         )
         if ingest_on_upload == "True":
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency_id
+            )
             agency_datapoints = DatapointInterface.get_agency_datapoints(
                 session=current_session, agency_id=agency_id
             )
@@ -432,6 +435,10 @@ def get_api_blueprint(
                     key=lambda d: d.metric_definition_key,
                 )
             }
+            metric_definitions = MetricInterface.get_metric_definitions(
+                systems={schema.System[system] for system in agency.systems or []}
+            )
+
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
@@ -442,16 +449,11 @@ def get_api_blueprint(
                 xls=pd.ExcelFile(file),
                 agency_id=agency_id,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_definitions=metric_definitions,
             )
 
             current_session.commit()
 
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id
-            )
-            metric_definitions = MetricInterface.get_metric_definitions(
-                systems={schema.System[system] for system in agency.systems or []}
-            )
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
                     metric_key_to_errors=metric_key_to_errors,
