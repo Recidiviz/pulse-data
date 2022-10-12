@@ -32,7 +32,13 @@ COMPARTMENT_LEVEL_1_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     SELECT
         *
     FROM
-        UNNEST(['INCARCERATION', 'SUPERVISION', 'INCARCERATION_OUT_OF_STATE', 'SUPERVISION_OUT_OF_STATE']) AS compartment_level_1
+        UNNEST([
+            'INCARCERATION',
+            'SUPERVISION',
+            'INCARCERATION_OUT_OF_STATE',
+            'SUPERVISION_OUT_OF_STATE',
+            'INVESTIGATION'
+        ]) AS compartment_level_1
     WITH
     OFFSET
         AS priority
