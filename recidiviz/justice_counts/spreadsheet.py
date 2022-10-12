@@ -198,6 +198,7 @@ class SpreadsheetInterface:
         auth0_user_id: str,
         agency_id: int,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_definitions: Optional[List[MetricDefinition]] = None,
     ) -> Tuple[
         Dict[str, List[Dict[str, Any]]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -216,6 +217,7 @@ class SpreadsheetInterface:
             system=spreadsheet.system,
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_definitions=metric_definitions,
         )
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
