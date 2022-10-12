@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: asm_AssessmentStatus
+file_description: |-
+  A table describing each AssessmentStatusId, mapping each ID value to its definition.
+data_classification: source
+primary_key_cols:
+  - AssessmentStatusId
+columns:
+  - name: AssessmentStatusId
+    description: |-
+      Unique ID for each assessment status.
+  - name: AssessmentStatusDesc
+    description: |-
+      Text description of the assessment status, corresponding to 
+      AssessmentStatusId.
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+  - name: UpdateDate
+    is_datetime: True
+  - name: IsCustom

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_Investigation
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - InvestigationId
+columns:
+  - name: InvestigationId
+    description: |-
+      Unique identifier for each investigation.
+  - name: RequestDate
+    is_datetime: True
+    description: |-
+      The date on which the investigation was requested.
+  - name: RequestingAgencyId
+    description: |-
+      Identifier for the agency requesting the investigation; can be a number, 
+      alphanumeric string, or null.
+  - name: InvestigationTypeId
+    description: |-
+      Identifier for the type of investigation conducted. Can be joined to
+      `com_InvestigationType.InvestigationTypeId`.
+  - name: RequestingStaffId
+    is_pii: True
+    description: |-
+      Identifier for the staff requesting the investigation.
+  - name: ReceivingDOCLocationId
+  - name: TransferReasonId
+  - name: RequestNotes
+    description: |-
+      Notes regarding the investigation request; can be raw text or a number.
+  - name: AssignedById
+  - name: AssignedToId
+  - name: AssignedDate
+  - name: DueDate
+  - name: CompletionDate
+  - name: AssociatedReportId
+  - name: Accepted
+  - name: Cancelled
+  - name: ResponseNotes
+  - name: OffenderId
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: ProposedOffenderAddressId
+  - name: OtherDOCLocationId
+  - name: OtherAssignedById
+  - name: OtherAssignedToId
+  - name: OtherAssignedDate
+  - name: OtherDueDate
+  - name: InvestigationStatusId

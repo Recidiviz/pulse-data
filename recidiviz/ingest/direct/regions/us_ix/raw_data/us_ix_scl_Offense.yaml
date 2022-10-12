@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Offense
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenseId
+  - name: SentenceOrderId
+  - name: OffenseLawId
+  - name: OffenseDate
+  - name: LatestOffenseDate
+  - name: OffenseTypeId
+  - name: SubstanceTypeId
+  - name: Count
+  - name: Comments
+  - name: OffenseSortingOrder
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: OutOfStateOffenseDesc
+  - name: IsNoContactOrder
+  - name: IsExemptedRegSexOffense

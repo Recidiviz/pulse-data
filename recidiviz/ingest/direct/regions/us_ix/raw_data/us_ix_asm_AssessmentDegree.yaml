@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: asm_AssessmentDegree
+file_description: |-
+  A table describing each AssessmentDegreeId, mapping each ID value to its definition.
+data_classification: source
+primary_key_cols:
+  - AssessmentDegreeId
+columns:
+  - name: AssessmentDegreeId
+    description: |-
+      Unique ID for each assessment degree classification.
+  - name: AssessmentDegreeDesc
+    description: |-
+      Text description of the assessment degree, corresponding to AssessmentDegreeId.
+  - name: SystemRow
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+  - name: UpdateDate
+    is_datetime: True
+  - name: IsCustom

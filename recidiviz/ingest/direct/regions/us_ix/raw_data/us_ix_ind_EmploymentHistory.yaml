@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_EmploymentHistory
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: EmploymentHistoryId
+  - name: StartDate
+  - name: EndDate
+  - name: MonthlySalary
+  - name: EmployerId
+  - name: JobTitle
+  - name: Shift
+  - name: EmploymentStatusId
+  - name: PrimaryEmployment
+  - name: ActualProposedId
+  - name: Comments
+  - name: OffenderId
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: Wage
+  - name: EmploymentWageFrequencyId
+  - name: HoursPerWeek
+  - name: SupervisorName

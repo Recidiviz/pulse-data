@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_StatuteCategory
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: StatuteCategoryId
+  - name: StatuteCategoryName
+  - name: Inactive
+  - name: Locking
+  - name: InsertDate
+  - name: InsertUserId
+  - name: UpdateDate
+  - name: UpdateUserId
+  - name: SystemRow
+  - name: IsCustom

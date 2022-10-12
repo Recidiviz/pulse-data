@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: asm_AssessmentTypeResult
+file_description: |-
+  A table describing each AssessmentTypeResultId, mapping each ID value to its definition.
+data_classification: source
+primary_key_cols:
+  - AssessmentTypeResultId
+columns:
+  - name: AssessmentTypeResultId
+    description: |-
+      Unique ID for each assessment type result.
+  - name: AssessmentTypeResultDesc
+    description: |-
+      Text description of the assessment type result, corresponding to 
+      AssessmentTypeResultId.
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+  - name: UpdateDate
+    is_datetime: True
+  - name: IsCustom

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_SentenceDetail
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SentenceDetailId
+  - name: SegmentStartDate
+  - name: SegmentEndDate
+  - name: SegmentYears
+  - name: SegmentMonths
+  - name: SegmentDays
+  - name: SegmentGoodTimeRelDate
+  - name: SegmentFullTimeRelDate
+  - name: SegmentDiscrEndDate
+  - name: SegmentProbEndDate
+  - name: SegmentMaxPrlRelDate
+  - name: SegmentDaysServed
+  - name: SegmentSgtEarned
+  - name: SegmentSgtProjected
+  - name: SegmentSgtLost
+  - name: SegmentSgtRestored
+  - name: SegmentSpecialAward
+  - name: SegmentSentReduction
+  - name: SegmentComments
+  - name: Detention
+  - name: Diversion
+  - name: OtherConfine
+  - name: ProbationStartId
+  - name: ProbExpectStartDate
+  - name: ProbSpecificStartDate
+  - name: CourtOrderedMED
+  - name: ForLife
+  - name: DeterminedByMaxSentence
+  - name: SentenceId
+  - name: SentenceDetailTypeId
+  - name: SentenceDetailRelationshipId
+  - name: SentenceDetailStatusId
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: SupervisionId
+  - name: SegmentMaxYears
+  - name: SegmentMaxMonths
+  - name: SegmentMaxDays
+  - name: OffenseSentenceTypeId
+  - name: SegmentPED
+  - name: SegmentIndeterminateStartDate
+  - name: SegmentIndeterminateEndDate
+  - name: SegmentSatisfactionDate
+  - name: SegmentDeterminateCredit
+  - name: SegmentIndeterminateCredit
+  - name: CalculationRequired
+  - name: GapCredit

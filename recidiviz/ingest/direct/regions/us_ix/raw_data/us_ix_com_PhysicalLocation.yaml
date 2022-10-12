@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_PhysicalLocation
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PhysicalLocationId
+  - name: OffenderId
+  - name: LocationChangeStartDate
+  - name: LocationChangeEndDate
+  - name: PhysicalLocationTypeId
+  - name: LocationId
+  - name: OtherLocation
+  - name: Notes
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate

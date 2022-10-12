@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Escape
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: EscapeId
+  - name: EscapeDate
+  - name: ReturnDocDate
+  - name: ArrestDate
+  - name: EscapeDays
+  - name: SentDaysLeft
+  - name: SentMonthsLeft
+  - name: SentYearsLeft
+  - name: Notes
+  - name: Clothing
+  - name: Contacts
+  - name: OtherReason
+  - name: ApprovedDate
+  - name: Inactive
+  - name: OffenderId
+  - name: TermId
+  - name: EscapeTypeId
+  - name: TobeTriedId
+  - name: NewCrimeId
+  - name: ArrestedLocationId
+  - name: EscapeLocationId
+  - name: ReturnLocationId
+  - name: ApprovalStateId
+  - name: ApprovedById
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate

@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: hsn_Bed
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: BedId
+  - name: BedName
+  - name: FacilityLevelId
+  - name: BedTypeId
+  - name: BedStatusId
+  - name: BunkTypeId
+  - name: Handicap
+  - name: Comments
+  - name: DedicatedBedTypeId
+  - name: Locking
+  - name: InsertUserId
+  - name: UpdateUserId
+  - name: InsertDate
+  - name: UpdateDate

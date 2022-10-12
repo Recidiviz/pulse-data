@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_SentenceOrderType_LegalStatus
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SentenceOrderTypeLegalStatusId
+  - name: SentenceOrderTypeId
+  - name: LegalStatusId
+  - name: LegalStatusChangeReasonId
+  - name: TermStatusId
+  - name: LegalStatusClassId
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: Inactive
+  - name: IsCustom

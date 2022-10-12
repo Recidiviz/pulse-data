@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Supervision
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SupervisionId
+  - name: MasterTermId
+  - name: SupervisionTypeId
+  - name: ImposedDate
+  - name: CourtAuthority
+  - name: JudgeId
+  - name: StartDate
+  - name: SupervisionMEDDate
+  - name: SupervisionStatusId
+  - name: AliasNameId
+  - name: InterstateTypeParole
+  - name: InterstateTypeProbation
+  - name: InterstateTypeOther
+  - name: ReportingInstruction
+  - name: ReleaseNotes
+  - name: ParoleId
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: OriginalOffense
+  - name: OffenderId

@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_SentenceOrder
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SentenceOrderId
+  - name: ParentSentenceOrderId
+  - name: StateId
+  - name: CountyId
+  - name: Sequence
+  - name: EffectiveDate
+  - name: OffenderId
+  - name: TermId
+  - name: JudgeLegistId
+  - name: DefendantAliasNameId
+  - name: ProsecutingAuthorityLocationId
+  - name: SentenceDate
+  - name: ReceiveDate
+  - name: Comment
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: SentenceOrderTypeId
+  - name: DefendantAttorney
+  - name: DistrictAttorney
+  - name: ChargeId
+  - name: SentenceOrderStatusId
+  - name: SentenceOrderEventTypeId
+  - name: IsApproved
+  - name: CorrectionsCompactStartDate
+  - name: CorrectionsCompactEndDate
+  - name: SentenceOrderReasonId
+  - name: IsCalculated
+  - name: IsStartUponTransferToDOC
+  - name: HistoricalLegalStatusId
+  - name: RJRelinquishedDate
+  - name: HistoricalDocket
+  - name: HistoricalChargeOutcomeTypeId
