@@ -3,20 +3,51 @@ file_tag: hsn_FacilityLevel
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - FacilityLevelId
 columns:
   - name: FacilityLevelId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacilityId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentFacilityLevelId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacilityLevelName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacilityLevelStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Hid
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LevelPath
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacilityLevelTypeId
+    description: |-
+      TODO(#15329): Fill in column description

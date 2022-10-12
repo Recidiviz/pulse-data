@@ -3,19 +3,48 @@ file_tag: hsn_Bed
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - BedId
 columns:
   - name: BedId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: BedName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FacilityLevelId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: BedTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: BedStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: BunkTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Handicap
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DedicatedBedTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description

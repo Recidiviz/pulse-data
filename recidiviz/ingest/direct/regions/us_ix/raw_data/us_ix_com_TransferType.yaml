@@ -7,22 +7,34 @@ primary_key_cols:
   - TransferTypeId
 columns:
   - name: TransferTypeId
-    description: Code for transfer type.
-    # TODO(#15329): Add known_values
+    description: |-
+      Code for transfer type.
+      TODO(#15329): Add known_values
   - name: TransferTypeDesc
-    description: Description of transfer type.
+    description: |-
+      Description of transfer type.
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description

@@ -7,45 +7,96 @@ primary_key_cols:
   - ChargeId
 columns:
   - name: ChargeId
-    description: Unique identifier for each row in table.
+    description: |-
+      Unique identifier for each row in table.
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: Docket
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InformationSource
+    description: |-
+      TODO(#15329): Fill in column description
   - name: WarrantDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ArrestDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: CourtId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherCourt
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ChargeStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ChargePleaId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Comments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ChargedOffenseId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: VictimId
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: NextCourtDateTime
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: NextCourtComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OutcomeDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: HasPleaAgreement
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ChargeOutcomeTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherOutcomeType
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AmendedOffenseTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AmendedOffenseComments
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.

@@ -8,20 +8,36 @@ primary_key_cols:
   - CurrentFromDate
 columns:
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PreviousToDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CurrentFromDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CurrentToDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.

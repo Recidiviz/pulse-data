@@ -3,18 +3,45 @@ file_tag: scl_ProbationSupervision
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - ProbationSupervisionId
 columns:
   - name: ProbationSupervisionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentenceOrderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EndDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DurationYear
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DurationMonth
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DurationDay
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProbationStartId
+    description: |-
+      TODO(#15329): Fill in column description

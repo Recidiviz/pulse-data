@@ -3,18 +3,45 @@ file_tag: scl_MasterTerm
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - MasterTermId
 columns:
   - name: MasterTermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParoleMED
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MaxMED
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MasterTermStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionStartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionStartTermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionStartTransferId
+    description: |-
+      TODO(#15329): Fill in column description

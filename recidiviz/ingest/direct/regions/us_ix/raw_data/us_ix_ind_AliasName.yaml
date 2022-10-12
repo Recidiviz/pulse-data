@@ -13,44 +13,64 @@ columns:
     description: |-
       The reference code for the type of alias this record pertains to (reference table: ind_AliasNameType)
   - name: OffenderId
-    is_pii: True
     description: |-
       The ID of the person that this alias is associated with
-  - name: FirstName
     is_pii: True
+  - name: FirstName
     description: |-
       First name
-  - name: MiddleName
     is_pii: True
+  - name: MiddleName
     description: |-
       Middle name
-  - name: LastName
     is_pii: True
+  - name: LastName
     description: |-
       Last name
-  - name: NameSuffixTypeId
     is_pii: True
+  - name: NameSuffixTypeId
     description: |-
       The reference code for the name suffix for this alias record (reference table: ref_NameSuffixType)
+    is_pii: True
   - name: SoundexFirstName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SoundexMiddleName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SoundexLastName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Notes
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: DisplayName
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: OrganizationalUnitId
+    description: |-
+      TODO(#15329): Fill in column description

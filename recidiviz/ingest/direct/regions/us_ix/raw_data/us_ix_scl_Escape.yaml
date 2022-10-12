@@ -3,34 +3,93 @@ file_tag: scl_Escape
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - EscapeId
 columns:
   - name: EscapeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EscapeDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReturnDocDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ArrestDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EscapeDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentDaysLeft
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentMonthsLeft
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SentYearsLeft
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Notes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Clothing
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Contacts
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OtherReason
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EscapeTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TobeTriedId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: NewCrimeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ArrestedLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EscapeLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReturnLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovalStateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedById
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description

@@ -3,28 +3,75 @@ file_tag: scl_Supervision
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SupervisionId
 columns:
   - name: SupervisionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MasterTermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ImposedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CourtAuthority
+    description: |-
+      TODO(#15329): Fill in column description
   - name: JudgeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: StartDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionMEDDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AliasNameId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InterstateTypeParole
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InterstateTypeProbation
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InterstateTypeOther
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReportingInstruction
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReleaseNotes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParoleId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OriginalOffense
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderId
+    description: |-
+      TODO(#15329): Fill in column description

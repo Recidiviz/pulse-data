@@ -8,16 +8,20 @@ primary_key_cols:
   - OffenderId
 columns:
   - name: OffenderId
-    is_pii: True
     description: |-
       The IDOC identifier for a given person.  This is synonymous to the docno and ofndr_num fields in other IDOC data systems.
-  - name: ODS_NUM
-  - name: BirthDate
     is_pii: True
-    is_datetime: True
+  - name: ODS_NUM
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: BirthDate
     description: |-
       Date of birth
+    is_datetime: True
+    is_pii: True
   - name: ReligionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: GenderId
     description: |-
       The reference code for the gender type (reference table: ind_Gender)
@@ -25,63 +29,157 @@ columns:
     description: |-
       The reference code for the race type (reference table: ind_Race)
   - name: EmployeeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MaritalStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EthnicOriginId
     description: |-
       The reference code for the ethnicity type (reference table: ind_EthnicOrigin)
   - name: EnglishNotSpoken
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LanguageId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CitizenshipId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RegistrationDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RegisteredSexOffender
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DnaNotRequired
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DnaSampleDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReportToIns
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PlaceOfBirthCity
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PlaceOfBirthCountryId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PlaceOfBirthStateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Height
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HeightFeet
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HeightInches
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Weight
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HasGlasses
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HasContacts
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EyeColorId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HairColorId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ComplexionId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PhysicalAppearanceNotes
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EmailAddress
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: LiterateReadSelfReport
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LiterateWriteSelfReport
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LiterateReadTest
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LiterateWriteTest
+    description: |-
+      TODO(#15329): Fill in column description
   - name: EducationHighestLevel
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LastSchoolAttended
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OccupationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: NeverEmployed
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: CurrentLocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AnnualReviewDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LatestDNAConfirmationDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MaximumVisitationHour
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InterviewDay
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApproximateAgeRecordedDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AgeEstimated
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DNARefusalDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: HeightCm
+    description: |-
+      TODO(#15329): Fill in column description
   - name: WeightGr
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OccupationInterestedIn
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OccupationOther
+    description: |-
+      TODO(#15329): Fill in column description

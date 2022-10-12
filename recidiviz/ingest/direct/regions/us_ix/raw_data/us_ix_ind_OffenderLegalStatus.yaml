@@ -8,36 +8,58 @@ primary_key_cols:
   - OffenderLegalStatusId
 columns:
   - name: OffenderLegalStatusId
-    description: ID for this legal status period.
+    description: |-
+      ID for this legal status period.
   - name: LegalStatusId
-    description: Code for this legal status, joins to ind_LegalStatus.LegalStatusId.
+    description: |-
+      Code for this legal status, joins to ind_LegalStatus.LegalStatusId.
   - name: LegalStatusChangeReasonId
-    description: Code for the reason why the legal status changed, joins to ind_LegalStatusChangeReason.LegalStatusChangeReasonId.
+    description: |-
+      Code for the reason why the legal status changed, joins to ind_LegalStatusChangeReason.LegalStatusChangeReasonId.
   - name: PreviousEndDate
+    description: |-
+      End date of previous legal status period.
     is_datetime: True
-    description: End date of previous legal status period.
   - name: StartDate
+    description: |-
+      Start date for this legal status period.
     is_datetime: True
-    description: Start date for this legal status period.
   - name: EndDate
+    description: |-
+      End date for this legal status period.
     is_datetime: True
-    description: End date for this legal status period.
   - name: Comment
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: LegalStatusClassId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LegalStatusClassCode
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LegalStatusObjectId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsSystemCreated
+    description: |-
+      TODO(#15329): Fill in column description

@@ -7,128 +7,271 @@ primary_key_cols:
   - TermId
 columns:
   - name: TermId
-    description: Unique identifier for each row in table.
+    description: |-
+      Unique identifier for each row in table.
   - name: MasterTermId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AliasNameId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InmateNumber
+    description: |-
+      Identifying number of inmate.
     is_pii: True
-    description: Identifying number of inmate.
   - name: SpnrNum
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DrcDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: DrcOverrideDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: DrcOverrideApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: DpedApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: DpedPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: MprdApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: MprdPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: MaxprdApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: MaxprdPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: GtrdApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: GtrdPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: FtrdApprovedDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: FtrdPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: AdoOverride
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AdoOverrideDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AdjustedDaysApplied
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AdjustedDaysAppliedTo
+    description: |-
+      TODO(#15329): Fill in column description
   - name: DpedInelgible
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FtoOverrideLevel
+    description: |-
+      TODO(#15329): Fill in column description
   - name: FtoOverrideEffectDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: LastCalculateDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ApprovalDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ActiveDetainer
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CsoOverrideTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: TermStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LastCalculateById
+    description: |-
+      ID of person who last calculated term.
     is_pii: True
-    description: ID of person who last calculated term.
   - name: ApprovalStateId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovalEmployeeId
+    description: |-
+      ID of approving employee.
     is_pii: True
-    description: ID of approving employee.
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
     is_pii: True
-    description: ID of the user who created this record.
   - name: InsertDate
+    description: |-
+      Timestamp for record creation.
     is_datetime: True
-    description: Timestamp for record creation.
   - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
     is_pii: True
-    description: ID of the user who most recently modified this record.
   - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
     is_datetime: True
-    description: Timestamp for record modification.
   - name: LocStatusEffDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: LocationId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: OffenderStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: LastPendingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: Pending
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingTotalSentenceYears
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingTotalSentenceMonths
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingTotalSentenceDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedTotalSentenceYears
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedTotalSentenceMonths
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedTotalSentenceDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingTotalSentenceLifeDeathTx
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingStateResponsible
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingLocalResponsible
+    description: |-
+      TODO(#15329): Fill in column description
   - name: PendingMostSeriousOffenseId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedTotalSentenceLifeDeathTx
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedStateResponsible
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedLocalResponsible
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ApprovedMostSeriousOffenseId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReleaseDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: OffenderId
+    description: |-
+      ID for offender.
     is_pii: True
-    description: ID for offender.
   - name: TermStartDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: TentativeParoleDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: NextHearingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: TermSentenceDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: SegmentStartDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: IndeterminateStartDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: IndeterminateEndDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ProbationStartDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ProbationExpirationDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ProbationCalculationStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ProbationCalculationDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: ProbationCalculationEmployeeId
+    description: |-
+      TODO(#15329): Fill in column description
     is_pii: True
   - name: RiderCalculationStatusId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: RiderStartDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: RiderExpiryDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True
   - name: InitialParoleHearingDate
+    description: |-
+      TODO(#15329): Fill in column description
     is_datetime: True

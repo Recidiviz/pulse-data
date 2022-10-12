@@ -3,20 +3,51 @@ file_tag: drg_Substance
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SubstanceId
 columns:
   - name: SubstanceId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ParentId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SubstanceDesc
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SubstanceCode
+    description: |-
+      TODO(#15329): Fill in column description
   - name: CommunitySupervision
+    description: |-
+      TODO(#15329): Fill in column description
   - name: AllInstitution
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsDCLSAnalyteAvailable
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCreatinineAdulterant
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description

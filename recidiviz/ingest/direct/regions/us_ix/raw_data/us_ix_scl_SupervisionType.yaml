@@ -3,20 +3,51 @@ file_tag: scl_SupervisionType
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SupervisionTypeId
 columns:
   - name: SupervisionTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionTypeDesc
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionTypeAbbrev
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SYSTEM_REF_TX
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SubTypeId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SupervisionConditionInactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MaintainConditionSupervisionInactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description

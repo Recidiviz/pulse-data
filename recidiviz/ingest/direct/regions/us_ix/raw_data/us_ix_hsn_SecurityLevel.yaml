@@ -3,20 +3,51 @@ file_tag: hsn_SecurityLevel
 file_description: |-
   TODO(#15329): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - SecurityLevelId
 columns:
   - name: SecurityLevelId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SecurityLevelName
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SecurityLevelDesc
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SecurityLevelRank
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ReclassificationFrequencyDays
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MinScore
+    description: |-
+      TODO(#15329): Fill in column description
   - name: MaxScore
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
   - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
   - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
   - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
