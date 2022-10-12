@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_OffenseType
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: OffenseTypeId
+  - name: OFFENSE_TYPE_STATE_CD
+  - name: OFFENSE_TYPE_NCIC_CD
+  - name: JIS_OFFNSE_TITLE_TX
+  - name: RegisterableOffenseId
+  - name: OffenseTypeDesc
+  - name: INEFFCT_DATE
+  - name: EFFCT_DATE
+  - name: OffenseClassId
+  - name: OffenseCategoryId
+  - name: OffenseModifierId
+  - name: OFFENSE_STATUTE
+  - name: GOOD_TIME_EARNED_RESTRICT_IND
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: VIOLENT_OFFENSE_IND
+  - name: DnaNotRequired
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: SeverityIdForInitial
+  - name: SeverityIdForReclassification
+  - name: Restrictor
+  - name: ShortDescription
+  - name: SVPPredicateOffenseInd
+  - name: VCCUsage
+  - name: JISNameIndexId
+  - name: JISOffenseSectionId
+  - name: FMOOffenseTypeId
+  - name: PARPRBOffenseTypeId
+  - name: TCIneligible
+  - name: SORTReferral
+  - name: MSOOffenseTypeId
+  - name: IsCustom
+  - name: TIBRSCode
+  - name: Priority
+  - name: MinRangePct
+  - name: StartDate
+  - name: EndDate
+  - name: OffenseTypeFlag
+  - name: DisqualifyForESC
+  - name: DisqualifyForESC2
+  - name: DisqualifyTerminallyIll

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: drg_DrugTestResult
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: DrugTestResultId
+  - name: OffenderId
+  - name: CollectionDate
+  - name: ColorGroupId
+  - name: NoShow
+  - name: ExcusedException
+  - name: UnableToProvide
+  - name: AllNegative
+  - name: Bac
+  - name: PrimaryOfficerId
+  - name: LocationId
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: PostedDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: CollectedById
+  - name: TestingMethodId
+  - name: FacTestReasonId
+  - name: IsDrugTestFacility
+  - name: Cancelled
+  - name: SampleRejected
+  - name: AbnormalResult
+  - name: RefusalToSubmit
+  - name: TakingMedications
+  - name: Medication
+  - name: VerifiedByMedicalDepartment
+  - name: RejectionOrAbnormalComments
+  - name: GCMSComments
+  - name: DateSentToEx
+  - name: DateReturnedFromEx
+  - name: SampleNumber
+  - name: FacTestResultId
+  - name: SentForConfirmation
+  - name: TestCancellationReasonId

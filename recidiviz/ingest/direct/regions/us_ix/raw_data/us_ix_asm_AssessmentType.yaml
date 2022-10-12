@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: asm_AssessmentType
+file_description: |-
+  A table describing each AssessmentTypeId, mapping each ID value to its definition. 
+  Appears to include dummy variables for categorizing the assessment type, but 
+  definitions are unknown.
+data_classification: source
+primary_key_cols:
+  - AssessmentTypeId
+columns:
+  - name: AssessmentTypeId
+    description: |-
+      Unique ID for each assessment type.
+  - name: AssessmentTypeDesc
+    description: |-
+      Text description of the assessment type, corresponding to 
+      AssessmentTypeId.
+  - name: Assessment
+  - name: Program
+  - name: Community
+  - name: Custody
+  - name: SystemRow
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+    is_datetime: True
+  - name: UpdateUserId
+  - name: UpdateDate
+    is_datetime: True
+  - name: IsCustom

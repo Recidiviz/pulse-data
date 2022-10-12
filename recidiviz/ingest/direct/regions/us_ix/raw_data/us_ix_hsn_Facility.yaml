@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: hsn_Facility
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: FacilityId
+  - name: LocationId
+  - name: AssignmentRestriction
+  - name: EscapeRiskAllowed
+  - name: MinimumAge
+  - name: MaximumAge
+  - name: Maintenance
+  - name: Locking
+  - name: InsertUserId
+  - name: UpdateUserId
+  - name: InsertDate
+  - name: UpdateDate
+  - name: MinTimeToServe
+  - name: MaxTimeToServe
+  - name: CommonFare
+  - name: IsCustom
+  - name: AllowCommissionerAlert
+  - name: AllowDeathRow
+  - name: AllowSafeKeeper

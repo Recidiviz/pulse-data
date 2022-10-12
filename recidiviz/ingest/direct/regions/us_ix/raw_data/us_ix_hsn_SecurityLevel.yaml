@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: hsn_SecurityLevel
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SecurityLevelId
+  - name: SecurityLevelName
+  - name: SecurityLevelDesc
+  - name: SecurityLevelRank
+  - name: ReclassificationFrequencyDays
+  - name: MinScore
+  - name: MaxScore
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: UpdateUserId
+  - name: InsertDate
+  - name: UpdateDate
+  - name: IsCustom
+  - name: SystemRow

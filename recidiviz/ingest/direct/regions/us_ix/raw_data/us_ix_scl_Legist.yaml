@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_Legist
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: LegistId
+  - name: Code
+  - name: Adult
+  - name: Juvenile
+  - name: FirstName
+  - name: MiddleName
+  - name: LastName
+  - name: NameSuffix
+  - name: DisplayName
+  - name: EmailAddress
+  - name: LegistTypeId
+  - name: Locking
+  - name: Inactive
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: SystemRow
+  - name: IsCustom

@@ -16,11 +16,15 @@ columns:
   - name: CareOfName_Deprecated
   - name: Comments
   - name: OutOfStatePlace
-  - name: AreaId
+  - name: AreaId # Always null
   - name: JurisdictionId
+    description: Code for jurisdiction of this address. Joins to `ref_Location.LocationId`.
   - name: CountyId
+    description: Code for county of this address. Joins to `ref_Location.LocationId`.
   - name: StateId
+    description: Code for state of this address. Joins to `ref_Location.LocationId`.
   - name: CountryId
+    description: Code for country of this address. Joins to `ref_Location.LocationId`.
   - name: Locking
   - name: InsertUserId
     is_pii: True

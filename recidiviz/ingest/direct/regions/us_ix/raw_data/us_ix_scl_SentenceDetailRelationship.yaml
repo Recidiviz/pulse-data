@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_SentenceDetailRelationship
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: SentenceDetailRelationshipId
+  - name: SentenceDetailRelationshipDesc
+  - name: SYSTEM_REF_TX
+  - name: SYSTEM_REF_COMMENTS_TX
+  - name: SentenceDetailRelationshipFlag
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: IsCustom

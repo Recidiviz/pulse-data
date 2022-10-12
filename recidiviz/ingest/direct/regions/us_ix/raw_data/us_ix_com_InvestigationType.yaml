@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_InvestigationType
+file_description: |-
+  TODO(#15329): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: InvestigationTypeId
+  - name: InvestigationTypeDesc
+  - name: DaysUsedToCalculate
+  - name: RequireReceivingDOC
+  - name: RequireAcceptInvestigation
+  - name: EnableReasonField
+  - name: Inactive
+  - name: Locking
+  - name: InsertUserId
+  - name: InsertDate
+  - name: UpdateUserId
+  - name: UpdateDate
+  - name: EnableProposedAddress
+  - name: EnableAssignmentOther
+  - name: IsOnCreationDefaultLocation_Receiving
+  - name: RequireRequestingDOC
+  - name: IsLocationFilter_Receiving_Exclude
+  - name: IsLocationFilter_Requesting_Exclude
+  - name: IsLocationFilter_Receiving_ByType
+  - name: IsLocationFilter_Requesting_ByType
+  - name: SystemRow
+  - name: IsCustom
+  - name: AutomaticNoteClassId
+  - name: AutomaticNoteActionId
