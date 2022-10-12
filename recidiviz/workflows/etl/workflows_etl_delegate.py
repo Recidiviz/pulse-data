@@ -122,7 +122,14 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         # step 1: load new documents
         for file_stream in self.get_file_stream(state_code, filename):
             while line := file_stream.readline():
-                row_id, document_fields = self.transform_row(line)
+                try:
+                    row_id, document_fields = self.transform_row(line)
+                except Exception as e:
+                    logging.error(
+                        "Transform row failed on [%d] due to: %d", line, str(e)
+                    )
+                    continue
+
                 if row_id is None or document_fields is None:
                     continue
                 document_id = f"{state_code.lower()}_{row_id}"
