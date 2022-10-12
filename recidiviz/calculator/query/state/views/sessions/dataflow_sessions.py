@@ -199,7 +199,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 IF(
                     compartment_level_2 = "INVESTIGATION",
                     "INVESTIGATION",
-                    compartment_level_2
+                    compartment_level_1
                 ) AS compartment_level_1,
                 compartment_level_2,
                 compartment_location,
