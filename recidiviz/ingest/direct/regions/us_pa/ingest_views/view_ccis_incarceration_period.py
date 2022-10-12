@@ -55,7 +55,7 @@ WITH inmate_number_with_control_numbers AS (
     control_number,
     Inmate_Number AS inmate_number,
     CCISMvmt_ID AS movement_id,
-    SAFE_CAST(Mvmt_SeqNum AS INT64) AS movement_sequence,
+    Mvmt_SeqNum AS INT64 AS movement_sequence,
     Status_Cd as movement_status_code,
     Status_Dt AS movement_date,
     REPLACE(desc_line, '/', ': ') AS location,
