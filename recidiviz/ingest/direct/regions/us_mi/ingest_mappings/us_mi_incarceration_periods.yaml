@@ -55,11 +55,12 @@ output:
                         - "3" # Other Movement
                       StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                         - "13" # New Commitment (Reception Center Only)
+                        - "159" # New Commitment - HYTA Prisoner
+                      StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
                         - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
                         - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
                         - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
-                        - "159" # New Commitment - HYTA Prisoner
-                        - "11" # New Commitment - Escaper w/ New Sentence (Rec. Ctr. Only)
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                         - "80" # Escaper Returned to the Institution
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
