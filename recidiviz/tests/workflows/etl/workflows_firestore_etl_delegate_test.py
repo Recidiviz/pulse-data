@@ -144,3 +144,31 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_delete_old_documents.assert_called_once_with(
             "testOpportunity", "US_XX", "__loadedAt", mock_now
         )
+
+    def test_run_etl_transform_error(
+        self,
+        mock_get_file_stream: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_batch_writer: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+    ) -> None:
+        """Tests that the ETL Delegate logs an error when transform_row raises Exception"""
+
+        mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
+        mock_get_file_stream.return_value = [FakeFileStream(2)]
+
+        with local_project_id_override("test-project"):
+            delegate = TestETLDelegate()
+            with freeze_time(mock_now):
+                with mock.patch.object(
+                    TestETLDelegate, "transform_row"
+                ) as mock_transform:
+                    with patch("logging.Logger.error") as mock_logger:
+                        mock_transform.side_effect = [
+                            (123, {"personExternalId": 123}),
+                            Exception,
+                        ]
+                        delegate.run_etl("US_XX", "test_export.json")
+                        mock_logger.assert_called_once()
+                        assert mock_transform.call_count == 2
