@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_id_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervision_level_downgrade_record import (
+    US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
+)
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
@@ -48,4 +51,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ID_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
     US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER,
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
+    US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 ]
