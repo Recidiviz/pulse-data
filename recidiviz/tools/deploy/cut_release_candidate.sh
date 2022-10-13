@@ -119,4 +119,4 @@ fi
 
 duration=$SECONDS
 MINUTES=$((duration / 60))
-echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
+echo "Release candidate staging deploy completed in ${MINUTES} minutes."
