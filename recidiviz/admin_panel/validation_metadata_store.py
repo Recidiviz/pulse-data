@@ -102,9 +102,9 @@ def results_query(
     only from the most recent validation run for a given state.
     """
     if most_recent_run_only:
-        results_filter_join_clause = """INNER JOIN (
+        results_filter_join_clause = f"""INNER JOIN (
         SELECT *
-        FROM `recidiviz-staging.validation_results.validation_results`
+        FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
         QUALIFY ROW_NUMBER() OVER (PARTITION BY region_code ORDER BY run_datetime DESC) = 1
      )
     USING (run_id, region_code)"""
