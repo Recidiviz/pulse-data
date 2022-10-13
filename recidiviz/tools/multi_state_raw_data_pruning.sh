@@ -30,10 +30,9 @@ then
       echo "Starting raw data pruning in PROD for $state"
       python -m recidiviz.tools.ingest.one_offs.clear_redundant_raw_data_on_bq --dry-run False --project-id=recidiviz-123 --state-code="$state"
     done
+    echo "Deleting temporary output files..."
+    rm prune-prod.txt
+    rm prune-staging.txt
+
+    echo "Done with raw data pruning script for the following states: ${states[*]}."
 fi
-
-echo "Deleting temporary output files..."
-rm prune-prod.txt
-rm prune-staging.txt
-
-echo "Done with raw data pruning script for the following states: ${states[*]}."
