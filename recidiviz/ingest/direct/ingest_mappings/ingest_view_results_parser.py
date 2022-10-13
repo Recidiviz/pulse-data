@@ -18,7 +18,7 @@
 manifest file for this ingest view.
 """
 import os
-from typing import Dict, Iterator, List, Set, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from more_itertools import one
 
@@ -51,7 +51,13 @@ class IngestViewResultsParser:
         self.delegate = delegate
 
     def parse(
-        self, *, ingest_view_name: str, contents_iterator: Iterator[Dict[str, str]]
+        self,
+        *,
+        ingest_view_name: str,
+        contents_iterator: Iterator[Dict[str, str]],
+        result_callable: Optional[
+            Callable[[int, Dict[str, str], Union[Entity, Exception]], None]
+        ] = None,
     ) -> List[Entity]:
         """Parses ingest view query results into entities based on the manifest file for
         this ingest view.
@@ -62,9 +68,22 @@ class IngestViewResultsParser:
         result = []
         for i, row in enumerate(contents_iterator):
             self._validate_row_columns(i, row, expected_input_columns)
-            output_tree = output_manifest.build_from_row(row)
+
+            try:
+                output_tree = output_manifest.build_from_row(row)
+            except Exception as e:
+                if result_callable:
+                    result_callable(i, row, e)
+                    # If the callable does not raise the exception, just skip that result.
+                    continue
+                raise e
+
             if not output_tree:
                 raise ValueError("Unexpected null output tree for row.")
+
+            if result_callable:
+                result_callable(i, row, output_tree)
+
             result.append(output_tree)
         return result
 
