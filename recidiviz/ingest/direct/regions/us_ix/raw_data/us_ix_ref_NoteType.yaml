@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ref_NoteType
+file_description: |-
+  This is a code table that describes the type of contact notes found in `ind_OffenderNote`.
+data_classification: source
+primary_key_cols:
+  - NoteTypeId
+columns:
+  - name: NoteTypeId
+    description: |-
+      ID for this note type.
+  - name: NoteTypeDesc
+    description: |-
+      Description for this note type.
+  - name: Inactive
+    description: |-
+      Flag to indicate if this note type is currently in use.
+  - name: Locking
+    description: |-
+      Used for row-level locking in the Atlas application.
+  - name: InsertUserId
+    is_pii: True
+    description: |-
+      ID of the user who inserted this record.
+  - name: InsertDate
+    is_datetime: True
+    description: |-
+      Timestamp for record insertion.
+  - name: UpdateUserId
+    is_pii: True
+    description: |-
+      ID of the user who most recently updated this record.
+  - name: UpdateDate
+    is_datetime: True
+    description: |-
+      Timestamp for most recent record modification.
+  - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: IsCustom
+    description: |-
+      Flag to indicate whether or not this record was created specifically for IDOC use.
