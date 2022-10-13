@@ -116,8 +116,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
             response.headers[
                 "Strict-Transport-Security"
             ] = "max-age=63072000; includeSubDomains"  # max age of 2 years
-        # TODO(#13905) Turn off report-only after testing that changes aren't reporting any issues
-        response.headers["Content-Security-Policy-Report-Only"] = (
+        response.headers["Content-Security-Policy"] = (
             "default-src 'self' *.run.app https://recidiviz-justice-counts-staging.us.auth0.com https://recidiviz-justice-counts.us.auth0.com https://cdn.segment.com/ https://api.segment.io;"
             "object-src 'none'; "
             "img-src * data:; "
