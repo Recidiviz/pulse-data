@@ -28,6 +28,8 @@ source that actually creates the id in the real world.
 # StatePersonExternalId.id_type
 
 US_ID_DOC = "US_ID_DOC"
+# TODO(#10703): Remove US_IX once Atlas is merged into US_ID
+US_IX_DOC = "US_IX_DOC"
 
 US_MO_DOC = "US_MO_DOC"
 US_MO_SID = "US_MO_SID"
