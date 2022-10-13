@@ -103,8 +103,8 @@ update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT
 
 duration=$SECONDS
 MINUTES=$((duration / 60))
-echo "Production deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
-echo "Release candidate staging deploy completed in ${MINUTES} minutes. Add to go/deploy-duration-tracker."
+echo "Production deploy completed in ${MINUTES} minutes."
+echo "Release candidate staging deploy completed in ${MINUTES} minutes."
 
 echo "Generating release notes."
 GITHUB_DEPLOY_BOT_TOKEN=$(get_secret "$PROJECT" github_deploy_script_pat)
