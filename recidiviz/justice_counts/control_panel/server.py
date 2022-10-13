@@ -26,7 +26,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect
-from werkzeug.middleware.profiler import ProfilerMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from recidiviz.justice_counts.control_panel.config import Config
@@ -93,7 +92,6 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Need to silence mypy error `Cannot assign to a method`
     app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
-    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, sort_by=("cumtime",), restrictions=(100,))  # type: ignore[assignment]
     CSRFProtect(app)
     register_error_handlers(app)
 
