@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 separator: ","
 custom_line_terminator: "\n"
+always_historical_export: False
 primary_key_cols:
   - SUPERVISION_SITE
 columns:
