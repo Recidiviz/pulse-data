@@ -79,6 +79,9 @@ columns:
   - name: RequestorTypeId
     description: |-
       ID of the assessment's requestor type (either 1 or 2).
+  - name: ResultNote
+    description: |-
+      TODO(#15329): Fill in column description
   - name: Result
     description: |-
       TODO(#15329): Fill in column description
