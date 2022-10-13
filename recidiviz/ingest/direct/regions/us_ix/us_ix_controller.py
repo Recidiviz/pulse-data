@@ -22,6 +22,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.environment import in_gcp_production
 
 
 class UsIxController(BaseDirectIngestController):
@@ -40,4 +41,9 @@ class UsIxController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return []
+        tags = []
+
+        if not in_gcp_production():
+            tags.extend(["person"])
+
+        return tags
