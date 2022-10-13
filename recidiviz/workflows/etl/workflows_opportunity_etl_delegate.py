@@ -82,10 +82,12 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
 
     @staticmethod
     def build_document(row: dict[str, Any]) -> dict:
+        """Transform the raw record from Big Query into a nested form for Firestore."""
         new_document: dict[str, Any] = {
             "formInformation": {},
             "metadata": {},
             "criteria": {},
+            "caseNotes": {},
         }
         for key, value in row.items():
             # Rename form_information and metadata fields
@@ -103,6 +105,19 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                     reason["criteria_name"].lower(): reason["reason"]
                     for reason in value
                 }
+            elif key == "case_notes":
+                for note in value:
+                    criteria = note["criteria"]
+                    if criteria not in new_document["caseNotes"]:
+                        new_document["caseNotes"][criteria] = []
+
+                    new_document["caseNotes"][criteria].append(
+                        {
+                            "noteTitle": note["note_title"],
+                            "noteBody": note["note_body"],
+                            "eventDate": note["event_date"],
+                        }
+                    )
             else:
                 new_document[key] = value
 
