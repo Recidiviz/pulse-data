@@ -121,7 +121,12 @@ class StateIngestViewParserTestBase:
         expected_output: Sequence[Entity],
         debug: bool = False,
     ) -> None:
-        """Runs a test that parses the ingest view into Python entities."""
+        """Runs a test that parses the ingest view into Python entities.
+
+        It reads the input from the following file:
+        `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/{ingest_view_name}.csv`
+        """
+        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory.
         self._check_test_matches_file_tag(ingest_view_name)
 
         parser = self._build_parser()

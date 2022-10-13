@@ -79,6 +79,12 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         """Reads in the expected output CSV file from the ingest view fixture path and
         asserts that the results from the raw data ingest view query are equal. Prints
         out the dataframes for both expected rows and results.
+
+        It will read raw files that match the following (for any `file_tag`):
+        `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/raw/{file_tag}/{fixtures_files_name}.csv`
+
+        And compare output against the following file:
+        `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/ingest_view/{ingest_view_name}/{fixtures_files_name}.csv`
         """
         self.create_mock_raw_bq_tables_from_fixtures(
             region_code=self.region_code,

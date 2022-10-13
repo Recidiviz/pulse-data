@@ -327,7 +327,13 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
     def _run_ingest_job_for_filename(
         self, filename: str, is_rerun: bool = False
     ) -> None:
-        """Runs ingest for the ingest view file with the given unnormalized file name."""
+        """Runs ingest for the ingest view file with the given unnormalized file name.
+
+        It reads the input from the following file:
+        `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/{ingest_view_name}.csv`
+        """
+        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory and pass
+        # along a test case name to the materialization args.
 
         environ_patcher = patch.dict("os.environ", {"PERSIST_LOCALLY": "true"})
         environ_patcher.start()

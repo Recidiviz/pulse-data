@@ -324,6 +324,8 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
                 f"even though the args are not marked as processed in the DB."
             )
 
+        # TODO(#15801): Move the fixture files to `ingest_view` subdirectory and pass
+        # along a test case name.
         data_local_path = direct_ingest_fixture_path(
             region_code=self.region.region_code,
             file_name=f"{ingest_view_materialization_args.ingest_view_name}.csv",
