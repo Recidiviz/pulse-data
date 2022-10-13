@@ -47,6 +47,26 @@ TEST_DATA = {
             "reason": {"revocation_date": None},
         },
     ],
+    "case_notes": [
+        {
+            "criteria": "criteria A",
+            "note_body": "body1",
+            "note_title": "title1",
+            "event_date": "2011-03-04",
+        },
+        {
+            "criteria": "criteria A",
+            "note_body": "body2",
+            "note_title": "title2",
+            "event_date": "2018-08-12",
+        },
+        {
+            "criteria": "criteria B",
+            "note_body": "body3",
+            "note_title": "title3",
+            "event_date": "2016-06-19",
+        },
+    ],
     "metadata_multiple_sentences": True,
     "metadata_out_of_state": False,
     "random_field_with_metadata": False,
@@ -68,6 +88,15 @@ EXPECTED_DOCUMENT = {
     "metadata": {
         "outOfState": False,
         "multipleSentences": True,
+    },
+    "caseNotes": {
+        "criteria A": [
+            {"noteTitle": "title1", "noteBody": "body1", "eventDate": "2011-03-04"},
+            {"noteTitle": "title2", "noteBody": "body2", "eventDate": "2018-08-12"},
+        ],
+        "criteria B": [
+            {"noteTitle": "title3", "noteBody": "body3", "eventDate": "2016-06-19"}
+        ],
     },
     "randomFieldWithMetadata": False,
 }
