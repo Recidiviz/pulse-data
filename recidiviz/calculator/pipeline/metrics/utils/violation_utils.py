@@ -91,38 +91,51 @@ def _shorthand_description_for_ranked_violation_counts(
 def _identify_most_severe_violation_type_and_subtype(
     violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
-) -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
+) -> Tuple[Optional[StateSupervisionViolationType], Optional[str], Optional[str]]:
     """Identifies the most severe violation type on the provided |violations|, and,
     if relevant, the subtype of that most severe violation type. Returns both as a
-    tuple.
+    tuple, as well as the raw text associated with the most severe type.
     """
     violation_subtypes: List[str] = []
+    violation_subtypes_to_raw_text_list: Dict[str, List[Optional[str]]] = defaultdict(
+        list
+    )
 
     if not violations:
-        return None, None
+        return None, None, None
 
     for violation in violations:
-        violation_subtypes.extend(
-            violation_delegate.get_violation_type_subtype_strings_for_violation(
-                violation
-            ).keys()
-        )
+        for (
+            violation_subtype,
+            subtype_strings,
+        ) in violation_delegate.get_violation_type_subtype_strings_for_violation(
+            violation
+        ).items():
+            violation_subtypes_to_raw_text_list[violation_subtype] += subtype_strings
+            violation_subtypes.append(violation_subtype)
 
     if not violation_subtypes:
-        return None, None
+        return None, None, None
 
     most_severe_subtype = most_severe_violation_subtype(
         violation_subtypes, violation_delegate
     )
 
     most_severe_type = None
+    most_severe_type_raw_text = None
 
     if most_severe_subtype:
         most_severe_type = violation_type_from_subtype(
             violation_delegate, most_severe_subtype
         )
+        raw_texts = [
+            raw_text
+            for raw_text in violation_subtypes_to_raw_text_list[most_severe_subtype]
+            if raw_text
+        ]
+        most_severe_type_raw_text = ",".join(raw_texts) if raw_texts else None
 
-    return most_severe_type, most_severe_subtype
+    return most_severe_type, most_severe_type_raw_text, most_severe_subtype
 
 
 def most_severe_violation_subtype(
@@ -178,6 +191,7 @@ ViolationHistory = NamedTuple(
     "ViolationHistory",
     [
         ("most_severe_violation_type", Optional[StateSupervisionViolationType]),
+        ("most_severe_violation_type_raw_text", Optional[str]),
         ("most_severe_violation_type_subtype", Optional[str]),
         (
             "most_severe_response_decision",
@@ -209,6 +223,7 @@ def get_violation_and_response_history(
     if not violation_responses_for_history and incarceration_period is None:
         return ViolationHistory(
             most_severe_violation_type=None,
+            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=None,
             most_severe_response_decision=None,
             response_count=0,
@@ -253,6 +268,7 @@ def get_violation_and_response_history(
     # Find the most severe violation type info of all of the entries in the window
     (
         most_severe_violation_type,
+        most_severe_violation_type_raw_text,
         most_severe_violation_type_subtype,
     ) = _identify_most_severe_violation_type_and_subtype(
         violations_in_window, violation_delegate
@@ -279,6 +295,7 @@ def get_violation_and_response_history(
 
     violation_history_result = ViolationHistory(
         most_severe_violation_type,
+        most_severe_violation_type_raw_text,
         most_severe_violation_type_subtype,
         most_severe_response_decision,
         response_count,
@@ -315,7 +332,7 @@ def _get_violation_history_description(
         )
         if not most_severe_violation_type_and_subtype:
             continue
-        _, most_severe_subtype = most_severe_violation_type_and_subtype
+        _, _, most_severe_subtype = most_severe_violation_type_and_subtype
 
         if most_severe_subtype:
             subtype_counts[most_severe_subtype] += 1
