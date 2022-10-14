@@ -119,7 +119,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 standards.Staff_First_Name AS staff_first_name,
                 standards.Staff_Last_Name AS staff_last_name,
                 standards.Case_Type AS supervision_type,
-                standards.Supervision_Level AS supervision_level,
+                sup_levels.supervision_level AS supervision_level,
                 standards.Plan_Start_Date AS supervision_level_start,
                 standards.Last_Sanctions_Type AS last_sanction,
                 standards.Last_DRU_Note AS last_drug_screen_date,
@@ -135,14 +135,9 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 sup_levels.previous_start_date AS previous_supervision_level_start,
                 LPAD(CAST(Offender_ID AS string), 8, '0') AS Offender_ID,
                 -- Criteria: Currently on Minimum/Medium
-                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
-                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
-                CASE WHEN ( standards.Supervision_Level LIKE '%MINIMUM%'
-                            AND sup_levels.supervision_level = 'MINIMUM'
-                          )
+                CASE WHEN sup_levels.supervision_level = 'MINIMUM'
                             OR 
-                          ( standards.Supervision_Level LIKE ('%MEDIUM%') 
-                            AND sup_levels.supervision_level = 'MEDIUM'
+                          ( sup_levels.supervision_level = 'MEDIUM'
                             AND supervision_level_raw_text != '6P3'
                             )  
                     THEN 1 
@@ -165,11 +160,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                         - if previously minimum: "medium or less"
                     else: "medium"
                 */ 
-                # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
-                -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
-                CASE WHEN ( standards.Supervision_Level LIKE ('%MINIMUM%') 
-                            AND sup_levels.supervision_level = 'MINIMUM'
-                            ) 
+                CASE WHEN sup_levels.supervision_level = 'MINIMUM'
                     THEN (
                             CASE 
                                 WHEN DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=12 THEN 'minimum'
@@ -180,8 +171,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                             ELSE 'minimum'
                             END
                             )
-                    WHEN ( standards.Supervision_Level LIKE ('%MEDIUM%') 
-                            AND sup_levels.supervision_level = 'MEDIUM'
+                    WHEN ( sup_levels.supervision_level = 'MEDIUM'
                             AND supervision_level_raw_text != '6P3' 
                             ) 
                     THEN (
@@ -233,17 +223,13 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
              (unassigned supervision level) and haven't had a higher supervision level during this system session, we mark them as automatically
              eligible for compliant reporting
             */
-            # TODO(#12606): Switch to using only ingested supervision level data when Workflows operated from prod
-            -- Due to data lags, our ingested supervision level is sometimes not accurate compared to standards sheet, so using the latter
             CASE WHEN sl.previous_supervision_level = 'UNASSIGNED'
-                    AND standards.Supervision_Level LIKE ('%MINIMUM%')
                     AND sl.supervision_level = 'MINIMUM'
                     AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
                     THEN 'Eligible'
                 -- For people where the previous supervision level is not Intake (Unassigned) but could be Limited (Compliant Reporting), Unknown, Null, etc
                 -- but who are on minimum without a higher level this system session, we flag them as eligible pending review
                  WHEN COALESCE(sl.previous_supervision_level,'MISSING') != 'UNASSIGNED'
-                    AND standards.Supervision_Level LIKE ('%MINIMUM%') 
                     AND sl.supervision_level = 'MINIMUM'
                     AND COALESCE(latest_start_higher_sup_level,'1900-01-01') < latest_system_session_start_date 
                     THEN 'Needs Review'
