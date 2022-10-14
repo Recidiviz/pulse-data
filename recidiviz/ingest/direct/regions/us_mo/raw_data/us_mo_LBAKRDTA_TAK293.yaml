@@ -24,12 +24,36 @@ columns:
   - name: JU_FOR
     description: |-
       Classification Hearing Form
+    known_values:
+      - value: CLA
+        description: Classification Hearing Forms
+      - value: ITC
+        description: Instit Treatment Center Class Hearing
   - name: JU_BA
     description: |-
       CH-Classification Hearing Date
   - name: JU_HRT
     description: |-
       Classification Hearing Type
+    known_values:
+      - value: ADS30
+        description: AD SEG 30 Days
+      - value: ADS60
+        description: AD SEG 60 Days
+      - value: ADS90
+        description: AD SEG 90 Days
+      - value: INITIA
+        description: Initial
+      - value: OMT
+        description: # TODO(#16022): fill in known value
+      - value: OTHER
+        description: Other Type of Hearing (Free Text)
+      - value: PC
+        description: Protective Custody
+      - value: PRC
+        description: # TODO(#16022): fill in known value
+      - value: TASC
+        description: TASC
   - name: JU_PIN
     description: |-
       DOC Location
@@ -51,12 +75,57 @@ columns:
   - name: JU_RM1
     description: |-
       Recommendation 1
+    known_values:
+      - value: AAD
+        description: Assign to Admin Seg
+      - value: AGP
+        description: Assign to General Pop
+      - value: APC
+        description: Assign to Protective Custody
+      - value: CON
+        description: Continue Assignment
+      - value: COP
+        description: # TODO(#16022): fill in known value
+      - value: DIS
+        description: Discontinue Assignment
+      - value: OTH
+        description: Other (See Text)
+      - value: REF
+        description: # TODO(#16022): fill in known value
+      - value: TER
+        description: # TODO(#16022): fill in known value
   - name: JU_RM2
     description: |-
       Recommendation 2
+    known_values:
+      - value: AAD
+        description: Assign to Admin Seg
+      - value: AGP
+        description: Assign to General Pop
+      - value: APC
+        description: Assign to Protective Custody
+      - value: CON
+        description: Continue Assignment
+      - value: COP
+        description: # TODO(#16022): fill in known value
+      - value: DIS
+        description: Discontinue Assignment
+      - value: OTH
+        description: Other (See Text)
+      - value: REF
+        description: # TODO(#16022): fill in known value
+      - value: TER
+        description: # TODO(#16022): fill in known value
   - name: JU_FDP
     description: |-
       Final Disposition
+    known_values:
+      - value: A
+        description: Approved
+      - value: D
+        description: Disapproved
+      - value: M
+        description: Modify
   - name: JU_DFC
     description: |-
       Final Disposition Comments
