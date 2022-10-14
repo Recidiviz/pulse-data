@@ -28,21 +28,19 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 ./recidiviz/tools/justice_counts/control_panel/initialize_development_environment.sh
 ```
 
-## Running the backend
+## Running locally
 
-First build the Docker image with dev dependencies:
-
-```bash
-pipenv run docker-build-dev
-```
-
-Then run `docker-compose`:
+1. Build the Docker image. (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 5, which will take precendence over the frontend that is bundled in the docker image.)
 
 ```bash
-docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up
+pipenv run docker-build-jc --build-arg JC_FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
 ```
 
-(Or equivalently, `pipenv run docker-jc`.)
+2. Run `docker-compose`:
+
+```bash
+pipenv run docker-jc
+```
 
 We use `docker-compose` to run all services that the app depends on. This includes:
 
@@ -50,39 +48,41 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-## Deployment
+3. (Optional) Load fixtures:
+
+```bash
+pipenv run fixtures-jc
+```
+
+4. Clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory
+
+5. Run `yarn install` and `yarn run dev`
+
+6. You should see the application running on `localhost:3000`!
+
+## Connect to the local Postgres database
+
+1. Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
+2. In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
+
+## Deploying
 
 The backend and frontend of the application are deployed together in the same Docker image to Google Cloud Run. To build a Docker image for deployment:
 
-1: Checkout the branch you want to deploy
-2: Run `docker build . -t us.gcr.io/recidiviz-staging/<your name>-test --platform linux/amd64`
-3: Run `docker push us.gcr.io/recidiviz-staging/<your name>-test`
-
-By default, when building the image, Docker will pull the frontend code from the `main` branch of the [justice-counts](https://github.com/Recidiviz/justice-counts) repo. To build an image with frontend code from another branch of this repo, run `docker build . -t us.gcr.io/recidiviz-staging/<your name>-test --build-arg JC_FRONTEND_BRANCH="<branch name>" --platform linux/amd64`. Note that in order for this to work, your branch must be pushed to Github, and it also must not contain forward slashes!
-
-## Testing end-to-end
-
-1: Run the JC backend via docker:
+1. Checkout the branch you want to deploy.
+2. Build the Docker image. Specify which version of the frontend to include by referencing a tarball. You can either use a branch name via `https://github.com/Recidiviz/justice-counts/archive/<branch name>.tar.gz` or a tag name via `https://github.com/Recidiviz/justice-counts/archive/refs/tags/<tag name>.tar.gz`.
 
 ```bash
-pipenv run docker-jc
+pipenv run docker-build-jc --build-arg JC_FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
 ```
 
-2: Load fixtures (fake data for testing):
+3. Push the image to Docker:
 
-````bash
-pipenv run fixtures-jc
-
-3: Run the JC frontend (`yarn run dev` from the `frontends/justice-counts/control-panel` directory). Login with your Recidiviz email address. You should see a message saying that the user is not connected to an agency.
-
-4: Connect your user to an agency via the admin panel. Run the admin panel backend via docker:
 ```bash
-pipenv run docker-admin
-````
+docker push us.gcr.io/recidiviz-staging/<your name>-test
+```
 
-Then run the admin panel frontend (`yarn run dev` from the `frontends/admin-panel` directory). Go to the Agency Provisioning page in the left sidebar (scroll down) and connect your user to `Agency Alpha`.
-
-5: Go back to the JC frontend and reload. You should see a report!
+4. Go to the Revisions tab of our GCP Cloud Run service (either staging or production) and select the image you just pushed in the previous step.
 
 ## SQLAlchemy Primer
 
@@ -92,35 +92,3 @@ Then run the admin panel frontend (`yarn run dev` from the `frontends/admin-pane
 - If you're operating in a `with SessionFactory.using_database` context manager (i.e. in our unit tests), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
 - In our API code, we don't the `with SessionFactory.using_database` context manager, so `session.commit()` will not be called for you automatically. Thus, at the end of any API method, you should explicitly call `current_session.commit()`.
 - You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.
-
-## Testing the backend API
-
-1: Download `justice-counts-auth0-m2m-files.zip` from the Justice Counts 1password vault. Extract the contents (there should be two files) into the directory `recidiviz/pulse-data/recidiviz/justice_counts/control_panel/local/gsm`
-
-2: Run docker:
-
-```bash
-pipenv run docker-jc
-```
-
-3: Load fixtures:
-
-```bash
-pipenv run fixtures-jc
-```
-
-4: Make test requests to the backend API:
-
-```bash
-# python -m recidiviz.tools.justice_counts.control_panel.request_api <endpoint name> <params>`
-python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0}' get
-python -m recidiviz.tools.justice_counts.control_panel.request_api users '{"email_address":"jsmith@gmail.com"}' post
-python -m recidiviz.tools.justice_counts.control_panel.request_api reports '{"user_id":0,"agency_id": 0, "month": 3, "year": 2022, "frequency": "MONTHLY"}' post
-```
-
-Note that if you make changes to any of the fixtures .csv files, you'll have to re-run the `pipenv run fixtures-jc` script.
-
-## Connect to the local postgres database
-
-1: Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
-2: In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
