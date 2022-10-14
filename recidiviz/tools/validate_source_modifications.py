@@ -239,7 +239,11 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     BUILD_INFRA_KEY: [
         RequiredModificationSets.for_symmetric_check(
             frozenset(
-                {"mirror/copy.bara.sky", "Dockerfile.case-triage-pathways.dockerignore"}
+                {
+                    "mirror/copy.bara.sky",
+                    "Dockerfile.case-triage-pathways.dockerignore",
+                    "Dockerfile.justice-counts.dockerignore",
+                }
             )
         ),
     ],
