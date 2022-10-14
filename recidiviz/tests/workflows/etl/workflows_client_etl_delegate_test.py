@@ -127,7 +127,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 row,
             )
 
-            # US_TN third row has almost-eligible data
+            # US_TN third row has supervision downgrade eligible
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "202")
@@ -165,7 +165,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     ],
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
-                    "compliantReportingEligible": True,
+                    "supervisionLevelDowngradeEligible": True,
                 },
                 row,
             )
