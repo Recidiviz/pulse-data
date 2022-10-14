@@ -18,10 +18,10 @@
 
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
-    CorrectionalFacilityStaffType,
-    PrisonPopulationType,
-    PrisonReleaseType,
-    ReadmissionType,
+    PrisonsOffenseType,
+    PrisonsReadmissionType,
+    PrisonsReleaseType,
+    PrisonsStaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -42,7 +42,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=prisons.total_staff,
-        disaggregation=CorrectionalFacilityStaffType,
+        disaggregation=PrisonsStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
@@ -52,7 +52,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="readmissions_by_type",
         definition=prisons.readmissions,
-        disaggregation=ReadmissionType,
+        disaggregation=PrisonsReadmissionType,
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(
@@ -62,7 +62,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="admissions_by_type",
         definition=prisons.admissions,
-        disaggregation=PrisonPopulationType,
+        disaggregation=PrisonsOffenseType,
         disaggregation_column_name="admission_type",
     ),
     MetricFile(
@@ -72,8 +72,8 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="population_by_type",
         definition=prisons.average_daily_population,
-        disaggregation=PrisonPopulationType,
-        disaggregation_column_name="population_type",
+        disaggregation=PrisonsOffenseType,
+        disaggregation_column_name="offense_type",
     ),
     MetricFile(
         canonical_filename="population_by_race",
@@ -94,7 +94,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="releases_by_type",
         definition=prisons.releases,
-        disaggregation=PrisonReleaseType,
+        disaggregation=PrisonsReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(

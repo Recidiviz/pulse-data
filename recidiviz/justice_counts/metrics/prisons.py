@@ -19,19 +19,49 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
-    CorrectionalFacilityStaffType,
-    PrisonPopulationType,
-    PrisonReleaseType,
-    ReadmissionType,
+    PrisonsOffenseType,
+    PrisonsReadmissionType,
+    PrisonsReleaseType,
+    PrisonsStaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.person import GenderIncludesExcludes
+from recidiviz.justice_counts.includes_excludes.prisons import (
+    OtherPrisonStaffIncludesExcludes,
+    PrisonAdmissionsIncludesExcludes,
+    PrisonAverageDailyPopulationIncludesExcludes,
+    PrisonBudgetIncludesExcludes,
+    PrisonClinicalStaffIncludesExcludes,
+    PrisonDrugOffenseIncludesExcludes,
+    PrisonGrievancesIncludesExcludes,
+    PrisonNonSecurityStaffIncludesExcludes,
+    PrisonPersonOffenseIncludesExcludes,
+    PrisonProgrammaticStaffIncludesExcludes,
+    PrisonPropertyOffenseIncludesExcludes,
+    PrisonPublicOrderOffenseIncludesExcludes,
+    PrisonReadmissionsIncludesExcludes,
+    PrisonReadmissionsNewCommitmentIncludesExcludes,
+    PrisonReadmissionsParoleIncludesExcludes,
+    PrisonReadmissionsProbationIncludesExcludes,
+    PrisonReleasesDeathIncludesExcludes,
+    PrisonReleasesIncludesExcludes,
+    PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+    PrisonReleasesToParoleIncludesExcludes,
+    PrisonReleasesToProbationIncludesExcludes,
+    PrisonSecurityStaffIncludesExcludes,
+    PrisonStaffIncludesExcludes,
+    PrisonUseOfForceIncludesExcludes,
+    UnknownPrisonStaffIncludesExcludes,
+    VacantPrisonStaffIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     YesNoContext,
@@ -64,6 +94,16 @@ annual_budget = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Annual Budget",
     description="Measures the total annual budget (in dollars) of your state correctional institutions.",
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonBudgetIncludesExcludes,
+        excluded_set={
+            PrisonBudgetIncludesExcludes.BIENNIUM_FUNDING,
+            PrisonBudgetIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
+            PrisonBudgetIncludesExcludes.JAILS,
+            PrisonBudgetIncludesExcludes.COMMUNITY_SUPERVISION,
+            PrisonBudgetIncludesExcludes.JUVENILE_CORRECTIONAL_FACILITIES,
+        },
+    ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="DOCs should only report on their correctional institution budget.",
@@ -89,6 +129,13 @@ total_staff = MetricDefinition(
             definition="Number of people employed in a full-time (0.9+) capacity.",
         )
     ],
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonStaffIncludesExcludes,
+        excluded_set={
+            PrisonStaffIncludesExcludes.VOLUNTEER,
+            PrisonStaffIncludesExcludes.INTERN,
+        },
+    ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="DOCs should only report on their correctional institution staff.",
@@ -109,7 +156,58 @@ total_staff = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CorrectionalFacilityStaffType, required=False)
+        AggregatedDimension(
+            dimension=PrisonsStaffType,
+            required=False,
+            dimension_to_includes_excludes={
+                PrisonsStaffType.SECURITY: IncludesExcludesSet(
+                    members=PrisonSecurityStaffIncludesExcludes,
+                    excluded_set={
+                        PrisonSecurityStaffIncludesExcludes.OTHER,
+                        PrisonSecurityStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.NON_SECURITY: IncludesExcludesSet(
+                    members=PrisonNonSecurityStaffIncludesExcludes,
+                    excluded_set={
+                        PrisonNonSecurityStaffIncludesExcludes.OTHER,
+                        PrisonNonSecurityStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
+                    members=PrisonClinicalStaffIncludesExcludes,
+                    excluded_set={
+                        PrisonClinicalStaffIncludesExcludes.OTHER,
+                        PrisonClinicalStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.PROGRAMMATIC: IncludesExcludesSet(
+                    members=PrisonProgrammaticStaffIncludesExcludes,
+                    excluded_set={
+                        PrisonProgrammaticStaffIncludesExcludes.OTHER,
+                        PrisonProgrammaticStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.OTHER: IncludesExcludesSet(
+                    members=OtherPrisonStaffIncludesExcludes,
+                    excluded_set={
+                        OtherPrisonStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.UNKNOWN: IncludesExcludesSet(
+                    members=UnknownPrisonStaffIncludesExcludes,
+                    excluded_set={
+                        UnknownPrisonStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                PrisonsStaffType.VACANT: IncludesExcludesSet(
+                    members=VacantPrisonStaffIncludesExcludes,
+                    excluded_set={
+                        VacantPrisonStaffIncludesExcludes.FILLED,
+                    },
+                ),
+            },
+        )
     ],
 )
 
@@ -124,8 +222,34 @@ readmissions = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="Exclude re-entry after a temporary exit (escape, work release, appointment, etc.).",
     specified_contexts=[],
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonReadmissionsIncludesExcludes,
+        excluded_set={
+            PrisonReadmissionsIncludesExcludes.TEMP_ABSENCE,
+            PrisonReadmissionsIncludesExcludes.TRANSFERRED_IN_STATE,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=ReadmissionType, required=False)
+        AggregatedDimension(
+            dimension=PrisonsReadmissionType,
+            required=False,
+            dimension_to_includes_excludes={
+                PrisonsReadmissionType.NEW_ADMISSION: IncludesExcludesSet(
+                    members=PrisonReadmissionsNewCommitmentIncludesExcludes,
+                    excluded_set={
+                        PrisonReadmissionsNewCommitmentIncludesExcludes.OTHER
+                    },
+                ),
+                PrisonsReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
+                    members=PrisonReadmissionsProbationIncludesExcludes,
+                    excluded_set={PrisonReadmissionsProbationIncludesExcludes.OTHER},
+                ),
+                PrisonsReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
+                    members=PrisonReadmissionsParoleIncludesExcludes,
+                    excluded_set={PrisonReadmissionsParoleIncludesExcludes.OTHER},
+                ),
+            },
+        )
     ],
 )
 
@@ -138,6 +262,13 @@ admissions = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_note="Report individuals in the most serious category (new sentence > violation > hold).",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonAdmissionsIncludesExcludes,
+        excluded_set={
+            PrisonAdmissionsIncludesExcludes.RETURNING_FROM_ABSENCE,
+            PrisonAdmissionsIncludesExcludes.TRANSFERRED_BETWEEN_FACILITIES,
+        },
+    ),
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
@@ -155,11 +286,37 @@ admissions = MetricDefinition(
     ],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonPopulationType,
+            dimension=PrisonsOffenseType,
             required=False,
-            # Prison Population Type and Admission Type are the same thing;
-            # name this the latter for clarity since it's the Admission metric
-            display_name="Prison Admission Type",
+            display_name="Prison Offense Type",
+            dimension_to_includes_excludes={
+                PrisonsOffenseType.PERSON: IncludesExcludesSet(
+                    members=PrisonPersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPersonOffenseIncludesExcludes.ARSON,
+                        PrisonPersonOffenseIncludesExcludes.HARASSMENT,
+                        PrisonPersonOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PrisonPropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPropertyOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                    members=PrisonDrugOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonDrugOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PrisonPublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPublicOrderOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+            },
         )
     ],
 )
@@ -170,13 +327,73 @@ average_daily_population = MetricDefinition(
     category=MetricCategory.POPULATIONS,
     display_name="Average Daily Population",
     description="Measures the average daily population of individuals held in your state corrections system.",
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonAverageDailyPopulationIncludesExcludes,
+        excluded_set={
+            PrisonAverageDailyPopulationIncludesExcludes.AWOL,
+            PrisonAverageDailyPopulationIncludesExcludes.HOUSED_FOR_OTHER_AGENCIES,
+        },
+    ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="Calculate the average against a 30-day month. Report individuals in the most serious category (new sentence > violation > hold).",
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PrisonPopulationType, required=False),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
+        AggregatedDimension(
+            dimension=GenderRestricted,
+            required=True,
+            dimension_to_includes_excludes={
+                GenderRestricted.MALE: IncludesExcludesSet(
+                    members=GenderIncludesExcludes,
+                    excluded_set={
+                        GenderIncludesExcludes.FEMALE,
+                        GenderIncludesExcludes.OTHER,
+                        GenderIncludesExcludes.UNKNOWN,
+                    },
+                ),
+                GenderRestricted.FEMALE: IncludesExcludesSet(
+                    members=GenderIncludesExcludes,
+                    excluded_set={
+                        GenderIncludesExcludes.MALE,
+                        GenderIncludesExcludes.OTHER,
+                        GenderIncludesExcludes.UNKNOWN,
+                    },
+                ),
+            },
+        ),
+        AggregatedDimension(
+            dimension=PrisonsOffenseType,
+            required=False,
+            display_name="Prison Offense Type",
+            dimension_to_includes_excludes={
+                PrisonsOffenseType.PERSON: IncludesExcludesSet(
+                    members=PrisonPersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPersonOffenseIncludesExcludes.ARSON,
+                        PrisonPersonOffenseIncludesExcludes.HARASSMENT,
+                        PrisonPersonOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PrisonPropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPropertyOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                    members=PrisonDrugOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonDrugOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+                PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PrisonPublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PrisonPublicOrderOffenseIncludesExcludes.OTHER,
+                    },
+                ),
+            },
+        ),
     ],
 )
 
@@ -189,6 +406,14 @@ releases = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="Exclude temporary release (work release, appointment, court hearing, etc.).",
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonReleasesIncludesExcludes,
+        excluded_set={
+            PrisonReleasesIncludesExcludes.TEMP_EXIT,
+            PrisonReleasesIncludesExcludes.TEMP_TRANSFER,
+            PrisonReleasesIncludesExcludes.TRANSFERRED_IN,
+        },
+    ),
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_SUPERVISION,
@@ -198,7 +423,30 @@ releases = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PrisonReleaseType, required=False)
+        AggregatedDimension(
+            dimension=PrisonsReleaseType,
+            required=False,
+            dimension_to_includes_excludes={
+                PrisonsReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
+                    members=PrisonReleasesToParoleIncludesExcludes,
+                    excluded_set={PrisonReleasesToParoleIncludesExcludes.OTHER},
+                ),
+                PrisonsReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
+                    members=PrisonReleasesToProbationIncludesExcludes,
+                    excluded_set={PrisonReleasesToProbationIncludesExcludes.OTHER},
+                ),
+                PrisonsReleaseType.SENTENCE_COMPLETION: IncludesExcludesSet(
+                    members=PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+                    excluded_set={
+                        PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER
+                    },
+                ),
+                PrisonsReleaseType.DEATH: IncludesExcludesSet(
+                    members=PrisonReleasesDeathIncludesExcludes,
+                    excluded_set={PrisonReleasesDeathIncludesExcludes.OTHER},
+                ),
+            },
+        )
     ],
 )
 
@@ -217,6 +465,7 @@ staff_use_of_force_incidents = MetricDefinition(
             definition="An event in which an officer uses force towards or in the vicinity of an individual incarcerated. The AJA focuses on uses of force resulting in injury or a discharge of a weapon.  Count all uses of force occurring during the same event as one incident.",
         )
     ],
+    includes_excludes=IncludesExcludesSet(members=PrisonUseOfForceIncludesExcludes),
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
@@ -244,4 +493,12 @@ grievances_upheld = MetricDefinition(
             definition="A complaint or question filed with the institution by an individual incarcerated regarding their experience, with procedures, treatment, or interaction with officers.",
         )
     ],
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonGrievancesIncludesExcludes,
+        excluded_set={
+            PrisonGrievancesIncludesExcludes.DUPLICATE,
+            PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION,
+            PrisonGrievancesIncludesExcludes.INFORMAL,
+        },
+    ),
 )

@@ -18,10 +18,10 @@
 
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
-    CorrectionalFacilityStaffType,
     JailPopulationType,
     JailReleaseType,
-    ReadmissionType,
+    JailsReadmissionType,
+    JailsStaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -42,7 +42,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=jails.total_staff,
-        disaggregation=CorrectionalFacilityStaffType,
+        disaggregation=JailsStaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
@@ -52,7 +52,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="readmissions_by_type",
         definition=jails.readmissions,
-        disaggregation=ReadmissionType,
+        disaggregation=JailsReadmissionType,
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(

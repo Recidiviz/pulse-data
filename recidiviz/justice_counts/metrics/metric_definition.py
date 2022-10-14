@@ -17,7 +17,7 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Set, Type
 
 import attr
 
@@ -29,6 +29,38 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
     System,
 )
+
+
+class IncludesExcludesSetting(enum.Enum):
+    YES = "Yes"
+    NO = "No"
+    NOT_AVAILABLE = "N/A"
+
+
+class IncludesExcludesSet:
+    # Enum that describes all includes / excludes
+    # options (i.e PrisonsStaffIncludesExcludes)
+    members: Type[enum.Enum]
+    # Dictionary that maps includes / excludes enum member to
+    # the default IncludesExcludesSetting
+    # (i.e {PrisonsStaffIncludesExcludes.STAFF_ON_LEAVE: IncludesExcludesSetting.YES, ...})
+    member_to_default_inclusion_setting: Dict[enum.Enum, IncludesExcludesSetting]
+
+    def __init__(
+        self,
+        members: Type[enum.Enum],
+        excluded_set: Optional[Set[enum.Enum]] = None,
+        not_available_set: Optional[Set[enum.Enum]] = None,
+    ):
+        self.members = members
+        self.member_to_default_inclusion_setting = {}
+        for member in self.members:
+            setting = IncludesExcludesSetting.YES
+            if excluded_set is not None and member in excluded_set:
+                setting = IncludesExcludesSetting.NO
+            elif not_available_set is not None and member in not_available_set:
+                setting = IncludesExcludesSetting.NOT_AVAILABLE
+            self.member_to_default_inclusion_setting[member] = setting
 
 
 class YesNoContext(enum.Enum):
@@ -105,7 +137,13 @@ class AggregatedDimension:
     display_name: Optional[str] = None
     # Text displayed above aggregated dimension breakdowns.
     helper_text: Optional[str] = None
-    # If disabled, don't send to the frontend to render
+    # Maps dimension member to IncludesExcludesSet to
+    # describes what data is included/excluded in
+    # the aggregated dimension values. This information
+    # is displayed as toggles in the metric settings page.
+    dimension_to_includes_excludes: Optional[
+        Dict[DimensionBase, IncludesExcludesSet]
+    ] = None
 
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()
@@ -151,9 +189,11 @@ class MetricDefinition:
     definitions: Optional[List[Definition]] = None
     # Dimensions that this metric should be disaggregated by in the reporting
     aggregated_dimensions: Optional[List[AggregatedDimension]] = None
-
     # If disabled, don't send to the frontend to render
     disabled: bool = False
+    # Describes what data is included/excluded in the metrics aggregate value.
+    # The IncludesExcludesSet is rendered as toggles in the metric settings page.
+    includes_excludes: Optional[IncludesExcludesSet] = None
 
     @property
     def key(self) -> str:
