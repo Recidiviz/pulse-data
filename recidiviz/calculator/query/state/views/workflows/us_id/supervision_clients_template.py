@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ID Workflows supervision clients."""
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
@@ -43,7 +43,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             AND dataflow.person_id = projected_end.person_id
             AND dataflow.date_of_supervision
                 BETWEEN projected_end.start_date
-                    AND {nonnull_end_date_clause('projected_end.end_date')}
+                    AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
         WHERE dataflow.state_code = 'US_ID'
         AND supervising_officer_external_id IS NOT NULL
     ),

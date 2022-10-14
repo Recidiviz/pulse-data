@@ -22,7 +22,10 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -350,7 +353,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON proj.state_code = ses.state_code
         AND proj.person_id = ses.person_id
         --use the projected completion date from the current span
-        AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_clause('proj.end_date')}
+        AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_exclusive_clause('proj.end_date')}
       LEFT JOIN sentence_charge_description charge
         ON tes.state_code = charge.state_code
         AND tes.person_id = charge.person_id
@@ -395,7 +398,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       LEFT JOIN latest_notes n
         ON tes.state_code = n.state_code
         AND tes.person_id = n.person_id
-      WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
+      WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.is_eligible
         AND tes.state_code = 'US_ID'
       GROUP BY 1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,27,28,29,30,31

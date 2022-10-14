@@ -21,7 +21,10 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -166,7 +169,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ON proj.state_code = ses.state_code
             AND proj.person_id = ses.person_id
             --use the projected completion date from the current span
-            AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_clause('proj.end_date')}
+            AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_exclusive_clause('proj.end_date')}
         LEFT JOIN latest_notes n
             ON ses.state_code = n.state_code
             AND ses.person_id = n.person_id
@@ -175,7 +178,7 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             AND ses.person_id = pei.person_id
             AND pei.id_type = "US_ID_DOC"
             --only individuals that are currently eligible for early discharge
-        WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
+        WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
             AND tes.is_eligible
             AND tes.state_code = 'US_ID'
         GROUP BY 1,2,3,4,5
