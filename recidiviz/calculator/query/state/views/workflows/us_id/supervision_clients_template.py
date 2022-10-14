@@ -144,8 +144,9 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS STRING) AS compliant_reporting_eligible,
             FALSE AS early_termination_eligible,
             IFNULL(earned_discharge_eligible, FALSE) AS earned_discharge_eligible,
-            IFNULL(limited_supervision_eligible, FALSE) AS limited_supervision_eligibile,
+            IFNULL(limited_supervision_eligible, FALSE) AS limited_supervision_eligible,
             IFNULL(past_FTRD_eligible, FALSE) AS past_FTRD_eligible,
+            FALSE AS supervision_level_downgrade_eligible,
         FROM join_id_clients
         LEFT JOIN id_earned_discharge_eligibility USING(person_external_id)
         LEFT JOIN id_lsu_eligibility USING (person_external_id)

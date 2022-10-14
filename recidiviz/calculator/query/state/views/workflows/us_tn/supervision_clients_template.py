@@ -18,6 +18,12 @@
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
+    tn_supervision_level_downgrade_eligibility AS (
+        SELECT 
+            external_id AS person_external_id,
+            TRUE AS supervision_level_downgrade_eligible,
+        FROM `{project_id}.{workflows_dataset}.us_tn_supervision_level_downgrade_record_materialized`
+    ),
     tn_clients AS (
         # Values set to NULL are not applicable for this state
         SELECT
@@ -43,6 +49,8 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
             FALSE AS earned_discharge_eligible,
             FALSE AS limited_supervision_eligible,
             FALSE AS past_FTRD_eligible,
+            IFNULL(supervision_level_downgrade_eligible, FALSE) AS supervision_level_downgrade_eligible,
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
+        LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
     )
 """
