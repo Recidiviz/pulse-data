@@ -21,7 +21,7 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.candidate_population_builders import (
-    state_agnostic_supervision_candidate_population_view_builder,
+    state_agnostic_candidate_population_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,10 +34,11 @@ are included.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
-    state_agnostic_supervision_candidate_population_view_builder(
+    state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
         additional_filters=[],
+        compartment_level_1="SUPERVISION",
     )
 )
 
