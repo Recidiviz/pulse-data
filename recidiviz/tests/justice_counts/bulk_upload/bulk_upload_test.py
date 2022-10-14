@@ -25,7 +25,7 @@ import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonPopulationType
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsOffenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
@@ -44,7 +44,7 @@ from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
 )
-from recidiviz.justice_counts.metrics import law_enforcement, prosecution
+from recidiviz.justice_counts.metrics import law_enforcement, prisons, prosecution
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -181,20 +181,20 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # Spot check a report
             monthly_report = reports_by_instance["01 2022 Metrics"]
-            metrics = sorted(
-                ReportInterface.get_metrics_by_report(
-                    session=session, report=monthly_report
-                ),
-                key=lambda x: x.key,
+            metrics = ReportInterface.get_metrics_by_report(
+                session=session, report=monthly_report
             )
+
+            admissions_metric = list(
+                filter(lambda m: m.key == prisons.admissions.key, metrics)
+            )[0]
+
             self.assertEqual(len(metrics), 4)
-            self.assertEqual(metrics[0].value, 294)
+            self.assertEqual(admissions_metric.value, 294)
             self.assertEqual(
-                metrics[0]  # type: ignore[index]
-                .aggregated_dimensions[0]
-                .dimension_to_value[
-                    PrisonPopulationType.SUPERVISION_VIOLATION_OR_REVOCATION
-                ],
+                admissions_metric.aggregated_dimensions[  # type: ignore[index]
+                    0
+                ].dimension_to_value[PrisonsOffenseType.DRUG],
                 2,
             )
             self.assertEqual(metrics[1].value, 2151.29)

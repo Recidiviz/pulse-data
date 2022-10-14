@@ -19,10 +19,10 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
-    CorrectionalFacilityStaffType,
     JailPopulationType,
     JailReleaseType,
-    ReadmissionType,
+    JailsReadmissionType,
+    JailsStaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -107,7 +107,7 @@ total_staff = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CorrectionalFacilityStaffType, required=False)
+        AggregatedDimension(dimension=JailsStaffType, required=False)
     ],
 )
 
@@ -122,7 +122,7 @@ readmissions = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=ReadmissionType, required=False)
+        AggregatedDimension(dimension=JailsReadmissionType, required=False)
     ],
 )
 
