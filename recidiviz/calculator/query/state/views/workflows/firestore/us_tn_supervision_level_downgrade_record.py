@@ -17,7 +17,7 @@
 """Query for relevant metadata needed to support supervision level downgrade opportunity in Tennessee
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -56,7 +56,7 @@ LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_
     ON pei.external_id = contact.OffenderID
     AND CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= CAST(JSON_VALUE(reasons[0].reason.latest_assessment_date) AS DATE)
     AND ContactNoteType IN ('PWAR','VWAR','VRPT','ARRP')
-WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
+WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_TN'
 GROUP BY 1,2

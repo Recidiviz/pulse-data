@@ -17,7 +17,7 @@
 """Query for clients past their full-term release date in Idaho"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -47,7 +47,7 @@ ON tes.state_code = pei.state_code
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_ID_DOC"
 WHERE task_name = "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION"
-    AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_clause('tes.end_date')}
+    AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_ID'
 """

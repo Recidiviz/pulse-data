@@ -258,6 +258,12 @@ def nonnull_end_date_clause(column_name: str) -> str:
     return f'COALESCE({column_name}, "{MAGIC_END_DATE}")'
 
 
+def nonnull_end_date_exclusive_clause(column_name: str) -> str:
+    """Convert NULL end dates to dates far in the future to help with the date logic. For use in
+    views that use exclusive end dates, like task eligibility."""
+    return f'COALESCE(DATE_SUB({column_name}, INTERVAL 1 DAY), "{MAGIC_END_DATE}")'
+
+
 def revert_nonnull_end_date_clause(column_name: str) -> str:
     """Convert end dates far in the future to NULL"""
     return f'IF({column_name} = "{MAGIC_END_DATE}", NULL, {column_name})'
