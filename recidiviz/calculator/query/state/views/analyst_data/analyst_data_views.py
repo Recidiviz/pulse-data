@@ -66,6 +66,9 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.calculator.query.state.views.analyst_data.supervision_unnested_metrics import (
     SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.analyst_data.supervision_unnested_metrics_preprocessed_sessions import (
+    SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.analyst_data.task_events import (
     TASK_EVENTS_VIEW_BUILDER,
 )
@@ -244,6 +247,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER,
         US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
     ]
+    + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
     + SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS
 )
