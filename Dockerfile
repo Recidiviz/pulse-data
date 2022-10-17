@@ -16,6 +16,7 @@ RUN yarn build
 
 FROM node:14-alpine as case-triage-build
 
+
 WORKDIR /usr/case-triage
 COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
 COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
