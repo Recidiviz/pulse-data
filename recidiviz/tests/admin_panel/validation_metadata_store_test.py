@@ -29,11 +29,33 @@ from recidiviz.admin_panel.models.validation_pb2 import (
     ValidationStatusRecords,
 )
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
+from recidiviz.utils.environment import GCP_PROJECTS
+
+_TEST_PROJECT = "test-project"
 
 
-@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value=_TEST_PROJECT))
 class ValidationStatusStoreTest(unittest.TestCase):
     """Tests for ValidationStatusStore"""
+
+    def _check_queries_use_correct_project_id(
+        self, mock_bigquery_client: MagicMock
+    ) -> None:
+        if not mock_bigquery_client.run_query_async.mock_calls:
+            raise ValueError("Did not find any calls to run_query_async")
+
+        for call in mock_bigquery_client.run_query_async.mock_calls:
+            kwargs = call[2]
+            query_str = kwargs["query_str"]
+            for project_id in GCP_PROJECTS:
+                self.assertFalse(
+                    project_id in query_str,
+                    f"Found substring '{project_id}' in the query string: {query_str} ",
+                )
+            self.assertTrue(
+                _TEST_PROJECT in query_str,
+                f"Did not find expected substring '{_TEST_PROJECT}' in the query string: {query_str} ",
+            )
 
     @patch(
         "recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl",
@@ -93,6 +115,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         store = ValidationStatusStore()
         store.recalculate_store()
         results = store.get_most_recent_validation_results()
+        self._check_queries_use_correct_project_id(mock_bigquery_client)
 
         timestamp = Timestamp()
         timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
@@ -209,6 +232,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         store = ValidationStatusStore()
         store.recalculate_store()
         results = store.get_most_recent_validation_results()
+        self._check_queries_use_correct_project_id(mock_bigquery_client)
 
         timestamp = Timestamp()
         timestamp.FromDatetime(datetime.datetime(2000, 1, 1, 0, 0, 0))
