@@ -29,7 +29,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         SELECT
           dataflow.person_id,
           person_external_id,
-          compartment_level_2 AS supervision_type,
+          dataflow.supervision_type,
           supervising_officer_external_id AS officer_id,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_single_day_supervision_population_metrics_materialized` dataflow
@@ -88,7 +88,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           sp.full_name as person_name,
           sp.current_address as address,
           CAST(ph.phonenumber AS INT64) AS phone_number,
-          supervision_type,
+          sc.supervision_type,
           sc.officer_id,
           sl.supervision_level,
           sl.supervision_level_start,
@@ -102,6 +102,16 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         INNER JOIN us_id_supervision_super_sessions ss USING(person_id)
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
         LEFT JOIN us_id_phone_numbers ph USING(person_external_id)
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority` sl_dedup
+            ON sl.supervision_level=sl_dedup.correctional_level
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_2_dedup_priority` cl2_dedup
+            ON "SUPERVISION" = cl2_dedup.compartment_level_1
+            AND sc.supervision_type=cl2_dedup.compartment_level_2
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id
+            ORDER BY COALESCE(sl_dedup.correctional_level_priority, 999),
+            COALESCE(cl2_dedup.priority, 999),
+            sc.officer_id
+        ) = 1
     ),
     id_lsu_eligibility AS (
         SELECT
