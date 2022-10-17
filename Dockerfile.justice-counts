@@ -17,7 +17,9 @@ FROM us.gcr.io/recidiviz-staging/recidiviz-base:latest
 WORKDIR /app/recidiviz
 
 # Add the rest of the application code once all dependencies are installed
+COPY gunicorn.conf.py .
 COPY ./recidiviz/__init__.py .
+COPY ./recidiviz/auth/ auth/
 COPY ./recidiviz/justice_counts/ justice_counts/
 COPY ./recidiviz/cloud_storage/ cloud_storage/
 COPY ./recidiviz/common/ common/
