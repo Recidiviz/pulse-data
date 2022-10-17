@@ -18,10 +18,7 @@
 from typing import List, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -40,12 +37,6 @@ SUPERVISION_METRICS_SUPPORTED_LEVELS_NAMES = {
     "supervision_office": "office",
     "supervision_district": "district",
     "state_code": "state",
-}
-SUPERVISION_METRICS_SUPPORTED_LEVELS_INDEX_RENAME = {
-    "supervising_officer_external_id": "state_code, supervising_officer_external_id AS officer_id",
-    "supervision_office": "state_code, supervision_district AS district, supervision_office AS office",
-    "supervision_district": "state_code, supervision_district AS district",
-    "state_code": "state_code",
 }
 SUPERVISION_METRICS_SUPPORTED_LEVELS_INDEX_COLUMNS = {
     "supervising_officer_external_id": "state_code, officer_id",
@@ -75,7 +66,6 @@ def get_supervision_unnested_metrics_view_strings_by_level(
 
     level_name = SUPERVISION_METRICS_SUPPORTED_LEVELS_NAMES[level]
     view_id = f"supervision_{level_name}_unnested_metrics"
-    index_cols_long = SUPERVISION_METRICS_SUPPORTED_LEVELS_INDEX_RENAME[level]
     index_cols = SUPERVISION_METRICS_SUPPORTED_LEVELS_INDEX_COLUMNS[level]
     window_days_string = ", ".join(
         [
@@ -92,15 +82,6 @@ Does not materialize since this view is an intermediate step between source
 events/spans tables and the supervision_{level_name}_metrics table.
 """
 
-    # get client-period source table
-    if level == "supervising_officer_external_id":
-        table = "supervision_officer_sessions_materialized"
-    elif level == "state_code":
-        table = "compartment_sessions_materialized"
-    else:
-        table = "location_sessions_materialized"
-    client_period_table = f"{{project_id}}.{{sessions_dataset}}.{table}"
-
     query_template = f"""
 /*{{description}}*/
 
@@ -116,104 +97,6 @@ WITH date_array AS (
             INTERVAL 1 DAY
         )) AS date
 )
-
--- define supervision population
--- We only include supervised clients in designated compartment_level_2 for metrics.
--- This is for consistency across states when defining a supervision sample.
-, sample AS (
-    SELECT
-        {"state_code," if level_name == "state" else ""}
-        person_id,
-        start_date AS sample_start_date,
-        -- TODO(#14675): remove the DATE_ADD when session end_dates are exclusive
-        DATE_ADD(end_date, INTERVAL 1 DAY) AS sample_end_date,
-    FROM
-        `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
-    WHERE
-        -- require that clients be associated with a compartment that is part of the
-        -- target "supervision" population for all aggregated metrics
-        compartment_level_1 = "SUPERVISION"
-        AND compartment_level_2 IN (
-            "COMMUNITY_CONFINEMENT", "DUAL", "INFORMAL_PROBATION", "PAROLE", "PROBATION"
-        )
-)
-
--- client assignments to {level_name}
--- if client not always in sample population, take intersection of inclusive periods
--- to determine the start and end dates of assignment
-, potentially_adjacent_spans AS (
-    SELECT
-{'''
-        * EXCEPT(sample_start_date, sample_end_date),
-        sample_start_date AS assignment_date,
-        -- impute end date as 9999-01-01 if null (we'll adjust in the next cte)
-        IFNULL(sample_end_date, "9999-01-01") AS end_date,
-    FROM
-        sample
-''' if level_name == "state" else f'''
-        {index_cols_long},
-        assign.person_id,
-        -- latest start date of overlap is the assignment date
-        GREATEST(sample_start_date, start_date) AS assignment_date,
-        -- earliest end date of overlap is the end of association.
-        -- end_date here is exclusive, i.e. the date of transition, but leave as 
-        -- 9999-01-01 if null (we'll adjust in the next cte)
-        LEAST(
-            IFNULL(end_date, "9999-01-01"),
-            IFNULL(sample_end_date, "9999-01-01")
-        ) AS end_date,
-    FROM (
-        SELECT
-            * EXCEPT (end_date),
-            -- TODO(#14675): remove the DATE_ADD when end_dates are exclusive upstream
-            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
-        FROM
-            `{client_period_table}`
-    ) assign
-    INNER JOIN
-        sample 
-    ON
-        sample.person_id = assign.person_id
-        -- sample and assignment spans must overlap
-        AND (
-            sample_start_date BETWEEN start_date AND IFNULL(end_date, "9999-01-01")
-            OR start_date BETWEEN sample_start_date AND IFNULL(sample_end_date, 
-                "9999-01-01")
-        )
-    WHERE
-        {level} IS NOT NULL
-'''}
-)
-
--- now session-ize contiguous periods
-, {level_name}_assignments AS (
-    SELECT
-        {index_cols},
-        person_id,
-        session_id,
-        MIN(assignment_date) AS assignment_date,
-        NULLIF(MAX(end_date), "9999-01-01") AS end_date,
-    FROM (
-        SELECT
-            * EXCEPT(date_gap),
-            SUM(IF(date_gap, 1, 0)) OVER (
-                PARTITION BY {index_cols}, person_id ORDER BY assignment_date
-            ) AS session_id,
-        FROM (
-            SELECT
-                *,
-                IFNULL(
-                    LAG(end_date) OVER(
-                        PARTITION BY {index_cols}, person_id ORDER BY assignment_date
-                    ) != assignment_date, TRUE
-                ) AS date_gap,
-            FROM
-                potentially_adjacent_spans
-        )
-    )
-    GROUP BY {index_cols}, person_id, session_id
-)
-
 /* 
 Note that we count events occurring on days where a client transitions between two
 officers/offices/district towards both entities - this is because it is ambiguous
@@ -235,7 +118,7 @@ or to no entity, e.g. if the client is released or incarcerated.
         a.end_date AS assignment_end_date,
         MIN(a.assignment_date) OVER (PARTITION BY {index_cols}) AS first_assignment_date,
     FROM
-        {level_name}_assignments a
+        `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics_preprocessed_sessions_materialized` a
     INNER JOIN
         date_array
     ON
@@ -921,7 +804,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
     
     -- assignment here is date person assigned to {level_name}
     INNER JOIN 
-        {level_name}_assignments assign
+        `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics_preprocessed_sessions_materialized` assign
     ON
         d.date = assign.assignment_date
         
@@ -1026,7 +909,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
     
     -- assignment here is date person assigned to {level_name}
     INNER JOIN
-        {level_name}_assignments assign
+        `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics_preprocessed_sessions_materialized` assign
     ON
         d.date = assign.assignment_date
         
@@ -1092,7 +975,7 @@ of the metric. In the CTEs below, we require that the date of metric observation
     
     -- assignment here is date person assigned to {level_name}
     INNER JOIN 
-        {level_name}_assignments assign
+        `{{project_id}}.{{analyst_dataset}}.supervision_{level_name}_unnested_metrics_preprocessed_sessions_materialized` assign
     ON
         d.date = assign.assignment_date
         
@@ -1240,7 +1123,6 @@ for level_string in SUPERVISION_METRICS_SUPPORTED_LEVELS:
             view_query_template=query_template_string,
             description=view_description_string,
             analyst_dataset=ANALYST_VIEWS_DATASET,
-            sessions_dataset=SESSIONS_DATASET,
             clustering_fields=clustering_fields,
             # This view is too expensive to materialize as part of our regular view
             # deploy. We materialize this to the `unmanaged_views` dataset via a BQ
