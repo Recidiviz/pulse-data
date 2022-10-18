@@ -564,84 +564,95 @@ def get_api_blueprint(
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
 
+    def get_agency_datapoints(agency_id: str, published_only: bool = False) -> Response:
+        permissions = g.user_context.permissions if "user_context" in g else []
+        if agency_id is None:
+            # If no agency_id is specified, pick one of the agencies
+            # that the user belongs to as a default for the home page
+            if (
+                len(g.user_context.agency_ids) == 0
+                and ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+            ):
+                raise JusticeCountsServerError(
+                    code="justice_counts_agency_permission",
+                    description="User does not belong to any agencies.",
+                )
+            agency_id = g.user_context.agency_ids[0]
+
+        reports = ReportInterface.get_reports_by_agency_id(
+            session=current_session,
+            agency_id=int(agency_id),
+            # we are only fetching reports here to get the list of report
+            # ids in an agency, so no need to fetch datapoints here
+            include_datapoints=False,
+            published_only=published_only,
+        )
+        report_id_to_status = {report.id: report.status for report in reports}
+        report_id_to_frequency = {
+            report.id: ReportInterface.get_reporting_frequency(report)
+            for report in reports
+        }
+
+        # fetch non-context datapoints
+        datapoints = DatapointInterface.get_datapoints_with_report_ids(
+            session=current_session,
+            report_ids=list(report_id_to_status.keys()),
+            include_contexts=False,
+        )
+
+        datapoints_json = [
+            DatapointInterface.to_json_response(
+                datapoint=d,
+                is_published=report_id_to_status[d.report_id]
+                == schema.ReportStatus.PUBLISHED,
+                frequency=report_id_to_frequency[d.report_id],
+            )
+            for d in datapoints
+        ]
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=int(agency_id)
+        )
+
+        metric_definitions = MetricInterface.get_metric_definitions(
+            systems={schema.System[system] for system in agency.systems or []}
+        )
+        dimension_names_by_metric_and_disaggregation = {}
+        for metric_definition in metric_definitions:
+            disaggregations = metric_definition.aggregated_dimensions or []
+            disaggregation_name_to_dimension_names = {
+                disaggregation.dimension.human_readable_name(): [
+                    # TODO(#14940) Have DimensionBase extend from Enum rather than having
+                    # classes that inherit it must also inherit from Enum
+                    i.value
+                    for i in disaggregation.dimension  # type: ignore[attr-defined]
+                ]
+                for disaggregation in disaggregations
+            }
+            dimension_names_by_metric_and_disaggregation[
+                metric_definition.key
+            ] = disaggregation_name_to_dimension_names
+
+        return jsonify(
+            {
+                "datapoints": datapoints_json,
+                "dimension_names_by_metric_and_disaggregation": dimension_names_by_metric_and_disaggregation,
+            }
+        )
+
     @api_blueprint.route("agencies/<agency_id>/datapoints", methods=["GET"])
     @auth_decorator
     @raise_if_user_is_unauthorized
     def get_datapoints_by_agency_id(agency_id: str) -> Response:
         try:
-            permissions = g.user_context.permissions if "user_context" in g else []
-            if agency_id is None:
-                # If no agency_id is specified, pick one of the agencies
-                # that the user belongs to as a default for the home page
-                if (
-                    len(g.user_context.agency_ids) == 0
-                    and ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-                ):
-                    raise JusticeCountsServerError(
-                        code="justice_counts_agency_permission",
-                        description="User does not belong to any agencies.",
-                    )
-                agency_id = g.user_context.agency_ids[0]
+            return get_agency_datapoints(agency_id=agency_id)
+        except Exception as e:
+            raise _get_error(error=e) from e
 
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=current_session,
-                agency_id=int(agency_id),
-                # we are only fetching reports here to get the list of report
-                # ids in an agency, so no need to fetch datapoints here
-                include_datapoints=False,
-            )
-            report_id_to_status = {report.id: report.status for report in reports}
-            report_id_to_frequency = {
-                report.id: ReportInterface.get_reporting_frequency(report)
-                for report in reports
-            }
-
-            # fetch non-context datapoints
-            datapoints = DatapointInterface.get_datapoints_with_report_ids(
-                session=current_session,
-                report_ids=list(report_id_to_status.keys()),
-                include_contexts=False,
-            )
-
-            datapoints_json = [
-                DatapointInterface.to_json_response(
-                    datapoint=d,
-                    is_published=report_id_to_status[d.report_id]
-                    == schema.ReportStatus.PUBLISHED,
-                    frequency=report_id_to_frequency[d.report_id],
-                )
-                for d in datapoints
-            ]
-
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
-            )
-
-            metric_definitions = MetricInterface.get_metric_definitions(
-                systems={schema.System[system] for system in agency.systems or []}
-            )
-            dimension_names_by_metric_and_disaggregation = {}
-            for metric_definition in metric_definitions:
-                disaggregations = metric_definition.aggregated_dimensions or []
-                disaggregation_name_to_dimension_names = {
-                    disaggregation.dimension.human_readable_name(): [
-                        # TODO(#14940) Have DimensionBase extend from Enum rather than having
-                        # classes that inherit it must also inherit from Enum
-                        i.value
-                        for i in disaggregation.dimension  # type: ignore[attr-defined]
-                    ]
-                    for disaggregation in disaggregations
-                }
-                dimension_names_by_metric_and_disaggregation[
-                    metric_definition.key
-                ] = disaggregation_name_to_dimension_names
-
-            return jsonify(
-                {
-                    "datapoints": datapoints_json,
-                    "dimension_names_by_metric_and_disaggregation": dimension_names_by_metric_and_disaggregation,
-                }
-            )
+    @api_blueprint.route("agencies/<agency_id>/published_datapoints", methods=["GET"])
+    def get_published_datapoints_by_agency_id(agency_id: str) -> Response:
+        try:
+            return get_agency_datapoints(agency_id=agency_id, published_only=True)
         except Exception as e:
             raise _get_error(error=e) from e
 

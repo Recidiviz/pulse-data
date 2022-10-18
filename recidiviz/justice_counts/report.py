@@ -64,11 +64,17 @@ class ReportInterface:
 
     @staticmethod
     def get_reports_by_agency_id(
-        session: Session, agency_id: int, include_datapoints: bool = False
+        session: Session,
+        agency_id: int,
+        include_datapoints: bool = False,
+        published_only: bool = False,
     ) -> List[schema.Report]:
         q = ReportInterface._get_report_query(
             session, include_datapoints=include_datapoints
         )
+
+        if published_only:
+            q = q.filter(schema.Report.status == schema.ReportStatus.PUBLISHED)
 
         return (
             q.filter(schema.Report.source_id == agency_id)
