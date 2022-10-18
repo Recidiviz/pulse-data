@@ -50,8 +50,8 @@ from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
     IngestViewProcessorImpl,
 )
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManagerImpl,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManagerImpl,
     build_handle_new_files_task_id,
     build_scheduler_task_id,
 )
@@ -129,7 +129,7 @@ class BaseDirectIngestController:
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
-        self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+        self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.ingest_instance = ingest_instance
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
             region_code=self.region.region_code,

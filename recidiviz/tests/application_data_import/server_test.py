@@ -87,7 +87,7 @@ class TestApplicationDataImportRoutes(TestCase):
         self.fs_patcher.stop()
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
-    @patch("recidiviz.application_data_import.server.CloudTaskQueueManager")
+    @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
     def test_import_trigger_pathways(self, mock_task_manager: MagicMock) -> None:
         with self.app.test_request_context():
             response = self.client.post(

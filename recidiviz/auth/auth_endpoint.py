@@ -41,9 +41,9 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
-    CloudTaskQueueManager,
+    SingleCloudTaskQueueManager,
     get_cloud_task_json_body,
 )
 from recidiviz.common.str_field_utils import to_snake_case
@@ -100,7 +100,7 @@ def handle_import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
         logging.info("Unknown filename %s, ignoring", filename)
         return "", HTTPStatus.OK
 
-    cloud_task_manager = CloudTaskQueueManager(
+    cloud_task_manager = SingleCloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
     cloud_task_manager.create_task(

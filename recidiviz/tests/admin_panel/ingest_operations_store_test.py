@@ -34,8 +34,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManagerImpl,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -84,8 +84,8 @@ class IngestOperationsStoreTestBase(TestCase):
         self.fs_patcher.start()
 
         self.task_manager_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_operations_store.DirectIngestCloudTaskManagerImpl",
-            return_value=create_autospec(DirectIngestCloudTaskManagerImpl),
+            "recidiviz.admin_panel.ingest_operations_store.DirectIngestCloudTaskQueueManagerImpl",
+            return_value=create_autospec(DirectIngestCloudTaskQueueManagerImpl),
         )
         self.task_manager_patcher.start()
 

@@ -27,9 +27,9 @@ import attr
 from google.cloud import tasks_v2
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
-    CloudTaskQueueManager,
+    SingleCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -42,10 +42,14 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils import metadata
 
 SCHEDULER_TASK_ID_TAG = "scheduler"
 HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
 HANDLE_SFTP_DOWNLOAD_TASK_ID_TAG = "handle_sftp_download"
+
+_TASK_LOCATION = "us-east1"
+QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
 
 
 def _build_task_id(
@@ -317,7 +321,7 @@ class IngestViewMaterializationCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo
         return bool(list(self._task_names_for_instance(region_code, ingest_instance)))
 
 
-class DirectIngestCloudTaskManager:
+class DirectIngestCloudTaskQueueManager:
     """Abstract interface for a class that interacts with Cloud Task queues."""
 
     @abc.abstractmethod
@@ -496,7 +500,7 @@ class DirectIngestCloudTaskManager:
         return all(queue_info.is_empty() for queue_info in ingest_queue_info)
 
 
-class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
+class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
 
@@ -505,12 +509,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def _get_scheduler_queue_manager(
         self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
-    ) -> CloudTaskQueueManager[SchedulerCloudTaskQueueInfo]:
+    ) -> SingleCloudTaskQueueManager[SchedulerCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.SCHEDULER, region.region_code, ingest_instance
         )
 
-        return CloudTaskQueueManager(
+        return SingleCloudTaskQueueManager(
             queue_info_cls=SchedulerCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
@@ -518,14 +522,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def _get_raw_data_import_queue_manager(
         self, region: DirectIngestRegion
-    ) -> CloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
+    ) -> SingleCloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.RAW_DATA_IMPORT,
             region.region_code,
             DirectIngestInstance.PRIMARY,
         )
 
-        return CloudTaskQueueManager(
+        return SingleCloudTaskQueueManager(
             queue_info_cls=RawDataImportCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
@@ -535,14 +539,14 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self,
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
-    ) -> CloudTaskQueueManager[IngestViewMaterializationCloudTaskQueueInfo]:
+    ) -> SingleCloudTaskQueueManager[IngestViewMaterializationCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.MATERIALIZE_INGEST_VIEW,
             region.region_code,
             ingest_instance,
         )
 
-        return CloudTaskQueueManager(
+        return SingleCloudTaskQueueManager(
             queue_info_cls=IngestViewMaterializationCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
@@ -552,12 +556,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self,
         region: DirectIngestRegion,
         ingest_instance: DirectIngestInstance,
-    ) -> CloudTaskQueueManager[ExtractAndMergeCloudTaskQueueInfo]:
+    ) -> SingleCloudTaskQueueManager[ExtractAndMergeCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.EXTRACT_AND_MERGE, region.region_code, ingest_instance
         )
 
-        return CloudTaskQueueManager(
+        return SingleCloudTaskQueueManager(
             queue_info_cls=ExtractAndMergeCloudTaskQueueInfo,
             queue_name=queue_name,
             cloud_tasks_client=self.cloud_tasks_client,
@@ -565,10 +569,10 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def _get_sftp_queue_manager(
         self, region: DirectIngestRegion
-    ) -> CloudTaskQueueManager[SftpCloudTaskQueueInfo]:
+    ) -> SingleCloudTaskQueueManager[SftpCloudTaskQueueInfo]:
         """Returns the appropriate SFTP queue for teh given region. This uses a standardized
         naming scheme based on the queue type."""
-        return CloudTaskQueueManager(
+        return SingleCloudTaskQueueManager(
             queue_info_cls=SftpCloudTaskQueueInfo,
             queue_name=_queue_name_for_queue_type(
                 DirectIngestQueueType.SFTP_QUEUE,
@@ -752,3 +756,77 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self._get_scheduler_queue_manager(region, ingest_instance).delete_task(
             task_name=task_name
         )
+
+    def update_ingest_queue_states_str(
+        self, state_code: StateCode, new_queue_state_str: str
+    ) -> None:
+        self.update_ingest_queue_states(
+            state_code, QUEUE_STATE_ENUM(new_queue_state_str)
+        )
+
+    def update_ingest_queue_states(
+        self, state_code: StateCode, new_queue_state: tasks_v2.enums.Queue.State
+    ) -> None:
+        """
+         It updates the state of the following queues by either pausing or resuming the
+        queues:
+         - direct-ingest-state-<region_code>-extract-and-merge
+         - direct-ingest-state-<region_code>-extract-and-merge-queue-secondary
+         - direct-ingest-state-<region_code>-scheduler
+         - direct-ingest-state-<region_code>-scheduler-secondary
+         - direct-ingest-state-<region_code>-raw-data-import
+         - direct-ingest-state-<region_code>-raw-data-import-secondary
+         - direct-ingest-state-<region_code>-materialize-ingest-view
+         - direct-ingest-state-<region_code>-materialize-ingest-view-secondary
+         - direct-ingest-state-<region_code>-sftp-queue    (for select regions)
+
+        Requires:
+        - state_code: (required) State code to pause queues for
+        - new_state: (required) Either 'PAUSED' or 'RUNNING'
+        """
+        queues_to_update = sorted(get_direct_ingest_queues_for_state(state_code))
+
+        if new_queue_state not in [
+            QUEUE_STATE_ENUM.RUNNING,
+            QUEUE_STATE_ENUM.PAUSED,
+        ]:
+            logging.error(
+                "Received an invalid queue state: %s. This method should only be used "
+                "to update queue states to PAUSED or RUNNING",
+                new_queue_state,
+            )
+            raise ValueError(
+                f"Invalid queue state [{new_queue_state}] received",
+            )
+
+        for queue in queues_to_update:
+            queue_path = self.cloud_tasks_client.queue_path(
+                metadata.project_id(), _TASK_LOCATION, queue
+            )
+
+            if new_queue_state == QUEUE_STATE_ENUM.PAUSED:
+                logging.info("Pausing queue: %s", new_queue_state)
+                self.cloud_tasks_client.pause_queue(name=queue_path)
+            else:
+                logging.info("Resuming queue: %s", new_queue_state)
+                self.cloud_tasks_client.resume_queue(name=queue_path)
+
+    def get_ingest_queue_states(
+        self, state_code: StateCode
+    ) -> List[Dict[str, tasks_v2.enums.Queue.State]]:
+        """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""
+        ingest_queue_states: List[Dict[str, tasks_v2.enums.Queue.State]] = []
+        queues_for_state = sorted(get_direct_ingest_queues_for_state(state_code))
+
+        for queue_name in queues_for_state:
+            queue_path = self.cloud_tasks_client.queue_path(
+                metadata.project_id(), _TASK_LOCATION, queue_name
+            )
+            queue = self.cloud_tasks_client.get_queue(name=queue_path)
+            queue_state = {
+                "name": queue_name,
+                "state": QUEUE_STATE_ENUM(queue.state),
+            }
+            ingest_queue_states.append(queue_state)
+
+        return ingest_queue_states

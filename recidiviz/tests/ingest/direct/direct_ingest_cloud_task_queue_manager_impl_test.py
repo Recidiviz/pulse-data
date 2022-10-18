@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the DirectIngestCloudTaskManagerImpl."""
+"""Tests for the DirectIngestCloudTaskQueueManagerImpl."""
 import datetime
 import json
 from unittest import TestCase
@@ -32,8 +32,8 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManagerImpl,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManagerImpl,
     DirectIngestQueueType,
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
@@ -340,8 +340,8 @@ class TestExtractAndMergeCloudTaskQueueInfo(TestCase):
             )
 
 
-class TestDirectIngestCloudTaskManagerImpl(TestCase):
-    """Tests for the DirectIngestCloudTaskManagerImpl."""
+class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
+    """Tests for the DirectIngestCloudTaskQueueManagerImpl."""
 
     def setUp(self) -> None:
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -352,7 +352,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task(
@@ -383,7 +383,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
             ingest_instance=ingest_instance,
             just_finished_job=False,
@@ -400,12 +400,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task_secondary(
@@ -436,7 +436,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
             ingest_instance=ingest_instance,
             just_finished_job=False,
@@ -453,12 +453,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_extract_and_merge_task(
@@ -503,7 +503,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION, args
         )
 
@@ -520,12 +520,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_extract_and_merge_task_secondary(
@@ -570,7 +570,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_extract_and_merge_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_extract_and_merge_task(
             _REGION,
             args,
         )
@@ -588,12 +588,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.SECONDARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_raw_data_import_task(
@@ -636,7 +636,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_raw_data_import_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_raw_data_import_task(
             _REGION, import_args
         )
 
@@ -653,12 +653,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_ingest_view_materialization_task(
@@ -701,7 +701,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_view_materialization_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_view_materialization_task(
             _REGION,
             export_args,
         )
@@ -719,12 +719,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid")
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2021-01-01")
     def test_create_direct_ingest_sftp_download_task(
@@ -750,7 +750,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.task_path.return_value = task_name
         mock_client.return_value.queue_path.return_value = queue_path
 
-        DirectIngestCloudTaskManagerImpl().create_direct_ingest_sftp_download_task(
+        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_sftp_download_task(
             _REGION
         )
 
@@ -770,7 +770,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         state_code_list_patcher.start()
 
         self.assertFalse(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -783,7 +783,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     ) -> None:
         """Assert that all ingest-related queues are empty when no tasks are added to the relevant queues."""
         self.assertTrue(
-            DirectIngestCloudTaskManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
                 region=_REGION, ingest_instance=DirectIngestInstance.PRIMARY
             )
         )

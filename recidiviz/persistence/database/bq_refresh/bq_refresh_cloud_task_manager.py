@@ -28,13 +28,13 @@ from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
     PIPELINE_RUN_TYPE_REQUEST_ARG,
     UPDATE_MANAGED_VIEWS_REQUEST_ARG,
 )
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
-    CloudTaskQueueInfo,
-    CloudTaskQueueManager,
-)
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     CLOUD_SQL_TO_BQ_REFRESH_QUEUE,
     CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE,
+)
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
+    CloudTaskQueueInfo,
+    SingleCloudTaskQueueManager,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 
@@ -45,11 +45,11 @@ class BQRefreshCloudTaskManager:
     """
 
     def __init__(self) -> None:
-        self.bq_cloud_task_queue_manager = CloudTaskQueueManager(
+        self.bq_cloud_task_queue_manager = SingleCloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=CLOUD_SQL_TO_BQ_REFRESH_QUEUE
         )
 
-        self.job_monitor_cloud_task_queue_manager = CloudTaskQueueManager(
+        self.job_monitor_cloud_task_queue_manager = SingleCloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo,
             queue_name=CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE,
         )

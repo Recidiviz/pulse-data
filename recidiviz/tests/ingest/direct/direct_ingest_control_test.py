@@ -44,9 +44,9 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     build_ingest_bucket_name,
 )
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManager,
-    DirectIngestCloudTaskManagerImpl,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManager,
+    DirectIngestCloudTaskQueueManagerImpl,
 )
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
@@ -121,9 +121,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_controller_factory = self.controller_factory_patcher.start()
 
         self.task_manager_patcher = patch(
-            f"{CONTROL_PACKAGE_NAME}.DirectIngestCloudTaskManagerImpl"
+            f"{CONTROL_PACKAGE_NAME}.DirectIngestCloudTaskQueueManagerImpl"
         )
-        self.mock_task_manager = create_autospec(DirectIngestCloudTaskManagerImpl)
+        self.mock_task_manager = create_autospec(DirectIngestCloudTaskQueueManagerImpl)
         self.task_manager_patcher.start().return_value = self.mock_task_manager
 
         self.state_code = StateCode.US_ND
@@ -709,7 +709,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
-        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         mock_controllers_by_region_code = {}
 
         def mock_build_controller(
@@ -763,7 +763,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
-        "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl"
+        "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskQueueManagerImpl"
     )
     def test_ensure_all_raw_file_paths_normalized_actual_regions(
         self, mock_cloud_task_manager: mock.MagicMock, mock_environment: mock.MagicMock
@@ -774,7 +774,7 @@ class TestDirectIngestControl(unittest.TestCase):
         with local_project_id_override("recidiviz-staging"):
             mock_environment.return_value = "staging"
             mock_cloud_task_manager.return_value = create_autospec(
-                DirectIngestCloudTaskManager
+                DirectIngestCloudTaskQueueManager
             )
 
             headers = APP_ENGINE_HEADERS
@@ -896,7 +896,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
-        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = defaultdict(list)
 
         def mock_build_controller(
@@ -953,7 +953,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
-        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = defaultdict(list)
 
         def mock_build_controller(
@@ -1004,7 +1004,7 @@ class TestDirectIngestControl(unittest.TestCase):
         }
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
-        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = {}
 
         def mock_build_controller(

@@ -22,12 +22,12 @@ from typing import Optional
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManager,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManager,
 )
 
 
-class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager, abc.ABC):
+class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, abc.ABC):
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
     def __init__(self) -> None:

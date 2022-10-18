@@ -22,9 +22,9 @@ from typing import List, Tuple
 
 from flask import Blueprint, request
 
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
-    CloudTaskQueueManager,
+    SingleCloudTaskQueueManager,
     get_cloud_task_json_body,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -84,7 +84,7 @@ def get_workflows_etl_blueprint() -> Blueprint:
         if "staging" in region_code:
             return "", HTTPStatus.OK
 
-        cloud_task_manager = CloudTaskQueueManager(
+        cloud_task_manager = SingleCloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=WORKFLOWS_ETL_OPERATIONS_QUEUE
         )
         cloud_task_manager.create_task(

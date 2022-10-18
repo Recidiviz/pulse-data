@@ -40,9 +40,9 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import _FakeStateCode
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
-    CloudTaskQueueManager,
+    SingleCloudTaskQueueManager,
 )
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
@@ -183,7 +183,7 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    cloud_task_manager = CloudTaskQueueManager(
+    cloud_task_manager = SingleCloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=PATHWAYS_DB_IMPORT_QUEUE
     )
 

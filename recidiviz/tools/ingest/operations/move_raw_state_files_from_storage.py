@@ -46,7 +46,7 @@ from typing import List, Optional, Tuple
 from progress.bar import Bar
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (

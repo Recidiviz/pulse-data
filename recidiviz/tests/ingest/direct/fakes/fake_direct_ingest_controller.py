@@ -375,7 +375,7 @@ def build_fake_direct_ingest_controller(
         view_collector_cls = DirectIngestPreProcessedIngestViewCollector
 
     with patch(
-        f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskManagerImpl"
+        f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskQueueManagerImpl"
     ) as mock_task_factory_cls, patch(
         f"{BaseDirectIngestController.__module__}.BigQueryClientImpl"
     ) as mock_big_query_client_cls, patch(
