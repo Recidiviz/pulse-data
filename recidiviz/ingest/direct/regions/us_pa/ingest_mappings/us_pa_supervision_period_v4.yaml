@@ -19,5 +19,5 @@ keys_to_ignore:
   - supervising_officer_id # Supervision officer's id - handled manually in the controller
   - district_office # Code for district this person is being supervised in - handled manually in the controller
   - district_sub_office_id # Specific sub office this person is being supervised by - handled manually in the controller
-  - supervision_location_org_code # Organization code of the person's specific supervision unit - handled manually in the controller
+  - supervision_location_org_code # TODO(#16080) - Ignore "0" value from raw data migration when transfer from V1 to V2 is being done. Organization code of the person's specific supervision unit - handled manually in the controller
   - supervision_types # Admission codes used to derive supervision types for all ongoing types of supervision at this time - handled manually in the controller
