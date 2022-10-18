@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_SHUSER
+file_description: |-
+  This table contains information on users in the COMPAS data system.
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - RecId
+columns:
+  - name: RecId
+    description: COMPAS system-generated ID for an user record
+    is_pii: True
+  - name: FirstName
+    description: First name
+    is_pii: True
+  - name: MiddleInitial
+    description: Middle initial
+    is_pii: True
+  - name: LastName
+    description: Last name
+    is_pii: True
+  - name: UserName
+    description: Username
+    is_pii: True
+  - name: UserPassword
+    description: Password
+    is_pii: True
+  - name: Email
+    description: Email
+    is_pii: True
+  - name: FkShAgency
+  - name: FkShUserCreatedBy
+    is_pii: True
+  - name: FkShUserUpdatedBy
+    is_pii: True
+  - name: FkShUserDeletedBy
+    is_pii: True
+  - name: FkShUserManager
+  - name: DateCreated
+    is_datetime: True
+  - name: DateUpdated
+    is_datetime: True
+  - name: DateDeleted
+    is_datetime: True
+  - name: IsActive
+  - name: IsSuperAdmin
+  - name: IsDeleted
+  - name: IsPasswordResetOnLogin
+  - name: IsLocked
+  - name: InvalidLoginCount
+  - name: DateLastLogin
+    is_datetime: True
+  - name: FkShRfCodeLocation
+  - name: DatePasswordLastSet
+    is_datetime: True
+  - name: IsPasswordExpirationIgnored
+  - name: FkShRfCodeLocationLastSearch
+  - name: FkShAgencyLastSearch
+  - name: OtherId
+  - name: FkShClient
+  - name: Points
+  - name: DefaultHomePage
+  - name: DateCreatedAsString
+  - name: DateUpdatedAsString
+  - name: Signature
+  - name: DefaultDashboardLayout
+  - name: UserPhoneNumber
+    is_pii: True

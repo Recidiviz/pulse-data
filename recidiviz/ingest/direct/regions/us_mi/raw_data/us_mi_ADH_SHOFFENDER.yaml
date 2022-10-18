@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_SHOFFENDER
+file_description: |-
+  This table contains information on people under MIDOC jurisdiction.
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - FkShPerson
+columns:
+  - name: FkShPerson
+    description: COMPAS system-generated ID for a justice-involed individual
+    is_pii: True
+  - name: FkShAgency
+  - name: OffenderNumber
+    description: MDOC offender number (used across all data systems)
+    is_pii: True
+  - name: SecondOffenderNumber
+    is_pii: True
+  - name: ThirdOffenderNumber
+    is_pii: True
+  - name: ForthOffenderNumber
+    is_pii: True
+  - name: MugShotImagesCount
+  - name: FkShAgencyCreatedBy
+  - name: IsClosed
+  - name: IsRestricted

@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_CORFSCALESET
+file_description: |-
+  This table contains reference information on assessment scale sets
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - RecId
+columns:
+  - name: RecId
+    description: COMPAS system-generated ID for an assessment scale set record
+  - name: AssessmentTitle
+  - name: Name
+    description: Name of assessment scale set
+  - name: Description
+    description: Description of assessment scale set
+  - name: Disclaimer
+    description: Disclaimer
+  - name: FkCoSyNormSet
+  - name: FkShSyCodeSex
+  - name: FkShSyCodeIncarceratedLanguage
+  - name: FkCoSyScaleGroupsTypoplogy
+  - name: IsTypology
+  - name: SortOrder
+  - name: RefString
+  - name: IsDefault
+  - name: IsActive
+    description: Flag for whether the assessment scale set is active
+  - name: IsDeleted
+    description: Flag for whether the assessment scale set has been deleted
+  - name: FkShUserCreatedBy
+    is_pii: True
+  - name: FkShUserUpdatedBy
+    is_pii: True
+  - name: FkShUserDeletedBy
+    is_pii: True
+  - name: DateCreated
+    is_datetime: True
+  - name: DateUpdated
+    is_datetime: True
+  - name: DateDeleted
+    is_datetime: True
+  - name: FkShClient
+  - name: IsSearchable
+  - name: IsNeedScaleSet
+  - name: IsPSI
+  - name: IsFemaleTypology
+  - name: IsSimpleTypology
+  - name: FkShSyCodeCHScoringMethodSubgroup
+  - name: FkShSyCodeGenderSubgroup
+  - name: FkShSyCodeWRNAVersionSubgroup
+  - name: FkShSyCodeInterviewTypeSubgroup
+  - name: FkShSyCodeYouthVersionSubgroup
+  - name: Version
+  - name: DoNotCopy
+  - name: NoStaticData
+  - name: IsEbrv
+  - name: FkShSyCodeLevelType
+  - name: IsHideScaleNames
+  - name: FkCoRfDataSheets
+  - name: CurrentChargeDirections
+  - name: ResultsDisplayOption
+  - name: LockAfterCalc
+  - name: DaysToLock
+  - name: IsOpioidUsedForRecSupLvl
+  - name: IsOpioidUsedForSubUseScale
