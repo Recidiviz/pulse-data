@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - Incident_Id
+  - Year_Num
 columns:
   - name: Cis_900_Employee_1_Id
     is_pii: True
