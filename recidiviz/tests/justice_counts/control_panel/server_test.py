@@ -1224,6 +1224,109 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             },
         )
 
+    def test_get_published_datapoints_by_agency_id(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        report1 = self.test_schema_objects.test_report_monthly
+        report2 = self.test_schema_objects.test_report_monthly
+        report2.status = schema.ReportStatus.PUBLISHED
+        report2.date_range_start = datetime.date.fromisoformat("2022-07-01")
+        report2.date_range_end = datetime.date.fromisoformat("2022-08-01")
+        self.session.add_all([report1, report2, user_A])
+
+        report_metric = self.test_schema_objects.reported_residents_metric
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report1,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report2,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_A.auth0_user_id, agency_ids=[report1.source_id]
+            )
+            response = self.client.get(
+                f"/api/agencies/{report1.source_id}/published_datapoints"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        agency_datapoints = self.session.query(Datapoint).all()
+        response_json = assert_type(response.json, dict)
+        response_json_datapoints = assert_type(response_json["datapoints"], list)
+        print("response_json_datapoints", response_json_datapoints)
+        self.assertEqual(len(agency_datapoints), len(response_json_datapoints))
+
+        response_json_datapoint = assert_type(response_json_datapoints[0], dict)
+        self.assertEqual(response_json_datapoint["dimension_display_name"], None)
+        self.assertEqual(response_json_datapoint["disaggregation_display_name"], None)
+        self.assertEqual(
+            response_json_datapoint["end_date"], "Mon, 01 Aug 2022 00:00:00 GMT"
+        )
+        self.assertEqual(
+            response_json_datapoint["frequency"], ReportingFrequency.MONTHLY.value
+        )
+        self.assertEqual(response_json_datapoint["is_published"], True)
+        self.assertEqual(
+            response_json_datapoint["metric_definition_key"],
+            "LAW_ENFORCEMENT_RESIDENTS",
+        )
+        self.assertEqual(
+            response_json_datapoint["metric_display_name"], "Jurisdiction Residents"
+        )
+        self.assertEqual(
+            response_json_datapoint["start_date"], "Fri, 01 Jul 2022 00:00:00 GMT"
+        )
+        self.assertEqual(response_json_datapoint["value"], 5000)
+
+        response_json_dimensions = response_json[
+            "dimension_names_by_metric_and_disaggregation"
+        ]
+
+        self.assertEqual(
+            response_json_dimensions,
+            {
+                "LAW_ENFORCEMENT_ARRESTS": {
+                    "Gender": ["Male", "Female", "Other", "Non-Binary", "Unknown"],
+                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"],
+                    "Race / Ethnicity": [
+                        "American Indian / Alaskan Native",
+                        "Asian",
+                        "Black",
+                        "External / Unknown",
+                        "Hispanic",
+                        "Native Hawaiian / Pacific Islander",
+                        "Other",
+                        "White",
+                    ],
+                },
+                "LAW_ENFORCEMENT_BUDGET": {},
+                "LAW_ENFORCEMENT_CALLS_FOR_SERVICE": {
+                    "Call Type": ["Emergency", "Non-emergency", "Unknown"]
+                },
+                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {},
+                "LAW_ENFORCEMENT_REPORTED_CRIME": {
+                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"]
+                },
+                "LAW_ENFORCEMENT_TOTAL_STAFF": {},
+                "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS": {
+                    "Force Type": [
+                        "Physical",
+                        "Restraint",
+                        "Verbal",
+                        "Weapon",
+                        "Unknown",
+                    ]
+                },
+            },
+        )
+
     def test_session(self) -> None:
         # Add data
         name = "Agency Alpha"
