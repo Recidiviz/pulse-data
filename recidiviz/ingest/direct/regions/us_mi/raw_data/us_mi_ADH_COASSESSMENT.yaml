@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_COASSESSMENT
+file_description: |-
+  This table contains assessment information for people under MIDOC jurisdiction.
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - RecId
+columns:
+  - name: RecId
+    description: COMPAS system-generated ID for the assessment record
+  - name: FkShOffender
+    description: ID for the justice-involved individual (links with FkShPerson in ADH_SHOFFENDER)
+    is_pii: True
+  - name: FkShCase
+  - name: FkCoRfScaleSet
+    description: ID for the scale set for the assessment (links with RecId in ADH_CORFSCALESET)
+  - name: FkShSyCodeLanguage
+  - name: FkShUserScreener
+    description: ID for user who conducted the screener (links with RecId in ADH_SHUSER)
+    is_pii: True
+  - name: FkShRfCodeLocation
+  - name: DateOfScreening
+    description: Date of the screening
+    is_datetime: True
+  - name: Age
+  - name: AgeCalc
+  - name: LockedReason
+  - name: MessageText
+  - name: RandomResponseCount
+  - name: FkShAgencyCreatedBy
+  - name: FkShUserCreatedBy
+    is_pii: True
+  - name: FkShUserUpdatedBy
+    is_pii: True
+  - name: FkShUserDeletedBy
+    is_pii: True
+  - name: FKCoSyRecSupervisionLevel
+    description: Reference code for recommended supervision level
+  - name: IsCompleted
+    description: flag for whether the assessment was completed
+  - name: IsComputed
+    description: flag for whether the assessment score was computed
+  - name: IsComputedOffline
+  - name: IsNarrativeCreated
+  - name: IsReasonLocked
+  - name: IsDeleted
+    description: flag for whether the assessment record was deleted
+  - name: DateCreated
+    is_datetime: True
+  - name: DateUpdated
+    is_datetime: True
+  - name: DateComputed
+    description: Date assessment score was computed
+    is_datetime: True
+  - name: DateDeleted
+    is_datetime: True
+  - name: TypologyScoreClass
+  - name: TypologyVerbose
+  - name: TypologyScore
+  - name: FkCoSyRecSupervisionLevelPreTrial
+  - name: FkShRfCodeNonComplete
+  - name: OldRecId
+  - name: IsQa
+  - name: IsHasValidationWarnings
+  - name: DateOfScreeningAsString
+    is_datetime: True
+  - name: DateCreatedAsString
+    is_datetime: True
+  - name: DateUpdatedAsString
+    is_datetime: True
+  - name: FkPtMasterRecId
+  - name: FkShUserComputedBy
+    is_pii: True
+  - name: DateComputedAsString
+    is_datetime: True
+  - name: FkShUserSubmittedBy
+    is_pii: True
+  - name: DateSubmitted
+    is_datetime: True
+  - name: DateSubmittedAsString
+    is_datetime: True
+  - name: FkCoSyRecSupervisionLevelROriginal
+  - name: IsSupervisionLevelROverriden
+  - name: DateToBeLocked
+  - name: DateToBeLockedAsString
+  - name: IsLocked

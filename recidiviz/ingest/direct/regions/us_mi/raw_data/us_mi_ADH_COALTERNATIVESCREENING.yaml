@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_COALTERNATIVESCREENING
+file_description: |-
+  This table contains screening information for people under MIDOC jurisdiction.
+data_classification: source
+encoding: windows-1252
+primary_key_cols:
+  - RecId
+columns:
+  - name: RecId
+    description: COMPAS system-generated ID for a screening record
+  - name: FkShOffender
+    description: ID for an offender record (links with fkshperson in the ADH_SHOFFENDER table)
+    is_pii: True
+  - name: FkCoSyScreeningType
+    description: Screening type
+  - name: FkShUserScreener
+    description: ID for the user that conducted the screening
+    is_pii: True
+  - name: FkShRfCodeLocation
+  - name: FkShCase
+  - name: DateOfScreening
+    description: Date of screening
+    is_datetime: True
+  - name: FkShUserCreatedBy
+    is_pii: True
+  - name: FkShUserUpdatedBy
+    is_pii: True
+  - name: FkShUserDeletedBy
+    is_pii: True
+  - name: DateCreated
+    is_datetime: True
+  - name: DateUpdated
+    description: Date screening record was updated
+    is_datetime: True
+  - name: DateDeleted
+    is_datetime: True
+  - name: IsDeleted
+  - name: IsCompleted
+    description: flag for whether the screening was completed
+  - name: IsComputed
+    description: flag for whether the screening score was computed
+  - name: IsComputedOffline
+  - name: FkShAgencyCreatedBy
+    description: ID for agency that created this screening record (links with FkShAgencyCreatedBy in ADH_SHOFFENDER)
+  - name: DateComputed
+    description: Date screening score computed
+    is_datetime: True
+  - name: IsLocked
+  - name: Comments
+    is_pii: True
+  - name: FkShRfCodeNonComplete
+  - name: FkCoAlternativeScreeningParent
+  - name: DateOfScreeningAsString
+  - name: DateUpdatedAsString
+  - name: DateCreatedAsString
+  - name: DateComputedAsString
+  - name: FkShSyCodeMatrixType
