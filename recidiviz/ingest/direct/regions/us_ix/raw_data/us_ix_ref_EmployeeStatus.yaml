@@ -1,28 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: ind_Offender_Phone
+file_tag: ref_EmployeeStatus
 file_description: |-
-  This table contains records of IDOC clients' phone numbers. These records must be
-  joined to the table `ref_Phone` to get the acutal phone number.
+  Code table that describes the codes for current status of an IDOC employee.
 data_classification: source
 primary_key_cols:
-  - Offender_PhoneId
+  - EmployeeStatusId
 columns:
-  - name: Offender_PhoneId
-    description: |-
-      Primary key.
-  - name: PhoneId
-    description: |-
-      ID of the phone number, joins to `ref_Phone.PhoneId`.
-  - name: OffenderId
-    is_pii: True
-    description: |-
-      IDOC client ID
-  - name: PrimaryPhone
-    description: |-
-      TODO(#15329): Fill in column description
+  - name: EmployeeStatusId
+    description: Primary key
+  - name: EmployeeStatusDesc
+    description: Description of this employee status type.
+  - name: Inactive
   - name: Locking
-    description: |-
-      TODO(#15329): Fill in column description
   - name: InsertUserId
     description: |-
       ID of the user who created this record.
@@ -39,3 +28,4 @@ columns:
     description: |-
       Timestamp for record modification.
     is_datetime: True
+  - name: IsCustom
