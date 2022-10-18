@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Various helper classes for interacting with a cloud task queue."""
+"""Various helper classes for interacting with a single cloud task queue."""
 import json
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
@@ -58,7 +58,7 @@ class CloudTaskQueueInfo:
 QueueInfoType = TypeVar("QueueInfoType", bound=CloudTaskQueueInfo)
 
 
-class CloudTaskQueueManager(Generic[QueueInfoType]):
+class SingleCloudTaskQueueManager(Generic[QueueInfoType]):
     """Class with helpers for interacting with a single CloudTask queue."""
 
     def __init__(

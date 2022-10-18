@@ -18,7 +18,7 @@
 asynchronously on background threads."""
 from typing import Any, Callable
 
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
@@ -39,7 +39,7 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
-    FakeDirectIngestCloudTaskManager,
+    FakeDirectIngestCloudTaskQueueManager,
 )
 from recidiviz.utils import monitoring
 from recidiviz.utils.single_thread_task_queue import SingleThreadTaskQueue
@@ -55,7 +55,7 @@ def with_monitoring(
     return wrapped_fn
 
 
-class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
+class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManager):
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     asynchronously on background threads."""
 

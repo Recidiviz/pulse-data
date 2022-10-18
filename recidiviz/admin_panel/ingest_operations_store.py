@@ -31,9 +31,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManagerImpl,
-    get_direct_ingest_queues_for_state,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManagerImpl,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -75,10 +74,6 @@ from recidiviz.ingest.direct.types.errors import (
 )
 from recidiviz.utils import metadata
 
-_TASK_LOCATION = "us-east1"
-
-QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
-
 BucketSummaryType = Dict[str, Union[str, int]]
 
 
@@ -89,7 +84,7 @@ class IngestOperationsStore(AdminPanelStore):
 
     def __init__(self) -> None:
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
-        self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+        self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
         self.bq_client = BigQueryClientImpl()
 
@@ -101,11 +96,6 @@ class IngestOperationsStore(AdminPanelStore):
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
-
-    @staticmethod
-    def get_queues_for_region(state_code: StateCode) -> List[str]:
-        """Returns the list of formatted direct ingest queues for given state"""
-        return sorted(get_direct_ingest_queues_for_state(state_code))
 
     def _verify_clean_ingest_view_state(
         self, state_code: StateCode, instance: DirectIngestInstance
@@ -174,66 +164,27 @@ class IngestOperationsStore(AdminPanelStore):
         self, state_code: StateCode, new_queue_state: str
     ) -> None:
         """This function is called through the Ingest Operations UI in the admin panel.
-        It updates the state of the following queues by either pausing or resuming the
-        queues:
-         - direct-ingest-state-<region_code>-extract-and-merge
-         - direct-ingest-state-<region_code>-extract-and-merge-queue-secondary
-         - direct-ingest-state-<region_code>-scheduler
-         - direct-ingest-state-<region_code>-scheduler-secondary
-         - direct-ingest-state-<region_code>-raw-data-import
-         - direct-ingest-state-<region_code>-raw-data-import-secondary
-         - direct-ingest-state-<region_code>-materialize-ingest-view
-         - direct-ingest-state-<region_code>-materialize-ingest-view-secondary
-         - direct-ingest-state-<region_code>-sftp-queue    (for select regions)
+        It updates the state of the ingest-related queues by either pausing or resuming the
+        queues.
 
         Requires:
         - state_code: (required) State code to pause queues for
         - new_state: (required) Either 'PAUSED' or 'RUNNING'
         """
-        queues_to_update = self.get_queues_for_region(state_code)
-
-        if new_queue_state not in [
-            QUEUE_STATE_ENUM.RUNNING.name,
-            QUEUE_STATE_ENUM.PAUSED.name,
-        ]:
-            logging.error(
-                "Received an invalid queue state: %s. This method should only be used "
-                "to update queue states to PAUSED or RUNNING",
-                new_queue_state,
-            )
-            raise ValueError(
-                f"Invalid queue state [{new_queue_state}] received",
-            )
-
-        for queue in queues_to_update:
-            queue_path = self.cloud_tasks_client.queue_path(
-                metadata.project_id(), _TASK_LOCATION, queue
-            )
-
-            if new_queue_state == QUEUE_STATE_ENUM.PAUSED.name:
-                logging.info("Pausing queue: %s", new_queue_state)
-                self.cloud_tasks_client.pause_queue(name=queue_path)
-            else:
-                logging.info("Resuming queue: %s", new_queue_state)
-                self.cloud_tasks_client.resume_queue(name=queue_path)
+        self.cloud_task_manager.update_ingest_queue_states_str(
+            state_code=state_code, new_queue_state_str=new_queue_state
+        )
 
     def get_ingest_queue_states(self, state_code: StateCode) -> List[Dict[str, str]]:
         """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""
-        ingest_queue_states: List[Dict[str, str]] = []
-        queues_to_update = self.get_queues_for_region(state_code)
+        ingest_queue_states: List[
+            Dict[str, tasks_v2.enums.Queue.State]
+        ] = self.cloud_task_manager.get_ingest_queue_states(state_code)
 
-        for queue_name in queues_to_update:
-            queue_path = self.cloud_tasks_client.queue_path(
-                metadata.project_id(), _TASK_LOCATION, queue_name
-            )
-            queue = self.cloud_tasks_client.get_queue(name=queue_path)
-            queue_state = {
-                "name": queue_name,
-                "state": QUEUE_STATE_ENUM(queue.state).name,
-            }
-            ingest_queue_states.append(queue_state)
-
-        return ingest_queue_states
+        return [
+            {queue_info["name"]: queue_info["state"].name}
+            for queue_info in ingest_queue_states
+        ]
 
     def start_ingest_rerun(
         self,

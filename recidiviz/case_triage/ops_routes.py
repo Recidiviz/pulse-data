@@ -27,9 +27,9 @@ from flask import Blueprint, request
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
-    CloudTaskQueueManager,
+    SingleCloudTaskQueueManager,
     get_cloud_task_json_body,
 )
 from recidiviz.metrics.export.export_config import (
@@ -111,7 +111,7 @@ def _handle_gcs_imports() -> Tuple[str, HTTPStatus]:
         logging.info("Ignoring file %s", filename)
         return "", HTTPStatus.OK
 
-    cloud_task_manager = CloudTaskQueueManager(
+    cloud_task_manager = SingleCloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
     cloud_task_manager.create_task(

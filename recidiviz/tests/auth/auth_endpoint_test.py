@@ -125,7 +125,7 @@ class AuthEndpointTests(TestCase):
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
-    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
     def test_handle_import_user_restrictions_csv_to_sql(
         self, mock_task_manager: MagicMock
     ) -> None:
@@ -164,7 +164,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(b"Invalid Pub/Sub message", response.data)
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
-    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
     def test_handle_import_user_restrictions_csv_to_sql_missing_region(
         self, mock_task_manager: MagicMock
     ) -> None:
@@ -186,7 +186,7 @@ class AuthEndpointTests(TestCase):
 
             mock_task_manager.return_value.create_task.assert_not_called()
 
-    @patch("recidiviz.auth.auth_endpoint.CloudTaskQueueManager")
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
     def test_handle_import_user_restrictions_csv_to_sql_invalid_file(
         self, mock_task_manager: MagicMock
     ) -> None:

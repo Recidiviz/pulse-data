@@ -58,7 +58,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
         self.project_id_patcher.stop()
         self.requires_gae_auth_patcher.stop()
 
-    @patch("recidiviz.workflows.etl.routes.CloudTaskQueueManager")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     def test_handle_workflows_firestore_etl(self, mock_task_manager: MagicMock) -> None:
         test_filename = "US_XX/test_file.json"
 
@@ -83,7 +83,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 body={"filename": "test_file.json", "state_code": "US_XX"},
             )
 
-    @patch("recidiviz.workflows.etl.routes.CloudTaskQueueManager")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     def test_handle_workflows_firestore_etl_skips_staged_files(
         self, mock_task_manager: MagicMock
     ) -> None:
@@ -105,7 +105,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
             mock_task_manager.return_value.create_task.assert_not_called()
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
-    @patch("recidiviz.workflows.etl.routes.CloudTaskQueueManager")
+    @patch("recidiviz.workflows.etl.routes.SingleCloudTaskQueueManager")
     def test_handle_workflows_firestore_etl_missing_region_code(
         self, mock_task_manager: MagicMock
     ) -> None:

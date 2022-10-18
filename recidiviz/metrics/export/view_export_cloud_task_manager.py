@@ -22,12 +22,12 @@ from typing import Optional
 
 import pytz
 
-from recidiviz.common.google_cloud.cloud_task_queue_manager import (
-    CloudTaskQueueInfo,
-    CloudTaskQueueManager,
-)
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     METRIC_VIEW_EXPORT_QUEUE,
+)
+from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
+    CloudTaskQueueInfo,
+    SingleCloudTaskQueueManager,
 )
 
 
@@ -35,7 +35,7 @@ class ViewExportCloudTaskManager:
     """Class for interacting with cloud tasks related to BQ view export."""
 
     def __init__(self) -> None:
-        self.cloud_task_queue_manager = CloudTaskQueueManager(
+        self.cloud_task_queue_manager = SingleCloudTaskQueueManager(
             queue_info_cls=CloudTaskQueueInfo, queue_name=METRIC_VIEW_EXPORT_QUEUE
         )
 

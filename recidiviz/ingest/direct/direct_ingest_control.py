@@ -41,9 +41,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
 from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
 )
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    DirectIngestCloudTaskManager,
-    DirectIngestCloudTaskManagerImpl,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManager,
+    DirectIngestCloudTaskQueueManagerImpl,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -793,7 +793,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                     # Trigger ingest to handle copied files (in case queue has emptied already while
                     # ingest was paused).
                     direct_ingest_cloud_task_manager = (
-                        DirectIngestCloudTaskManagerImpl()
+                        DirectIngestCloudTaskQueueManagerImpl()
                     )
 
                     if not gcs_destination_bucket_override:
@@ -838,7 +838,7 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
     with monitoring.push_region_tag(region_code, ingest_instance=None):
         try:
             region = _region_for_region_code(region_code)
-            direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+            direct_ingest_cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
             direct_ingest_cloud_task_manager.create_direct_ingest_sftp_download_task(
                 region
             )
@@ -867,4 +867,4 @@ def _parse_cloud_task_args(
     if not json_data_str:
         return None
     data = json.loads(json_data_str)
-    return DirectIngestCloudTaskManager.json_to_cloud_task_args(data)
+    return DirectIngestCloudTaskQueueManager.json_to_cloud_task_args(data)

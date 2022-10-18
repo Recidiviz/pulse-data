@@ -19,7 +19,7 @@ synchronously, when prompted."""
 import os.path
 from typing import List, Tuple
 
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
@@ -40,12 +40,14 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_cloud_task_manager import (
-    FakeDirectIngestCloudTaskManager,
+    FakeDirectIngestCloudTaskQueueManager,
 )
 from recidiviz.utils import monitoring
 
 
-class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
+class FakeSynchronousDirectIngestCloudTaskManager(
+    FakeDirectIngestCloudTaskQueueManager
+):
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     synchronously, when prompted."""
 

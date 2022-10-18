@@ -83,7 +83,7 @@ class OpsRoutesTest(TestCase):
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
-    @patch("recidiviz.case_triage.ops_routes.CloudTaskQueueManager")
+    @patch("recidiviz.case_triage.ops_routes.SingleCloudTaskQueueManager")
     def test_handle_gcs_imports(self, mock_task_manager: MagicMock) -> None:
         with self.app.test_request_context():
             response = self.client.post(
@@ -138,7 +138,7 @@ class OpsRoutesTest(TestCase):
                 b"Pub/Sub message must include an objectId attribute", response.data
             )
 
-    @patch("recidiviz.case_triage.ops_routes.CloudTaskQueueManager")
+    @patch("recidiviz.case_triage.ops_routes.SingleCloudTaskQueueManager")
     def test_handle_gcs_imports_ignore_file(self, mock_task_manager: MagicMock) -> None:
         with self.app.test_request_context():
             response = self.client.post(
