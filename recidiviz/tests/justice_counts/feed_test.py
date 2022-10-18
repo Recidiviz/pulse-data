@@ -95,7 +95,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(
                 set(system_to_filename_to_rows.keys()),
-                {"SUPERVISION", "PROBATION", "PAROLE"},
+                {"SUPERVISION", "PROBATION", "PAROLE", "PRISONS"},
             )
 
             filename_to_rows = system_to_filename_to_rows["SUPERVISION"]
