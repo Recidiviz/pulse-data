@@ -56,6 +56,7 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
     tables: List[schema.JusticeCountsBase] = [
         schema.UserAccount,
         schema.Source,
+        schema.Spreadsheet,
         schema.Report,
     ]
     session = Session(bind=engine)

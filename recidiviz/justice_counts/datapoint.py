@@ -130,18 +130,45 @@ class DatapointInterface:
 
     @staticmethod
     def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
+        """Each datapoint in the DB has a JSON `dimension_identifier_to_member`
+        dictionary that looks like `{"metric/prisons/staff/type": "SECURITY"}`.
+        This dictionary tells us that the datapoint is filtered on the dimension
+        class with identifier "metric/prisons/staff/type" (i.e. PrisonsStaffType)
+        and that the value of that filter is PrisonsStaffType.SECURITY. This
+        method parses the JSON blob to ultimately return this enum member --
+        -- e.g. in this case the return value is PrisonsStaffType.SECURITY.
+        """
         if datapoint.dimension_identifier_to_member is None:
             return None
         if len(datapoint.dimension_identifier_to_member) != 1:
             raise ValueError(
                 f"datapoint with id: {datapoint.id} has more than one disaggregation, which is currently not supported"
             )
+        # example: dimension_member = "MALE"
         dimension_id, dimension_member = list(
             datapoint.dimension_identifier_to_member.items()
         ).pop()
-        dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]
-        dimension = dimension_class[dimension_member]
-        return dimension
+
+        dimension_class = None
+        try:
+            dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
+                dimension_id
+            ]  # example: dimension_class = GenderRestricted
+        except KeyError:
+            logging.warning("Dimension identifier %s not found.", dimension_id)
+
+        dimension_enum_member = None
+        if dimension_class is not None:
+            try:
+                # example: dimension_enum_member = GenderRestricted.MALE
+                dimension_enum_member = dimension_class[dimension_member]
+            except KeyError:
+                logging.warning(
+                    "Dimension member %s not found in class %s",
+                    dimension_member,
+                    dimension_class,
+                )
+        return dimension_enum_member
 
     @staticmethod
     def to_json_response(
@@ -554,32 +581,20 @@ class DatapointInterface:
             # in is the enabled status.
             for dimension_id, dimension_datapoints in dimension_id_to_datapoint.items():
                 for datapoint in dimension_datapoints:
-                    if (
-                        len(datapoint.dimension_identifier_to_member) > 1  # type: ignore[attr-defined]
-                    ):
-                        raise JusticeCountsServerError(
-                            code="invalid_datapoint",
-                            description=(
-                                "Datapoint represents multiple dimensions. "
-                                f"Datapoint ID: {datapoint.id}."
-                            ),
-                        )
 
-                    # example: dimension_name = "MALE"
-                    dimension_name = list(
-                        datapoint.dimension_identifier_to_member.values()
-                    ).pop()
-
-                    dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
-                        dimension_id
-                    ]  # example: dimension_class = GenderRestricted
+                    dimension_enum_member = DatapointInterface.get_dimension(
+                        datapoint=datapoint
+                    )
 
                     curr_dimension_dict = dimension_id_to_dimension_dicts.get(
                         dimension_id
                     )  # example: curr_dimension_dict = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
 
-                    if curr_dimension_dict is not None:
-                        curr_dimension_dict[dimension_class[dimension_name]] = (
+                    if (
+                        dimension_enum_member is not None
+                        and curr_dimension_dict is not None
+                    ):
+                        curr_dimension_dict[dimension_enum_member] = (
                             datapoint.get_value()
                             if create_dimension_to_value_dict
                             else datapoint.enabled

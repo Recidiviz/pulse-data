@@ -194,8 +194,10 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                 schema.System.SUPERVISION,
                 schema.System.PAROLE,
                 schema.System.PROBATION,
+                schema.System.PRISONS,
             ),
-            "Supervision",
+            # Add Prisons so that this agency resembles NCDPS
+            "Supervision & Prison",
         ),
     ]
     agencies = []
