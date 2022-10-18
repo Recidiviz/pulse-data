@@ -31,6 +31,7 @@ SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Sentencing Data"""
 
 # List of states that have separate sentence preprocessed views
 SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_TN"]
+INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_ND"]
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
 SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
@@ -77,7 +78,11 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sis.external_id IS NOT NULL
-        AND sis.state_code NOT IN ('{special_states}')
+        AND sis.state_code NOT IN ('{special_states}', '{incarceration_special_states}')
+
+    UNION ALL
+
+    SELECT * FROM `{project_id}.{sessions_dataset}.us_nd_incarceration_sentences_preprocessed`
 
     UNION ALL
 
@@ -257,6 +262,9 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_base_dataset=STATE_BASE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     special_states="', '".join(SENTENCES_PREPROCESSED_SPECIAL_STATES),
+    incarceration_special_states="', '".join(
+        INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES
+    ),
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )
