@@ -55,7 +55,7 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
     ],
     "US_TN": [
         OpportunityExportConfig(
-            source_filename="us_tn_supervision_level_downgrade_record_materialized.json",
+            source_filename="us_tn_supervision_level_downgrade_record.json",
             export_collection_name="US_TN-supervisionLevelDowngrade",
         ),
     ],

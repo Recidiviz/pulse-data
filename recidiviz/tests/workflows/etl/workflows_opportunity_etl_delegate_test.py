@@ -147,7 +147,11 @@ class TestWorkflowsETLConfig(TestCase):
     """Checks constraints on the ETL config"""
 
     def test_source_filename_format(self) -> None:
-        """Tests that the source_filename parameter ends in .json."""
+        """Tests for common mistakes one can make when configuring filenames"""
         for configs in CONFIG_BY_STATE.values():
             for config in configs:
+                # filename must have json extension
                 self.assertEqual(".json", config.source_filename[-5:])
+
+                # filename (unlike corresponding view) must not have materialized suffix
+                self.assertNotRegex(config.source_filename, r"_materialized.json$")
