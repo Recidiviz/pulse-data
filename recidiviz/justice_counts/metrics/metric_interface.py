@@ -31,6 +31,8 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
+    IncludesExcludesSet,
+    IncludesExcludesSetting,
     MetricCategory,
     MetricDefinition,
 )
@@ -39,6 +41,7 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     METRICS_BY_SYSTEM,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.utils.types import assert_type
 
 MetricContextDataT = TypeVar("MetricContextDataT", bound="MetricContextData")
 MetricAggregatedDimensionDataT = TypeVar(
@@ -98,6 +101,9 @@ class MetricAggregatedDimensionData:
     dimension_to_enabled_status: Optional[Dict[DimensionBase, Any]] = attr.field(
         default=None
     )
+    dimension_to_includes_excludes_member_to_setting: Optional[
+        Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
+    ] = attr.field(default=None)
 
     @dimension_to_value.validator
     def validate(self, _attribute: attr.Attribute, value: Any) -> None:
@@ -137,12 +143,54 @@ class MetricAggregatedDimensionData:
             description="Metric has no dimension_to_enabled_status or dimension_to_value dictionary.",
         )
 
+    def to_included_excluded_json(
+        self,
+        dimension: DimensionBase,
+        includes_excludes_definition: Optional[IncludesExcludesSet] = None,
+    ) -> List[Dict[str, Any]]:
+        """Returns a json list of include_exclude settings for a dimension."""
+
+        includes_excludes_list: List[Dict[str, str]] = []
+        if includes_excludes_definition is None:
+            return includes_excludes_list
+
+        # Example: {SettingEnum.SETTING_1: IncludesExcludesSetting.YES,
+        # SettingEnum.SETTING_2: IncludesExcludesSetting.No, ...}
+        actual_member_to_includes_excludes_setting = (
+            self.dimension_to_includes_excludes_member_to_setting.get(dimension, {})
+            if self.dimension_to_includes_excludes_member_to_setting is not None
+            else {}
+        )
+
+        for (
+            member,
+            default_setting,
+        ) in includes_excludes_definition.member_to_default_inclusion_setting.items():
+            includes_excludes_list.append(
+                {
+                    "key": member.name,
+                    "label": member.value,
+                    "included": assert_type(
+                        actual_member_to_includes_excludes_setting.get(
+                            member, default_setting
+                        ),
+                        IncludesExcludesSetting,
+                    ).value,
+                    "default": default_setting.value,
+                }
+            )
+        return includes_excludes_list
+
     def dimension_to_json(
-        self, entry_point: DatapointGetRequestEntryPoint
+        self,
+        entry_point: DatapointGetRequestEntryPoint,
+        dimension_to_includes_excludes: Optional[
+            Dict[DimensionBase, IncludesExcludesSet]
+        ] = None,
     ) -> List[Dict[str, Any]]:
         """This method would be called in two scenarios: 1) We are getting the json of
-        a report metric with will have both dimension_to_enabled_status and dimension_to_value
-        populated or 2) We are getting the json of an agency metric with will only have
+        a report metric which will have both dimension_to_enabled_status and dimension_to_value
+        populated or 2) We are getting the json of an agency metric which will only have
         dimension_to_enabled_status populated."""
         dimensions = []
         if self.dimension_to_enabled_status is not None:
@@ -152,6 +200,16 @@ class MetricAggregatedDimensionData:
                     "label": dimension.dimension_value,
                     "enabled": status,
                 }
+                if (
+                    dimension_to_includes_excludes is not None
+                    and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
+                ):
+                    json["settings"] = self.to_included_excluded_json(
+                        dimension=dimension,
+                        includes_excludes_definition=dimension_to_includes_excludes.get(
+                            dimension
+                        ),
+                    )
                 if (
                     self.dimension_to_value is not None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -188,7 +246,10 @@ class MetricAggregatedDimensionData:
             "should_sum_to_total": dimension_definition.should_sum_to_total,
             "display_name": dimension_definition.display_name
             or dimension_definition.dimension.display_name(),
-            "dimensions": self.dimension_to_json(entry_point=entry_point),
+            "dimensions": self.dimension_to_json(
+                entry_point=entry_point,
+                dimension_to_includes_excludes=dimension_definition.dimension_to_includes_excludes,
+            ),
             "enabled": is_disaggregation_enabled,
         }
 
@@ -197,6 +258,7 @@ class MetricAggregatedDimensionData:
         cls: Type[MetricAggregatedDimensionDataT],
         json: Dict[str, Any],
         entry_point: DatapointGetRequestEntryPoint,
+        disaggregation_definition: AggregatedDimension,
     ) -> MetricAggregatedDimensionDataT:
         """
         - The input json is expected to be of the format {dimension name -> value/enabled}, e.g. {"BLACK": 50} for report
@@ -209,9 +271,6 @@ class MetricAggregatedDimensionData:
           does include all dimension names.
         - The dimensions that were reported in json will be copied over to dimension_to_value/dimension_to_enabled_status dict.
         """
-        # default_dimension_enabled_status will be True or False if a disaggregation is being turned off/on,
-        # and None otherwise.
-        default_dimension_enabled_status = json.get("enabled")
         value_key = (
             "value"
             if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -227,18 +286,82 @@ class MetricAggregatedDimensionData:
             dim["key"]: dim[value_key] for dim in dimensions or []
         }  # example: {"BLACK": 50, "WHITE": 20, ...} if a report metric
         # or {"BLACK": True, "WHITE": False, ...} if it is an agency metric
-        dimension_to_value = {
+        if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
+            return cls(
+                dimension_to_value={
+                    dimension: dimension_enum_value_to_value.get(
+                        dimension.to_enum().value, None
+                    )
+                    for dimension in dimension_class
+                }
+            )  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20})
+
+        # default_dimension_enabled_status will be True or False if a disaggregation is being turned off/on,
+        # and None otherwise.
+        default_dimension_enabled_status = json.get("enabled")
+        dimension_to_enabled_status = {
             dimension: dimension_enum_value_to_value.get(
                 dimension.to_enum().value,
-                None
-                if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
-                else default_dimension_enabled_status,
+                default_dimension_enabled_status,
             )
             for dimension in dimension_class
-        }  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20}
-        if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
-            return cls(dimension_to_value=dimension_to_value)
-        return cls(dimension_to_enabled_status=dimension_to_value)
+        }  # example: {RaceAndEthnicity.BLACK: True, RaceAndEthnicity.WHITE: False}
+
+        if (
+            disaggregation_definition is not None
+            and disaggregation_definition.dimension_to_includes_excludes is None
+        ):
+            # If the disaggregation definition has no includes_excludes options specified,
+            # return a MetricAggregatedDimensionData object with just a dimension_to_enabled_status
+            # dict.
+            return cls(
+                dimension_to_enabled_status=dimension_to_enabled_status,
+            )
+
+        dimension_to_includes_excludes_member_to_setting: Dict[
+            DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
+        ] = {dimension: {} for dimension in dimension_class}
+
+        # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "N/A"},
+        # "WHITE": {"SETTING_1": "No", "SETTING_2", "Yes"}}
+        dimension_enum_value_to_includes_excludes_member_to_setting = {
+            dim["key"]: {
+                setting["key"]: setting["included"]
+                for setting in dim.get("settings", [])
+            }
+            for dim in dimensions or []
+        }
+
+        for dimension in dimension_class:
+            # For each dimension that is part of the aggregated dimension,
+            # get the IncludesExcludesSet, which contains all the
+            # members of the includes/excludes enum as well as the default settings.
+            includes_excludes_set = (
+                disaggregation_definition.dimension_to_includes_excludes.get(dimension)
+            )
+            member_to_include_excludes_setting = {}
+            # Example: {"SETTING_1": "Yes", "SETTING_2": "No...}
+            member_to_actual_inclusion_setting = (
+                dimension_enum_value_to_includes_excludes_member_to_setting.get(
+                    dimension.to_enum().value, {}
+                )
+            )
+            if includes_excludes_set is not None:
+                for member in includes_excludes_set.members:
+                    setting = member_to_actual_inclusion_setting.get(member.name)
+                    member_to_include_excludes_setting[member] = (
+                        IncludesExcludesSetting(setting)
+                        if setting is not None
+                        else None
+                    )
+                dimension_to_includes_excludes_member_to_setting[
+                    dimension
+                ] = member_to_include_excludes_setting
+
+        return cls(
+            dimension_to_enabled_status=dimension_to_enabled_status,
+            dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
+        )
 
 
 @attr.define()
@@ -260,6 +383,10 @@ class MetricInterface:
     aggregated_dimensions: List[MetricAggregatedDimensionData] = attr.field(
         factory=list
     )
+    # Values for includes_excludes settings at the metric level.
+    includes_excludes_member_to_setting: Dict[
+        enum.Enum, Optional[IncludesExcludesSetting]
+    ] = attr.field(factory=dict)
 
     # TODO(#12418) [Backend] Figure out when/when not to validate MetricInterfaces
     enforce_validation: Optional[bool] = False
@@ -351,6 +478,8 @@ class MetricInterface:
         return METRIC_KEY_TO_METRIC[self.key]
 
     def to_json(self, entry_point: DatapointGetRequestEntryPoint) -> Dict[str, Any]:
+        """Returns the json form of the MetricInterface object."""
+
         dimension_id_to_dimension_definition = {
             d.dimension_identifier(): d
             for d in self.metric_definition.aggregated_dimensions or []
@@ -360,6 +489,29 @@ class MetricInterface:
         }
 
         frequency = self.metric_definition.reporting_frequency.value
+        settings_json = []
+        if (
+            entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
+            and self.metric_definition.includes_excludes
+        ):
+            for member, setting in self.includes_excludes_member_to_setting.items():
+                default_setting = assert_type(
+                    self.metric_definition.includes_excludes.member_to_default_inclusion_setting.get(
+                        member
+                    ),
+                    enum.Enum,
+                ).value
+                settings_json.append(
+                    {
+                        "key": member.name,
+                        "label": member.value,
+                        "included": setting.value
+                        if setting is not None
+                        else default_setting,
+                        "default": default_setting,
+                    }
+                )
+
         return {
             "key": self.key,
             "system": self.metric_definition.system.value.replace("_", " ")
@@ -369,6 +521,7 @@ class MetricInterface:
             "description": self.metric_definition.description,
             "reporting_note": self.metric_definition.reporting_note,
             "value": self.value,
+            "settings": settings_json,
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.value,
             "label": self.metric_definition.display_name,
@@ -405,12 +558,44 @@ class MetricInterface:
             )
             for context_json in json.get("contexts", [])
         ]
+        metric_definition = METRIC_KEY_TO_METRIC[json["key"]]
+        includes_excludes_member_to_setting = {}
+        if (
+            metric_definition.includes_excludes is not None
+            and entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
+        ):
+            actual_includes_excludes_list = json.get("settings", [])
+            actual_includes_excludes_member_to_setting = {
+                setting["key"]: setting["included"]
+                for setting in actual_includes_excludes_list
+            }
+            for member in metric_definition.includes_excludes.members:
+                setting = actual_includes_excludes_member_to_setting.get(member.name)
+                includes_excludes_member_to_setting[member] = (
+                    IncludesExcludesSetting(setting) if setting is not None else None
+                )
 
         disaggregations = []
+        dimension_id_to_definition = (
+            {
+                d.dimension.dimension_identifier(): d
+                for d in metric_definition.aggregated_dimensions
+            }
+            if metric_definition.aggregated_dimensions is not None
+            else {}
+        )
         for dimension_json in json.get("disaggregations", []):
+            dimension_definition = dimension_id_to_definition.get(dimension_json["key"])
+            if dimension_definition is None:
+                raise JusticeCountsServerError(
+                    code="invalid_dimension_id",
+                    description=f'Metric json contains an invalid dimension identifier: {dimension_json["key"]}',
+                )
             disaggregations.append(
                 MetricAggregatedDimensionData.from_json(
-                    json=dimension_json, entry_point=entry_point
+                    json=dimension_json,
+                    entry_point=entry_point,
+                    disaggregation_definition=dimension_definition,
                 )
             )
 
@@ -428,6 +613,7 @@ class MetricInterface:
             value=json.get("value"),
             contexts=metric_context_data,
             aggregated_dimensions=disaggregations,
+            includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             is_metric_enabled=json.get("enabled", True),
             # TODO(#13556) Backend validation needs to match new frontend validation
             # Right now, if you only publish a subset of the metrics, this will error

@@ -19,18 +19,22 @@
 from typing import Any, Dict
 from unittest import TestCase
 
-import recidiviz.justice_counts.metrics.law_enforcement as law_enforcement_metric_definitions
 from recidiviz.common.constants.justice_counts import ContextKey
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    LawEnforcementStaffType,
-    OffenseType,
-)
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsReleaseType
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
 from recidiviz.justice_counts.dimensions.person import GenderRestricted
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.includes_excludes.prisons import (
+    PrisonGrievancesIncludesExcludes,
+    PrisonReleasesDeathIncludesExcludes,
+    PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+    PrisonReleasesToParoleIncludesExcludes,
+    PrisonReleasesToProbationIncludesExcludes,
+)
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     CallsRespondedOptions,
+    IncludesExcludesSetting,
 )
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
@@ -39,6 +43,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricInterface,
 )
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
+from recidiviz.utils.types import assert_type
 
 
 class TestJusticeCountsMetricInterface(TestCase):
@@ -172,6 +177,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Annual Budget",
                 "enabled": True,
                 "frequency": "ANNUAL",
+                "settings": [],
                 "contexts": [
                     {
                         "key": "PRIMARY_FUNDING_SOURCE",
@@ -200,7 +206,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         reported_metric = (
             self.test_schema_objects.get_reported_calls_for_service_metric()
         )
-        metric_definition = law_enforcement_metric_definitions.calls_for_service
+        metric_definition = law_enforcement.calls_for_service
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -220,6 +226,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "settings": [],
                 "contexts": [
                     {
                         "key": "ALL_CALLS_OR_CALLS_RESPONDED",
@@ -289,9 +296,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         reported_metric = (
             self.test_schema_objects.get_civilian_complaints_sustained_metric()
         )
-        metric_definition = (
-            law_enforcement_metric_definitions.civilian_complaints_sustained
-        )
+        metric_definition = law_enforcement.civilian_complaints_sustained
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -315,6 +320,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     },
                 ],
                 "category": metric_definition.category.value,
+                "settings": [],
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
                 "label": "Civilian Complaints Sustained",
@@ -335,7 +341,7 @@ class TestJusticeCountsMetricInterface(TestCase):
 
     def test_total_arrests_metric_json(self) -> None:
         reported_metric = self.test_schema_objects.get_total_arrests_metric()
-        metric_definition = law_enforcement_metric_definitions.total_arrests
+        metric_definition = law_enforcement.total_arrests
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -353,6 +359,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Total Arrests",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "settings": [],
                 "contexts": [
                     {
                         "key": "JURISDICTION_DEFINITION_OF_ARREST",
@@ -437,6 +444,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         dimension_data = MetricAggregatedDimensionData.from_json(
             json=request_json,
             entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            disaggregation_definition=assert_type(
+                law_enforcement.reported_crime.aggregated_dimensions, list
+            )[0],
         )
 
         self.assertEqual(
@@ -461,6 +471,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         dimension_data = MetricAggregatedDimensionData.from_json(
             json=request_json,
             entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            disaggregation_definition=assert_type(
+                law_enforcement.reported_crime.aggregated_dimensions, list
+            )[0],
         )
 
         self.assertEqual(
@@ -477,6 +490,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         dimension_data = MetricAggregatedDimensionData.from_json(
             json=request_json,
             entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            disaggregation_definition=assert_type(
+                law_enforcement.reported_crime.aggregated_dimensions, list
+            )[0],
         )
         self.assertEqual(
             dimension_data.dimension_to_enabled_status,
@@ -492,6 +508,9 @@ class TestJusticeCountsMetricInterface(TestCase):
         dimension_data = MetricAggregatedDimensionData.from_json(
             json=request_json,
             entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            disaggregation_definition=assert_type(
+                law_enforcement.reported_crime.aggregated_dimensions, list
+            )[0],
         )
 
         self.assertEqual(
@@ -500,7 +519,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         )
 
     def test_arrest_metric_json_to_report_metric(self) -> None:
-        metric_definition = law_enforcement_metric_definitions.total_arrests
+        metric_definition = law_enforcement.total_arrests
         response_json = {
             "key": metric_definition.key,
             "value": 100,
@@ -554,7 +573,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         )
 
     def test_police_officer_metric_json_to_report_metric(self) -> None:
-        metric_definition = law_enforcement_metric_definitions.police_officers
+        metric_definition = law_enforcement.police_officers
         response_json = {
             "key": metric_definition.key,
             "value": 100,
@@ -563,22 +582,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                     "key": metric_definition.contexts[0].key.value,
                     "value": "additional context",
                     "multiple_choice_options": [],
-                }
-            ],
-            "disaggregations": [
-                {
-                    "key": LawEnforcementStaffType.dimension_identifier(),
-                    "dimensions": [
-                        {
-                            "key": LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS.value,
-                            "value": 100,
-                        },
-                        {
-                            "key": LawEnforcementStaffType.CIVILIAN_STAFF.value,
-                            "value": 50,
-                        },
-                        {"key": LawEnforcementStaffType.UNKNOWN.value, "value": 0},
-                    ],
                 }
             ],
         }
@@ -593,15 +596,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                         value="additional context",
                     )
                 ],
-                aggregated_dimensions=[
-                    MetricAggregatedDimensionData(
-                        dimension_to_value={
-                            LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: 100,
-                            LawEnforcementStaffType.CIVILIAN_STAFF: 50,
-                            LawEnforcementStaffType.UNKNOWN: 0,
-                        },
-                    )
-                ],
                 # TODO(#13556) Backend validation needs to match new frontend validation
                 # enforce_validation=True
                 enforce_validation=False,
@@ -613,9 +607,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         )
 
     def test_complaints_sustained_metric_json_to_report_metric(self) -> None:
-        metric_definition = (
-            law_enforcement_metric_definitions.civilian_complaints_sustained
-        )
+        metric_definition = law_enforcement.civilian_complaints_sustained
         response_json = {
             "key": metric_definition.key,
             "value": 100,
@@ -672,6 +664,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
                 "contexts": [],
+                "settings": [],
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -736,6 +729,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
                 "contexts": [],
+                "settings": [],
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -799,6 +793,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "settings": [],
                 "contexts": [
                     {
                         "display_name": "Please provide additional context.",
@@ -876,6 +871,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
                 "contexts": [],
+                "settings": [],
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -1012,6 +1008,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         metric_definition = law_enforcement.total_arrests
         metric_json = {
             "key": metric_definition.key,
+            "settings": [],
             "disaggregations": [
                 {"key": OffenseType.dimension_identifier(), "enabled": False},
             ],
@@ -1035,9 +1032,7 @@ class TestJusticeCountsMetricInterface(TestCase):
         )
 
     def test_boolean_reported_complaint(self) -> None:
-        context_definition = (
-            law_enforcement_metric_definitions.calls_for_service.contexts[0]
-        )
+        context_definition = law_enforcement.calls_for_service.contexts[0]
         response_json = {
             "key": context_definition.key.value,
             "value": CallsRespondedOptions.ALL_CALLS.value,
@@ -1064,4 +1059,348 @@ class TestJusticeCountsMetricInterface(TestCase):
         self.assertEqual(
             MetricContextData.from_json(json=cleared_input),
             MetricContextData(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
+        )
+
+    def test_disaggregation_includes_excludes(self) -> None:
+        disaggregation_metric_interface = MetricAggregatedDimensionData(
+            dimension_to_enabled_status={d: True for d in PrisonsReleaseType},
+            dimension_to_value=None,
+            dimension_to_includes_excludes_member_to_setting={
+                PrisonsReleaseType.SENTENCE_COMPLETION: {
+                    d: IncludesExcludesSetting.NO
+                    for d in PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes
+                },
+                PrisonsReleaseType.TO_PAROLE_SUPERVISION: {
+                    d: IncludesExcludesSetting.YES
+                    for d in PrisonReleasesToParoleIncludesExcludes
+                },
+                PrisonsReleaseType.TO_PROBATION_SUPERVISION: {
+                    d: IncludesExcludesSetting.NOT_AVAILABLE
+                    for d in PrisonReleasesToProbationIncludesExcludes
+                },
+                PrisonsReleaseType.DEATH: {
+                    d: IncludesExcludesSetting.YES
+                    for d in PrisonReleasesDeathIncludesExcludes
+                },
+                PrisonsReleaseType.TRANSFER: {},
+                PrisonsReleaseType.UNAPPROVED_ABSENCE: {},
+                PrisonsReleaseType.COMPASSIONATE_RELEASE: {},
+                PrisonsReleaseType.UNKNOWN: {},
+                PrisonsReleaseType.OTHER: {},
+            },
+        )
+
+        disaggregation_json = {
+            "key": PrisonsReleaseType.dimension_identifier(),
+            "enabled": True,
+            "required": False,
+            "helper_text": None,
+            "should_sum_to_total": False,
+            "display_name": "Prisons Release Types",
+            "dimensions": [
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.SENTENCE_COMPLETION.value,
+                    "key": PrisonsReleaseType.SENTENCE_COMPLETION.value,
+                    "settings": [
+                        {
+                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.NOT_ELIGIBLE_FOR_PAROLE.name,
+                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.NOT_ELIGIBLE_FOR_PAROLE.value,
+                            "included": "No",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.APPROVED_FOR_PAROLE.name,
+                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.APPROVED_FOR_PAROLE.value,
+                            "included": "No",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.DENIED_PAROLE.name,
+                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.DENIED_PAROLE.value,
+                            "included": "No",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.COMMUTED_SENTENCE.name,
+                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.COMMUTED_SENTENCE.value,
+                            "included": "No",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER.name,
+                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER.value,
+                            "included": "No",
+                            "default": "No",
+                        },
+                    ],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
+                    "key": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
+                    "settings": [
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToParoleIncludesExcludes.OTHER.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.OTHER.value,
+                            "included": "Yes",
+                            "default": "No",
+                        },
+                    ],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
+                    "key": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
+                    "settings": [
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.COMMUTED_SENTENCE.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.COMMUTED_SENTENCE.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
+                            "included": "N/A",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesToProbationIncludesExcludes.OTHER.name,
+                            "label": PrisonReleasesToProbationIncludesExcludes.OTHER.value,
+                            "included": "N/A",
+                            "default": "No",
+                        },
+                    ],
+                },
+                {
+                    "enabled": True,
+                    "key": PrisonsReleaseType.DEATH.value,
+                    "label": PrisonsReleaseType.DEATH.value,
+                    "settings": [
+                        {
+                            "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
+                            "label": PrisonReleasesDeathIncludesExcludes.DEATH.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.name,
+                            "label": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesDeathIncludesExcludes.OTHER.name,
+                            "label": PrisonReleasesDeathIncludesExcludes.OTHER.value,
+                            "included": "Yes",
+                            "default": "No",
+                        },
+                    ],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.TRANSFER.value,
+                    "key": PrisonsReleaseType.TRANSFER.value,
+                    "settings": [],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
+                    "key": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
+                    "settings": [],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
+                    "key": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
+                    "settings": [],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.UNKNOWN.value,
+                    "key": PrisonsReleaseType.UNKNOWN.value,
+                    "settings": [],
+                },
+                {
+                    "enabled": True,
+                    "label": PrisonsReleaseType.OTHER.value,
+                    "key": PrisonsReleaseType.OTHER.value,
+                    "settings": [],
+                },
+            ],
+        }
+
+        self.assertEqual(
+            disaggregation_metric_interface.to_json(
+                dimension_definition=assert_type(
+                    prisons.releases.aggregated_dimensions, list
+                )[0],
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            ),
+            disaggregation_json,
+        )
+        self.assertEqual(
+            MetricAggregatedDimensionData.from_json(
+                json=disaggregation_json,
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+                disaggregation_definition=assert_type(
+                    prisons.releases.aggregated_dimensions, list
+                )[0],
+            ),
+            disaggregation_metric_interface,
+        )
+
+    def test_metric_includes_excludes_to_json(self) -> None:
+        metric_interface = MetricInterface(
+            key=prisons.grievances_upheld.key,
+            is_metric_enabled=True,
+            value=200,
+            enforce_validation=False,
+            includes_excludes_member_to_setting={
+                PrisonGrievancesIncludesExcludes.UPHELD: IncludesExcludesSetting.NO,
+                PrisonGrievancesIncludesExcludes.REMEDY: IncludesExcludesSetting.NOT_AVAILABLE,
+                PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED: IncludesExcludesSetting.YES,
+                PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION: IncludesExcludesSetting.YES,
+                PrisonGrievancesIncludesExcludes.INFORMAL: IncludesExcludesSetting.NO,
+                PrisonGrievancesIncludesExcludes.DUPLICATE: IncludesExcludesSetting.NOT_AVAILABLE,
+            },
+            aggregated_dimensions=[],
+            contexts=[],
+        )
+
+        metric_interface_json = {
+            "key": prisons.grievances_upheld.key,
+            "enabled": True,
+            "system": "Prisons",
+            "display_name": prisons.grievances_upheld.display_name,
+            "description": prisons.grievances_upheld.description,
+            "definitions": [
+                {
+                    "definition": "A complaint or question filed with the institution by an "
+                    "individual incarcerated regarding their experience, with procedures, "
+                    "treatment, or interaction with officers.",
+                    "term": "Grievance",
+                }
+            ],
+            "reporting_note": prisons.grievances_upheld.reporting_note,
+            "unit": prisons.grievances_upheld.metric_type.unit,
+            "category": prisons.grievances_upheld.category.value,
+            "label": prisons.grievances_upheld.display_name,
+            "frequency": prisons.grievances_upheld.reporting_frequencies[0].value,
+            "value": 200,
+            "disaggregations": [],
+            "contexts": [],
+            "settings": [
+                {
+                    "key": PrisonGrievancesIncludesExcludes.UPHELD.name,
+                    "label": PrisonGrievancesIncludesExcludes.UPHELD.value,
+                    "included": "No",
+                    "default": "Yes",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.REMEDY.name,
+                    "label": PrisonGrievancesIncludesExcludes.REMEDY.value,
+                    "included": "N/A",
+                    "default": "Yes",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED.name,
+                    "label": PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION.name,
+                    "label": PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION.value,
+                    "included": "Yes",
+                    "default": "No",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.INFORMAL.name,
+                    "label": PrisonGrievancesIncludesExcludes.INFORMAL.value,
+                    "included": "No",
+                    "default": "No",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.DUPLICATE.name,
+                    "label": PrisonGrievancesIncludesExcludes.DUPLICATE.value,
+                    "included": "N/A",
+                    "default": "No",
+                },
+            ],
+        }
+
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            ),
+            metric_interface_json,
+        )
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_interface_json,
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            ),
+            metric_interface,
         )
