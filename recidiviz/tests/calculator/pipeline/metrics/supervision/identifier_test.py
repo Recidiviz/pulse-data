@@ -89,7 +89,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
     UsIdSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    UsMoIncarcerationSentence,
+    NormalizedUsMoIncarcerationSentence,
+    NormalizedUsMoSupervisionSentence,
     UsMoSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
@@ -2499,7 +2500,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
+        supervision_sentence = NormalizedUsMoSupervisionSentence.from_supervision_sentence(
             sentence=base_supervision_sentence,
             sentence_statuses_raw=[
                 {
@@ -2530,7 +2531,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        incarceration_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(
+        incarceration_sentence = NormalizedUsMoIncarcerationSentence.from_incarceration_sentence(
             sentence=base_incarceration_sentence,
             sentence_statuses_raw=[
                 {

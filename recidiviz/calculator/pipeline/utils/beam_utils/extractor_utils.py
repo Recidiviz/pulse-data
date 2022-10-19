@@ -39,6 +39,8 @@ from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     state_base_entity_class_for_entity_class,
@@ -57,6 +59,8 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     select_query,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    NormalizedUsMoIncarcerationSentence,
+    NormalizedUsMoSupervisionSentence,
     UsMoIncarcerationSentence,
     UsMoSupervisionSentence,
 )
@@ -1394,7 +1398,9 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
                         status_dict
                     )
 
-        updated_incarceration_sentences: List[UsMoIncarcerationSentence] = []
+        updated_incarceration_sentences: List[
+            Union[UsMoIncarcerationSentence, NormalizedUsMoIncarcerationSentence]
+        ] = []
 
         for incarceration_sentence in incarceration_sentences:
             if not isinstance(
@@ -1419,8 +1425,18 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
                     incarceration_sentence.external_id
                 ]
 
-            state_specific_incarceration_sentence = (
-                UsMoIncarcerationSentence.from_incarceration_sentence(
+            state_specific_incarceration_sentence: Union[
+                UsMoIncarcerationSentence, NormalizedUsMoIncarcerationSentence
+            ] = (
+                (
+                    UsMoIncarcerationSentence.from_incarceration_sentence(
+                        incarceration_sentence, sentence_statuses
+                    )
+                )
+                if not isinstance(
+                    incarceration_sentence, NormalizedStateIncarcerationSentence
+                )
+                else NormalizedUsMoIncarcerationSentence.from_incarceration_sentence(
                     incarceration_sentence, sentence_statuses
                 )
             )
@@ -1433,7 +1449,9 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
             state_entities.StateIncarcerationSentence.__name__
         ] = cast(List[Entity], updated_incarceration_sentences)
 
-        updated_supervision_sentences: List[UsMoSupervisionSentence] = []
+        updated_supervision_sentences: List[
+            Union[UsMoSupervisionSentence, NormalizedUsMoSupervisionSentence]
+        ] = []
 
         for supervision_sentence in supervision_sentences:
             if not isinstance(
@@ -1453,8 +1471,18 @@ class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
                     supervision_sentence.external_id
                 ]
 
-            state_specific_supervision_sentence = (
-                UsMoSupervisionSentence.from_supervision_sentence(
+            state_specific_supervision_sentence: Union[
+                NormalizedUsMoSupervisionSentence, UsMoSupervisionSentence
+            ] = (
+                (
+                    UsMoSupervisionSentence.from_supervision_sentence(
+                        supervision_sentence, sentence_statuses
+                    )
+                )
+                if not isinstance(
+                    supervision_sentence, NormalizedStateSupervisionSentence
+                )
+                else NormalizedUsMoSupervisionSentence.from_supervision_sentence(
                     supervision_sentence, sentence_statuses
                 )
             )
