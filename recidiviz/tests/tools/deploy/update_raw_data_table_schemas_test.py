@@ -22,16 +22,16 @@ from unittest.mock import patch
 
 from google.cloud import bigquery
 
-from recidiviz.ingest.direct.raw_data import direct_ingest_raw_data_table_manager
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnInfo,
 )
+from recidiviz.tools.deploy import update_raw_data_table_schemas
 
 
-class DirectIngestRawDataTableManagerTest(unittest.TestCase):
+class UpdateRawDataTableSchemasTest(unittest.TestCase):
     """Unit tests for update_raw_data_tables_schemas"""
 
     def setUp(self) -> None:
@@ -111,12 +111,12 @@ class DirectIngestRawDataTableManagerTest(unittest.TestCase):
         self.project_number_patcher.start().return_value = "123456789"
 
         self.bq_client_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_manager.BigQueryClientImpl"
+            "recidiviz.tools.deploy.update_raw_data_table_schemas.BigQueryClientImpl"
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
         self.region_config_patcher = patch(
-            "recidiviz.ingest.direct.raw_data.direct_ingest_raw_data_table_manager.get_region_raw_file_config"
+            "recidiviz.tools.deploy.update_raw_data_table_schemas.get_region_raw_file_config"
         )
         self.region_config_patcher.start().return_value = self.region_config
 
@@ -129,8 +129,8 @@ class DirectIngestRawDataTableManagerTest(unittest.TestCase):
     def test_update_raw_data_tables_schemas_create_table(self) -> None:
         self.mock_client.table_exists.return_value = False
 
-        direct_ingest_raw_data_table_manager.update_raw_data_tables_schemas_in_dataset(
-            self.fake_state
+        update_raw_data_table_schemas.update_raw_data_table_schema(
+            self.fake_state, "raw_data_table"
         )
 
         self.mock_client.create_table_with_schema.assert_called()
@@ -142,8 +142,8 @@ class DirectIngestRawDataTableManagerTest(unittest.TestCase):
     def test_update_raw_data_tables_schemas_update_table(self) -> None:
         self.mock_client.table_exists.return_value = True
 
-        direct_ingest_raw_data_table_manager.update_raw_data_tables_schemas_in_dataset(
-            self.fake_state
+        update_raw_data_table_schemas.update_raw_data_table_schema(
+            self.fake_state, "raw_data_table"
         )
 
         self.mock_client.update_schema.assert_called()
