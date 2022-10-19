@@ -29,6 +29,9 @@ from parameterized import parameterized
 
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.ingest.direct import regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
@@ -62,6 +65,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
+)
+from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
+    FakeDirectIngestInstanceStatusManager,
 )
 from recidiviz.utils.environment import GCPEnvironment
 
@@ -110,6 +116,36 @@ class DirectIngestRegionDirStructureBase:
     @abc.abstractmethod
     def test(self) -> unittest.TestCase:
         pass
+
+    def _build_controller(
+        self,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        allow_unlaunched: bool,
+        region_module_override: Optional[ModuleType],
+    ) -> BaseDirectIngestController:
+        with patch(
+            f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
+        ) as instance_status_manager_cls:
+            instance_status_manager_cls.return_value = (
+                FakeDirectIngestInstanceStatusManager(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                    initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
+                )
+            )
+            controller = DirectIngestControllerFactory.build(
+                region_code=region_code,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                allow_unlaunched=allow_unlaunched,
+                region_module_override=region_module_override,
+            )
+            if not isinstance(controller, BaseDirectIngestController):
+                raise ValueError(
+                    f"Expected type BaseDirectIngestController, found [{controller}] "
+                    f"with type [{type(controller)}]."
+                )
+            return controller
 
     def test_region_dirname_matches_pattern(self) -> None:
         for d in self.region_dir_names:
@@ -188,39 +224,36 @@ class DirectIngestRegionDirStructureBase:
             with patch(
                 "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
             ):
-                controller = DirectIngestControllerFactory.build(
+                self._build_controller(
                     region_code=region_code,
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
                     region_module_override=self.region_module_override,
                 )
-                self.test.assertIsNotNone(controller)
-                self.test.assertIsInstance(controller, BaseDirectIngestController)
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in self.region_dir_names:
             region = get_direct_ingest_region(
                 region_code, region_module_override=self.region_module_override
             )
-
             with patch(
                 "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
             ):
-                controller = DirectIngestControllerFactory.build(
+                controller = self._build_controller(
                     region_code=region_code,
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
                     region_module_override=self.region_module_override,
                 )
 
-            builders = DirectIngestPreProcessedIngestViewCollector(
-                region, controller.get_ingest_view_rank_list()
-            ).collect_view_builders()
+                builders = DirectIngestPreProcessedIngestViewCollector(
+                    region, controller.get_ingest_view_rank_list()
+                ).collect_view_builders()
 
-            raw_file_manager = DirectIngestRegionRawFileConfig(
-                region_code=region_code,
-                region_module=self.region_module_override,
-            )
+                raw_file_manager = DirectIngestRegionRawFileConfig(
+                    region_code=region_code,
+                    region_module=self.region_module_override,
+                )
 
             if builders or raw_file_manager.raw_file_configs:
                 if region.is_ingest_launched_in_env() is not None:
@@ -288,31 +321,26 @@ class DirectIngestRegionDirStructureBase:
         with patch(
             "recidiviz.utils.environment.get_gcp_environment",
             return_value=environment.value,
-        ):
-            with patch("recidiviz.utils.metadata.project_id", return_value=project_id):
-                for region_code in self.region_dir_names:
-                    region = get_direct_ingest_region(
-                        region_code, region_module_override=self.region_module_override
-                    )
-                    if not region.exists_in_env():
-                        continue
+        ), patch("recidiviz.utils.metadata.project_id", return_value=project_id):
+            for region_code in self.region_dir_names:
+                region = get_direct_ingest_region(
+                    region_code, region_module_override=self.region_module_override
+                )
+                if not region.exists_in_env():
+                    continue
 
-                    with patch(
-                        "recidiviz.utils.metadata.project_id",
-                        return_value="recidiviz-456",
-                    ):
-                        controller = DirectIngestControllerFactory.build(
-                            region_code=region_code,
-                            ingest_instance=DirectIngestInstance.PRIMARY,
-                            allow_unlaunched=True,
-                            region_module_override=self.region_module_override,
-                        )
+                controller = self._build_controller(
+                    region_code=region_code,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    allow_unlaunched=True,
+                    region_module_override=self.region_module_override,
+                )
 
-                    builders = DirectIngestPreProcessedIngestViewCollector(
-                        region, controller.get_ingest_view_rank_list()
-                    ).collect_view_builders()
-                    for builder in builders:
-                        builder.build()
+                builders = DirectIngestPreProcessedIngestViewCollector(
+                    region, controller.get_ingest_view_rank_list()
+                ).collect_view_builders()
+                for builder in builders:
+                    builder.build()
 
     def test_collect_and_build_raw_table_migrations(self) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-789"):
@@ -436,10 +464,11 @@ class DirectIngestRegionDirStructure(
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-staging"
         ):
             for region_code in PLAYGROUND_STATE_INFO:
-                DirectIngestControllerFactory.build(
+                self._build_controller(
                     region_code=region_code.lower(),
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=False,
+                    region_module_override=None,
                 )
 
         # But they should not be supported in production
@@ -449,10 +478,11 @@ class DirectIngestRegionDirStructure(
         ), patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-123"):
             for region_code in PLAYGROUND_STATE_INFO:
                 with self.assertRaisesRegex(DirectIngestError, "Unsupported"):
-                    DirectIngestControllerFactory.build(
+                    self._build_controller(
                         region_code=region_code.lower(),
                         ingest_instance=DirectIngestInstance.PRIMARY,
                         allow_unlaunched=False,
+                        region_module_override=None,
                     )
 
 

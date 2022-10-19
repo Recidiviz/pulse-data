@@ -355,6 +355,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
 def build_fake_direct_ingest_controller(
     controller_cls: Type[BaseDirectIngestController],
     ingest_instance: DirectIngestInstance,
+    initial_statuses: List[DirectIngestStatus],
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
@@ -392,12 +393,19 @@ def build_fake_direct_ingest_controller(
         FakeInstanceIngestViewContents,
     ), patch(
         f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-        FakeDirectIngestInstanceStatusManager,
-    ):
+    ) as instance_status_manager_cls:
         task_manager = (
             FakeAsyncDirectIngestCloudTaskManager()
             if run_async
             else FakeSynchronousDirectIngestCloudTaskManager()
+        )
+
+        instance_status_manager_cls.return_value = (
+            FakeDirectIngestInstanceStatusManager(
+                region_code=controller_cls.region_code(),
+                ingest_instance=ingest_instance,
+                initial_statuses=initial_statuses,
+            )
         )
         mock_task_factory_cls.return_value = task_manager
         mock_big_query_client_cls.return_value = _MockBigQueryClientForControllerTests(
@@ -418,8 +426,5 @@ def build_fake_direct_ingest_controller(
                     DirectIngestFakeGCSFileSystemDelegate(
                         controller, can_start_ingest=can_start_ingest
                     )
-                )
-                controller.ingest_instance_status_manager.change_status_to(
-                    DirectIngestStatus.STANDARD_RERUN_STARTED
                 )
                 return controller

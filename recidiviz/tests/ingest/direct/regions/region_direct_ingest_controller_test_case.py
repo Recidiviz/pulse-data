@@ -157,6 +157,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.controller = build_fake_direct_ingest_controller(
             self.controller_cls(),
             ingest_instance=self._main_ingest_instance(),
+            initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
             run_async=False,
             regions_module=regions,
         )

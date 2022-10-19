@@ -140,18 +140,35 @@ class BaseDirectIngestController:
         self.instance_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code, ingest_instance=self.ingest_instance
         )
-        # TODO(#12794): This will have to change based on which instance is the raw data
-        #  source instance.
-        raw_data_source_instance = DirectIngestInstance.PRIMARY
+        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+            region_code=self.region.region_code,
+            ingest_instance=self.ingest_instance,
+        )
+        try:
+            self.raw_data_source_instance = (
+                instance_status_manager.get_raw_data_source_instance()
+            )
+        except ValueError as exc:
+            raise ValueError(
+                f"No raw data source was located for the instance={self.ingest_instance} and "
+                f"region={self.region.region_code}. This means that no ingest rerun was started, which"
+                f"should never happen when initializing the ingest controller."
+            ) from exc
+
+        # TODO(#12794): Remove once raw data source can be SECONDARY.
+        if self.raw_data_source_instance == DirectIngestInstance.SECONDARY:
+            raise ValueError(
+                f"Invalid raw data source instance [{self.raw_data_source_instance}] provided."
+            )
 
         self.raw_data_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code,
-            ingest_instance=raw_data_source_instance,
+            ingest_instance=self.raw_data_source_instance,
         )
         self.raw_data_storage_directory_path = (
             gcsfs_direct_ingest_storage_directory_path_for_state(
                 region_code=self.region_code(),
-                ingest_instance=raw_data_source_instance,
+                ingest_instance=self.raw_data_source_instance,
             )
         )
 
@@ -161,9 +178,7 @@ class BaseDirectIngestController:
 
         self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
-            # TODO(#12794): Change to be based on the instance the raw file is
-            #  processed in once we can import data from both PRIMARY and SECONDARY.
-            raw_data_instance=DirectIngestInstance.PRIMARY,
+            raw_data_instance=self.raw_data_source_instance,
         )
 
         big_query_client = BigQueryClientImpl()
@@ -807,11 +822,11 @@ class BaseDirectIngestController:
         check_is_region_launched_in_env(self.region)
 
         unprocessed_raw_paths = self.fs.get_unprocessed_raw_file_paths(
-            self.instance_bucket_path
+            self.raw_data_bucket_path
         )
         if (
             unprocessed_raw_paths
-            and self.ingest_instance == DirectIngestInstance.SECONDARY
+            and self.raw_data_source_instance == DirectIngestInstance.SECONDARY
         ):
             raise ValueError(
                 f"Raw data import not supported from SECONDARY ingest bucket "
@@ -838,7 +853,7 @@ class BaseDirectIngestController:
             )
             return
 
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if self.raw_data_source_instance == DirectIngestInstance.SECONDARY:
             raise ValueError(
                 f"Raw data import not supported from the SECONDARY instance. Raw "
                 f"data task for [{data_import_args.raw_data_file_path}] should never "
