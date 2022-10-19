@@ -322,7 +322,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
         self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.CASE_TRIAGE))
-        mock_kick_all_schedulers.assert_called()
+        mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
