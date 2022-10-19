@@ -212,7 +212,8 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     )
 
     # Kick scheduler to restart ingest
-    kick_all_schedulers()
+    if schema_type in {SchemaType.STATE, SchemaType.OPERATIONS}:
+        kick_all_schedulers()
 
     return "", HTTPStatus.OK
 
