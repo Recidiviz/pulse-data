@@ -19,7 +19,7 @@
 import logging
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import Any, Dict, Generic, List, Optional, Tuple
+from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
 
 import attr
 
@@ -33,9 +33,16 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 )
 from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.state.entities import (
-    SentenceType,
     StateIncarcerationSentence,
     StateSupervisionSentence,
+)
+
+SentenceType = TypeVar(
+    "SentenceType",
+    "StateSupervisionSentence",
+    "StateIncarcerationSentence",
+    "NormalizedStateSupervisionSentence",
+    "NormalizedStateIncarcerationSentence",
 )
 
 
@@ -491,7 +498,8 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
 @attr.s
 class UsMoIncarcerationSentence(
-    NormalizedStateIncarcerationSentence, UsMoSentenceMixin[StateIncarcerationSentence]
+    StateIncarcerationSentence,
+    UsMoSentenceMixin[StateIncarcerationSentence],
 ):
     @classmethod
     def from_incarceration_sentence(
@@ -515,7 +523,8 @@ class UsMoIncarcerationSentence(
 
 @attr.s
 class UsMoSupervisionSentence(
-    NormalizedStateSupervisionSentence, UsMoSentenceMixin[StateSupervisionSentence]
+    StateSupervisionSentence,
+    UsMoSentenceMixin[StateSupervisionSentence],
 ):
     @classmethod
     def from_supervision_sentence(
@@ -523,6 +532,55 @@ class UsMoSupervisionSentence(
         sentence: StateSupervisionSentence,
         sentence_statuses_raw: List[Dict[str, Any]],
     ) -> "UsMoSupervisionSentence":
+        sentence_statuses_converted = [
+            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
+            for status_dict_raw in sentence_statuses_raw
+        ]
+        sentence_dict = {
+            **sentence.__dict__,
+            "base_sentence": sentence,
+            "sentence_statuses": sentence_statuses_converted,
+        }
+
+        return cls(**sentence_dict)  # type: ignore
+
+
+@attr.s
+class NormalizedUsMoIncarcerationSentence(
+    NormalizedStateIncarcerationSentence,
+    UsMoSentenceMixin[NormalizedStateIncarcerationSentence],
+):
+    @classmethod
+    def from_incarceration_sentence(
+        cls,
+        sentence: NormalizedStateIncarcerationSentence,
+        sentence_statuses_raw: List[Dict[str, Any]],
+    ) -> "NormalizedUsMoIncarcerationSentence":
+        sentence_statuses_converted = [
+            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
+            for status_dict_raw in sentence_statuses_raw
+        ]
+
+        sentence_dict = {
+            **sentence.__dict__,
+            "base_sentence": sentence,
+            "sentence_statuses": sentence_statuses_converted,
+        }
+
+        return cls(**sentence_dict)  # type: ignore
+
+
+@attr.s
+class NormalizedUsMoSupervisionSentence(
+    NormalizedStateSupervisionSentence,
+    UsMoSentenceMixin[NormalizedStateSupervisionSentence],
+):
+    @classmethod
+    def from_supervision_sentence(
+        cls,
+        sentence: NormalizedStateSupervisionSentence,
+        sentence_statuses_raw: List[Dict[str, Any]],
+    ) -> "NormalizedUsMoSupervisionSentence":
         sentence_statuses_converted = [
             UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
             for status_dict_raw in sentence_statuses_raw
