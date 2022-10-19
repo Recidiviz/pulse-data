@@ -17,10 +17,14 @@
 """Manages raw data table schema updates based on the YAML files defined in source code."""
 import argparse
 import logging
+import os
 import sys
 from typing import List, Tuple
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
@@ -35,11 +39,13 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
+from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.future_executor import FutureExecutor
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def update_raw_data_tables_schemas_in_dataset(state_code: str) -> None:
+def update_raw_data_table_schema(state_code: str, raw_file_tag: str) -> None:
     """Update the raw data tables for a given state by obtaining the raw file configs
     for a state and updating the schema based on the columns defined in the YAMLs. In
     addition, adds the necessary file_id and update_datetime columns to the schema."""
@@ -49,16 +55,17 @@ def update_raw_data_tables_schemas_in_dataset(state_code: str) -> None:
     region_config = get_region_raw_file_config(state_code)
     raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
 
-    bq_client.create_dataset_if_necessary(raw_data_dataset_ref)
+    raw_data_config = region_config.raw_file_configs[raw_file_tag]
 
-    for raw_file_tag, raw_data_config in region_config.raw_file_configs.items():
-        columns = [column.name for column in raw_data_config.columns] + [
-            FILE_ID_COL_NAME,
-            UPDATE_DATETIME_COL_NAME,
-        ]
-        schema = DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-            columns
-        )
+    columns = [column.name for column in raw_data_config.columns] + [
+        FILE_ID_COL_NAME,
+        UPDATE_DATETIME_COL_NAME,
+    ]
+    schema = DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
+        columns
+    )
+
+    try:
         if bq_client.table_exists(raw_data_dataset_ref, raw_file_tag):
             bq_client.update_schema(
                 raw_data_dataset_id, raw_file_tag, schema, allow_field_deletions=False
@@ -67,13 +74,50 @@ def update_raw_data_tables_schemas_in_dataset(state_code: str) -> None:
             bq_client.create_table_with_schema(
                 raw_data_dataset_id, raw_file_tag, schema
             )
+    except Exception as e:
+        logging.exception(
+            "Failed to update schema for `%s.%s`", raw_data_dataset_id, raw_file_tag
+        )
+        raise ValueError(
+            f"Failed to update schema for `{raw_data_dataset_id}.{raw_file_tag}`."
+        ) from e
 
 
-def update_raw_data_tables_schemas() -> None:
+def update_raw_data_table_schemas() -> None:
     """Update the raw data tables for all states that have support for direct ingest."""
-    for state_code in get_direct_ingest_states_existing_in_env():
-        logging.info("Updating schemas for state %s", state_code.value)
-        update_raw_data_tables_schemas_in_dataset(state_code.value)
+    state_codes = get_direct_ingest_states_existing_in_env()
+
+    logging.info("Getting raw file configs...")
+    file_kwargs = [
+        {"state_code": state_code.value, "raw_file_tag": raw_file_tag}
+        for state_code in state_codes
+        for raw_file_tag in get_region_raw_file_config(
+            state_code.value
+        ).raw_file_configs
+    ]
+
+    logging.info("Creating raw data datasets (if necessary)...")
+    bq_client = BigQueryClientImpl()
+    for state_code in state_codes:
+        raw_data_dataset_id = raw_tables_dataset_for_region(state_code.value)
+        raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
+        bq_client.create_dataset_if_necessary(raw_data_dataset_ref)
+
+    log_path = os.path.join(get_deploy_logs_dir(), "update_raw_data_table_schemas.log")
+    logging.info("Writing logs to %s", log_path)
+
+    with redirect_logging_to_file(log_path), FutureExecutor.build(
+        update_raw_data_table_schema,
+        file_kwargs,
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
+    ) as execution:
+
+        execution.wait_with_progress_bar(
+            "Updating raw table schemas...",
+            timeout=(10 * 60),  # 10 minutes
+        )
+
+    logging.info("Update complete.")
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -96,4 +140,4 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        update_raw_data_tables_schemas()
+        update_raw_data_table_schemas()
