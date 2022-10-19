@@ -108,6 +108,11 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
                 entity.__name__
                 for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
                 for entity in manager.normalized_entity_classes()
+            ]
+            + [
+                f"{child_entity.__name__}_{parent_entity.__name__}"
+                for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
+                for child_entity, parent_entity in manager.normalized_entity_associations()
             ],
         )
 

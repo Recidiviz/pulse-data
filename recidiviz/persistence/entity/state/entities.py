@@ -1433,7 +1433,7 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     incarceration_sentence: Optional["StateIncarcerationSentence"] = attr.ib(
         default=None
     )
-    supervision_sentence: Optional["StateIncarcerationSentence"] = attr.ib(default=None)
+    supervision_sentence: Optional["StateSupervisionSentence"] = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)

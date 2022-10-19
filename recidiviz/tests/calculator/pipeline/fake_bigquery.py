@@ -43,6 +43,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
     normalized_entity_class_with_base_class_name,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_association_table,
     column_names_on_bq_schema_for_normalized_state_entity,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
@@ -50,8 +51,10 @@ from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
+    get_database_entities_by_association_table,
     get_database_entity_by_table_name,
     get_state_table_classes,
+    is_association_table,
 )
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
 
@@ -146,6 +149,37 @@ class FakeBigQueryAssertMatchers:
                     )
 
         return _validate_normalized_entity_output
+
+    @staticmethod
+    def validate_normalized_association_entity_output(
+        child_class_name: str, parent_class_name: str
+    ) -> Callable[[List[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produces dictionaries with the expected keys
+        corresponding to the column names in the association table which the output
+        will be written."""
+
+        def _validate_normalized_association_entity_output(
+            output: List[Dict[str, Any]]
+        ) -> None:
+            schema_for_association = bq_schema_for_normalized_state_association_table(
+                child_class_name, parent_class_name
+            )
+
+            expected_column_names = {field.name for field in schema_for_association}
+
+            if not output:
+                raise BeamAssertException(
+                    f"Failed assert. Output is empty for entity association {child_class_name}, {parent_class_name}"
+                )
+            for output_dict in output:
+                if set(output_dict.keys()) != expected_column_names:
+                    raise BeamAssertException(
+                        "Output dictionary does not have "
+                        f"the expected keys. Expected: [{expected_column_names}],"
+                        f"found: [{list(output_dict.keys())}]"
+                    )
+
+        return _validate_normalized_association_entity_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):
@@ -530,17 +564,35 @@ class FakeWriteNormalizedEntitiesToBigQuery(FakeWriteToBigQuery):
         super().__init__(output_table, expected_output_tags)
 
     def expand(self, input_or_inputs: PCollection) -> Any:
-        db_entity = get_database_entity_by_table_name(schema, self._output_table)
-
-        if db_entity.__name__ in self._expected_output_tags:
-            assert_that(
-                input_or_inputs,
-                FakeBigQueryAssertMatchers.validate_normalized_entity_output(
-                    db_entity.__name__
-                ),
+        if is_association_table(self._output_table):
+            child_entity, parent_entity = get_database_entities_by_association_table(
+                schema, self._output_table
             )
+
+            if (
+                f"{child_entity.__name__}_{parent_entity.__name__}"
+                in self._expected_output_tags
+            ):
+                assert_that(
+                    input_or_inputs,
+                    FakeBigQueryAssertMatchers.validate_normalized_association_entity_output(
+                        child_entity.__name__, parent_entity.__name__
+                    ),
+                )
+            else:
+                assert_that(input_or_inputs, equal_to([]))
         else:
-            assert_that(input_or_inputs, equal_to([]))
+            db_entity = get_database_entity_by_table_name(schema, self._output_table)
+
+            if db_entity.__name__ in self._expected_output_tags:
+                assert_that(
+                    input_or_inputs,
+                    FakeBigQueryAssertMatchers.validate_normalized_entity_output(
+                        db_entity.__name__
+                    ),
+                )
+            else:
+                assert_that(input_or_inputs, equal_to([]))
 
         return []
 

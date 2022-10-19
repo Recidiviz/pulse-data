@@ -90,6 +90,8 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateProgramAssignment,
                 entities.StateAssessment,
                 entities.StatePerson,
+                entities.StateCharge,
+                entities.StateEarlyDischarge,
             ],
             required_reference_tables=[],
             required_state_based_reference_tables=[],

@@ -360,6 +360,19 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         self._run_nuclear_family_test(family.parent_entities, family.child_entities)
 
+    def test_convert_many_to_many_partial_graph_4(self):
+        """
+        Tests conversion on a mnay-to-many schema where the parent->children relationship
+        is a diamond.
+        """
+        family = self.SimpsonsFamily()
+
+        family.homer.children = [family.bart]
+        family.marge.children = [family.bart]
+        family.bart.parents = [family.homer, family.marge]
+
+        self._run_nuclear_family_test([family.homer, family.marge], [family.bart])
+
     def test_simple_tree(self):
         """
         Tests converting a simple graph with one root node and one child

@@ -78,6 +78,17 @@ class FakeNormalizedStateCharge(entities.StateCharge, NormalizedStateEntity):
     """Fake NormalizedStateCharge to use in tests."""
 
 
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class FakeNormalizedStateEarlyDischarge(
+    entities.StateEarlyDischarge, NormalizedStateEntity
+):
+    """Fake NormalizedStateEarlyDischarge to use in tests."""
+
+
 class TestNormalizedEntityClassesCoverage(unittest.TestCase):
     """Tests that all entity classes with Normalized versions are listed in
     NORMALIZED_ENTITY_CLASSES."""
