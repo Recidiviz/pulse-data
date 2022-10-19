@@ -36,7 +36,6 @@ import {
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
   moveIngestViewResultsToBackup,
-  pauseDirectIngestInstance,
   releaseBQExportLock,
   transferIngestViewMetadataToNewInstance,
   updateIngestQueuesState,
@@ -301,20 +300,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
-            title="Pause secondary ingest"
-            description={
-              <p>Mark secondary ingest as paused in the operations db.</p>
-            }
-            actionButtonEnabled={isReadyToFlash}
-            actionButtonTitle="Mark Paused"
-            onActionButtonClick={async () =>
-              pauseDirectIngestInstance(
-                stateCode,
-                DirectIngestInstance.SECONDARY
-              )
-            }
-          />
-          <StyledStep
             title="Set status to FLASH_CANCELLATION_IN_PROGRESS"
             description={
               <p>
@@ -344,7 +329,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   do so, run this script locally inside a pipenv shell:
                 </p>
                 <p>
-                  <CodeBlock enabled={currentStep === 4}>
+                  <CodeBlock enabled={currentStep === 3}>
                     python -m recidiviz.tools.migrations.purge_state_db \<br />
                     {"    "}--state-code {stateCode} \<br />
                     {"    "}--ingest-instance SECONDARY \<br />
@@ -697,20 +682,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
-            title="Pause secondary ingest"
-            description={
-              <p>Mark secondary ingest as paused in the operations db.</p>
-            }
-            actionButtonEnabled={isFlashInProgress}
-            actionButtonTitle="Mark Paused"
-            onActionButtonClick={async () =>
-              pauseDirectIngestInstance(
-                stateCode,
-                DirectIngestInstance.SECONDARY
-              )
-            }
-          />
-          <StyledStep
             title="Clear secondary database"
             description={
               <>
@@ -720,7 +691,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   do so, run this script locally inside a pipenv shell:
                 </p>
                 <p>
-                  <CodeBlock enabled={currentStep === 14}>
+                  <CodeBlock enabled={currentStep === 13}>
                     python -m recidiviz.tools.migrations.purge_state_db \<br />
                     {"    "}--state-code {stateCode} \<br />
                     {"    "}--ingest-instance SECONDARY \<br />

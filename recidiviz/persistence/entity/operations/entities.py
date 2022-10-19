@@ -128,15 +128,6 @@ class DirectIngestViewMaterializationMetadata(
 
 
 @attr.s(eq=False)
-class DirectIngestInstancePauseStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
-    """Status of whether an ingest instance is paused."""
-
-    region_code: str = attr.ib()
-    instance: DirectIngestInstance = attr.ib()
-    is_paused: bool = attr.ib()
-
-
-@attr.s(eq=False)
 class DirectIngestInstanceStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
     """Status of a direct instance ingest process."""
 

@@ -23,13 +23,19 @@ from mimetypes import guess_type
 from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
 
+from google.cloud import tasks_v2
+
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    DirectIngestCloudTaskQueueManagerImpl,
+)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
@@ -37,20 +43,19 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
-)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+
+QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
 
 
 class UploadStateFilesToIngestBucketDelegate:
     @abc.abstractmethod
     def should_pause_processing(self) -> bool:
         """Returns whether we should pause any automatic processing of new files before
-        performing this upload. Will return False if processing is already pause.
+        performing this upload. Will return False if the scheduler queue is already paused.
         """
 
     @abc.abstractmethod
@@ -139,12 +144,12 @@ class BaseUploadStateFilesToIngestBucketController:
         """Perform upload to ingest bucket."""
 
         # SFTP download writes to primary instance bucket, but we will need to pause
-        # both instances if they aren't already paused
+        # the scheduler queue if it isn't already paused
         should_pause = [
             delegate.should_pause_processing() for delegate in self.delegates
         ]
         try:
-            # We pause and unpause ingest to prevent races where ingest views begin
+            # We pause and unpause scheduler queue to prevent races where ingest views begin
             # to generate in the middle of a raw file upload.
             for idx, delegate in enumerate(self.delegates):
                 if should_pause[idx]:
@@ -200,19 +205,32 @@ class BaseUploadStateFilesToIngestBucketController:
 class DeployedUploadStateFilesToIngestBucketDelegate(
     UploadStateFilesToIngestBucketDelegate
 ):
-    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance) -> None:
-        self.ingest_status_manager = DirectIngestInstancePauseStatusManager(
-            region_code=region_code, ingest_instance=ingest_instance
-        )
+    def __init__(self, region_code: str) -> None:
+        self.state_code = StateCode(region_code.upper())
+        self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
 
     def should_pause_processing(self) -> bool:
-        return not self.ingest_status_manager.is_instance_paused()
+        # Note - SFTP only uploads to the PRIMARY bucket.
+        primary_scheduler_state = self.cloud_task_manager.get_scheduler_queue_state(
+            state_code=self.state_code, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+        return QUEUE_STATE_ENUM.RUNNING == primary_scheduler_state
 
     def pause_processing(self) -> None:
-        self.ingest_status_manager.pause_instance()
+        # Note - SFTP only uploads to the PRIMARY bucket.
+        self.cloud_task_manager.update_scheduler_queue_state(
+            state_code=self.state_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            new_queue_state=QUEUE_STATE_ENUM.PAUSED,
+        )
 
     def unpause_processing(self) -> None:
-        self.ingest_status_manager.unpause_instance()
+        # Note - SFTP only uploads to the PRIMARY bucket.
+        self.cloud_task_manager.update_scheduler_queue_state(
+            state_code=self.state_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            new_queue_state=QUEUE_STATE_ENUM.RUNNING,
+        )
 
 
 class UploadStateFilesToIngestBucketController(
@@ -236,9 +254,7 @@ class UploadStateFilesToIngestBucketController(
             delegates=[
                 DeployedUploadStateFilesToIngestBucketDelegate(
                     region_code=region_code,
-                    ingest_instance=ingest_instance,
                 )
-                for ingest_instance in DirectIngestInstance
             ],
             destination_bucket_override=gcs_destination_path,
         )

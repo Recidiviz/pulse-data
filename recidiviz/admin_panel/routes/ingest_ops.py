@@ -55,9 +55,6 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
@@ -393,52 +390,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             lock_manager.release_lock()
         except GCSPseudoLockDoesNotExist:
             return "lock does not exist", HTTPStatus.NOT_FOUND
-
-        return "", HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/pause_direct_ingest_instance", methods=["POST"])
-    @requires_gae_auth
-    def _pause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        ingest_status_manager = DirectIngestInstancePauseStatusManager(
-            region_code=state_code.value, ingest_instance=ingest_instance
-        )
-        try:
-            ingest_status_manager.pause_instance()
-        except Exception:
-            return (
-                "something went wrong pausing the intance",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-
-        return "", HTTPStatus.OK
-
-    @bp.route("/api/ingest_operations/unpause_direct_ingest_instance", methods=["POST"])
-    @requires_gae_auth
-    def _unpause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(request_json["ingestInstance"])
-        except ValueError:
-            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-
-        ingest_status_manager = DirectIngestInstancePauseStatusManager(
-            region_code=state_code.value, ingest_instance=ingest_instance
-        )
-        try:
-            ingest_status_manager.unpause_instance()
-        except Exception:
-            return (
-                "something went wrong unpausing the intance",
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
 
         return "", HTTPStatus.OK
 

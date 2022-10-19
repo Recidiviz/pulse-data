@@ -124,7 +124,6 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestViewMaterializationMetadata",
             "DirectIngestRawFileMetadata",
             "DirectIngestSftpFileMetadata",
-            "DirectIngestInstancePauseStatus",
             "DirectIngestInstanceStatus",
         ]
 
@@ -249,7 +248,6 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_view_materialization_metadata",
             "direct_ingest_raw_file_metadata",
             "direct_ingest_sftp_file_metadata",
-            "direct_ingest_instance_pause_status",
             "direct_ingest_instance_status",
         ]
 

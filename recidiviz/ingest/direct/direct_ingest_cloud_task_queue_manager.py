@@ -764,6 +764,53 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             state_code, QUEUE_STATE_ENUM(new_queue_state_str)
         )
 
+    def get_scheduler_queue_state(
+        self, state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> tasks_v2.enums.Queue.State:
+        """Retrieves the state of the state code and instance specific scheduler queue."""
+        queue_name = _queue_name_for_queue_type(
+            DirectIngestQueueType.SCHEDULER, state_code.value, ingest_instance
+        )
+
+        queue_path = self.cloud_tasks_client.queue_path(
+            metadata.project_id(), _TASK_LOCATION, queue_name
+        )
+        queue = self.cloud_tasks_client.get_queue(name=queue_path)
+        return queue.state
+
+    def update_scheduler_queue_state(
+        self,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        new_queue_state: tasks_v2.enums.Queue.State,
+    ) -> None:
+        """Updates the state of the state code and instance specific scheduler queue."""
+        queue_name = _queue_name_for_queue_type(
+            DirectIngestQueueType.SCHEDULER, state_code.value, ingest_instance
+        )
+
+        queue_path = self.cloud_tasks_client.queue_path(
+            metadata.project_id(), _TASK_LOCATION, queue_name
+        )
+
+        if new_queue_state not in [
+            QUEUE_STATE_ENUM.RUNNING,
+            QUEUE_STATE_ENUM.PAUSED,
+        ]:
+            logging.error(
+                "Received an invalid queue state: %s. This method should only be used "
+                "to update queue states to PAUSED or RUNNING",
+                new_queue_state,
+            )
+            raise ValueError(
+                f"Invalid queue state [{new_queue_state}] received",
+            )
+
+        if new_queue_state == QUEUE_STATE_ENUM.PAUSED:
+            self.cloud_tasks_client.pause_queue(name=queue_path)
+        else:
+            self.cloud_tasks_client.resume_queue(name=queue_path)
+
     def update_ingest_queue_states(
         self, state_code: StateCode, new_queue_state: tasks_v2.enums.Queue.State
     ) -> None:

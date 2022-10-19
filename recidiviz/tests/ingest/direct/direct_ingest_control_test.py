@@ -129,6 +129,12 @@ class TestDirectIngestControl(unittest.TestCase):
         self.mock_task_manager = create_autospec(DirectIngestCloudTaskQueueManagerImpl)
         self.task_manager_patcher.start().return_value = self.mock_task_manager
 
+        self.sftp_task_manager_patcher = patch(
+            "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller.DirectIngestCloudTaskQueueManagerImpl"
+        )
+        self.sftp_task_manager = create_autospec(DirectIngestCloudTaskQueueManagerImpl)
+        self.sftp_task_manager_patcher.start().return_value = self.sftp_task_manager
+
         self.state_code = StateCode.US_ND
         self.region_code = self.state_code.value.lower()
         self.primary_bucket = gcsfs_direct_ingest_bucket_for_state(
@@ -140,6 +146,8 @@ class TestDirectIngestControl(unittest.TestCase):
         self.project_id_patcher.stop()
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
+        self.task_manager_patcher.stop()
+        self.sftp_task_manager_patcher.stop()
         self.fs_patcher.stop()
         if self.controller_factory_patcher:
             self.controller_factory_patcher.stop()

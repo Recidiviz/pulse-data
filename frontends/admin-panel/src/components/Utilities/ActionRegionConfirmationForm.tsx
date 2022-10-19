@@ -30,9 +30,6 @@ export enum RegionAction {
   PauseIngestQueues = "pause",
   ResumeIngestQueues = "resume",
 
-  PauseIngestInstance = "pause_instance",
-  UnpauseIngestInstance = "unpause_instance",
-
   ExportToGCS = "export",
   ImportFromGCS = "import",
 
@@ -45,9 +42,6 @@ export const regionActionNames = {
   [RegionAction.StartIngestRerun]: "Start Ingest Rerun",
   [RegionAction.PauseIngestQueues]: "Pause Queues",
   [RegionAction.ResumeIngestQueues]: "Resume Queues",
-
-  [RegionAction.PauseIngestInstance]: "Pause Instance",
-  [RegionAction.UnpauseIngestInstance]: "Unpause Instance",
 
   [RegionAction.ExportToGCS]: "Export to GCS",
   [RegionAction.ImportFromGCS]: "Import from GCS",
