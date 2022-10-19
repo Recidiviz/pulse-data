@@ -21,9 +21,6 @@ max_allowed_error_overrides:
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
-  - validation_name: incarceration_population_by_facility_external_comparison
-    hard_max_allowed_error_override: 0.04
-    override_reason: TODO(#15791) - Validation is pulling a number different from expected -- need to investigate dataflow overrides that are excluding people included further upstream.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 7500

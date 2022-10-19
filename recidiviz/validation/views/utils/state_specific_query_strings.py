@@ -36,6 +36,9 @@ def state_specific_dataflow_facility_name_transformation() -> str:
                     AND facility IN ('ARTS','ATC','CM/DEN/CBT','COMCOR CC','CORECIVIC','DNVRGENHOS','GCCC','GEO RS','HILLTOP CC','ICCS-C','LCCC','MESA','RRK')  THEN 'COMMUNITY CORRECTIONS' 
                  WHEN state_code = 'US_CO' 
                     AND facility = 'ACCC' THEN 'FUG-INMATE' 
+                WHEN state_code = 'US_MO' 
+                    THEN 'EXTERNAL_UNKNOWN'
+                    # TODO(#16114) - Remove hacky logic once we have non-facility level aggregate validation
             ELSE facility END,
             'EXTERNAL_UNKNOWN'
         ) AS facility
