@@ -57,6 +57,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
@@ -765,13 +768,24 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(
         "recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskQueueManagerImpl"
     )
+    @patch(
+        f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
+    )
     def test_ensure_all_raw_file_paths_normalized_actual_regions(
-        self, mock_cloud_task_manager: mock.MagicMock, mock_environment: mock.MagicMock
+        self,
+        mock_instance_status_manager_cls: mock.MagicMock,
+        mock_cloud_task_manager: mock.MagicMock,
+        mock_environment: mock.MagicMock,
     ) -> None:
         # We want to use real controllers for this test so we stop and clear the patcher
         self.controller_factory_patcher.stop()
         self.controller_factory_patcher = None
         with local_project_id_override("recidiviz-staging"):
+            mock_status_manager = create_autospec(DirectIngestInstanceStatusManager)
+            mock_status_manager.get_raw_data_source_instance.return_value = (
+                DirectIngestInstance.PRIMARY
+            )
+            mock_instance_status_manager_cls.return_value = mock_status_manager
             mock_environment.return_value = "staging"
             mock_cloud_task_manager.return_value = create_autospec(
                 DirectIngestCloudTaskQueueManager

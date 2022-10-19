@@ -31,27 +31,34 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestInstanc
 class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
     """A fake implementation of DirectIngestInstanceStatusManager for use in tests."""
 
-    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
+    def __init__(
+        self,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        initial_statuses: List[DirectIngestStatus],
+    ):
         super().__init__(region_code=region_code, ingest_instance=ingest_instance)
         self.statuses: List[DirectIngestInstanceStatus] = [
             DirectIngestInstanceStatus(
                 region_code=self.region_code,
                 instance=self.ingest_instance,
                 timestamp=datetime.datetime.now(),
-                # Set the appropriate initial status based on the ingest instance.
-                status=(
-                    DirectIngestStatus.UP_TO_DATE
-                    if ingest_instance == DirectIngestInstance.PRIMARY
-                    else DirectIngestStatus.NO_RERUN_IN_PROGRESS
-                ),
+                status=status,
             )
+            for status in initial_statuses
         ]
 
     def get_raw_data_source_instance(self) -> DirectIngestInstance:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
-        return self.ingest_instance
+        for status in reversed(self.statuses):
+            if status.status == DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED:
+                return self.ingest_instance
+            if status.status == DirectIngestStatus.STANDARD_RERUN_STARTED:
+                return DirectIngestInstance.PRIMARY
+
+        raise ValueError("Did not find a valid start rerun status")
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""

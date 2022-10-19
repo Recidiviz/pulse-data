@@ -194,9 +194,9 @@ class IngestOperationsStore(AdminPanelStore):
     ) -> None:
         """Kicks off an ingest rerun in the specified instance.
         Requires:
-        - state_code: (required) State code to start ingest for (i.e. "US_ID")
-        - instance: (required) Ingest instance to start ingest (i.e. PRIMARY)
-        - raw_data_source_instance: (required)  Raw data source instance to
+        - state_code: (required) State code to start ingest rerun for (i.e. "US_ID")
+        - instance: (required) Ingest instance to start ingest rerun for (i.e. SECONDARY)
+        - raw_data_source_instance: (required)  Source instance of raw data (i.e. PRIMARY)
         """
         formatted_state_code = state_code.value.lower()
 
