@@ -94,6 +94,35 @@ def run_command(
         return out
 
 
+def does_command_fail(
+    command: str,
+    as_user: Optional[pwd.struct_passwd] = None,
+    timeout_sec: int = 15,
+) -> bool:
+    """Runs the given command. Returns True if the command exits with a non-zero return
+    code, False otherwise.
+    """
+    # pylint: disable=subprocess-popen-preexec-fn
+    with subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        preexec_fn=_get_run_as_user_fn(as_user) if as_user else None,
+    ) as proc:
+        try:
+            out, err = proc.communicate(timeout=timeout_sec)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            out, err = proc.communicate()
+
+        command_failed = proc.returncode != 0
+        if command_failed:
+            logging.info("Command failed: `%s`\n%s\n%s", command, err, out)
+        return command_failed
+
+
 def run_command_streaming(
     command: str, assert_success: bool = True
 ) -> Generator[str, None, None]:
