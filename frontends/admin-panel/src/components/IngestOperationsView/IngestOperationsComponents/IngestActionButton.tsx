@@ -19,8 +19,6 @@ import { useState } from "react";
 import {
   triggerTaskScheduler,
   updateIngestQueuesState,
-  pauseDirectIngestInstance,
-  unpauseDirectIngestInstance,
   exportDatabaseToGCS,
   startIngestRerun,
 } from "../../../AdminPanelAPI";
@@ -123,18 +121,6 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
           }
         }
         setActionConfirmed();
-        break;
-      case RegionAction.PauseIngestInstance:
-        if (instance) {
-          await pauseDirectIngestInstance(stateCode, instance);
-          setActionConfirmed();
-        }
-        break;
-      case RegionAction.UnpauseIngestInstance:
-        if (instance) {
-          await unpauseDirectIngestInstance(stateCode, instance);
-          setActionConfirmed();
-        }
         break;
       case RegionAction.ExportToGCS:
         if (instance) {

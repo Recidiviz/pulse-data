@@ -44,11 +44,6 @@ interface IngestActionsPageHeaderProps {
 
 const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
   ({ stateCode, instance, ingestInstanceSummary, onRefreshIngestSummary }) => {
-    const pauseUnpauseInstanceAction = ingestInstanceSummary?.operations
-      .isPaused
-      ? RegionAction.UnpauseIngestInstance
-      : RegionAction.PauseIngestInstance;
-
     const { data: statusInfo } = useFetchedDataJSON<IngestInstanceStatusInfo>(
       () => {
         return getCurrentIngestInstanceStatusInformation(stateCode, instance);
@@ -94,17 +89,14 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
                 stateCode={stateCode}
               />
               <IngestActionButton
-                style={
-                  ingestInstanceSummary.operations.isPaused
-                    ? { display: "none" }
-                    : { marginRight: 5 }
-                }
+                style={{ marginRight: 5 }}
                 action={RegionAction.TriggerTaskScheduler}
                 buttonText={
                   regionActionNames[RegionAction.TriggerTaskScheduler]
                 }
                 instance={instance}
                 stateCode={stateCode}
+                type="primary"
               />
               <IngestActionButton
                 style={
@@ -117,15 +109,6 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
                 buttonText={regionActionNames[RegionAction.StartIngestRerun]}
                 instance={instance}
                 stateCode={stateCode}
-              />
-              <IngestActionButton
-                action={pauseUnpauseInstanceAction}
-                buttonText={regionActionNames[pauseUnpauseInstanceAction]}
-                instance={instance}
-                stateCode={stateCode}
-                onActionConfirmed={() => {
-                  onRefreshIngestSummary();
-                }}
                 type="primary"
               />
             </>

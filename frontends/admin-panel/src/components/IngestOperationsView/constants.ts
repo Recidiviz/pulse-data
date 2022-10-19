@@ -67,7 +67,6 @@ export type IngestInstanceSummary = {
 };
 
 export type OperationsDbInfo = {
-  isPaused: boolean;
   unprocessedFilesRaw: number;
   processedFilesRaw: number;
 

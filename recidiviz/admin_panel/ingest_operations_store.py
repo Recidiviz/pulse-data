@@ -49,9 +49,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataSummary,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
@@ -169,7 +166,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         Requires:
         - state_code: (required) State code to pause queues for
-        - new_state: (required) Either 'PAUSED' or 'RUNNING'
+        - new_queue_state: (required) The state to set the queues
         """
         self.cloud_task_manager.update_ingest_queue_states_str(
             state_code=state_code, new_queue_state_str=new_queue_state
@@ -231,17 +228,6 @@ class IngestOperationsStore(AdminPanelStore):
         # Confirm that all ingest view metadata / data has been invalidated.
         self._verify_clean_ingest_view_state(state_code, instance)
 
-        instance_pause_status_manager = DirectIngestInstancePauseStatusManager(
-            region_code=formatted_state_code,
-            ingest_instance=instance,
-        )
-
-        # Assert that the instance is currently paused.
-        if not instance_pause_status_manager.is_instance_paused():
-            raise DirectIngestInstanceError(
-                "The instance must be paused before ingest rerun can start."
-            )
-
         # Validation that a rerun is a valid status transition is handled within the
         # instance manager.
         instance_status_manager = PostgresDirectIngestInstanceStatusManager(
@@ -251,8 +237,6 @@ class IngestOperationsStore(AdminPanelStore):
         instance_status_manager.change_status_to(
             DirectIngestStatus.STANDARD_RERUN_STARTED
         )
-
-        instance_pause_status_manager.unpause_instance()
 
         # TODO(#123123): configure raw data source instance as a part of ingest rerun.
         self.trigger_task_scheduler(state_code, instance.value)
@@ -441,7 +425,6 @@ class IngestOperationsStore(AdminPanelStore):
         """Returns the following dictionary with information about the operations
         database for the state:
         {
-            isPaused: <bool>
             dateOfEarliestUnprocessedIngestView: <datetime>
             ingestViewMaterializationSummaries: [
                 {
@@ -454,16 +437,6 @@ class IngestOperationsStore(AdminPanelStore):
             ]
         }
         """
-        logging.info(
-            "Getting operations DB metadata for instance [%s]", ingest_instance.value
-        )
-
-        ingest_instance_status_manager = DirectIngestInstancePauseStatusManager(
-            state_code.value, ingest_instance
-        )
-        logging.info("Checking is instance [%s] paused", ingest_instance.value)
-        is_paused = ingest_instance_status_manager.is_instance_paused()
-
         logging.info(
             "Getting instance [%s] ingest view materialization summaries",
             ingest_instance.value,
@@ -492,7 +465,6 @@ class IngestOperationsStore(AdminPanelStore):
             ingest_instance.value,
         )
         return {
-            "isPaused": is_paused,
             "ingestViewMaterializationSummaries": [
                 summary.as_api_dict()
                 for summary in materialization_job_summaries.values()

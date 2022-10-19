@@ -17,12 +17,16 @@
 """Tests for base_upload_state_files_to_ingest_bucket_controller.py"""
 import datetime
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, create_autospec, patch
+
+from mock import call
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
+    QUEUE_STATE_ENUM,
+    DirectIngestCloudTaskQueueManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -60,26 +64,27 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
 
+        self.task_manager_patcher = patch(
+            "recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_controller.DirectIngestCloudTaskQueueManagerImpl",
+            return_value=create_autospec(DirectIngestCloudTaskQueueManagerImpl),
+        )
+        self.task_manager_cls = self.task_manager_patcher.start()
+        self.mock_task_manager = self.task_manager_cls()
+
         self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.OPERATIONS
         )
         fakes.use_in_memory_sqlite_database(self.operations_database_key)
-        self.us_xx_primary_manager = (
-            DirectIngestInstancePauseStatusManager.add_instance(
-                self.region, DirectIngestInstance.PRIMARY, is_paused=False
-            )
-        )
-        self.us_xx_secondary_manager = (
-            DirectIngestInstancePauseStatusManager.add_instance(
-                self.region, DirectIngestInstance.SECONDARY, is_paused=False
-            )
-        )
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
+        self.task_manager_patcher.stop()
         self.project_id_patcher.stop()
 
     def test_do_upload_succeeds(self, mock_fs_factory: Mock) -> None:
+        self.mock_task_manager.get_scheduler_queue_state.return_value = (
+            QUEUE_STATE_ENUM.RUNNING
+        )
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -105,13 +110,28 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.assertEqual(result.successes, expected_result)
         self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(controller.skipped_files), 0)
-        self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
+        self.mock_task_manager.update_scheduler_queue_state.assert_has_calls(
+            [
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.PAUSED,
+                ),
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.RUNNING,
+                ),
+            ]
+        )
 
     def test_do_upload_graceful_failures(
         self,
         mock_fs_factory: Mock,
     ) -> None:
+        self.mock_task_manager.get_scheduler_queue_state.return_value = (
+            QUEUE_STATE_ENUM.RUNNING
+        )
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -144,13 +164,28 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ["recidiviz-456-direct-ingest-state-us-xx/raw_data/non_existent_file.txt"],
         )
         self.assertEqual(len(controller.skipped_files), 0)
-        self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
+        self.mock_task_manager.update_scheduler_queue_state.assert_has_calls(
+            [
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.PAUSED,
+                ),
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.RUNNING,
+                ),
+            ]
+        )
 
     def test_do_upload_sets_correct_content_type(
         self,
         mock_fs_factory: Mock,
     ) -> None:
+        self.mock_task_manager.get_scheduler_queue_state.return_value = (
+            QUEUE_STATE_ENUM.RUNNING
+        )
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -191,13 +226,28 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.assertListEqual(
             sorted(resulting_content_types), ["text/csv", "text/plain"]
         )
-        self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
+        self.mock_task_manager.update_scheduler_queue_state.assert_has_calls(
+            [
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.PAUSED,
+                ),
+                call(
+                    StateCode.US_XX,
+                    DirectIngestInstance.PRIMARY,
+                    QUEUE_STATE_ENUM.RUNNING,
+                ),
+            ]
+        )
 
     def test_get_paths_to_upload_is_correct(
         self,
         mock_fs_factory: Mock,
     ) -> None:
+        self.mock_task_manager.get_scheduler_queue_state.return_value = (
+            QUEUE_STATE_ENUM.RUNNING
+        )
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -234,8 +284,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ),
         ]
         self.assertListEqual(result, controller.get_paths_to_upload())
-        self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
+        self.mock_task_manager.update_scheduler_queue_state.assert_not_called()
 
     def test_skip_already_processed_or_discovered_files(
         self,
@@ -307,13 +356,11 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/discovered.csv",
             ],
         )
-        self.assertFalse(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
 
     def test_do_upload_succeeds_ingest_was_paused(self, mock_fs_factory: Mock) -> None:
-        self.us_xx_primary_manager.pause_instance()
-        self.us_xx_secondary_manager.pause_instance()
-
+        self.mock_task_manager.get_scheduler_queue_state.return_value = (
+            QUEUE_STATE_ENUM.PAUSED
+        )
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
@@ -339,38 +386,4 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.assertEqual(result.successes, expected_result)
         self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(controller.skipped_files), 0)
-        self.assertTrue(self.us_xx_primary_manager.is_instance_paused())
-        self.assertTrue(self.us_xx_secondary_manager.is_instance_paused())
-
-    def test_do_upload_succeeds_ingest_was_paused_only_in_one_instance(
-        self, mock_fs_factory: Mock
-    ) -> None:
-        self.us_xx_primary_manager.pause_instance()
-
-        mock_fs = FakeGCSFileSystem()
-        mock_fs.test_add_path(
-            path=GcsfsFilePath.from_bucket_and_blob_name(
-                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/test_file.txt"
-            ),
-            local_path=None,
-        )
-        mock_fs_factory.return_value = mock_fs
-        controller = UploadStateFilesToIngestBucketController(
-            paths_with_timestamps=[
-                (
-                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
-                    TODAY,
-                )
-            ],
-            project_id="recidiviz-456",
-            region_code="us_xx",
-        )
-        expected_result = [
-            "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
-        ]
-        result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
-        self.assertEqual(result.successes, expected_result)
-        self.assertEqual(len(result.failures), 0)
-        self.assertEqual(len(controller.skipped_files), 0)
-        self.assertTrue(self.us_xx_primary_manager.is_instance_paused())
-        self.assertFalse(self.us_xx_secondary_manager.is_instance_paused())
+        self.mock_task_manager.update_scheduler_queue_state.assert_not_called()

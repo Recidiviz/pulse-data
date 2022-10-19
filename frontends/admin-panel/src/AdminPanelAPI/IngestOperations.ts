@@ -170,34 +170,6 @@ export const releaseBQExportLock = async (
   });
 };
 
-// Pauses direct ingest instance
-export const pauseDirectIngestInstance = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/pause_direct_ingest_instance`,
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Unpauses direct ingest instance
-export const unpauseDirectIngestInstance = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    `/api/ingest_operations/unpause_direct_ingest_instance`,
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
 // Import raw files to BiqQuery Sandbox
 export const importRawDataToSandbox = async (
   stateCode: string,

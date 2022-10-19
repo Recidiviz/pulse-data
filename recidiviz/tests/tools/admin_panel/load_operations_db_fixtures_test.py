@@ -26,7 +26,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
-    DirectIngestInstancePauseStatus,
     DirectIngestInstanceStatus,
 )
 from recidiviz.persistence.database.schema_utils import (
@@ -86,37 +85,10 @@ class TestOperationsLoadFixtures(unittest.TestCase):
                     row_count > 0, f"Found no rows in table [{fixture_class}]"
                 )
 
-    def test_direct_ingest_instance_pause_status_contains_data_for_all_states(
-        self,
-    ) -> None:
-        """Enforces that the fixture for the pause status table at
-        recidiviz/tools/admin_panel/fixtures/operations_db/direct_ingest_instance_pause_status.csv
-        has data for all states.
-        """
-
-        # Clear DB and then load in fixture data
-        reset_operations_db_fixtures(self.engine)
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as read_session:
-            rows = read_session.query(DirectIngestInstancePauseStatus).all()
-
-            instance_to_state_codes = defaultdict(set)
-            for row in rows:
-                instance_to_state_codes[DirectIngestInstance(row.instance)].add(
-                    row.region_code
-                )
-
-            required_states = {name.upper() for name in get_existing_region_codes()}
-
-            for instance in DirectIngestInstance:
-                self.assertEqual(required_states, instance_to_state_codes[instance])
-
     def test_direct_ingest_instance_status_contains_data_for_all_states(
         self,
     ) -> None:
-        """Enforces that the fixture for the pause status table at
+        """Enforces that the fixture for the status table at
         recidiviz/tools/admin_panel/fixtures/operations_db/direct_ingest_instance_status.csv
         has data for all states.
         """

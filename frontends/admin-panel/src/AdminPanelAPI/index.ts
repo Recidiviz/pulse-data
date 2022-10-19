@@ -104,12 +104,10 @@ export {
   markInstanceIngestViewDataInvalidated,
   moveIngestViewResultsBetweenInstances,
   moveIngestViewResultsToBackup,
-  pauseDirectIngestInstance,
   releaseBQExportLock,
   transferIngestViewMetadataToNewInstance,
   triggerTaskScheduler,
   startIngestRerun,
-  unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "./IngestOperations";
 export { createAgency, getAgencies, getUsers } from "./JusticeCountsTools";

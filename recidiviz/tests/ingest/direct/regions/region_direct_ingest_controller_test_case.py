@@ -39,9 +39,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     LegacyIngestViewProcessor,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
-)
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
     IngestViewMaterializationArgs,
@@ -176,11 +173,6 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         )
 
         self.entity_matching_error_threshold_patcher.start()
-
-        for instance in DirectIngestInstance:
-            DirectIngestInstancePauseStatusManager.add_instance(
-                self.region_code(), instance, (instance != self._main_ingest_instance())
-            )
 
         self.file_tags_processed: List[str] = []
         self.did_rerun_for_idempotence = False

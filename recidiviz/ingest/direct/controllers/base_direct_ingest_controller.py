@@ -85,9 +85,6 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
     LegacyIngestViewProcessor,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_instance_pause_status_manager import (
-    DirectIngestInstancePauseStatusManager,
-)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
@@ -233,12 +230,6 @@ class BaseDirectIngestController:
             launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_instance_pause_status_manager = (
-            DirectIngestInstancePauseStatusManager(
-                self.region_code(), self.ingest_instance
-            )
-        )
-
         self.ingest_instance_status_manager = PostgresDirectIngestInstanceStatusManager(
             self.region_code(), self.ingest_instance
         )
@@ -269,6 +260,15 @@ class BaseDirectIngestController:
         state_code = StateCode(self.region_code().upper())
         return self.ingest_instance.database_key_for_state(
             state_code,
+        )
+
+    def _ingest_is_not_running(self) -> bool:
+        """Returns True if ingest is not running in this instance and all functions should
+        early-return without doing any work.
+        """
+        return (
+            self.ingest_instance_status_manager.get_current_status()
+            == DirectIngestStatus.NO_RERUN_IN_PROGRESS
         )
 
     # ============== #
@@ -330,9 +330,9 @@ class BaseDirectIngestController:
         """Internal helper for scheduling the next ingest task."""
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_pause_status_manager.is_instance_paused():
+        if self._ingest_is_not_running():
             logging.info(
-                "Ingest out of [%s] is currently paused.", self.ingest_instance
+                "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
 
@@ -552,9 +552,9 @@ class BaseDirectIngestController:
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_pause_status_manager.is_instance_paused():
+        if self._ingest_is_not_running():
             logging.info(
-                "Ingest out of [%s] is currently paused.", self.ingest_instance
+                "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
 
@@ -788,9 +788,9 @@ class BaseDirectIngestController:
                 "endpoint and any cloud functions that trigger ingest."
             )
 
-        if self.ingest_instance_pause_status_manager.is_instance_paused():
+        if self._ingest_is_not_running():
             logging.info(
-                "Ingest out of [%s] is currently paused.", self.ingest_instance
+                "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
 
@@ -847,9 +847,9 @@ class BaseDirectIngestController:
         """
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_pause_status_manager.is_instance_paused():
+        if self._ingest_is_not_running():
             logging.info(
-                "Ingest out of [%s] is currently paused.", self.ingest_instance
+                "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
 
@@ -922,9 +922,9 @@ class BaseDirectIngestController:
     ) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance_pause_status_manager.is_instance_paused():
+        if self._ingest_is_not_running():
             logging.info(
-                "Ingest out of [%s] is currently paused.", self.ingest_instance
+                "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
 
