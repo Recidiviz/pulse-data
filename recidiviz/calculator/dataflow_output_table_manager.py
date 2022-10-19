@@ -28,9 +28,13 @@ from typing import List, Tuple
 import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.calculator import dataflow_config
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
+)
+from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
+    NORMALIZATION_MANAGERS,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
@@ -155,6 +159,28 @@ def update_normalized_table_schemas_in_dataset(
                 table_id,
                 schema_for_entity_class,
             )
+
+    for manager in NORMALIZATION_MANAGERS:
+        for (child_cls, parent_cls) in manager.normalized_entity_associations():
+            association_table = schema_utils.get_state_database_association_with_names(
+                child_cls.__name__, parent_cls.__name__
+            )
+
+            schema_for_association_table = schema_for_sqlalchemy_table(
+                association_table, add_state_code_field=True
+            )
+
+            table_id = association_table.name
+            normalized_table_ids.append(table_id)
+
+            if bq_client.table_exists(normalized_state_dataset_ref, table_id):
+                bq_client.update_schema(
+                    normalized_state_dataset_id, table_id, schema_for_association_table
+                )
+            else:
+                bq_client.create_table_with_schema(
+                    normalized_state_dataset_id, table_id, schema_for_association_table
+                )
 
     return normalized_table_ids
 

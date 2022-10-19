@@ -21,11 +21,12 @@ import inspect
 import sys
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Iterator, List, Literal, Optional, Type, Union
+from typing import Any, Iterator, List, Literal, Optional, Tuple, Type, Union
 
 import sqlalchemy
 from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import RelationshipProperty
 
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
@@ -190,6 +191,35 @@ def get_database_entity_by_table_name(
     raise ValueError(f"Could not find model with table named {table_name}")
 
 
+def get_database_entities_by_association_table(
+    module: ModuleType, table_name: str
+) -> Tuple[Type[DeclarativeMeta], Type[DeclarativeMeta]]:
+    """Returns the database entities associated with the association table."""
+    parent_member = None
+    child_member = None
+    for name in dir(module):
+        member = getattr(module, name)
+        if not _is_database_entity_subclass(member):
+            continue
+
+        try:
+            for (
+                relationship
+            ) in member.get_relationship_property_names_and_properties().values():
+                if relationship.secondary.name == table_name:
+                    parent_member = member
+                    child_member = getattr(module, relationship.argument)
+        except AttributeError:
+            continue
+
+    if not child_member or not parent_member:
+        raise ValueError(
+            f"Could not find model with association table named {table_name}"
+        )
+
+    return child_member, parent_member
+
+
 def _is_database_entity_subclass(member: Any) -> bool:
     return (
         inspect.isclass(member)
@@ -214,6 +244,28 @@ def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
 
     raise LookupError(
         f"Entity class {class_name} does not exist in " f"{state_schema.__name__}."
+    )
+
+
+@lru_cache(maxsize=None)
+def get_state_database_association_with_names(
+    child_class_name: str, parent_class_name: str
+) -> Table:
+    parent_entity = get_state_database_entity_with_name(parent_class_name)
+    parent_relationships: List[
+        RelationshipProperty
+    ] = parent_entity.get_relationship_property_names_and_properties().values()
+
+    for relationship in parent_relationships:
+        if (
+            relationship.secondary is not None
+            and relationship.argument == child_class_name
+        ):
+            return relationship.secondary
+
+    raise LookupError(
+        f"Association table with {child_class_name} and {parent_class_name} does not in exist in "
+        f"{state_schema.__name__}"
     )
 
 

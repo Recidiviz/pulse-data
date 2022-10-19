@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.as
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
@@ -70,7 +71,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
 )
@@ -828,7 +828,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[
-                StateIncarcerationSentence.new_with_defaults(
+                NormalizedStateIncarcerationSentence.new_with_defaults(
                     state_code=StateCode.US_PA.value,
                     external_id="sentence1",
                     status=StateSentenceStatus.SERVING,
@@ -1543,7 +1543,7 @@ class TestNextRecommendedTreatmentCollateralVisitDate(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[
-                StateIncarcerationSentence.new_with_defaults(
+                NormalizedStateIncarcerationSentence.new_with_defaults(
                     state_code=StateCode.US_PA.value,
                     external_id="sentence1",
                     status=StateSentenceStatus.SERVING,
@@ -2224,7 +2224,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[
-                StateIncarcerationSentence.new_with_defaults(
+                NormalizedStateIncarcerationSentence.new_with_defaults(
                     state_code=StateCode.US_PA.value,
                     external_id="sentence1",
                     incarceration_sentence_id=1111,
@@ -2277,7 +2277,7 @@ class TestNextRecommendedReassessment(unittest.TestCase):
             supervision_contacts=[],
             violation_responses=[],
             incarceration_sentences=[
-                StateIncarcerationSentence.new_with_defaults(
+                NormalizedStateIncarcerationSentence.new_with_defaults(
                     state_code=StateCode.US_PA.value,
                     external_id="sentence1",
                     incarceration_sentence_id=1111,

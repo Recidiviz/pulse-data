@@ -14,30 +14,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Stores the base EntityNormalizationManager class for the entity normalization
-managers."""
-import abc
+"""Contains the logic for a SentenceNormalizationManager that manages the normalization
+of StateCharge entities in the calculation pipelines."""
 from typing import List, Tuple, Type
 
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
+)
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state.entities import (
+    StateCharge,
+    StateEarlyDischarge,
+    StateIncarcerationSentence,
+    StateSupervisionSentence,
+)
 
 
-class EntityNormalizationManager(metaclass=abc.ABCMeta):
-    """Base class for a class that manages the normalization of state entities."""
+class SentenceNormalizationManager(EntityNormalizationManager):
+    """Interface for generalized and state-specific normalization of StateCharges
+    for use in calculations."""
 
     @staticmethod
-    @abc.abstractmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
-        """Must be implemented by subclasses. Defines all entities that are
-        normalized by this normalization manager."""
+        return [
+            StateCharge,
+            StateSupervisionSentence,
+            StateIncarcerationSentence,
+            StateEarlyDischarge,
+        ]
 
     @staticmethod
     def normalized_entity_associations() -> List[Tuple[Type[Entity], Type[Entity]]]:
-        """Must be implemented by subclasses. Defines all entity pairs that have
-        associations (many-to-many relationships) that are normalized by this
-        normalization manager. The association must go from the child to the parent (e.g.
-        StateCharge, StateSupervisionSentence), because the association table is named
-        from child to parent.
-
-        Because associations are very rare, by default returns an empty list."""
-        return []
+        return [
+            (StateCharge, StateSupervisionSentence),
+            (StateCharge, StateIncarcerationSentence),
+        ]

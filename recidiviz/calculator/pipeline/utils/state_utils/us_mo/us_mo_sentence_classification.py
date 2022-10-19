@@ -23,6 +23,10 @@ from typing import Any, Dict, Generic, List, Optional, Tuple
 
 import attr
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
@@ -487,7 +491,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
 
 @attr.s
 class UsMoIncarcerationSentence(
-    StateIncarcerationSentence, UsMoSentenceMixin[StateIncarcerationSentence]
+    NormalizedStateIncarcerationSentence, UsMoSentenceMixin[StateIncarcerationSentence]
 ):
     @classmethod
     def from_incarceration_sentence(
@@ -511,7 +515,7 @@ class UsMoIncarcerationSentence(
 
 @attr.s
 class UsMoSupervisionSentence(
-    StateSupervisionSentence, UsMoSentenceMixin[StateSupervisionSentence]
+    NormalizedStateSupervisionSentence, UsMoSentenceMixin[StateSupervisionSentence]
 ):
     @classmethod
     def from_supervision_sentence(

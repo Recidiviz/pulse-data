@@ -133,17 +133,28 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
     def write_output(self, pipeline: beam.Pipeline) -> None:
         normalized_entity_types: Set[Type[Entity]] = set()
         normalized_entity_class_names: Set[str] = set()
+        normalized_entity_associations: Set[str] = set()
 
         for manager in self.required_entity_normalization_managers():
             for normalized_entity_class in manager.normalized_entity_classes():
                 normalized_entity_types.add(normalized_entity_class)
                 normalized_entity_class_names.add(normalized_entity_class.__name__)
+            for (
+                child_entity_class,
+                parent_entity_class,
+            ) in manager.normalized_entity_associations():
+                normalized_entity_associations.add(
+                    f"{child_entity_class.__name__}_{parent_entity_class.__name__}"
+                )
 
         writable_metrics = (
             pipeline
             | "Convert to dict to be written to BQ"
-            >> beam.ParDo(NormalizedEntityTreeWritableDicts()).with_outputs(
-                *normalized_entity_class_names
+            >> beam.ParDo(
+                NormalizedEntityTreeWritableDicts(),
+                state_code=self.pipeline_job_args.state_code,
+            ).with_outputs(
+                *normalized_entity_class_names, *normalized_entity_associations
             )
         )
 
@@ -154,6 +165,21 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
 
             _ = getattr(writable_metrics, entity_class_name) | (
                 f"Write Normalized{entity_class_name} to BQ table: "
+                f"{self.pipeline_job_args.output_dataset}.{table_id}"
+            ) >> WriteToBigQuery(
+                output_table=table_id,
+                output_dataset=self.pipeline_job_args.output_dataset,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+            )
+
+        for entity_association in normalized_entity_associations:
+            child_class_name, parent_class_name = entity_association.split("_")
+            table_id = schema_utils.get_state_database_association_with_names(
+                child_class_name, parent_class_name
+            ).name
+
+            _ = getattr(writable_metrics, entity_association) | (
+                f"Write Normalized{child_class_name} to Normalized{parent_class_name} associations to BQ table: "
                 f"{self.pipeline_job_args.output_dataset}.{table_id}"
             ) >> WriteToBigQuery(
                 output_table=table_id,
@@ -218,7 +244,7 @@ class NormalizeEntities(beam.DoFn):
 
 
 @with_input_types(
-    beam.typehints.Tuple[int, Dict[str, Sequence[Entity]], AdditionalAttributesMap]
+    beam.typehints.Tuple[int, Dict[str, Sequence[Entity]], AdditionalAttributesMap], str
 )
 @with_output_types(beam.typehints.Dict[str, Any])
 class NormalizedEntityTreeWritableDicts(beam.DoFn):
@@ -228,6 +254,7 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
     def process(
         self,
         element: Tuple[int, Dict[str, Sequence[Entity]], AdditionalAttributesMap],
+        state_code: str,
     ) -> Generator[Dict[str, Any], None, None,]:
         """The beam.io.WriteToBigQuery transform requires elements to be in dictionary
         form, where the values are in formats as required by BigQuery I/O connector.
@@ -249,18 +276,23 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
         person_id, normalized_entities, additional_attributes_map = element
 
         field_index = CoreEntityFieldIndex()
-        for normalized_entity_list in normalized_entities.values():
-            tagged_entity_dict_outputs = convert_entities_to_normalized_dicts(
-                person_id=person_id,
-                entities=normalized_entity_list,
-                additional_attributes_map=additional_attributes_map,
-                field_index=field_index,
-            )
+        normalized_entity_list = [
+            entity
+            for entity_list in normalized_entities.values()
+            for entity in entity_list
+        ]
+        tagged_entity_dict_outputs = convert_entities_to_normalized_dicts(
+            person_id=person_id,
+            state_code=state_code,
+            entities=normalized_entity_list,
+            additional_attributes_map=additional_attributes_map,
+            field_index=field_index,
+        )
 
-            for entity_name, entity_dict in tagged_entity_dict_outputs:
-                output_dict = json_serializable_dict(entity_dict)
+        for entity_name, entity_dict in tagged_entity_dict_outputs:
+            output_dict = json_serializable_dict(entity_dict)
 
-                yield beam.pvalue.TaggedOutput(entity_name, output_dict)
+            yield beam.pvalue.TaggedOutput(entity_name, output_dict)
 
     def to_runner_api_parameter(
         self, _unused_context: PipelineContext

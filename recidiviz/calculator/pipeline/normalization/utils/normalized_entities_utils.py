@@ -25,11 +25,15 @@ from more_itertools import one
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStateCharge,
+    NormalizedStateEarlyDischarge,
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateIncarcerationSentence,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -37,6 +41,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateSupervisionViolationTypeEntry,
     SequencedEntityMixin,
 )
+from recidiviz.common.attr_mixins import BuildableAttrFieldType
 from recidiviz.common.constants.states import MAX_FIPS_CODE
 
 # All entity classes that have Normalized versions
@@ -55,6 +60,10 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateSupervisionViolationTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateAssessment,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+    NormalizedStateCharge,
+    NormalizedStateEarlyDischarge,
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)
@@ -358,3 +367,62 @@ def sort_normalized_entities_by_sequence_num(
     """Returns the list of |sequenced_entities| sorted by sequence_num."""
     sorted_entities = sorted(sequenced_entities, key=lambda key: key.sequence_num)
     return sorted_entities
+
+
+def update_forward_references_on_updated_entity(
+    updated_entity: NormalizedStateEntityT,
+    new_related_entities: List[NormalizedStateEntityT],
+    forward_relationship_field: str,
+    forward_relationship_field_type: BuildableAttrFieldType,
+) -> None:
+    """For the |updated_entity|, updates the value stored in the |forward_relationship_field|
+    to point to the |new_related_entities| or the first item of |new_related_entities| if
+    the field type is not a list."""
+    if forward_relationship_field_type == BuildableAttrFieldType.FORWARD_REF:
+        if len(new_related_entities) != 1:
+            raise ValueError(
+                f"Unexpected number entities to be attached to forward ref: [{new_related_entities}]"
+            )
+        setattr(updated_entity, forward_relationship_field, new_related_entities[0])
+        return
+
+    if forward_relationship_field_type != BuildableAttrFieldType.LIST:
+        raise ValueError(
+            f"Unexpected forward_relationship_field_type: [{forward_relationship_field_type}]"
+        )
+
+    setattr(updated_entity, forward_relationship_field, new_related_entities)
+
+
+def update_reverse_references_on_related_entities(
+    updated_entity: NormalizedStateEntityT,
+    new_related_entities: List[NormalizedStateEntityT],
+    reverse_relationship_field: str,
+    reverse_relationship_field_type: BuildableAttrFieldType,
+) -> None:
+    """For each of the entities in the |new_related_entities| list, updates the value
+    stored in the |reverse_relationship_field| to point to the |updated_entity|.
+
+    If the attribute stored in the |reverse_relationship_field| is a list, replaces
+    the reference to the original entity in the list with the |updated_entity|.
+    """
+    if reverse_relationship_field_type == BuildableAttrFieldType.FORWARD_REF:
+        # If the reverse relationship field is a forward ref, set the updated entity
+        # directly as the value.
+        for new_related_entity in new_related_entities:
+            setattr(new_related_entity, reverse_relationship_field, updated_entity)
+        return
+
+    if reverse_relationship_field_type != BuildableAttrFieldType.LIST:
+        raise ValueError(
+            f"Unexpected reverse_relationship_field_type: [{reverse_relationship_field_type}]"
+        )
+
+    for new_related_entity in new_related_entities:
+        reverse_relationship_list = getattr(
+            new_related_entity, reverse_relationship_field
+        )
+
+        if updated_entity not in reverse_relationship_list:
+            # Add the updated entity to the list since it is not already present
+            reverse_relationship_list.append(updated_entity)

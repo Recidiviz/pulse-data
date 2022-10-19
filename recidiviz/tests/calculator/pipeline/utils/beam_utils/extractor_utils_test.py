@@ -659,6 +659,167 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
             test_pipeline.run()
 
+    def testExtractDataForPipeline_withAssociationTables_multi_parent_types(self):
+        """Tests the extraction of multiple entities with cross-entity
+        relationship properties hydrated."""
+        required_schema_classes = [
+            schema.StatePerson,
+            schema.StateSupervisionSentence,
+            schema.StateIncarcerationSentence,
+            schema.StateCharge,
+        ]
+
+        person_id = 12345
+
+        schema_person = schema.StatePerson(
+            person_id=person_id,
+            current_address="123 Street",
+            full_name="Bernard Madoff",
+            birthdate=date(1970, 1, 1),
+            gender=StateGender.MALE,
+            residency_status=StateResidencyStatus.PERMANENT,
+            state_code="US_XX",
+        )
+
+        schema_charge_1 = database_test_utils.generate_test_charge(
+            person_id=person_id, charge_id=123
+        )
+
+        schema_sup_sentence = database_test_utils.generate_test_supervision_sentence(
+            person_id=person_id,
+            charges=[schema_charge_1],
+            early_discharges=[],
+        )
+
+        schema_inc_sentence = database_test_utils.generate_test_incarceration_sentence(
+            person_id=person_id,
+            charges=[schema_charge_1],
+            early_discharges=[],
+        )
+
+        person_data = [normalized_database_base_dict(schema_person)]
+        charge_data = normalized_database_base_dict_list([schema_charge_1])
+        sentence_data = [normalized_database_base_dict(schema_sup_sentence)]
+        inc_sentence_data = [normalized_database_base_dict(schema_inc_sentence)]
+
+        state_charge_supervision_sentence_association_table_data = [
+            {
+                "charge_id": charge.charge_id,
+                "supervision_sentence_id": schema_sup_sentence.supervision_sentence_id,
+            }
+            for charge in [schema_charge_1]
+        ]
+
+        state_charge_incarceration_sentence_association_table_data = [
+            {
+                "charge_id": charge.charge_id,
+                "incarceration_sentence_id": schema_inc_sentence.incarceration_sentence_id,
+            }
+            for charge in [schema_charge_1]
+        ]
+
+        data_dict = default_data_dict_for_root_schema_classes(required_schema_classes)
+
+        data_dict_overrides = {
+            schema.StatePerson.__tablename__: person_data,
+            schema.StateSupervisionSentence.__tablename__: sentence_data,
+            schema.StateIncarcerationSentence.__tablename__: inc_sentence_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_charge_supervision_sentence_association_table.name: state_charge_supervision_sentence_association_table_data,
+            schema.state_charge_incarceration_sentence_association_table.name: state_charge_incarceration_sentence_association_table_data,
+        }
+        data_dict.update(data_dict_overrides)
+
+        entity_converter = StateSchemaToEntityConverter()
+
+        entity_person = entity_converter.convert(schema_person)
+        entity_charges: List[entities.StateCharge] = entity_converter.convert_all(
+            [schema_charge_1], populate_back_edges=False
+        )
+        entity_inc_sentence: entities.StateIncarcerationSentence = (
+            entity_converter.convert(schema_inc_sentence)
+        )
+        entity_sup_sentence: entities.StateSupervisionSentence = (
+            entity_converter.convert(schema_sup_sentence)
+        )
+
+        entity_charges[0].supervision_sentences = [entity_sup_sentence]
+        entity_charges[0].incarceration_sentences = [entity_inc_sentence]
+        entity_sup_sentence.charges = entity_charges
+        entity_inc_sentence.charges = entity_charges
+        entity_person.supervision_sentences = [entity_sup_sentence]
+        entity_person.incarceration_sentences = [entity_inc_sentence]
+
+        project = "project"
+        dataset = "state"
+
+        with patch(
+            "recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+            self.fake_bq_source_factory.create_fake_bq_source_constructor(
+                dataset, data_dict
+            ),
+        ):
+            test_pipeline = TestPipeline()
+
+            output = test_pipeline | extractor_utils.ExtractDataForPipeline(
+                state_code=entity_person.state_code,
+                project_id=project,
+                entities_dataset=dataset,
+                normalized_entities_dataset=dataset,
+                reference_dataset=dataset,
+                required_entity_classes=[
+                    entities.StatePerson,
+                    entities.StateSupervisionSentence,
+                    entities.StateIncarcerationSentence,
+                    entities.StateCharge,
+                ],
+                required_reference_tables=None,
+                required_state_based_reference_tables=None,
+                unifying_class=entities.StatePerson,
+                unifying_id_field_filter_set=None,
+            )
+
+            print(
+                [
+                    (
+                        12345,
+                        {
+                            entities.StatePerson.__name__: [entity_person],
+                            entities.StateSupervisionSentence.__name__: [
+                                entity_sup_sentence
+                            ],
+                            entities.StateIncarcerationSentence.__name__: [
+                                entity_inc_sentence
+                            ],
+                            entities.StateCharge.__name__: entity_charges,
+                        },
+                    )
+                ]
+            )
+
+            assert_that(
+                output,
+                equal_to(
+                    [
+                        (
+                            12345,
+                            {
+                                entities.StatePerson.__name__: [entity_person],
+                                entities.StateSupervisionSentence.__name__: [
+                                    entity_sup_sentence
+                                ],
+                                entities.StateIncarcerationSentence.__name__: [
+                                    entity_inc_sentence
+                                ],
+                                entities.StateCharge.__name__: entity_charges,
+                            },
+                        )
+                    ]
+                ),
+            )
+
+            test_pipeline.run()
+
     def testExtractDataForPipeline_withReferenceTables(self):
         """Tests the extraction of multiple entities with cross-entity
         relationship properties hydrated."""

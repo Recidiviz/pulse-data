@@ -28,11 +28,15 @@ from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateCharge,
+    StateEarlyDischarge,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StateProgramAssignment,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -291,3 +295,48 @@ class NormalizedStateSupervisionViolationResponseDecisionEntry(
 ):
     """Stores instances of StateSupervisionViolationResponseDecisionEntry entities that have been
     normalized and are prepared to be used in calculations."""
+
+
+# StateIncarcerationSentence / StateSupervisionSentence subtree
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateIncarcerationSentence(
+    StateIncarcerationSentence, NormalizedStateEntity
+):
+    """Stores instances of StateIncarcerationSentence entities that have been
+    normalized and are prepared to be used in calculations."""
+
+
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateSupervisionSentence(
+    StateSupervisionSentence, NormalizedStateEntity
+):
+    """Stores instances of StateSupervisionSentence entities that have been
+    normalized and are prepared to be used in calculations."""
+
+
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
+    """Stores instances of StateCharge entities that have been
+    normalized and are prepared to be used in calculations."""
+
+
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateEarlyDischarge(StateEarlyDischarge, NormalizedStateEntity):
+    """Stores instances of StateEarlyDischarge entities that have been normalized
+    and are prepared to be used in calculations."""
