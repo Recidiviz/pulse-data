@@ -18,8 +18,8 @@
 
 import logging
 from collections import defaultdict
-from datetime import date, timedelta
-from typing import Any, Dict, Generic, List, Optional, Tuple, TypeVar
+from datetime import date
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 import attr
 
@@ -394,106 +394,6 @@ class UsMoSentenceMixin(Generic[SentenceType]):
                 return status.supervision_type_status_classification
 
         return supervision_type
-
-    def _get_overlapping_supervision_type_span_index(
-        self, supervision_type_day: date
-    ) -> Optional[int]:
-        """Returns the index of the span in this sentence's supervision_type_spans list that overlaps in time with the
-        provided date, or None if there are no overlapping spans."""
-        filtered_spans = [
-            (i, span)
-            for i, span in enumerate(self.supervision_type_spans)
-            if span.start_date <= supervision_type_day
-            and (span.end_date is None or supervision_type_day < span.end_date)
-        ]
-
-        if not filtered_spans:
-            return None
-
-        if len(filtered_spans) > 1:
-            raise ValueError("Should have non-overlapping supervision type spans")
-
-        return filtered_spans[0][0]
-
-    def get_sentence_supervision_type_on_day(
-        self, supervision_type_day: date
-    ) -> Optional[StateSupervisionSentenceSupervisionType]:
-        """Calculates the supervision type to be associated with this sentence on a given day, or None if the sentence
-        has been completed/terminated, if the person is incarcerated on this date, or if there are no statuses for this
-        person on/before a given date.
-        """
-
-        overlapping_span_index = self._get_overlapping_supervision_type_span_index(
-            supervision_type_day
-        )
-
-        if overlapping_span_index is None:
-            return None
-
-        if self.supervision_type_spans[overlapping_span_index].supervision_type is None:
-            return None
-
-        while overlapping_span_index >= 0:
-            span = self.supervision_type_spans[overlapping_span_index]
-            if (
-                span.supervision_type is not None
-                and span.supervision_type
-                != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
-            ):
-                return span.supervision_type
-
-            # If the most recent status status is INTERNAL_UNKNOWN, we look back at previous statuses until we can
-            # find a status that is not INTERNAL_UNKNOWN
-            overlapping_span_index -= 1
-
-        return self.supervision_type_spans[overlapping_span_index].supervision_type
-
-    def get_most_recent_supervision_type_before_upper_bound_day(
-        self,
-        upper_bound_exclusive_date: date,
-        lower_bound_inclusive_date: Optional[date],
-    ) -> Optional[Tuple[date, StateSupervisionSentenceSupervisionType]]:
-        """Finds the most recent nonnull type associated this sentence, preceding the provided date. An optional lower
-        bound may be provided to limit the lookback window.
-
-        Returns a tuple (last valid date of that supervision type span, supervision type).
-        """
-        upper_bound_inclusive_day = upper_bound_exclusive_date - timedelta(days=1)
-        overlapping_span_index = self._get_overlapping_supervision_type_span_index(
-            upper_bound_inclusive_day
-        )
-
-        if overlapping_span_index is None:
-            return None
-
-        while overlapping_span_index >= 0:
-            span = self.supervision_type_spans[overlapping_span_index]
-
-            last_supervision_type_day_exclusive = (
-                min(upper_bound_exclusive_date, span.end_date)
-                if span.end_date
-                else upper_bound_exclusive_date
-            )
-            last_supervision_type_day_inclusive = (
-                last_supervision_type_day_exclusive - timedelta(days=1)
-            )
-
-            if (
-                lower_bound_inclusive_date
-                and last_supervision_type_day_inclusive < lower_bound_inclusive_date
-            ):
-                return None
-
-            supervision_type = self.get_sentence_supervision_type_on_day(
-                span.start_date
-            )
-
-            if supervision_type is not None:
-                return last_supervision_type_day_inclusive, supervision_type
-
-            overlapping_span_index -= 1
-
-        return None
 
 
 @attr.s
