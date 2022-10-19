@@ -201,7 +201,7 @@ these tests pass in CI.
 You can ignore any failing tests with (for example):
 
 ```bash
-$ pytest --ignore=recidiviz/tests/ingest/aggregate
+$ pytest --ignore=recidiviz/tests/path/to/tests
 ```
 
 ##### Option 2: Docker container

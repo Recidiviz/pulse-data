@@ -29,6 +29,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.tools.utils.script_helpers import does_command_fail, run_command
 
 BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
 
@@ -54,6 +55,27 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
     features, but not all of them. If you are trying to use the emulator and running
     into issues, you should post in #platform-team.
     """
+
+    @classmethod
+    def _assert_bq_emulator_is_running(cls) -> None:
+        if does_command_fail("docker info"):
+            raise ValueError("The `docker info` command failed - is Docker running?")
+
+        # Lists all running containers and looks for one with port 9050 exposed (this
+        # is the port used by the BQ emulator).
+        bq_emulator_container_ids = run_command(
+            'docker ps --filter "expose=9050" -q', timeout_sec=10
+        )
+        if not bq_emulator_container_ids:
+            raise ValueError(
+                f"No Docker container found running the BQ emulator. Follow the "
+                f"instructions in the {BigQueryEmulatorTestCase.__name__} class to "
+                f"start the emulator."
+            )
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._assert_bq_emulator_is_running()
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
