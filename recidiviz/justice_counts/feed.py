@@ -71,7 +71,10 @@ class FeedInterface:
         # needs to fetch non-context datapoints. Eventually adjust to include
         # contexts in the feed as well.
         reports = ReportInterface.get_reports_by_agency_id(
-            session=session, agency_id=agency_id, include_datapoints=True
+            session=session,
+            agency_id=agency_id,
+            include_datapoints=True,
+            published_only=True,
         )
         datapoints = [
             d

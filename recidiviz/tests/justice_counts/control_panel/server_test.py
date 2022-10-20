@@ -1366,6 +1366,26 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
 
+        # No data has been published; feed should be empty
+        empty_feed_response = self.client.get(
+            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+        )
+        self.assertEqual(empty_feed_response.status_code, 200)
+        self.assertEqual(empty_feed_response.data, b"")
+
+        # Some data has been published
+        report = self.session.query(schema.Report).limit(1).one()
+        report.status = ReportStatus.PUBLISHED
+        self.session.commit()
+        partial_feed_response = self.client.get(
+            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+        )
+        self.assertEqual(partial_feed_response.status_code, 200)
+
+        # Data has been published; feed should not be empty
+        self.session.query(schema.Report).update({"status": ReportStatus.PUBLISHED})
+        self.session.commit()
+
         feed_response_no_metric = self.client.get(f"/feed/{agency_id}")
         self.assertEqual(feed_response_no_metric.status_code, 200)
 

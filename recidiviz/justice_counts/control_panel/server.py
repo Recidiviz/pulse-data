@@ -152,6 +152,11 @@ def create_app(config: Optional[Config] = None) -> Flask:
             current_session, agency_id=int(agency_id)
         )
 
+        if not system_to_filename_to_rows:
+            feed_response = make_response("")
+            feed_response.headers["Content-type"] = "text/plain"
+            return feed_response
+
         metric = request.args.get("metric")
         system: Optional[str]
         if len(system_to_filename_to_rows) == 1:
@@ -198,7 +203,13 @@ def create_app(config: Optional[Config] = None) -> Flask:
         # Valid state: both metric and system parameters are present
         # Return plaintext feed of metric rows
         elif system and metric:
-            rows = system_to_filename_to_rows[system][metric]
+            if (
+                system in system_to_filename_to_rows
+                and metric in system_to_filename_to_rows[system]
+            ):
+                rows = system_to_filename_to_rows[system][metric]
+            else:
+                rows = []
 
         df = pd.DataFrame.from_dict(rows)
         csv = df.to_csv(index=False)

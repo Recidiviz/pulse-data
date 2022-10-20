@@ -45,6 +45,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         reset_justice_counts_fixtures(self.engine)
 
         with SessionFactory.using_database(self.database_key) as session:
+            session.query(schema.Report).update(
+                {"status": schema.ReportStatus.PUBLISHED}
+            )
+            session.commit()
+
             system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
                 session, agency_id=LAW_ENFORCEMENT_AGENCY_ID
             )
@@ -89,6 +94,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         reset_justice_counts_fixtures(self.engine)
 
         with SessionFactory.using_database(self.database_key) as session:
+            session.query(schema.Report).update(
+                {"status": schema.ReportStatus.PUBLISHED}
+            )
+            session.commit()
+
             system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
                 session, agency_id=SUPERVISION_AGENCY_ID
             )
