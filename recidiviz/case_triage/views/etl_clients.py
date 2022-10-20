@@ -138,10 +138,14 @@ most_recent_violations AS (
 ),
 supervision_start_dates AS (
   SELECT
-    *,
-    IF (sessions_start_date IS NOT NULL, sessions_start_date, start_date) AS supervision_start_date,
+    pop.person_id,
+    pop.state_code,
+    latest_periods.start_date,
+    * EXCEPT(person_id, state_code, start_date),
+    e.projected_completion_date_max AS projected_end_date,
+    IF (sessions_start_date IS NOT NULL, sessions_start_date, latest_periods.start_date) AS supervision_start_date,
   FROM
-    `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
+    `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` pop
   LEFT JOIN
     `{project_id}.{base_dataset}.state_person`
   USING (person_id, gender, state_code)
@@ -167,6 +171,11 @@ supervision_start_dates AS (
   LEFT JOIN
     supervision_start_dates_from_sessions
   USING (person_id, state_code, supervision_type)
+  LEFT JOIN `{project_id}.{sessions_dataset}.supervision_projected_completion_date_spans_materialized` e
+        ON pop.state_code = e.state_code
+        AND pop.person_id = e.person_id
+        AND pop.date_of_supervision BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
+  WHERE pop.included_in_state_population
 ),
 export_time AS (
   SELECT CURRENT_TIMESTAMP AS exported_at
@@ -200,6 +209,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     base_dataset=STATE_BASE_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     columns=[
         "state_code",
         "supervising_officer_external_id",
