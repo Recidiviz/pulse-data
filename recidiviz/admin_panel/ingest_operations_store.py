@@ -179,7 +179,7 @@ class IngestOperationsStore(AdminPanelStore):
         ] = self.cloud_task_manager.get_ingest_queue_states(state_code)
 
         return [
-            {queue_info["name"]: queue_info["state"].name}
+            {"name": queue_info["name"], "state": queue_info["state"].name}
             for queue_info in ingest_queue_states
         ]
 
