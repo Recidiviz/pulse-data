@@ -21,6 +21,9 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
@@ -33,7 +36,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 
 SUPERVISION_SENTENCE_PERIOD_LOOKBACK = 7
@@ -56,7 +58,7 @@ class UsMeSupervisionNormalizationDelegate(
     def supervision_termination_reason_override(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
     ) -> Optional[StateSupervisionPeriodTerminationReason]:
         """If there was a revocation sentence status with a completion date within a week of the supervision period's
         end date, then we assume the period's termination reason was a revocation."""

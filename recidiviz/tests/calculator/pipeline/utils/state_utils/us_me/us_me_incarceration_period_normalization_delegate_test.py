@@ -18,6 +18,9 @@
 import unittest
 from datetime import date
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_incarceration_period_normalization_delegate import (
     UsMeIncarcerationNormalizationDelegate,
 )
@@ -26,10 +29,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 _STATE_CODE = StateCode.US_ME.value
 
@@ -48,7 +48,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_date=date(2009, 1, 10),
         )
         incarceration_sentences = [
-            StateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '
@@ -76,7 +76,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
         incarceration_sentences = [
-            StateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '
@@ -104,7 +104,7 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         incarceration_sentences = [
-            StateIncarcerationSentence.new_with_defaults(
+            NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '

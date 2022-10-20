@@ -25,6 +25,10 @@ from typing import List, Optional, Tuple, Type
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
@@ -48,10 +52,8 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 
 
@@ -90,7 +92,7 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
     def supervision_termination_reason_override(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
     ) -> Optional[StateSupervisionPeriodTerminationReason]:
         """States may have specific logic that determines the termination reason for a
         supervision period.
@@ -101,8 +103,8 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
-        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
     ) -> List[StateSupervisionPeriod]:
         """Some states may use sentence information to split a period of supervision
         into multiple distinct periods with specific attributes. For example, if the
@@ -142,8 +144,8 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         delegate: StateSpecificSupervisionNormalizationDelegate,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
-        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
         earliest_death_date: Optional[datetime.date] = None,
     ):
@@ -155,12 +157,16 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
 
         self.delegate = delegate
 
-        self._incarceration_sentences: Optional[List[StateIncarcerationSentence]] = (
+        self._incarceration_sentences: Optional[
+            List[NormalizedStateIncarcerationSentence]
+        ] = (
             incarceration_sentences
             if self.delegate.normalization_relies_on_sentences()
             else None
         )
-        self._supervision_sentences: Optional[List[StateSupervisionSentence]] = (
+        self._supervision_sentences: Optional[
+            List[NormalizedStateSupervisionSentence]
+        ] = (
             supervision_sentences
             if self.delegate.normalization_relies_on_sentences()
             else None
@@ -394,7 +400,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     def _process_fields_on_final_supervision_period_set(
         self,
         supervision_periods: List[StateSupervisionPeriod],
-        supervision_sentences: Optional[List[StateSupervisionSentence]],
+        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
     ) -> List[StateSupervisionPeriod]:
         """After all supervision periods are sorted, dropped and split as necessary,
         continue to update fields of remaining supervision periods prior to adding to

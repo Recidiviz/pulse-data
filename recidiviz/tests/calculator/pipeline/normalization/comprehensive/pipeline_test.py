@@ -166,15 +166,38 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             ],
         )
 
+        charge = database_test_utils.generate_test_charge(fake_person_id, 1)
+        early_discharge = database_test_utils.generate_test_early_discharge(
+            fake_person_id
+        )
+
         incarceration_sentence = (
             database_test_utils.generate_test_incarceration_sentence(
-                fake_person_id, [], []
+                fake_person_id, [charge], []
             )
         )
 
         supervision_sentence = database_test_utils.generate_test_supervision_sentence(
-            fake_person_id, [], []
+            fake_person_id, [charge], [early_discharge]
         )
+        early_discharge.supervision_sentence_id = (
+            supervision_sentence.supervision_sentence_id
+        )
+
+        charge_to_incarceration_sentence_association = [
+            {
+                "charge_id": charge.charge_id,
+                "incarceration_sentence_id": incarceration_sentence.incarceration_sentence_id,
+                "state_code": state_code,
+            }
+        ]
+        charge_to_supervision_sentence_association = [
+            {
+                "charge_id": charge.charge_id,
+                "supervision_sentence_id": supervision_sentence.supervision_sentence_id,
+                "state_code": state_code,
+            }
+        ]
 
         incarceration_sentence_data = [
             normalized_database_base_dict(incarceration_sentence)
@@ -183,6 +206,14 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         supervision_sentence_data = [
             normalized_database_base_dict(supervision_sentence)
         ]
+
+        charge_data = normalized_database_base_dict_list(
+            incarceration_sentence.charges
+        ) + normalized_database_base_dict_list(supervision_sentence.charges)
+
+        early_discharge_data = normalized_database_base_dict_list(
+            supervision_sentence.early_discharges
+        )
 
         incarceration_periods_data = [
             normalized_database_base_dict(incarceration_period),
@@ -275,6 +306,10 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violated_condition_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.StateEarlyDischarge.__tablename__: early_discharge_data,
+            "state_charge_incarceration_sentence_association": charge_to_incarceration_sentence_association,
+            "state_charge_supervision_sentence_association": charge_to_supervision_sentence_association,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
         }
         data_dict.update(data_dict_overrides)
