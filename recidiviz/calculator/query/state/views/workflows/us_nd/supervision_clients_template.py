@@ -28,7 +28,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           compartment_level_2 AS supervision_type,
           supervising_officer_external_id AS officer_id,
           projected_end.projected_completion_date_max AS expiration_date
-        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_single_day_supervision_population_metrics_materialized` dataflow
+        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` dataflow
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
           ON dataflow.state_code = sessions.state_code
           AND dataflow.person_id = sessions.person_id
@@ -40,7 +40,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             AND dataflow.date_of_supervision
                 BETWEEN projected_end.start_date
                     AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
-        WHERE dataflow.state_code = 'US_ND'
+        WHERE dataflow.state_code = 'US_ND' AND dataflow.included_in_state_population
         AND supervising_officer_external_id IS NOT NULL
     ),
     nd_supervision_level_start AS (
