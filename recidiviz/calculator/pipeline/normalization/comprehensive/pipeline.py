@@ -57,6 +57,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.pipeline_type import (
     COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -96,7 +99,9 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateCharge,
                 entities.StateEarlyDischarge,
             ],
-            required_reference_tables=[],
+            required_reference_tables=[
+                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
+            ],
             required_state_based_reference_tables=[],
             state_specific_required_delegates=[
                 StateSpecificIncarcerationNormalizationDelegate,

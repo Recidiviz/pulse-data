@@ -17,7 +17,7 @@
 """Tests the entity_normalizer."""
 import unittest
 from copy import deepcopy
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 
@@ -48,6 +48,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
+)
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -106,6 +109,7 @@ class TestNormalizeEntities(unittest.TestCase):
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         persons: Optional[List[StatePerson]] = None,
+        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
@@ -119,6 +123,8 @@ class TestNormalizeEntities(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
+            STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
+            or [],
         }
         if not state_code_override:
             required_delegates = STATE_DELEGATES_FOR_TESTS
@@ -312,6 +318,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         assessments: Optional[List[StateAssessment]] = None,
         persons: Optional[List[StatePerson]] = None,
         state_code_override: Optional[str] = None,
+        charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
@@ -323,6 +330,8 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
+            STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
+            or [],
         }
 
         if not state_code_override:

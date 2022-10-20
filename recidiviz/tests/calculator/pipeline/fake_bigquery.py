@@ -695,6 +695,7 @@ def check_field_exists_in_table(table_name: str, field_name: str) -> None:
         "state_race_ethnicity_population_counts",
         "us_id_case_update_info",
         "supervision_location_ids_to_names",
+        "state_charge_offense_description_to_labels",
     }:
         return
 

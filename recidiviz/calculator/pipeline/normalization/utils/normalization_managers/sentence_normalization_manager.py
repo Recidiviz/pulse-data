@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains the logic for a SentenceNormalizationManager that manages the normalization
 of StateCharge entities in the calculation pipelines."""
-from typing import List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -24,6 +24,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.en
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
+)
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -42,9 +45,15 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         self,
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
+        charge_offense_description_to_labels_list: List[Dict[str, Any]],
     ) -> None:
         self._incarceration_sentences = incarceration_sentences
         self._supervision_sentences = supervision_sentences
+        self._charge_offense_description_to_labels: Dict[
+            int, Dict[str, Any]
+        ] = list_of_dicts_to_dict_with_keys(
+            charge_offense_description_to_labels_list, key="charge_id"
+        )
         self._normalized_incarceration_sentences_and_additional_attributes: Optional[
             Tuple[List[StateIncarcerationSentence], AdditionalAttributesMap]
         ] = None
