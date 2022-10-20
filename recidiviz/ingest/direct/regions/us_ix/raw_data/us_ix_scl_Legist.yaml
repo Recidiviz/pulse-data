@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Legist
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details about legal agents (attorneys and judges).
 data_classification: source
 primary_key_cols:
   - LegistId
 columns:
   - name: LegistId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the legal agent.
   - name: Code
     description: |-
       TODO(#15329): Fill in column description
@@ -20,25 +20,26 @@ columns:
       TODO(#15329): Fill in column description
   - name: FirstName
     description: |-
-      TODO(#15329): Fill in column description
+      The legal agent's first name.
   - name: MiddleName
     description: |-
       TODO(#15329): Fill in column description
   - name: LastName
     description: |-
-      TODO(#15329): Fill in column description
+      The legal agent's last name.
   - name: NameSuffix
     description: |-
       TODO(#15329): Fill in column description
   - name: DisplayName
     description: |-
-      TODO(#15329): Fill in column description
+      The legal agent's full name.
   - name: EmailAddress
     description: |-
       TODO(#15329): Fill in column description
   - name: LegistTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID indicating the type of legal agent.
+    known_values: []
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

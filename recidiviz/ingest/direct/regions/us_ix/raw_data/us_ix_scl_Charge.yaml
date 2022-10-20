@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Charge
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details about each charge, identifying the associated offender and docket.
 data_classification: source
 primary_key_cols:
   - ChargeId
@@ -11,11 +11,13 @@ columns:
       Unique identifier for each row in table.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender receiving the charge. Can be joined to 
+      `ind_Offender.OffenderId`.
     is_pii: True
   - name: Docket
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the docket containing the charge. A docket can contain multiple 
+      different ChargeIds.
   - name: InformationSource
     description: |-
       TODO(#15329): Fill in column description
@@ -32,7 +34,9 @@ columns:
       TODO(#15329): Fill in column description
   - name: StateId
     description: |-
-      TODO(#15329): Fill in column description
+      The state where the charge was brought from (or where the alleged crime occurred?)
+      Can be joined to `ref_Location.LocationId`.
+    known_values: []
   - name: OtherCourt
     description: |-
       TODO(#15329): Fill in column description
@@ -68,7 +72,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: ChargeOutcomeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of charge outcome.
+    known_values: []
   - name: OtherOutcomeType
     description: |-
       TODO(#15329): Fill in column description

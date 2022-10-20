@@ -1,29 +1,32 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Address
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains information on addresses.
 data_classification: source
 primary_key_cols:
   - AddressId
 columns:
   - name: AddressId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the address entry.
   - name: AppartmentNumber
     description: |-
       TODO(#15329): Fill in column description
   - name: StreetNumber
     description: |-
-      TODO(#15329): Fill in column description
+      The street number of the address.
+    is_pii: True
   - name: StreetNumberSuffix
     description: |-
       TODO(#15329): Fill in column description
   - name: StreetName
     description: |-
-      TODO(#15329): Fill in column description
+      The street name of the address.
+    is_pii: True
   - name: ZipCode
     description: |-
-      TODO(#15329): Fill in column description
+      The address's zip code; contains a mix of simple and two-part zip codes.
+    is_pii: True
   - name: POBox
     description: |-
       TODO(#15329): Fill in column description
@@ -32,10 +35,12 @@ columns:
       TODO(#15329): Fill in column description
   - name: Comments
     description: |-
-      TODO(#15329): Fill in column description
+      Text field with city names (unknown purpose).
+    is_pii: True
   - name: OutOfStatePlace
     description: |-
-      TODO(#15329): Fill in column description
+      Text field with city names for residents living out of state.
+    is_pii: True
   - name: AreaId
     description: |-
       Always null.

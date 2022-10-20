@@ -1,23 +1,23 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each sentence type ID to its definition.
 data_classification: source
 primary_key_cols:
   - SentenceTypeId
 columns:
   - name: SentenceTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence type.
   - name: SentenceTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence type.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Supplementary description for SentenceTypeDesc.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

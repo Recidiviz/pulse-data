@@ -1,17 +1,18 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Parole
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Provides details for each parole term, indicated by ParoleId.
 data_classification: source
 primary_key_cols:
   - ParoleId
 columns:
   - name: ParoleId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the parole term.
   - name: ReleaseDate
     description: |-
-      TODO(#15329): Fill in column description
+      Parole release date.
+    is_datetime: True
   - name: AdminDischargeDate
     description: |-
       TODO(#15329): Fill in column description
@@ -62,16 +63,18 @@ columns:
       TODO(#15329): Fill in column description
   - name: ParoleTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of parole. Can be joined with `scl_ParoleType.ParoleTypeId`.
+    known_values: []
   - name: ViolationTypeId
     description: |-
       TODO(#15329): Fill in column description
   - name: TermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the term. Can be joined with `scl_Term.TermId`.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender serving parole. Can be joined with `ind_Offender.OffenderId`.
+    is_pii: True
   - name: ApprovalStateId
     description: |-
       TODO(#15329): Fill in column description

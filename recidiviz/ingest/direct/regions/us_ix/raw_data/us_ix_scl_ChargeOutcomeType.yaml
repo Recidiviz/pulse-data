@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_ChargeOutcomeType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Defines possible charge outcome types by mapping ChargeOutcomeTypeId to its 
+  description.
 data_classification: source
 primary_key_cols:
   - ChargeOutcomeTypeId
 columns:
   - name: ChargeOutcomeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of charge outcome.
   - name: ChargeOutcomeTypeCode
     description: |-
       TODO(#15329): Fill in column description
   - name: ChargeOutcomeTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the charge outcome type corresponding to ChargeOutcomeTypeId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

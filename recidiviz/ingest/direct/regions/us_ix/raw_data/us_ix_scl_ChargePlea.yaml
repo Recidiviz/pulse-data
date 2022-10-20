@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_ChargePlea
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each charge plea ID to its definition, although plea data is currently missing
+  from the scl_Charge table.
 data_classification: source
 primary_key_cols:
   - ChargePleaId
 columns:
   - name: ChargePleaId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of charge plea.
   - name: ChargePleaCode
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened plea type name corresponding to ChargePleaId.
   - name: ChargePleaDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Full plea type name corresponding to ChargePleaId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

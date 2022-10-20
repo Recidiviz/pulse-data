@@ -1,23 +1,24 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: drg_Substance
 file_description: |-
-  TODO(#15329): Fill in the file description
+  A table describing each SubstanceId, mapping each ID value to the drug it references. 
+  Contains dummy variables with further details about the substance.
 data_classification: source
 primary_key_cols:
   - SubstanceId
 columns:
   - name: SubstanceId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies each substance with an integer ID value.
   - name: ParentId
     description: |-
       TODO(#15329): Fill in column description
   - name: SubstanceDesc
     description: |-
-      TODO(#15329): Fill in column description
+      String description of the substance identified by SubstanceId.
   - name: SubstanceCode
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened code corresponding to SubstanceDesc.
   - name: CommunitySupervision
     description: |-
       TODO(#15329): Fill in column description

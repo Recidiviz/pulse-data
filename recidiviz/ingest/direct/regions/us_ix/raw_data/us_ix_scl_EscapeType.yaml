@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_EscapeType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each EscapeTypeId to its description.
 data_classification: source
 primary_key_cols:
   - EscapeTypeId
 columns:
   - name: EscapeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of escape.
   - name: EscapeTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the type of escape corresponding to EscapeTypeId.
   - name: Abbreviation
     description: |-
       TODO(#15329): Fill in column description

@@ -1,20 +1,20 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_AgencyType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each AgencyTypeId to its corresponding description.
 data_classification: source
 primary_key_cols:
   - AgencyTypeId
 columns:
   - name: AgencyTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the agency type.
   - name: AgencyTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the agency type corresponding to AgencyTypeId.
   - name: Abbreviation
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened version of AgencyTypeDesc.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

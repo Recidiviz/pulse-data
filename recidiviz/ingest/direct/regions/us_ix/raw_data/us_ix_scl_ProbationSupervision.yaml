@@ -1,32 +1,38 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_ProbationSupervision
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Provides details on probation terms.
 data_classification: source
 primary_key_cols:
   - ProbationSupervisionId
 columns:
   - name: ProbationSupervisionId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the probation supervision term.
   - name: SentenceOrderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order. Can be joined with 
+      `scl_SentenceOrder.SentenceOrderId`.
   - name: StartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Start date of the probation term.
+    is_datetime: True
   - name: EndDate
     description: |-
-      TODO(#15329): Fill in column description
+      End date of the probation term.
+    is_datetime: True
   - name: DurationYear
     description: |-
-      TODO(#15329): Fill in column description
+      Probation term duration (years). Can be combined with DurationMonth and 
+      DurationDay for the precise duration.
   - name: DurationMonth
     description: |-
-      TODO(#15329): Fill in column description
+      Probation term duration (months). Can be combined with DurationYear and 
+      DurationDay for the precise duration.
   - name: DurationDay
     description: |-
-      TODO(#15329): Fill in column description
+      Probation term duration (days). Can be combined with DurationYear and 
+      DurationMonth for the precise duration.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -44,4 +50,6 @@ columns:
       TODO(#15329): Fill in column description
   - name: ProbationStartId
     description: |-
-      TODO(#15329): Fill in column description
+      ID indicating when the probation term starts. Mostly unused, and only ever takes
+      a value of 1 ("On sentence date").
+    known_values: []

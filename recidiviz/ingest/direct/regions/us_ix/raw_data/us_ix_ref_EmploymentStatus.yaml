@@ -8,10 +8,10 @@ primary_key_cols:
 columns:
   - name: EmploymentStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the employment status.
   - name: EmploymentStatusDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Describes the employment status corresponding to EmploymentStatusId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

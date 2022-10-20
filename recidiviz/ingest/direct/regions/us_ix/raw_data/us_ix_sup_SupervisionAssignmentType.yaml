@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sup_SupervisionAssignmentType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each supervision assignment type ID to its definition.
 data_classification: source
 primary_key_cols:
   - SupervisionAssignmentTypeId
 columns:
   - name: SupervisionAssignmentTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the supervision assignment type.
   - name: SupervisionAssignmentTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the supervision assignment type.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

@@ -1,17 +1,18 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: sup_SupervisionAssignment
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details on each supervision assignment.
 data_classification: source
 primary_key_cols:
   - SupervisionAssignmentId
 columns:
   - name: SupervisionAssignmentId
     description: |-
-      Unique identifier for each row in table.
+      ID for the supervision assignment.
   - name: MasterTermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the term the supervision assignment is associated with. Can be joined to 
+      `scl_Term.TermId`.
   - name: StartDate
     description: |-
       Timestamp indicated the start of current supervision assignment.
@@ -22,14 +23,17 @@ columns:
     is_datetime: True
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      Location of the supervision assignment. Can be joined to `ref_Location.LocationId`.
   - name: EmployeeId
     description: |-
-      ID of employee involved with supervision assignemnt.
+      ID of employee involved with supervision assignemnt. Can be joined to 
+      `ref_Employee.EmployeeId`.
     is_pii: True
   - name: SupervisionAssignmentTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of supervision assignment. Can be joined to 
+      `sup_SupervisionAssignmentType.SupervisionAssignmentTypeId`.
+    known_values: []
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

@@ -1,20 +1,24 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_ChangeReason
 file_description: |-
-  TODO(#15329): Fill in the file description
+  A table describing each ChangeReasonId, mapping each ID value to its description.
+  Note that the descriptions can be actual reasons for bed reassignment (e.g. "Offender
+  Request") or simply a type of bed reassignment (e.g. "Intra-Facility"). Though all 
+  ID values are marked as active, only the reassignment types (as opposed to reasons),
+  1 and 2, can be observedin the data.
 data_classification: source
 primary_key_cols:
   - ChangeReasonId
 columns:
   - name: ChangeReasonId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for each possible bed reassignment reason or type.
   - name: ChangeReasonName
     description: |-
-      TODO(#15329): Fill in column description
+      Description for the reason/type corresponding to each ChangeReasonId.
   - name: ChangeReasonDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Unused; description is found in ChangeReasonName instead.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

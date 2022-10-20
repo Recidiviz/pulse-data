@@ -1,26 +1,26 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Location_Address
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each location to its respective address(es).
 data_classification: source
 primary_key_cols:
   - Location_AddressId
 columns:
   - name: Location_AddressId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the unique combination of location and address.
   - name: AddressId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the address. Can be joined to `ref_Address.AddressId`.
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location. Can be joined to `ref_Location.LocationId`.
   - name: PrimaryAddress
     description: |-
       TODO(#15329): Fill in column description
   - name: AddressTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the address type. Can be joined to `ref_AddressType.AddressTypeId`.
   - name: StartDate
     description: |-
       TODO(#15329): Fill in column description

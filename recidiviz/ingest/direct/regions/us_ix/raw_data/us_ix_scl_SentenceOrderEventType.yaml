@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceOrderEventType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each ID for sentence order event type to its corresponding definition.
 data_classification: source
 primary_key_cols:
   - SentenceOrderEventTypeId
 columns:
   - name: SentenceOrderEventTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order event type.
   - name: SentenceOrderEventTypeName
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence order event type.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

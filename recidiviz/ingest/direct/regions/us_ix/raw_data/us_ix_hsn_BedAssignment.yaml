@@ -1,29 +1,37 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_BedAssignment
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Describes periods over which a given offender is assigned to a given bed.
 data_classification: source
 primary_key_cols:
   - BedAssignmentId
 columns:
   - name: BedAssignmentId
     description: |-
-      TODO(#15329): Fill in column description
+      Unique identifier for an offender's bed assignment period.
   - name: BedId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the particular bed an offender is assigned to within a period indicated
+      by BedAssignmentId. Can be joined to `hsn_Bed.BedId`.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the offender assigned to a given bed within a period indicated by 
+      BedAssignmentId. Can be joined to `ind_Offender.OffenderId`.
   - name: FromDate
     description: |-
-      TODO(#15329): Fill in column description
+      The beginning date of a bed assignment period.
   - name: ToDate
     description: |-
-      TODO(#15329): Fill in column description
+      The end date of a bed assignment period.
   - name: ChangeReasonId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the type of bed reassignment. Can be joined to 
+      `hsn_ChangeReason.ChangeReasonId`.
+    known_values:
+      - value: 1
+        description: Facility Transfer
+      - value: 2
+        description: Intra-Facility
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

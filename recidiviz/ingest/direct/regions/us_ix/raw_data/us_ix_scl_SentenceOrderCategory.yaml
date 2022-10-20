@@ -1,17 +1,18 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceOrderCategory
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each sentence order category ID to its definition (incarceration, probation, or 
+  interstate).
 data_classification: source
 primary_key_cols:
   - SentenceOrderCategoryId
 columns:
   - name: SentenceOrderCategoryId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order category.
   - name: SentenceOrderCategoryDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence order category.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

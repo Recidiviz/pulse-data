@@ -1,53 +1,64 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceOrder
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details on each sentence order.
 data_classification: source
 primary_key_cols:
   - SentenceOrderId
 columns:
   - name: SentenceOrderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order.
   - name: ParentSentenceOrderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the parent sentence order. Can be self-joined to SentenceOrderId.
   - name: StateId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order's state; unknown definition (no mapping table in the 
+      data). May include territories, since there are 52 possible values.
   - name: CountyId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order's county; unknown definition (no mapping table in the 
+      data).
   - name: Sequence
     description: |-
       TODO(#15329): Fill in column description
   - name: EffectiveDate
     description: |-
-      TODO(#15329): Fill in column description
+      Effective date of the sentence order.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender receiving the sentence order. Can be joined to 
+      `ind_Offender.OffenderId`.
+    is_pii: True
   - name: TermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the term corresponding to the sentence order. Can be joined to 
+      `scl_Term.TermId`.
   - name: JudgeLegistId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the judge issuing the sentence order. Can be joined to 
+      `scl_Legist.LegistId`.
+    is_pii: True
   - name: DefendantAliasNameId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the alias of the defendant receiving the sentence order. Can be joined to
+      `ind_AliasName.AliasNameId`.
+    is_pii: True
   - name: ProsecutingAuthorityLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location of the prosecuting authority issuing the sentence order. Can
+      be joined to `ref_Location.LocationId`.
   - name: SentenceDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the sentence.
+    is_datetime: True
   - name: ReceiveDate
     description: |-
       TODO(#15329): Fill in column description
   - name: Comment
     description: |-
-      TODO(#15329): Fill in column description
+      Comment regarding the sentence order; only used in 3 cases.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -65,25 +76,34 @@ columns:
       TODO(#15329): Fill in column description
   - name: SentenceOrderTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of sentence order. Can be joined to 
+      `scl_SentenceOrderType.SentenceOrderTypeId`.
   - name: DefendantAttorney
     description: |-
-      TODO(#15329): Fill in column description
+      Name of the defendant's attorney.
+    is_pii: True
   - name: DistrictAttorney
     description: |-
-      TODO(#15329): Fill in column description
+      Name of the District Attorney involved in the sentence order.
+    is_pii: True
   - name: ChargeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the charge associated with the sentence order. Can be joined to 
+      `scl_Charge.ChargeId`.
   - name: SentenceOrderStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order status. Can be joined to 
+      `scl_SentenceOrderStatus.SentenceOrderStatusId`.
+    known_values: []
   - name: SentenceOrderEventTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID For the sentence order event type. Can be joined to 
+      `scl_SentenceOrderEventType.SentenceOrderEventTypeId`.
+    known_values: []
   - name: IsApproved
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable indicating if the sentence order was approved (taking a value of 1
+      if it was approved and 0 otherwise).
   - name: CorrectionsCompactStartDate
     description: |-
       TODO(#15329): Fill in column description
@@ -95,7 +115,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: IsCalculated
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable indicating if the sentence order was calculated (taking a value of 1
+      if it was approved and 0 otherwise).
   - name: IsStartUponTransferToDOC
     description: |-
       TODO(#15329): Fill in column description
