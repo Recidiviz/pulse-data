@@ -20,4 +20,4 @@ columns:
     is_pii: True
   - name: MODIFIED_ON_DATE
 separator: ","
-custom_line_terminator: '\n'
+custom_line_terminator: "\n"
