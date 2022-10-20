@@ -147,8 +147,8 @@ class BaseDirectIngestController:
             )
         except ValueError as exc:
             raise ValueError(
-                f"No raw data source was located for the instance={self.ingest_instance} and "
-                f"region={self.region.region_code}. This means that no ingest rerun was started, which"
+                f"No raw data source was located for the instance={self.ingest_instance.value} and "
+                f"region={self.region.region_code.upper()}. This means that no ingest rerun was started, which "
                 f"should never happen when initializing the ingest controller."
             ) from exc
 
