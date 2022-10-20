@@ -991,35 +991,62 @@ class TestViewUpdateEndpoints(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.success_persister_patcher = patch(
+        self.rematerialization_success_persister_patcher = patch(
             "recidiviz.big_query.view_update_manager.RematerializationSuccessPersister"
         )
+        self.rematerialization_success_persister_constructor = (
+            self.rematerialization_success_persister_patcher.start()
+        )
+        self.mock_rematerialization_success_persister = (
+            self.rematerialization_success_persister_constructor.return_value
+        )
 
-        self.success_persister_constructor = self.success_persister_patcher.start()
-        self.mock_success_persister = self.success_persister_constructor.return_value
+        self.all_views_update_success_persister_patcher = patch(
+            "recidiviz.big_query.view_update_manager.AllViewsUpdateSuccessPersister"
+        )
+        self.all_views_update_success_persister_constructor = (
+            self.all_views_update_success_persister_patcher.start()
+        )
+        self.mock_all_views_update_success_persister = (
+            self.all_views_update_success_persister_constructor.return_value
+        )
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        self.success_persister_patcher.stop()
+        self.rematerialization_success_persister_patcher.stop()
+        self.all_views_update_success_persister_patcher.stop()
 
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
     @mock.patch(
         "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
     )
-    def test_update_all_managed_views(self, mock_create: MagicMock) -> None:
+    def test_update_all_managed_views(
+        self, mock_create: MagicMock, _mock_bq_client: MagicMock
+    ) -> None:
         """Tests the /view_update/update_all_managed_views endpoint."""
 
+        current_cloud_task_id = "my_cloud_task_id_abcd"
+        headers: Dict[str, Any] = {
+            **self.base_headers,
+            "X-AppEngine-TaskName": current_cloud_task_id,
+        }
         with self.app.test_request_context():
             update_all_managed_views_url = flask.url_for(
                 "view_update.update_all_managed_views"
             )
             response = self.client.post(
                 update_all_managed_views_url,
-                headers=self.base_headers,
+                headers=headers,
             )
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
         mock_create.assert_called()
+        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
+            deployed_view_builders=mock.ANY,
+            runtime_sec=mock.ANY,
+            cloud_task_id=current_cloud_task_id,
+        )
 
     @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
     @mock.patch(
@@ -1047,8 +1074,8 @@ class TestViewUpdateEndpoints(unittest.TestCase):
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
         mock_rematerialize.assert_called()
-        self.mock_success_persister.record_success_in_bq.assert_called_with(
+        self.mock_rematerialization_success_persister.record_success_in_bq.assert_called_with(
             deployed_view_builders=mock.ANY,
-            rematerialization_runtime_sec=mock.ANY,
+            runtime_sec=mock.ANY,
             cloud_task_id=current_cloud_task_id,
         )
