@@ -1,22 +1,86 @@
-key_mappings:
-  contact_start_date: state_supervision_contact.contact_date
-  contact_attempt: state_supervision_contact.status
-  contact_type: state_supervision_contact.contact_type
-  method: state_supervision_contact.contact_method
-  agent_number: state_supervision_contact.contacted_agent
-
-ancestor_keys:
-  parole_number: state_person.state_person_id
-
-# Primary key override in controller
-
-keys_to_ignore:
-  - person_id # Need clarification
-  - contact_end_date # Unused - generally the same as contact_start_date
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - parole_number
   - created_date # Describes when this contact was registered by the agent - Handled manually in controller as part of primary key
+  - contact_start_date
+  - contact_end_date # Unused - generally the same as contact_start_date
   - duration # Describes how long the contact was - Handled manually in controller as part of primary key
+  - contact_type
+  - method
+  - contact_attempt
   - collateral_type # Along with method, determines how the contact was done - Handled manually in controller
   - assisted # Unused - whether or not the agent was assisted by another agent for the contact
-  - agent_first_name # Unused - first name of the agent
-  - agent_last_name # Unused - last name of the agent
+  - agent_number
+  - agent_first_name
+  - agent_last_name
   - parole_org # Unused - organization of the agent
+
+unused_columns: [contact_end_date, assisted, parole_org]
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: parole_number
+          id_type: $literal("US_PA_PBPP")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id:
+            $concat:
+              $values:
+                - parole_number
+                - created_date
+                - contact_type
+                - duration
+          contacted_agent:
+            StateAgent:
+              external_id: agent_number
+              full_name:
+                $person_name:
+                  $given_names: agent_first_name
+                  $surname: agent_last_name
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          contact_date: contact_start_date
+          contact_type:
+            $enum_mapping:
+              $raw_text: contact_type
+              $mappings:
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT: "Both"
+                StateSupervisionContactType.COLLATERAL: "Collateral"
+                StateSupervisionContactType.DIRECT: "Offender"
+          contact_method:
+            $enum_mapping:
+              $raw_text: method
+              $mappings:
+                StateSupervisionContactMethod.IN_PERSON:
+                  - "Home"
+                  - "Office"
+                  - "Field"
+                  - "Work"
+                StateSupervisionContactMethod.TELEPHONE:
+                  - "Phone"
+                  - "Phone-Voice"
+                  - "Phone-Voicemail"
+                StateSupervisionContactMethod.VIRTUAL: "Virtual"
+                StateSupervisionContactMethod.WRITTEN_MESSAGE:
+                  - "Email"
+                  - "Phone-Text"
+                  - "Mail"
+                  - "Facsimile"
+          status:
+            $enum_mapping:
+              $raw_text: contact_attempt
+              $mappings:
+                StateSupervisionContactStatus.ATTEMPTED: "Yes"
+                StateSupervisionContactStatus.COMPLETED: "No"
+          location:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - collateral_type
+                    - method
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.supervision_contact_location_mapper
