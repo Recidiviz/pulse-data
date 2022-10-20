@@ -58,20 +58,29 @@ commitprefix AS (
         WHERE s.SENTENCETYPE != 'PT'
 ),
 sequences AS (
-    SELECT 
-        sc.OFFENDERID, 
-        sc.INCARCERATIONBEGINDT, 
-        sc.CHAINSEQUENCE,
-        sc.SENTENCESEQUENCE,
-        sc.TIMESERVEDTO AS INITIAL_TIME_SERVED_DAYS, 
-        sc.MINSENTDAYS AS MIN_LENGTH_DAYS, --or MINIMUMTERM, s.MINPRISONTERMD
-        sc.MAXSENTDAYSMR AS MAX_LENGTH_DAYS, --MAXIMUMTERM, MAXPRISONTERMD, c.MAXIMUMPRISONTERM
-        sc.EARNEDTIME, -- or EARNEDRELEASETIME,EARNEDTIMEPE,
-        scc.GOVERNS, 
-        scc.SENTENCECOMPONENT
-        FROM {eomis_sentencecompute} sc
+    SELECT * 
+    FROM 
+        (SELECT 
+            sc.OFFENDERID, 
+            scc.COMMITMENTPREFIX,
+            sc.INCARCERATIONBEGINDT, 
+            sc.CHAINSEQUENCE,
+            sc.SENTENCESEQUENCE,
+            sc.TIMESERVEDTO AS INITIAL_TIME_SERVED_DAYS, 
+            sc.MINSENTDAYS AS MIN_LENGTH_DAYS, --or MINIMUMTERM, s.MINPRISONTERMD
+            sc.MAXSENTDAYSMR AS MAX_LENGTH_DAYS, --MAXIMUMTERM, MAXPRISONTERMD, c.MAXIMUMPRISONTERM
+            sc.EARNEDTIME, -- or EARNEDRELEASETIME,EARNEDTIMEPE,
+            scc.GOVERNS, 
+            scc.SENTENCECOMPONENT,
+            # For a given sentence, there are a series of events in Chain Sequence or Sentence Sequence that shift things 
+            # like initial days served. This window selects the most recent update to the sentence sequence and chain sequence 
+            # to ensure we are using the most recently updated information for each sentence. 
+            ROW_NUMBER() OVER (PARTITION BY sc.OFFENDERID,scc.COMMITMENTPREFIX, scc.SENTENCECOMPONENT ORDER BY sc.SENTENCESEQUENCE DESC, sc.CHAINSEQUENCE DESC) AS recency_rank
+            FROM {eomis_sentencecompute} sc
         JOIN {eomis_sentcompchaining} scc
         USING (OFFENDERID, INCARCERATIONBEGINDT, CHAINSEQUENCE, SENTENCESEQUENCE)
+        ) s
+    WHERE recency_rank = 1
 )
 SELECT 
     cp.OFFENDERID,
@@ -109,7 +118,7 @@ SELECT
     GOVERNS
 FROM commitprefix cp
 LEFT JOIN sequences seq 
-USING (OFFENDERID, SENTENCECOMPONENT)
+USING (OFFENDERID, COMMITMENTPREFIX, SENTENCECOMPONENT)
 LEFT JOIN {eomis_inmateprofile} p
 ON cp.OFFENDERID = p.OFFENDERID
 """
