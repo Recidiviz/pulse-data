@@ -39,6 +39,7 @@ from recidiviz.big_query.big_query_client import (
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.rematerialization_success_persister import (
+    AllViewsUpdateSuccessPersister,
     RematerializationSuccessPersister,
 )
 from recidiviz.big_query.view_update_manager_utils import (
@@ -102,12 +103,22 @@ view_update_manager_blueprint = Blueprint("view_update", __name__)
 @retry.Retry(predicate=retry_predicate)
 def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
+    start = datetime.datetime.now()
+    view_builders = deployed_view_builders(metadata.project_id())
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        view_builders_to_update=deployed_view_builders(metadata.project_id()),
+        view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     )
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
 
+    success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
+    success_persister.record_success_in_bq(
+        deployed_view_builders=view_builders,
+        runtime_sec=runtime_sec,
+        cloud_task_id=get_current_cloud_task_id(),
+    )
     logging.info("All managed views successfully updated and materialized.")
 
     return "", HTTPStatus.OK
@@ -135,7 +146,7 @@ def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
     )
     success_persister.record_success_in_bq(
         deployed_view_builders=view_builders,
-        rematerialization_runtime_sec=runtime_sec,
+        runtime_sec=runtime_sec,
         cloud_task_id=get_current_cloud_task_id(),
     )
     logging.info("All deployed views successfully rematerialized.")
