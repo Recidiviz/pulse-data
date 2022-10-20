@@ -32,16 +32,16 @@ function upload_deployment_log {
   CURRENT_TIME="$(date +"%s")"
 
   local LOG_FILE_NAME="${RELEASE_VERSION_TAG}-${GIT_HASH}-${CURRENT_TIME}.log"
-  local LOG_OBJECT_PATH="${PROJECT_ID}-deploy-logs/${LOG_FILE_NAME}"
+  local LOG_OBJECT_URI="gs://${PROJECT_ID}-deploy-logs/${LOG_FILE_NAME}"
 
-  gsutil cp "${DEPLOYMENT_LOG_PATH}" "gs://${LOG_OBJECT_PATH}" > /dev/null 2>&1
+  gsutil cp "${DEPLOYMENT_LOG_PATH}" "${LOG_OBJECT_URI}" > /dev/null 2>&1
 
   local MESSAGE
   # sed is used to strip ANSI codes such as [34m and [0;10m
   MESSAGE=$(
 cat <<- EOM
 \`\`\`
-gsutil cat ${LOG_OBJECT_PATH}
+gsutil cat ${LOG_OBJECT_URI}
 \`\`\`
 
 \`\`\`
