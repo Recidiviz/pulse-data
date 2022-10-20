@@ -84,26 +84,6 @@ jobs:
           terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
           terraform -chdir=recidiviz/tools/deploy/terraform validate
 
-  validate-source-modifications:
-    name: Validate source modifications
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          # This clones the repo and checks out the SHA that triggered this action.
-          # We set fetch-depth 0 to fetch all branches and history so that merge-base
-          # is guaranteed to be able to find the common ancestor with the base branch.
-          # See https://github.com/actions/checkout#readme
-          fetch-depth: 0
-      - name: Python Setup
-        uses: ./.github/actions/python-setup
-      - name: Set merge_base
-        run: |
-          echo "merge_base=$(git merge-base origin/main HEAD)" >> $GITHUB_ENV
-      - name: Validate source modifications
-        run: |
-          pipenv run python -m recidiviz.tools.validate_source_modifications \
-            --commit-range ${{ env.merge_base }}...HEAD
       # TODO(#6431): pre-commit was flaky in CI, so we turned it off. It should be
       # re-enabled soon.
       # - name: pre-commit
