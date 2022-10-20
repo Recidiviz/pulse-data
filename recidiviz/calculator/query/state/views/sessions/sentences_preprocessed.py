@@ -53,8 +53,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CASE 
           WHEN sis.county_code = 'OUT_OF_STATE' 
             THEN 'INCARCERATION_OUT_OF_STATE'
-          WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
-            THEN 'TREATMENT'
+          -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
           ELSE 'INCARCERATION' END AS sentence_sub_type,
         sis.start_date AS effective_date,
         sis.date_imposed,
@@ -95,8 +94,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CASE 
             WHEN sss.county_code = 'OUT_OF_STATE' 
                 THEN 'SUPERVISION_OUT_OF_STATE'
-            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
-                THEN 'TREATMENT'
+            -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
             ELSE sss.supervision_type END AS sentence_sub_type,
         sss.start_date AS effective_date,
         -- TODO(#14091): hydrate `date_imposed` for US_MO supervision sentences
