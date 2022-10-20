@@ -44,7 +44,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactLocation,
     StateSupervisionContactMethod,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -93,7 +92,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_legacy_enum_helpers import (
     incarceration_period_admission_reason_mapper,
     incarceration_period_purpose_mapper,
     incarceration_period_release_reason_mapper,
-    supervision_contact_location_mapper,
     supervision_period_supervision_type_mapper,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -105,7 +103,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
-    StateSupervisionContact,
     StateSupervisionPeriod,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
@@ -165,10 +162,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._enrich_pbpp_assessments,
             ],
             "supervision_period_v4": supervision_period_postprocessors,
-            "supervision_contacts": [
-                self._set_supervision_contact_agent,
-                self._set_supervision_contact_fields,
-            ],
         }
 
         self.file_post_processors_by_file: Dict[
@@ -456,7 +449,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
         StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
-        StateSupervisionContactLocation: supervision_contact_location_mapper,
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
@@ -897,46 +889,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 obj.custodial_authority = StateCustodialAuthority.STATE_PRISON.value
-
-    @staticmethod
-    def _set_supervision_contact_agent(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets the supervision officer (as a contacted Agent entity) on the supervision contact."""
-        officer_id = row.get("agent_number", None)
-        officer_first_name = row.get("agent_first_name", None)
-        officer_last_name = row.get("agent_last_name", None)
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionContact):
-                if officer_id and officer_first_name and officer_last_name:
-                    obj.create_state_agent(
-                        state_agent_id=officer_id,
-                        given_names=officer_first_name.upper(),
-                        surname=officer_last_name.upper(),
-                        agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-                    )
-
-    @staticmethod
-    def _set_supervision_contact_fields(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets the supervision contact fields accordingly so that they can be parsed by enum mappers."""
-        method = row["method"].replace("-", "")
-        collateral_type = row["collateral_type"].replace(" ", "").replace("/", "")
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionContact):
-                if not collateral_type:
-                    obj.location = f"None-{method}"
-                else:
-                    obj.location = f"{collateral_type}-{method}"
 
 
 def _generate_sci_incarceration_period_primary_key(

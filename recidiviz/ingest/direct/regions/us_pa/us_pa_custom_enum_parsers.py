@@ -22,8 +22,10 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_pa_custom_enum_parsers.<function name>
 """
-
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+)
 
 
 def residency_status_from_address(raw_text: str) -> StateResidencyStatus:
@@ -36,3 +38,29 @@ def residency_status_from_address(raw_text: str) -> StateResidencyStatus:
             return StateResidencyStatus.HOMELESS
 
     return StateResidencyStatus.PERMANENT
+
+
+def supervision_contact_location_mapper(
+    raw_text: str,
+) -> StateSupervisionContactLocation:
+    """Maps a supervision_contact_location_raw_text to the corresponding
+    StateSupervisionContactLocation, if applicable."""
+    if raw_text:
+        collateral_type, method = raw_text.split("-")
+        if collateral_type == "Treatment Provider":
+            return StateSupervisionContactLocation.TREATMENT_PROVIDER
+        if collateral_type == "Employer":
+            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+        if collateral_type == "Court/Probation Staf":
+            return StateSupervisionContactLocation.COURT
+        if collateral_type == "Law Enforcement":
+            return StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY
+        if method == "Field":
+            return StateSupervisionContactLocation.FIELD
+        if method == "Office":
+            return StateSupervisionContactLocation.SUPERVISION_OFFICE
+        if method == "Home":
+            return StateSupervisionContactLocation.RESIDENCE
+        if method == "Work":
+            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+    return StateSupervisionContactLocation.INTERNAL_UNKNOWN

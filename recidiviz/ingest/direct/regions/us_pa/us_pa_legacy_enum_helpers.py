@@ -28,9 +28,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactLocation,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
@@ -609,28 +606,3 @@ def assessment_level_mapper(
     raise ValueError(
         f"Unexpected assessment_level_raw_text: {assessment_level_raw_text}"
     )
-
-
-def supervision_contact_location_mapper(
-    supervision_contact_location_raw_text: Optional[str],
-) -> StateSupervisionContactLocation:
-    """Maps a supervision_contact_location_raw_text to the corresponding StateSupervisionContactLocation, if applicable."""
-    if supervision_contact_location_raw_text:
-        collateral_type, method = supervision_contact_location_raw_text.split(" ")
-        if collateral_type == "TREATMENTPROVIDER":
-            return StateSupervisionContactLocation.TREATMENT_PROVIDER
-        if collateral_type == "EMPLOYER":
-            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
-        if collateral_type == "COURTPROBATIONSTAF":
-            return StateSupervisionContactLocation.COURT
-        if collateral_type == "LAWENFORCEMENT":
-            return StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY
-        if method == "FIELD":
-            return StateSupervisionContactLocation.FIELD
-        if method == "OFFICE":
-            return StateSupervisionContactLocation.SUPERVISION_OFFICE
-        if method == "HOME":
-            return StateSupervisionContactLocation.RESIDENCE
-        if method == "WORK":
-            return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
-    return StateSupervisionContactLocation.INTERNAL_UNKNOWN
