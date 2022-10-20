@@ -27,6 +27,7 @@ from recidiviz.validation.views import dataset_config
 DATES_WITH_AVAILABLE_DATA = [
     date(2022, 7, 22),
     date(2022, 8, 19),
+    date(2022, 9, 23),
 ]
 
 
