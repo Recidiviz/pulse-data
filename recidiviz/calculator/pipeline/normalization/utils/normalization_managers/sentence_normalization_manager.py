@@ -16,10 +16,14 @@
 # =============================================================================
 """Contains the logic for a SentenceNormalizationManager that manages the normalization
 of StateCharge entities in the calculation pipelines."""
-from typing import List, Tuple, Type
+from typing import List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -33,6 +37,20 @@ from recidiviz.persistence.entity.state.entities import (
 class SentenceNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of StateCharges
     for use in calculations."""
+
+    def __init__(
+        self,
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+    ) -> None:
+        self._incarceration_sentences = incarceration_sentences
+        self._supervision_sentences = supervision_sentences
+        self._normalized_incarceration_sentences_and_additional_attributes: Optional[
+            Tuple[List[StateIncarcerationSentence], AdditionalAttributesMap]
+        ] = None
+        self._normalized_supervision_sentences_and_additional_attributes: Optional[
+            Tuple[List[StateSupervisionSentence], AdditionalAttributesMap]
+        ] = None
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
@@ -49,3 +67,57 @@ class SentenceNormalizationManager(EntityNormalizationManager):
             (StateCharge, StateSupervisionSentence),
             (StateCharge, StateIncarcerationSentence),
         ]
+
+    def normalized_incarceration_sentences_and_additional_attributes(
+        self,
+    ) -> Tuple[List[StateIncarcerationSentence], AdditionalAttributesMap]:
+        """Performs normalization on incarceration sentences."""
+
+        if not self._normalized_incarceration_sentences_and_additional_attributes:
+            self._normalized_incarceration_sentences_and_additional_attributes = (
+                self._incarceration_sentences,
+                self.additional_attributes_map_for_normalized_incarceration_sentences(
+                    self._incarceration_sentences
+                ),
+            )
+        return self._normalized_incarceration_sentences_and_additional_attributes
+
+    @classmethod
+    def additional_attributes_map_for_normalized_incarceration_sentences(
+        cls,
+        incarceration_sentences: List[StateIncarcerationSentence],
+    ) -> AdditionalAttributesMap:
+        """Returns the attributes that should be set on the normalized version of each of
+        the StateIncarcerationSentences for each of the attributes that are unique to the
+        NormalizedStateIncarcerationSentence."""
+
+        return get_shared_additional_attributes_map_for_entities(
+            entities=incarceration_sentences
+        )
+
+    def normalized_supervision_sentences_and_additional_attributes(
+        self,
+    ) -> Tuple[List[StateSupervisionSentence], AdditionalAttributesMap]:
+        """Performs normalization on supervision sentences."""
+
+        if not self._normalized_supervision_sentences_and_additional_attributes:
+            self._normalized_supervision_sentences_and_additional_attributes = (
+                self._supervision_sentences,
+                self.additional_attributes_map_for_normalized_supervision_sentences(
+                    self._supervision_sentences
+                ),
+            )
+        return self._normalized_supervision_sentences_and_additional_attributes
+
+    @classmethod
+    def additional_attributes_map_for_normalized_supervision_sentences(
+        cls,
+        supervision_sentences: List[StateSupervisionSentence],
+    ) -> AdditionalAttributesMap:
+        """Returns the attributes that should be set on the normalized version of each of
+        the StateSupervisionSentences for each of the attributes that are unique to the
+        NormalizedStateSupervisionSentence."""
+
+        return get_shared_additional_attributes_map_for_entities(
+            entities=supervision_sentences
+        )

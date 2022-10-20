@@ -38,6 +38,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -45,8 +48,15 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     merge_additional_attributes_maps,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -190,6 +200,38 @@ def all_normalized_entities(
         )
     )
 
+    sentence_normalization_manager = SentenceNormalizationManager(
+        incarceration_sentences, supervision_sentences
+    )
+
+    (
+        processed_incarceration_sentences,
+        additional_incarceration_sentence_attributes,
+    ) = (
+        sentence_normalization_manager.normalized_incarceration_sentences_and_additional_attributes()
+    )
+
+    (
+        processed_supervision_sentences,
+        additional_supervision_sentence_attributes,
+    ) = (
+        sentence_normalization_manager.normalized_supervision_sentences_and_additional_attributes()
+    )
+
+    normalized_incarceration_sentences = convert_entity_trees_to_normalized_versions(
+        processed_incarceration_sentences,
+        NormalizedStateIncarcerationSentence,
+        additional_incarceration_sentence_attributes,
+        field_index,
+    )
+
+    normalized_supervision_sentences = convert_entity_trees_to_normalized_versions(
+        processed_supervision_sentences,
+        NormalizedStateSupervisionSentence,
+        additional_supervision_sentence_attributes,
+        field_index,
+    )
+
     program_assignment_manager = ProgramAssignmentNormalizationManager(
         program_assignments,
         program_assignment_normalization_delegate,
@@ -213,8 +255,8 @@ def all_normalized_entities(
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
         field_index=field_index,
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences,
+        incarceration_sentences=normalized_incarceration_sentences,
+        supervision_sentences=normalized_supervision_sentences,
     )
 
     assessment_normalization_manager = AssessmentNormalizationManager(
@@ -237,6 +279,8 @@ def all_normalized_entities(
             additional_pa_attributes,
             additional_vr_attributes,
             additional_assessments_attributes,
+            additional_incarceration_sentence_attributes,
+            additional_supervision_sentence_attributes,
         ]
     )
 
@@ -262,6 +306,8 @@ def all_normalized_entities(
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,
             StateAssessment.__name__: processed_assessments,
+            StateIncarcerationSentence.__name__: processed_incarceration_sentences,
+            StateSupervisionSentence.__name__: processed_supervision_sentences,
         },
         additional_attributes_map,
     )

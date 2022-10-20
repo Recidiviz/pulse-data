@@ -43,6 +43,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
@@ -124,4 +127,5 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
             SupervisionPeriodNormalizationManager,
             ViolationResponseNormalizationManager,
             AssessmentNormalizationManager,
+            SentenceNormalizationManager,
         ]
