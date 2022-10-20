@@ -1,0 +1,131 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_oras_assessment_weekly_v2` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - AssessmentId
+  - OffenderId
+  - AssessmentTypeDesc
+  - AssessmentToolDesc
+  - CompletionDate
+  - OverallScore
+  - ResultNote
+  - legacy_assessment_degree_level
+  - AssessmentDegreeId
+  - AssessmentDegreeDesc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - AssessmentId
+          assessment_date: CompletionDate
+          assessment_class:
+            $enum_mapping:
+              $raw_text: AssessmentTypeDesc
+              $mappings:
+                StateAssessmentClass.RISK:
+                  - "Risk/Need"
+          assessment_type:
+            $enum_mapping:
+              $raw_text: AssessmentToolDesc
+              $mappings:
+                StateAssessmentType.LSIR:
+                  - "LSI-R"
+          assessment_level:
+            $conditional:
+              - $if:
+                  $is_null: AssessmentDegreeId
+                $then:
+                  $enum_mapping:
+                    $raw_text: legacy_assessment_degree_level
+                    $mappings:
+                      StateAssessmentLevel.MINIMUM:
+                        - "Min"
+                        - "Minimum"
+                        - "minimum"
+                      StateAssessmentLevel.LOW:
+                        - "Low"
+                        - "Low Risk"
+                        - "Low Risk, [Pro_Rated_Score]"
+                      StateAssessmentLevel.MEDIUM:
+                        - "Medium"
+                        - "Medium -request override due to mental health issues"
+                        - "Medium due to sex offense"
+                        - "Mimimum, override to Medium"
+                        - "Minimum - Sex offender over-ride to Medium"
+                        - "Minimum - Sex offender, over-ride to medium"
+                        - "Minimum over-ride to Medium"
+                        - "Minimum overidden to med"
+                        - "Minimum, over ride to Medium"
+                        - "Minimum, override to Medium"
+                        - "Minimum- over ride to Medium"
+                        - "O/R to Med due to Sex Offender status"
+                        - "medium"
+                        - "medium Risk"
+                      StateAssessmentLevel.MODERATE:
+                        - "Mod"
+                        - "Mod."
+                        - "Moderate"
+                        - "Moderate Risk"
+                        - "Moderate Risk, [Pro_Rated_Score]"
+                        - "mod"
+                      StateAssessmentLevel.HIGH:
+                        - "High"
+                        - "High Risk"
+                        - "High Risk, [Pro_Rated_Score]"
+                      StateAssessmentLevel.MAXIMUM:
+                        - "Max"
+                        - "Maximum"
+                        - "Maximum due to Sex-Offender Status"
+                        - "Maximum override from medium"
+                        - "Maximum overriden from Medium due to crime"
+                        - "Medium  to max sex off"
+                        - "Medium OVER RODE TO MAX DUE TO S/O."
+                        - "Medium OVERRIDE TO MAX DUE TO SEX OFFENDER"
+                        - "Medium override to Max"
+                        - "Medium override to max due to crime"
+                        - "Medium override to max for sex offender caseload"
+                        - "Medium overrode to sex max"
+                        - "Medium to max for sex offender caseload"
+                        - "Medium to sex max"
+                        - "Medium to sex offender max"
+                        - "Medium, override to Maximum"
+                        - "Mimimum, override to Maximum"
+                        - "Minimum overrode to sex max"
+                        - "Minimum to max"
+                        - "Minimum to max for sex offender caseload"
+                        - "Minimum to sex max"
+                        - "Minimum to sex offender max"
+                        - "Minimum, overide to max due to denial/risk"
+                        - "Minimum, override to Maximum (sex offender program)"
+                        - "Minimum- over ride to Maximum"
+                        - "maximum override from medium"
+                        - "override to sex max fromMinimum"
+                        - "override to sx max fromMedium"
+                        - "sex offender max fromMinimum"
+                    $ignore:
+                      - "Click OK to view test results"
+                      - 'Institutional classification is "community"'
+              - $else:
+                  $enum_mapping:
+                    $raw_text: AssessmentDegreeDesc
+                    $mappings:
+                      StateAssessmentLevel.LOW:
+                        - "Low Risk"
+                      StateAssessmentLevel.MEDIUM:
+                        - "Moderate Risk"
+                      StateAssessmentLevel.HIGH:
+                        - "High Risk"
+          assessment_score: OverallScore
+          assessment_metadata:
+            $json_dict:
+              ResultNote: ResultNote

@@ -104,7 +104,7 @@ class BigQueryQueryRewriter:
         query = _replace_iter(
             query,
             r"SPLIT\((?P<first>[^,]+?), (?P<delimiter>.+?)\)\[OFFSET\((?P<offset>.+?)\)\]",
-            "split_part({first}, {delimiter}, {offset})",
+            "split_part({first}, {delimiter}, {offset} + 1)",
         )
         query = _replace_iter(
             query,
@@ -214,8 +214,8 @@ class BigQueryQueryRewriter:
         # the two, bigquery returns an int
         query = _replace_iter(
             query,
-            r"EXTRACT\((?!DATE|DATETIME|TIME)(?P<clause>.+)\)(?P<end>[^:])",
-            "EXTRACT({clause})::integer{end}",
+            r"[^REGEXP_]EXTRACT\((?!DATE|DATETIME|TIME)(?P<clause>.+)\)(?P<end>[^:])",
+            " EXTRACT({clause})::integer{end}",
         )
 
         # EXTRACT DATE returns a DATE type in BQ, this strips out the EXTRACT(DATE FROM timestamp_col) AS xx_column
@@ -346,6 +346,15 @@ class BigQueryQueryRewriter:
             "ARRAY_TO_JSON(",
             flags=re.IGNORECASE,
         )
+
+        # The REGEXP_EXTRACT function does not exist in postgres, so we replace with
+        # 'SUBSTRING(text, pattern)', which has the same behavior.
+        query = _replace_iter(
+            query,
+            r"REGEXP_EXTRACT\((?P<first>.+?), r?(?P<second>.+?\)?')\)",
+            "SUBSTRING({first}, {second})",
+        )
+
         return query
 
     BQ_TIMESTAMP_DATE_FORMAT_TO_POSTGRES = {
