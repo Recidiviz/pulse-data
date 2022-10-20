@@ -1,41 +1,48 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Location
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each LocationId to its name along with additional information, although most of 
+  the detail columns are currently missing data.
 data_classification: source
 primary_key_cols:
   - LocationId
 columns:
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location.
   - name: ParentLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the parent location a given location belongs to (currently, the only
+      parent location used is "Idaho"). Can be self joined to `ref_Location.LocationId`.
   - name: LocationName
     description: |-
-      TODO(#15329): Fill in column description
+      The name of the location corresponding to LocationId.
   - name: LocationCode
     description: |-
-      TODO(#15329): Fill in column description
+      The code corresponding to the location. Either an abbreviation of LocationName,
+      or simply 1.
   - name: Capacity
     description: |-
       TODO(#15329): Fill in column description
   - name: Notes
     description: |-
-      TODO(#15329): Fill in column description
+      Text field with notes regarding the location.
   - name: SupervisorId
     description: |-
-      TODO(#15329): Fill in column description
+      Either null or 1, no ID mapping present in the dataset.
   - name: RegionId
     description: |-
-      TODO(#15329): Fill in column description
+      The region the location belongs to. Can be joined with `ref_Region.RegionId`.
+    known_values: []
   - name: LocationTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of location. Can be joined with 
+      `ref_LocationType.ref_LocationTypeId.`
+    known_values: []
   - name: LocationSubTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the subtype of location. Can be joined with 
+      `ref_LocationSubType.ref_LocationSubTypeId.`
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
@@ -99,7 +106,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: ParentCountyId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the county the location belongs to. Mapping for the ID appears to be 
+      absent in the data currently.
   - name: ParentCountyCityId
     description: |-
       TODO(#15329): Fill in column description

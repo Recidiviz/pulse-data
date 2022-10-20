@@ -1,38 +1,39 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Offense
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details about each individual offense.
 data_classification: source
 primary_key_cols:
   - OffenseId
 columns:
   - name: OffenseId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offense.
   - name: SentenceOrderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order. Can be joined to `scl_SentenceOrder.SentenceOrderId`.
   - name: OffenseLawId
     description: |-
       TODO(#15329): Fill in column description
   - name: OffenseDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the offense (nullable).
+    is_datetime: True
   - name: LatestOffenseDate
     description: |-
       TODO(#15329): Fill in column description
   - name: OffenseTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offense type. Can be joined to `scl_OffenseType.OffenseTypeId`.
   - name: SubstanceTypeId
     description: |-
       TODO(#15329): Fill in column description
   - name: Count
     description: |-
-      TODO(#15329): Fill in column description
+      The number of counts of the offense.
   - name: Comments
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding the offense.
   - name: OffenseSortingOrder
     description: |-
       TODO(#15329): Fill in column description

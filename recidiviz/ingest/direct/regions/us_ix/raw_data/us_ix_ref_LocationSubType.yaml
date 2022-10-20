@@ -1,20 +1,20 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_LocationSubType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each LocationSubTypeId to its corresponding description.
 data_classification: source
 primary_key_cols:
   - LocationSubTypeId
 columns:
   - name: LocationSubTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location subtype.
   - name: LocationSubTypeName
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the location subtype corresponding to LocationSubTypeId.
   - name: Abbreviation
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened name for some location subtypes.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description

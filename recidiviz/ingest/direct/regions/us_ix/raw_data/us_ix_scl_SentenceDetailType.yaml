@@ -8,16 +8,18 @@ primary_key_cols:
 columns:
   - name: SentenceDetailTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of sentence detail.
   - name: SentenceDetailTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened description for the sentence detail type corresponding to 
+      SentenceDetailTypeId.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Longer description of the sentence detail type corresponding to
+      SentenceDetailTypeId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

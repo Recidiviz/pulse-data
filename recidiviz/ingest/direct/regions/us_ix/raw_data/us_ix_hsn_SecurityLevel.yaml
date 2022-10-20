@@ -1,23 +1,27 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_SecurityLevel
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Describes the possible security levels that can be present within a facility or 
+  facility sublevel by mapping each SecurityLevelId to its deinition, with some 
+  additional detail.
 data_classification: source
 primary_key_cols:
   - SecurityLevelId
 columns:
   - name: SecurityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for each possible security level that can be present within a facility
+      or facility sublevel.
   - name: SecurityLevelName
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the security level corresponding to SecurityLevelId.
   - name: SecurityLevelDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the security level corresponding to SecurityLevelId (similar to but 
+      slightly more verbose than SecurityLevelName).
   - name: SecurityLevelRank
     description: |-
-      TODO(#15329): Fill in column description
+      Nullable, non-consecutive integer indicating the given security level's rank.
   - name: ReclassificationFrequencyDays
     description: |-
       TODO(#15329): Fill in column description

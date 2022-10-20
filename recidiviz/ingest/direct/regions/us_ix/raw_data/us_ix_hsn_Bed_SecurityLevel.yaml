@@ -1,20 +1,22 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_Bed_SecurityLevel
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each bed to its security level.
 data_classification: source
 primary_key_cols:
   - BedSecurityLevelId
 columns:
   - name: BedSecurityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Unique identifier for each bed's security level.
   - name: BedId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for a given bed. Can be joined with `hsn_Bed.BedId`.
   - name: SecurityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for the security level associated with a given bed. Can be joined with 
+      `hsn_SecurityLevel.SecurityLevelId`.
+    known_values: []
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

@@ -1,26 +1,27 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_ContactMode
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Describes each possible contact mode by mapping ContactModeId to the associated
+  description.
 data_classification: source
 primary_key_cols:
   - ContactModeId
 columns:
   - name: ContactModeId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies each unique contact mode.
   - name: ContactModeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Full description of the contact mode corresponding to ContactModeId.
   - name: Abbreviation
     description: |-
-      TODO(#15329): Fill in column description
+      Shortened description of the contact mode corresponding to ContactModeId.
   - name: SystemRow
     description: |-
       TODO(#15329): Fill in column description
   - name: DefaultText
     description: |-
-      TODO(#15329): Fill in column description
+      Raw text field providing the default text for certain contact modes.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

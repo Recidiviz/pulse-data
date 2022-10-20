@@ -1,26 +1,32 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Employee
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Describes each employee in the system, mapping each EmployeeId to details about that
+  employee.
 data_classification: source
 primary_key_cols:
   - EmployeeId
 columns:
   - name: EmployeeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for a given employee.
+    is_pii: True
   - name: FirstName
     description: |-
-      TODO(#15329): Fill in column description
+      Employee's first name.
+    is_pii: True
   - name: MiddleName
     description: |-
-      TODO(#15329): Fill in column description
+      Employee's middle name.
+    is_pii: True
   - name: LastName
     description: |-
-      TODO(#15329): Fill in column description
+      Employee's last name.
+    is_pii: True
   - name: Email
     description: |-
-      TODO(#15329): Fill in column description
+      Employee's email address.
+    is_pii: True
   - name: MSG_VIEWED_DATE
     description: |-
       TODO(#15329): Fill in column description
@@ -41,13 +47,14 @@ columns:
       TODO(#15329): Fill in column description
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      Employee location. Can be joined to `ref_Location.LocationId`.
+    is_pii: True
   - name: SecondaryLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      Employee secondary location. Can be joined to `ref_Location.LocationId`.
   - name: EmployeeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the employee's type. Can be joined to `ref_EmployeeType.EmployeeTypeId`.
   - name: SYS_ROW_IND
     description: |-
       TODO(#15329): Fill in column description
@@ -87,31 +94,36 @@ columns:
       TODO(#15329): Fill in column description
   - name: StaffId
     description: |-
-      TODO(#15329): Fill in column description
+      Employee staff ID.
+    is_pii: True
   - name: DisplayName
     description: |-
-      TODO(#15329): Fill in column description
+      Employee display name.
+    is_pii: True
   - name: Signature
     description: |-
       TODO(#15329): Fill in column description
   - name: DefaultLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      Default employee location. Can be joined to `ref_Location.LocationId`.
+    is_pii: True
   - name: IsSuperUser
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable, taking a value of 1 if the given employee is a "super user" and 0
+      otherwise.
   - name: IsIntegrationUser
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable, taking a value of 1 if the given employee is an "integration user"
+      and 0 otherwise.
   - name: OrganizationalUnitId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the employee's organizational unit.
   - name: UseDefaultSecurityProfile
     description: |-
       TODO(#15329): Fill in column description
   - name: EmployeeStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the employee's status (no mapping available for the ID values).
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description
@@ -120,4 +132,4 @@ columns:
       TODO(#15329): Fill in column description
   - name: Comment
     description: |-
-      TODO(#15329): Fill in column description
+      Unused comment field.

@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_BedStatus
 file_description: |-
-  TODO(#15329): Fill in the file description
+  A table describing each BedStatusId, mapping each ID value to the status it references.
 data_classification: source
 primary_key_cols:
   - BedStatusId
 columns:
   - name: BedStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies a bed's status.
   - name: BedStatusDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Describes the status corresponding to each BedStatusId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

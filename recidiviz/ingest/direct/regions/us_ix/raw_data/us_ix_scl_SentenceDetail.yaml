@@ -8,13 +8,15 @@ primary_key_cols:
 columns:
   - name: SentenceDetailId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence detail.
   - name: SegmentStartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Start date for the sentence segment.
+    is_datetime: True
   - name: SegmentEndDate
     description: |-
-      TODO(#15329): Fill in column description
+      End date for the sentence segment.
+    is_datetime: True
   - name: SegmentYears
     description: |-
       TODO(#15329): Fill in column description
@@ -92,10 +94,11 @@ columns:
       TODO(#15329): Fill in column description
   - name: SentenceId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence containing the detailed segment. Can be joined to 
+      `scl_Sentence.SentenceId`.
   - name: SentenceDetailTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of sentence detail.
   - name: SentenceDetailRelationshipId
     description: |-
       TODO(#15329): Fill in column description

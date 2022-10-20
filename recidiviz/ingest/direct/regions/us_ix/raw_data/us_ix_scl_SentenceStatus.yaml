@@ -1,23 +1,23 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceStatus
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each sentence status ID to its description.
 data_classification: source
 primary_key_cols:
   - SentenceStatusId
 columns:
   - name: SentenceStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID For the sentence status.
   - name: SentenceStatusDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence status.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Supplementary details for SentenceStatusDesc.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

@@ -1,26 +1,26 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_OffenseModifier
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each OffenseModifierId to its description.
 data_classification: source
 primary_key_cols:
   - OffenseModifierId
 columns:
   - name: OffenseModifierId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offense modifier.
   - name: OffenseModifierDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description for the offense modifier.
   - name: Abbreviation
     description: |-
-      TODO(#15329): Fill in column description
+      1-letter abbreviation for the offense modifier.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding the offense modifier.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

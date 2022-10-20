@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_ChargeStatus
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each charge status ("Pending" or "Tried") to its description, although status data is currently missing
+  from the scl_Charge table.
 data_classification: source
 primary_key_cols:
   - ChargeStatusId
 columns:
   - name: ChargeStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the charge status.
   - name: ChargeStatusCode
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the charge status; identical to ChargeStatusDesc.
   - name: ChargeStatusDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the charge status; identical to ChargeStatusCode.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

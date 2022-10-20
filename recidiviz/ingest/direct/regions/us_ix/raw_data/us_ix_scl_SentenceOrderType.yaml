@@ -1,23 +1,26 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceOrderType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each SentenceOrderTypeId to its definition, indicating the respective sentence 
+  order category.
 data_classification: source
 primary_key_cols:
   - SentenceOrderTypeId
 columns:
   - name: SentenceOrderTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order type.
   - name: SentenceOrderTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence order type.
   - name: SentenceOrderTypeCode
     description: |-
-      TODO(#15329): Fill in column description
+      1-character abbreviation of the sentence order type description.
   - name: SentenceOrderCategoryId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order category. Can be joined to 
+      `scl_SentenceOrderCategory.SentenceOrderCategoryId`
+    known_values: []
   - name: IsCalculated
     description: |-
       TODO(#15329): Fill in column description

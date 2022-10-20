@@ -1,20 +1,24 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_FacilityLevel_SecurityLevel
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains information on the unique security levels present within each facility
+  sublevel.
 data_classification: source
 primary_key_cols:
   - FacilityLevelSecurityLevelId
 columns:
   - name: FacilityLevelSecurityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for a security level existing within a given facility sublevel.
   - name: FacilityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for the facility sublevel. Can be joined to 
+      `hsn_FacilityLevel.FacilityLevelId`.
   - name: SecurityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for the security level existing within a given facility sublevel. Can
+      be joined to `hsn_SecurityLevel.SecurityLevelId`.
+    known_values: []
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

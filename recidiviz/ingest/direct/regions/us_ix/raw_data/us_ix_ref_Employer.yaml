@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Employer
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Identifies each employer using EmployerId, mapping this ID to the employer's name 
+  and phone number.
 data_classification: source
 primary_key_cols:
   - EmployerId
 columns:
   - name: EmployerId
     description: |-
-      TODO(#15329): Fill in column description
+      Unique identifier for a given employer.
   - name: EmployerDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the employer, corresponding with EmployerId.
   - name: Phone
     description: |-
-      TODO(#15329): Fill in column description
+      Employer phone number (just numbers, no special characters).
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_ParoleType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each ParoleTypeId to its definition.
 data_classification: source
 primary_key_cols:
   - ParoleTypeId
 columns:
   - name: ParoleTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the parole type.
   - name: ParoleTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the parole type.
   - name: Abbreviation
     description: |-
       TODO(#15329): Fill in column description
@@ -20,7 +20,7 @@ columns:
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding the parole type.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

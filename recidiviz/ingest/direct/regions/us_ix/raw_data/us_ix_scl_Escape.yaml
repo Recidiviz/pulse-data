@@ -1,23 +1,28 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Escape
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains information about each escape from custody.
 data_classification: source
 primary_key_cols:
   - EscapeId
 columns:
   - name: EscapeId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for the escape instance.
   - name: EscapeDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the escape.
+    is_datetime: True
   - name: ReturnDocDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the escapee's return to DOC. Can be the same as EscapeDate, usually when
+      ArrestDate is null (potentially indicating that no return to DOC occurred).
+    is_datetime: True
   - name: ArrestDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the escapee's arrest. Includes null values (potentially indicating that
+      no arrest was made).
+    is_datetime: True
   - name: EscapeDays
     description: |-
       TODO(#15329): Fill in column description
@@ -32,7 +37,7 @@ columns:
       TODO(#15329): Fill in column description
   - name: Notes
     description: |-
-      TODO(#15329): Fill in column description
+      Raw text comments regarding the escape.
   - name: Clothing
     description: |-
       TODO(#15329): Fill in column description
@@ -50,13 +55,16 @@ columns:
       TODO(#15329): Fill in column description
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID of the offender who escaped. Can be joined with `ind_Offender.OffenderId`.
+    is_pii: True
   - name: TermId
     description: |-
-      TODO(#15329): Fill in column description
+      The term during which the offender's escape occurred. Can be joined with 
+      `scl_Term.TermId`.
   - name: EscapeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of escape. Can be joined with `scl_EscapeType.EscapeTypeId`.
+    known_values: []
   - name: TobeTriedId
     description: |-
       TODO(#15329): Fill in column description
@@ -68,10 +76,11 @@ columns:
       TODO(#15329): Fill in column description
   - name: EscapeLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      The location of the escape. Can be joined with `ref_Location.LocationId`.
   - name: ReturnLocationId
     description: |-
-      TODO(#15329): Fill in column description
+      The location of the returned escapee. Can be joined with 
+      `ref_Location.LocationId`.
   - name: ApprovalStateId
     description: |-
       TODO(#15329): Fill in column description

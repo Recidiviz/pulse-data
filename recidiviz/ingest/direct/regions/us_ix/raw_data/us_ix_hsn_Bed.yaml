@@ -1,35 +1,47 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: hsn_Bed
 file_description: |-
-  TODO(#15329): Fill in the file description
+  A table describing beds, providing additional details that correspond to each unique
+  BedId.
 data_classification: source
 primary_key_cols:
   - BedId
 columns:
   - name: BedId
     description: |-
-      TODO(#15329): Fill in column description
+      Unique identifier for each bed.
   - name: BedName
     description: |-
-      TODO(#15329): Fill in column description
+      Tag associated with a given bed. Takes duplicate values, including characters,
+      integers, and alphanumeric strings.
   - name: FacilityLevelId
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates the facility level identifier associated with a given bed. Can be joined
+      with `hsn_FacilityLevel.FacilityLevelId`
   - name: BedTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates each bed's type. Can be joined with `hsn_BedType.BedTypeId`.
+    known_values: []
   - name: BedStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates each bed's status. Can be joined with `hsn_BedStatus.BedStatusId`.
+    known_values: []
   - name: BunkTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates each bed's bunk type, i.e. its capacity.
+    known_values:
+      - value: 1
+        description: 1-person bed
+      - value: 2
+        description: 2-person bed
   - name: Handicap
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable indicating the bed's handicap accessibility.
   - name: Comments
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding a given bed. Unlike most comment fields, takes a limited range
+      of values rather than broadly varying free text.
+    known_values: []
   - name: DedicatedBedTypeId
     description: |-
       TODO(#15329): Fill in column description

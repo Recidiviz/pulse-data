@@ -1,17 +1,18 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: drg_TestingMethod
 file_description: |-
-  TODO(#15329): Fill in the file description
+  A table describing each TestingMethodId, mapping each ID value to the drug testing 
+  method it represents.
 data_classification: source
 primary_key_cols:
   - TestingMethodId
 columns:
   - name: TestingMethodId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies each type of drug testing method.
   - name: TestingMethodDesc
     description: |-
-      TODO(#15329): Fill in column description
+      String description of the testing method corresponding to TestingMethodId.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

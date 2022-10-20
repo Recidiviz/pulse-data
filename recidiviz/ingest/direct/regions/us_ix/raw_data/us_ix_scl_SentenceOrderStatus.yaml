@@ -1,17 +1,17 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_SentenceOrderStatus
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each sentence order status ID value to its definition.
 data_classification: source
 primary_key_cols:
   - SentenceOrderStatusId
 columns:
   - name: SentenceOrderStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence order status.
   - name: SentenceOrderStatusName
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the sentence order status.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

@@ -1,35 +1,42 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ind_EmploymentHistory
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Details each offender's employment history in the form of distinct employment periods.
 data_classification: source
 primary_key_cols:
   - EmploymentHistoryId
 columns:
   - name: EmploymentHistoryId
     description: |-
-      TODO(#15329): Fill in column description
+      Unique identifier for the period of employment.
   - name: StartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Starting date of the employment period.
+    is_datetime: True
   - name: EndDate
     description: |-
-      TODO(#15329): Fill in column description
+      Ending date of the employment period. Includes some zeroes, which may indicate 
+      an open period or missing data.
+    is_datetime: True
   - name: MonthlySalary
     description: |-
-      TODO(#15329): Fill in column description
+      Monthly salary over the period of employment. Data is currently missing (null in
+      all cases); payment data can be found in the Wage column.
   - name: EmployerId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the individual's employer during the employment period. Can be joined 
+      with `ref_Employer.EmployerId`.
   - name: JobTitle
     description: |-
-      TODO(#15329): Fill in column description
+      String describing the position held during the employment period.
   - name: Shift
     description: |-
-      TODO(#15329): Fill in column description
+      String describing the shift worked during the employment period.
   - name: EmploymentStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates the individual's status over the employment period. Can be joined with 
+      `ref_EmploymentStatus.EmploymentStatusId`.
+    known_values: []
   - name: PrimaryEmployment
     description: |-
       TODO(#15329): Fill in column description
@@ -38,10 +45,15 @@ columns:
       TODO(#15329): Fill in column description
   - name: Comments
     description: |-
-      TODO(#15329): Fill in column description
+      Raw text field providing notes on the associated employment period, including 
+      the period's status, verification method used, reason for exit, and miscellaneous
+      comments. Note that the raw text includes several names, email addresses, and 
+      personal information.
+    is_pii: True
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      Identifies the offender employed over the given period.
+    is_pii: True
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description
@@ -62,13 +74,18 @@ columns:
       TODO(#15329): Fill in column description
   - name: Wage
     description: |-
-      TODO(#15329): Fill in column description
+      The wage earned in dollars over the given employment period, with a mixture of
+      wage frequencies.
   - name: EmploymentWageFrequencyId
     description: |-
-      TODO(#15329): Fill in column description
+      Integer identifier for the frequency of payments over the given employment period.
+      Values appear to correspond with hourly, weekly, monthly, and annual payment, but
+      no mapping is provided and inferring the mapping yields implausible payment 
+      amounts.
   - name: HoursPerWeek
     description: |-
-      TODO(#15329): Fill in column description
+      Integer value indicating the hours worked per week over the employment period.
   - name: SupervisorName
     description: |-
-      TODO(#15329): Fill in column description
+      An individual's supervisor during a given employment period.
+    is_pii: True

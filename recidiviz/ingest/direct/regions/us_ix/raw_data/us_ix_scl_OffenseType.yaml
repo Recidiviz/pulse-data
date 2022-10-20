@@ -1,20 +1,21 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_OffenseType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Provides details about each offense type (indicated by OffenseTypeId), such as 
+  the statute code and description.
 data_classification: source
 primary_key_cols:
   - OffenseTypeId
 columns:
   - name: OffenseTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offense type.
   - name: OFFENSE_TYPE_STATE_CD
     description: |-
-      TODO(#15329): Fill in column description
+      Statute code corresponding to OffenseTypeId.
   - name: OFFENSE_TYPE_NCIC_CD
     description: |-
-      TODO(#15329): Fill in column description
+      TODO(#15329): Fill in column description?/
   - name: JIS_OFFNSE_TITLE_TX
     description: |-
       TODO(#15329): Fill in column description
@@ -23,7 +24,7 @@ columns:
       TODO(#15329): Fill in column description
   - name: OffenseTypeDesc
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the statute referred to by OffenseTypeId.
   - name: INEFFCT_DATE
     description: |-
       TODO(#15329): Fill in column description
@@ -35,13 +36,15 @@ columns:
       TODO(#15329): Fill in column description
   - name: OffenseCategoryId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offense category. Can be joined with 
+      `scl_OffenseCategory.OffenseCategoryId`.
   - name: OffenseModifierId
     description: |-
       TODO(#15329): Fill in column description
   - name: OFFENSE_STATUTE
     description: |-
-      TODO(#15329): Fill in column description
+      Statute code corresponding to OffenseTypeId. Identical to OFFENSE_TYPE_STATE_CD 
+      in all but one case (the inactive "ConversionOffense").
   - name: GOOD_TIME_EARNED_RESTRICT_IND
     description: |-
       TODO(#15329): Fill in column description
@@ -50,10 +53,10 @@ columns:
       TODO(#15329): Fill in column description
   - name: SYSTEM_REF_COMMENTS_TX
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding the offense type.
   - name: VIOLENT_OFFENSE_IND
     description: |-
-      TODO(#15329): Fill in column description
+      Dummy variable indicating if the offense type is violent (1 if so, 0 otherwise).
   - name: DnaNotRequired
     description: |-
       TODO(#15329): Fill in column description
@@ -86,7 +89,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: ShortDescription
     description: |-
-      TODO(#15329): Fill in column description
+      Statute description corresponding to OffenseTypeId. Identical to OffenseTypeDesc 
+      in all but one case (the inactive "ConversionOffense").
   - name: SVPPredicateOffenseInd
     description: |-
       TODO(#15329): Fill in column description

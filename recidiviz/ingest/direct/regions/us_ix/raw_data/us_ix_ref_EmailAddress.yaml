@@ -1,17 +1,18 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_EmailAddress
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps EmailAddressId to the associated email addresses.
 data_classification: source
 primary_key_cols:
   - EmailAddressId
 columns:
   - name: EmailAddressId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for an email address.
   - name: EmailAddress
     description: |-
-      TODO(#15329): Fill in column description
+      String containing the email address corresponding to EmailAddressId.
+    is_pii: True
   - name: EmailAddressTypeId
     description: |-
       TODO(#15329): Fill in column description
@@ -20,7 +21,7 @@ columns:
       TODO(#15329): Fill in column description
   - name: Comment
     description: |-
-      TODO(#15329): Fill in column description
+      Unused comment field.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

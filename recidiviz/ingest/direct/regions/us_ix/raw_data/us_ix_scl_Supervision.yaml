@@ -1,41 +1,50 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Supervision
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains details about each supervision assignment.
 data_classification: source
 primary_key_cols:
   - SupervisionId
 columns:
   - name: SupervisionId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the supervision assignment.
   - name: MasterTermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the master term containing the supervision assignment. Can be joined to 
+      `scl_MasterTerm.MasterTermId`.
   - name: SupervisionTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the supervision type. Can be joined to 
+      `scl_SupervisionType.SupervisionTypeId`.
+    known_values: []
   - name: ImposedDate
     description: |-
-      TODO(#15329): Fill in column description
+      The date the supervision term was imposed.
+    is_datetime: True
   - name: CourtAuthority
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the court holding authority over the supervision assignment.
   - name: JudgeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID For the judge presiding over the supervision assignment. Can be joined to 
+      `scl_Legist.LegistId`.
   - name: StartDate
     description: |-
-      TODO(#15329): Fill in column description
+      The start date of the supervision term.
+    is_datetime: True
   - name: SupervisionMEDDate
     description: |-
       TODO(#15329): Fill in column description
   - name: SupervisionStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the supervision status. Can be joined to 
+      `scl_SupervisionStatus.SupervisionStatusId`.
+    known_values: []
   - name: AliasNameId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the alias name of the supervisee. Can be joined to 
+      `ind_AliasName.AliasNameId`.
   - name: InterstateTypeParole
     description: |-
       TODO(#15329): Fill in column description
@@ -53,7 +62,7 @@ columns:
       TODO(#15329): Fill in column description
   - name: ParoleId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the parole term. Can be joined to `scl_Parole.ParoleId`.
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -74,4 +83,6 @@ columns:
       TODO(#15329): Fill in column description
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender under supervision. Can be joined with 
+      `ind_Offender.OffenderId`.
+    is_pii: True

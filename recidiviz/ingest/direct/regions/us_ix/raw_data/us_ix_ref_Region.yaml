@@ -1,23 +1,23 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_Region
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each region ID to the region's name.
 data_classification: source
 primary_key_cols:
   - RegionId
 columns:
   - name: RegionId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for each region a location can belong to.
   - name: RegionName
     description: |-
-      TODO(#15329): Fill in column description
+      Name of the region corresponding to RegionId.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description
   - name: Comments
     description: |-
-      TODO(#15329): Fill in column description
+      Comments regarding the region.
   - name: Inactive
     description: |-
       TODO(#15329): Fill in column description

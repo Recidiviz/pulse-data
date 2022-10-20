@@ -1,20 +1,22 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Term
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Contains data about each term of incarceration/supervision.
 data_classification: source
 primary_key_cols:
   - TermId
 columns:
   - name: TermId
     description: |-
-      Unique identifier for each row in table.
+      Unique identifier for each term.
   - name: MasterTermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the master term. Multiple terms can belong to the same master term. Can be 
+      self joined with TermId.
   - name: AliasNameId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the alias of the individual serving the term. Can be joined with 
+      `ind_AliasName.AliasNameId`.
   - name: InmateNumber
     description: |-
       Identifying number of inmate.
@@ -115,7 +117,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: TermStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the term status. Can be joined with `scl_TermStatus.TermStatusId`.
+    known_values: []
   - name: LastCalculateById
     description: |-
       ID of person who last calculated term.
@@ -152,7 +155,8 @@ columns:
     is_datetime: True
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location corresponding to the term. Can be joined to 
+      `ref_Location.LocationId`.
   - name: OffenderStatusId
     description: |-
       TODO(#15329): Fill in column description
@@ -207,23 +211,23 @@ columns:
       TODO(#15329): Fill in column description
   - name: ReleaseDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of release from the term.
     is_datetime: True
   - name: OffenderId
     description: |-
-      ID for offender.
+      ID for offender. Can be joined with `ind_Offender.OffenderId`.
     is_pii: True
   - name: TermStartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Start date of the term.
     is_datetime: True
   - name: TentativeParoleDate
     description: |-
-      TODO(#15329): Fill in column description
+      Tentative date of parole for the term.
     is_datetime: True
   - name: NextHearingDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the next hearing.
     is_datetime: True
   - name: TermSentenceDate
     description: |-
@@ -235,19 +239,19 @@ columns:
     is_datetime: True
   - name: IndeterminateStartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Start date of the indeterminate sentence, if applicable.
     is_datetime: True
   - name: IndeterminateEndDate
     description: |-
-      TODO(#15329): Fill in column description
+      End date of the indeterminate sentence, if applicable.
     is_datetime: True
   - name: ProbationStartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Probation start date, if applicable.
     is_datetime: True
   - name: ProbationExpirationDate
     description: |-
-      TODO(#15329): Fill in column description
+      Probation end date, if applicable.
     is_datetime: True
   - name: ProbationCalculationStatusId
     description: |-
@@ -265,13 +269,13 @@ columns:
       TODO(#15329): Fill in column description
   - name: RiderStartDate
     description: |-
-      TODO(#15329): Fill in column description
+      Start date of the rider term, if applicable.
     is_datetime: True
   - name: RiderExpiryDate
     description: |-
-      TODO(#15329): Fill in column description
+      Expiration date of the rider term, if applicable.
     is_datetime: True
   - name: InitialParoleHearingDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the initial parole hearing.
     is_datetime: True

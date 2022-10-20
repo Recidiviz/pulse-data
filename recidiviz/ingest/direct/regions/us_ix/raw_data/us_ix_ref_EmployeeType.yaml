@@ -1,20 +1,20 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ref_EmployeeType
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Maps each EmployeeTypeId to its respective description.
 data_classification: source
 primary_key_cols:
   - EmployeeTypeId
 columns:
   - name: EmployeeTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the type of employee described.
   - name: EmployeeTypeName
     description: |-
-      TODO(#15329): Fill in column description
+      Description of the EmployeeTypeID.
   - name: Abbreviation
     description: |-
-      TODO(#15329): Fill in column description
+      Unused.
   - name: SYSTEM_REF_TX
     description: |-
       TODO(#15329): Fill in column description

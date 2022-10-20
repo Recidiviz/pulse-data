@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: scl_Sentence
 file_description: |-
-  TODO(#15329): Fill in the file description
+  Provides details on sentences, although most of the data is missing.
 data_classification: source
 primary_key_cols:
   - SentenceId
 columns:
   - name: SentenceId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence.
   - name: CourtOrderSignedDate
     description: |-
       TODO(#15329): Fill in column description
@@ -128,13 +128,14 @@ columns:
       TODO(#15329): Fill in column description
   - name: TermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the term. Can be joined to `scl_Term.TermId`.
   - name: MasterTermId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the master term. Can be joined to `scl_Term.MasterTermId`.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender. Can be joined to `ind_Offender.OffenderId`.
+    is_pii: True
   - name: ConsecSentenceId
     description: |-
       TODO(#15329): Fill in column description
@@ -146,19 +147,21 @@ columns:
       TODO(#15329): Fill in column description
   - name: SentenceTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence type. Can be joined to `scl_SentenceType.SentenceTypeId`.
+    known_values: []
   - name: SentenceStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the sentence status. Can be joined to `scl_SentenceStatus.SentenceStatusId`.
+    known_values: []
   - name: SentenceRelationshipId
     description: |-
       TODO(#15329): Fill in column description
   - name: CourtOrderTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the court order type. No mapping table exists in the data.
   - name: CourtId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the court. No mapping table exists in the data.
   - name: ApprovalStateId
     description: |-
       TODO(#15329): Fill in column description
@@ -215,10 +218,11 @@ columns:
       TODO(#15329): Fill in column description
   - name: EarlyDischargeDate
     description: |-
-      TODO(#15329): Fill in column description
+      When this column has a value, it's the same as the DischargeDate value. Therefore,
+      probably meant to just be used as a flag for when a discharge occurs early.
   - name: DischargeDate
     description: |-
-      TODO(#15329): Fill in column description
+      Sentence discharge date.
   - name: DischargeUpdateDate
     description: |-
       TODO(#15329): Fill in column description
