@@ -16,7 +16,7 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import List
+from typing import Any, Dict, List
 
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
@@ -57,6 +57,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
+)
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -121,6 +124,9 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             ],
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
             assessments=normalizer_args[StateAssessment.__name__],
+            charge_offense_descriptions_to_labels=normalizer_args[
+                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
+            ],
         )
 
     def _normalize_entities(
@@ -138,6 +144,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
+        charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
@@ -154,6 +161,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             assessments=assessments,
+            charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
             field_index=self.field_index,
         )
 
@@ -174,6 +182,7 @@ def all_normalized_entities(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     assessments: List[StateAssessment],
+    charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -201,7 +210,9 @@ def all_normalized_entities(
     )
 
     sentence_normalization_manager = SentenceNormalizationManager(
-        incarceration_sentences, supervision_sentences
+        incarceration_sentences,
+        supervision_sentences,
+        charge_offense_descriptions_to_labels,
     )
 
     (
