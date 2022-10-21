@@ -325,7 +325,9 @@ class FakeBigQueryClient(BigQueryClient):
     ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
-    def delete_table(self, dataset_id: str, table_id: str) -> None:
+    def delete_table(
+        self, dataset_id: str, table_id: str, not_found_ok: bool = False
+    ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
     def update_description(
