@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision population by PO and day"""
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
@@ -66,48 +66,55 @@ enabled_states = tuple(
 
 
 def generate_state_specific_population(
-    populations_by_state: Dict[str, Tuple[str, ...]], field: str
+    populations_by_state: Dict[str, Tuple[str, ...]],
+    field: str,
+    optional_prefix: Optional[str] = None,
 ) -> str:
     """Generates a field selector which only counts people in the specified supervision groups in each state.
     Defaults to counting all supervised people for unlisted states.
     """
+    prefix = f"{optional_prefix}." if optional_prefix else None
     state_clauses = "\n            ".join(
-        f"WHEN '{state}' THEN COUNT(DISTINCT(IF(supervision_level in {populations_by_state[state]}, person_id, null)))"
+        f"WHEN '{state}' THEN COUNT(DISTINCT(IF(supervision_level in {populations_by_state[state]}, {prefix}person_id, null)))"
         for state in sorted(populations_by_state.keys())
     )
     return f"""
-        CASE state_code
+        CASE {prefix}state_code
             {state_clauses}
-            ELSE COUNT(DISTINCT(person_id))
+            ELSE COUNT(DISTINCT({prefix}person_id))
         END as {field}"""
 
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
     /*{{description}}*/
     WITH supervision_population_metrics AS (
-        {hack_us_id_absconsions('most_recent_supervision_population_metrics_materialized')}
+        {hack_us_id_absconsions('most_recent_supervision_population_span_to_single_day_metrics_materialized')}
     ),
     supervision_population AS (
         SELECT
-            state_code,
+            supervision_population_metrics.state_code,
             date_of_supervision,
             supervising_district_external_id,
             supervising_officer_external_id,
             CASE WHEN supervising_district_external_id = 'ALL' THEN 'ALL' ELSE district_id END AS district_id,
             CASE WHEN supervising_district_external_id = 'ALL' THEN 'ALL' ELSE district_name END AS district_name,
-            COUNT(DISTINCT(person_id)) AS people_under_supervision,
-            COUNT (DISTINCT IF(projected_end_date < date_of_supervision AND projected_end_date IS NOT NULL, person_id, NULL)) AS due_for_release_count,
+            COUNT(DISTINCT(supervision_population_metrics.person_id)) AS people_under_supervision,
+            COUNT (DISTINCT IF(completions.projected_completion_date_max < date_of_supervision AND completions.projected_completion_date_max IS NOT NULL, completions.person_id, NULL)) AS due_for_release_count,
             -- TODO(#7470): Expand contact population here once we process DIVERSION
-            {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact')},
-            {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment')},
+            {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact', 'supervision_population_metrics')},
+            {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment', 'supervision_population_metrics')},
         FROM supervision_population_metrics
         INNER JOIN `{{project_id}}.{{vitals_views_dataset}}.supervision_officers_and_districts_materialized` officers
-            USING (state_code, supervising_officer_external_id),
+            USING (state_code, supervising_officer_external_id)
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` completions
+            ON supervision_population_metrics.state_code = completions.state_code
+            AND supervision_population_metrics.person_id = completions.person_id
+            AND supervision_population_metrics.date_of_supervision BETWEEN completions.start_date AND COALESCE(completions.end_date, CURRENT_DATE('US/Eastern')),
         UNNEST ([officers.supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
         UNNEST ([officers.supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
-            AND state_code in {enabled_states}
-            AND {state_specific_entity_filter()}
+            AND supervision_population_metrics.state_code in {enabled_states}
+            AND {state_specific_entity_filter("supervision_population_metrics")}
         GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name
     )
     
@@ -133,6 +140,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     state_base_dataset=dataset_config.STATE_BASE_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
 )
 
