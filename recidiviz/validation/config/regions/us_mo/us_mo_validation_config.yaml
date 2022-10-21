@@ -48,3 +48,6 @@ num_allowed_rows_overrides:
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 22
     override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
+  - validation_name: sentence_end_dates_before_start_dates
+    hard_num_allowed_rows_override: 1500000
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 1,335,497 rows #TODO(#16182)

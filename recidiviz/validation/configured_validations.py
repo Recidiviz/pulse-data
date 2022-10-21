@@ -217,6 +217,9 @@ from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.sentence_end_dates_before_start_dates import (
+    SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
@@ -459,6 +462,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
