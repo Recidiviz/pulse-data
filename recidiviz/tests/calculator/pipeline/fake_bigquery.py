@@ -32,6 +32,7 @@ from typing import (
 )
 
 import apache_beam
+from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.pvalue import PCollection
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
@@ -629,12 +630,22 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
         expected_output_tags: Collection[str],
         **kwargs: Any,
     ) -> Callable[
-        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQueryType
+        [
+            str,
+            str,
+            apache_beam.io.BigQueryDisposition,
+        ],
+        FakeWriteToBigQueryType,
     ]:
+        """Constructor for writing to BQ"""
+
         def write_constructor(
             output_table: str,
             output_dataset: str,
             write_disposition: apache_beam.io.BigQueryDisposition,
+            schema: Optional[  # pylint: disable=unused-argument,redefined-outer-name
+                beam_bigquery.TableSchema
+            ] = None,
         ) -> FakeWriteToBigQueryType:
             if output_dataset != expected_dataset:
                 raise ValueError(

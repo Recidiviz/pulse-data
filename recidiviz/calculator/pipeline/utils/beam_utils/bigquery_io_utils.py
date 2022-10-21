@@ -21,6 +21,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar
 
 import apache_beam as beam
+from apache_beam.io.gcp.internal.clients import bigquery
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
@@ -97,6 +98,7 @@ class WriteToBigQuery(beam.io.WriteToBigQuery):
         output_dataset: str,
         output_table: str,
         write_disposition: beam.io.BigQueryDisposition,
+        schema: Optional[bigquery.TableSchema] = None,
     ):
         super().__init__(
             table=output_table,
@@ -104,6 +106,7 @@ class WriteToBigQuery(beam.io.WriteToBigQuery):
             create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
             write_disposition=write_disposition,
             method=beam.io.WriteToBigQuery.Method.FILE_LOADS,
+            schema=schema,
         )
 
 

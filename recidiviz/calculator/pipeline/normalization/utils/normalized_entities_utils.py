@@ -201,6 +201,9 @@ def get_shared_additional_attributes_map_for_entities(
 
     entity_base_class = one(set(type(e) for e in entities))
     entity_name = entity_base_class.__name__
+    # TODO(#16102) Remove custom class base name for US_MO once normalization is moved.
+    if "UsMo" in entity_name:
+        entity_name = entity_base_class.__base__.__name__
     normalized_entity_class = normalized_entity_class_with_base_class_name(entity_name)
 
     # Add empty map by default for entity types with no additional attributes

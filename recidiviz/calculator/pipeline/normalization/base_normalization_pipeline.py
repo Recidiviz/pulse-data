@@ -31,6 +31,7 @@ from typing import (
 )
 
 import apache_beam as beam
+from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.pvalue import PBegin
 from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints import with_input_types, with_output_types
@@ -48,8 +49,10 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.en
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
+    normalized_entity_class_with_base_class_name,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_entity,
     convert_entities_to_normalized_dicts,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
@@ -162,6 +165,17 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
             table_id = schema_utils.get_state_database_entity_with_name(
                 entity_class_name
             ).__tablename__
+            normalized_entity_type = normalized_entity_class_with_base_class_name(
+                entity_class_name
+            )
+            normalized_entity_schema_fields = bq_schema_for_normalized_state_entity(
+                normalized_entity_type
+            )
+            beam_schema_fields: List[beam_bigquery.TableFieldSchema] = [
+                beam_bigquery.TableFieldSchema(name=field.name, type=field.field_type)
+                for field in normalized_entity_schema_fields
+            ]
+            schema = beam_bigquery.TableSchema(fields=beam_schema_fields)
 
             _ = getattr(writable_metrics, entity_class_name) | (
                 f"Write Normalized{entity_class_name} to BQ table: "
@@ -170,6 +184,7 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
                 output_table=table_id,
                 output_dataset=self.pipeline_job_args.output_dataset,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+                schema=schema,
             )
 
         for entity_association in normalized_entity_associations:
