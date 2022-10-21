@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the conversion to/from NormalizedStateEntity objects."""
 from collections import defaultdict, deque
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, cast
 
 import attr
 from google.cloud import bigquery
@@ -35,6 +35,10 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
     normalized_entity_class_with_base_class_name,
     update_forward_references_on_updated_entity,
     update_reverse_references_on_related_entities,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    UsMoIncarcerationSentence,
+    UsMoSupervisionSentence,
 )
 from recidiviz.common.attr_mixins import (
     BuildableAttr,
@@ -59,6 +63,10 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionSentence,
 )
 
 NormalizedEntityKey = Tuple[Type[NormalizedStateEntity], int]
@@ -130,6 +138,10 @@ def convert_entity_trees_to_normalized_versions(
         # Verify the base entity and normalized entity are compatible
         base_entity_cls = type(base_entity)
         base_entity_cls_name = base_entity_cls.__name__
+        # TODO(#16102) Remove custom class base name for US_MO once normalization is moved.
+        if "UsMo" in base_entity_cls_name:
+            base_entity_cls_name = base_entity_cls.__base__.__name__
+            base_entity_cls = base_entity_cls.__base__
         if normalized_base_entity_class.__base__ != base_entity_cls:
             raise ValueError(
                 f"Trying to convert entities of type {base_entity_cls} to "
@@ -151,8 +163,14 @@ def convert_entity_trees_to_normalized_versions(
             normalized_base_entity_attributes.update(additional_args_for_base_entity)
 
         # Set all flat fields and unique fields to normalized class first on the builder
+        # TODO(#16102) Remove custom class base name for US_MO once normalization is moved.
+        entity_to_index = base_entity
+        if isinstance(base_entity, UsMoSupervisionSentence):
+            entity_to_index = cast(StateSupervisionSentence, base_entity)
+        elif isinstance(base_entity, UsMoIncarcerationSentence):
+            entity_to_index = cast(StateIncarcerationSentence, base_entity)
         flat_fields = field_index.get_all_core_entity_fields(
-            base_entity, EntityFieldType.FLAT_FIELD
+            entity_to_index, EntityFieldType.FLAT_FIELD
         )
         unique_fields = fields_unique_to_normalized_class(normalized_base_entity_class)
         fields_to_set_or_traverse = flat_fields | unique_fields
