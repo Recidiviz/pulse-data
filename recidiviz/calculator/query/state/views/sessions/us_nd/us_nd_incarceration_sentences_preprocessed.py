@@ -68,7 +68,7 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'INCARCERATION' AS sentence_type,
         'INCARCERATION' AS sentence_sub_type,
         sis.start_date AS effective_date,
-        sis.date_imposed,
+        MIN(sis.start_date) OVER(PARTITION BY sis.person_id, SPLIT(sis.external_id,'-')[SAFE_OFFSET(0)]) AS date_imposed,
         sis.completion_date,
         sis.status,
         sis.status_raw_text,
