@@ -338,7 +338,45 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.delete_table.assert_called_with(
             bigquery.DatasetReference(
                 self.mock_project_id, self.mock_view.dataset_id
-            ).table(self.mock_table_id)
+            ).table(self.mock_table_id),
+            not_found_ok=True,
+        )
+
+    def test_export_query_results_to_cloud_storage_extract_throws(self) -> None:
+        """Tests that if export_query_results_to_cloud_storage fails at the extract
+        step, we throw an error, but still do intermediate table cleanup.
+        """
+        bucket = self.mock_project_id + "-bucket"
+        query_job: futures.Future = futures.Future()
+        query_job.set_result([])
+        extract_job: futures.Future = futures.Future()
+        extract_job.set_exception(ValueError("Extract failed!!"))
+        self.mock_client.query.return_value = query_job
+        self.mock_client.extract_table.return_value = extract_job
+
+        with self.assertRaisesRegex(ValueError, "Extract failed!!"):
+            self.bq_client.export_query_results_to_cloud_storage(
+                export_configs=[
+                    ExportQueryConfig.from_view_query(
+                        view=self.mock_view,
+                        view_filter_clause="WHERE x = y",
+                        intermediate_table_name=self.mock_table_id,
+                        output_uri=f"gs://{bucket}/view.json",
+                        output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
+                    )
+                ],
+                print_header=True,
+                use_query_cache=False,
+            )
+        self.mock_client.query.assert_called()
+        self.mock_client.extract_table.assert_called()
+
+        # Tests that we still do cleanup even though the extract failed.
+        self.mock_client.delete_table.assert_called_with(
+            bigquery.DatasetReference(
+                self.mock_project_id, self.mock_view.dataset_id
+            ).table(self.mock_table_id),
+            not_found_ok=True,
         )
 
     def test_create_table_from_query(self) -> None:
@@ -1613,7 +1651,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.delete_table.assert_called_with(
             bigquery.DatasetReference(self.mock_project_id, "my_dst_dataset").table(
                 mock_table_3.table_id
-            )
+            ),
+            not_found_ok=False,
         )
         mock_transfer_client.delete_transfer_config.assert_called_once()
 
@@ -2083,7 +2122,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             "fake-recidiviz-project", destination_dataset_id
         )
         self.mock_client.delete_table.assert_called_with(
-            bigquery.TableReference(destination_dataset_ref, "my_extra_table")
+            bigquery.TableReference(destination_dataset_ref, "my_extra_table"),
+            not_found_ok=False,
         )
         self.assertEqual(
             bigquery.WriteDisposition.WRITE_TRUNCATE, self.job_config.write_disposition

@@ -690,12 +690,15 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def delete_table(self, dataset_id: str, table_id: str) -> None:
+    def delete_table(
+        self, dataset_id: str, table_id: str, not_found_ok: bool = False
+    ) -> None:
         """Provided the |dataset_id| and |table_id|, attempts to delete the given table from BigQuery.
 
         Args:
             dataset_id: The name of the dataset where the table lives.
             table_id: The name of the table to delete.
+            not_found_ok: If False, this raises an exception when the table is not found.
         """
 
     @abc.abstractmethod
@@ -1074,64 +1077,74 @@ class BigQueryClientImpl(BigQueryClient):
         print_header: bool,
         use_query_cache: bool,
     ) -> None:
-        query_jobs = []
-        for export_config in export_configs:
-            query_job = self.create_table_from_query_async(
-                dataset_id=export_config.intermediate_dataset_id,
-                table_id=export_config.intermediate_table_name,
-                query=export_config.query,
-                query_parameters=export_config.query_parameters,
-                overwrite=True,
-                use_query_cache=use_query_cache,
-            )
-            if query_job is not None:
-                query_jobs.append(query_job)
-
-        logging.info("Waiting on [%d] query jobs to finish", len(query_jobs))
-        for job in query_jobs:
-            job.result()
-
-        logging.info("Completed [%d] query jobs.", len(query_jobs))
-
-        extract_jobs = []
-        for export_config in export_configs:
-            extract_job = self.export_table_to_cloud_storage_async(
-                self.dataset_ref_for_id(export_config.intermediate_dataset_id),
-                export_config.intermediate_table_name,
-                export_config.output_uri,
-                export_config.output_format,
-                print_header,
-            )
-            if extract_job is not None:
-                extract_jobs.append(extract_job)
-
-        logging.info("Waiting on [%d] extract jobs to finish", len(extract_jobs))
-        for job in extract_jobs:
-            try:
-                job.result()
-            except Exception:
-                logging.exception(
-                    "Extraction failed for table: %s", job.source.table_id
+        try:
+            query_jobs = []
+            for export_config in export_configs:
+                query_job = self.create_table_from_query_async(
+                    dataset_id=export_config.intermediate_dataset_id,
+                    table_id=export_config.intermediate_table_name,
+                    query=export_config.query,
+                    query_parameters=export_config.query_parameters,
+                    overwrite=True,
+                    use_query_cache=use_query_cache,
                 )
-        logging.info("Completed [%d] extract jobs.", len(extract_jobs))
+                if query_job is not None:
+                    query_jobs.append(query_job)
 
-        logging.info(
-            "Deleting [%d] temporary intermediate tables.", len(export_configs)
-        )
-        for export_config in export_configs:
-            self.delete_table(
-                dataset_id=export_config.intermediate_dataset_id,
-                table_id=export_config.intermediate_table_name,
+            logging.info("Waiting on [%d] query jobs to finish", len(query_jobs))
+            for job in query_jobs:
+                job.result()
+
+            logging.info("Completed [%d] query jobs.", len(query_jobs))
+
+            extract_jobs_to_config = {}
+            for export_config in export_configs:
+                extract_job = self.export_table_to_cloud_storage_async(
+                    self.dataset_ref_for_id(export_config.intermediate_dataset_id),
+                    export_config.intermediate_table_name,
+                    export_config.output_uri,
+                    export_config.output_format,
+                    print_header,
+                )
+                if extract_job is not None:
+                    extract_jobs_to_config[extract_job] = export_config
+
+            logging.info(
+                "Waiting on [%d] extract jobs to finish", len(extract_jobs_to_config)
             )
-        logging.info("Done deleting temporary intermediate tables.")
 
-    def delete_table(self, dataset_id: str, table_id: str) -> None:
+            for job, export_config in extract_jobs_to_config.items():
+                try:
+                    job.result()
+                except Exception as e:
+                    logging.exception(
+                        "Extraction failed for table: %s",
+                        export_config.intermediate_table_name,
+                    )
+                    raise e
+            logging.info("Completed [%d] extract jobs.", len(extract_jobs_to_config))
+
+        finally:
+            logging.info(
+                "Deleting [%d] temporary intermediate tables.", len(export_configs)
+            )
+            for export_config in export_configs:
+                self.delete_table(
+                    dataset_id=export_config.intermediate_dataset_id,
+                    table_id=export_config.intermediate_table_name,
+                    not_found_ok=True,
+                )
+            logging.info("Done deleting temporary intermediate tables.")
+
+    def delete_table(
+        self, dataset_id: str, table_id: str, not_found_ok: bool = False
+    ) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
         table_ref = dataset_ref.table(table_id)
         logging.info(
             "Deleting table/view [%s] from dataset [%s].", table_id, dataset_id
         )
-        self.client.delete_table(table_ref)
+        self.client.delete_table(table_ref, not_found_ok=not_found_ok)
 
     def run_query_async(
         self,
