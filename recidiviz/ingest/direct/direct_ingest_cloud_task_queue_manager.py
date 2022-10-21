@@ -761,7 +761,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self, state_code: StateCode, new_queue_state_str: str
     ) -> None:
         self.update_ingest_queue_states(
-            state_code, QUEUE_STATE_ENUM(new_queue_state_str)
+            state_code, QUEUE_STATE_ENUM[new_queue_state_str]
         )
 
     def get_scheduler_queue_state(
