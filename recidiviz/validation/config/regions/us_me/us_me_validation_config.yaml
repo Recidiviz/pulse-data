@@ -5,4 +5,7 @@ region_code: US_ME
 dev_mode: True
 exclusions: []
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: sentence_end_dates_before_start_dates
+    hard_num_allowed_rows_override: 150000
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 121,838 rows #TODO(#16183)

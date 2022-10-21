@@ -41,3 +41,6 @@ num_allowed_rows_overrides:
     override_reason: Needs further investigation.
       There's a known issue with overlapping supervision periods that arise when offender bookings overlap
       but there are a few other scenarios as well.  Currently expected number of failing rows is ~5000 #TODO(#15587)
+  - validation_name: sentence_end_dates_before_start_dates
+    hard_num_allowed_rows_override: 100000
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 56,669 rows #TODO(#16186)

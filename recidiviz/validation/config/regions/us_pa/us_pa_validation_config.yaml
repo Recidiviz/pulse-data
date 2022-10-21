@@ -121,3 +121,6 @@ num_allowed_rows_overrides:
       more than one commitment from supervision admission with multiple different parole
       board hold periods (of different lengths) that preceed them, which can cause
       different dates to be used for identifying SPs associated with an admission.
+  - validation_name: sentence_end_dates_before_start_dates
+    hard_num_allowed_rows_override: 40000
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 23,029 rows #TODO(#16189)

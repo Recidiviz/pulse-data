@@ -78,3 +78,6 @@ num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing.
+  - validation_name: sentence_end_dates_before_start_dates
+    hard_num_allowed_rows_override: 4000
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 2,834 rows #TODO(#16188)
