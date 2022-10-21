@@ -41,19 +41,12 @@ class DirectIngestBucketNameUtilsTest(TestCase):
             "us_pa",
         )
 
-        self.assertEqual(
-            get_region_code_from_direct_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex"
-            ),
-            "us_ma_middlesex",
-        )
-
         # Unknown still produces region code
         self.assertEqual(
             get_region_code_from_direct_ingest_bucket(
-                "recidiviz-newproject-direct-ingest-state-us-ca"
+                "recidiviz-newproject-direct-ingest-state-us-ab"
             ),
-            "us_ca",
+            "us_ab",
         )
 
     def test_get_region_code_from_direct_ingest_bucket_secondary(self) -> None:
@@ -69,12 +62,6 @@ class DirectIngestBucketNameUtilsTest(TestCase):
             ),
             "us_pa",
         )
-        self.assertEqual(
-            get_region_code_from_direct_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex-secondary"
-            ),
-            "us_ma_middlesex",
-        )
 
     def test_get_region_code_from_direct_ingest_bucket_upload_testing(self) -> None:
         self.assertEqual(
@@ -82,13 +69,6 @@ class DirectIngestBucketNameUtilsTest(TestCase):
                 "recidiviz-staging-direct-ingest-state-us-pa-upload-testing"
             ),
             "us_pa",
-        )
-
-        self.assertEqual(
-            get_region_code_from_direct_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex-upload-testing"
-            ),
-            "us_ma_middlesex",
         )
 
     def test_get_region_code_from_direct_ingest_bucket_malformed(self) -> None:
@@ -112,11 +92,6 @@ class DirectIngestBucketNameUtilsTest(TestCase):
         self.assertTrue(
             is_primary_ingest_bucket("recidiviz-staging-direct-ingest-state-us-pa"),
         )
-        self.assertTrue(
-            is_primary_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex"
-            ),
-        )
 
         self.assertFalse(
             is_primary_ingest_bucket(
@@ -127,11 +102,6 @@ class DirectIngestBucketNameUtilsTest(TestCase):
         self.assertFalse(
             is_primary_ingest_bucket(
                 "recidiviz-staging-direct-ingest-state-us-pa-secondary"
-            ),
-        )
-        self.assertFalse(
-            is_primary_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex-secondary"
             ),
         )
 
@@ -144,19 +114,9 @@ class DirectIngestBucketNameUtilsTest(TestCase):
                 "recidiviz-staging-direct-ingest-state-us-pa-upload-testing"
             ),
         )
-        self.assertFalse(
-            is_secondary_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex"
-            ),
-        )
 
         self.assertTrue(
             is_secondary_ingest_bucket(
                 "recidiviz-staging-direct-ingest-state-us-pa-secondary"
-            ),
-        )
-        self.assertTrue(
-            is_secondary_ingest_bucket(
-                "recidiviz-staging-direct-ingest-county-us-ma-middlesex-secondary"
             ),
         )
