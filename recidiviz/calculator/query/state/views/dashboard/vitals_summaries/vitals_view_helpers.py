@@ -56,11 +56,12 @@ def make_enabled_states_filter_for_vital(
     return f"state_code in ({enabled_states})"
 
 
-def state_specific_entity_filter() -> str:
+def state_specific_entity_filter(optional_prefix: Optional[str] = None) -> str:
     """Generates a state specific entity filter"""
-    return """
+    prefix = f"{optional_prefix}." if optional_prefix else ""
+    return f"""
         CASE
-          WHEN state_code = 'US_ND' THEN
+          WHEN {prefix}state_code = 'US_ND' THEN
             district_name != 'CENTRAL OFFICE'
           ELSE TRUE
         END

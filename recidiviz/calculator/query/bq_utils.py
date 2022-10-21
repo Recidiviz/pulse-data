@@ -138,6 +138,7 @@ def hack_us_id_absconsions(dataflow_metric_table: str) -> str:
         USING (person_id, state_code)
         WHERE supervising_officer_external_id IS NOT NULL
             AND supervision_level IS NOT NULL
+            AND metric.included_in_state_population
     """
 
 
