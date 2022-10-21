@@ -95,14 +95,17 @@ class BigQueryViewTestCase(unittest.TestCase):
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
         self.fake_bq_db.create_view(view_builder)
 
+    def query(self, query: str) -> pd.DataFrame:
+        if self.sql_regex_replacements:
+            for bq_sql_regex_pattern, pg_sql in self.sql_regex_replacements.items():
+                query = re.sub(bq_sql_regex_pattern, pg_sql, query)
+
+        return self.fake_bq_db.run_query(query)
+
     def query_view(
         self, table_address: BigQueryAddress, view_query: str
     ) -> pd.DataFrame:
-        if self.sql_regex_replacements:
-            for bq_sql_regex_pattern, pg_sql in self.sql_regex_replacements.items():
-                view_query = re.sub(bq_sql_regex_pattern, pg_sql, view_query)
-
-        results = self.fake_bq_db.run_query(view_query)
+        results = self.query(view_query)
 
         # Log results to debug log level, to see them pass --log-level DEBUG to pytest
         logging.debug("Results for `%s`:\n%s", table_address, results.to_string())

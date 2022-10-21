@@ -17,10 +17,11 @@
 
 """Tests for validation/checks/sameness_check.py."""
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, Sequence
 from unittest import TestCase
 
 import pandas as pd
+from google.cloud.bigquery.table import Row
 from mock import Mock, patch
 from pandas._testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
@@ -50,6 +51,10 @@ from recidiviz.validation.validation_models import (
 )
 
 
+def make_row(values: Dict[str, Any]) -> Row:
+    return Row(list(values.values()), {key: i for i, key in enumerate(values.keys())})
+
+
 class TestSamenessValidationCheckers(TestCase):
     """Tests for the SamenessPerRowValidationChecker and SamenessPerViewValidationChecker."""
 
@@ -63,46 +68,9 @@ class TestSamenessValidationCheckers(TestCase):
         )
         self.mock_client = self.client_patcher.start().return_value
 
-        self.good_string_row = {"p": "test", "a": "same", "b": "same", "c": "same"}
-        self.bad_string_row = {
-            "p": "test",
-            "a": "a_value",
-            "b": "b_value",
-            "c": "c_value",
-        }
-
-        self.good_date_row = {
-            "p": "test",
-            "a": date(2020, 1, 1),
-            "b": date(2020, 1, 1),
-            "c": date(2020, 1, 1),
-        }
-        self.bad_date_row = {
-            "p": "test",
-            "a": date(2020, 1, 1),
-            "b": date(2020, 1, 2),
-            "c": date(2020, 1, 3),
-        }
-
     def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
-
-    def return_string_values_with_num_bad_rows(
-        self, num_bad_rows: int
-    ) -> List[Dict[str, str]]:
-        return_values = [self.good_string_row] * (100 - num_bad_rows)
-        return_values.extend([self.bad_string_row] * num_bad_rows)
-
-        return return_values
-
-    def return_date_values_with_num_bad_rows(
-        self, num_bad_rows: int
-    ) -> List[Dict[str, Any]]:
-        return_values = [self.good_date_row] * (100 - num_bad_rows)
-        return_values.extend([self.bad_date_row] * num_bad_rows)
-
-        return return_values
 
     def test_sameness_check_no_comparison_columns(self) -> None:
         with self.assertRaisesRegex(
@@ -395,10 +363,50 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-    def test_sameness_check_strings_different_values_no_allowed_error(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"p": "test", "a": "a", "b": "b", "c": "c"}
-        ]
+
+@patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
+class SamenessPerViewValidationCheckerTest(BigQueryViewTestCase):
+    """Tests for the SamenessPerViewValidationChecker error view builder queries."""
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.client_patcher = patch(
+            "recidiviz.validation.checks.sameness_check.BigQueryClientImpl"
+        )
+        self.mock_client = self.client_patcher.start().return_value
+
+        # pylint: disable=unused-argument
+        def run_test_query(query_str: str, use_query_cache: bool) -> Sequence[Row]:
+            results = self.query(query_str)
+            rows = [make_row(row.to_dict()) for i, row in results.iterrows()]
+            return rows
+
+        self.mock_client.run_query_async = run_test_query
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.client_patcher.stop()
+
+    def test_strings(self) -> None:
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.String(),
+                    "b": sqltypes.String(),
+                    "c": sqltypes.String(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [["US_XX", "test", "a", "b", "c"], ["US_XX", "test2", "a", "b", "c"]],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -406,18 +414,91 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
+                partition_columns=["label"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
 
+        # Assert
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=SamenessPerViewValidationResultDetails(
+                    num_error_rows=2,
+                    total_num_rows=2,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
+                    non_null_counts_per_column_per_partition=[
+                        (("test",), {"a": 1, "b": 1, "c": 1}),
+                        (("test2",), {"a": 1, "b": 1, "c": 1}),
+                    ],
+                ),
+            ),
+        )
+
+    def test_dates(self) -> None:
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.Date(),
+                    "b": sqltypes.Date(),
+                    "c": sqltypes.Date(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        "US_XX",
+                        "test",
+                        date(2020, 1, 2),
+                        date(2020, 1, 3),
+                        date(2020, 1, 4),
+                    ],
+                ],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
+
+        job = DataValidationJob(
+            region_code="US_XX",
+            validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
+                validation_type=ValidationCheckType.SAMENESS,
+                comparison_columns=["a", "b", "c"],
+                partition_columns=["label"],
+                sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    description="test_view description",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
+                ),
+            ),
+        )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
+        result = job.validation.get_checker().run_check(job)
+
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -434,15 +515,25 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-    def test_sameness_check_dates_different_values_no_allowed_error(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {
-                "p": "test",
-                "a": date(2020, 1, 2),
-                "b": date(2020, 1, 3),
-                "c": date(2020, 1, 4),
-            }
-        ]
+    def test_empty_string(self) -> None:
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.String(),
+                    "b": sqltypes.String(),
+                    "c": sqltypes.String(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [["US_XX", "test", "same", "same", None]],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -450,57 +541,23 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
+                partition_columns=["label"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
 
-        self.assertEqual(
-            result,
-            DataValidationJobResult(
-                validation_job=job,
-                result_details=SamenessPerViewValidationResultDetails(
-                    num_error_rows=1,
-                    total_num_rows=1,
-                    hard_max_allowed_error=0.02,
-                    soft_max_allowed_error=0.02,
-                    non_null_counts_per_column_per_partition=[
-                        (("test",), {"a": 1, "b": 1, "c": 1}),
-                    ],
-                ),
-            ),
-        )
-
-    def test_sameness_check_strings_different_values_handle_empty_string(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"p": "test", "a": "same", "b": "same", "c": None}
-        ]
-
-        job = DataValidationJob(
-            region_code="US_XX",
-            validation=SamenessDataValidationCheck(
-                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-                validation_type=ValidationCheckType.SAMENESS,
-                comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
-                sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-                view_builder=SimpleBigQueryViewBuilder(
-                    dataset_id="my_dataset",
-                    view_id="test_view",
-                    description="test_view description",
-                    view_query_template="select * from literally_anything",
-                ),
-            ),
-        )
-        result = job.validation.get_checker().run_check(job)
-
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -517,10 +574,25 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-    def test_sameness_check_date_different_values_handle_empty_date(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"p": "test", "a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": None}
-        ]
+    def test_empty_date(self) -> None:
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.Date(),
+                    "b": sqltypes.Date(),
+                    "c": sqltypes.Date(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [["US_XX", "test", date(2020, 1, 1), date(2020, 1, 1), None]],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -528,17 +600,23 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
+                partition_columns=["label"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
+
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -555,14 +633,40 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-    def test_sameness_check_dates_different_values_within_margin(self) -> None:
-        num_bad_rows = 2
-        hard_max_allowed_error = num_bad_rows / 100
-
-        self.mock_client.run_query_async.side_effect = [
-            [self.bad_date_row] * num_bad_rows,
-            self.return_date_values_with_num_bad_rows(num_bad_rows),
+    def test_many_dates(self) -> None:
+        # Arrange
+        error_row = [
+            "US_XX",
+            "test",
+            date(2020, 1, 1),
+            date(2020, 1, 2),
+            date(2020, 1, 3),
         ]
+        match_row = [
+            "US_XX",
+            "test",
+            date(2020, 1, 1),
+            date(2020, 1, 1),
+            date(2020, 1, 1),
+        ]
+
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.Date(),
+                    "b": sqltypes.Date(),
+                    "c": sqltypes.Date(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                2 * [error_row] + 98 * [match_row],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -570,19 +674,24 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
+                partition_columns=["label"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-                hard_max_allowed_error=hard_max_allowed_error,
+                hard_max_allowed_error=0.02,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
 
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -599,89 +708,33 @@ class TestSamenessValidationCheckers(TestCase):
             ),
         )
 
-    def test_sameness_check_dates_different_values_above_margin(self) -> None:
-        num_bad_rows = 5
-        max_allowed_error = (num_bad_rows - 1) / 100  # Below the number of bad rows
-
-        self.mock_client.run_query_async.side_effect = [
-            [self.bad_date_row] * num_bad_rows,
-            self.return_date_values_with_num_bad_rows(num_bad_rows),
+    def test_multiple_partitions(self) -> None:
+        # Arrange
+        all_rows = [
+            ["US_XX", "2021-01-31", "1", "1"],
+            ["US_XX", "2021-01-31", "2", None],
+            ["US_XX", "2021-01-31", "3", "3"],
+            ["US_XX", "2021-01-31", None, "4"],
+            ["US_XX", "2020-12-31", "1", "1"],
+            ["US_XX", "2020-12-31", "3", "3"],
+            ["US_XX", "2020-12-31", None, "5"],
         ]
-
-        job = DataValidationJob(
-            region_code="US_XX",
-            validation=SamenessDataValidationCheck(
-                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-                validation_type=ValidationCheckType.SAMENESS,
-                comparison_columns=["a", "b", "c"],
-                partition_columns=["p"],
-                sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-                hard_max_allowed_error=max_allowed_error,
-                soft_max_allowed_error=max_allowed_error,
-                view_builder=SimpleBigQueryViewBuilder(
-                    dataset_id="my_dataset",
-                    view_id="test_view",
-                    description="test_view description",
-                    view_query_template="select * from literally_anything",
-                ),
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "date": sqltypes.String(),
+                    "a": sqltypes.String(),
+                    "b": sqltypes.String(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                all_rows,
+                columns=["region_code", "date", "a", "b"],
             ),
         )
-        result = job.validation.get_checker().run_check(job)
-
-        self.assertEqual(
-            result,
-            DataValidationJobResult(
-                validation_job=job,
-                result_details=SamenessPerViewValidationResultDetails(
-                    num_error_rows=5,
-                    total_num_rows=100,
-                    hard_max_allowed_error=0.04,
-                    soft_max_allowed_error=0.04,
-                    non_null_counts_per_column_per_partition=[
-                        (("test",), {"a": 100, "b": 100, "c": 100}),
-                    ],
-                ),
-            ),
-        )
-
-    def test_sameness_check_dates_multiple_dates(self) -> None:
-        error_rows: List[object] = [
-            {"region": "US_XX", "date": "2021-01-31", "a": date(2020, 1, 2), "b": None},
-            {"region": "US_XX", "date": "2021-01-31", "a": None, "b": date(2020, 1, 4)},
-            {"region": "US_XX", "date": "2020-12-31", "a": None, "b": date(2020, 1, 5)},
-        ]
-        normal_rows: List[object] = [
-            # January 2021
-            {
-                "region": "US_XX",
-                "date": "2021-01-31",
-                "a": date(2020, 1, 1),
-                "b": date(2020, 1, 1),
-            },
-            {
-                "region": "US_XX",
-                "date": "2021-01-31",
-                "a": date(2020, 1, 3),
-                "b": date(2020, 1, 3),
-            },
-            # December 2020
-            {
-                "region": "US_XX",
-                "date": "2020-12-31",
-                "a": date(2020, 1, 1),
-                "b": date(2020, 1, 1),
-            },
-            {
-                "region": "US_XX",
-                "date": "2020-12-31",
-                "a": date(2020, 1, 3),
-                "b": date(2020, 1, 3),
-            },
-        ]
-        self.mock_client.run_query_async.side_effect = [
-            error_rows,
-            normal_rows + error_rows,
-        ]
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -689,7 +742,7 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b"],
-                partition_columns=["region", "date"],
+                partition_columns=["region_code", "date"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
                 hard_max_allowed_error=0.0,
                 soft_max_allowed_error=0.0,
@@ -697,12 +750,17 @@ class TestSamenessValidationCheckers(TestCase):
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
 
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -713,21 +771,35 @@ class TestSamenessValidationCheckers(TestCase):
                     hard_max_allowed_error=0.0,
                     soft_max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
                         (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
+                        (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
                     ],
                 ),
             ),
         )
 
-    def test_sameness_checks_no_partition_columns(self) -> None:
-        num_bad_rows = 2
-        hard_max_allowed_error = num_bad_rows / 100
+    def test_no_partition_columns(self) -> None:
+        # Arrange
+        error_row = ["US_XX", "test", "1", "2", "3"]
+        match_row = ["US_XX", "test", "1", "1", "1"]
 
-        self.mock_client.run_query_async.side_effect = [
-            [self.bad_string_row] * num_bad_rows,
-            self.return_string_values_with_num_bad_rows(num_bad_rows),
-        ]
+        self.create_mock_bq_table(
+            dataset_id="my_dataset",
+            table_id="test_data",
+            mock_schema=PostgresTableSchema(
+                {
+                    "region_code": sqltypes.String(),
+                    "label": sqltypes.String(),
+                    "a": sqltypes.String(),
+                    "b": sqltypes.String(),
+                    "c": sqltypes.String(),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                2 * [error_row] + 98 * [match_row],
+                columns=["region_code", "label", "a", "b", "c"],
+            ),
+        )
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -736,17 +808,21 @@ class TestSamenessValidationCheckers(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-                hard_max_allowed_error=hard_max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
-                    view_query_template="select * from literally_anything",
+                    view_query_template="select * from `{project_id}.my_dataset.test_data`",
                 ),
             ),
         )
+        self.create_view(job.validation.view_builder)
+        self.create_view(job.validation.error_view_builder)
+
+        # Act
         result = job.validation.get_checker().run_check(job)
 
+        # Assert
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -1159,249 +1235,6 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             dtype=int,
         )
         assert_frame_equal(original_expected, original_result, check_dtype=False)
-
-
-@patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
-class SamenessPerViewValidationChecker(BigQueryViewTestCase):
-    """Tests for the SamenessPerViewValidationChecker error view builder queries."""
-
-    def test_sameness_check_dates_same_values(self) -> None:
-
-        mock_data = [
-            [
-                "test",
-                "2020-01-01",
-                "2020-01-01",
-                "2020-01-01",
-            ]
-        ]
-        columns = ["label", "a", "b", "c"]
-        mock_df = pd.DataFrame(mock_data, columns=columns)
-
-        self.create_mock_bq_table(
-            dataset_id="my_dataset",
-            table_id="test_data",
-            mock_schema=PostgresTableSchema(
-                {
-                    "label": sqltypes.String(),
-                    "a": sqltypes.Date(),
-                    "b": sqltypes.Date(),
-                    "c": sqltypes.Date(),
-                }
-            ),
-            mock_data=mock_df,
-        )
-
-        validation = SamenessDataValidationCheck(
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-            validation_type=ValidationCheckType.SAMENESS,
-            comparison_columns=["a", "b", "c"],
-            partition_columns=["label"],
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            view_builder=SimpleBigQueryViewBuilder(
-                dataset_id="my_dataset",
-                view_id="test_view",
-                description="test_view description",
-                view_query_template="select * from `{project_id}.my_dataset.test_data`",
-            ),
-        )
-
-        error_result = self.query_view_for_builder(
-            validation.error_view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        original_result = self.query_view_for_builder(
-            validation.view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        # need to drop since Postgres doesn't properly remove columns with EXCEPT
-        error_result = error_result.drop(
-            ["unique_count"],
-            axis=1,
-        )
-
-        # TODO(https://github.com/pandas-dev/pandas/issues/40077): Remove the explicit
-        #  index argument once this issue is resolved.
-        error_expected = pd.DataFrame(
-            [],
-            columns=["label", "a", "b", "c"],
-            dtype=str,
-            index=pd.RangeIndex(start=0, stop=0, step=1),
-        )
-        assert_frame_equal(error_expected, error_result, check_dtype=False)
-
-        original_expected = pd.DataFrame(mock_data, columns=columns)
-        assert_frame_equal(original_expected, original_result, check_dtype=False)
-
-    def test_sameness_check_dates_different_values(self) -> None:
-        mock_data = [
-            [
-                "test",
-                "2020-01-01",
-                "2020-01-02",
-                "2020-01-01",
-            ],
-            [
-                "test2",
-                "2020-01-03",
-                "2020-01-03",
-                "2020-01-03",
-            ],
-        ]
-        columns = ["label", "a", "b", "c"]
-        mock_df = pd.DataFrame(mock_data, columns=columns)
-
-        self.create_mock_bq_table(
-            dataset_id="my_dataset",
-            table_id="test_data",
-            mock_schema=PostgresTableSchema(
-                {
-                    "label": sqltypes.String(),
-                    "a": sqltypes.Date(),
-                    "b": sqltypes.Date(),
-                    "c": sqltypes.Date(),
-                }
-            ),
-            mock_data=mock_df,
-        )
-
-        validation = SamenessDataValidationCheck(
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-            validation_type=ValidationCheckType.SAMENESS,
-            comparison_columns=["a", "b", "c"],
-            partition_columns=["label"],
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            soft_max_allowed_error=0.02,
-            hard_max_allowed_error=0.3,
-            view_builder=SimpleBigQueryViewBuilder(
-                dataset_id="my_dataset",
-                view_id="test_view",
-                description="test_view description",
-                view_query_template="select * from `{project_id}.my_dataset.test_data`",
-            ),
-        )
-
-        error_result = self.query_view_for_builder(
-            validation.error_view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        original_result = self.query_view_for_builder(
-            validation.view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        # need to drop since Postgres doesn't properly remove columns with EXCEPT
-        error_result = error_result.drop(
-            ["unique_count"],
-            axis=1,
-        )
-
-        error_expected = pd.DataFrame(
-            [
-                [
-                    "test",
-                    "2020-01-01",
-                    "2020-01-02",
-                    "2020-01-01",
-                ]
-            ],
-            columns=["label", "a", "b", "c"],
-            dtype=str,
-        )
-        assert_frame_equal(error_expected, error_result, check_dtype=False)
-
-        original_expected = pd.DataFrame(mock_data, columns=columns)
-        assert_frame_equal(original_expected, original_result, check_dtype=False)
-
-    def test_sameness_check_empty_value(self) -> None:
-        mock_data = [
-            [
-                "test",
-                "2020-01-01",
-                "",
-                "2020-01-01",
-            ],
-            [
-                "test2",
-                "2020-01-03",
-                "2020-01-03",
-                "2020-01-03",
-            ],
-        ]
-        columns = ["label", "a", "b", "c"]
-        mock_df = pd.DataFrame(mock_data, columns=columns)
-
-        self.create_mock_bq_table(
-            dataset_id="my_dataset",
-            table_id="test_data",
-            mock_schema=PostgresTableSchema(
-                {
-                    "label": sqltypes.String(),
-                    "a": sqltypes.String(),
-                    "b": sqltypes.String(),
-                    "c": sqltypes.String(),
-                }
-            ),
-            mock_data=mock_df,
-        )
-
-        validation = SamenessDataValidationCheck(
-            validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
-            validation_type=ValidationCheckType.SAMENESS,
-            comparison_columns=["a", "b", "c"],
-            partition_columns=["label"],
-            sameness_check_type=SamenessDataValidationCheckType.PER_VIEW,
-            soft_max_allowed_error=0.02,
-            hard_max_allowed_error=0.3,
-            view_builder=SimpleBigQueryViewBuilder(
-                dataset_id="my_dataset",
-                view_id="test_view",
-                description="test_view description",
-                view_query_template="select * from `{project_id}.my_dataset.test_data`",
-            ),
-        )
-
-        error_result = self.query_view_for_builder(
-            validation.error_view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        original_result = self.query_view_for_builder(
-            validation.view_builder,
-            {"label": str, "a": str, "b": str, "c": str},
-            ["label"],
-        )
-
-        # need to drop since Postgres doesn't properly remove columns with EXCEPT
-        error_result = error_result.drop(
-            ["unique_count"],
-            axis=1,
-        )
-
-        error_expected = pd.DataFrame(
-            [
-                [
-                    "test",
-                    "2020-01-01",
-                    "",
-                    "2020-01-01",
-                ]
-            ],
-            columns=["label", "a", "b", "c"],
-            dtype=str,
-        )
-        assert_frame_equal(error_expected, error_result)
-
-        original_expected = pd.DataFrame(mock_data, columns=columns)
-        assert_frame_equal(original_expected, original_result)
 
 
 class TestSamenessPerRowValidationResultDetails(TestCase):
