@@ -50,6 +50,7 @@ columns:
   - name: judge_id
     is_pii: True
   - name: counts
+    description: the number of counts of the charge that are on this legal order
   - name: review_flag_id
   - name: effective_date
     description: effective date of sentence
@@ -93,6 +94,7 @@ columns:
   - name: amx_rgt_max_date
   - name: consecutive_flag
   - name: controlling_sent_code_id
+    description: reference code for whether this sentence is a controlling sentence and if so what type (reference table = ADH_REFERENCE_CODE)
   - name: controlling_min_sentence_flag
   - name: controlling_max_sentence_flag
   - name: prior_minimum_sentence_id

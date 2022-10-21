@@ -373,6 +373,7 @@ columns:
   - name: order_disclosure_id
   - name: prison_prefix
   - name: judge_id
+    description: ID for a specific judge (references ADH_JUDGE)
     is_pii: True
   - name: defense_counsel_name
     is_pii: True
