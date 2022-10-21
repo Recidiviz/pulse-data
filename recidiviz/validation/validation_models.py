@@ -104,7 +104,7 @@ DataValidationType = TypeVar("DataValidationType", bound=DataValidationCheck)
 
 
 def _query_str_for_region_code(view: BigQueryView, region_code: str) -> str:
-    return f"{view.select_query} WHERE region_code = '{region_code}';"
+    return f"{view.select_query} WHERE region_code = '{region_code}'"
 
 
 @attr.s(frozen=True)

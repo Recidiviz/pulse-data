@@ -708,7 +708,7 @@ class TestFetchValidations(TestCase):
         )
 
         self.assertEqual(
-            "SELECT * FROM `recidiviz-456.my_dataset.test_2` WHERE region_code = 'US_XX';",
+            "SELECT * FROM `recidiviz-456.my_dataset.test_2` WHERE region_code = 'US_XX'",
             existence_check_job.original_builder_query_str(),
         )
 
@@ -721,6 +721,6 @@ class TestFetchValidations(TestCase):
         )
 
         self.assertEqual(
-            "SELECT * FROM `recidiviz-456.my_dataset_override.test_2` WHERE region_code = 'US_XX';",
+            "SELECT * FROM `recidiviz-456.my_dataset_override.test_2` WHERE region_code = 'US_XX'",
             existence_check_job.original_builder_query_str(),
         )

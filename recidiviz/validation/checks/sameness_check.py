@@ -19,7 +19,7 @@
 columns are not the same."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attr
 from google.cloud.bigquery.table import Row
@@ -566,6 +566,63 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
     """
 
 
+def _get_row_count_query(initial_query: str) -> str:
+    """Given an initial query, returns a query that will produce a single value with
+    the number of rows returned by the initial query.
+    """
+    return f"""
+WITH initial_query AS (
+    {initial_query}
+)
+SELECT COUNT(*) FROM initial_query;
+    """
+
+
+def _get_partition_count_query(
+    initial_query: str, validation: SamenessDataValidationCheck
+) -> str:
+    """Given an initial query, returns a query that will count the number of non-null
+    values in each comparison column for each partition.
+
+    E.g. Given a single partition column "p", and two comparison
+    columns "a" and "b", the following input:
+
+    | p   | a    | b    |
+    |-----|------|------|
+    | foo | 12   | 12   |
+    | foo | 27   | NULL |
+    | bar | 18   | 18   |
+    | bar | NULL | 34   |
+    | bar | 47   | NULL |
+
+    The query would return:
+
+    | p   | a    | b    |
+    |-----|------|------|
+    | foo | 2    | 1    |
+    | bar | 2    | 2    |
+    """
+    count_columns = [
+        f"COUNTIF({column} IS NOT NULL) AS {column}"
+        for column in validation.comparison_columns
+    ]
+    select_columns = (validation.partition_columns or []) + count_columns
+    group_by_clause = (
+        ""
+        if validation.partition_columns is None
+        else f"GROUP BY {', '.join(validation.partition_columns)}"
+    )
+    return f"""
+WITH initial_query AS (
+    {initial_query}
+)
+SELECT
+    {", ".join(select_columns)}
+FROM initial_query
+{group_by_clause}
+    """
+
+
 class SamenessPerViewValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
     """
     Performs the validation check for sameness check type PerView.
@@ -579,47 +636,37 @@ class SamenessPerViewValidationChecker(ValidationChecker[SamenessDataValidationC
         comparison_columns = validation_job.validation.comparison_columns
         validation = validation_job.validation
 
-        error_query_job = BigQueryClientImpl().run_query_async(
-            query_str=validation_job.error_builder_query_str(),
+        num_errors_query_job = BigQueryClientImpl().run_query_async(
+            query_str=_get_row_count_query(validation_job.error_builder_query_str()),
             use_query_cache=True,
-            query_parameters=[],
         )
-        original_query_job = BigQueryClientImpl().run_query_async(
-            query_str=validation_job.original_builder_query_str(),
+        num_total_query_job = BigQueryClientImpl().run_query_async(
+            query_str=_get_row_count_query(validation_job.original_builder_query_str()),
             use_query_cache=True,
-            query_parameters=[],
+        )
+        partition_count_query_job = BigQueryClientImpl().run_query_async(
+            query_str=_get_partition_count_query(
+                validation_job.original_builder_query_str(), validation
+            ),
+            use_query_cache=True,
         )
 
-        num_errors = len(list(error_query_job))
-        num_rows = 0
+        [[num_errors]] = num_errors_query_job
+        [[num_rows]] = num_total_query_job
         non_null_counts_per_column_per_partition: Dict[
             Tuple[str, ...], Dict[str, int]
         ] = {}
 
         row: Row
-        for row in original_query_job:
-            num_rows += 1
-            unique_values: Set[Any] = set()
+        for row in partition_count_query_job:
             partition_key = (
                 tuple(str(row.get(column)) for column in validation.partition_columns)
                 if validation.partition_columns
                 else tuple()
             )
-            if partition_key not in non_null_counts_per_column_per_partition:
-                non_null_counts_per_column_per_partition[partition_key] = {
-                    column: 0 for column in comparison_columns
-                }
-            non_null_counts_per_column = non_null_counts_per_column_per_partition[
-                partition_key
-            ]
-
-            for column in comparison_columns:
-                value = row[column]
-                if value is None:
-                    unique_values.add(None)
-                else:
-                    non_null_counts_per_column[column] += 1
-                    unique_values.add(value)
+            non_null_counts_per_column_per_partition[partition_key] = {
+                column: row.get(column) for column in comparison_columns
+            }
 
         return DataValidationJobResult(
             validation_job=validation_job,
