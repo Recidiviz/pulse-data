@@ -24,15 +24,14 @@ INGEST_SECONDARY_BUCKET_SUFFIX = "-secondary"
 INGEST_SFTP_BUCKET_SUFFIX = "-sftp"
 
 _DIRECT_INGEST_BUCKET_REGEX = re.compile(
-    r"(?P<project>recidiviz-(?:.*))-direct-ingest-"
-    r"(?:(state-(?P<state_code>[a-z]{2}-[a-z]{2}))|"
-    r"(county-(?P<county_code>[a-z]{2}-[a-z]{2}-[a-z]*)))"
+    r"(?P<project>recidiviz-(?:.*))-direct-ingest-state-"
+    r"(?P<state_code>[a-z]{2}-[a-z]{2})"
     rf"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX}|"
     rf"-upload-testing|{INGEST_SFTP_BUCKET_SUFFIX})?$"
 )
 
 _DIRECT_INGEST_STORAGE_BUCKET_REGEX = re.compile(
-    rf"(?P<project>recidiviz-(?:.*))-direct-ingest-(?:state|county)-storage"
+    rf"(?P<project>recidiviz-(?:.*))-direct-ingest-state-storage"
     rf"(?P<suffix>{INGEST_SECONDARY_BUCKET_SUFFIX})?$"
 )
 
@@ -44,9 +43,7 @@ def get_region_code_from_direct_ingest_bucket(ingest_bucket_name: str) -> Option
     if match_obj is None:
         return None
 
-    region_code_match = match_obj.groupdict().get(
-        "state_code", None
-    ) or match_obj.groupdict().get("county_code", None)
+    region_code_match = match_obj.groupdict().get("state_code", None)
     if not region_code_match:
         return None
     return region_code_match.replace("-", "_")
