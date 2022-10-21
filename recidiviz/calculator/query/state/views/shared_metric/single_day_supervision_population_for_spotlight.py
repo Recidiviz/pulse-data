@@ -38,22 +38,27 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION = (
 SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
-      state_code,
-      person_id,
-      person_external_id,
-      case_type,
+      pop.state_code,
+      pop.person_id,
+      pop.person_external_id,
+      pop.case_type,
       {state_specific_supervision_type_groupings},
-      supervising_officer_external_id,
-      prioritized_race_or_ethnicity,
-      projected_end_date,
-      IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
+      pop.supervising_officer_external_id,
+      pop.prioritized_race_or_ethnicity,
+      e.projected_completion_date_max AS projected_end_date,
+      IFNULL(pop.gender, 'EXTERNAL_UNKNOWN') as gender,
       {age_bucket},
-      IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
-      IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
-      IFNULL(supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
-      date_of_supervision
+      IFNULL(pop.judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
+      IFNULL(pop.supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
+      IFNULL(pop.supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
+      pop.date_of_supervision
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
+      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` pop
+    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_projected_completion_date_spans_materialized` e
+        ON pop.state_code = e.state_code
+        AND pop.person_id = e.person_id
+        AND pop.date_of_supervision BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
+    WHERE pop.included_in_state_population
     """
 
 SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -63,8 +68,11 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryVie
     view_query_template=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE,
     description=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    age_bucket=spotlight_age_buckets(),
-    state_specific_supervision_type_groupings=state_specific_query_strings.state_specific_supervision_type_groupings(),
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
+    age_bucket=spotlight_age_buckets("pop.age"),
+    state_specific_supervision_type_groupings=state_specific_query_strings.state_specific_supervision_type_groupings(
+        "pop"
+    ),
 )
 
 if __name__ == "__main__":
