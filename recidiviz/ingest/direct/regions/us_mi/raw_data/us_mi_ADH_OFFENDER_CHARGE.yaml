@@ -14,10 +14,12 @@ columns:
       with, as referenced by the OFFENDER_BOOKING table.
     is_pii: True
   - name: legal_order_id
+    description: The OMNI-database generated ID for the legal order record associated with this charge (references ADH_LEGAL_ORDER)
   - name: charge_number
   - name: offense_id
     description: The OMNI-database generated ID for the offense
   - name: charge_status_id
+    description: Reference code for the charge status (reference table = ADH_REFERENCE_CODE)
     known_values:
       - value: "1912"
         description: Closed
@@ -42,6 +44,7 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: conviction_type_id
+    description: Reference code for the type of conviction (reference table = ADH_REFERENCE_CODE)
     known_values:
       - value: "1918"
         description: Parole
@@ -152,6 +155,7 @@ columns:
   - name: enhanced_offense_id
   - name: docket_number_lookup
   - name: closing_reason_code
+    description: Reference code for the closing reason associated with this charge record (reference table = ADH_REFERENCE_CODE)
     known_values:
       - value: "12020"
         description: Sentence Suspended by Court
@@ -217,8 +221,15 @@ columns:
       - value: "5264"
         description: Pardoned
   - name: closing_autohrity_id
+    is_pii: True
   - name: closing_date
+    description: date charge was closed
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: last_update_user
+    is_pii: True
   - name: last_update_date
+    is_datetime: True
   - name: last_update_node
