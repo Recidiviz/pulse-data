@@ -120,7 +120,12 @@ def generate_district_id_from_district_name(district_name_field: str) -> str:
 
 # TODO(#12146): Exclude absconsion periods from US_ID in the
 #  UsIdSupervisionCaseCompliance delegate
-def hack_us_id_absconsions(dataflow_metric_table: str) -> str:
+def hack_us_id_absconsions(
+    dataflow_metric_table: str, include_state_pop: bool = False
+) -> str:
+    include_state_pop_string = (
+        "AND metric.included_in_state_population" if include_state_pop else ""
+    )
     return f"""
         WITH latest_periods AS (
           SELECT
@@ -138,7 +143,7 @@ def hack_us_id_absconsions(dataflow_metric_table: str) -> str:
         USING (person_id, state_code)
         WHERE supervising_officer_external_id IS NOT NULL
             AND supervision_level IS NOT NULL
-            AND metric.included_in_state_population
+            {include_state_pop_string}
     """
 
 
