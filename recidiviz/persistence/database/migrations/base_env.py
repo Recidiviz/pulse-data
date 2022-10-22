@@ -41,7 +41,7 @@ _DB_TYPE = "postgresql"
 
 
 def get_sqlalchemy_url() -> str:
-    """Returns string needed to connect to database"""
+    """Returns string needed to connect to database."""
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
