@@ -24,7 +24,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.base_schema import JailsBase, StateBase
+from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
     FederatedCloudSQLTableBigQueryView,
     FederatedCloudSQLTableBigQueryViewBuilder,
@@ -66,7 +66,7 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
         expected_description = """View providing a connection to the [state_person]
 table in the [us_xx_primary] database in the [STATE] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
+schema-specific datasets (`state`, `justice_counts`, etc)."""
 
         expected_view_query = f"""/*{expected_description}*/
 SELECT
@@ -139,7 +139,7 @@ FROM EXTERNAL_QUERY(
         expected_description = """View providing a connection to the [state_person]
 table in the [us_xx_secondary] database in the [STATE] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
+schema-specific datasets (`state`, `justice_counts`, etc)."""
 
         expected_view_query = f"""/*{expected_description}*/
 SELECT
@@ -170,28 +170,32 @@ FROM EXTERNAL_QUERY(
         )
 
     def test_build_view_non_multi_db_schema(self) -> None:
-        table = one(t for t in JailsBase.metadata.sorted_tables if t.name == "person")
+        table = one(
+            t
+            for t in OperationsBase.metadata.sorted_tables
+            if t.name == "direct_ingest_instance_status"
+        )
         view_builder = FederatedCloudSQLTableBigQueryViewBuilder(
             connection_region="us-east2",
             table=table,
             view_id=table.name,
-            cloud_sql_query="SELECT * FROM person;",
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+            cloud_sql_query="SELECT * FROM direct_ingest_instance_status;",
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS),
             materialized_address_override=BigQueryAddress(
                 dataset_id="materialized_dataset", table_id="materialized_table"
             ),
         )
-        expected_description = """View providing a connection to the [person]
-table in the [postgres] database in the [JAILS] schema. This view is 
+        expected_description = """View providing a connection to the [direct_ingest_instance_status]
+table in the [postgres] database in the [OPERATIONS] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
+schema-specific datasets (`state`, `justice_counts`, etc)."""
 
         expected_view_query = f"""/*{expected_description}*/
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.jails_v2_cloudsql",
-    "SELECT * FROM person;"
+    "test-project.us-east2.operations_v2_cloudsql",
+    "SELECT * FROM direct_ingest_instance_status;"
 )"""
 
         # Build without dataset overrides
@@ -202,8 +206,8 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="jails_v2_cloudsql_connection",
-                table_id="person",
+                dataset_id="operations_v2_cloudsql_connection",
+                table_id="direct_ingest_instance_status",
             ),
             view.address,
         )

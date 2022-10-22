@@ -98,20 +98,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="jails_v2_db_user_value",
-                        password="jails_v2_db_password_value",
-                        port=5432,
-                        database="postgres",
-                        query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level=None,
-                    poolclass=None,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
                         username="operations_v2_db_user_value",
                         password="operations_v2_db_password_value",
                         port=5432,
@@ -283,20 +269,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
         self.assertCountEqual(
             mock_create_engine.call_args_list,
             [
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="jails_v2_db_user_value",
-                        password="jails_v2_db_password_value",
-                        port=5432,
-                        database="postgres",
-                        query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level=None,
-                    poolclass=None,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
                 call(
                     URL.create(
                         drivername="postgresql",

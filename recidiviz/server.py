@@ -121,7 +121,7 @@ elif environment.in_gcp():
     # down the entire application. Any attempt to use those databases later will
     # attempt to connect again in case the database was just unhealthy.
     if service_type is environment.ServiceType.DEFAULT:
-        schemas = set(SchemaType) - {SchemaType.JAILS}
+        schemas = set(SchemaType)
     else:
         raise ValueError(f"Unsupported service type: {service_type}")
 

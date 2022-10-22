@@ -22,7 +22,6 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
-from recidiviz.persistence.database.schema.county.schema import Booking, Charge, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -108,9 +107,9 @@ CHARGE_TEXT_COUNTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CHARGE_TEXT_COUNTS_DESCRIPTION,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
-    charge_table=Charge.__tablename__,
-    booking_table=Booking.__tablename__,
-    person_table=Person.__tablename__,
+    charge_table="charge",
+    booking_table="booking",
+    person_table="person",
     county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )
 

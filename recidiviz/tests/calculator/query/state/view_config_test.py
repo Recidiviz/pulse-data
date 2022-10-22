@@ -34,9 +34,6 @@ from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views im
     SHARED_METRIC_VIEW_BUILDERS,
 )
 from recidiviz.metrics.export import export_config
-from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.utils import fakes
 
 
 class ViewExportConfigTest(unittest.TestCase):
@@ -47,12 +44,8 @@ class ViewExportConfigTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-456"
 
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
-        fakes.use_in_memory_sqlite_database(self.database_key)
-
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        fakes.teardown_in_memory_sqlite_databases()
 
     @mock.patch("google.cloud.bigquery.Client")
     def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(

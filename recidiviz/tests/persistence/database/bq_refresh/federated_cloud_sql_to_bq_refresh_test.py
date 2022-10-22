@@ -34,7 +34,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.base_schema import JailsBase, StateBase
+from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
     federated_cloud_sql_to_bq_refresh,
@@ -121,7 +121,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         ):
             _ = UnionedStateSegmentsViewBuilder(
                 config=config,
-                table=JailsBase.metadata.sorted_tables[0],
+                table=OperationsBase.metadata.sorted_tables[0],
                 state_codes=[StateCode.US_XX],
             )
 

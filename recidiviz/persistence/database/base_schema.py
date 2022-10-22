@@ -17,7 +17,6 @@
 """Defines base classes for each of the database schemas."""
 from typing import Union
 
-from recidiviz.persistence.database.schema.aggregate.schema import JailsBase
 from recidiviz.persistence.database.schema.case_triage.schema import CaseTriageBase
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     JusticeCountsBase,
@@ -27,7 +26,6 @@ from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema.state.schema import StateBase
 
 SQLAlchemyModelType = Union[
-    JailsBase,
     StateBase,
     OperationsBase,
     JusticeCountsBase,

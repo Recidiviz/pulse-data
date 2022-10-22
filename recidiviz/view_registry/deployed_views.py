@@ -162,12 +162,6 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
 CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
     SchemaType, Set[str]
 ] = {
-    SchemaType.JAILS: {
-        "census_regional",
-        # TODO(#8282): Remove this once we delete the v1 databases.
-        "jails_cloudsql_connection",
-        "jails_v2_cloudsql_connection",
-    },
     SchemaType.CASE_TRIAGE: {
         "case_triage_cloudsql_connection",
         "case_triage_federated_regional",

@@ -191,14 +191,6 @@ class TestCaseTriageMigrations(MigrationsTestBase):
         return SchemaType.CASE_TRIAGE
 
 
-class TestJailsMigrations(MigrationsTestBase):
-    __test__ = True
-
-    @property
-    def schema_type(self) -> SchemaType:
-        return SchemaType.JAILS
-
-
 class TestJusticeCountsMigrations(MigrationsTestBase):
     __test__ = True
 

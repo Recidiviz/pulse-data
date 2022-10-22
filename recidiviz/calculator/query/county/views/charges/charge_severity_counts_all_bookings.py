@@ -25,7 +25,6 @@ from recidiviz.calculator.query.county.views.charges.charge_severity_all_booking
 from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
-from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -104,8 +103,8 @@ CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_DESCRIPTION,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
-    booking_table=Booking.__tablename__,
-    person_table=Person.__tablename__,
+    booking_table="booking",
+    person_table="person",
     charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.view_id,
     county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )

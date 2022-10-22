@@ -47,7 +47,6 @@ class TestServerConfig(unittest.TestCase):
             all_keys.extend(server_config.database_keys_for_schema_type(schema_type))
 
         expected_all_keys = [
-            SQLAlchemyDatabaseKey(SchemaType.JAILS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.OPERATIONS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.JUSTICE_COUNTS, db_name="postgres"),
             SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),

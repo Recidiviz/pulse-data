@@ -18,11 +18,9 @@
 import unittest
 from typing import List
 
-from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
-from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
@@ -53,45 +51,6 @@ class TestSchemaUtils(unittest.TestCase):
     """Unit tests for schema_utils.py"""
 
     def test_get_all_database_entity_classes(self) -> None:
-        aggregate_database_entity_names = [
-            "CaFacilityAggregate",
-            "CoFacilityAggregate",
-            "DcFacilityAggregate",
-            "FlCountyAggregate",
-            "FlFacilityAggregate",
-            "GaCountyAggregate",
-            "HiFacilityAggregate",
-            "InCountyAggregate",
-            "KyFacilityAggregate",
-            "MaFacilityAggregate",
-            "NyFacilityAggregate",
-            "PaCountyPreSentencedAggregate",
-            "PaFacilityPopAggregate",
-            "SingleCountAggregate",
-            "TnFacilityAggregate",
-            "TnFacilityFemaleAggregate",
-            "TxCountyAggregate",
-            "WvFacilityAggregate",
-        ]
-        county_database_entity_names = [
-            "Arrest",
-            "ArrestHistory",
-            "Bond",
-            "BondHistory",
-            "Booking",
-            "BookingHistory",
-            "Charge",
-            "ChargeHistory",
-            "Hold",
-            "HoldHistory",
-            "Person",
-            "PersonHistory",
-            "Sentence",
-            "SentenceHistory",
-            "SentenceRelationship",
-            "SentenceRelationshipHistory",
-            "ScraperSuccess",
-        ]
         state_database_entity_names = [
             "StateAgent",
             "StateAssessment",
@@ -127,23 +86,15 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestInstanceStatus",
         ]
 
-        expected_qualified_names = (
-            _prefix_module_name(
-                aggregate_schema.__name__, aggregate_database_entity_names
-            )
-            + _prefix_module_name(county_schema.__name__, county_database_entity_names)
-            + _prefix_module_name(state_schema.__name__, state_database_entity_names)
-            + _prefix_module_name(
-                operations_schema.__name__, operations_database_entity_names
-            )
+        expected_qualified_names = _prefix_module_name(
+            state_schema.__name__, state_database_entity_names
+        ) + _prefix_module_name(
+            operations_schema.__name__, operations_database_entity_names
         )
 
-        all_database_entity_names = (
-            list(_get_all_database_entities_in_module(aggregate_schema))
-            + list(_get_all_database_entities_in_module(county_schema))
-            + list(_get_all_database_entities_in_module(state_schema))
-            + list(_get_all_database_entities_in_module(operations_schema))
-        )
+        all_database_entity_names = list(
+            _get_all_database_entities_in_module(state_schema)
+        ) + list(_get_all_database_entities_in_module(operations_schema))
 
         all_database_entity_names = _database_entities_to_qualified_names(  # type: ignore[assignment]
             all_database_entity_names
@@ -152,26 +103,6 @@ class TestSchemaUtils(unittest.TestCase):
         self.assertEqual(sorted(all_database_entity_names), sorted(expected_qualified_names))  # type: ignore[type-var]
 
     def test_get_all_table_classes(self) -> None:
-        aggregate_table_names = [
-            "ca_facility_aggregate",
-            "co_facility_aggregate",
-            "dc_facility_aggregate",
-            "fl_county_aggregate",
-            "fl_facility_aggregate",
-            "ga_county_aggregate",
-            "hi_facility_aggregate",
-            "in_county_aggregate",
-            "ky_facility_aggregate",
-            "ma_facility_aggregate",
-            "ny_facility_aggregate",
-            "pa_county_pre_sentenced_aggregate",
-            "pa_facility_pop_aggregate",
-            "single_count_aggregate",
-            "tn_facility_aggregate",
-            "tn_facility_female_aggregate",
-            "tx_county_aggregate",
-            "wv_facility_aggregate",
-        ]
         case_triage_table_names = [
             "etl_clients",
             "etl_officers",
@@ -252,8 +183,7 @@ class TestSchemaUtils(unittest.TestCase):
         ]
 
         expected_table_class_names = (
-            aggregate_table_names
-            + case_triage_table_names
+            case_triage_table_names
             + justice_counts_table_names
             + operations_table_names
             + pathways_table_names

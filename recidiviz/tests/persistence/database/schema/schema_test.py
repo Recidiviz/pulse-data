@@ -25,8 +25,6 @@ from unittest import TestCase
 import sqlalchemy
 
 from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
-from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
-from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
     _get_all_database_entities_in_module,
@@ -34,7 +32,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_all_table_classes_in_module,
 )
 
-ALL_SCHEMA_MODULES = [county_schema, state_schema, aggregate_schema]
+ALL_SCHEMA_MODULES = [state_schema]
 
 
 class TestSchemaEnums(TestCase):
