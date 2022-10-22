@@ -20,9 +20,6 @@ import logging
 from typing import Dict, List, Set
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.county.view_config import (
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.experiments.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
@@ -62,7 +59,6 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     return list(
         itertools.chain(
             CASE_TRIAGE_VIEW_BUILDERS,
-            COUNTY_VIEW_BUILDERS,
             get_direct_ingest_view_builders(),
             EXPERIMENTS_VIEW_BUILDERS,
             EXTERNALLY_SHARED_VIEW_BUILDERS,
