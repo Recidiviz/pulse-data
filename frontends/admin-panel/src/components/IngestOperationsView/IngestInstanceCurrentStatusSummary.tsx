@@ -220,6 +220,7 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     <>
       <StateSelectorPageHeader
         title="Ingest Status Summary"
+        stateCode={null}
         onChange={stateCodeChange}
       />
       <Layout className="content-side-padding">

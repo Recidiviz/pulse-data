@@ -42,8 +42,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 .buffer {
   padding-top: 16px;
-  padding-bottom: 16px;
   white-space: normal !important;
+}
+
+.metadata-table {
+  padding-top: 16px;
 }
 
 .ant-table-tbody > tr.metadata-table-row > td.ant-table-cell {

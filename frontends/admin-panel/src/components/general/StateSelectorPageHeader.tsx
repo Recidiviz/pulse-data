@@ -20,16 +20,18 @@ import { fetchIngestStateCodes } from "../../AdminPanelAPI";
 import StateSelector from "../Utilities/StateSelector";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
-interface IngestPageHeaderProps {
+interface StateSelectorPageHeaderProps {
   title: string;
-  stateCode?: string;
+  stateCode: string | null;
   onChange: (stateCode: StateCodeInfo) => void;
+  onBack?: (e?: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
 }
 
-const StateSelectorPageHeader: React.FC<IngestPageHeaderProps> = ({
+const StateSelectorPageHeader: React.FC<StateSelectorPageHeaderProps> = ({
   title,
   stateCode,
   onChange,
+  onBack,
 }) => {
   return (
     <PageHeader
@@ -41,6 +43,7 @@ const StateSelectorPageHeader: React.FC<IngestPageHeaderProps> = ({
           initialValue={stateCode}
         />,
       ]}
+      onBack={onBack}
     />
   );
 };

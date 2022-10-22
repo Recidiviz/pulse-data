@@ -20,7 +20,7 @@ import { Checkbox, Empty, Table } from "antd";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
-import uniqueStates from "./Utilities/UniqueStates";
+import { addStateCodeQueryToLink } from "../navigation/DatasetMetadata";
 
 const emptyCell = <div className="center">N/A</div>;
 
@@ -37,46 +37,18 @@ const getCountForCountedRecord = (
     : countedRecord.totalCount;
 };
 
-const stateColumnsForBreakdown = (
-  states: string[],
-  nonplaceholdersOnly: boolean
-): ColumnsType<MetadataRecord<MetadataCount>> => {
-  return states.map((s) => {
-    return {
-      title: s,
-      key: s,
-      render: (_: string, record: MetadataRecord<MetadataCount>) => {
-        const countedRecord = record.resultsByState[s];
-        if (countedRecord === undefined) {
-          return emptyCell;
-        }
-        const count = getCountForCountedRecord(
-          countedRecord,
-          nonplaceholdersOnly
-        );
-        if (count === 0) {
-          return emptyCell;
-        }
-        return <div className="success">{count.toLocaleString()}</div>;
-      },
-      sorter: (a, b) =>
-        getCountForCountedRecord(a.resultsByState[s], nonplaceholdersOnly) -
-        getCountForCountedRecord(b.resultsByState[s], nonplaceholdersOnly),
-    };
-  });
-};
-
 interface MetadataTableProps {
   initialColumnTitle: string;
+  stateCode?: string | null;
   initialColumnLink?: (name: string) => string;
   data: MetadataAPIResult | undefined;
 }
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
-  const { data, initialColumnLink, initialColumnTitle } = props;
+  const { data, stateCode, initialColumnLink, initialColumnTitle } = props;
   const [nonplaceholdersOnly, setNonplaceholdersOnly] = useState<boolean>(true);
 
-  if (data === undefined) {
+  if (data === undefined || !stateCode) {
     return <Empty className="buffer" />;
   }
   const metadataRecords = Object.keys(data)
@@ -91,9 +63,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
     return <Empty className="buffer" />;
   }
 
-  const states = uniqueStates(metadataRecords);
-
-  const initialColumns: ColumnsType<MetadataRecord<MetadataCount>> = [
+  const columns: ColumnsType<MetadataRecord<MetadataCount>> = [
     {
       title: initialColumnTitle,
       key: "name",
@@ -104,7 +74,14 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
         }
         return (
           <div>
-            <Link to={initialColumnLink(record.name)}>{record.name}</Link>
+            <Link
+              to={addStateCodeQueryToLink(
+                initialColumnLink(record.name),
+                stateCode
+              )}
+            >
+              {record.name}
+            </Link>
           </div>
         );
       },
@@ -117,10 +94,34 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
       onFilter: (value, content) => content.name === value,
       filterSearch: true,
     },
+    {
+      title: "Count",
+      key: "count",
+      render: (_: string, record: MetadataRecord<MetadataCount>) => {
+        const countedRecord = record.resultsByState[stateCode];
+        if (countedRecord === undefined) {
+          return emptyCell;
+        }
+        const count = getCountForCountedRecord(
+          countedRecord,
+          nonplaceholdersOnly
+        );
+        if (count === 0) {
+          return emptyCell;
+        }
+        return <div className="success">{count.toLocaleString()}</div>;
+      },
+      sorter: (a, b) =>
+        getCountForCountedRecord(
+          a.resultsByState[stateCode],
+          nonplaceholdersOnly
+        ) -
+        getCountForCountedRecord(
+          b.resultsByState[stateCode],
+          nonplaceholdersOnly
+        ),
+    },
   ];
-  const columns = initialColumns.concat(
-    stateColumnsForBreakdown(states, nonplaceholdersOnly)
-  );
 
   const onChange = (e: CheckboxChangeEvent) => {
     setNonplaceholdersOnly(e.target.checked);
