@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Breadcrumb, PageHeader, Spin } from "antd";
+import { Layout, Spin } from "antd";
 import { useCallback } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import { fetchColumnObjectCountsByValue } from "../../AdminPanelAPI";
@@ -22,6 +22,7 @@ import { useFetchedDataJSON } from "../../hooks";
 import MetadataDataset from "../../models/MetadataDatasets";
 import * as DatasetMetadata from "../../navigation/DatasetMetadata";
 import MetadataTable from "../MetadataTable";
+import DatasetsHeader from "./DatasetsHeader";
 
 interface MatchParams {
   column: string;
@@ -29,7 +30,11 @@ interface MatchParams {
   dataset: MetadataDataset;
 }
 
-const ColumnView = (): JSX.Element => {
+interface ColumnViewProps {
+  stateCode: string | null;
+}
+
+const ColumnView: React.FC<ColumnViewProps> = ({ stateCode }) => {
   const { column, table, dataset: metadataDataset } = useParams<MatchParams>();
   const history = useHistory();
 
@@ -48,33 +53,36 @@ const ColumnView = (): JSX.Element => {
 
   const topBreadCrumbLabel =
     DatasetMetadata.getBreadCrumbLabel(metadataDataset);
-  const topBreadCrumbRoute =
-    DatasetMetadata.routeForMetadataDataset(metadataDataset);
-  const secondBreadCrumbRoute = DatasetMetadata.routeForMetadataTable(
-    metadataDataset,
-    table
+  const topBreadCrumbRoute = DatasetMetadata.addStateCodeQueryToLink(
+    DatasetMetadata.routeForMetadataDataset(metadataDataset),
+    stateCode
+  );
+  const secondBreadCrumbRoute = DatasetMetadata.addStateCodeQueryToLink(
+    DatasetMetadata.routeForMetadataTable(metadataDataset, table),
+    stateCode
   );
 
   return (
     <>
-      <Breadcrumb>
-        <Breadcrumb.Item>
-          <Link to={topBreadCrumbRoute}>{topBreadCrumbLabel}</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <Link to={secondBreadCrumbRoute}>{table}</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{column}</Breadcrumb.Item>
-      </Breadcrumb>
-      <PageHeader
+      <DatasetsHeader
         title="Column Breakdown"
-        onBack={() => {
-          history.push(
-            DatasetMetadata.routeForMetadataTable(metadataDataset, table)
-          );
+        stateCode={stateCode}
+        backAction={() => {
+          history.push(secondBreadCrumbRoute);
         }}
+        breadCrumbLinks={[
+          <Link to={topBreadCrumbRoute}>{topBreadCrumbLabel}</Link>,
+          <Link to={secondBreadCrumbRoute}>{table}</Link>,
+          column,
+        ]}
       />
-      <MetadataTable data={data} initialColumnTitle="Value" />
+      <Layout className="content-side-padding">
+        <MetadataTable
+          stateCode={stateCode}
+          data={data}
+          initialColumnTitle="Value"
+        />
+      </Layout>
     </>
   );
 };

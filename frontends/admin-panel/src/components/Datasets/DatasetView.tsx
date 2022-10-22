@@ -14,30 +14,40 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Layout, PageHeader } from "antd";
-import { Route, Switch } from "react-router-dom";
+import { Alert } from "antd";
+import { Route, Switch, useLocation } from "react-router-dom";
 import * as DatasetMetadata from "../../navigation/DatasetMetadata";
 import ColumnView from "./ColumnView";
 import DatasetOverviewView from "./DatasetOverviewView";
 import TableView from "./TableView";
 
 const DatasetView = (): JSX.Element => {
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const stateCode = queryParams.get("stateCode");
+
   return (
     <>
-      <PageHeader title="Dataset View" />
-      <Layout className="content-side-padding">
-        <Switch>
-          <Route
-            path={DatasetMetadata.METADATA_COLUMN_ROUTE_TEMPLATE}
-            component={ColumnView}
+      <>
+        {stateCode ? null : (
+          <Alert
+            message="Select a region to view dataset details"
+            type="warning"
+            showIcon
           />
-          <Route
-            path={DatasetMetadata.METADATA_TABLE_ROUTE_TEMPLATE}
-            component={TableView}
-          />
-          <Route component={DatasetOverviewView} />
-        </Switch>
-      </Layout>
+        )}
+      </>
+      <Switch>
+        <Route path={DatasetMetadata.METADATA_COLUMN_ROUTE_TEMPLATE}>
+          <ColumnView stateCode={stateCode} />
+        </Route>
+        <Route path={DatasetMetadata.METADATA_TABLE_ROUTE_TEMPLATE}>
+          <TableView stateCode={stateCode} />
+        </Route>
+        <Route>
+          <DatasetOverviewView stateCode={stateCode} />
+        </Route>
+      </Switch>
     </>
   );
 };

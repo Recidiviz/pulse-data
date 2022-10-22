@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2020 Recidiviz, Inc.
+// Copyright (C) 2022 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Breadcrumb, Spin } from "antd";
+import { Layout, Spin } from "antd";
 import { useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { fetchObjectCountsByTable } from "../../AdminPanelAPI";
@@ -22,12 +22,19 @@ import { useFetchedDataJSON } from "../../hooks";
 import MetadataDataset from "../../models/MetadataDatasets";
 import * as DatasetMetadata from "../../navigation/DatasetMetadata";
 import MetadataTable from "../MetadataTable";
+import DatasetsHeader from "./DatasetsHeader";
 
 interface MatchParams {
   dataset: MetadataDataset;
 }
 
-const DatasetOverviewView = (): JSX.Element => {
+interface DatesetOverviewViewProps {
+  stateCode: string | null;
+}
+
+const DatasetOverviewView: React.FC<DatesetOverviewViewProps> = ({
+  stateCode,
+}) => {
   const { dataset: metadataDataset } = useParams<MatchParams>();
 
   const fetchValues = useCallback(async (): Promise<Response> => {
@@ -48,16 +55,21 @@ const DatasetOverviewView = (): JSX.Element => {
 
   return (
     <>
-      <Breadcrumb>
-        <Breadcrumb.Item>{topBreadCrumbLabel}</Breadcrumb.Item>
-      </Breadcrumb>
-      <MetadataTable
-        data={data}
-        initialColumnTitle="Tables"
-        initialColumnLink={(name: string) =>
-          DatasetMetadata.routeForMetadataTable(metadataDataset, name)
-        }
+      <DatasetsHeader
+        title="Dataset View"
+        stateCode={stateCode}
+        breadCrumbLinks={[topBreadCrumbLabel]}
       />
+      <Layout className="content-side-padding">
+        <MetadataTable
+          data={data}
+          stateCode={stateCode}
+          initialColumnTitle="Tables"
+          initialColumnLink={(name: string) =>
+            DatasetMetadata.routeForMetadataTable(metadataDataset, name)
+          }
+        />
+      </Layout>
     </>
   );
 };

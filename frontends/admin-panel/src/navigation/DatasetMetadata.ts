@@ -66,3 +66,10 @@ export const getBreadCrumbLabel = (
   }
   return "";
 };
+
+export function addStateCodeQueryToLink(
+  link: string,
+  stateCode: string | undefined | null
+): string {
+  return stateCode ? `${link}?stateCode=${stateCode}` : link;
+}
