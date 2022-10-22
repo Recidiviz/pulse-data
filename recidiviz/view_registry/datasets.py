@@ -24,10 +24,6 @@ from recidiviz.big_query.rematerialization_success_persister import (
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
-from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
-from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
-    VERA_DATASET,
-)
 from recidiviz.calculator.query.experiments.dataset_config import (
     CASE_TRIAGE_SEGMENT_DATASET,
 )
@@ -124,11 +120,12 @@ NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
 }
 NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 
+VERA_DATASET: str = "vera_data"
+
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     ANALYST_DATA_SCRATCH_SPACE_DATASET: "Analyst data scratch space. Contains views for scrappy impact",
     CASE_TRIAGE_FEDERATED_DATASET: "Case Triage data. This dataset is a copy of the case-triage postgres database.",
     CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
-    COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
     DATAFLOW_METRICS_DATASET: "Stores metric output of Dataflow pipeline jobs.",
     EXPORT_ARCHIVES_DATASET: "Contains tables that archive the contents of daily exports.",

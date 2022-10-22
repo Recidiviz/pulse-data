@@ -18,15 +18,13 @@
 available"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
-    VERA_DATASET,
-)
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.view_registry.datasets import VERA_DATASET
 
 POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_NAME = (
     "population_density_by_supervision_office"
