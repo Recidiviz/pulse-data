@@ -33,6 +33,7 @@ import os
 import threading
 from typing import List, Optional, Tuple
 
+import pytz
 from progress.bar import Bar
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
@@ -204,28 +205,51 @@ def upload_raw_state_files_to_ingest_bucket_with_date(
         destination_bucket_override=override_bucket,
     )
 
-    if controller.dry_run:
-        logging.info("Running in DRY RUN mode for region [%s]", controller.region)
-    else:
-        i = input(
-            f"This will upload raw files to the [{controller.region}] ingest bucket "
-            f"[{controller.destination_ingest_bucket.uri()}] with datetime "
-            f"[{date}]. Type {controller.project_id} to continue: "
+    prompt_for_confirmation(
+        f"This will upload raw files to the [{controller.region}] ingest bucket "
+        f"[{controller.destination_ingest_bucket.uri()}] with datetime "
+        f"[{date}].",
+        controller.project_id,
+        dry_run=controller.dry_run,
+    )
+
+    file_date = datetime.datetime.fromisoformat(date).date()
+    now_date = datetime.datetime.now(pytz.UTC).date()
+
+    if file_date > now_date:
+        prompt_for_confirmation(
+            f"The provided file date [{file_date.isoformat()}] (UTC) is in the future."
+            f"Are you certain this is not a typo (only should be used in very rare"
+            f"circumstances, like some messy raw data surgery)?",
+            file_date.isoformat(),
+            dry_run=controller.dry_run,
         )
 
-        if i != controller.project_id:
-            return
+    age_threshold = 30
+    if file_date < now_date - datetime.timedelta(days=age_threshold):
+        prompt_for_confirmation(
+            f"The provided file date [{file_date.isoformat()}] (UTC) more than "
+            f"{age_threshold} days in the past. Are you certain this is not a typo? "
+            f"Are these files actually that old?",
+            file_date.isoformat(),
+            dry_run=controller.dry_run,
+        )
+
+    prompt_for_confirmation(
+        f"This will upload raw files to the [{controller.region}] ingest bucket "
+        f"[{controller.destination_ingest_bucket.uri()}] with datetime "
+        f"[{date}].",
+        controller.project_id,
+        dry_run=controller.dry_run,
+    )
 
     if override_bucket:
-        if not controller.dry_run:
-            i = input(
-                f"Are you sure you want to upload to non-standard bucket "
-                f"[{controller.destination_ingest_bucket.uri()}]?. Type "
-                f"{controller.destination_ingest_bucket.bucket_name} to continue: "
-            )
-
-            if i != controller.destination_ingest_bucket.bucket_name:
-                return
+        prompt_for_confirmation(
+            f"Are you sure you want to upload to non-standard bucket "
+            f"[{controller.destination_ingest_bucket.uri()}]?",
+            controller.destination_ingest_bucket.bucket_name,
+            dry_run=controller.dry_run,
+        )
 
     msg_prefix = "[DRY RUN] " if controller.dry_run else ""
     controller.move_progress = Bar(
