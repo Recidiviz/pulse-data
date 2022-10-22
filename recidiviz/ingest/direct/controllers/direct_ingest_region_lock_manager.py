@@ -26,9 +26,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import (
     DirectIngestSchemaType,
     SchemaType,
@@ -37,9 +35,6 @@ from recidiviz.persistence.database.schema_utils import (
 GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
     f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}STATE_"
-)
-JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
-    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}JAILS_"
 )
 
 
@@ -128,12 +123,8 @@ class DirectIngestRegionLockManager:
         )
 
     def _ingest_lock_name_for_instance(self) -> str:
-        if StateCode.is_state_code(self.region_code):
-            return (
-                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
-                + self.region_code.upper()
-                + f"_{self.ingest_instance.name}"
-            )
         return (
-            JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + self.region_code.upper()
+            STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            + self.region_code.upper()
+            + f"_{self.ingest_instance.name}"
         )

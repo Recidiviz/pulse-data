@@ -57,11 +57,6 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 blocking_locks=[],
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
-            self.county_ingest_lock_manager = DirectIngestRegionLockManager(
-                region_code="US_XX_YYYYY",
-                blocking_locks=[],
-                ingest_instance=DirectIngestInstance.PRIMARY,
-            )
             self.normalized_state_update_lock_manager = (
                 NormalizedStateUpdateLockManager()
             )
@@ -90,16 +85,19 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.JAILS)
+        self.lock_manager.acquire_lock(
+            lock_id="lock1", schema_type=SchemaType.OPERATIONS
+        )
         expected_paths.append(
             GcsfsFilePath(
-                bucket_name=self.lock_bucket, blob_name="EXPORT_PROCESS_RUNNING_JAILS"
+                bucket_name=self.lock_bucket,
+                blob_name="EXPORT_PROCESS_RUNNING_OPERATIONS",
             )
         )
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
         self.lock_manager.release_lock(schema_type=SchemaType.STATE)
-        self.lock_manager.release_lock(schema_type=SchemaType.JAILS)
+        self.lock_manager.release_lock(schema_type=SchemaType.OPERATIONS)
         self.assertEqual([], self.fake_fs.all_paths)
 
     def test_release_without_acquiring(self) -> None:
@@ -119,8 +117,8 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
             self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
             self.assertFalse(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
-            # State ingest does not block JAILS export
-            self.assertTrue(self.lock_manager.can_proceed(SchemaType.JAILS))
+            # State ingest does not block PATHWAYS export
+            self.assertTrue(self.lock_manager.can_proceed(SchemaType.PATHWAYS))
             self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
 
         # Acquiring the same state export lock again does not crash
@@ -138,27 +136,8 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
         self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
         # normalized_state update only blocks the STATE CloudSQL export
         self.assertTrue(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
-        self.assertTrue(self.lock_manager.can_proceed(SchemaType.JAILS))
+        self.assertTrue(self.lock_manager.can_proceed(SchemaType.PATHWAYS))
         self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
-
-    def test_acquire_county_cannot_proceed(self) -> None:
-        with self.county_ingest_lock_manager.using_region_lock(
-            expiration_in_seconds=10
-        ):
-            for schema_type in SchemaType:
-                self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
-            self.assertFalse(self.lock_manager.can_proceed(SchemaType.JAILS))
-            self.assertFalse(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
-            # County ingest does not block STATE export
-            self.assertTrue(self.lock_manager.can_proceed(SchemaType.STATE))
-            self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
-
-        # Acquiring the same jails export lock again does not crash
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.JAILS)
-
-        # Now that the ingest lock has been released, all export jobs can proceed
-        for schema_type in SchemaType:
-            self.assertTrue(self.lock_manager.can_proceed(schema_type))
 
     def test_can_proceed_without_acquiring(self) -> None:
         with self.assertRaises(GCSPseudoLockDoesNotExist):

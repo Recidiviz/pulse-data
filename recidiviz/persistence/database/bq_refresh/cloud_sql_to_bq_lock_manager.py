@@ -28,7 +28,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
-    JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
     STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -81,7 +80,6 @@ class CloudSqlToBQLockManager:
 
         if schema_type not in (
             SchemaType.STATE,
-            SchemaType.JAILS,
             SchemaType.OPERATIONS,
         ):
             return True
@@ -96,10 +94,6 @@ class CloudSqlToBQLockManager:
 
             blocking_ingest_lock_prefix = (
                 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
-            )
-        elif schema_type == SchemaType.JAILS:
-            blocking_ingest_lock_prefix = (
-                JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
             )
         elif schema_type == SchemaType.OPERATIONS:
             # The operations export yields for all types of ingest

@@ -27,7 +27,6 @@ from recidiviz.common.constants.county.enum_canonical_strings import (
     bond_type_secured,
     present_without_info,
 )
-from recidiviz.persistence.database.schema.county.schema import Bond
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -101,7 +100,7 @@ BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     bond_status_revoked=bond_status_revoked,
     bond_status_posted=bond_status_posted,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
-    bond_table=Bond.__tablename__,
+    bond_table="bond",
 )
 
 if __name__ == "__main__":

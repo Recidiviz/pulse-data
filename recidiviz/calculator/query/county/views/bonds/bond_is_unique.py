@@ -18,7 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
-from recidiviz.persistence.database.schema.county.schema import Bond, Booking, Charge
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -45,9 +44,9 @@ BOND_IS_UNIQUE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=BOND_IS_UNIQUE_QUERY_TEMPLATE,
     description=BOND_IS_UNIQUE_DESCRIPTION,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
-    booking_table=Booking.__tablename__,
-    charge_table=Charge.__tablename__,
-    bond_table=Bond.__tablename__,
+    booking_table="booking",
+    charge_table="charge",
+    bond_table="bond",
 )
 
 if __name__ == "__main__":

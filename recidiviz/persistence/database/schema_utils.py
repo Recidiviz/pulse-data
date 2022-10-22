@@ -21,7 +21,7 @@ import inspect
 import sys
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Iterator, List, Literal, Optional, Tuple, Type, Union
+from typing import Any, Iterator, List, Literal, Optional, Tuple, Type
 
 import sqlalchemy
 from sqlalchemy import ForeignKeyConstraint, Table
@@ -30,14 +30,12 @@ from sqlalchemy.orm import RelationshipProperty
 
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
-    JailsBase,
     JusticeCountsBase,
     OperationsBase,
     PathwaysBase,
     StateBase,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
@@ -49,7 +47,6 @@ from recidiviz.persistence.database.schema.pathways import schema as pathways_sc
 from recidiviz.persistence.database.schema.state import schema as state_schema
 
 _SCHEMA_MODULES: List[ModuleType] = [
-    aggregate_schema,
     case_triage_schema,
     justice_counts_schema,
     pathways_schema,
@@ -124,10 +121,6 @@ def get_all_table_classes_in_module(module: ModuleType) -> Iterator[Type[Table]]
                 # but is actually not. Instances of this subclass will actually exist as rows in the parent class's table.
                 # The way we can distinguish this case is that the subclass does not have a "__tablename__" attribute.
                 yield member.__table__
-
-
-def get_aggregate_table_classes() -> Iterator[Table]:
-    yield from get_all_table_classes_in_module(aggregate_schema)
 
 
 def get_justice_counts_table_classes() -> Iterator[Table]:
@@ -225,7 +218,6 @@ def _is_database_entity_subclass(member: Any) -> bool:
         inspect.isclass(member)
         and issubclass(member, DatabaseEntity)
         and member is not DatabaseEntity
-        and member is not JailsBase
         and member is not JusticeCountsBase
         and member is not StateBase
         and member is not OperationsBase
@@ -290,8 +282,6 @@ def historical_table_class_from_obj(
 
 @enum.unique
 class SchemaType(enum.Enum):
-    # TODO(#13703): Delete JAILS schema entirely.
-    JAILS = "JAILS"
     STATE = "STATE"
     OPERATIONS = "OPERATIONS"
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
@@ -304,7 +294,7 @@ class SchemaType(enum.Enum):
         return self in [SchemaType.STATE, SchemaType.PATHWAYS]
 
 
-DirectIngestSchemaType = Union[Literal[SchemaType.JAILS], Literal[SchemaType.STATE]]
+DirectIngestSchemaType = Literal[SchemaType.STATE]
 
 
 def schema_type_for_schema_module(module: ModuleType) -> SchemaType:
@@ -317,8 +307,6 @@ def schema_type_for_schema_module(module: ModuleType) -> SchemaType:
 
 
 def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
-    if isinstance(schema_object, JailsBase):
-        return SchemaType.JAILS
     if isinstance(schema_object, JusticeCountsBase):
         return SchemaType.JUSTICE_COUNTS
     if isinstance(schema_object, StateBase):
@@ -334,8 +322,6 @@ def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
 
 
 def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
-    if schema_type == SchemaType.JAILS:
-        return JailsBase
     if schema_type == SchemaType.STATE:
         return StateBase
     if schema_type == SchemaType.OPERATIONS:

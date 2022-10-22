@@ -22,7 +22,6 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
-from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -119,8 +118,8 @@ POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER: SimpleBigQueryViewBuild
         base_dataset=dataset_config.COUNTY_BASE_DATASET,
         views_dataset=dataset_config.VIEWS_DATASET,
         county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
-        booking_table=Booking.__tablename__,
-        person_table=Person.__tablename__,
+        booking_table="booking",
+        person_table="person",
     )
 )
 

@@ -21,7 +21,6 @@ from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import (
     CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER,
 )
-from recidiviz.persistence.database.schema.county.schema import Charge
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,7 +48,7 @@ CHARGE_INFO_BY_BOOKING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
     views_dataset=dataset_config.VIEWS_DATASET,
     charge_severity_all_bookings_view=CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER.view_id,
-    charge_table=Charge.__tablename__,
+    charge_table="charge",
 )
 
 if __name__ == "__main__":

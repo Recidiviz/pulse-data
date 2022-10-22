@@ -29,7 +29,6 @@ from sqlalchemy.orm.session import close_all_sessions
 from conftest import get_pytest_worker_id
 from recidiviz.persistence.database.base_schema import (
     CaseTriageBase,
-    JailsBase,
     JusticeCountsBase,
     OperationsBase,
     StateBase,
@@ -58,7 +57,6 @@ from recidiviz.utils.environment import in_ci
 DECLARATIVE_BASES = [
     OperationsBase,
     StateBase,
-    JailsBase,
     JusticeCountsBase,
     FakeBase,
     CaseTriageBase,

@@ -157,8 +157,6 @@ class IngestViewResultsParserDelegateImpl(
             # All entities in the state schema have the state_code field - we add this
             # as a common argument so we don't have to specify it in the yaml mappings.
             return {"state_code": self.region.region_code}
-        if self.schema_type == SchemaType.JAILS:
-            return {}
         raise ValueError(f"Unexpected schema type [{self.schema_type}]")
 
     def _get_deserialize_factories_module(self) -> ModuleType:

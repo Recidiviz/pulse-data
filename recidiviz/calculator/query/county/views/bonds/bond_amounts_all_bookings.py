@@ -26,7 +26,6 @@ from recidiviz.calculator.query.county.views.vera.county_names import (
     COUNTY_NAMES_VIEW_BUILDER,
 )
 from recidiviz.common.constants.county.enum_canonical_strings import bond_type_denied
-from recidiviz.persistence.database.schema.county.schema import Booking, Person
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -101,8 +100,8 @@ BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     views_dataset=dataset_config.VIEWS_DATASET,
     bond_amounts_by_booking_view=BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER.view_id,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
-    booking_table=Booking.__tablename__,
-    person_table=Person.__tablename__,
+    booking_table="booking",
+    person_table="person",
     county_names_view=COUNTY_NAMES_VIEW_BUILDER.view_id,
 )
 

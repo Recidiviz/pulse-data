@@ -379,7 +379,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         # Do not grab lock
-        # self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.JAILS)
+        # self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.OPERATIONS)
 
         route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
 
@@ -434,43 +434,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_federated_refresh.assert_not_called()
         self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
-
-    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
-    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
-    def test_refresh_bq_schema_ingest_locked_other_schema(
-        self,
-        mock_federated_refresh: mock.MagicMock,
-        mock_kick_all_schedulers: mock.MagicMock,
-    ) -> None:
-        ingest_lock_manager = DirectIngestRegionLockManager(
-            region_code="US_XX_YYYY",
-            blocking_locks=[],
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
-
-        # Attempt to refresh while ingest is still locked for a COUNTY
-        with ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
-            # Grab lock, just like the /create_tasks... endpoint does
-            self.mock_lock_manager.acquire_lock(
-                "any_lock_id", schema_type=SchemaType.STATE
-            )
-
-            route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
-
-            data = json.dumps(
-                {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
-            )
-
-            response = self.mock_flask_client.post(
-                route,
-                data=data,
-                content_type="application/json",
-                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-            )
-        self.assertEqual(HTTPStatus.OK, response.status_code)
-        mock_federated_refresh.assert_called()
-        self.mock_pubsub_helper.publish_message_to_topic.assert_called()
-        mock_kick_all_schedulers.assert_called()
 
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment",

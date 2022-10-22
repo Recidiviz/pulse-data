@@ -40,7 +40,7 @@ FROM EXTERNAL_QUERY(
 DESCRIPTION_TEMPLATE = """View providing a connection to the [{cloudsql_table_name}]
 table in the [{database_name}] database in the [{schema_name}] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
-schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
+schema-specific datasets (`state`, `justice_counts`, etc)."""
 
 
 class FederatedCloudSQLTableBigQueryView(BigQueryView):
@@ -118,7 +118,7 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
         # TODO(#8282): Remove this custom v2 logic when we're in the Phase 5 cleanup.
         if database_key.schema_type == SchemaType.STATE:
             return f"{database_key.schema_type.value.lower()}_v2_{database_key.db_name}_cloudsql"
-        if database_key.schema_type in (SchemaType.JAILS, SchemaType.OPERATIONS):
+        if database_key.schema_type == SchemaType.OPERATIONS:
             return f"{database_key.schema_type.value.lower()}_v2_cloudsql"
 
         if database_key.is_default_db:

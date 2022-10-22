@@ -23,7 +23,8 @@ from typing import List
 import sqlalchemy
 from sqlalchemy.dialects import postgresql
 
-from recidiviz.persistence.database.base_schema import JailsBase, StateBase
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema.operations.schema import OperationsBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
     CloudSqlSchemaTableRegionFilteredQueryBuilder,
@@ -96,14 +97,15 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
     """Base test class for SchemaTableRegionFilteredQueryBuilder subclass tests."""
 
     def setUp(self) -> None:
-        self.fake_jails_table = sqlalchemy.Table(
-            "fake_jails_table",
-            JailsBase.metadata,
+        self.fake_operations_table = sqlalchemy.Table(
+            "fake_operations_table",
+            OperationsBase.metadata,
             sqlalchemy.Column("column1", sqlalchemy.Integer, primary_key=True),
-            sqlalchemy.Column("state_code", sqlalchemy.String, index=True),
+            sqlalchemy.Column("region_code", sqlalchemy.String, index=True),
             sqlalchemy.Column("excluded_col", sqlalchemy.String),
         )
         self.mock_columns_to_include = ["column1", "state_code"]
+        self.mock_operations_columns_to_include = ["column1", "region_code"]
         self.fake_state_table = sqlalchemy.Table(
             "fake_state_table",
             StateBase.metadata,
@@ -146,7 +148,7 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         ]
 
     def tearDown(self) -> None:
-        JailsBase.metadata.remove(self.fake_jails_table)
+        OperationsBase.metadata.remove(self.fake_operations_table)
         StateBase.metadata.remove(self.fake_state_table)
         StateBase.metadata.remove(self.fake_table_complex_schema)
         StateBase.metadata.remove(self.fake_association_table)
@@ -169,7 +171,7 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
         with self.assertRaises(ValueError):
             CloudSqlSchemaTableRegionFilteredQueryBuilder(
                 SchemaType.STATE,
-                self.fake_jails_table,
+                self.fake_operations_table,
                 self.mock_columns_to_include,
                 region_codes_to_include=[],
                 region_codes_to_exclude=["US_ID"],
@@ -179,27 +181,11 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
         """Test that no assertion is raised if both region_codes_to_include and region_codes_to_exclude are None"""
         CloudSqlSchemaTableRegionFilteredQueryBuilder(
             SchemaType.STATE,
-            self.fake_jails_table,
+            self.fake_operations_table,
             self.mock_columns_to_include,
             region_codes_to_include=None,
             region_codes_to_exclude=None,
         )
-
-    def test_select_clause_jails_schema(self) -> None:
-        """Given a SchemaType.JAILS schema, it returns the basic select query for a table."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.JAILS, self.fake_jails_table, self.mock_columns_to_include
-        )
-        expected_select = f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code"
-        self.assertEqual(expected_select, query_builder.select_clause())
-
-    def test_from_clause_jails_schema(self) -> None:
-        """Given a SchemaType.JAILS schema, it returns the basic FROM query for a table."""
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.JAILS, self.fake_jails_table, self.mock_columns_to_include
-        )
-        expected_select = f"FROM {self.fake_jails_table.name}"
-        self.assertEqual(expected_select, query_builder.from_clause())
 
     def test_select_clause_state_schema(self) -> None:
         """Given a SchemaType.STATE schema, it returns the basic select query for a table."""
@@ -245,9 +231,11 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(None, query_builder.join_clause())
 
     def test_join_clause_no_region_codes_in_schema(self) -> None:
-        """Given a SchemaType.JAILS schema it returns None."""
+        """Given a SchemaType.OPERATIONS schema it returns None."""
         query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.JAILS, self.fake_jails_table, self.mock_columns_to_include
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
+            self.mock_columns_to_include,
         )
         self.assertEqual(None, query_builder.join_clause())
 
@@ -312,25 +300,27 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
     def test_full_query(self) -> None:
         """Given a table it returns a full query string."""
         query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            SchemaType.JAILS, self.fake_jails_table, self.mock_columns_to_include
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
+            self.mock_operations_columns_to_include,
         )
         expected_query = (
-            f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
-            f"FROM {self.fake_jails_table.name}"
+            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
+            f"FROM {self.fake_operations_table.name}"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
     def test_full_query_federated(self) -> None:
         """Given a table it returns a full query string."""
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            schema_type=SchemaType.JAILS,
-            table=self.fake_jails_table,
-            columns_to_include=self.mock_columns_to_include,
+            schema_type=SchemaType.OPERATIONS,
+            table=self.fake_operations_table,
+            columns_to_include=self.mock_operations_columns_to_include,
             region_code=None,
         )
         expected_query = (
-            f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
-            f"FROM {self.fake_jails_table.name}"
+            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
+            f"FROM {self.fake_operations_table.name}"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
@@ -501,7 +491,7 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
                 "recidiviz-456",
                 "my_dataset",
                 SchemaType.STATE,
-                self.fake_jails_table,
+                self.fake_operations_table,
                 self.mock_columns_to_include,
                 region_codes_to_include=[],
                 region_codes_to_exclude=["US_ID"],
@@ -513,34 +503,34 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
             "recidiviz-456",
             "my_dataset",
             SchemaType.STATE,
-            self.fake_jails_table,
+            self.fake_state_table,
             self.mock_columns_to_include,
             region_codes_to_include=None,
             region_codes_to_exclude=None,
         )
 
-    def test_select_clause_jails_schema(self) -> None:
-        """Given a SchemaType.JAILS schema, it returns the basic select query for a table."""
+    def test_select_clause_operations_schema(self) -> None:
+        """Given a SchemaType.OPERATIONS schema, it returns the basic select query for a table."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
-            SchemaType.JAILS,
-            self.fake_jails_table,
-            self.mock_columns_to_include,
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
+            self.mock_operations_columns_to_include,
         )
-        expected_select = f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code"
+        expected_select = f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code"
         self.assertEqual(expected_select, query_builder.select_clause())
 
-    def test_from_clause_jails_schema(self) -> None:
-        """Given a SchemaType.JAILS schema, it returns the basic FROM query for a table."""
+    def test_from_clause_operations_schema(self) -> None:
+        """Given a SchemaType.OPERATIONS schema, it returns the basic FROM query for a table."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
-            SchemaType.JAILS,
-            self.fake_jails_table,
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
             self.mock_columns_to_include,
         )
-        expected_select = f"FROM `recidiviz-456.my_dataset.{self.fake_jails_table.name}` {self.fake_jails_table.name}"
+        expected_select = f"FROM `recidiviz-456.my_dataset.{self.fake_operations_table.name}` {self.fake_operations_table.name}"
         self.assertEqual(expected_select, query_builder.from_clause())
 
     def test_select_clause_state_schema(self) -> None:
@@ -596,12 +586,12 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         self.assertEqual(None, query_builder.join_clause())
 
     def test_join_clause_no_region_codes_in_schema(self) -> None:
-        """Given a SchemaType.JAILS schema it returns None."""
+        """Given a SchemaType.OPERATIONS schema it returns None."""
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
-            SchemaType.JAILS,
-            self.fake_jails_table,
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
             self.mock_columns_to_include,
         )
         self.assertEqual(None, query_builder.join_clause())
@@ -679,13 +669,13 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
         query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
             "recidiviz-456",
             "my_dataset",
-            SchemaType.JAILS,
-            self.fake_jails_table,
-            self.mock_columns_to_include,
+            SchemaType.OPERATIONS,
+            self.fake_operations_table,
+            self.mock_operations_columns_to_include,
         )
         expected_query = (
-            f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
-            f"FROM `recidiviz-456.my_dataset.{self.fake_jails_table.name}` {self.fake_jails_table.name}"
+            f"SELECT {self.fake_operations_table.name}.column1,{self.fake_operations_table.name}.region_code "
+            f"FROM `recidiviz-456.my_dataset.{self.fake_operations_table.name}` {self.fake_operations_table.name}"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
