@@ -19,9 +19,6 @@ import unittest
 from datetime import date
 from typing import List
 
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionSentence,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (
     UsMeSupervisionNormalizationDelegate,
 )
@@ -38,6 +35,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 _STATE_CODE = StateCode.US_ME.value
@@ -236,12 +234,12 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
         supervision_sentences = [
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.REVOKED,
@@ -266,12 +264,12 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
         supervision_sentences = [
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.REVOKED,
@@ -296,12 +294,12 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
         supervision_sentences = [
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
-            NormalizedStateSupervisionSentence.new_with_defaults(
+            StateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.COMPLETED,
@@ -325,7 +323,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             termination_date=date(2010, 1, 7),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
         )
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = []
         self.assertEqual(
             StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
             self._build_delegate(

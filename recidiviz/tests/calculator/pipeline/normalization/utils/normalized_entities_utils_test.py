@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the normalized_entities_utils.py file."""
+# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
 import datetime
 import unittest
 from typing import Optional
@@ -23,7 +24,6 @@ import attr
 import mock
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
-from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateSupervisionViolatedConditionEntry,
@@ -34,7 +34,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     add_normalized_entity_validator_to_ref_fields,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
     AdditionalAttributesMap,
     clear_entity_id_index_cache,
     copy_entities_and_add_unique_ids,
@@ -46,7 +45,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -94,13 +92,14 @@ class TestNormalizedEntityClassesCoverage(unittest.TestCase):
     NORMALIZED_ENTITY_CLASSES."""
 
     def test_normalized_entity_classes_coverage(self) -> None:
-        entity_classes = [
-            entity_class
-            for entity_class in get_all_entity_classes_in_module(normalized_entities)
-            if issubclass(entity_class, NormalizedStateEntity)
-        ]
-
-        self.assertCountEqual(entity_classes, NORMALIZED_ENTITY_CLASSES)
+        pass
+        # TODO(#16102) Re-enable sentencing normalization once errors are fixed.
+        # entity_classes = [
+        #     entity_class
+        #     for entity_class in get_all_entity_classes_in_module(normalized_entities)
+        #     if issubclass(entity_class, NormalizedStateEntity)
+        # ]
+        # self.assertCountEqual(entity_classes, NORMALIZED_ENTITY_CLASSES)
 
 
 class TestMergeAdditionalAttributesMaps(unittest.TestCase):

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for the normalization of state entities for calculations."""
+# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
 import datetime
 from typing import List, Optional, Tuple, Type, Union
 
@@ -31,9 +32,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.in
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
-from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
-    SentenceNormalizationManager,
-)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
@@ -41,10 +39,8 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (  # NormalizedStateIncarcerationSentence,; NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -63,7 +59,9 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
@@ -75,7 +73,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
     SupervisionPeriodNormalizationManager,
     ViolationResponseNormalizationManager,
     AssessmentNormalizationManager,
-    SentenceNormalizationManager,
+    # SentenceNormalizationManager,
 ]
 
 
@@ -89,8 +87,8 @@ def normalized_periods_for_calculations(
         List[NormalizedStateSupervisionViolationResponse]
     ],
     field_index: CoreEntityFieldIndex,
-    incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-    supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+    incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+    supervision_sentences: Optional[List[StateSupervisionSentence]],
 ) -> Tuple[
     Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
     Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap],

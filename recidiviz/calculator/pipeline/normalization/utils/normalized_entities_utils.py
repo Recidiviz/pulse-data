@@ -16,6 +16,7 @@
 # =============================================================================
 """Utils for working with NormalizedStateEntity objects.
 """
+# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
 from collections import defaultdict
 from copy import copy
 from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar, Union
@@ -23,17 +24,13 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Type, TypeVar, Unio
 from more_itertools import one
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (  # NormalizedStateCharge,; NormalizedStateEarlyDischarge,; NormalizedStateIncarcerationSentence,; NormalizedStateSupervisionSentence,
     NormalizedStateAssessment,
-    NormalizedStateCharge,
-    NormalizedStateEarlyDischarge,
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
@@ -60,10 +57,10 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateSupervisionViolationTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateCharge,
-    NormalizedStateEarlyDischarge,
+    # NormalizedStateIncarcerationSentence,
+    # NormalizedStateSupervisionSentence,
+    # NormalizedStateCharge,
+    # NormalizedStateEarlyDischarge,
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)

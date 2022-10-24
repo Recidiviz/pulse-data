@@ -56,10 +56,8 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.as
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
@@ -89,8 +87,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
     UsIdSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    NormalizedUsMoIncarcerationSentence,
-    NormalizedUsMoSupervisionSentence,
+    UsMoIncarcerationSentence,
     UsMoSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
@@ -136,8 +133,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
@@ -196,8 +195,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     def _test_find_supervision_events(
         self,
-        supervision_sentences: List[NormalizedStateSupervisionSentence],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         assessments: List[NormalizedStateAssessment],
@@ -214,8 +213,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods,
-            NormalizedStateIncarcerationSentence.base_class_name(): incarceration_sentences,
-            NormalizedStateSupervisionSentence.base_class_name(): supervision_sentences,
+            StateIncarcerationSentence.__name__: incarceration_sentences,
+            StateSupervisionSentence.__name__: supervision_sentences,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
             NormalizedStateAssessment.base_class_name(): assessments,
             StateSupervisionContact.__name__: supervision_contacts,
@@ -289,7 +288,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         start_date = date(2017, 1, 1)
         completion_date = date(2018, 5, 19)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=start_date,
             external_id="ss1",
@@ -316,7 +315,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -397,7 +396,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -412,7 +411,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -482,7 +481,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -497,7 +496,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -592,7 +591,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -607,7 +606,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -702,7 +701,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -718,7 +717,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
@@ -812,7 +811,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -820,7 +819,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
         assessments: List[NormalizedStateAssessment] = []
@@ -871,7 +870,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -879,7 +878,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
         assessments: List[NormalizedStateAssessment] = []
@@ -954,7 +953,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -972,7 +971,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1080,7 +1079,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -1098,7 +1097,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -1180,7 +1179,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -1196,7 +1195,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1309,7 +1308,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -1325,7 +1324,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1408,7 +1407,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
             external_id="ss1",
@@ -1423,7 +1422,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1515,7 +1514,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -1530,7 +1529,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -1630,7 +1629,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -1649,7 +1648,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
 
@@ -1782,28 +1781,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        first_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code="US_XX",
-                supervision_sentence_id=111,
-                start_date=date(2017, 1, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2018, 12, 19),
-            )
+        first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2018, 12, 19),
         )
 
-        second_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code="US_XX",
-                supervision_sentence_id=222,
-                start_date=date(2017, 1, 1),
-                external_id="ss2",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2019, 1, 19),
-            )
+        second_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=222,
+            start_date=date(2017, 1, 1),
+            external_id="ss2",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2019, 1, 19),
         )
 
         supervision_sentences = [
@@ -1818,7 +1813,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
@@ -1944,7 +1939,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=date(2018, 5, 1),
             external_id="ss1",
@@ -1970,7 +1965,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -2053,28 +2048,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        first_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code="US_XX",
-                supervision_sentence_id=111,
-                start_date=date(2018, 1, 1),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2018, 1, 2),
-            )
+        first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2018, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2018, 1, 2),
         )
 
-        second_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code="US_XX",
-                supervision_sentence_id=222,
-                start_date=date(2019, 2, 1),
-                external_id="ss2",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-                completion_date=date(2019, 2, 2),
-            )
+        second_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=222,
+            start_date=date(2019, 2, 1),
+            external_id="ss2",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            completion_date=date(2019, 2, 2),
         )
 
         supervision_sentences = [
@@ -2086,7 +2077,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         first_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
         second_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
@@ -2176,7 +2167,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -2191,7 +2182,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -2261,7 +2252,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             supervision_level_raw_text="LOW",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -2269,7 +2260,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             status=StateSentenceStatus.COMPLETED,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
@@ -2293,7 +2284,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -2389,13 +2380,13 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_events = self._test_find_supervision_events(
             supervision_sentences,
@@ -2488,19 +2479,17 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
         )
 
-        base_supervision_sentence = (
-            NormalizedStateSupervisionSentence.new_with_defaults(
-                state_code="US_MO",
-                supervision_sentence_id=111,
-                start_date=date(2017, 1, 1),
-                completion_date=date(2018, 5, 19),
-                external_id="ss1",
-                status=StateSentenceStatus.COMPLETED,
-                supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            )
+        base_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_MO",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            completion_date=date(2018, 5, 19),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
         )
 
-        supervision_sentence = NormalizedUsMoSupervisionSentence.from_supervision_sentence(
+        supervision_sentence = UsMoSupervisionSentence.from_supervision_sentence(
             sentence=base_supervision_sentence,
             sentence_statuses_raw=[
                 {
@@ -2520,18 +2509,16 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ],
         )
 
-        base_incarceration_sentence = (
-            NormalizedStateIncarcerationSentence.new_with_defaults(
-                state_code="US_MO",
-                incarceration_sentence_id=123,
-                external_id="is1",
-                start_date=date(2017, 1, 1),
-                completion_date=date(2018, 5, 19),
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            )
+        base_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_MO",
+            incarceration_sentence_id=123,
+            external_id="is1",
+            start_date=date(2017, 1, 1),
+            completion_date=date(2018, 5, 19),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_sentence = NormalizedUsMoIncarcerationSentence.from_incarceration_sentence(
+        incarceration_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(
             sentence=base_incarceration_sentence,
             sentence_statuses_raw=[
                 {
@@ -2551,15 +2538,13 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ],
         )
 
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = [
-            supervision_sentence
-        ]
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -2618,13 +2603,13 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = []
         supervision_periods = [supervision_period]
         incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         expected_events = [
             create_start_event_from_period(
@@ -2704,7 +2689,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -2716,7 +2701,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
@@ -2799,7 +2784,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
@@ -2931,7 +2916,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code=state_code,
             supervision_sentence_id=111,
             start_date=date(2018, 1, 1),
@@ -3066,7 +3051,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2003, 1, 1),
@@ -3086,7 +3071,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_events = (
@@ -3152,7 +3137,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3169,7 +3154,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
@@ -3240,7 +3225,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             release_date=date(2019, 10, 17),
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3259,7 +3244,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3335,7 +3320,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3356,7 +3341,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3417,7 +3402,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             release_reason=ReleaseReason.CONDITIONAL_RELEASE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2007, 1, 1),
@@ -3438,7 +3423,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3504,7 +3489,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2000, 1, 1),
@@ -3523,7 +3508,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3583,7 +3568,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MINIMUM,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2000, 1, 1),
@@ -3602,7 +3587,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3659,7 +3644,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2000, 1, 1),
@@ -3678,10 +3663,8 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_reports: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
-        supervision_sentences: List[NormalizedStateSupervisionSentence] = [
-            supervision_sentence
-        ]
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
 
         supervision_events = (
             self.identifier._find_population_events_for_supervision_period(
@@ -3751,7 +3734,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             sequence_num=1,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3772,7 +3755,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3846,7 +3829,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3864,7 +3847,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         assessments = [assessment]
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -3934,7 +3917,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             ),
         ]
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -3952,7 +3935,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -4021,7 +4004,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
             ),
         ]
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -4039,7 +4022,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
         assessments: List[NormalizedStateAssessment] = []
         violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         supervision_events = (
             self.identifier._find_population_events_for_supervision_period(
@@ -4101,7 +4084,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -4178,7 +4161,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -4260,7 +4243,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -4342,7 +4325,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence_projected_completion_date = date(2018, 8, 19)
         first_supervision_sentence_completion_date = date(2018, 8, 19)
         first_supervision_sentence_start_date = date(2017, 1, 1)
-        first_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=first_supervision_sentence_start_date,
@@ -4356,7 +4339,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         second_supervision_sentence_completion_date = date(2018, 12, 25)
         second_supervision_sentence_start_date = date(2017, 1, 1)
-        second_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        second_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=second_supervision_sentence_start_date,
@@ -4458,7 +4441,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         first_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         first_supervision_sentence_completion_date = date(2018, 12, 25)
         first_supervision_sentence_start_date = date(2017, 1, 1)
-        first_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        first_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=first_supervision_sentence_start_date,
@@ -4472,7 +4455,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         second_supervision_sentence_projected_completion_date = date(2018, 12, 25)
         second_supervision_sentence_completion_date = date(2018, 12, 25)
         second_supervision_sentence_start_date = date(2017, 1, 1)
-        second_supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        second_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=second_supervision_sentence_start_date,
@@ -4563,7 +4546,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -4646,7 +4629,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -4729,7 +4712,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         start_date = date(2017, 1, 1)
         projected_completion_date = date(2018, 12, 25)
         completion_date = date(2018, 12, 19)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=start_date,
@@ -4790,7 +4773,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -4834,7 +4817,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -4877,7 +4860,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -4926,7 +4909,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         projected_completion_date = date(2018, 12, 25)
         start_date = date(2017, 1, 1)
         completion_date = date(2018, 12, 20)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=start_date,
@@ -5002,7 +4985,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         start_date = date(2017, 1, 1)
         completion_date = date(2018, 12, 25)
         max_length_days = (completion_date - start_date).days
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=111,
             start_date=start_date,
@@ -5013,7 +4996,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -5067,7 +5050,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=111,
             start_date=date.today() + datetime.timedelta(days=10),
@@ -5078,7 +5061,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             completion_date=date.today() + datetime.timedelta(days=1000),
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -5111,7 +5094,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -5121,7 +5104,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             completion_date=date(2018, 12, 25),
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -5154,7 +5137,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=111,
             start_date=date(2017, 1, 1),
@@ -5165,7 +5148,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             completion_date=date(2018, 12, 25),
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -5201,7 +5184,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence_completion_date = date(2018, 12, 25)
         supervision_sentence_start_date = date(2017, 1, 1)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             start_date=supervision_sentence_start_date,
@@ -5230,7 +5213,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         start_date = date(2006, 2, 21)
         completion_date = date(2007, 12, 3)
         max_length_days = 730
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=111,
             start_date=start_date,
@@ -5241,7 +5224,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             completion_date=completion_date,
         )
 
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = [
+        incarceration_sentences: List[StateIncarcerationSentence] = [
             incarceration_sentence
         ]
 
@@ -7228,9 +7211,7 @@ def _generate_case_compliances(
     violation_responses: Optional[
         List[NormalizedStateSupervisionViolationResponse]
     ] = None,
-    incarceration_sentences: Optional[
-        List[NormalizedStateIncarcerationSentence]
-    ] = None,
+    incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
     incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
     supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
