@@ -48,7 +48,6 @@ columns:
   - name: LocationId
     description: |-
       Employee location. Can be joined to `ref_Location.LocationId`.
-    is_pii: True
   - name: SecondaryLocationId
     description: |-
       Employee secondary location. Can be joined to `ref_Location.LocationId`.

@@ -7,14 +7,17 @@ primary_key_cols:
   - PhoneId
 columns:
   - name: PhoneId
-    description: Primary key.
+    description: |-
+      Primary key.
   - name: PhoneNumber
+    description: |-
+      The actual phone number.
     is_pii: True
-    description: The actual phone number.
   - name: Comments
     is_pii: True
   - name: PhoneTypeId
-    description: Code for the type of phone. Joins to `ref_PhoneType.PhoneTypeId`.
+    description: |-
+      Code for the type of phone. Joins to `ref_PhoneType.PhoneTypeId`.
   - name: Inactive
   - name: Locking
   - name: InsertUserId

@@ -78,6 +78,17 @@ columns:
     description: |-
       ID for the type of sentence order. Can be joined to 
       `scl_SentenceOrderType.SentenceOrderTypeId`.
+    known_values:
+      - value: 1
+        description: Commitment
+      - value: 2
+        description: Retained Jurisdiction
+      - value: 3
+        description: Corrections Compact
+      - value: 5
+        description: Suspended Sentence
+      - value: 6
+        description: Withheld Judgment
   - name: DefendantAttorney
     description: |-
       Name of the defendant's attorney.
@@ -94,12 +105,22 @@ columns:
     description: |-
       ID for the sentence order status. Can be joined to 
       `scl_SentenceOrderStatus.SentenceOrderStatusId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: In Progress
   - name: SentenceOrderEventTypeId
     description: |-
       ID For the sentence order event type. Can be joined to 
       `scl_SentenceOrderEventType.SentenceOrderEventTypeId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Initial
+      - value: 2
+        description: Amendment
+      - value: 3
+        description: Error Correction
+      - value: 5
+        description: Linked Event
   - name: IsApproved
     description: |-
       Dummy variable indicating if the sentence order was approved (taking a value of 1

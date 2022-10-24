@@ -24,7 +24,11 @@ columns:
     description: |-
       Identifies the facility level's status. Can be joined to 
       `hsn_FacilityLevelStatus.FacilityLevelStatusId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Inactive
+      - value: 2
+        description: Active
   - name: Comments
     description: |-
       Free text field containing comments about the facility sublevel.
@@ -56,4 +60,8 @@ columns:
     description: |-
       Identifies a sublevel's type. Can be joined with 
       `hsn_FacilityLevelType.FacilityLevelTypeId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Level
+      - value: 2
+        description: Cell

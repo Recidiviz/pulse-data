@@ -8,37 +8,63 @@ primary_key_cols:
 columns:
   - name: DrugTestResultId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the drug test result.
   - name: OffenderId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the offender who performed the drug test. Can be joined to 
+      `ind_Offender.OffenderId`.
+    is_pii: True
   - name: CollectionDate
     description: |-
-      TODO(#15329): Fill in column description
+      Date of the drug test's collection.
+    is_datetime: True
   - name: ColorGroupId
     description: |-
       TODO(#15329): Fill in column description
   - name: NoShow
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the offender failed to show up for the drug test. Always 0, likely 
+      because the data contains drug test results and not drug test instances in general
+      (i.e. only completed drug tests are present in the data).
   - name: ExcusedException
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the offender received an excused exception for the drug test. Always 
+      0, likely because the data contains drug test results and not drug test instances 
+      in general (i.e. only completed drug tests are present in the data).
   - name: UnableToProvide
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test could not be provided. Always 0, likely because the 
+      data contains drug test results and not drug test instances in general
+      (i.e. only completed drug tests are present in the data).
   - name: AllNegative
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test result were negative for all substances tested. Takes
+      a value of 1 if so and 0 otherwise.
   - name: Bac
     description: |-
       TODO(#15329): Fill in column description
   - name: PrimaryOfficerId
     description: |-
-      TODO(#15329): Fill in column description
+      ID of the primary officer involved in the drug test.
+    is_pii: True
   - name: LocationId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the location of the drug test. Can be joined to `ref_Location.LocationId`.
+    known_values:
+      - value: 15008
+        description: District 4 - Meridian
+      - value: 15020
+        description: Low Supervsn Unit
+      - value: 2154
+        description: Administrative
+      - value: 8272
+        description: District 3 - Caldwell
+      - value: 8274
+        description: District 4 - Boise
+      - value: 8275
+        description: District 4 - Eagle
+      - value: 8276
+        description: District 4 - McCall
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -59,10 +85,28 @@ columns:
       TODO(#15329): Fill in column description
   - name: CollectedById
     description: |-
-      TODO(#15329): Fill in column description
+      Identifier for the drug test's collector.
   - name: TestingMethodId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the drug testing method. Can be joined with 
+      `drg_TestingMethod.TestingMethodId`.
+    known_values:
+      - value: 100
+        description: Saliva Sample
+      - value: 101
+        description: Urine Sample
+      - value: 102
+        description: Not Taken
+      - value: 103
+        description: Sweat Sample
+      - value: 51
+        description: Hair Sample
+      - value: 97
+        description: Admitted Use
+      - value: 98
+        description: Blood Sample
+      - value: 99
+        description: Breath Sample
   - name: FacTestReasonId
     description: |-
       TODO(#15329): Fill in column description
@@ -71,16 +115,23 @@ columns:
       TODO(#15329): Fill in column description
   - name: Cancelled
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test was cancelled. Always 0 or null, likely because the 
+      data contains drug test results and not drug test instances in general
+      (i.e. only completed drug tests are present in the data).
   - name: SampleRejected
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test sample was rejected. Always 0 or null, likely because 
+      the data contains drug test results and not drug test instances in general
+      (i.e. only completed drug tests are present in the data).
   - name: AbnormalResult
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test was discarded due to abnormal results. Always 0 or 
+      null, likely because the data contains drug test results and not drug test 
+      instances in general (i.e. only completed drug tests are present in the data).
   - name: RefusalToSubmit
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the drug test's submission was refused, taking a value of 1 if so
+      and 0 otherwise.
   - name: TakingMedications
     description: |-
       TODO(#15329): Fill in column description
@@ -98,10 +149,13 @@ columns:
       TODO(#15329): Fill in column description
   - name: DateSentToEx
     description: |-
-      TODO(#15329): Fill in column description
+      The date the drug test was sent to the examiner. Currently only contains 1 value.
+    is_datetime: True
   - name: DateReturnedFromEx
     description: |-
-      TODO(#15329): Fill in column description
+      The date the drug test was returned from the examiner. Currently only contains 1 
+      value.
+    is_datetime: True
   - name: SampleNumber
     description: |-
       TODO(#15329): Fill in column description
@@ -110,7 +164,8 @@ columns:
       TODO(#15329): Fill in column description
   - name: SentForConfirmation
     description: |-
-      TODO(#15329): Fill in column description
+      Indicates if the test was sent in for confirmation, taking a value of 1 if so
+      and 0 otherwise.
   - name: TestCancellationReasonId
     description: |-
       TODO(#15329): Fill in column description

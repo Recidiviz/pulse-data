@@ -12,6 +12,21 @@ columns:
   - name: AliasNameTypeId
     description: |-
       The reference code for the type of alias this record pertains to (reference table: ind_AliasNameType)
+    known_values:
+      - value: 0
+        description: Default
+      - value: 1
+        description: Maiden Name
+      - value: 13
+        description: Married Name
+      - value: 3
+        description: Monicker
+      - value: 5
+        description: Legal Name
+      - value: 6
+        description: Alias
+      - value: 7
+        description: Name of Record
   - name: OffenderId
     description: |-
       The ID of the person that this alias is associated with
@@ -31,7 +46,17 @@ columns:
   - name: NameSuffixTypeId
     description: |-
       The reference code for the name suffix for this alias record (reference table: ref_NameSuffixType)
-    is_pii: True
+    known_values:
+      - value: 1
+        description: Jr.
+      - value: 4
+        description: II
+      - value: 5
+        description: III
+      - value: 6
+        description: IV
+      - value: 7
+        description: V
   - name: SoundexFirstName
     description: |-
       TODO(#15329): Fill in column description

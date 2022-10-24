@@ -20,7 +20,11 @@ columns:
     description: |-
       ID for the sentence order category. Can be joined to 
       `scl_SentenceOrderCategory.SentenceOrderCategoryId`
-    known_values: []
+    known_values:
+      - value: 1
+        description: Probation
+      - value: 2
+        description: Incarceration
   - name: IsCalculated
     description: |-
       TODO(#15329): Fill in column description

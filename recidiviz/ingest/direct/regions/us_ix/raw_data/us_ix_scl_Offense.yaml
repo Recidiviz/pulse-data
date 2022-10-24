@@ -15,6 +15,33 @@ columns:
   - name: OffenseLawId
     description: |-
       TODO(#15329): Fill in column description
+    known_values:
+      - value: 1
+        description: CP - Court Probation
+      - value: 10
+        description: HI - Hand Calculation indeterminate
+      - value: 11
+        description: UD - Unified Determinate
+      - value: 12
+        description: UI - Unified indeterminate
+      - value: 13
+        description: IB - Interstate Probation
+      - value: 14
+        description: IP - Interstate Parole
+      - value: 2
+        description: DC - Drug Court
+      - value: 3
+        description: PS - Suspended Sentence Probation
+      - value: 4
+        description: PW - Withheld Sentence Probation
+      - value: 5
+        description: GD - Good time Determinate
+      - value: 6
+        description: GI - Good time Indeterminate
+      - value: 8
+        description: PI - Pre-unified indeterminate
+      - value: 9
+        description: HD - Hand Calculation Determinate
   - name: OffenseDate
     description: |-
       Date of the offense (nullable).

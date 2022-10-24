@@ -21,6 +21,27 @@ columns:
     description: |-
       Identifier for the type of investigation conducted. Can be joined to
       `com_InvestigationType.InvestigationTypeId`.
+    known_values:
+      - value: 158
+        description: SUD Assessment Investigation
+      - value: 19
+        description: Home Plan Investigation
+      - value: 237
+        description: Firearm Applicant
+      - value: 250
+        description: Release Date Request
+      - value: 251
+        description: Parole- DOR
+      - value: 253
+        description: Transfer - District to District
+      - value: 254
+        description: Transfer to LSU
+      - value: 255
+        description: Transfer - District Officer to Officer
+      - value: 31
+        description: PSI_investigation_Converted
+      - value: 8
+        description: Pardon Investigation
   - name: RequestingStaffId
     description: |-
       Identifier for the staff requesting the investigation.
@@ -31,6 +52,7 @@ columns:
   - name: TransferReasonId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: RequestNotes
     description: |-
       Notes regarding the investigation request; can be raw text or a number.
@@ -100,3 +122,12 @@ columns:
   - name: InvestigationStatusId
     description: |-
       TODO(#15329): Fill in column description
+    known_values:
+      - value: 1
+        description: Pending
+      - value: 2
+        description: Completed
+      - value: 3
+        description: Accepted
+      - value: 4
+        description: Denied

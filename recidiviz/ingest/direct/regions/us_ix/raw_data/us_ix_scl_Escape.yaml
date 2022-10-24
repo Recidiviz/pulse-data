@@ -64,7 +64,15 @@ columns:
   - name: EscapeTypeId
     description: |-
       ID for the type of escape. Can be joined with `scl_EscapeType.EscapeTypeId`.
-    known_values: []
+    known_values:
+      - value: 141
+        description: Escape Conviction Secure Facility
+      - value: 142
+        description: Escape without Conviction Secure Facility
+      - value: 143
+        description: Escape Non-secure Facility
+      - value: 145
+        description: Legacy Data Conversion
   - name: TobeTriedId
     description: |-
       TODO(#15329): Fill in column description

@@ -142,20 +142,32 @@ columns:
   - name: OffenseTypeId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: FtiLevelTypeId
     description: |-
       TODO(#15329): Fill in column description
   - name: SentenceTypeId
     description: |-
       ID for the sentence type. Can be joined to `scl_SentenceType.SentenceTypeId`.
-    known_values: []
+    known_values:
+      - value: 524
+        description: Custodial
+      - value: 525
+        description: Community
+      - value: 526
+        description: Non-Idaho Custodial
   - name: SentenceStatusId
     description: |-
       ID for the sentence status. Can be joined to `scl_SentenceStatus.SentenceStatusId`.
-    known_values: []
+    known_values:
+      - value: 531
+        description: Active
+      - value: 535
+        description: Satisfied
   - name: SentenceRelationshipId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: CourtOrderTypeId
     description: |-
       ID for the court order type. No mapping table exists in the data.

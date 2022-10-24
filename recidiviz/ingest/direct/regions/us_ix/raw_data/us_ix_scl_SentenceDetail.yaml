@@ -77,6 +77,7 @@ columns:
   - name: ProbationStartId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: ProbExpectStartDate
     description: |-
       TODO(#15329): Fill in column description
@@ -99,12 +100,19 @@ columns:
   - name: SentenceDetailTypeId
     description: |-
       ID for the type of sentence detail.
+    known_values:
+      - value: 570
+        description: Sentence
+      - value: 575
+        description: Probation
   - name: SentenceDetailRelationshipId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: SentenceDetailStatusId
     description: |-
       TODO(#15329): Fill in column description
+    known_values: []
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
@@ -135,6 +143,11 @@ columns:
   - name: OffenseSentenceTypeId
     description: |-
       TODO(#15329): Fill in column description
+    known_values:
+      - value: 1
+        description: Death
+      - value: 3
+        description: Life without parole
   - name: SegmentPED
     description: |-
       TODO(#15329): Fill in column description

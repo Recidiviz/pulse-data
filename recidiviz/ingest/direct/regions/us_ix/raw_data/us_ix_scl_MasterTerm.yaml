@@ -18,6 +18,9 @@ columns:
   - name: MasterTermStatusId
     description: |-
       TODO(#15329): Fill in column description
+    known_values:
+      - value: 1
+        description: Active
   - name: OffenderId
     description: |-
       TODO(#15329): Fill in column description

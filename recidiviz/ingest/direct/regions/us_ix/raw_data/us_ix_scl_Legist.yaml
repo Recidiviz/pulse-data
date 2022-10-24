@@ -39,7 +39,9 @@ columns:
   - name: LegistTypeId
     description: |-
       ID indicating the type of legal agent.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Judge
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

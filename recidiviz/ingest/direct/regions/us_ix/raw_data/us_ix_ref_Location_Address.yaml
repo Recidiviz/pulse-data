@@ -21,6 +21,9 @@ columns:
   - name: AddressTypeId
     description: |-
       ID for the address type. Can be joined to `ref_AddressType.AddressTypeId`.
+    known_values:
+      - value: 2
+        description: Local Address
   - name: StartDate
     description: |-
       TODO(#15329): Fill in column description
