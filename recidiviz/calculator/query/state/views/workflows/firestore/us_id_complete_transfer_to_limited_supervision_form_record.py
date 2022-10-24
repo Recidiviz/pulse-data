@@ -393,7 +393,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.is_eligible
         AND tes.state_code = 'US_ID'
-      GROUP BY 1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,27,28,29,30,31
+      GROUP BY 1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27
      )
      SELECT * from form 
      ORDER BY external_id
