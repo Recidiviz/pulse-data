@@ -20,6 +20,7 @@ import unittest
 from typing import List, Optional
 
 import pandas as pd
+import pandas.errors
 
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
     COMMON_RAW_FILE_ENCODINGS,
@@ -176,6 +177,35 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         )
         self.assertEqual(1, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
+
+    def test_read_with_failure_bad_delimiter(self) -> None:
+        """Tests that we properly fail if there is a bad delimiter and don't fall back
+        to the default delimiter on the second try.
+        """
+        file_path = fixtures.as_filepath("encoded_utf_8.csv")
+        gcs_path = GcsfsFilePath.from_absolute_path(file_path)
+        self.fake_gcs.test_add_path(gcs_path, file_path)
+
+        delegate = _TestGcsfsCsvReaderDelegate()
+        with self.assertRaises(pandas.errors.ParserError):
+            self.reader.streaming_read(
+                gcs_path,
+                delegate=delegate,
+                chunk_size=1,
+                encodings_to_try=["UTF-16", "UTF-8"],
+                # This separator is incorrect
+                sep="|",
+                header=0,
+                names=["symbol", "name"],
+            )
+
+        self.assertEqual(2, len(delegate.encodings_attempted))
+        self.assertEqual(["UTF-16", "UTF-8"], delegate.encodings_attempted)
+        self.assertEqual(0, delegate.normalized_streams)
+        self.assertIsNone(delegate.successful_encoding)
+        self.assertEqual([], delegate.dataframes)
+        self.assertEqual(1, delegate.decode_errors)
+        self.assertEqual(1, delegate.exceptions)
 
     def test_read_with_no_failure(self) -> None:
         file_path = fixtures.as_filepath("encoded_utf_8.csv")
