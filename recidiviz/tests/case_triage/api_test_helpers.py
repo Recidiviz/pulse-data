@@ -72,8 +72,7 @@ class CaseTriageTestHelpers:
     def using_demo_user(self) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
             self.set_session_user_info(DEMO_USER_EMAIL)
-            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
+            g.user_context = UserContext.base_context_for_email(
                 DEMO_USER_EMAIL, self.mock_auth_store
             )
 
@@ -83,8 +82,7 @@ class CaseTriageTestHelpers:
     def using_officer(self, officer: ETLOfficer) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
             self.set_session_user_info(officer.email_address)
-            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
+            g.user_context = UserContext.base_context_for_email(
                 officer.email_address, self.mock_auth_store
             )
 
@@ -96,8 +94,7 @@ class CaseTriageTestHelpers:
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": ADMIN_USER_EMAIL}
                 sess[IMPERSONATED_EMAIL_KEY] = hash_email(email)
-            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
+            g.user_context = UserContext.base_context_for_email(
                 ADMIN_USER_EMAIL, self.mock_auth_store
             )
 
@@ -109,8 +106,7 @@ class CaseTriageTestHelpers:
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": email}
                 del sess[IMPERSONATED_EMAIL_KEY]
-            # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-            g.user_context = UserContext.base_context_for_email(  # pylint: disable=assigning-non-slot
+            g.user_context = UserContext.base_context_for_email(
                 email, self.mock_auth_store
             )
             yield self.test_client

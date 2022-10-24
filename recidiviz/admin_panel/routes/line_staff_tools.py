@@ -90,8 +90,7 @@ from recidiviz.utils.types import assert_type
 
 def get_email_handler() -> EmailReportingHandler:
     if "email_handler" not in g:
-        # TODO(PyCQA/pylint#5317): Remove ignore fixed by PyCQA/pylint#5457
-        g.email_handler = EmailReportingHandler()  # pylint: disable=assigning-non-slot
+        g.email_handler = EmailReportingHandler()
 
     return g.email_handler
 
