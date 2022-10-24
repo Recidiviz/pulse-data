@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the Datapoint model."""
 import datetime
+import enum
 import json
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -29,7 +30,10 @@ from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
-from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
+from recidiviz.justice_counts.metrics.metric_definition import (
+    IncludesExcludesSetting,
+    MetricDefinition,
+)
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricContextData,
@@ -254,6 +258,7 @@ class DatapointInterface:
         session: Session,
         agency: schema.Agency,
         agency_metric: MetricInterface,
+        user_account: schema.UserAccount,
     ) -> None:
         """
         Agency datapoints are not used to store data, like report datapoints are; rather, they are used to
@@ -273,7 +278,8 @@ class DatapointInterface:
             disaggregation is disabled.
 
         2) To update agency context datapoints with default values that can be used on every report.
-
+        3) To update metric includes/excludes datapoints to save include/exclude settings. Includes/excludes
+        settings describe what data is used to make up aggregate or disaggregation values.
         """
 
         if agency_metric.is_metric_enabled is False:
@@ -287,6 +293,22 @@ class DatapointInterface:
                 ),
                 session=session,
             )
+
+        if agency_metric.metric_definition.includes_excludes is not None:
+            # Create new datapoint for each includes_excludes setting
+            # at the metric level.
+            for (
+                member,
+                setting,
+            ) in agency_metric.includes_excludes_member_to_setting.items():
+                DatapointInterface.add_includes_excludes_datapoint(
+                    session=session,
+                    member=member,
+                    setting=setting,
+                    agency=agency,
+                    user_account=user_account,
+                    agency_metric=agency_metric,
+                )
 
         if agency_metric.is_metric_enabled is True:
             # When metric is re-enabled, delete corresponding agency datapoint.
@@ -312,7 +334,6 @@ class DatapointInterface:
                     ),
                     session,
                 )
-
             for aggregated_dimension in agency_metric.aggregated_dimensions:
                 if aggregated_dimension.dimension_to_enabled_status is not None:
                     for (
@@ -322,14 +343,15 @@ class DatapointInterface:
                         # If is_dimension_enabled is None, then there are no deltas associated
                         # with a dimension datapoint and there is no need to update/create/delete
                         # the datapoint.
+                        dimension_identifier_to_member = {
+                            dimension.dimension_identifier(): dimension.dimension_name
+                        }
                         if is_dimension_enabled is False:
                             update_existing_or_create(
                                 ingested_entity=schema.Datapoint(
                                     metric_definition_key=agency_metric.key,
                                     source=agency,
-                                    dimension_identifier_to_member={
-                                        dimension.dimension_identifier(): dimension.dimension_name
-                                    },
+                                    dimension_identifier_to_member=dimension_identifier_to_member,
                                     enabled=False,
                                 ),
                                 session=session,
@@ -340,12 +362,64 @@ class DatapointInterface:
                                 ingested_entity=schema.Datapoint(
                                     source=agency,
                                     metric_definition_key=agency_metric.key,
-                                    dimension_identifier_to_member={
-                                        dimension.dimension_identifier(): dimension.dimension_name
-                                    },
+                                    dimension_identifier_to_member=dimension_identifier_to_member,
                                 ),
                                 entity_cls=schema.Datapoint,
                             )
+                        for (
+                            member,
+                            setting,
+                        ) in aggregated_dimension.dimension_to_includes_excludes_member_to_setting.get(
+                            dimension, {}
+                        ).items():
+                            # For each reported includes/excludes setting, create a new datapoint
+                            DatapointInterface.add_includes_excludes_datapoint(
+                                session=session,
+                                member=member,
+                                setting=setting,
+                                dimension_identifier_to_member=dimension_identifier_to_member,
+                                agency=agency,
+                                user_account=user_account,
+                                agency_metric=agency_metric,
+                            )
+
+    @staticmethod
+    def add_includes_excludes_datapoint(
+        session: Session,
+        member: enum.Enum,
+        agency: schema.Agency,
+        user_account: schema.UserAccount,
+        agency_metric: MetricInterface,
+        setting: Optional[IncludesExcludesSetting] = None,
+        dimension_identifier_to_member: Optional[Dict[str, str]] = None,
+    ) -> None:
+        """Adds agency datapoints to the Datapoint table that correspond with
+        includes/excludes settings."""
+
+        if setting is None:
+            return
+
+        datapoint, existing_datapoint = update_existing_or_create(
+            ingested_entity=schema.Datapoint(
+                metric_definition_key=agency_metric.key,
+                source=agency,
+                includes_excludes_key=member.name,
+                value=setting.value,
+                dimension_identifier_to_member=dimension_identifier_to_member,
+            ),
+            session=session,
+        )
+        if existing_datapoint is not None:
+            if existing_datapoint.value != datapoint.value:
+                session.add(
+                    schema.DatapointHistory(
+                        datapoint_id=existing_datapoint.id,
+                        user_account_id=user_account.id,
+                        timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+                        old_value=existing_datapoint.value,
+                        new_value=setting.value,
+                    )
+                )
 
     @staticmethod
     def add_datapoint(

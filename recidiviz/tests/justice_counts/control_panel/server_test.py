@@ -39,14 +39,21 @@ from recidiviz.justice_counts.control_panel.constants import ControlPanelPermiss
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
-from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
+from recidiviz.justice_counts.includes_excludes.prisons import (
+    PrisonStaffIncludesExcludes,
+)
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.metric_definition import (
+    CallsRespondedOptions,
+    IncludesExcludesSetting,
+)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     Datapoint,
+    DatapointHistory,
     Report,
     ReportingFrequency,
     ReportStatus,
@@ -655,7 +662,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add_all(
             [
                 self.test_schema_objects.test_user_A,
-                self.test_schema_objects.test_agency_A,
+                self.test_schema_objects.test_agency_G,
             ]
         )
         self.session.commit()
@@ -677,10 +684,110 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 f"/api/agencies/{agency.id}/metrics",
                 json=request_body,
             )
-        self.assertEqual(response.status_code, 200)
-        agency_datapoints = self.session.query(Datapoint).all()
-        # 1 metric datapoint, 2 breakdown datapoints, and 1 and one context datapoint
-        self.assertEqual(len(agency_datapoints), 4)
+            self.assertEqual(response.status_code, 200)
+            agency_datapoint_histories = self.session.query(DatapointHistory).all()
+            self.assertEqual(len(agency_datapoint_histories), 0)
+            agency_datapoints = self.session.query(Datapoint).all()
+
+            # 17 total datapoints: 1 metric datapoint, 2 breakdown datapoints,
+            # 13 includes/excludes datapoints (2 at the metric
+            # level, 11 at the disaggregation level), and 1 and
+            # one context datapoint.
+            self.assertEqual(len(agency_datapoints), 17)
+            includes_excludes_key_and_dimension_to_datapoint = {
+                (
+                    d.includes_excludes_key,
+                    list(d.dimension_identifier_to_member.values())[0]
+                    if d.dimension_identifier_to_member is not None
+                    else None,
+                ): d
+                for d in agency_datapoints
+            }
+            # Volunteer and Intern includes/excludes datapoints will be created because
+            # their default was IncludesExcludesSetting.NO and they are now included. Their
+            # IncludeExcludesSetting is now IncludesExcludesSetting.YES
+            self.assertEqual(
+                includes_excludes_key_and_dimension_to_datapoint[
+                    (PrisonStaffIncludesExcludes.VOLUNTEER.name, None)
+                ].value,
+                "Yes",
+            )
+            self.assertEqual(
+                includes_excludes_key_and_dimension_to_datapoint[
+                    (PrisonStaffIncludesExcludes.INTERN.name, None)
+                ].value,
+                "Yes",
+            )
+            # All includes/excludes that were set to YES should have a datapoint
+            # with a dimension_identifier_to_member.
+            for dimension, includes_excludes in assert_type(
+                prisons.total_staff.aggregated_dimensions, list
+            )[0].dimension_to_includes_excludes.items():
+                for (
+                    member,
+                    default_includes_excludes_setting,
+                ) in includes_excludes.member_to_default_inclusion_setting.items():
+                    if (
+                        default_includes_excludes_setting
+                        is not IncludesExcludesSetting.YES
+                    ):
+                        saved_datapoint = (
+                            includes_excludes_key_and_dimension_to_datapoint[
+                                (member.name, dimension.name)
+                            ]
+                        )
+                        self.assertEqual(
+                            saved_datapoint.value,
+                            "Yes",
+                        )
+                        self.assertEqual(
+                            saved_datapoint.dimension_identifier_to_member,
+                            {
+                                dimension.dimension_identifier(): dimension.dimension_name
+                            },
+                        )
+            # Reset includes/excludes settings at the metric setting back to
+            # their default.
+            update_request_body = (
+                self.test_schema_objects.get_agency_datapoints_request(
+                    agency_id=agency.id, reset_to_default=True
+                )
+            )
+            response = self.client.put(
+                f"/api/agencies/{agency.id}/metrics",
+                json=update_request_body,
+            )
+            self.assertEqual(response.status_code, 200)
+            agency_datapoint_histories = self.session.query(DatapointHistory).all()
+            # Two includes/excludes settings were changed from "Yes" -> "No"
+            self.assertEqual(len(agency_datapoint_histories), 2)
+            agency_datapoints = self.session.query(Datapoint).all()
+            # Amount of agency_datapoints won't change. Only two datapoints were updated.
+            self.assertEqual(len(agency_datapoints), 17)
+            includes_excludes_key_and_dimension_to_datapoint = {
+                (
+                    d.includes_excludes_key,
+                    list(d.dimension_identifier_to_member.values())[0]
+                    if d.dimension_identifier_to_member is not None
+                    else None,
+                ): d
+                for d in agency_datapoints
+            }
+            # Volunteer and Intern includes/excludes datapoints will be saved as "No"
+            # even though "No" is their default because we do not delete includes/excludes
+            # datapoints when settings are reset to default
+            self.assertEqual(
+                includes_excludes_key_and_dimension_to_datapoint[
+                    (PrisonStaffIncludesExcludes.VOLUNTEER.name, None)
+                ].value,
+                "No",
+            )
+            self.assertEqual(
+                includes_excludes_key_and_dimension_to_datapoint[
+                    (PrisonStaffIncludesExcludes.INTERN.name, None)
+                ].value,
+                "No",
+            )
 
     def test_upload_spreadsheet_wrong_filetype(self) -> None:
         self.session.add_all(

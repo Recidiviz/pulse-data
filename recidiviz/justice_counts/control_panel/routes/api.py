@@ -364,8 +364,15 @@ def get_api_blueprint(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
                 )
+                user_account_id = get_user_account_id(request_dict=request_json)
+                user_account = UserAccountInterface.get_user_by_id(
+                    session=current_session, user_account_id=user_account_id
+                )
                 DatapointInterface.add_or_update_agency_datapoints(
-                    session=current_session, agency_metric=agency_metric, agency=agency
+                    session=current_session,
+                    agency_metric=agency_metric,
+                    agency=agency,
+                    user_account=user_account,
                 )
 
             current_session.commit()

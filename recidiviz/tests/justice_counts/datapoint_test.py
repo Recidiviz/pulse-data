@@ -23,11 +23,16 @@ from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.includes_excludes.prisons import (
+    PrisonBudgetIncludesExcludes,
+)
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts.schema import (
-    Agency,
     Datapoint,
+    DatapointHistory,
     Report,
     ReportingFrequency,
     ReportStatus,
@@ -50,12 +55,16 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
     def test_save_agency_datapoints_turnoff_whole_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
-            session.add(agency)
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
@@ -66,13 +75,17 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
     def test_save_agency_datapoints_turnoff_disaggregation(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_agency_A)
-            agency = session.query(Agency).one()
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 include_disaggregation=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), len(CallType))
@@ -97,13 +110,17 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
     def test_save_agency_datapoints_disable_single_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_agency_A)
-            agency = session.query(Agency).one()
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 use_partially_disabled_disaggregation=True, include_disaggregation=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 2)
@@ -120,13 +137,17 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
     def test_save_agency_datapoints_reenable_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_agency_A)
-            agency = session.query(Agency).one()
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 include_disaggregation=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 3)
@@ -135,20 +156,27 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 use_partially_disabled_disaggregation=True, include_disaggregation=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 2)
 
     def test_save_agency_datapoints_reenable_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_agency_A)
-            agency = session.query(Agency).one()
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
@@ -156,20 +184,27 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 is_metric_enabled=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 0)
 
     def test_save_agency_datapoints_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            session.add(self.test_schema_objects.test_agency_A)
-            agency = session.query(Agency).one()
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 include_contexts=True, include_disaggregation=True
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
             datapoints = session.query(Datapoint).all()
             # One context datapoint, 3 disaggregation datapoints
@@ -184,6 +219,53 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(
                         datapoint.value, "this additional context provides contexts"
                     )
+
+    def test_save_includes_excludes_histories(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            agency_metric = MetricInterface(
+                key=prisons.annual_budget.key,
+                includes_excludes_member_to_setting={
+                    member: IncludesExcludesSetting.NOT_AVAILABLE
+                    for member in PrisonBudgetIncludesExcludes
+                },
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(len(datapoint_histories), 0)
+            agency_metric = MetricInterface(
+                key=prisons.annual_budget.key,
+                includes_excludes_member_to_setting={
+                    member: IncludesExcludesSetting.YES
+                    for member in PrisonBudgetIncludesExcludes
+                },
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            datapoint_histories = session.query(DatapointHistory).all()
+            self.assertEqual(
+                len(datapoint_histories), len(PrisonBudgetIncludesExcludes)
+            )
+            for datapoint in datapoint_histories:
+                self.assertEqual(datapoint.old_value, "N/A")
+                self.assertEqual(datapoint.new_value, "Yes")
 
     def test_save_invalid_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
