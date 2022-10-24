@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screen` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DrugTestResultId
+  - OffenderId
+  - CollectionDate
+  - TestingMethodDesc
+  - AllNegative
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    drug_screens:
+      - StateDrugScreen:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - DrugTestResultId
+          drug_screen_date: CollectionDate
+          drug_screen_result:
+            $conditional:
+              - $if:
+                  $equal:
+                    - TestingMethodDesc
+                    - $literal("Admitted Use")
+                $then:
+                  $enum_mapping:
+                    $raw_text: TestingMethodDesc
+                    $mappings:
+                      StateDrugScreenResult.ADMITTED_POSITIVE: "Admitted Use"
+              - $else:
+                  $enum_mapping:
+                    $raw_text: AllNegative
+                    $mappings:
+                      StateDrugScreenResult.NEGATIVE: "1"
+                      StateDrugScreenResult.POSITIVE: "0"
+          sample_type:
+            $enum_mapping:
+              $raw_text: TestingMethodDesc
+              $mappings:
+                StateDrugScreenSampleType.BLOOD:
+                  - "Blood Sample"
+                StateDrugScreenSampleType.BREATH:
+                  - "Breath Sample"
+                StateDrugScreenSampleType.EXTERNAL_UNKNOWN:
+                  - "Unknown"
+                StateDrugScreenSampleType.HAIR:
+                  - "Hair Sample"
+                StateDrugScreenSampleType.INTERNAL_UNKNOWN:
+                  - "Admitted Use"
+                  - "DCLS Lab"
+                  - "Hand-held"
+                  - "Other Lab"
+                StateDrugScreenSampleType.NO_SAMPLE:
+                  - "Not Taken"
+                StateDrugScreenSampleType.SALIVA:
+                  - "Saliva Sample"
+                StateDrugScreenSampleType.SWEAT:
+                  - "Sweat Sample"
+                StateDrugScreenSampleType.URINE:
+                  - "Urine Sample"

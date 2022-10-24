@@ -338,6 +338,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
+    drug_screens: List["StateDrugScreen"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
 
 @attr.s(eq=False, kw_only=True)

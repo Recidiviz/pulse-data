@@ -75,7 +75,9 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
             get_direct_ingest_region(region_code), []
         ).get_view_builder_by_view_name(ingest_view_name)
 
-    def run_ingest_view_test(self, fixtures_files_name: str) -> None:
+    def run_ingest_view_test(
+        self, fixtures_files_name: str, create_expected: bool = False
+    ) -> None:
         """Reads in the expected output CSV file from the ingest view fixture path and
         asserts that the results from the raw data ingest view query are equal. Prints
         out the dataframes for both expected rows and results.
@@ -85,6 +87,9 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
 
         And compare output against the following file:
         `recidiviz/tests/ingest/direct/direct_ingest_fixtures/ux_xx/ingest_view/{ingest_view_name}/{fixtures_files_name}.csv`
+
+        Passing `create_expected=True` will first create the expected output csv before
+        the comparison check.
         """
         self.create_mock_raw_bq_tables_from_fixtures(
             region_code=self.region_code,
@@ -99,6 +104,9 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
             file_name=fixtures_files_name,
         )
         results = self.query_ingest_view_for_builder(self.view_builder)
+
+        if create_expected:
+            results.to_csv(expected_output_fixture_path, index=False)
 
         self.compare_results_to_fixture(results, expected_output_fixture_path)
 
