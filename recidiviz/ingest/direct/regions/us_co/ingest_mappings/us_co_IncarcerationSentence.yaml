@@ -76,6 +76,7 @@ output:
                   - T # Splinter CS/CC - TODO(#15761): Update when CO responds with additional context
                 StateSentenceStatus.SUSPENDED:
                   - S # Suspended-YOS
+                  - H # Held in Abeyance - TODO(#15761): Update when CO responds with additional context
           incarceration_type:
             $enum_mapping:
               $raw_text: SENTENCETYPE
@@ -144,6 +145,8 @@ output:
                         - FDFS # Deferred Sentence
                       StateChargeStatus.DROPPED:
                         - FGSA # Guilty Set Aside
+                        - FFNG # Not Guilty
+                        - DMDA # Dismissed by D.A.
                       StateChargeStatus.EXTERNAL_UNKNOWN:
                         - UNKN # Unknown (Conversion)
                 offense_date: OFFENSEDATE
