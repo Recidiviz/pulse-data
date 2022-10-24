@@ -138,21 +138,24 @@ class GcsfsCsvReader:
             line_terminator=line_terminator,
             quoting=quoting,
         )
+
+        result_kwargs = kwargs.copy()
+
         # Use the default line terminator (newline)
-        del kwargs["lineterminator"]
+        del result_kwargs["lineterminator"]
 
         # Use the default separator (comma)
-        del kwargs["sep"]
+        del result_kwargs["sep"]
 
         # Stream normalizes all fields to be fully quoted
-        kwargs["quoting"] = csv.QUOTE_ALL
+        result_kwargs["quoting"] = csv.QUOTE_ALL
 
         # We should now be able to use the faster "c" engine to parse
         # the normalized stream.
-        kwargs["engine"] = "c"
+        result_kwargs["engine"] = "c"
         encoding = UTF_8_ENCODING
 
-        return preprocessed_fp, encoding, kwargs
+        return preprocessed_fp, encoding, result_kwargs
 
     def streaming_read(
         self,
@@ -196,7 +199,9 @@ class GcsfsCsvReader:
                             old_encoding=encoding, new_encoding=updated_encoding
                         )
                         encoding = updated_encoding
-                        kwargs = updated_kwargs
+                        kwargs_for_read = updated_kwargs
+                    else:
+                        kwargs_for_read = kwargs
 
                     try:
                         reader: Iterator[pd.DataFrame] = pd.read_csv(
@@ -207,7 +212,7 @@ class GcsfsCsvReader:
                             encoding=encoding,
                             dtype=dtype,
                             chunksize=chunk_size,
-                            **kwargs,
+                            **kwargs_for_read,
                         )
                     except pd.errors.EmptyDataError:
                         reader = iter([])
