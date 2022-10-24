@@ -17,6 +17,7 @@ FROM us.gcr.io/recidiviz-staging/recidiviz-base:latest
 WORKDIR /app/recidiviz
 
 # Add the rest of the application code once all dependencies are installed
+COPY gevent_config.py /app/
 COPY gunicorn.conf.py /app/
 COPY ./recidiviz/__init__.py .
 COPY ./recidiviz/auth/ auth/
