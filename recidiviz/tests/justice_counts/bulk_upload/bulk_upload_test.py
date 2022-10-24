@@ -554,14 +554,18 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         the metric is disabled."""
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A
-            session.add(agency)
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
 
             # Turn off calls for service metric.
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=False
             )
             DatapointInterface.add_or_update_agency_datapoints(
-                agency_metric=agency_metric, agency=agency, session=session
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
             )
 
             # Get agency metric and construct metric_key_to_agency_datapoints dict.

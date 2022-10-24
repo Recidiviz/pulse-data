@@ -25,13 +25,24 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.auth.auth0_client import Auth0User, JusticeCountsAuth0AppMetadata
 from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsStaffType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
-from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.includes_excludes.prisons import (
+    OtherPrisonStaffIncludesExcludes,
+    PrisonClinicalStaffIncludesExcludes,
+    PrisonNonSecurityStaffIncludesExcludes,
+    PrisonProgrammaticStaffIncludesExcludes,
+    PrisonSecurityStaffIncludesExcludes,
+    PrisonStaffIncludesExcludes,
+    UnknownPrisonStaffIncludesExcludes,
+    VacantPrisonStaffIncludesExcludes,
+)
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
@@ -396,31 +407,139 @@ class JusticeCountsSchemaTestObjects:
 
     @staticmethod
     def get_agency_datapoints_request(
-        agency_id: int,
+        agency_id: int, reset_to_default: Optional[bool] = False
     ) -> Dict[str, Any]:
         return {
             "agency_id": agency_id,
             "metrics": [
                 {
-                    "key": law_enforcement.annual_budget.key,
+                    "key": prisons.annual_budget.key,
                     "enabled": False,
                 },
                 {
-                    "key": law_enforcement.calls_for_service.key,
+                    "key": prisons.total_staff.key,
                     "enabled": True,
+                    "settings": [
+                        {
+                            "key": PrisonStaffIncludesExcludes.VOLUNTEER.name,
+                            "included": "Yes" if reset_to_default is False else "No",
+                        },
+                        {
+                            "key": PrisonStaffIncludesExcludes.INTERN.name,
+                            "included": "Yes" if reset_to_default is False else "No",
+                        },
+                    ],
                     "disaggregations": [
                         {
                             "enabled": True,
-                            "key": CallType.dimension_identifier(),
+                            "key": PrisonsStaffType.dimension_identifier(),
                             "dimensions": [
-                                {"key": CallType.UNKNOWN.value, "enabled": False},
-                                {"key": CallType.EMERGENCY.value, "enabled": False},
+                                {
+                                    "key": PrisonsStaffType.SECURITY.value,
+                                    "enabled": False,
+                                    "settings": [
+                                        {
+                                            "key": PrisonSecurityStaffIncludesExcludes.OTHER.name,
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": PrisonSecurityStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        },
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.NON_SECURITY.value,
+                                    "enabled": False,
+                                    "settings": [
+                                        {
+                                            "key": PrisonNonSecurityStaffIncludesExcludes.OTHER.name,
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": PrisonNonSecurityStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        },
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.CLINICAL_OR_MEDICAL.value,
+                                    "enabled": True,
+                                    "settings": [
+                                        {
+                                            "key": PrisonClinicalStaffIncludesExcludes.OTHER.name,
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": PrisonClinicalStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        },
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.PROGRAMMATIC.value,
+                                    "enabled": True,
+                                    "settings": [
+                                        {
+                                            "key": PrisonProgrammaticStaffIncludesExcludes.OTHER.name,
+                                            "included": "Yes",
+                                        },
+                                        {
+                                            "key": PrisonProgrammaticStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        },
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.OTHER.value,
+                                    "enabled": True,
+                                    "settings": [
+                                        {
+                                            "key": OtherPrisonStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        }
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.UNKNOWN.value,
+                                    "enabled": True,
+                                    "settings": [
+                                        {
+                                            "key": UnknownPrisonStaffIncludesExcludes.VACANT.name,
+                                            "included": "Yes",
+                                        }
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
+                                {
+                                    "key": PrisonsStaffType.VACANT.value,
+                                    "enabled": True,
+                                    "settings": [
+                                        {
+                                            "key": VacantPrisonStaffIncludesExcludes.FILLED.name,
+                                            "included": "Yes",
+                                        }
+                                    ]
+                                    if reset_to_default is False
+                                    else [],
+                                },
                             ],
                         }
                     ],
                 },
                 {
-                    "key": law_enforcement.civilian_complaints_sustained.key,
+                    "key": prisons.grievances_upheld.key,
                     "enabled": True,
                     "contexts": [
                         {

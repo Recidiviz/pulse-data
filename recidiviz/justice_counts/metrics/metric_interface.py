@@ -101,9 +101,9 @@ class MetricAggregatedDimensionData:
     dimension_to_enabled_status: Optional[Dict[DimensionBase, Any]] = attr.field(
         default=None
     )
-    dimension_to_includes_excludes_member_to_setting: Optional[
-        Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]
-    ] = attr.field(default=None)
+    dimension_to_includes_excludes_member_to_setting: Dict[
+        DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
+    ] = attr.field(default={})
 
     @dimension_to_value.validator
     def validate(self, _attribute: attr.Attribute, value: Any) -> None:
@@ -158,8 +158,6 @@ class MetricAggregatedDimensionData:
         # SettingEnum.SETTING_2: IncludesExcludesSetting.No, ...}
         actual_member_to_includes_excludes_setting = (
             self.dimension_to_includes_excludes_member_to_setting.get(dimension, {})
-            if self.dimension_to_includes_excludes_member_to_setting is not None
-            else {}
         )
 
         for (
@@ -283,7 +281,7 @@ class MetricAggregatedDimensionData:
         ]  # example: RaceAndEthnicity
         dimensions = json.get("dimensions")
         dimension_enum_value_to_value = {
-            dim["key"]: dim[value_key] for dim in dimensions or []
+            dim["key"]: dim.get(value_key) for dim in dimensions or []
         }  # example: {"BLACK": 50, "WHITE": 20, ...} if a report metric
         # or {"BLACK": True, "WHITE": False, ...} if it is an agency metric
         if entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE:
