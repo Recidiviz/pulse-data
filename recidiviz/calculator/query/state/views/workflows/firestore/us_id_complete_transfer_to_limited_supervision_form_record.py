@@ -320,11 +320,6 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           --only include negative drug screen info if within the past 90 days 
           IF(DATE_ADD(ds.drug_screen_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific'),
                 ds.drug_screen_date, NULL) AS form_information_latest_negative_drug_screen_date,
-          #TODO(#15919) remove fields once FE is updated
-          IF(DATE_ADD(ds.drug_screen_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific'),
-                ds.drug_screen_date, NULL) AS form_information_drug_screen_date,
-          IF(DATE_ADD(ds.drug_screen_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific'),
-                ds.is_positive_result, NULL) AS form_information_drug_screen_result,  
           ncic.review_date AS form_information_ncic_review_date,
           ncic.note_title AS form_information_ncic_note_title,
           ncic.note_body AS form_information_ncic_note_body,
@@ -333,10 +328,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           tx.note_body AS form_information_tx_note_body,
           ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
           ARRAY_AGG(n.case_notes IGNORE NULLS ORDER BY ses.start_date)[ORDINAL(1)] AS case_notes,
-          #TODO(#15919) remove fields once FE is updated
           ds.drug_screen_date AS metadata_latest_negative_drug_screen_date, 
-          ds.drug_screen_date AS metadata_drug_screen_date, 
-          ds.is_positive_result AS metadata_drug_screen_result,
           ad.assessment_date AS metadata_lsir_alchohol_drug_date,
           ad.alcohol_drug_total AS metadata_lsir_alcohol_drug_score
       FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_limited_supervision_form_materialized` tes
