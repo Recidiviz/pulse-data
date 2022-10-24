@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagRowMissingColumns
 file_description: |-
   tagRowMissingColumns file description
@@ -9,3 +10,4 @@ columns:
   - name: comment
   - name: termination_code
   - name: update_date
+custom_line_terminator: "\n"

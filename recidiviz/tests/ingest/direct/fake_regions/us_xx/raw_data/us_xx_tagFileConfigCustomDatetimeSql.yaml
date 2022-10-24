@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagFileConfigCustomDatetimeSql
 file_description: |-
   Testing custom datetime sql parsing associated with the datetime field
@@ -10,3 +11,4 @@ columns:
     is_datetime: True
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"
+custom_line_terminator: "\n"

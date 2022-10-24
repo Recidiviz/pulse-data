@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagColCapsDoNotMatchConfig
 file_description: |-
   tagColCapsDoNotMatchConfig file description
@@ -8,3 +9,4 @@ columns:
   - name: COL1
   - name: COL_2
   - name: Col3
+custom_line_terminator: "\n"

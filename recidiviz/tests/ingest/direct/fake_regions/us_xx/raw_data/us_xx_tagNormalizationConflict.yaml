@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagNormalizationConflict
 file_description: |-
   tagNormalizationConflict file description
@@ -8,3 +9,4 @@ columns:
   - name: COL_1
     description: |-
       COL_1 description
+custom_line_terminator: "\n"
