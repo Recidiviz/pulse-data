@@ -76,7 +76,7 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
         )
 
         self.entity_eq_patcher = patch(
-            "recidiviz.persistence.entity.operations.entities.OperationsEntity.__eq__",
+            "recidiviz.persistence.entity.base_entity.Entity.__eq__",
             _fake_eq,
         )
         self.entity_eq_patcher.start()

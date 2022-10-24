@@ -79,12 +79,13 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     entity types.
     """
 
-    def __init__(self, direction_checker: SchemaEdgeDirectionChecker):
+    def __init__(self, direction_checker: Optional[SchemaEdgeDirectionChecker]):
         """
         Args:
             direction_checker: A SchemaEdgeDirectionChecker object that is
             specific to the schema required by the subclass. Will be used to
-            determine which edges of the graph are back edges.
+            determine which edges of the graph are back edges. May be null if there
+            are no edges between nodes in the graph.
         """
         self._direction_checker = direction_checker
 
@@ -105,10 +106,6 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
     @abc.abstractmethod
     def _get_schema_module(self) -> ModuleType:
-        pass
-
-    @abc.abstractmethod
-    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         pass
 
     @abc.abstractmethod
@@ -224,15 +221,6 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             raise DatabaseConversionError(f"Unable to convert class [{src.__class__}]")
 
         for field, attribute in attr.fields_dict(entity_cls).items():
-            if self._should_skip_field(entity_cls, field):
-                continue
-
-            if (
-                self._direction_checker.is_back_edge(src, field)
-                and not populate_back_edges
-            ):
-                continue
-
             v = getattr(src, field)
 
             if not isinstance(attribute, attr.Attribute):
@@ -242,9 +230,17 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                 )
 
             if isinstance(v, list):
+                if not self._direction_checker:
+                    raise ValueError(
+                        f"Found null direction checker for entity [{entity_cls}] with "
+                        f"relationship field [{field}]"
+                    )
+                is_backedge = self._direction_checker.is_back_edge(src, field)
+                if is_backedge and not populate_back_edges:
+                    continue
                 values = []
                 for next_src in v:
-                    if self._direction_checker.is_back_edge(src, field):
+                    if is_backedge:
                         self._register_back_edge(src, next_src, field)
                         continue
                     values.append(self._convert_forward(next_src, populate_back_edges))
@@ -254,8 +250,16 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
                 value: Optional[Any] = values
             elif issubclass(type(v), Entity) or issubclass(type(v), DatabaseEntity):
+                if not self._direction_checker:
+                    raise ValueError(
+                        f"Found null direction checker for entity [{entity_cls}] with "
+                        f"relationship field [{field}]"
+                    )
+                is_backedge = self._direction_checker.is_back_edge(src, field)
+                if is_backedge and not populate_back_edges:
+                    continue
                 next_src = v
-                if self._direction_checker.is_back_edge(src, field):
+                if is_backedge:
                     self._register_back_edge(src, next_src, field)
                     continue
                 value = self._convert_forward(v, populate_back_edges)

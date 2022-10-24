@@ -21,7 +21,7 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
+from recidiviz.persistence.database.schema.state import schema as state_schema
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -39,7 +39,7 @@ class MatchedEntities(BuildableAttr):
         matching.
     """
 
-    people: List[SchemaPersonType] = attr.ib(factory=list)
+    people: List[state_schema.StatePerson] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
     database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)

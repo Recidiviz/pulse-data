@@ -21,7 +21,7 @@ from typing import List
 
 from mock import MagicMock, create_autospec, patch
 
-from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database_invariant_validator import (
@@ -32,25 +32,25 @@ DATABASE_INVARIANT_VALIDATOR_MODULE = database_invariant_validator.__name__
 
 
 def validator_that_succeeds(
-    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+    _session: Session, _region_code: str, _output_people: List[state_schema.StatePerson]
 ) -> bool:
     return True
 
 
 def validator_that_fails(
-    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+    _session: Session, _region_code: str, _output_people: List[state_schema.StatePerson]
 ) -> bool:
     return False
 
 
 def validator_that_throws(
-    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+    _session: Session, _region_code: str, _output_people: List[state_schema.StatePerson]
 ) -> bool:
     raise ValueError("Validation error")
 
 
 def validator_that_throws_session_is_dirty(
-    _session: Session, _region_code: str, _output_people: List[SchemaPersonType]
+    _session: Session, _region_code: str, _output_people: List[state_schema.StatePerson]
 ) -> bool:
     raise SessionIsDirtyError("Dirty session error")
 

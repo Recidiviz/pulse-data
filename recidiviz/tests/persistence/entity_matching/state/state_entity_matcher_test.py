@@ -43,7 +43,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
@@ -140,7 +140,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     @staticmethod
     def _match(
-        session: Session, ingested_people: List[EntityPersonType]
+        session: Session, ingested_people: List[state_entities.StatePerson]
     ) -> MatchedEntities:
         return entity_matching.match(
             session, _STATE_CODE, ingested_people, DEFAULT_METADATA

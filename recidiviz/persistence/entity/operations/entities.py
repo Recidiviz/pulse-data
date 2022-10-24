@@ -30,25 +30,11 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.entity.base_entity import entity_graph_eq
+from recidiviz.persistence.entity.base_entity import Entity
 
 
 @attr.s(eq=False)
-class OperationsEntity:
-    """Base class for all entity types."""
-
-    # Consider Entity abstract and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
-        if cls is OperationsEntity:
-            raise Exception("Abstract class cannot be instantiated")
-        return super().__new__(cls)
-
-    def __eq__(self, other):
-        return entity_graph_eq(self, other)
-
-
-@attr.s(eq=False)
-class DirectIngestSftpFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr):
+class DirectIngestSftpFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     """Metadata about a file downloaded from SFTP for a particular region."""
 
     file_id: int = attr.ib()
@@ -62,7 +48,7 @@ class DirectIngestSftpFileMetadata(OperationsEntity, BuildableAttr, DefaultableA
 
 
 @attr.s(eq=False)
-class DirectIngestRawFileMetadata(OperationsEntity, BuildableAttr, DefaultableAttr):
+class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     """Metadata about a raw file imported directly from a particular region."""
 
     file_id: int = attr.ib()
@@ -90,9 +76,7 @@ class DirectIngestRawFileMetadata(OperationsEntity, BuildableAttr, DefaultableAt
 
 
 @attr.s(eq=False)
-class DirectIngestViewMaterializationMetadata(
-    OperationsEntity, BuildableAttr, DefaultableAttr
-):
+class DirectIngestViewMaterializationMetadata(Entity, BuildableAttr, DefaultableAttr):
     """Represents the metadata known about a job to materialize the results of an ingest
     view and save them for use later in ingest (as rows in a BQ table).
     """
@@ -128,7 +112,7 @@ class DirectIngestViewMaterializationMetadata(
 
 
 @attr.s(eq=False)
-class DirectIngestInstanceStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
+class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
     """Status of a direct instance ingest process."""
 
     # The region code of a particular instance doing ingest.

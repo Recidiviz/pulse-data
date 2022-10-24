@@ -56,7 +56,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
@@ -64,7 +64,6 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.errors import PersistenceError
@@ -111,7 +110,7 @@ class SchemaEdgeDirectionChecker:
         )
 
     @classmethod
-    def state_direction_checker(cls):
+    def state_direction_checker(cls) -> "SchemaEdgeDirectionChecker":
         global _state_direction_checker
         if not _state_direction_checker:
             _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
@@ -174,7 +173,7 @@ class SchemaEdgeDirectionChecker:
             < self._class_hierarchy_map[type_2_name]
         )
 
-    def assert_sorted(self, entity_types: List[Type[CoreEntity]]):
+    def assert_sorted(self, entity_types: Sequence[Type[CoreEntity]]):
         """Throws if the input |entity_types| list is not in descending order
         based on class hierarchy.
         """
@@ -519,7 +518,7 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
     # Although these are not flat fields, they represent characteristics of a
     # person. If present, we do have information about the provided person, and
     # therefore it is not a placeholder.
-    if isinstance(entity, (schema.StatePerson, entities.StatePerson)):
+    if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
         if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
             return False
 
@@ -536,7 +535,7 @@ def is_reference_only_entity(
     fields (aside from default values).
     """
     set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
-    if isinstance(entity, (schema.StatePerson, entities.StatePerson)):
+    if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
         if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
             return False
         return bool(entity.external_ids)
@@ -876,7 +875,7 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
 
 
 def log_entity_count(
-    db_persons: List[schema.StatePerson], field_index: CoreEntityFieldIndex
+    db_persons: List[state_schema.StatePerson], field_index: CoreEntityFieldIndex
 ):
     """Counts and logs the total number of entities of each class included in
     the |db_persons| trees.
@@ -889,7 +888,8 @@ def log_entity_count(
 
 
 def person_has_id(
-    person: Union[entities.StatePerson, schema.StatePerson], person_external_id: str
+    person: Union[state_entities.StatePerson, state_schema.StatePerson],
+    person_external_id: str,
 ):
     """Returns true if the given |person_external_id| matches any of the
     external_ids for the given |person|.

@@ -29,7 +29,6 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
     DstBaseType,
-    FieldNameType,
     SrcBaseType,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -52,9 +51,6 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
     def _get_entities_module(self) -> ModuleType:
         return entities
 
-    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
-        return False
-
     def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
         if isinstance(dst, (StatePerson, schema.StatePerson)):
             self._add_person_to_dst(dst, dst)
@@ -64,9 +60,8 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
         entity_cls: Type[Entity] = self._get_entity_class(dst)
 
         for field, _ in attr.fields_dict(entity_cls).items():
-            if self._should_skip_field(entity_cls, field):
-                continue
-
+            if not self._direction_checker:
+                raise ValueError("Found unexpectedly null direction checker.")
             if self._direction_checker.is_back_edge(dst, field):
                 continue
 

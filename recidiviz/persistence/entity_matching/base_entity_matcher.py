@@ -23,7 +23,7 @@ from typing import List
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.utils import monitoring
 
@@ -52,7 +52,7 @@ class BaseEntityMatcher:
         self,
         session: Session,
         region_code: str,
-        ingested_people: List[EntityPersonType],
+        ingested_people: List[state_entities.StatePerson],
     ) -> MatchedEntities:
         """
         Attempts to match all people from |ingested_people| with corresponding
