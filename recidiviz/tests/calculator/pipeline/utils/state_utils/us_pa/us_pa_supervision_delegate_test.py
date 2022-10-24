@@ -21,9 +21,6 @@ from typing import Optional
 
 from parameterized import parameterized
 
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
@@ -34,7 +31,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+)
 
 
 class TestUsPaSupervisionDelegate(unittest.TestCase):
@@ -99,7 +99,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 5, 1),
@@ -130,7 +130,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 4, 1),
@@ -163,21 +163,19 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
             start_date=date(2018, 5, 1),
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_sentence_2 = (
-            NormalizedStateIncarcerationSentence.new_with_defaults(
-                state_code="US_PA",
-                incarceration_sentence_id=123,
-                start_date=date(2018, 5, 1),
-                projected_max_release_date=date(2018, 6, 10),
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            )
+        incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_PA",
+            incarceration_sentence_id=123,
+            start_date=date(2018, 5, 1),
+            projected_max_release_date=date(2018, 6, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         self.assertEqual(

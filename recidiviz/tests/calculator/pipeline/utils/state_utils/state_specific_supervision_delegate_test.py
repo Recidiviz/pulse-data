@@ -24,10 +24,6 @@ from parameterized import parameterized
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -42,8 +38,10 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 
@@ -137,7 +135,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=date(2018, 5, 1),
             external_id="ss1",
@@ -207,7 +205,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=date(2018, 5, 1),
             external_id="ss1",
@@ -250,7 +248,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
@@ -294,7 +292,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             supervision_level_raw_text="M",
         )
 
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
             start_date=date(2018, 5, 1),
             external_id="ss1",
@@ -307,7 +305,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
         # The supervision period is within the bounds of the incarceration sentence, and because its projected max
         # release date is after the supervision sentence's, it will be used to determine whether the event date is past
         # the projected end date.
-        incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",

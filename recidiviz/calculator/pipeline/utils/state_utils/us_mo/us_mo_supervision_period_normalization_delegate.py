@@ -23,10 +23,6 @@ from typing import Dict, List, Optional, Set
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     copy_entities_and_add_unique_ids,
     update_normalized_entity_with_globally_unique_id,
@@ -56,8 +52,10 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 
@@ -74,8 +72,8 @@ class UsMoSupervisionNormalizationDelegate(
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        supervision_sentences: Optional[List[StateSupervisionSentence]],
     ) -> List[StateSupervisionPeriod]:
         """Generates supervision periods based on sentences and critical statuses
         that denote changes in supervision type.

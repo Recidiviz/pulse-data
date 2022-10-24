@@ -20,13 +20,13 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+)
 
 
 class UsMiIncarcerationNormalizationDelegate(
@@ -37,7 +37,7 @@ class UsMiIncarcerationNormalizationDelegate(
     def incarceration_admission_reason_override(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         if (
             incarceration_period.admission_reason
