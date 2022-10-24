@@ -18,7 +18,13 @@ columns:
     description: |-
       Identifier for the security level existing within a given facility sublevel. Can
       be joined to `hsn_SecurityLevel.SecurityLevelId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Minimum
+      - value: 3
+        description: Medium
+      - value: 4
+        description: Close
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description

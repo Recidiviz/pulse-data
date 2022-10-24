@@ -17,7 +17,13 @@ columns:
     description: |-
       ID for the supervision type. Can be joined to 
       `scl_SupervisionType.SupervisionTypeId`.
-    known_values: []
+    known_values:
+      - value: 3
+        description: Parole
+      - value: 31
+        description: Probation
+      - value: 4
+        description: Interstate
   - name: ImposedDate
     description: |-
       The date the supervision term was imposed.
@@ -40,7 +46,11 @@ columns:
     description: |-
       ID for the supervision status. Can be joined to 
       `scl_SupervisionStatus.SupervisionStatusId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Active
+      - value: 2
+        description: Closed
   - name: AliasNameId
     description: |-
       ID for the alias name of the supervisee. Can be joined to 

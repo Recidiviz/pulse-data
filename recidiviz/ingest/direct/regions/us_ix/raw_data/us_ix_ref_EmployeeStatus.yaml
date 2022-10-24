@@ -7,9 +7,11 @@ primary_key_cols:
   - EmployeeStatusId
 columns:
   - name: EmployeeStatusId
-    description: Primary key
+    description: |-
+      Primary key
   - name: EmployeeStatusDesc
-    description: Description of this employee status type.
+    description: |-
+      Description of this employee status type.
   - name: Inactive
   - name: Locking
   - name: InsertUserId

@@ -19,6 +19,19 @@ columns:
       Integer values corresponding to the type of assessment used in a given 
       observation, ranging from 1-7 (though a type of 2 is never used in the data).
       Can be joined to `asm_AssessmentType.AssessmentTypeId`.
+    known_values:
+      - value: 1
+        description: Substance Abuse
+      - value: 3
+        description: Academic
+      - value: 4
+        description: Risk/Need
+      - value: 5
+        description: Sex Offender
+      - value: 6
+        description: Polygraph
+      - value: 7
+        description: Vocational
   - name: AssessmentToolId
     description: |-
       Integer values corresponding to the tool used to conduct a given assessment,
@@ -29,6 +42,19 @@ columns:
       Integer values corresponding to the given assessment's degree, with 6 possible 
       values along with a null option. Can be joined to
       `asm_AssessmentDegree.AssessmentDegreeId`.
+    known_values:
+      - value: 1
+        description: Minimum Needs
+      - value: 15
+        description: Low
+      - value: 266
+        description: 1 - Outpatient Treatment
+      - value: 4
+        description: Low Risk
+      - value: 5
+        description: Moderate Risk
+      - value: 7
+        description: High Risk
   - name: AssessorTypeId
     description: |-
       Integer values corresponding to the type of assessor conducting the assessment.
@@ -122,7 +148,35 @@ columns:
     description: |-
       ID value (integer) corresponding to the assessment's status. Can be joined to
       `asm_AssessmentStatus.AssessmentStatusId`.
+    known_values:
+      - value: 3
+        description: Completed
+      - value: 5
+        description: Pending
+      - value: 6
+        description: In Progress
+      - value: 7
+        description: Scheduled
   - name: AssessmentTypeResultId
     description: |-
       ID value (integer) corresponding to the assessment type result. Can be joined to
       `asm_AssessmentTypeResult.AssessmentTypeResultId`.
+    known_values:
+      - value: 1
+        description: No Deception Indicated
+      - value: 2
+        description: Deception Indicated
+      - value: 3
+        description: Inconclusive
+      - value: 4
+        description: Comment
+      - value: 40
+        description: Low
+      - value: 46
+        description: Non-Dependent
+      - value: 6
+        description: Chemically Dependent
+      - value: 7
+        description: Code 01
+      - value: 8
+        description: Code 02

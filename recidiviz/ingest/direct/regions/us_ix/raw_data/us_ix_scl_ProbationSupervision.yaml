@@ -52,4 +52,6 @@ columns:
     description: |-
       ID indicating when the probation term starts. Mostly unused, and only ever takes
       a value of 1 ("On sentence date").
-    known_values: []
+    known_values:
+      - value: 1
+        description: On Sentence Date

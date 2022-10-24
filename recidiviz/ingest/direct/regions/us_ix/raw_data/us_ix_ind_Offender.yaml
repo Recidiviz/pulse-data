@@ -25,9 +25,31 @@ columns:
   - name: GenderId
     description: |-
       The reference code for the gender type (reference table: ind_Gender)
+    known_values:
+      - value: 12
+        description: Male
+      - value: 13
+        description: Female
+      - value: 14
+        description: Unknown
+      - value: 23
+        description: Female to Male
+      - value: 24
+        description: Male to Female
   - name: RaceId
     description: |-
       The reference code for the race type (reference table: ind_Race)
+    known_values:
+      - value: 15
+        description: American Indian or Alaskan Native
+      - value: 16
+        description: Asian or Pacific Islander
+      - value: 17
+        description: Black
+      - value: 18
+        description: White
+      - value: 19
+        description: Unknown
   - name: EmployeeId
     description: |-
       TODO(#15329): Fill in column description
@@ -37,6 +59,11 @@ columns:
   - name: EthnicOriginId
     description: |-
       The reference code for the ethnicity type (reference table: ind_EthnicOrigin)
+    known_values:
+      - value: 0
+        description: Other
+      - value: 1
+        description: Hispanic
   - name: EnglishNotSpoken
     description: |-
       TODO(#15329): Fill in column description

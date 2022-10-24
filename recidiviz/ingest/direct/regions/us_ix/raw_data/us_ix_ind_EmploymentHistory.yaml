@@ -36,7 +36,11 @@ columns:
     description: |-
       Indicates the individual's status over the employment period. Can be joined with 
       `ref_EmploymentStatus.EmploymentStatusId`.
-    known_values: []
+    known_values:
+      - value: 11
+        description: Disabled
+      - value: 15
+        description: Employed
   - name: PrimaryEmployment
     description: |-
       TODO(#15329): Fill in column description

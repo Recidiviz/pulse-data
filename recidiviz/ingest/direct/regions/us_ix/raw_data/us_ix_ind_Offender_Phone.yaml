@@ -14,9 +14,9 @@ columns:
     description: |-
       ID of the phone number, joins to `ref_Phone.PhoneId`.
   - name: OffenderId
-    is_pii: True
     description: |-
       IDOC client ID
+    is_pii: True
   - name: PrimaryPhone
     description: |-
       TODO(#15329): Fill in column description

@@ -13,9 +13,27 @@ columns:
   - name: LegalStatusId
     description: |-
       Code for this legal status, joins to ind_LegalStatus.LegalStatusId.
+    known_values:
+      - value: 26
+        description: Parole Violator
+      - value: 75
+        description: Termer
+      - value: 76
+        description: Rider
+      - value: 77
+        description: Probation
+      - value: 78
+        description: Parole
+      - value: 79
+        description: Non Idaho Commitment
   - name: LegalStatusChangeReasonId
     description: |-
       Code for the reason why the legal status changed, joins to ind_LegalStatusChangeReason.LegalStatusChangeReasonId.
+    known_values:
+      - value: 343
+        description: Conversion
+      - value: 71
+        description: Initial
   - name: PreviousEndDate
     description: |-
       End date of previous legal status period.

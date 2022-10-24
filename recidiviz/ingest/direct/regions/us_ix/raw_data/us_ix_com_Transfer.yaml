@@ -21,9 +21,47 @@ columns:
   - name: TransferTypeId
     description: |-
       Code for transfer type, joins to com_TransferType.TransferTypeId.
+    known_values:
+      - value: 1
+        description: In to DOC
+      - value: 2
+        description: Out from DOC
+      - value: 6
+        description: DOC Community to DOC Facility
+      - value: 7
+        description: DOC Facility to DOC Community
+      - value: 8
+        description: DOC Community to Community
+      - value: 9
+        description: DOC Facility to Facility
   - name: TransferReasonId
     description: |-
       Code for transfer reason, joins to com_TransferReason.TransferReasonId.
+    known_values:
+      - value: 1
+        description: Court Action
+      - value: 10
+        description: Pending Custody Intake
+      - value: 12
+        description: Administrative
+      - value: 2
+        description: Offender Moves Location
+      - value: 27
+        description: Escape
+      - value: 29
+        description: Assigned
+      - value: 3
+        description: Administrative Transfer
+      - value: 32
+        description: Initial Facility Intake
+      - value: 41
+        description: Out To Court
+      - value: 50
+        description: Release to Supervision
+      - value: 53
+        description: Return from Escape
+      - value: 8
+        description: Discharged from DOC
   - name: DOCLocationFromId
     description: |-
       Code for origin location within IDOC. Joins to ref_Location.LocationId.
@@ -98,7 +136,12 @@ columns:
     is_datetime: True
   - name: TransferStatusId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the transfer status. Can be joined to `com_TransferStatus.TransferStatusId`.
+    known_values:
+      - value: 1
+        description: Scheduled
+      - value: 3
+        description: Confirmed
   - name: CancellationDate
     description: |-
       TODO(#15329): Fill in column description
@@ -112,7 +155,12 @@ columns:
       ID of the sentence term to which this transfer applies, joins to scl_Term.TermId.
   - name: BedTypeId
     description: |-
-      TODO(#15329): Fill in column description
+      ID for the bed type. Can be joined to `hsn_BedType.BedTypeId`.
+    known_values:
+      - value: 2
+        description: General Population
+      - value: 4
+        description: Reception and Diagnostic Unit
   - name: KeepSeparateReason
     description: |-
       TODO(#15329): Fill in column description

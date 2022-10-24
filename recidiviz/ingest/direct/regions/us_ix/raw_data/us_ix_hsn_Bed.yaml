@@ -21,11 +21,35 @@ columns:
   - name: BedTypeId
     description: |-
       Indicates each bed's type. Can be joined with `hsn_BedType.BedTypeId`.
-    known_values: []
+    known_values:
+      - value: 10
+        description: Protective Custody
+      - value: 2
+        description: General Population
+      - value: 3
+        description: Medical
+      - value: 4
+        description: Reception and Diagnostic Unit
+      - value: 56
+        description: Long Term Restrictive Housing
+      - value: 57
+        description: Community Reentry Center
+      - value: 58
+        description: Work Camp
+      - value: 6
+        description: Mental Health
+      - value: 60
+        description: Retained Jurisdiction
+      - value: 61
+        description: Short Term Restrictive Housing
   - name: BedStatusId
     description: |-
       Indicates each bed's status. Can be joined with `hsn_BedStatus.BedStatusId`.
-    known_values: []
+    known_values:
+      - value: 1
+        description: Inactive
+      - value: 2
+        description: Active
   - name: BunkTypeId
     description: |-
       Indicates each bed's bunk type, i.e. its capacity.

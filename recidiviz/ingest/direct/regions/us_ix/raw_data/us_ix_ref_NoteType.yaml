@@ -19,21 +19,21 @@ columns:
     description: |-
       Used for row-level locking in the Atlas application.
   - name: InsertUserId
-    is_pii: True
     description: |-
       ID of the user who inserted this record.
+    is_pii: True
   - name: InsertDate
-    is_datetime: True
     description: |-
       Timestamp for record insertion.
+    is_datetime: True
   - name: UpdateUserId
-    is_pii: True
     description: |-
       ID of the user who most recently updated this record.
+    is_pii: True
   - name: UpdateDate
-    is_datetime: True
     description: |-
       Timestamp for most recent record modification.
+    is_datetime: True
   - name: SystemRow
     description: |-
       TODO(#15329): Fill in column description
