@@ -215,6 +215,9 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
 class NormalizeEntities(beam.DoFn):
     """Normalizes entities."""
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     # pylint: disable=arguments-differ
     def process(
         self,
@@ -257,6 +260,9 @@ class NormalizeEntities(beam.DoFn):
     ) -> Tuple[str, Any]:
         pass
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
 
 @with_input_types(
     beam.typehints.Tuple[int, Dict[str, Sequence[Entity]], AdditionalAttributesMap], str
@@ -264,6 +270,9 @@ class NormalizeEntities(beam.DoFn):
 @with_output_types(beam.typehints.Dict[str, Any])
 class NormalizedEntityTreeWritableDicts(beam.DoFn):
     """Builds a dictionary in the format necessary to write the output to BigQuery."""
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     # pylint: disable=arguments-differ
     def process(

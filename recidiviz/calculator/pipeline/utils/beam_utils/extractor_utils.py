@@ -541,6 +541,9 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
     hydrated related entities for all relationships listed in |relationships|.
     """
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     @staticmethod
     def _get_associations(
         *,
@@ -779,6 +782,9 @@ class _PackageAssociationIDValues(beam.DoFn):
 
     (unifying_id, (root_entity_id, related_entity_id))
     """
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     def process(
         self, element: Dict[Any, Any], *_args, **kwargs
@@ -1189,6 +1195,9 @@ class _ExtractAssociationValues(_ExtractValuesFromEntityBase):
 class _ShallowHydrateEntity(beam.DoFn):
     """Hydrates an Entity."""
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     def process(self, element: TableRow, *_args, **kwargs):
         """Builds an entity from key-value pairs.
 
@@ -1239,6 +1248,9 @@ class _ShallowHydrateEntity(beam.DoFn):
 )
 class _AttachStateBasedReferenceDataToEntities(beam.DoFn):
     """Attaches state-wide reference tables (no unifying ID in the table) as side inputs."""
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     # pylint: disable=arguments-differ
     def process(
@@ -1292,6 +1304,9 @@ class _AttachStateBasedReferenceDataToEntities(beam.DoFn):
 class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
     """Converts entities into state-specific subclasses of those entities,
     for use in state-specific calculate flows."""
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     # pylint: disable=arguments-differ
     def process(

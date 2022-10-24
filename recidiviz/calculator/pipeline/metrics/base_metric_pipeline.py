@@ -420,6 +420,9 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
 class ProduceMetrics(beam.DoFn):
     """A DoFn that produces metrics given a StatePerson, metadata and associated events."""
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     # pylint: disable=arguments-differ
     def process(
         self,
@@ -523,6 +526,9 @@ class GetMetrics(beam.PTransform):
 class ClassifyResults(beam.DoFn):
     """Classifies a result according to multiple types of measurement."""
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     # pylint: disable=arguments-differ
     def process(
         self,
@@ -571,6 +577,9 @@ class ClassifyResults(beam.DoFn):
 @with_output_types(beam.typehints.Dict[str, Any])
 class RecidivizMetricWritableDict(beam.DoFn):
     """Builds a dictionary in the format necessary to write the output to BigQuery."""
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     # pylint: disable=arguments-differ
     def process(
