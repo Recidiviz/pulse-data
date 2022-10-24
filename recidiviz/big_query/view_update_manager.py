@@ -17,13 +17,14 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import datetime
 import logging
+import time
 from concurrent import futures
 from concurrent.futures import Future
 from enum import Enum
 from http import HTTPStatus
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
 
-from flask import Blueprint
+from flask import Blueprint, request
 from google.api_core import retry
 from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
@@ -105,11 +106,19 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
     start = datetime.datetime.now()
     view_builders = deployed_view_builders(metadata.project_id())
-    create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    )
+    dry_run = request.args.get("dry_run", default=False, type=bool)
+
+    # TODO(#11437): `dry_run` will go away once development of the DAG integration is complete
+    if dry_run:
+        time.sleep(10)
+        cloud_task_id = "test_cloud_task_id"
+    else:
+        create_managed_dataset_and_deploy_views_for_view_builders(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_builders_to_update=view_builders,
+            historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        )
+        cloud_task_id = get_current_cloud_task_id()
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
 
@@ -117,7 +126,7 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     success_persister.record_success_in_bq(
         deployed_view_builders=view_builders,
         runtime_sec=runtime_sec,
-        cloud_task_id=get_current_cloud_task_id(),
+        cloud_task_id=cloud_task_id,
     )
     logging.info("All managed views successfully updated and materialized.")
 
