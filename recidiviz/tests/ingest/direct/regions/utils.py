@@ -23,6 +23,10 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
     StateAssessmentType,
 )
+from recidiviz.common.constants.state.state_drug_screen import (
+    StateDrugScreenResult,
+    StateDrugScreenSampleType,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -446,3 +450,29 @@ def add_supervision_contact_to_person(
 
     person.supervision_contacts.append(supervision_contact)
     return supervision_contact
+
+
+def add_drug_screen_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    drug_screen_date: datetime.date,
+    drug_screen_result: Optional[StateDrugScreenResult],
+    drug_screen_result_raw_text: Optional[str],
+    sample_type: Optional[StateDrugScreenSampleType],
+    sample_type_raw_text: Optional[str],
+) -> None:
+    """Append a drug screen to the person (updates the person entity in place)."""
+
+    drug_screen = entities.StateDrugScreen.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        drug_screen_date=drug_screen_date,
+        drug_screen_result=drug_screen_result,
+        drug_screen_result_raw_text=drug_screen_result_raw_text,
+        sample_type=sample_type,
+        sample_type_raw_text=sample_type_raw_text,
+        person=person,
+    )
+
+    person.drug_screens.append(drug_screen)
