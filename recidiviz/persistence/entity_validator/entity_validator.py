@@ -18,15 +18,16 @@
 
 from typing import Callable, List, Tuple
 
-from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_validator.state.state_validator import (
     validate_state_person,
 )
 
 
-def validate(people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], int]:
-    """Validates a list of EntityPersonType entities and returns the valid people and the number of people with
+def validate(
+    people: List[state_entities.StatePerson],
+) -> Tuple[List[state_entities.StatePerson], int]:
+    """Validates a list of state_entities.StatePerson entities and returns the valid people and the number of people with
     validation errors.
     """
     data_validation_errors = 0
@@ -40,7 +41,7 @@ def validate(people: List[EntityPersonType]) -> Tuple[List[EntityPersonType], in
     return validated_people, data_validation_errors
 
 
-def _get_validator(person: EntityPersonType) -> Callable[..., bool]:
+def _get_validator(person: state_entities.StatePerson) -> Callable[..., bool]:
     if isinstance(person, state_entities.StatePerson):
         return validate_state_person
 

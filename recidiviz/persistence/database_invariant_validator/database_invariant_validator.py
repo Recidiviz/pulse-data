@@ -19,20 +19,20 @@
 import logging
 from typing import Callable, List
 
-from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database_invariant_validator.state.state_invariant_validators import (
     get_state_database_invariant_validators,
 )
 
-ValidatorType = Callable[[Session, str, List[SchemaPersonType]], bool]
+ValidatorType = Callable[[Session, str, List[state_schema.StatePerson]], bool]
 
 
 def validate_invariants(
     session: Session,
     region_code: str,
-    output_people: List[SchemaPersonType],
+    output_people: List[state_schema.StatePerson],
 ) -> int:
     """Validates that certain database invariants are true for the given region.
 

@@ -18,9 +18,9 @@
 
 from unittest import TestCase
 
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.operations import entities
-from recidiviz.persistence.entity.operations.entities import OperationsEntity
 
 
 class TestOperationsEntities(TestCase):
@@ -30,7 +30,7 @@ class TestOperationsEntities(TestCase):
         for entity_class in get_all_entity_classes_in_module(entities):
             self.assertEqual(
                 entity_class.__eq__,
-                OperationsEntity.__eq__,
+                Entity.__eq__,
                 f"Class [{entity_class}] has an __eq__ function "
                 f"unequal to the base Entity class - did you "
                 f"remember to set eq=False in the @attr.s "

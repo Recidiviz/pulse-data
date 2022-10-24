@@ -23,7 +23,6 @@ from typing import Any, List, Sequence
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_entity_converter.operations.schema_entity_converter import (
     OperationsEntityToSchemaConverter,
@@ -34,7 +33,6 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.operations import entities as operations_entities
 from recidiviz.persistence.entity.state import entities as state_entities
 
@@ -44,9 +42,9 @@ def _is_obj_in_module(obj: Any, module: ModuleType) -> bool:
 
 
 def convert_entity_people_to_schema_people(
-    people: List[EntityPersonType], populate_back_edges: bool = True
-) -> List[SchemaPersonType]:
-    def _as_schema_person_type(e: DatabaseEntity) -> SchemaPersonType:
+    people: List[state_entities.StatePerson], populate_back_edges: bool = True
+) -> List[state_schema.StatePerson]:
+    def _as_schema_person_type(e: DatabaseEntity) -> state_schema.StatePerson:
         if not isinstance(e, state_schema.StatePerson):
             raise ValueError(f"Unexpected database entity type: [{type(e)}]")
         return e

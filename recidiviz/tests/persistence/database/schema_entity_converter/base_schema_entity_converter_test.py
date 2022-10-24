@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for BaseSchemaEntityConverter"""
 from types import ModuleType
-from typing import Type
 from unittest import TestCase
 from unittest.mock import create_autospec
 
@@ -24,7 +23,6 @@ from more_itertools import one
 
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
-    FieldNameType,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -66,9 +64,6 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
 
     def _get_entities_module(self) -> ModuleType:
         return entities
-
-    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
-        return False
 
     def _populate_indirect_back_edges(self, _):
         return

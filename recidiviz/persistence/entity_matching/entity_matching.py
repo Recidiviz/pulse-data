@@ -20,7 +20,6 @@ from typing import List, Optional
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.entities import EntityPersonType
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.base_entity_matcher import BaseEntityMatcher
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
@@ -39,7 +38,7 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[], error_count=0, total_root_entit
 def match(
     session: Session,
     region: str,
-    ingested_people: List[EntityPersonType],
+    ingested_people: List[state_entities.StatePerson],
     ingest_metadata: IngestMetadata,
 ) -> MatchedEntities:
     matcher = _get_matcher(ingested_people, region, ingest_metadata)
@@ -50,7 +49,7 @@ def match(
 
 
 def _get_matcher(
-    ingested_people: List[EntityPersonType],
+    ingested_people: List[state_entities.StatePerson],
     region_code: str,
     ingest_metadata: IngestMetadata,
 ) -> Optional[BaseEntityMatcher]:

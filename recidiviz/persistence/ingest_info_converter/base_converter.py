@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence.entity.entities import EntityPersonType
+from recidiviz.persistence.entity.state import entities as state_entities
 
 # TODO(#8905): Remove the State enums once all states have been migrated to v2 ingest
 #  mappings.
@@ -44,7 +44,7 @@ class EntityDeserializationResult:
     enum_parsing_errors: int = attr.ib()
     general_parsing_errors: int = attr.ib()
     protected_class_errors: int = attr.ib()
-    people: List[EntityPersonType] = attr.ib(factory=list)
+    people: List[state_entities.StatePerson] = attr.ib(factory=list)
 
 
 class BaseConverter:
@@ -55,7 +55,7 @@ class BaseConverter:
         self.metadata = metadata
 
     def run_convert(self) -> EntityDeserializationResult:
-        people: List[EntityPersonType] = []
+        people: List[state_entities.StatePerson] = []
         protected_class_errors = 0
         enum_parsing_errors = 0
         general_parsing_errors = 0
@@ -88,7 +88,7 @@ class BaseConverter:
         """Pops a person from the list of persons to be converted."""
 
     @abstractmethod
-    def _convert_person(self, ingest_person) -> EntityPersonType:
+    def _convert_person(self, ingest_person) -> state_entities.StatePerson:
         """Converts the ingested person and all of its children to Entities."""
 
     @abstractmethod

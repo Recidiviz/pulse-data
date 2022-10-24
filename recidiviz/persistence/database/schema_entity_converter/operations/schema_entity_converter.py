@@ -20,18 +20,15 @@ objects.
 """
 
 from types import ModuleType
-from typing import Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
     DstBaseType,
-    FieldNameType,
     SrcBaseType,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.persistence.entity.operations import entities
 
 
@@ -41,17 +38,13 @@ class _OperationsSchemaEntityConverter(
     """Operations-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self) -> None:
-        # TODO(#13703): Make a direction checker specifically for the operations DB?
-        super().__init__(SchemaEdgeDirectionChecker.state_direction_checker())
+        super().__init__(direction_checker=None)
 
     def _get_schema_module(self) -> ModuleType:
         return schema
 
     def _get_entities_module(self) -> ModuleType:
         return entities
-
-    def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
-        return False
 
     def _populate_indirect_back_edges(self, _: DstBaseType) -> None:
         return
