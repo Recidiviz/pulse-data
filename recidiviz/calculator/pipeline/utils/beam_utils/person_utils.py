@@ -62,6 +62,9 @@ class StateRaceEthnicityPopulationCounts(BuildableAttr):
 class BuildPersonMetadata(beam.DoFn):
     """Produces a PersonMetadata object storing information about the given StatePerson."""
 
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
     # pylint: disable=arguments-differ
     def process(
         self,
@@ -104,6 +107,9 @@ class BuildPersonMetadata(beam.DoFn):
 class ExtractPersonEventsMetadata(beam.DoFn):
     """Extracts the StatePerson, PersonMetadata, and list of pipeline-specific
     events for use in the calculator step of the pipeline."""
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
 
     def process(
         self,

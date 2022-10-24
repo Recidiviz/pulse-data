@@ -16,7 +16,7 @@ mypy = "*"
 bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
-apache-beam = {extras = ["gcp", "test"],version = "==2.37.0"}
+apache-beam = {extras = ["gcp", "test"],version = "==2.41.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
@@ -29,6 +29,7 @@ parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
+google-cloud-build = "*"
 gspread = "*"
 pytablewriter = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
