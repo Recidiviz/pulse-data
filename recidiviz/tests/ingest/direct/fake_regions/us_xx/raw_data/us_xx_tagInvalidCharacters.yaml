@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagInvalidCharacters
 file_description: |-
   tagInvalidCharacters file description
@@ -11,3 +12,4 @@ columns:
   - name: _COL2
   - name: _3COL
   - name: _4_COL
+custom_line_terminator: "\n"

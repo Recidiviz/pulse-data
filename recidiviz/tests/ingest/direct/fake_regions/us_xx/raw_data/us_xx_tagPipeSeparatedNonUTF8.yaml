@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagPipeSeparatedNonUTF8
 file_description: |-
   tagPipeSeparatedNonUTF8 file description
@@ -14,3 +15,4 @@ columns:
 encoding: ISO-8859-1
 separator: "|"
 ignore_quotes: True
+custom_line_terminator: "\n"

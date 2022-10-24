@@ -17,7 +17,7 @@
 
 """Functionality for generating raw data config YAML contents."""
 import os
-from typing import List
+from typing import List, Optional
 
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -91,12 +91,14 @@ class RawDataConfigWriter:
         default_separator: str,
         default_ignore_quotes: bool,
         default_always_historical_export: bool,
+        default_line_terminator: Optional[str],
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
         file_description_string = "\n  ".join(
             raw_file_config.file_description.splitlines()
         )
         config = (
+            "# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json\n"
             f"file_tag: {raw_file_config.file_tag}\n"
             "file_description: |-\n"
             f"  {file_description_string}\n"
@@ -124,10 +126,12 @@ class RawDataConfigWriter:
         # we need to include it in the config
         if raw_file_config.always_historical_export != default_always_historical_export:
             config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
-        if raw_file_config.custom_line_terminator:
-            config += (
-                f'custom_line_terminator: "{raw_file_config.custom_line_terminator}"\n'
-            )
+        if raw_file_config.custom_line_terminator != default_line_terminator:
+            # Convert newline, etc. to escape sequences
+            custom_line_terminator_for_yaml = repr(
+                raw_file_config.custom_line_terminator
+            ).strip("'")
+            config += f'custom_line_terminator: "{custom_line_terminator_for_yaml}"\n'
 
         prior_config = None
         if os.path.exists(output_path):

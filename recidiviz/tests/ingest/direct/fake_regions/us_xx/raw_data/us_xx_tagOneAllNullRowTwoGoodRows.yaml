@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagOneAllNullRowTwoGoodRows
 file_description: |-
   tagOneAllNullRowTwoGoodRows file description
@@ -9,3 +10,4 @@ columns:
   - name: COL2
   - name: COL3
   - name: COL4
+custom_line_terminator: "\n"

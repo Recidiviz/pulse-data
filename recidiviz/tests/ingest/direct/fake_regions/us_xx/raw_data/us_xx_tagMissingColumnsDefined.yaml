@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagMissingColumnsDefined
 file_description: |-
   tagMissingColumnsDefined file description
@@ -7,3 +8,4 @@ primary_key_cols:
 columns:
   - name: COL1
   - name: COL2
+custom_line_terminator: "\n"

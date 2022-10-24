@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: tagBasicData
 file_description: |-
   tagBasicData file description
@@ -8,3 +9,4 @@ columns:
   - name: COL1
   - name: COL2
   - name: COL3
+custom_line_terminator: "\n"

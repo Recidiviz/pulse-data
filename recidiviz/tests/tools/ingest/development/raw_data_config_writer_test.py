@@ -35,9 +35,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
 
-    def test_output_to_file(
-        self,
-    ) -> None:
+    def test_output_to_file(self) -> None:
 
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
@@ -55,6 +53,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_always_historical_export=False,
                     output_path=test_output_path,
                     raw_file_config=config,
+                    default_line_terminator="‡\n",
                 )
                 with open(test_output_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
@@ -68,4 +67,5 @@ class RawDataConfigWriterTest(unittest.TestCase):
 
                 with open(test_output_path, "r", encoding="utf-8") as f:
                     written_contents = f.read()
+
                 self.assertEqual(expected_contents, written_contents)
