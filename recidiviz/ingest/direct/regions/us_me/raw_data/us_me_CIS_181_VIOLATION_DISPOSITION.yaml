@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CIS_181_VIOLATION_DISPOSITION
+file_description: |-
+  This table records the disposition of a client's violation case.
+data_classification: source
+primary_key_cols:
+  - Violation_Disposition_Id
+columns:
+  - name: Cis_180_Disciplinary_Case_Id
+    description: ID of the related disciplinary case, joins to CIS_180_DISCIPLINARY_CASE.DISCIPLINARY_CASE_ID.
+  - name: Cis_1810_Disposition_Class_Cd
+  - name: Cis_1810_Violation_Class_Cd
+  - name: Cis_1811_Disposition_Type_Cd
+  - name: Cis_1811_Violation_Type_Cd
+  - name: Cis_1812_Violation_Plea_Type_Cd
+  - name: Cis_1813_Disposition_Outcome_Type_Cd
+  - name: Created_By_Tx
+    is_pii: True
+  - name: Created_On_Date
+  - name: Locking_Tsp
+  - name: Logical_Delete_Ind
+  - name: Modified_By_Tx
+    is_pii: True
+  - name: Modified_On_Date
+  - name: Violation_Disposition_Id
+    description: Primary key
+  - name: Violation_Disposition_Seq_Num
