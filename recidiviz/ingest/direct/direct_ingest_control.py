@@ -34,9 +34,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
@@ -51,9 +48,6 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
-    PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -626,26 +620,16 @@ def kick_all_schedulers() -> None:
         if not region.is_ingest_launched_in_env():
             continue
         for ingest_instance in DirectIngestInstance:
-            status_manager = PostgresDirectIngestInstanceStatusManager(
-                state_code.value,
-                ingest_instance,
-            )
-            # TODO(#16127) Refactor the controller logic internally so we can instantiate even if there is no rerun in
-            # progress.
-            if (
-                status_manager.get_current_status()
-                != DirectIngestStatus.NO_RERUN_IN_PROGRESS
+            with monitoring.push_region_tag(
+                state_code.value, ingest_instance=ingest_instance.value
             ):
-                with monitoring.push_region_tag(
-                    state_code.value, ingest_instance=ingest_instance.value
-                ):
-                    controller = DirectIngestControllerFactory.build(
-                        region_code=state_code.value,
-                        ingest_instance=ingest_instance,
-                        allow_unlaunched=False,
-                    )
+                controller = DirectIngestControllerFactory.build(
+                    region_code=state_code.value,
+                    ingest_instance=ingest_instance,
+                    allow_unlaunched=False,
+                )
 
-                    controller.kick_scheduler(just_finished_job=False)
+                controller.kick_scheduler(just_finished_job=False)
 
 
 @direct_ingest_control.route("/upload_from_sftp", methods=["GET", "POST"])

@@ -31,7 +31,11 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
@@ -92,6 +96,7 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
     PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusChangeListener,
     PostgresDirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -116,7 +121,7 @@ from recidiviz.utils import environment, trace
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-class BaseDirectIngestController:
+class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     """Parses and persists individual-level info from direct ingest partners."""
 
     def __init__(
@@ -137,57 +142,21 @@ class BaseDirectIngestController:
         self.instance_bucket_path = gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code, ingest_instance=self.ingest_instance
         )
-        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+        self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
+
+        self.ingest_instance_status_manager = PostgresDirectIngestInstanceStatusManager(
             region_code=self.region.region_code,
             ingest_instance=self.ingest_instance,
-        )
-        try:
-            self.raw_data_source_instance = (
-                instance_status_manager.get_raw_data_source_instance()
-            )
-        except ValueError as exc:
-            raise ValueError(
-                f"No raw data source was located for the instance={self.ingest_instance.value} and "
-                f"region={self.region.region_code.upper()}. This means that no ingest rerun was started, which "
-                f"should never happen when initializing the ingest controller."
-            ) from exc
-
-        # TODO(#12794): Remove once raw data source can be SECONDARY.
-        if self.raw_data_source_instance == DirectIngestInstance.SECONDARY:
-            raise ValueError(
-                f"Invalid raw data source instance [{self.raw_data_source_instance}] provided."
-            )
-
-        self.raw_data_bucket_path = gcsfs_direct_ingest_bucket_for_state(
-            region_code=self.region.region_code,
-            ingest_instance=self.raw_data_source_instance,
-        )
-        self.raw_data_storage_directory_path = (
-            gcsfs_direct_ingest_storage_directory_path_for_state(
-                region_code=self.region_code(),
-                ingest_instance=self.raw_data_source_instance,
-            )
+            change_listener=self,
         )
 
         self.temp_output_directory_path = (
             gcsfs_direct_ingest_temporary_output_directory_path()
         )
 
-        self.raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code=self.region.region_code,
-            raw_data_instance=self.raw_data_source_instance,
-        )
+        self.big_query_client = BigQueryClientImpl()
 
-        big_query_client = BigQueryClientImpl()
-
-        self.raw_file_import_manager = DirectIngestRawFileImportManager(
-            region=self.region,
-            fs=self.fs,
-            temp_output_directory_path=self.temp_output_directory_path,
-            big_query_client=big_query_client,
-        )
-
-        view_collector = DirectIngestPreProcessedIngestViewCollector(
+        self.view_collector = DirectIngestPreProcessedIngestViewCollector(
             self.region, self.get_ingest_view_rank_list()
         )
 
@@ -200,7 +169,7 @@ class BaseDirectIngestController:
             )
         )
         self.ingest_view_contents = InstanceIngestViewContentsImpl(
-            big_query_client=big_query_client,
+            big_query_client=self.big_query_client,
             region_code=self.region_code(),
             ingest_instance=self.ingest_instance,
             dataset_prefix=None,
@@ -210,31 +179,132 @@ class BaseDirectIngestController:
             ingest_view_rank_list=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_view_materialization_args_generator = (
-            IngestViewMaterializationArgsGenerator(
-                region=self.region,
-                metadata_manager=self.view_materialization_metadata_manager,
-                raw_file_metadata_manager=self.raw_file_metadata_manager,
-                view_collector=view_collector,
-                launched_ingest_views=self.get_ingest_view_rank_list(),
-            )
-        )
-
         self.ingest_view_materializer = IngestViewMaterializerImpl(
             region=self.region,
             ingest_instance=self.ingest_instance,
             ingest_view_contents=self.ingest_view_contents,
             metadata_manager=self.view_materialization_metadata_manager,
-            big_query_client=big_query_client,
-            view_collector=view_collector,
+            big_query_client=self.big_query_client,
+            view_collector=self.view_collector,
             launched_ingest_views=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_instance_status_manager = PostgresDirectIngestInstanceStatusManager(
-            self.region_code(), self.ingest_instance
+        # We cannot set these objects until we know the raw data source instance, which
+        # may not be set at instantiation time (i.e. if there is no rerun in progress
+        # for this instance).
+        self._raw_data_source_instance: Optional[DirectIngestInstance] = None
+        self._raw_file_metadata_manager: Optional[
+            PostgresDirectIngestRawFileMetadataManager
+        ] = None
+        self._raw_file_import_manager: Optional[DirectIngestRawFileImportManager] = None
+        self._ingest_view_materialization_args_generator: Optional[
+            IngestViewMaterializationArgsGenerator
+        ] = None
+
+        self.on_raw_data_source_instance_change(
+            self.ingest_instance_status_manager.get_raw_data_source_instance()
         )
 
-        self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
+    @property
+    def raw_data_source_instance(self) -> DirectIngestInstance:
+        if not self._raw_data_source_instance:
+            raise ValueError("Expected nonnull raw data source instance.")
+        return self._raw_data_source_instance
+
+    @property
+    def raw_file_metadata_manager(self) -> PostgresDirectIngestRawFileMetadataManager:
+        if not self._raw_file_metadata_manager:
+            raise ValueError(
+                "Expected nonnull raw file metadata manager - has "
+                "on_raw_data_source_instance_change() been called?"
+            )
+        return self._raw_file_metadata_manager
+
+    @property
+    def raw_file_import_manager(self) -> DirectIngestRawFileImportManager:
+        if not self._raw_file_import_manager:
+            raise ValueError(
+                "Expected nonnull raw file import manager - has "
+                "on_raw_data_source_instance_change() been called?"
+            )
+        return self._raw_file_import_manager
+
+    @property
+    def ingest_view_materialization_args_generator(
+        self,
+    ) -> IngestViewMaterializationArgsGenerator:
+        if not self._ingest_view_materialization_args_generator:
+            raise ValueError(
+                "Expected nonnull materialization args generator - has "
+                "on_raw_data_source_instance_change() been called?"
+            )
+        return self._ingest_view_materialization_args_generator
+
+    @property
+    def raw_data_bucket_path(self) -> GcsfsBucketPath:
+        if not self._raw_data_source_instance:
+            raise ValueError("Expected nonnull raw data source instance.")
+        return gcsfs_direct_ingest_bucket_for_state(
+            region_code=self.region.region_code,
+            ingest_instance=self._raw_data_source_instance,
+        )
+
+    @property
+    def raw_data_storage_directory_path(self) -> GcsfsDirectoryPath:
+        if not self._raw_data_source_instance:
+            raise ValueError("Expected nonnull raw data source instance.")
+        return gcsfs_direct_ingest_storage_directory_path_for_state(
+            region_code=self.region_code(),
+            ingest_instance=self._raw_data_source_instance,
+        )
+
+    def on_raw_data_source_instance_change(
+        self, raw_data_source_instance: Optional[DirectIngestInstance]
+    ) -> None:
+        """Listener method called by the PostgresDirectIngestInstanceStatusManager
+        every time the raw_data_source_instance changes.
+        """
+        # Do nothing if the raw data source hasn't changed.
+        if self._raw_data_source_instance == raw_data_source_instance:
+            return
+
+        self._raw_data_source_instance = raw_data_source_instance
+        # Clear out all fields that rely on a raw_data_source_instance if it's empty
+        if not self._raw_data_source_instance:
+            self._raw_file_metadata_manager = None
+            self._raw_file_import_manager = None
+            self._ingest_view_materialization_args_generator = None
+            return
+
+        # TODO(#12794): Remove once raw data source can be SECONDARY.
+        if self._raw_data_source_instance == DirectIngestInstance.SECONDARY:
+            raise ValueError(
+                f"Invalid raw data source instance [{self._raw_data_source_instance.value}] "
+                f"provided."
+            )
+
+        # Update all fields to rely on the new raw_data_source_instance.
+        self._raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code=self.region.region_code,
+            raw_data_instance=self._raw_data_source_instance,
+        )
+
+        self._raw_file_import_manager = DirectIngestRawFileImportManager(
+            region=self.region,
+            fs=self.fs,
+            temp_output_directory_path=self.temp_output_directory_path,
+            big_query_client=self.big_query_client,
+            csv_reader=self.csv_reader,
+        )
+        self._ingest_view_materialization_args_generator = (
+            IngestViewMaterializationArgsGenerator(
+                region=self.region,
+                metadata_manager=self.view_materialization_metadata_manager,
+                raw_file_metadata_manager=self.raw_file_metadata_manager,
+                view_collector=self.view_collector,
+                launched_ingest_views=self.get_ingest_view_rank_list(),
+            )
+        )
 
     @property
     def region(self) -> DirectIngestRegion:
@@ -542,7 +612,6 @@ class BaseDirectIngestController:
         """This method can be overridden by subclasses that need more (or less)
         time to process jobs to completion, but by default enforces a
         one hour timeout on locks.
-
         Jobs may take longer than the alotted time, but if they do so, they
         will de facto relinquish their hold on the acquired lock."""
         return 3600
@@ -728,7 +797,6 @@ class BaseDirectIngestController:
         """Returns a handle to the ingest view contents allows us to iterate over the
         contents and also manages cleanup of resources once we are done with the
         contents.
-
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
@@ -752,7 +820,6 @@ class BaseDirectIngestController:
     def handle_file(self, path: GcsfsFilePath, start_ingest: bool) -> None:
         """Called when a single new file is added to an ingest bucket (may also
         be called as a result of a rename).
-
         May be called from any worker/queue.
         """
         if self.fs.is_processed_file(path):
@@ -777,7 +844,6 @@ class BaseDirectIngestController:
     def handle_new_files(self, *, current_task_id: str, can_start_ingest: bool) -> None:
         """Searches the ingest directory for new/unprocessed files. Normalizes
         new raw file names as necessary, then schedules the next ingest job if allowed.
-
         Should only be called from the scheduler queue.
         """
         if not can_start_ingest and self.region.is_ingest_launched_in_env():

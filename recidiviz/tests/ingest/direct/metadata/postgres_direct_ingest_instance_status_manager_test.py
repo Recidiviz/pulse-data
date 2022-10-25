@@ -18,7 +18,9 @@
 from typing import List, Optional
 from unittest.case import TestCase
 
+import mock
 import pytest
+from mock import patch
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
@@ -39,7 +41,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @pytest.mark.uses_db
-class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
+class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     """Implements tests for PostgresDirectIngestInstanceStatusManager."""
 
     # Stores the location of the postgres DB for this test run
@@ -55,7 +57,6 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
-
         self.us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
@@ -176,8 +177,14 @@ class PostgresDirectIngestInstanceStatusManagerManagerTest(TestCase):
         )
         self.assertEqual(raw_data_source_instance, DirectIngestInstance.SECONDARY)
 
-    def test_change_status_to_invalid_transitions(self) -> None:
+    @patch(
+        f"{PostgresDirectIngestInstanceStatusManager.__module__}.PostgresDirectIngestInstanceStatusManager.get_raw_data_source_instance"
+    )
+    def test_change_status_to_invalid_transitions(
+        self, mock_get_raw_data_source_instance: mock.MagicMock
+    ) -> None:
         """Ensure that all invalid transitions raise the correct error."""
+        mock_get_raw_data_source_instance.return_value = DirectIngestInstance.PRIMARY
         for (
             instance,
             valid_status_transitions,

@@ -18,6 +18,7 @@
 from typing import Optional
 
 
+# TODO(#12795): Pass a raw_data_source_instance into this function
 def raw_tables_dataset_for_region(
     region_code: str, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:
@@ -26,6 +27,7 @@ def raw_tables_dataset_for_region(
     return f"{prefix}{region_code.lower()}_raw_data"
 
 
+# TODO(#12795): Pass a raw_data_source_instance into this function
 def raw_latest_views_dataset_for_region(
     region_code: str, sandbox_dataset_prefix: Optional[str] = None
 ) -> str:

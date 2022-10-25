@@ -588,6 +588,7 @@ class DirectIngestRawFileImportManager:
         fs: DirectIngestGCSFileSystem,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
+        csv_reader: GcsfsCsvReader,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         sandbox_dataset_prefix: Optional[str] = None,
         allow_incomplete_configs: bool = False,
@@ -606,11 +607,13 @@ class DirectIngestRawFileImportManager:
             )
         )
         self.allow_incomplete_configs = allow_incomplete_configs
-        self.csv_reader = GcsfsCsvReader(fs)
+        self.csv_reader = csv_reader
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
             regions_module_override=self.region.region_module,
         ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
+        # TODO(#12795): Pass a raw_data_source_instance into the constructor so you
+        #  can thread it through here.
         self.raw_tables_dataset = raw_tables_dataset_for_region(
             region_code=self.region.region_code,
             sandbox_dataset_prefix=sandbox_dataset_prefix,

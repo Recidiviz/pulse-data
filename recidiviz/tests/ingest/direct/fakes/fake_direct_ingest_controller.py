@@ -42,6 +42,9 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,
 )
+from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusChangeListener,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
@@ -221,6 +224,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         fs: DirectIngestGCSFileSystem,
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
+        csv_reader: GcsfsCsvReader,
     ):
         super().__init__(
             region=region,
@@ -230,6 +234,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
             region_raw_file_config=FakeDirectIngestRegionRawFileConfig(
                 region.region_code
             ),
+            csv_reader=csv_reader,
         )
         self.imported_paths: List[GcsfsFilePath] = []
 
@@ -368,6 +373,18 @@ def build_fake_direct_ingest_controller(
     def mock_build_fs() -> FakeGCSFileSystem:
         return fake_fs
 
+    def mock_build_status_manager(
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        change_listener: DirectIngestInstanceStatusChangeListener,
+    ) -> FakeDirectIngestInstanceStatusManager:
+        return FakeDirectIngestInstanceStatusManager(
+            region_code=region_code,
+            ingest_instance=ingest_instance,
+            change_listener=change_listener,
+            initial_statuses=initial_statuses,
+        )
+
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
             BigQueryViewCollector
@@ -393,38 +410,28 @@ def build_fake_direct_ingest_controller(
         FakeInstanceIngestViewContents,
     ), patch(
         f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-    ) as instance_status_manager_cls:
+        mock_build_status_manager,
+    ):
         task_manager = (
             FakeAsyncDirectIngestCloudTaskManager()
             if run_async
             else FakeSynchronousDirectIngestCloudTaskManager()
         )
-
-        instance_status_manager_cls.return_value = (
-            FakeDirectIngestInstanceStatusManager(
-                region_code=controller_cls.region_code(),
-                ingest_instance=ingest_instance,
-                initial_statuses=initial_statuses,
-            )
-        )
         mock_task_factory_cls.return_value = task_manager
         mock_big_query_client_cls.return_value = _MockBigQueryClientForControllerTests(
             fs=fake_fs
         )
-        with patch.object(GcsfsFactory, "build", new=mock_build_fs):
-            with patch.object(
-                direct_ingest_raw_table_migration_collector,
-                "regions",
-                new=regions_module,
-            ):
-                controller = controller_cls(ingest_instance=ingest_instance)
-                controller.csv_reader = GcsfsCsvReader(fake_fs)
-                controller.raw_file_import_manager.csv_reader = controller.csv_reader
+        with patch.object(GcsfsFactory, "build", new=mock_build_fs), patch.object(
+            direct_ingest_raw_table_migration_collector,
+            "regions",
+            new=regions_module,
+        ):
+            controller = controller_cls(ingest_instance=ingest_instance)
 
-                task_manager.set_controller(controller)
-                fake_fs.test_set_delegate(
-                    DirectIngestFakeGCSFileSystemDelegate(
-                        controller, can_start_ingest=can_start_ingest
-                    )
+            task_manager.set_controller(controller)
+            fake_fs.test_set_delegate(
+                DirectIngestFakeGCSFileSystemDelegate(
+                    controller, can_start_ingest=can_start_ingest
                 )
-                return controller
+            )
+            return controller

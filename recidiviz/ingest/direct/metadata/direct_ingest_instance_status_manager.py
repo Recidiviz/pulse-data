@@ -185,6 +185,16 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
 }
 
 
+class DirectIngestInstanceStatusChangeListener:
+    """An abstract class used to react to changes in instance statuses."""
+
+    @abc.abstractmethod
+    def on_raw_data_source_instance_change(
+        self, raw_data_source_instance: Optional[DirectIngestInstance]
+    ) -> None:
+        """Reacts to raw data source instance change."""
+
+
 class DirectIngestInstanceStatusManager:
     """An interface for reading and updating DirectIngestInstanceStatuses. For a
     visualization of valid instance statuses transitions, please refer to
@@ -196,7 +206,7 @@ class DirectIngestInstanceStatusManager:
         self.ingest_instance = ingest_instance
 
     @abc.abstractmethod
-    def get_raw_data_source_instance(self) -> DirectIngestInstance:
+    def get_raw_data_source_instance(self) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
