@@ -869,6 +869,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                             a.dimension.dimension_identifier()
                         ]
                     },
+                    dimension_to_includes_excludes_member_to_setting={},
                 )
                 for a in law_enforcement.total_arrests.aggregated_dimensions or []
             ]
