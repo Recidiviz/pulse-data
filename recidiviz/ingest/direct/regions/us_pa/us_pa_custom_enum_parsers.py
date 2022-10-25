@@ -46,7 +46,7 @@ def supervision_contact_location_mapper(
     """Maps a supervision_contact_location_raw_text to the corresponding
     StateSupervisionContactLocation, if applicable."""
     if raw_text:
-        collateral_type, method = raw_text.split("-")
+        collateral_type, method = raw_text.split("†")
         if collateral_type == "Treatment Provider":
             return StateSupervisionContactLocation.TREATMENT_PROVIDER
         if collateral_type == "Employer":

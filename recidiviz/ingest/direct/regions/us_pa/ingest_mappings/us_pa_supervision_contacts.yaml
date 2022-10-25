@@ -79,6 +79,7 @@ output:
             $enum_mapping:
               $raw_text:
                 $concat:
+                  $separator: "†"
                   $values:
                     - collateral_type
                     - method
