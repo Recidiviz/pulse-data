@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
+    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -528,7 +529,6 @@ from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
 )
@@ -629,7 +629,7 @@ def get_state_specific_case_compliance_manager(
     assessments: List[NormalizedStateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[NormalizedStateSupervisionViolationResponse],
-    incarceration_sentences: List[StateIncarcerationSentence],
+    incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionCaseComplianceManager]:

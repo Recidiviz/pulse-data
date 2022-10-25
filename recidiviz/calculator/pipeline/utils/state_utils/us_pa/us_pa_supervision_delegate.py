@@ -18,6 +18,10 @@
 from datetime import date
 from typing import List, Optional, Tuple
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -30,11 +34,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
@@ -98,8 +98,8 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     def get_projected_completion_date(
         self,
         supervision_period: StateSupervisionPeriod,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> Optional[date]:
         """In US_PA, we only consider incarceration sentences for the projected completion
         dates of periods of supervision."""

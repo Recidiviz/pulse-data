@@ -57,6 +57,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
@@ -111,7 +112,6 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
-    StateSupervisionSentence,
 )
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
@@ -1171,7 +1171,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         start_date = date(2008, 1, 1)
         completion_date = date(2015, 5, 29)
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             external_id="ss1",

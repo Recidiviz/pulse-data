@@ -52,7 +52,10 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
+    StateCharge,
+    StateEarlyDischarge,
     StateIncarcerationPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -499,224 +502,222 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
 
         self.assertCountEqual(expected_output, converted_output)
 
-    # TODO(#16102) Re-enable sentencing normalization once errors are fixed.
     def test_convert_entities_to_normalized_dicts_many_to_many(self) -> None:
-        pass
+        person_id = 123
 
-    #     person_id = 123
+        supervision_sentence1 = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
 
-    #     supervision_sentence1 = StateSupervisionSentence.new_with_defaults(
-    #         state_code="US_XX",
-    #         supervision_sentence_id=111,
-    #         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-    #     )
+        supervision_sentence2 = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=222,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
 
-    #     supervision_sentence2 = StateSupervisionSentence.new_with_defaults(
-    #         state_code="US_XX",
-    #         supervision_sentence_id=222,
-    #         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-    #     )
+        charge1 = StateCharge.new_with_defaults(
+            charge_id=1,
+            state_code="US_XX",
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence1, supervision_sentence2],
+        )
 
-    #     charge1 = StateCharge.new_with_defaults(
-    #         charge_id=1,
-    #         state_code="US_XX",
-    #         status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-    #         supervision_sentences=[supervision_sentence1, supervision_sentence2],
-    #     )
+        charge2 = StateCharge.new_with_defaults(
+            charge_id=2,
+            state_code="US_XX",
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence1, supervision_sentence2],
+        )
 
-    #     charge2 = StateCharge.new_with_defaults(
-    #         charge_id=2,
-    #         state_code="US_XX",
-    #         status=StateChargeStatus.PRESENT_WITHOUT_INFO,
-    #         supervision_sentences=[supervision_sentence1, supervision_sentence2],
-    #     )
+        early_discharge = StateEarlyDischarge.new_with_defaults(
+            early_discharge_id=1,
+            state_code="US_XX",
+            supervision_sentence=supervision_sentence1,
+        )
 
-    #     early_discharge = StateEarlyDischarge.new_with_defaults(
-    #         early_discharge_id=1,
-    #         state_code="US_XX",
-    #         supervision_sentence=supervision_sentence1,
-    #     )
+        supervision_sentence1.charges = [charge1, charge2]
+        supervision_sentence2.charges = [charge1, charge2]
+        supervision_sentence1.early_discharges = [early_discharge]
 
-    #     supervision_sentence1.charges = [charge1, charge2]
-    #     supervision_sentence2.charges = [charge1, charge2]
-    #     supervision_sentence1.early_discharges = [early_discharge]
+        entities_to_convert = [supervision_sentence1, supervision_sentence2]
 
-    #     entities_to_convert = [supervision_sentence1, supervision_sentence2]
+        additional_attributes_map: AdditionalAttributesMap = (
+            get_shared_additional_attributes_map_for_entities(entities_to_convert)
+        )
 
-    #     additional_attributes_map: AdditionalAttributesMap = (
-    #         get_shared_additional_attributes_map_for_entities(entities_to_convert)
-    #     )
+        converted_output = convert_entities_to_normalized_dicts(
+            person_id=person_id,
+            state_code="US_XX",
+            entities=entities_to_convert,
+            additional_attributes_map=additional_attributes_map,
+            field_index=self.field_index,
+        )
 
-    #     converted_output = convert_entities_to_normalized_dicts(
-    #         person_id=person_id,
-    #         state_code="US_XX",
-    #         entities=entities_to_convert,
-    #         additional_attributes_map=additional_attributes_map,
-    #         field_index=self.field_index,
-    #     )
+        expected_output = [
+            (
+                f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
+                {
+                    "charge_id": 1,
+                    "supervision_sentence_id": 111,
+                    "state_code": "US_XX",
+                },
+            ),
+            (
+                f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
+                {
+                    "charge_id": 2,
+                    "supervision_sentence_id": 111,
+                    "state_code": "US_XX",
+                },
+            ),
+            (
+                StateSupervisionSentence.__name__,
+                {
+                    "supervision_sentence_id": 111,
+                    "external_id": None,
+                    "status": "PRESENT_WITHOUT_INFO",
+                    "status_raw_text": None,
+                    "supervision_type": None,
+                    "supervision_type_raw_text": None,
+                    "date_imposed": None,
+                    "start_date": None,
+                    "projected_completion_date": None,
+                    "completion_date": None,
+                    "state_code": "US_XX",
+                    "county_code": None,
+                    "min_length_days": None,
+                    "max_length_days": None,
+                    "sentence_metadata": None,
+                    "conditions": None,
+                    "person_id": 123,
+                },
+            ),
+            (
+                f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
+                {
+                    "charge_id": 1,
+                    "supervision_sentence_id": 222,
+                    "state_code": "US_XX",
+                },
+            ),
+            (
+                f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
+                {
+                    "charge_id": 2,
+                    "supervision_sentence_id": 222,
+                    "state_code": "US_XX",
+                },
+            ),
+            (
+                StateSupervisionSentence.__name__,
+                {
+                    "supervision_sentence_id": 222,
+                    "external_id": None,
+                    "status": "PRESENT_WITHOUT_INFO",
+                    "status_raw_text": None,
+                    "supervision_type": None,
+                    "supervision_type_raw_text": None,
+                    "date_imposed": None,
+                    "start_date": None,
+                    "projected_completion_date": None,
+                    "completion_date": None,
+                    "state_code": "US_XX",
+                    "county_code": None,
+                    "min_length_days": None,
+                    "max_length_days": None,
+                    "sentence_metadata": None,
+                    "conditions": None,
+                    "person_id": 123,
+                },
+            ),
+            (
+                StateCharge.__name__,
+                {
+                    "charge_id": 1,
+                    "external_id": None,
+                    "status": "PRESENT_WITHOUT_INFO",
+                    "status_raw_text": None,
+                    "offense_date": None,
+                    "date_charged": None,
+                    "state_code": "US_XX",
+                    "county_code": None,
+                    "ncic_code": None,
+                    "statute": None,
+                    "description": None,
+                    "attempted": None,
+                    "classification_type": None,
+                    "classification_type_raw_text": None,
+                    "classification_subtype": None,
+                    "offense_type": None,
+                    "is_violent": None,
+                    "is_sex_offense": None,
+                    "is_drug": None,
+                    "counts": None,
+                    "charge_notes": None,
+                    "charging_entity": None,
+                    "is_controlling": None,
+                    "judge_full_name": None,
+                    "judge_external_id": None,
+                    "judicial_district_code": None,
+                    "person_id": 123,
+                },
+            ),
+            (
+                StateCharge.__name__,
+                {
+                    "charge_id": 2,
+                    "external_id": None,
+                    "status": "PRESENT_WITHOUT_INFO",
+                    "status_raw_text": None,
+                    "offense_date": None,
+                    "date_charged": None,
+                    "state_code": "US_XX",
+                    "county_code": None,
+                    "ncic_code": None,
+                    "statute": None,
+                    "description": None,
+                    "attempted": None,
+                    "classification_type": None,
+                    "classification_type_raw_text": None,
+                    "classification_subtype": None,
+                    "offense_type": None,
+                    "is_violent": None,
+                    "is_sex_offense": None,
+                    "is_drug": None,
+                    "counts": None,
+                    "charge_notes": None,
+                    "charging_entity": None,
+                    "is_controlling": None,
+                    "judge_full_name": None,
+                    "judge_external_id": None,
+                    "judicial_district_code": None,
+                    "person_id": 123,
+                },
+            ),
+            (
+                StateEarlyDischarge.__name__,
+                {
+                    "county_code": None,
+                    "deciding_body_type": None,
+                    "deciding_body_type_raw_text": None,
+                    "decision": None,
+                    "decision_date": None,
+                    "decision_raw_text": None,
+                    "decision_status": None,
+                    "decision_status_raw_text": None,
+                    "early_discharge_id": 1,
+                    "external_id": None,
+                    "incarceration_sentence_id": None,
+                    "person_id": 123,
+                    "request_date": None,
+                    "requesting_body_type": None,
+                    "requesting_body_type_raw_text": None,
+                    "state_code": "US_XX",
+                    "supervision_sentence_id": 111,
+                },
+            ),
+        ]
 
-    #     expected_output = [
-    #         (
-    #             f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
-    #             {
-    #                 "charge_id": 1,
-    #                 "supervision_sentence_id": 111,
-    #                 "state_code": "US_XX",
-    #             },
-    #         ),
-    #         (
-    #             f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
-    #             {
-    #                 "charge_id": 2,
-    #                 "supervision_sentence_id": 111,
-    #                 "state_code": "US_XX",
-    #             },
-    #         ),
-    #         (
-    #             StateSupervisionSentence.__name__,
-    #             {
-    #                 "supervision_sentence_id": 111,
-    #                 "external_id": None,
-    #                 "status": "PRESENT_WITHOUT_INFO",
-    #                 "status_raw_text": None,
-    #                 "supervision_type": None,
-    #                 "supervision_type_raw_text": None,
-    #                 "date_imposed": None,
-    #                 "start_date": None,
-    #                 "projected_completion_date": None,
-    #                 "completion_date": None,
-    #                 "state_code": "US_XX",
-    #                 "county_code": None,
-    #                 "min_length_days": None,
-    #                 "max_length_days": None,
-    #                 "sentence_metadata": None,
-    #                 "conditions": None,
-    #                 "person_id": 123,
-    #             },
-    #         ),
-    #         (
-    #             f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
-    #             {
-    #                 "charge_id": 1,
-    #                 "supervision_sentence_id": 222,
-    #                 "state_code": "US_XX",
-    #             },
-    #         ),
-    #         (
-    #             f"{StateCharge.__name__}_{StateSupervisionSentence.__name__}",
-    #             {
-    #                 "charge_id": 2,
-    #                 "supervision_sentence_id": 222,
-    #                 "state_code": "US_XX",
-    #             },
-    #         ),
-    #         (
-    #             StateSupervisionSentence.__name__,
-    #             {
-    #                 "supervision_sentence_id": 222,
-    #                 "external_id": None,
-    #                 "status": "PRESENT_WITHOUT_INFO",
-    #                 "status_raw_text": None,
-    #                 "supervision_type": None,
-    #                 "supervision_type_raw_text": None,
-    #                 "date_imposed": None,
-    #                 "start_date": None,
-    #                 "projected_completion_date": None,
-    #                 "completion_date": None,
-    #                 "state_code": "US_XX",
-    #                 "county_code": None,
-    #                 "min_length_days": None,
-    #                 "max_length_days": None,
-    #                 "sentence_metadata": None,
-    #                 "conditions": None,
-    #                 "person_id": 123,
-    #             },
-    #         ),
-    #         (
-    #             StateCharge.__name__,
-    #             {
-    #                 "charge_id": 1,
-    #                 "external_id": None,
-    #                 "status": "PRESENT_WITHOUT_INFO",
-    #                 "status_raw_text": None,
-    #                 "offense_date": None,
-    #                 "date_charged": None,
-    #                 "state_code": "US_XX",
-    #                 "county_code": None,
-    #                 "ncic_code": None,
-    #                 "statute": None,
-    #                 "description": None,
-    #                 "attempted": None,
-    #                 "classification_type": None,
-    #                 "classification_type_raw_text": None,
-    #                 "classification_subtype": None,
-    #                 "offense_type": None,
-    #                 "is_violent": None,
-    #                 "is_sex_offense": None,
-    #                 "is_drug": None,
-    #                 "counts": None,
-    #                 "charge_notes": None,
-    #                 "charging_entity": None,
-    #                 "is_controlling": None,
-    #                 "judge_full_name": None,
-    #                 "judge_external_id": None,
-    #                 "judicial_district_code": None,
-    #                 "person_id": 123,
-    #             },
-    #         ),
-    #         (
-    #             StateCharge.__name__,
-    #             {
-    #                 "charge_id": 2,
-    #                 "external_id": None,
-    #                 "status": "PRESENT_WITHOUT_INFO",
-    #                 "status_raw_text": None,
-    #                 "offense_date": None,
-    #                 "date_charged": None,
-    #                 "state_code": "US_XX",
-    #                 "county_code": None,
-    #                 "ncic_code": None,
-    #                 "statute": None,
-    #                 "description": None,
-    #                 "attempted": None,
-    #                 "classification_type": None,
-    #                 "classification_type_raw_text": None,
-    #                 "classification_subtype": None,
-    #                 "offense_type": None,
-    #                 "is_violent": None,
-    #                 "is_sex_offense": None,
-    #                 "is_drug": None,
-    #                 "counts": None,
-    #                 "charge_notes": None,
-    #                 "charging_entity": None,
-    #                 "is_controlling": None,
-    #                 "judge_full_name": None,
-    #                 "judge_external_id": None,
-    #                 "judicial_district_code": None,
-    #                 "person_id": 123,
-    #             },
-    #         ),
-    #         (
-    #             StateEarlyDischarge.__name__,
-    #             {
-    #                 "county_code": None,
-    #                 "deciding_body_type": None,
-    #                 "deciding_body_type_raw_text": None,
-    #                 "decision": None,
-    #                 "decision_date": None,
-    #                 "decision_raw_text": None,
-    #                 "decision_status": None,
-    #                 "decision_status_raw_text": None,
-    #                 "early_discharge_id": 1,
-    #                 "external_id": None,
-    #                 "incarceration_sentence_id": None,
-    #                 "person_id": 123,
-    #                 "request_date": None,
-    #                 "requesting_body_type": None,
-    #                 "requesting_body_type_raw_text": None,
-    #                 "state_code": "US_XX",
-    #                 "supervision_sentence_id": 111,
-    #             },
-    #         ),
-    #     ]
-    #     self.assertCountEqual(expected_output, converted_output)
+        self.assertCountEqual(expected_output, converted_output)

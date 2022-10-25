@@ -16,8 +16,7 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
-from typing import List
+from typing import Any, Dict, List
 
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
@@ -39,6 +38,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -46,8 +48,18 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     merge_additional_attributes_maps,
+)
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    convert_entity_trees_to_normalized_versions,
+)
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -62,7 +74,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
 class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
     """Entity normalizer class for the normalization pipeline that normalizes all
     entities with configured normalization processes."""
@@ -113,9 +124,9 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             ],
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
             assessments=normalizer_args[StateAssessment.__name__],
-            # charge_offense_descriptions_to_labels=normalizer_args[
-            #     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
-            # ],
+            charge_offense_descriptions_to_labels=normalizer_args[
+                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
+            ],
         )
 
     def _normalize_entities(
@@ -133,7 +144,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
-        # charge_offense_descriptions_to_labels: List[Dict[str, Any]],
+        charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
         processed_entities = all_normalized_entities(
@@ -150,7 +161,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             assessments=assessments,
-            # charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
+            charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
             field_index=self.field_index,
         )
 
@@ -171,7 +182,7 @@ def all_normalized_entities(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     assessments: List[StateAssessment],
-    # charge_offense_descriptions_to_labels: List[Dict[str, Any]],
+    charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -198,39 +209,39 @@ def all_normalized_entities(
         )
     )
 
-    # sentence_normalization_manager = SentenceNormalizationManager(
-    #     incarceration_sentences,
-    #     supervision_sentences,
-    #     charge_offense_descriptions_to_labels,
-    # )
+    sentence_normalization_manager = SentenceNormalizationManager(
+        incarceration_sentences,
+        supervision_sentences,
+        charge_offense_descriptions_to_labels,
+    )
 
-    # (
-    #     processed_incarceration_sentences,
-    #     additional_incarceration_sentence_attributes,
-    # ) = (
-    #     sentence_normalization_manager.normalized_incarceration_sentences_and_additional_attributes()
-    # )
+    (
+        processed_incarceration_sentences,
+        additional_incarceration_sentence_attributes,
+    ) = (
+        sentence_normalization_manager.normalized_incarceration_sentences_and_additional_attributes()
+    )
 
-    # (
-    #     processed_supervision_sentences,
-    #     additional_supervision_sentence_attributes,
-    # ) = (
-    #     sentence_normalization_manager.normalized_supervision_sentences_and_additional_attributes()
-    # )
+    (
+        processed_supervision_sentences,
+        additional_supervision_sentence_attributes,
+    ) = (
+        sentence_normalization_manager.normalized_supervision_sentences_and_additional_attributes()
+    )
 
-    # normalized_incarceration_sentences = convert_entity_trees_to_normalized_versions(
-    #     processed_incarceration_sentences,
-    #     NormalizedStateIncarcerationSentence,
-    #     additional_incarceration_sentence_attributes,
-    #     field_index,
-    # )
+    normalized_incarceration_sentences = convert_entity_trees_to_normalized_versions(
+        processed_incarceration_sentences,
+        NormalizedStateIncarcerationSentence,
+        additional_incarceration_sentence_attributes,
+        field_index,
+    )
 
-    # normalized_supervision_sentences = convert_entity_trees_to_normalized_versions(
-    #     processed_supervision_sentences,
-    #     NormalizedStateSupervisionSentence,
-    #     additional_supervision_sentence_attributes,
-    #     field_index,
-    # )
+    normalized_supervision_sentences = convert_entity_trees_to_normalized_versions(
+        processed_supervision_sentences,
+        NormalizedStateSupervisionSentence,
+        additional_supervision_sentence_attributes,
+        field_index,
+    )
 
     program_assignment_manager = ProgramAssignmentNormalizationManager(
         program_assignments,
@@ -255,8 +266,8 @@ def all_normalized_entities(
         supervision_periods=supervision_periods,
         normalized_violation_responses=normalized_violation_responses,
         field_index=field_index,
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences,
+        incarceration_sentences=normalized_incarceration_sentences,
+        supervision_sentences=normalized_supervision_sentences,
     )
 
     assessment_normalization_manager = AssessmentNormalizationManager(
@@ -279,8 +290,8 @@ def all_normalized_entities(
             additional_pa_attributes,
             additional_vr_attributes,
             additional_assessments_attributes,
-            # additional_incarceration_sentence_attributes,
-            # additional_supervision_sentence_attributes,
+            additional_incarceration_sentence_attributes,
+            additional_supervision_sentence_attributes,
         ]
     )
 
@@ -306,8 +317,8 @@ def all_normalized_entities(
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,
             StateAssessment.__name__: processed_assessments,
-            # StateIncarcerationSentence.__name__: processed_incarceration_sentences,
-            # StateSupervisionSentence.__name__: processed_supervision_sentences,
+            StateIncarcerationSentence.__name__: processed_incarceration_sentences,
+            StateSupervisionSentence.__name__: processed_supervision_sentences,
         },
         additional_attributes_map,
     )
