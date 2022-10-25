@@ -41,7 +41,6 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     METRICS_BY_SYSTEM,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.utils.types import assert_type
 
 MetricContextDataT = TypeVar("MetricContextDataT", bound="MetricContextData")
 MetricAggregatedDimensionDataT = TypeVar(
@@ -164,16 +163,14 @@ class MetricAggregatedDimensionData:
             member,
             default_setting,
         ) in includes_excludes_definition.member_to_default_inclusion_setting.items():
+            included = actual_member_to_includes_excludes_setting.get(member)
             includes_excludes_list.append(
                 {
                     "key": member.name,
                     "label": member.value,
-                    "included": assert_type(
-                        actual_member_to_includes_excludes_setting.get(
-                            member, default_setting
-                        ),
-                        IncludesExcludesSetting,
-                    ).value,
+                    "included": included.value
+                    if included is not None
+                    else default_setting.value,
                     "default": default_setting.value,
                 }
             )
@@ -384,7 +381,7 @@ class MetricInterface:
     # Values for includes_excludes settings at the metric level.
     includes_excludes_member_to_setting: Dict[
         enum.Enum, Optional[IncludesExcludesSetting]
-    ] = attr.field(factory=dict)
+    ] = attr.field(default={})
 
     # TODO(#12418) [Backend] Figure out when/when not to validate MetricInterfaces
     enforce_validation: Optional[bool] = False
@@ -492,21 +489,21 @@ class MetricInterface:
             entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
             and self.metric_definition.includes_excludes
         ):
-            for member, setting in self.includes_excludes_member_to_setting.items():
-                default_setting = assert_type(
-                    self.metric_definition.includes_excludes.member_to_default_inclusion_setting.get(
-                        member
-                    ),
-                    enum.Enum,
-                ).value
+            for (
+                member,
+                default_setting,
+            ) in (
+                self.metric_definition.includes_excludes.member_to_default_inclusion_setting.items()
+            ):
+                included = self.includes_excludes_member_to_setting.get(member)
                 settings_json.append(
                     {
                         "key": member.name,
                         "label": member.value,
-                        "included": setting.value
-                        if setting is not None
-                        else default_setting,
-                        "default": default_setting,
+                        "included": included.value
+                        if included is not None
+                        else default_setting.value,
+                        "default": default_setting.value,
                     }
                 )
 

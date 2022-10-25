@@ -38,8 +38,10 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsOffenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.includes_excludes.prisons import (
+    PrisonReleasesToParoleIncludesExcludes,
     PrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
@@ -196,7 +198,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add_all(
             [
                 self.test_schema_objects.test_user_A,
-                self.test_schema_objects.test_agency_A,
+                self.test_schema_objects.test_agency_G,
             ]
         )
         self.session.commit()
@@ -215,25 +217,178 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(response.status_code, 200)
         metrics = assert_type(response.json, list)
-        self.assertEqual(len(metrics), 7)
+        self.assertEqual(len(metrics), 8)
         # Annual Budget metric is turned off
-        self.assertEqual(metrics[0]["key"], law_enforcement.annual_budget.key)
+        self.assertEqual(metrics[0]["key"], prisons.annual_budget.key)
         self.assertEqual(metrics[0]["enabled"], False)
-        # Police Officer metric has a prefilled context (ADDITIONAL_CONTEXT)
-        self.assertEqual(metrics[1]["key"], law_enforcement.police_officers.key)
+        # Total Staff metric has two includes/excludes settings that
+        # are different from the default.
+        self.assertEqual(metrics[1]["key"], prisons.total_staff.key)
         self.assertEqual(
-            metrics[1]["contexts"],
+            metrics[1]["settings"],
             [
                 {
-                    "display_name": "Please provide the land size (area) of the jurisdiction in "
-                    "square miles.",
-                    "key": "JURISDICTION_AREA",
-                    "multiple_choice_options": [],
-                    "reporting_note": None,
-                    "required": False,
-                    "type": "NUMBER",
-                    "value": None,
+                    "key": "AVAILABLE",
+                    "label": PrisonStaffIncludesExcludes.AVAILABLE.value,
+                    "included": "Yes",
+                    "default": "Yes",
                 },
+                {
+                    "key": "ON_LEAVE",
+                    "label": PrisonStaffIncludesExcludes.ON_LEAVE.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "VACANT",
+                    "label": PrisonStaffIncludesExcludes.VACANT.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "FULL_TIME",
+                    "label": PrisonStaffIncludesExcludes.FULL_TIME.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "PART_TIME",
+                    "label": PrisonStaffIncludesExcludes.PART_TIME.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "CONTRACTED",
+                    "label": PrisonStaffIncludesExcludes.CONTRACTED.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "TEMPORARY",
+                    "label": PrisonStaffIncludesExcludes.TEMPORARY.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "OTHER",
+                    "label": PrisonStaffIncludesExcludes.OTHER.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "VOLUNTEER",
+                    "label": PrisonStaffIncludesExcludes.VOLUNTEER.value,
+                    "included": "Yes",
+                    "default": "No",
+                },
+                {
+                    "key": "INTERN",
+                    "label": PrisonStaffIncludesExcludes.INTERN.value,
+                    "included": "N/A",
+                    "default": "No",
+                },
+            ],
+        )
+        # Admissions metric is enabled but PrisonsOffenseType
+        # disaggregation is disabled
+        dimension_to_includes_excludes = assert_type(
+            prisons.admissions.aggregated_dimensions, list
+        )[0].dimension_to_includes_excludes
+        self.assertEqual(metrics[2]["key"], prisons.admissions.key)
+        self.assertEqual(metrics[2]["enabled"], True)
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["key"],
+            PrisonsOffenseType.dimension_identifier(),
+        )
+        self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"],
+            [
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.PERSON.value,
+                    "key": PrisonsOffenseType.PERSON.value,
+                    "settings": [
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": default_setting.value,
+                            "default": default_setting.value,
+                        }
+                        for member, default_setting in dimension_to_includes_excludes[
+                            PrisonsOffenseType.PERSON
+                        ].member_to_default_inclusion_setting.items()
+                    ],
+                },
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.PROPERTY.value,
+                    "key": PrisonsOffenseType.PROPERTY.value,
+                    "settings": [
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": default_setting.value,
+                            "default": default_setting.value,
+                        }
+                        for member, default_setting in dimension_to_includes_excludes[
+                            PrisonsOffenseType.PROPERTY
+                        ].member_to_default_inclusion_setting.items()
+                    ],
+                },
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.DRUG.value,
+                    "key": PrisonsOffenseType.DRUG.value,
+                    "settings": [
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": default_setting.value,
+                            "default": default_setting.value,
+                        }
+                        for member, default_setting in dimension_to_includes_excludes[
+                            PrisonsOffenseType.DRUG
+                        ].member_to_default_inclusion_setting.items()
+                    ],
+                },
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.PUBLIC_ORDER.value,
+                    "key": PrisonsOffenseType.PUBLIC_ORDER.value,
+                    "settings": [
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": default_setting.value,
+                            "default": default_setting.value,
+                        }
+                        for member, default_setting in dimension_to_includes_excludes[
+                            PrisonsOffenseType.PUBLIC_ORDER
+                        ].member_to_default_inclusion_setting.items()
+                    ],
+                },
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.OTHER.value,
+                    "key": PrisonsOffenseType.OTHER.value,
+                    "settings": [],
+                },
+                {
+                    "enabled": False,
+                    "label": PrisonsOffenseType.UNKNOWN.value,
+                    "key": PrisonsOffenseType.UNKNOWN.value,
+                    "settings": [],
+                },
+            ],
+        )
+
+        self.assertEqual(metrics[3]["key"], prisons.average_daily_population.key)
+        # Readmissions metric has a prefilled context.
+        self.assertEqual(metrics[4]["key"], prisons.readmissions.key)
+        self.assertEqual(
+            metrics[4]["contexts"],
+            [
                 {
                     "display_name": "Please provide additional context.",
                     "key": "ADDITIONAL_CONTEXT",
@@ -245,47 +400,58 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             ],
         )
-        # Calls for service metric is enabled but CallType disaggregation is disabled
-        self.assertEqual(metrics[2]["key"], law_enforcement.calls_for_service.key)
-        self.assertEqual(metrics[2]["enabled"], True)
+        # For the release metric, two settings are excluded from the parole to supervision
+        # disaggregation.
+        self.assertEqual(metrics[5]["key"], prisons.releases.key)
         self.assertEqual(
-            metrics[2]["disaggregations"],
+            metrics[5]["disaggregations"][0]["dimensions"][1]["settings"],
             [
                 {
-                    "key": CallType.dimension_identifier(),
-                    "enabled": False,
-                    "required": True,
-                    "helper_text": None,
-                    "should_sum_to_total": False,
-                    "display_name": CallType.display_name(),
-                    "dimensions": [
-                        {
-                            "enabled": False,
-                            "label": CallType.EMERGENCY.value,
-                            "key": CallType.EMERGENCY.value,
-                        },
-                        {
-                            "enabled": False,
-                            "label": CallType.NON_EMERGENCY.value,
-                            "key": CallType.NON_EMERGENCY.value,
-                        },
-                        {
-                            "enabled": False,
-                            "label": CallType.UNKNOWN.value,
-                            "key": CallType.UNKNOWN.value,
-                        },
-                    ],
-                }
+                    "key": "AUTOMATIC_OR_PRESUMPTIVE",
+                    "label": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.value,
+                    "included": "No",
+                    "default": "Yes",
+                },
+                {
+                    "key": "PAROLE_BOARD_VOTE",
+                    "label": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "AFTER_SANCTION",
+                    "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
+                    "included": "No",
+                    "default": "Yes",
+                },
+                {
+                    "key": "POST_RELEASE_SUPERVISION",
+                    "label": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "COMMUTED_SENTENCE",
+                    "label": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "TRANSFERRED_OUT",
+                    "label": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.value,
+                    "included": "Yes",
+                    "default": "Yes",
+                },
+                {
+                    "key": "OTHER",
+                    "label": PrisonReleasesToParoleIncludesExcludes.OTHER.value,
+                    "included": "No",
+                    "default": "No",
+                },
             ],
         )
-        self.assertEqual(metrics[3]["key"], law_enforcement.reported_crime.key)
-        self.assertEqual(metrics[4]["key"], law_enforcement.total_arrests.key)
-        self.assertEqual(
-            metrics[5]["key"], law_enforcement.officer_use_of_force_incidents.key
-        )
-        self.assertEqual(
-            metrics[6]["key"], law_enforcement.civilian_complaints_sustained.key
-        )
+        self.assertEqual(metrics[6]["key"], prisons.staff_use_of_force_incidents.key)
+        self.assertEqual(metrics[7]["key"], prisons.grievances_upheld.key)
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
