@@ -43,6 +43,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
     ProgramAssignmentNormalizationManager,
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    SentenceNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
@@ -54,6 +57,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.pipeline_type import (
     COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
+    STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
@@ -61,7 +67,6 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 
 
-# TODO(#16102) Re-enable sentencing normalization once errors are fixed.
 class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDelegate):
     """Defines the entity normalization pipeline that normalizes all entities with
     configured normalization processes."""
@@ -91,11 +96,11 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StateProgramAssignment,
                 entities.StateAssessment,
                 entities.StatePerson,
-                # entities.StateCharge,
-                # entities.StateEarlyDischarge,
+                entities.StateCharge,
+                entities.StateEarlyDischarge,
             ],
             required_reference_tables=[
-                # STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
+                STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
             ],
             required_state_based_reference_tables=[],
             state_specific_required_delegates=[
@@ -127,5 +132,5 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
             SupervisionPeriodNormalizationManager,
             ViolationResponseNormalizationManager,
             AssessmentNormalizationManager,
-            # SentenceNormalizationManager,
+            SentenceNormalizationManager,
         ]

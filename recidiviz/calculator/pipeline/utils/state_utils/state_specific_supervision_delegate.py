@@ -28,6 +28,10 @@ from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
@@ -45,9 +49,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
-    StateIncarcerationSentence,
     StateSupervisionPeriod,
-    StateSupervisionSentence,
 )
 
 
@@ -208,8 +210,8 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     def get_projected_completion_date(
         self,
         supervision_period: StateSupervisionPeriod,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> Optional[date]:
         """Returns the projected completion date. Because supervision periods have
         different relationships with incarceration and supervision sentences, we consider

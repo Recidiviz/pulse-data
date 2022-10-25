@@ -51,7 +51,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.as
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationPeriod,
+    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
@@ -106,10 +108,8 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
     StatePerson,
     StateSupervisionContact,
-    StateSupervisionSentence,
 )
 
 
@@ -134,9 +134,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 StateSpecificViolationDelegate.__name__
             ],
             person=person,
-            supervision_sentences=identifier_context[StateSupervisionSentence.__name__],
+            supervision_sentences=identifier_context[
+                NormalizedStateSupervisionSentence.base_class_name()
+            ],
             incarceration_sentences=identifier_context[
-                StateIncarcerationSentence.__name__
+                NormalizedStateIncarcerationSentence.base_class_name()
             ],
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
@@ -160,8 +162,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_delegate: StateSpecificSupervisionDelegate,
         violation_delegate: StateSpecificViolationDelegate,
         person: StatePerson,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         assessments: List[NormalizedStateAssessment],
@@ -292,8 +294,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     def _find_population_events_for_supervision_period(
         self,
         person: StatePerson,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
@@ -809,8 +811,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _classify_supervision_success(
         self,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
@@ -828,7 +830,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         projected_completion_events: List[ProjectedSupervisionCompletionEvent] = []
 
         all_sentences: List[
-            Union[StateIncarcerationSentence, StateSupervisionSentence]
+            Union[
+                NormalizedStateIncarcerationSentence, NormalizedStateSupervisionSentence
+            ]
         ] = []
         all_sentences.extend(supervision_sentences)
         all_sentences.extend(incarceration_sentences)
@@ -846,7 +850,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             ):
                 continue
 
-            if isinstance(sentence, StateIncarcerationSentence):
+            if isinstance(sentence, NormalizedStateIncarcerationSentence):
                 # This handles max_length_days that would otherwise cause a null or overflow error
                 if (
                     not sentence.max_length_days
@@ -861,7 +865,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 sentence_supervision_type: Optional[
                     StateSupervisionSentenceSupervisionType
                 ] = StateSupervisionSentenceSupervisionType.PAROLE
-            elif isinstance(sentence, StateSupervisionSentence):
+            elif isinstance(sentence, NormalizedStateSupervisionSentence):
                 if not sentence.projected_completion_date:
                     continue
                 projected_completion_date = sentence.projected_completion_date
@@ -936,7 +940,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _get_projected_completion_event(
         self,
-        sentence: Union[StateSupervisionSentence, StateIncarcerationSentence],
+        sentence: Union[
+            NormalizedStateSupervisionSentence, NormalizedStateIncarcerationSentence
+        ],
         projected_completion_date: date,
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,

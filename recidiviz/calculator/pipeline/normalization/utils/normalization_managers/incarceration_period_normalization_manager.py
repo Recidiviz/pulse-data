@@ -27,6 +27,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.en
     EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
@@ -61,10 +62,7 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     is_placeholder,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateIncarcerationSentence,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
     "custodial_authority",
@@ -108,7 +106,7 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
     def incarceration_admission_reason_override(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         """States may have specific logic that determines the admission reason for an
         incarceration period.
@@ -272,7 +270,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         normalized_violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ],
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
         field_index: CoreEntityFieldIndex,
         earliest_death_date: Optional[date] = None,
     ):
@@ -303,7 +301,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             else None
         )
 
-        self._incarceration_sentences: Optional[List[StateIncarcerationSentence]] = (
+        self._incarceration_sentences: Optional[
+            List[NormalizedStateIncarcerationSentence]
+        ] = (
             incarceration_sentences
             if self.normalization_delegate.normalization_relies_on_incarceration_sentences()
             else None
@@ -1177,7 +1177,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     def _process_fields_on_final_incarceration_period_set(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
-        incarceration_sentences: Optional[List[StateIncarcerationSentence]],
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
     ) -> List[StateIncarcerationPeriod]:
         """After all incarceration periods are processed, continue to update fields of remaining
         incarceration periods prior to adding to the index by:
