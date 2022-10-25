@@ -122,6 +122,16 @@ DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST: List[Dict[str, Any]] = lis
     _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION.values()
 )
 
+DEFAULT_US_MO_SENTENCE_STATUSES = [
+    {
+        "sentence_external_id": "1061945-20030505-7",
+        "sentence_status_external_id": "1061945-20030505-7-26",
+        "status_code": "35I1000",
+        "status_date": "20180716",
+        "status_description": "Court Probation-Revisit",
+    },
+]
+
 # The state-specific delegates that should be used in state-agnostic tests
 STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificIncarcerationNormalizationDelegate": UsXxIncarcerationNormalizationDelegate(),
@@ -160,6 +170,7 @@ def test_get_required_state_specific_delegates() -> None:
                 ],
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
+                "us_mo_sentence_statuses": DEFAULT_US_MO_SENTENCE_STATUSES,
             },
         )
 

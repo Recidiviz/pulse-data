@@ -523,6 +523,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_location_ids_t
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
+from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
+    US_MO_SENTENCE_STATUSES_VIEW_NAME,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
@@ -787,7 +790,18 @@ def _get_state_specific_supervision_period_normalization_delegate(
     if state_code == StateCode.US_MI.value:
         return UsMiSupervisionNormalizationDelegate()
     if state_code == StateCode.US_MO.value:
-        return UsMoSupervisionNormalizationDelegate()
+        if not entity_kwargs or US_MO_SENTENCE_STATUSES_VIEW_NAME not in entity_kwargs:
+            raise ValueError(
+                "Missing US_MO sentence status view for UsMoSupervisionNormalizationDelegate"
+            )
+        us_mo_sentence_statuses = [
+            a
+            for a in entity_kwargs[US_MO_SENTENCE_STATUSES_VIEW_NAME]
+            if isinstance(a, dict)
+        ]
+        return UsMoSupervisionNormalizationDelegate(
+            sentence_statuses_list=us_mo_sentence_statuses
+        )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionNormalizationDelegate()
     if state_code == StateCode.US_OR.value:
