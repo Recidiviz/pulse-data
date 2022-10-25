@@ -18,7 +18,7 @@
 import itertools
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -33,7 +33,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
-    UsMoSentenceMixin,
     UsMoSentenceStatus,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
@@ -42,6 +41,9 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import (
@@ -65,6 +67,128 @@ class UsMoSupervisionNormalizationDelegate(
     StateSpecificSupervisionNormalizationDelegate
 ):
     """US_MO implementation of the supervision normalization delegate"""
+
+    def __init__(self, sentence_statuses_list: List[Dict[str, Any]]) -> None:
+        self._sentence_statuses: Dict[
+            str, List[UsMoSentenceStatus]
+        ] = self._get_sentence_statuses_by_sentence(sentence_statuses_list)
+        self._supervision_type_spans = self._get_supervision_type_spans_by_sentence()
+        self._validate_supervision_type_spans()
+
+    @staticmethod
+    def _get_sentence_statuses_by_sentence(
+        sentence_statuses_list: List[Dict[str, Any]]
+    ) -> Dict[str, List[UsMoSentenceStatus]]:
+        sentence_status_dict = defaultdict(list)
+        for sentence_status_row in sentence_statuses_list:
+            sentence_status = UsMoSentenceStatus.build_from_dictionary(
+                sentence_status_row
+            )
+            if sentence_status:
+                sentence_status_dict[sentence_status.sentence_external_id].append(
+                    sentence_status
+                )
+        return sentence_status_dict
+
+    def _get_supervision_type_spans_by_sentence(
+        self,
+    ) -> Dict[str, List[SupervisionTypeSpan]]:
+        """Generates the time span objects representing the supervision type for this
+        sentence between certain critical dates where the type may have changed for all
+        sentences."""
+        supervision_type_spans: Dict[str, List[SupervisionTypeSpan]] = defaultdict(list)
+        for sentence_external_id, sentence_statuses in self._sentence_statuses.items():
+            all_critical_statuses = [
+                status
+                for status in sentence_statuses
+                if status.is_supervision_type_critical_status
+            ]
+            critical_statuses_by_day = defaultdict(list)
+
+            for s in all_critical_statuses:
+                if s.status_date is not None:
+                    critical_statuses_by_day[s.status_date].append(s)
+
+            critical_days = sorted(critical_statuses_by_day.keys())
+
+            for i, critical_day in enumerate(critical_days):
+                start_date = critical_day
+                end_date = critical_days[i + 1] if i < len(critical_days) - 1 else None
+
+                supervision_type = (
+                    self._get_sentence_supervision_type_from_critical_day_statuses(
+                        critical_statuses_by_day[critical_day]
+                    )
+                )
+                supervision_type_spans[sentence_external_id].append(
+                    SupervisionTypeSpan(
+                        sentence_external_id=sentence_external_id,
+                        start_date=start_date,
+                        end_date=end_date,
+                        supervision_type=supervision_type,
+                    )
+                )
+
+        return supervision_type_spans
+
+    @staticmethod
+    def _get_sentence_supervision_type_from_critical_day_statuses(
+        critical_day_statuses: List[UsMoSentenceStatus],
+    ) -> Optional[StateSupervisionSentenceSupervisionType]:
+        """Given a set of 'supervision type critical' statuses, returns the supervision
+        type for the SupervisionTypeSpan starting on that day."""
+
+        # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
+        # should be given precedence.
+        critical_day_statuses.sort(
+            key=lambda s: s.sentence_status_external_id, reverse=True
+        )
+        supervision_type = critical_day_statuses[
+            0
+        ].supervision_type_status_classification
+
+        if (
+            supervision_type is None
+            or supervision_type
+            != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
+        ):
+            return supervision_type
+
+        # If the most recent status in a day does not give us enough information to tell the supervision type, look to
+        # other statuses on that day.
+        for status in critical_day_statuses:
+            if (
+                status.supervision_type_status_classification is not None
+                and status.supervision_type_status_classification
+                != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
+            ):
+                return status.supervision_type_status_classification
+
+        return supervision_type
+
+    def _validate_supervision_type_spans(self) -> None:
+        """Validate that the supervision type spans are generated correctly."""
+        if self._supervision_type_spans is None:
+            raise ValueError("Spans dictionary should not be None")
+
+        for (
+            sentence_external_id,
+            supervision_type_spans,
+        ) in self._supervision_type_spans.items():
+            if not supervision_type_spans:
+                continue
+
+            last_span = supervision_type_spans[-1]
+            if last_span.end_date is not None:
+                raise ValueError(
+                    f"Must end span list with an open span for sentence_external_id: {sentence_external_id}"
+                )
+
+            for not_last_span in supervision_type_spans[:-1]:
+                if not_last_span.end_date is None:
+                    raise ValueError(
+                        f"Intermediate span must not have None end date for sentence_external_id: {sentence_external_id}"
+                    )
 
     def normalization_relies_on_sentences(self) -> bool:
         """In US_MO, sentences are used to pre-process StateSupervisionPeriods."""
@@ -93,15 +217,18 @@ class UsMoSupervisionNormalizationDelegate(
         supervision_type_spans: List[SupervisionTypeSpan] = []
         all_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]] = defaultdict(set)
         for sentence in sentences:
-            if not isinstance(sentence, UsMoSentenceMixin):
-                raise ValueError(
-                    f"Unexpected type for sentence: {type(sentence)}. "
-                    f"Found sentence: {sentence}."
-                )
-            for status in sentence.sentence_statuses:
+            if not sentence.external_id:
+                continue
+            sentence_statuses: List[UsMoSentenceStatus] = self._sentence_statuses[
+                sentence.external_id
+            ]
+            type_spans: List[SupervisionTypeSpan] = self._supervision_type_spans[
+                sentence.external_id
+            ]
+            for status in sentence_statuses:
                 if status.status_date:
                     all_statuses_by_date[status.status_date].add(status)
-            for supervision_type_span in sentence.supervision_type_spans:
+            for supervision_type_span in type_spans:
                 supervision_type_spans.append(supervision_type_span)
 
         time_spans: List[PotentiallyOpenDateRange] = self._get_new_period_time_spans(

@@ -14,36 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Missouri-specific code for modeling sentence based on sentence statuses from table TAK026."""
-
-import logging
-from collections import defaultdict
+"""Missouri-specific classes for modeling sentences based on sentence statuses from table TAK026."""
 from datetime import date
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-)
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.date import DateRange, DurationMixin
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-)
-
-SentenceType = TypeVar(
-    "SentenceType",
-    "StateSupervisionSentence",
-    "StateIncarcerationSentence",
-    "NormalizedStateSupervisionSentence",
-    "NormalizedStateIncarcerationSentence",
-)
 
 
 @attr.s(frozen=True)
@@ -245,6 +226,9 @@ class SupervisionTypeSpan(DurationMixin):
     """Represents a duration in which there is a specific supervision type associated
     derived from critical statuses and sentences."""
 
+    # External id for the sentence associated with this status
+    sentence_external_id: str = attr.ib()
+
     # Sentence supervision type to associate with this time span, or None if the person was not on supervision at this
     # time.
     supervision_type: Optional[StateSupervisionSentenceSupervisionType] = attr.ib()
@@ -269,226 +253,3 @@ class SupervisionTypeSpan(DurationMixin):
     @property
     def end_date_exclusive(self) -> Optional[date]:
         return self.end_date
-
-
-@attr.s
-class UsMoSentenceMixin(Generic[SentenceType]):
-    """State-specific extension of sentence classes for MO which allows us to calculate additional info based on the
-    MO sentence statuses.
-    """
-
-    base_sentence: SentenceType = attr.ib()
-
-    @base_sentence.default
-    def _base_sentence(self) -> SentenceType:
-        raise ValueError("Must set base_sentence")
-
-    sentence_statuses: List[UsMoSentenceStatus] = attr.ib()
-
-    @sentence_statuses.default
-    def _sentence_statuses(self) -> List[UsMoSentenceStatus]:
-        raise ValueError("Must set sentence_statuses")
-
-    # Time span objects that represent time spans where a sentence has a given supervision type
-    supervision_type_spans: List[SupervisionTypeSpan] = attr.ib()
-
-    @supervision_type_spans.default
-    def _get_supervision_type_spans(self) -> List[SupervisionTypeSpan]:
-        """Generates the time span objects representing the supervision type for this sentence between certain critical
-        dates where the type may have changed.
-        """
-        if not self.base_sentence.external_id:
-            return []
-
-        if not self.sentence_statuses:
-            logging.warning(
-                "No sentence statuses in the reftable for sentence [%s]",
-                self.base_sentence.external_id,
-            )
-            return []
-
-        all_critical_statuses = [
-            status
-            for status in self.sentence_statuses
-            if status.is_supervision_type_critical_status
-        ]
-        critical_statuses_by_day = defaultdict(list)
-
-        for s in all_critical_statuses:
-            if s.status_date is not None:
-                critical_statuses_by_day[s.status_date].append(s)
-
-        critical_days = sorted(critical_statuses_by_day.keys())
-
-        supervision_type_spans = []
-        for i, critical_day in enumerate(critical_days):
-            start_date = critical_day
-            end_date = critical_days[i + 1] if i < len(critical_days) - 1 else None
-
-            supervision_type = (
-                self._get_sentence_supervision_type_from_critical_day_statuses(
-                    critical_statuses_by_day[critical_day]
-                )
-            )
-            supervision_type_spans.append(
-                SupervisionTypeSpan(
-                    start_date=start_date,
-                    end_date=end_date,
-                    supervision_type=supervision_type,
-                )
-            )
-
-        return supervision_type_spans
-
-    @supervision_type_spans.validator
-    def _supervision_type_spans_validator(
-        self,
-        _attribute: attr.Attribute,
-        supervision_type_spans: List[SupervisionTypeSpan],
-    ) -> None:
-        if supervision_type_spans is None:
-            raise ValueError("Spans list should not be None")
-
-        if not supervision_type_spans:
-            return
-
-        last_span = supervision_type_spans[-1]
-        if last_span.end_date is not None:
-            raise ValueError("Must end span list with an open span")
-
-        for not_last_span in supervision_type_spans[:-1]:
-            if not_last_span.end_date is None:
-                raise ValueError("Intermediate span must not have None end date")
-
-    @staticmethod
-    def _get_sentence_supervision_type_from_critical_day_statuses(
-        critical_day_statuses: List[UsMoSentenceStatus],
-    ) -> Optional[StateSupervisionSentenceSupervisionType]:
-        """Given a set of 'supervision type critical' statuses, returns the supervision type for the
-        SupervisionTypeSpan starting on that day."""
-
-        # Status external ids are the sentence id with the status sequence number appended - larger sequence numbers
-        # should be given precedence.
-        critical_day_statuses.sort(
-            key=lambda s: s.sentence_status_external_id, reverse=True
-        )
-        supervision_type = critical_day_statuses[
-            0
-        ].supervision_type_status_classification
-
-        if (
-            supervision_type is None
-            or supervision_type
-            != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
-        ):
-            return supervision_type
-
-        # If the most recent status in a day does not give us enough information to tell the supervision type, look to
-        # other statuses on that day.
-        for status in critical_day_statuses:
-            if (
-                status.supervision_type_status_classification is not None
-                and status.supervision_type_status_classification
-                != StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN
-            ):
-                return status.supervision_type_status_classification
-
-        return supervision_type
-
-
-@attr.s
-class UsMoIncarcerationSentence(
-    StateIncarcerationSentence,
-    UsMoSentenceMixin[StateIncarcerationSentence],
-):
-    @classmethod
-    def from_incarceration_sentence(
-        cls,
-        sentence: StateIncarcerationSentence,
-        sentence_statuses_raw: List[Dict[str, Any]],
-    ) -> "UsMoIncarcerationSentence":
-        sentence_statuses_converted = [
-            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-            for status_dict_raw in sentence_statuses_raw
-        ]
-
-        sentence_dict = {
-            **sentence.__dict__,
-            "base_sentence": sentence,
-            "sentence_statuses": sentence_statuses_converted,
-        }
-
-        return cls(**sentence_dict)  # type: ignore
-
-
-@attr.s
-class UsMoSupervisionSentence(
-    StateSupervisionSentence,
-    UsMoSentenceMixin[StateSupervisionSentence],
-):
-    @classmethod
-    def from_supervision_sentence(
-        cls,
-        sentence: StateSupervisionSentence,
-        sentence_statuses_raw: List[Dict[str, Any]],
-    ) -> "UsMoSupervisionSentence":
-        sentence_statuses_converted = [
-            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-            for status_dict_raw in sentence_statuses_raw
-        ]
-        sentence_dict = {
-            **sentence.__dict__,
-            "base_sentence": sentence,
-            "sentence_statuses": sentence_statuses_converted,
-        }
-
-        return cls(**sentence_dict)  # type: ignore
-
-
-@attr.s
-class NormalizedUsMoIncarcerationSentence(
-    NormalizedStateIncarcerationSentence,
-    UsMoSentenceMixin[NormalizedStateIncarcerationSentence],
-):
-    @classmethod
-    def from_incarceration_sentence(
-        cls,
-        sentence: NormalizedStateIncarcerationSentence,
-        sentence_statuses_raw: List[Dict[str, Any]],
-    ) -> "NormalizedUsMoIncarcerationSentence":
-        sentence_statuses_converted = [
-            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-            for status_dict_raw in sentence_statuses_raw
-        ]
-
-        sentence_dict = {
-            **sentence.__dict__,
-            "base_sentence": sentence,
-            "sentence_statuses": sentence_statuses_converted,
-        }
-
-        return cls(**sentence_dict)  # type: ignore
-
-
-@attr.s
-class NormalizedUsMoSupervisionSentence(
-    NormalizedStateSupervisionSentence,
-    UsMoSentenceMixin[NormalizedStateSupervisionSentence],
-):
-    @classmethod
-    def from_supervision_sentence(
-        cls,
-        sentence: NormalizedStateSupervisionSentence,
-        sentence_statuses_raw: List[Dict[str, Any]],
-    ) -> "NormalizedUsMoSupervisionSentence":
-        sentence_statuses_converted = [
-            UsMoSentenceStatus.build_from_dictionary(status_dict_raw)
-            for status_dict_raw in sentence_statuses_raw
-        ]
-        sentence_dict = {
-            **sentence.__dict__,
-            "base_sentence": sentence,
-            "sentence_statuses": sentence_statuses_converted,
-        }
-
-        return cls(**sentence_dict)  # type: ignore

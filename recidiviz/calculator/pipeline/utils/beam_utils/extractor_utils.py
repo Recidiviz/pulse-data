@@ -29,7 +29,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    cast,
 )
 
 import apache_beam as beam
@@ -39,8 +38,6 @@ from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     state_base_entity_class_for_entity_class,
@@ -58,16 +55,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     UnifyingId,
     select_query,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    NormalizedUsMoIncarcerationSentence,
-    NormalizedUsMoSupervisionSentence,
-    UsMoIncarcerationSentence,
-    UsMoSupervisionSentence,
-)
-from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
-    US_MO_SENTENCE_STATUSES_VIEW_NAME,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -495,16 +482,8 @@ class ExtractDataForPipeline(beam.PTransform):
             )
         )
 
-        fully_connected_entities_with_converted_state_types = (
-            fully_connected_hydrated_entities
-            | "Convert entities to state-specific type"
-            >> beam.ParDo(
-                ConvertEntitiesToStateSpecificTypes(), state_code=self._state_code
-            )
-        )
-
         final_entities_with_state_based_reference = (
-            fully_connected_entities_with_converted_state_types
+            fully_connected_hydrated_entities
             | "Attach state-based reference data to entities"
             >> beam.ParDo(
                 _AttachStateBasedReferenceDataToEntities(),
@@ -1283,230 +1262,6 @@ class _AttachStateBasedReferenceDataToEntities(beam.DoFn):
             **state_based_reference_data,
         }
         yield person_id, final_entities_and_reference_tables
-
-    def to_runner_api_parameter(self, _):
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(
-    beam.typehints.Tuple[
-        UnifyingId,
-        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
-    ],
-    beam.typehints.Optional[str],
-)
-@with_output_types(
-    beam.typehints.Tuple[
-        UnifyingId,
-        Dict[Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]],
-    ],
-)
-class ConvertEntitiesToStateSpecificTypes(beam.DoFn):
-    """Converts entities into state-specific subclasses of those entities,
-    for use in state-specific calculate flows."""
-
-    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
-    # pylint: disable=W0223
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[
-            UnifyingId,
-            Dict[
-                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-            ],
-        ],
-        state_code: str,
-        *_args,
-        **_kwargs,
-    ) -> Iterable[
-        Tuple[
-            UnifyingId,
-            Dict[
-                Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-            ],
-        ]
-    ]:
-        """For the entities of the given person, convert to a state-specific subclass,
-        if necessary.
-
-        Args:
-            element: A tuple containing person_id and a dictionary with all of the
-                person's entities and sentence statuses (if applicable)
-            state_code: The state_code corresponding to the entities
-
-        Yields:
-            A replica of the provided element, with some entities replaced by updated
-            entities, where applicable.
-        """
-        person_id, entities_and_reference_tables = element
-
-        if state_code == StateCode.US_MO.value:
-            self.update_US_MO_sentences(entities_and_reference_tables)
-        yield person_id, entities_and_reference_tables
-
-    def update_US_MO_sentences(
-        self,
-        entities_and_reference_tables: Dict[
-            Union[EntityClassName, TableName], Union[List[Entity], List[TableRow]]
-        ],
-    ) -> None:
-        """Updates US_MO StateIncarcerationSentence and StateSupervisionSentence
-        entities to state-specific versions of the classes that store additional
-        information required to perform calculations in this state."""
-        incarceration_sentences: List[Entity] = []
-        supervision_sentences: List[Entity] = []
-
-        if (
-            state_entities.StateIncarcerationSentence.__name__
-            in entities_and_reference_tables
-        ):
-            incarceration_sentences = cast(
-                List[Entity],
-                entities_and_reference_tables[
-                    state_entities.StateIncarcerationSentence.__name__
-                ],
-            )
-
-        if (
-            state_entities.StateSupervisionSentence.__name__
-            in entities_and_reference_tables
-        ):
-            supervision_sentences = cast(
-                List[Entity],
-                entities_and_reference_tables[
-                    state_entities.StateSupervisionSentence.__name__
-                ],
-            )
-
-        if not supervision_sentences and not incarceration_sentences:
-            return
-
-        if US_MO_SENTENCE_STATUSES_VIEW_NAME not in entities_and_reference_tables:
-            raise ValueError(
-                f"Must hydrate [{US_MO_SENTENCE_STATUSES_VIEW_NAME}] to "
-                f"use sentences in a US_MO pipeline."
-            )
-        all_sentence_statuses: Union[
-            List[Entity], List[TableRow]
-        ] = entities_and_reference_tables.pop(US_MO_SENTENCE_STATUSES_VIEW_NAME)
-
-        us_mo_sentence_statuses_by_sentence: Dict[
-            str, List[Dict[str, str]]
-        ] = defaultdict(list)
-
-        if all_sentence_statuses:
-            # Build a dictionary that maps each sentence_external_id to a list of
-            # dictionaries containing status updates for this sentence
-            for status_dict in all_sentence_statuses:
-                if not isinstance(status_dict, Dict):
-                    raise ValueError(
-                        "Expected sentence status element to be of type "
-                        f"Dict. Found {type(status_dict)}."
-                    )
-
-                sentence_external_id = status_dict.get("sentence_external_id")
-
-                if sentence_external_id:
-                    us_mo_sentence_statuses_by_sentence[sentence_external_id].append(
-                        status_dict
-                    )
-
-        updated_incarceration_sentences: List[
-            Union[UsMoIncarcerationSentence, NormalizedUsMoIncarcerationSentence]
-        ] = []
-
-        for incarceration_sentence in incarceration_sentences:
-            if not isinstance(
-                incarceration_sentence, state_entities.StateIncarcerationSentence
-            ):
-                raise ValueError(
-                    "Expected entity to be of type "
-                    f"StateIncarcerationSentence. Found {type(incarceration_sentence)}."
-                )
-
-            if incarceration_sentence.state_code != StateCode.US_MO.value:
-                raise ValueError(
-                    f"Found sentence that isn't of US_MO: {incarceration_sentence}"
-                )
-
-            sentence_statuses = []
-            if (
-                incarceration_sentence.external_id
-                in us_mo_sentence_statuses_by_sentence
-            ):
-                sentence_statuses = us_mo_sentence_statuses_by_sentence[
-                    incarceration_sentence.external_id
-                ]
-
-            state_specific_incarceration_sentence: Union[
-                UsMoIncarcerationSentence, NormalizedUsMoIncarcerationSentence
-            ] = (
-                (
-                    UsMoIncarcerationSentence.from_incarceration_sentence(
-                        incarceration_sentence, sentence_statuses
-                    )
-                )
-                if not isinstance(
-                    incarceration_sentence, NormalizedStateIncarcerationSentence
-                )
-                else NormalizedUsMoIncarcerationSentence.from_incarceration_sentence(
-                    incarceration_sentence, sentence_statuses
-                )
-            )
-
-            updated_incarceration_sentences.append(
-                state_specific_incarceration_sentence
-            )
-
-        entities_and_reference_tables[
-            state_entities.StateIncarcerationSentence.__name__
-        ] = cast(List[Entity], updated_incarceration_sentences)
-
-        updated_supervision_sentences: List[
-            Union[UsMoSupervisionSentence, NormalizedUsMoSupervisionSentence]
-        ] = []
-
-        for supervision_sentence in supervision_sentences:
-            if not isinstance(
-                supervision_sentence, state_entities.StateSupervisionSentence
-            ):
-                raise ValueError(
-                    "Expected entity to be of type "
-                    f"StateSupervisionSentence. Found {type(supervision_sentence)}."
-                )
-            if supervision_sentence.state_code != StateCode.US_MO.value:
-                raise ValueError(
-                    f"Found sentence that isn't of US_MO: {supervision_sentence}"
-                )
-            sentence_statuses = []
-            if supervision_sentence.external_id in us_mo_sentence_statuses_by_sentence:
-                sentence_statuses = us_mo_sentence_statuses_by_sentence[
-                    supervision_sentence.external_id
-                ]
-
-            state_specific_supervision_sentence: Union[
-                NormalizedUsMoSupervisionSentence, UsMoSupervisionSentence
-            ] = (
-                (
-                    UsMoSupervisionSentence.from_supervision_sentence(
-                        supervision_sentence, sentence_statuses
-                    )
-                )
-                if not isinstance(
-                    supervision_sentence, NormalizedStateSupervisionSentence
-                )
-                else NormalizedUsMoSupervisionSentence.from_supervision_sentence(
-                    supervision_sentence, sentence_statuses
-                )
-            )
-
-            updated_supervision_sentences.append(state_specific_supervision_sentence)
-
-        entities_and_reference_tables[
-            state_entities.StateSupervisionSentence.__name__
-        ] = cast(List[Entity], updated_supervision_sentences)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

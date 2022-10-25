@@ -54,9 +54,6 @@ class CoreEntity:
             id_name = id_name.replace("normalized_state_", "")
         elif id_name.startswith("state_"):
             id_name = id_name.replace("state_", "")
-        # TODO(#16102) Remove custom class base name for US_MO once normalization is moved.
-        elif id_name.startswith("us_mo_"):
-            id_name = id_name.replace("us_mo_", "")
         return id_name
 
     def get_id(self):
