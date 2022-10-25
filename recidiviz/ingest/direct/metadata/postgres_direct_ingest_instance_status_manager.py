@@ -26,6 +26,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
     VALID_START_OF_RERUN_STATUSES,
+    DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -47,9 +48,15 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
     http://go/ingest-instance-status-flow.
     """
 
-    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
+    def __init__(
+        self,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        change_listener: Optional[DirectIngestInstanceStatusChangeListener] = None,
+    ):
         super().__init__(region_code=region_code, ingest_instance=ingest_instance)
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        self.change_listener = change_listener
 
     @staticmethod
     def _direct_ingest_instance_status_as_entity(
@@ -174,7 +181,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         # If there isn't yet a completed rerun, return all status rows.
         return self._get_rows_after_timestamp(session=session, timestamp=datetime.min)
 
-    def get_raw_data_source_instance(self) -> DirectIngestInstance:
+    def get_raw_data_source_instance(self) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
@@ -189,9 +196,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 session=session
             )
             if not current_rerun_status_rows:
-                raise ValueError(
-                    f"[{self.region_code}][{self.ingest_instance}] Expected rerun to be in progress."
-                )
+                return None
 
             current_rerun_start_status = one(
                 row.status
@@ -209,9 +214,17 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""
+        prev_raw_data_source_instance = self.get_raw_data_source_instance()
         self._validate_status_transition_from_current_status(new_status=new_status)
         self._add_new_status_row(status=new_status)
+        if self.change_listener is not None and prev_raw_data_source_instance != (
+            raw_data_source_instance := self.get_raw_data_source_instance()
+        ):
+            self.change_listener.on_raw_data_source_instance_change(
+                raw_data_source_instance
+            )
 
+    @environment.test_only
     def add_instance_status(
         self,
         status: DirectIngestStatus,

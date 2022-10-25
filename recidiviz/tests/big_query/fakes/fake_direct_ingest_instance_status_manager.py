@@ -16,12 +16,13 @@
 # =============================================================================
 """A fake implementation of DirectIngestInstanceStatusManager for use in tests."""
 import datetime
-from typing import List
+from typing import List, Optional
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -36,8 +37,12 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
         region_code: str,
         ingest_instance: DirectIngestInstance,
         initial_statuses: List[DirectIngestStatus],
+        change_listener: Optional[DirectIngestInstanceStatusChangeListener] = None,
     ):
-        super().__init__(region_code=region_code, ingest_instance=ingest_instance)
+        super().__init__(
+            region_code=region_code,
+            ingest_instance=ingest_instance,
+        )
         self.statuses: List[DirectIngestInstanceStatus] = [
             DirectIngestInstanceStatus(
                 region_code=self.region_code,
@@ -47,8 +52,9 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             )
             for status in initial_statuses
         ]
+        self.change_listener = change_listener
 
-    def get_raw_data_source_instance(self) -> DirectIngestInstance:
+    def get_raw_data_source_instance(self) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
@@ -75,6 +81,10 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             status=new_status,
         )
         self.statuses.append(new_ingest_instance_status)
+        if self.change_listener is not None:
+            self.change_listener.on_raw_data_source_instance_change(
+                self.get_raw_data_source_instance()
+            )
 
     def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""

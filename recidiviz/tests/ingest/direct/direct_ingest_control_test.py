@@ -34,9 +34,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.operations.direct_ingest_instance_status import (
-    DirectIngestStatus,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
@@ -82,9 +79,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
-)
-from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
-    FakeDirectIngestInstanceStatusManager,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
@@ -909,10 +903,8 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.PostgresDirectIngestInstanceStatusManager")
     def test_heartbeat(
         self,
-        mock_status_manager: mock.MagicMock,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
@@ -924,14 +916,6 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
-
-        fake_instance_status_manager = FakeDirectIngestInstanceStatusManager(
-            region_code="US_MO",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            initial_statuses=[DirectIngestStatus.UP_TO_DATE],
-        )
-        mock_status_manager.return_value = fake_instance_status_manager
-
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
@@ -976,28 +960,21 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.PostgresDirectIngestInstanceStatusManager")
     def test_kick_all_schedulers(
         self,
-        mock_status_manager: mock.MagicMock,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
     ) -> None:
+
         fake_supported_regions = {
             "us_mo": fake_region(region_code="us_mo", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
             ),
         }
-        fake_instance_status_manager = FakeDirectIngestInstanceStatusManager(
-            region_code="US_MO",
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            initial_statuses=[DirectIngestStatus.UP_TO_DATE],
-        )
-        mock_status_manager.return_value = fake_instance_status_manager
-
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
+
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = defaultdict(list)
 
@@ -1006,19 +983,13 @@ class TestDirectIngestControl(unittest.TestCase):
             ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
-            with patch(
-                f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-            ) as instance_status_manager_cls:
-                instance_status_manager_cls.return_value = fake_instance_status_manager
-                self.assertFalse(allow_unlaunched)
-                if region_code is None:
-                    raise ValueError("Expected nonnull region code")
-                mock_controller = Mock(__class__=BaseDirectIngestController)
-                mock_controller.cloud_task_manager.return_value = (
-                    mock_cloud_task_manager
-                )
-                region_to_mock_controller[region_code.lower()].append(mock_controller)
-                return mock_controller
+            self.assertFalse(allow_unlaunched)
+            if region_code is None:
+                raise ValueError("Expected nonnull region code")
+            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
+            region_to_mock_controller[region_code.lower()].append(mock_controller)
+            return mock_controller
 
         self.mock_controller_factory.build.side_effect = mock_build_controller
 
@@ -1040,72 +1011,8 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.PostgresDirectIngestInstanceStatusManager")
-    def test_kick_all_schedulers_skips_secondary_no_rerun(
-        self,
-        mock_status_manager: mock.MagicMock,
-        mock_get_region: mock.MagicMock,
-        mock_environment: mock.MagicMock,
-        mock_states_in_env: mock.MagicMock,
-    ) -> None:
-        fake_supported_regions = {
-            "us_mo": fake_region(region_code="us_mo", environment="staging"),
-            self.region_code: fake_region(
-                region_code=self.region_code, environment="production"
-            ),
-        }
-        fake_instance_status_manager = FakeDirectIngestInstanceStatusManager(
-            region_code="US_MO",
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            initial_statuses=[DirectIngestStatus.NO_RERUN_IN_PROGRESS],
-        )
-        mock_status_manager.return_value = fake_instance_status_manager
-
-        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
-        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
-        region_to_mock_controller = defaultdict(list)
-
-        def mock_build_controller(
-            region_code: str,
-            ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
-            allow_unlaunched: bool,
-        ) -> BaseDirectIngestController:
-            with patch(
-                f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-            ) as instance_status_manager_cls:
-                instance_status_manager_cls.return_value = fake_instance_status_manager
-                self.assertFalse(allow_unlaunched)
-                if region_code is None:
-                    raise ValueError("Expected nonnull region code")
-                mock_controller = Mock(__class__=BaseDirectIngestController)
-                mock_controller.cloud_task_manager.return_value = (
-                    mock_cloud_task_manager
-                )
-                region_to_mock_controller[region_code.lower()].append(mock_controller)
-                return mock_controller
-
-        self.mock_controller_factory.build.side_effect = mock_build_controller
-
-        def fake_get_region(region_code: str) -> DirectIngestRegion:
-            return fake_supported_regions[region_code]
-
-        mock_get_region.side_effect = fake_get_region
-
-        mock_environment.return_value = "staging"
-
-        kick_all_schedulers()
-
-        mock_states_in_env.assert_called()
-        # Assert that no controller is created, because the only instance has a status of NO_RERUN_IN_PROGRESS
-        self.assertEqual(len(region_to_mock_controller.values()), 0)
-
-    @patch(f"{CONTROL_PACKAGE_NAME}.get_direct_ingest_states_existing_in_env")
-    @patch("recidiviz.utils.environment.get_gcp_environment")
-    @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
-    @patch(f"{CONTROL_PACKAGE_NAME}.PostgresDirectIngestInstanceStatusManager")
     def test_kick_all_schedulers_ignores_unlaunched_environments(
         self,
-        mock_status_manager: mock.MagicMock,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
         mock_states_in_env: mock.MagicMock,
@@ -1117,13 +1024,6 @@ class TestDirectIngestControl(unittest.TestCase):
                 region_code=self.region_code, environment="production"
             ),
         }
-
-        fake_instance_status_manager = FakeDirectIngestInstanceStatusManager(
-            region_code="US_MO",
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            initial_statuses=[DirectIngestStatus.NO_RERUN_IN_PROGRESS],
-        )
-        mock_status_manager.return_value = fake_instance_status_manager
         mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)

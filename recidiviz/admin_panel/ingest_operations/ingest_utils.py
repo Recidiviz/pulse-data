@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
@@ -136,6 +137,7 @@ def import_raw_files_to_bq_sandbox(
     """
 
     file_status_list = []
+    csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
     try:
         region_code = state_code.value.lower()
@@ -145,6 +147,7 @@ def import_raw_files_to_bq_sandbox(
             temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
                 source_bucket, "temp_raw_data"
             ),
+            csv_reader=csv_reader,
             big_query_client=BigQueryClientImpl(),
             sandbox_dataset_prefix=sandbox_dataset_prefix,
             allow_incomplete_configs=allow_incomplete_configs,
