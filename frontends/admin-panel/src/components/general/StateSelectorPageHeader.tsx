@@ -22,6 +22,7 @@ import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface StateSelectorPageHeaderProps {
   title: string;
+  subTitle?: string;
   stateCode: string | null;
   onChange: (stateCode: StateCodeInfo) => void;
   onBack?: (e?: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
@@ -29,6 +30,7 @@ interface StateSelectorPageHeaderProps {
 
 const StateSelectorPageHeader: React.FC<StateSelectorPageHeaderProps> = ({
   title,
+  subTitle,
   stateCode,
   onChange,
   onBack,
@@ -36,6 +38,7 @@ const StateSelectorPageHeader: React.FC<StateSelectorPageHeaderProps> = ({
   return (
     <PageHeader
       title={title}
+      subTitle={subTitle}
       extra={[
         <StateSelector
           fetchStateList={fetchIngestStateCodes}

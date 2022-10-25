@@ -16,8 +16,11 @@
 // =============================================================================
 
 import { PresetStatusColorType } from "antd/lib/_util/colors";
+import { MouseEventHandler } from "react";
+import { History } from "history";
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { RecordStatus } from "./constants";
+import { routeForValidationDetail } from "../../navigation/DatasetMetadata";
 
 export const replaceInfinity = <T>(x: number, replacement: T): number | T => {
   return Number.isFinite(x) ? x : replacement;
@@ -192,4 +195,16 @@ export const chooseIdNameForCategory = (
     default:
       return "UNKNOWN";
   }
+};
+
+export const handleClickToDetails = (
+  history: History,
+  validationName?: string,
+  stateCode?: string
+): MouseEventHandler => {
+  return (_event) =>
+    history.push({
+      pathname: routeForValidationDetail(validationName),
+      search: stateCode && `?stateCode=${stateCode}`,
+    });
 };
