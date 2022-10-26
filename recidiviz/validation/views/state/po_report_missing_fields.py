@@ -90,6 +90,7 @@ PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     non_null_column_count=",\n  ".join(
         [f"COUNTIF({col} IS NOT NULL) AS {col}" for col in PO_REPORT_REQUIRED_FIELDS]
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

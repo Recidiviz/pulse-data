@@ -46,6 +46,7 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

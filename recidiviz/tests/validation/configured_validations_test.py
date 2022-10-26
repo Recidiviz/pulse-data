@@ -84,6 +84,15 @@ class TestConfiguredValidations(unittest.TestCase):
             validation_view = validation.view_builder.build()
             assert "region_code" in validation_view.view_query
 
+    def test_configured_validation_views_all_materialized(self) -> None:
+        validations = get_all_validations()
+        for validation in validations:
+            builder = validation.view_builder
+            self.assertIsNotNone(
+                builder.materialized_address,
+                f"Found validation view that is not materialized: {builder.address}",
+            )
+
     def test_all_validation_builders_configured_in_a_validation(self) -> None:
         found_builders = set(
             BigQueryViewCollector.collect_view_builders_in_module(

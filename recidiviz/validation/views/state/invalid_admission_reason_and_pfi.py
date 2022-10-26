@@ -79,6 +79,7 @@ INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     description=INVALID_ADMISSION_REASON_AND_PFI_DESCRIPTION,
     normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

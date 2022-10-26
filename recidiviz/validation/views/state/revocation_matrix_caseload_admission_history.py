@@ -66,6 +66,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER = SimpleBigQueryViewBu
     description=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     shared_metric_views_dataset=state_dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

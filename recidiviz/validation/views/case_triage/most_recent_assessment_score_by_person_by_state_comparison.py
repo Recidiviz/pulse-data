@@ -45,6 +45,7 @@ MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER = Simple
     state_dataset=STATE_BASE_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
+    should_materialize=True,
 )
 
 

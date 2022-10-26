@@ -65,6 +65,7 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryV
     description=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

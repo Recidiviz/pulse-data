@@ -81,6 +81,7 @@ ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
     dataflow_metrics_materialized_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

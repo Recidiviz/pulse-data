@@ -68,6 +68,7 @@ INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     description=INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_DESCRIPTION,
     normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

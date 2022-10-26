@@ -50,6 +50,7 @@ INVALID_NULL_PFI_IN_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     description=INVALID_NULL_PFI_IN_METRICS_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

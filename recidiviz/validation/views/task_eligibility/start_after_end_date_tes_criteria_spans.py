@@ -52,6 +52,7 @@ START_AFTER_END_DATE_TES_CRITERIA_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder
     view_query_template=START_AFTER_END_DATE_TES_CRITERIA_SPANS_QUERY_TEMPLATE,
     description=START_AFTER_END_DATE_TES_CRITERIA_SPANS_DESCRIPTION,
     task_eligibility_dataset=tes_dataset_config.TASK_ELIGIBILITY_DATASET_ID,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

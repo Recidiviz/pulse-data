@@ -49,6 +49,7 @@ RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER = Simpl
     description=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

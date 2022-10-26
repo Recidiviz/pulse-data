@@ -80,6 +80,7 @@ SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SENTENCE_END_DATES_BEFORE_START_DATES_QUERY_TEMPLATE,
     description=SENTENCE_END_DATES_BEFORE_START_DATES_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

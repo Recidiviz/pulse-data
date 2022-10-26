@@ -143,6 +143,7 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE,
     description=PO_REPORT_AVGS_PER_DISTRICT_STATE_DESCRIPTION,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

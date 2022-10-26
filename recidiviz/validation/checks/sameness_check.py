@@ -155,7 +155,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
         # TODO(#8646): Build a way for view builders to depend on other view *builders*
         #  so that we don't have to build the view query for the parent view while we
         #  are constructing the builder for the error rows view here.
-        validation_view_query = self.view_builder.build().view_query
+        validation_view_query = self.view_builder.build().select_query
 
         view_id = self.view_builder.view_id
         if self.validation_name_suffix is not None:

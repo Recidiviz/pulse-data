@@ -43,6 +43,7 @@ NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=NORMALIZED_ENTITIES_UNIQUE_IDS_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     description=NORMALIZED_ENTITIES_UNIQUE_IDS_DESCRIPTION,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
