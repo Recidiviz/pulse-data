@@ -37,7 +37,7 @@ from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
-# A parametrized query for looking at the most recent row for each primary key, among rows with update datetimes
+# A parameterized query for looking at the most recent row for each primary key, among rows with update datetimes
 # before a certain date.
 RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
 WITH rows_with_recency_rank AS (
@@ -365,12 +365,12 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         )
 
 
-# NOTE: BigQuery does not support parametrized queries for views, so we can't actually
+# NOTE: BigQuery does not support parameterized queries for views, so we can't actually
 # upload this as a view until this issue is resolved: https://issuetracker.google.com/issues/35905221.
 # For now, we construct it like a BigQueryView, but just use the view_query field to get
 # a query we can execute to pull data in direct ingest.
 class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView):
-    """A view with a parametrized query for the given |raw_file_config|. The caller is
+    """A view with a parameterized query for the given |raw_file_config|. The caller is
     responsible for filling out the parameter. When used, this query will load all rows
     in the provided table up to the date of the provided date parameter.
     """
@@ -384,7 +384,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
         include_undocumented_columns: bool = False,
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
-        description = f"{raw_file_config.file_tag} parametrized view"
+        description = f"{raw_file_config.file_tag} parameterized view"
         view_query_template = (
             RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
             if raw_file_config.always_historical_export
@@ -437,7 +437,7 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
 
 
 class RawTableViewType(Enum):
-    # Raw table view subqueries will take form of non-parametrized queries that return the latest version of each raw
+    # Raw table view subqueries will take form of non-parameterized queries that return the latest version of each raw
     # table. This type will produce a query that can run in the BigQuery UI and that can be used easily for debugging.
     LATEST = auto()
 
@@ -474,7 +474,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         # Specifies the structure of the raw table view subqueries
         raw_table_view_type: RawTableViewType = attr.ib()
 
-        # For queries with a |raw_table_view_type| of PARAMETRIZED, this may be to set to specify a custom name for the
+        # For queries with a |raw_table_view_type| of PARAMETERIZED, this may be to set to specify a custom name for the
         # max update date parameter. If it is not set, the parameter name will be the default
         # UPDATE_DATETIME_PARAM_NAME.
         param_name_override: Optional[str] = attr.ib(default=None)
@@ -714,7 +714,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         *,
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
-        parametrize_query: bool,
+        parameterize_query: bool,
         raw_table_subquery_name_prefix: Optional[str],
         materialize_raw_data_table_views: bool,
     ) -> str:
@@ -727,7 +727,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 cls._get_table_subquery_str(
                     region_code,
                     raw_table_config,
-                    parametrize_query,
+                    parameterize_query,
                     raw_table_subquery_name_prefix,
                 )
             )
@@ -761,7 +761,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return cls._raw_table_subquery_clause(
             region_code=region_code,
             raw_table_dependency_configs=raw_table_dependency_configs,
-            parametrize_query=config.parameterize_raw_data_table_views,
+            parameterize_query=config.parameterize_raw_data_table_views,
             raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
             materialize_raw_data_table_views=materialize_raw_data_table_views,
         )
@@ -788,7 +788,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             raw_table_subquery_clause = cls._raw_table_subquery_clause(
                 region_code=region_code,
                 raw_table_dependency_configs=raw_table_dependency_configs,
-                parametrize_query=config.parameterize_raw_data_table_views,
+                parameterize_query=config.parameterize_raw_data_table_views,
                 raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
                 materialize_raw_data_table_views=materialize_raw_data_table_views,
             )
@@ -908,14 +908,14 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         cls,
         region_code: str,
         raw_table_config: DirectIngestRawFileConfig,
-        parametrize_query: bool,
+        parameterize_query: bool,
         raw_table_subquery_name_prefix: Optional[str],
     ) -> str:
         """Returns an expanded subquery on this raw table in the form 'subquery_name AS (...)'."""
         date_bounded_query = cls._date_bounded_query_for_raw_table(
             region_code=region_code,
             raw_table_config=raw_table_config,
-            parametrize_query=parametrize_query,
+            parameterize_query=parameterize_query,
         )
         date_bounded_query = date_bounded_query.strip("\n")
         indented_date_bounded_query = cls.SUBQUERY_INDENT + date_bounded_query.replace(
@@ -973,9 +973,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def _date_bounded_query_for_raw_table(
         region_code: str,
         raw_table_config: DirectIngestRawFileConfig,
-        parametrize_query: bool,
+        parameterize_query: bool,
     ) -> str:
-        if parametrize_query:
+        if parameterize_query:
             return DirectIngestRawDataTableUpToDateView(
                 region_code=region_code, raw_file_config=raw_table_config
             ).view_query
@@ -1094,10 +1094,10 @@ class DirectIngestPreProcessedIngestViewBuilder(
         )
 
     def build_and_print(self) -> None:
-        """For local testing, prints out the parametrized and latest versions of the view's query."""
+        """For local testing, prints out the parameterized and latest versions of the view's query."""
         view = self.build()
         print(
-            "****************************** PARAMETRIZED ******************************"
+            "****************************** PARAMETERIZED ******************************"
         )
         print(
             view.expanded_view_query(
