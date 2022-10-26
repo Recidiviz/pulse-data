@@ -68,7 +68,7 @@ table in the [us_xx_primary] database in the [STATE] schema. This view is
 managed outside of regular view update operations and the results can be found in the 
 schema-specific datasets (`state`, `justice_counts`, etc)."""
 
-        expected_view_query = f"""/*{expected_description}*/
+        expected_view_query = """
 SELECT
     *
 FROM EXTERNAL_QUERY(
@@ -141,7 +141,7 @@ table in the [us_xx_secondary] database in the [STATE] schema. This view is
 managed outside of regular view update operations and the results can be found in the 
 schema-specific datasets (`state`, `justice_counts`, etc)."""
 
-        expected_view_query = f"""/*{expected_description}*/
+        expected_view_query = """
 SELECT
     *
 FROM EXTERNAL_QUERY(
@@ -190,7 +190,7 @@ table in the [postgres] database in the [OPERATIONS] schema. This view is
 managed outside of regular view update operations and the results can be found in the 
 schema-specific datasets (`state`, `justice_counts`, etc)."""
 
-        expected_view_query = f"""/*{expected_description}*/
+        expected_view_query = """
 SELECT
     *
 FROM EXTERNAL_QUERY(

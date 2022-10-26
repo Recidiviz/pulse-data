@@ -29,7 +29,6 @@ US_ID_CASE_UPDATE_INFO_DESCRIPTION = """Provides agent case update notes for peo
     """
 
 US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH person_id_with_external_ids AS (
         SELECT
             person_id,

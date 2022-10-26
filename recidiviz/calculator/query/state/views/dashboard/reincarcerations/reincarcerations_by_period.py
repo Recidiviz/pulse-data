@@ -27,7 +27,6 @@ REINCARCERATIONS_BY_PERIOD_VIEW_NAME = "reincarcerations_by_period"
 REINCARCERATIONS_BY_PERIOD_DESCRIPTION = """Reincarcerations by metric period month."""
 
 REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
 
     WITH admissions AS (
       SELECT

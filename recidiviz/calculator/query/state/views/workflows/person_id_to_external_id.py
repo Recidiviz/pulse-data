@@ -29,7 +29,6 @@ PERSON_ID_TO_EXTERNAL_ID_DESCRIPTION = (
 
 
 PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         external_id AS person_external_id,
         person_id,

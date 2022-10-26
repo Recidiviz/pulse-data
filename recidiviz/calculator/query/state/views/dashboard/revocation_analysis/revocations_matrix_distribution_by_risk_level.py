@@ -32,7 +32,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION = """
  """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_counts AS (
         SELECT
           state_code, 

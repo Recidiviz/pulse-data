@@ -41,7 +41,6 @@ reincarcerated, and this is left joined to compartment_sessions so that we have 
 """
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
-    /*{description}*/
     # TODO(#7629): Investigate why this view is missing reincarceration events for all states except ND
     
     WITH recid_metric AS

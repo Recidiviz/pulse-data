@@ -31,7 +31,6 @@ SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_DESCRIPTION = """
 Compares counts of supervision success by month between the dashboard and the public dashboard. """
 
 SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH dashboard_success AS (
       SELECT * EXCEPT (district),
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district

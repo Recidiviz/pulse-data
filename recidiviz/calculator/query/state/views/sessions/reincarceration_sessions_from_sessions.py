@@ -82,7 +82,6 @@ Reincarcerations are then joined to these releases based on:
 """
 
 REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cte AS
     (
     SELECT 

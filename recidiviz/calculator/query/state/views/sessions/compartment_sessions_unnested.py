@@ -30,7 +30,6 @@ used to calculate person-based metrics such as population
 """
 
 COMPARTMENT_SESSIONS_UNNESTED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cte AS 
     (
     SELECT

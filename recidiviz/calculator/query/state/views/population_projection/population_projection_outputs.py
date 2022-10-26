@@ -58,7 +58,6 @@ POPULATION_PROJECTION_OUTPUT_VIEWS = [
 ]
 
 POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH most_recent_results AS (
       SELECT
         simulation_tag, MAX(date_created) AS date_created

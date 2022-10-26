@@ -27,7 +27,6 @@ COVID_REPORT_WEEKS_VIEW_NAME = "covid_report_weeks"
 COVID_REPORT_WEEKS_DESCRIPTION = """Week dates by state for COVID-19 Report"""
 
 COVID_REPORT_WEEKS_QUERY_TEMPLATE = """
-    /*{description}*/
     -- US_ID report starting 2020-05-02 --
     SELECT
       'US_ID' as state_code,

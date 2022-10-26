@@ -44,7 +44,6 @@ ASSESSMENT_LEVEL_ORDERED_PRIORITY = [
 ]
 
 ASSESSMENT_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT 
         assessment_level,
         assessment_level_priority,

@@ -35,7 +35,6 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_DESCRIPTION = (
 )
 
 SESSIONS_IN_INCARCERATION_OR_SUPERVISION_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT
         person_id,
         state_code AS region_code,

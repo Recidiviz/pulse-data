@@ -30,7 +30,6 @@ REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_DESCRIPTION = (
 )
 
 REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code, year, month,
       SUM(IF(supervision_type = 'PROBATION', revocation_count, 0)) AS probation_count,

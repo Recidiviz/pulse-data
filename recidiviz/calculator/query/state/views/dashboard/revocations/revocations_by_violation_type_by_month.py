@@ -30,7 +30,6 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_DESCRIPTION = (
 )
 
 REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         state_code, year, month,
         IFNULL(felony_count, 0) AS felony_count,

@@ -34,7 +34,6 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     -- TODO(#15611): Remove preprocessing file when community confinement facilities are flagged in sessions
     WITH incarceration_population_cte AS (
         SELECT

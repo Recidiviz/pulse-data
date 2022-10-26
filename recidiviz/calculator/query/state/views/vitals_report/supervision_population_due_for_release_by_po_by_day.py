@@ -32,7 +32,6 @@ Supervision population due for release by PO by day
 """
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT 
         state_code,
         date_of_supervision,

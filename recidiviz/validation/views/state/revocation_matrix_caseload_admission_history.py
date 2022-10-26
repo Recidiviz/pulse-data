@@ -32,7 +32,6 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_DESCRIPTION = """
 Validate admission history descriptions for the revocation matrix caseload dashboard view."""
 
 REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH admission_counts AS (
         SELECT state_code, person_id, COUNT(*) AS total_admissions
         FROM `{project_id}.{shared_metric_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`

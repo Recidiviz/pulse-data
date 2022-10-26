@@ -33,7 +33,6 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_NAME = "recidivism_rates_by_cohort_by_ye
 RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION = """Reincarceration recidivism rates by release cohort and follow-up period years, with demographic breakdowns."""
 
 RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
 # TODO(#12426): Update ND to new sessions logic
     WITH releases AS (
       SELECT

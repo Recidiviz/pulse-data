@@ -31,7 +31,6 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_NAME = (
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most recent daily supervision population counts broken down by district and demographic categories."""
 
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_pop_with_state_specific_race AS (
         SELECT
           person_id,

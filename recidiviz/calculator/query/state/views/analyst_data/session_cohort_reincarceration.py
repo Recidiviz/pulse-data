@@ -30,7 +30,6 @@ SESSION_COHORT_REINCARCERATION_VIEW_DESCRIPTION = (
 )
 
 SESSION_COHORT_REINCARCERATION_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cohort AS
     /*
     This cte defines the cohort and has a record for every person and every start event. In the case of 

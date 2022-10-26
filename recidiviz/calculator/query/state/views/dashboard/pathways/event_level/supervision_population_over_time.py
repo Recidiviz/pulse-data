@@ -39,7 +39,6 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_DESCRIPTION = """Supervision population co
 """
 
 SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT {columns}
     FROM `{project_id}.{dashboards_dataset}.supervision_population`
     WHERE time_period IS NOT NULL

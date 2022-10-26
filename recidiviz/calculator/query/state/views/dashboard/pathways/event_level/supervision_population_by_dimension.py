@@ -39,7 +39,6 @@ SUPERVISION_POPULATION_BY_DIMENSION_VIEW_DESCRIPTION = """Supervision population
 """
 
 SUPERVISION_POPULATION_BY_DIMENSION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT {columns}
     FROM `{project_id}.{dashboards_dataset}.supervision_population`
     WHERE end_date IS NULL

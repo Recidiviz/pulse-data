@@ -34,7 +34,6 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION = """
 """
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         state_code, projected_year, projected_month,
         COUNTIF(successful_termination) AS successful_termination,

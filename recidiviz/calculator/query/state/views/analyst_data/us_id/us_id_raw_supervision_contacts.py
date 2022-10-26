@@ -30,7 +30,6 @@ US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
 US_ID_RAW_SUPERVISION_CONTACTS_VIEW_DESCRIPTION = "View pulling from raw data in US_ID that captures supervision contacts, not limited to actual contacts with a client"
 
 US_ID_RAW_SUPERVISION_CONTACTS_QUERY_TEMPLATE = """
-    /*{description}*/
     -- View cleans raw contacts data. This pre-processing is similar to what's done for state_supervision_contact
     -- but those are limited to actual contacts with a client (i.e. Face to Face or Virtual Contacts). The supervision contact data
     -- has a lot of other contacts (e.g. COLLATERAL) that can be useful for identifying, for example, treatment referrals

@@ -25,7 +25,6 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_NAME = "agent_external_id_to_full_name"
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_DESCRIPTION = """Agent information table that adds links distinct external ids for state agents back to their full names"""
 
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH unique_agents AS (
         SELECT
             state_code,

@@ -33,7 +33,6 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_DESCRIPTION = """
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 # TODO(#4491): Consider using `external_id` instead of `agent_external_id`
 SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_periods AS (
       SELECT
         state_code, sp.person_id, supervision_period_id,

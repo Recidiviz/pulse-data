@@ -39,7 +39,6 @@ DISCHARGE_STRUCT_FRAGMENT = """STRUCT (
             )"""
 
 OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE = """
-/*{description}*/
 # TODO(#9988) Replace roster query with a recipients reference table
 WITH base_recipients AS (
     SELECT 'US_ID' AS state_code, external_id, email_address  FROM `{project_id}.{static_reference_dataset}.us_id_roster`

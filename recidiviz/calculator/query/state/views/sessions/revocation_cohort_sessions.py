@@ -60,7 +60,6 @@ Additionally, the `revocation` flag is altered so that it represents not just a 
 """
 
 REVOCATION_COHORT_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         r.state_code,
         r.person_id,

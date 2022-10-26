@@ -34,7 +34,6 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION = """
 """
 
 FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision AS (
       SELECT
         state_code,

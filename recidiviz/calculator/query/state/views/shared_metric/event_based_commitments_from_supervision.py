@@ -34,7 +34,6 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION = """
  """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       person_id, state_code, year, month,
       supervision_type,

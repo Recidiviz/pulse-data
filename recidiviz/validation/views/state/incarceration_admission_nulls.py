@@ -30,7 +30,6 @@ INCARCERATION_ADMISSION_NULLS_DESCRIPTION = (
 )
 
 INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
     WHERE admission_date IS NULL

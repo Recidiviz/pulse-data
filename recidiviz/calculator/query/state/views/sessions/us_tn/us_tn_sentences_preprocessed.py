@@ -33,7 +33,6 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH raw_data_cte AS
     (
     SELECT 

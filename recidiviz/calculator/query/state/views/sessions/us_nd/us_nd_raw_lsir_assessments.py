@@ -34,7 +34,6 @@ US_ND_RAW_LSIR_ASSESSMENTS_VIEW_NAME = "us_nd_raw_lsir_assessments"
 US_ND_RAW_LSIR_ASSESSMENTS_VIEW_DESCRIPTION = """Individual questions and subscale components of the LSI-R assessment in ND, derived from raw tables"""
 
 US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT 
         p.state_code, 
         p.person_id, 

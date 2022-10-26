@@ -53,7 +53,6 @@ VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION: List[str] = [
 ]
 
 MOST_RECENT_JOBS_TEMPLATE: str = """
-    /*{description}*/
     WITH job_recency as (
         SELECT
             *,

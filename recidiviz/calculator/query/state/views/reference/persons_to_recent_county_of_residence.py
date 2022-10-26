@@ -30,7 +30,6 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = (
 )
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = """
-/*{description}*/
     WITH zip_code_county_map AS (
       SELECT
         UPPER(REPLACE(county_name, " ", "_")) AS normalized_county_name,

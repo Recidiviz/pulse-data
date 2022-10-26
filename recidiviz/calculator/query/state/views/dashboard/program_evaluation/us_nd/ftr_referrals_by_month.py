@@ -30,7 +30,6 @@ FTR_REFERRALS_BY_MONTH_DESCRIPTION = """
 """
 
 FTR_REFERRALS_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       year,

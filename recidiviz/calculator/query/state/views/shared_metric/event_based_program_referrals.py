@@ -31,7 +31,6 @@ EVENT_BASED_PROGRAM_REFERRALS_DESCRIPTION = """
  """
 
 EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       person_id,

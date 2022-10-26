@@ -27,7 +27,6 @@ Types of admissions for each state in the matrix views
 """
 
 ADMISSION_TYPES_PER_STATE_FOR_MATRIX_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         DISTINCT state_code, admission_type
     FROM `{project_id}.{shared_metric_views_dataset}.revocations_matrix_by_person_materialized`

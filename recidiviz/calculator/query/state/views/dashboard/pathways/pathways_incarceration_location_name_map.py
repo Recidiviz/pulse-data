@@ -37,7 +37,6 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME = (
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION = "Map by state from location id to the name and aggregating id of the location it will be aggregated by"
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH data AS (
         SELECT
             state_code,

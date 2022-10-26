@@ -28,7 +28,6 @@ SENTENCE_RELATIONSHIP_VIEW_DESCRIPTION = (
 )
 
 SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cte AS
     /*
     This cte does a series of self-joins based on the consecutive sentence id field to create a view that has a record

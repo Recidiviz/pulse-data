@@ -51,7 +51,6 @@ PRISON_POPULATION_OVER_TIME_VIEW_DESCRIPTION = """Prison population count.
 """
 
 PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     add_mapped_dimensions AS (
         SELECT 

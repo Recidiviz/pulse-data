@@ -28,7 +28,6 @@ CLIENTS_REFERRAL_IMPLEMENTED_DESCRIPTION = """
 
 
 CLIENTS_REFERRAL_IMPLEMENTED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH
     downgrade_dates AS (
         SELECT

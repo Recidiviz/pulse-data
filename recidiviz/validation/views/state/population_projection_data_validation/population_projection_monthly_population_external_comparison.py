@@ -36,7 +36,6 @@ incarceration/supervision populations.
 
 # TODO(#5998): add the supervision population to this validation
 POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
-/*{description}*/
 WITH external_data AS (
     SELECT
         region_code,

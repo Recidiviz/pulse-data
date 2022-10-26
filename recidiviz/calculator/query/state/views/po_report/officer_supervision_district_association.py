@@ -32,7 +32,6 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION = """
  """
 
 OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH all_officers_to_person_count_in_district AS (
         SELECT 
                 state_code, year, month, SPLIT(district, '|')[OFFSET(0)] as district_name,

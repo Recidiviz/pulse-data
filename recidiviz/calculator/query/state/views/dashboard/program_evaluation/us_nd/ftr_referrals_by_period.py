@@ -32,7 +32,6 @@ FTR_REFERRAL_DESCRIPTION = """All individuals who have been referred to Free Thr
 
 # TODO(#2549): Filter by FTR specifically once the metadata exists.
 FTR_REFERRAL_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       pop.state_code,
       district,

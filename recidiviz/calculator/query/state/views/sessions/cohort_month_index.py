@@ -30,7 +30,6 @@ COHORT_MONTH_INDEX_VIEW_DESCRIPTION = """
     """
 
 COHORT_MONTH_INDEX_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         cohort_months
     FROM UNNEST(GENERATE_ARRAY(0, 18, 1)) AS cohort_months

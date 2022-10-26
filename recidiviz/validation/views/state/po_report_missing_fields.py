@@ -73,7 +73,6 @@ PO_REPORT_REQUIRED_FIELDS = [
 PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ["total_rows"]
 
 PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code as region_code, review_month,
       COUNT(*) AS total_rows,

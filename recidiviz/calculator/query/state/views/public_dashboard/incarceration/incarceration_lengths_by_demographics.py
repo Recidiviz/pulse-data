@@ -43,7 +43,6 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Years spent incarcer
 
 # TODO(#3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
 INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH releases AS (
         SELECT
           state_code, 

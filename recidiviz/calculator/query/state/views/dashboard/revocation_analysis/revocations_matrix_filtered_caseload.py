@@ -27,7 +27,6 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
  """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
-    /*{description}*/
   WITH inclusion_ranks_by_person AS (
     SELECT
       state_code,

@@ -43,7 +43,6 @@ ASSESSMENT_LSIR_PROTECTIVE_QUESTION_LIST = [
 ]
 
 ASSESSMENT_LSIR_SCORING_KEY_QUERY_TEMPLATE = """
-/*{description}*/
     WITH question_types_key AS (
         SELECT 
             assessment_question, 

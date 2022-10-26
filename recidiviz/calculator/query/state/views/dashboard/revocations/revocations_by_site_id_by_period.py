@@ -32,7 +32,6 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_DESCRIPTION = """
  """
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       IFNULL(felony_count, 0) AS felony_count,

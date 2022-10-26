@@ -26,7 +26,6 @@ REVOCATIONS_BY_MONTH_VIEW_NAME = "revocations_by_month"
 REVOCATIONS_BY_MONTH_DESCRIPTION = """ Revocations by month """
 
 REVOCATIONS_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code, year, month,
       IFNULL(revocation_count, 0) as revocation_count,

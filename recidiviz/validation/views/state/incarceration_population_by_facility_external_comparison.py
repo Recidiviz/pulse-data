@@ -35,7 +35,6 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = """ Compa
 
 
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH external_validation_dates AS (
         -- Only compare states and months for which we have external validation data
         SELECT DISTINCT region_code, date_of_stay FROM

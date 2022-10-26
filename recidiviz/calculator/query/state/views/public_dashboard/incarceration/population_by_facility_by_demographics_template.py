@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state import (
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH facility_names AS (
         SELECT
         state_code,

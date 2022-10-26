@@ -30,7 +30,6 @@ CLIENT_RECORD_ARCHIVE_MISSING_DAYS_DESCRIPTION = (
 )
 
 CLIENT_RECORD_ARCHIVE_MISSING_DAYS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     start_date_by_state AS (
         SELECT

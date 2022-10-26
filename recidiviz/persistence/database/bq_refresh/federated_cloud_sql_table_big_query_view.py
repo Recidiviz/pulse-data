@@ -29,7 +29,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.string import StrictStringFormatter
 
-TABLE_QUERY_TEMPLATE = """/*{description}*/
+TABLE_QUERY_TEMPLATE = """
 SELECT
     *
 FROM EXTERNAL_QUERY(

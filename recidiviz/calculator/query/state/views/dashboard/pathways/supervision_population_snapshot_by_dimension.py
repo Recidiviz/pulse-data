@@ -42,7 +42,6 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
 )
 
 SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     get_last_updated AS ({get_pathways_supervision_last_updated_date})
     , cte AS ( 

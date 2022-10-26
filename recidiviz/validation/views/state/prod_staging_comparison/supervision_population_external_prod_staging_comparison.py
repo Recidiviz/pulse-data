@@ -34,7 +34,6 @@ Comparison of external, prod, and staging data on supervision population
 """
 
 SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
-/*{description}*/
       /* TODO(#8153): Update views to only exist in or materialize in staging */
       SELECT
         # TODO(#7545): Update external, prod, and staging validation views to use internal person_id for supervision metrics

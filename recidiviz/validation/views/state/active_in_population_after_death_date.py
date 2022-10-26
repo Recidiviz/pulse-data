@@ -35,7 +35,6 @@ counted in our population metrics after their death.
 """
 
 ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_QUERY_TEMPLATE = """
-/*{description}*/
 WITH death_periods AS (
     /*Incarceration and supervision periods with end reasons of DEATH and their end dates*/
     SELECT DISTINCT 

@@ -31,7 +31,6 @@ EVENT_BASED_ADMISSIONS_DESCRIPTION = """
  """
 
 EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       person_id, state_code, year, month,
       IFNULL(district, 'EXTERNAL_UNKNOWN') as district,

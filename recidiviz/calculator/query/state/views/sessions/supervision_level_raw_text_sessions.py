@@ -28,7 +28,6 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of no
 a state's internal mappings"""
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sub_sessions_attributes_unnested AS
     (
     SELECT DISTINCT

@@ -36,7 +36,6 @@ in dataflow vs sessions.
 """
 
 SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH population_dates AS
     (
     SELECT 

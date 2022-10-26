@@ -32,7 +32,6 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_DESCRIPTION = """
 Revocation matrix comparison of summed revocation counts by officer """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH by_officer as (
       SELECT
         state_code as region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,

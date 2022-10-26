@@ -49,8 +49,6 @@ US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_DESCRIPTION = """
 
 
 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE = """
-    /*{description}*/
-    
 WITH probation_officer AS(
   /* This CTE creates a view unique on external_id
    for non null officer names */

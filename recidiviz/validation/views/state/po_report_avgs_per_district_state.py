@@ -30,7 +30,6 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_DESCRIPTION = """
 """
 
 PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'pos_discharges_district_average-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1

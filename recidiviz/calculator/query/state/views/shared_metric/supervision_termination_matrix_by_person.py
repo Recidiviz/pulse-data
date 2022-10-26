@@ -37,8 +37,6 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION = """
  window leading up to the termination."""
 
 SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
-    
     /* Supervision case terminations. */
     WITH terminations_with_agent_info AS (
         SELECT

@@ -52,7 +52,6 @@ LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION = (
 )
 
 LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH prior_incarcerations AS (
         SELECT
             compartment.state_code,

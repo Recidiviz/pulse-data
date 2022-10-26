@@ -27,7 +27,6 @@ STATE_GENDER_POPULATION_VIEW_DESCRIPTION = (
 )
 
 STATE_GENDER_POPULATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       gender,

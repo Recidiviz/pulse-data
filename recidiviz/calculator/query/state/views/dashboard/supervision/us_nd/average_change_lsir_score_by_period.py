@@ -34,7 +34,6 @@ termination to the second LSIR score of the person's supervision.
 """
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code, metric_period_months,
       ROUND(IFNULL(AVG(assessment_score_change), 0), 2) AS average_change,

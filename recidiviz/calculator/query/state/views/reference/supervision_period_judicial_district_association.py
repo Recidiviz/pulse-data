@@ -33,7 +33,6 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps supe
     related sentences."""
 
 SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sps_to_all_sentences AS (
       -- Supervision periods with all sentences --
       SELECT

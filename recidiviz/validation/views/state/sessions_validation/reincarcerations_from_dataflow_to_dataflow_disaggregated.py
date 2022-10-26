@@ -38,7 +38,6 @@ indicates whether the number of days between the release and the reincarceration
 """
 
 REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         person_id,
         state_code,

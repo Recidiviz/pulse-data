@@ -30,7 +30,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_NAME = (
 COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_DESCRIPTION = """Date gaps found for a given region in compliant_reporting_referral_record_archive"""
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     archive_start_date AS (
         SELECT

@@ -40,7 +40,6 @@ PRISON_POPULATION_TIME_SERIES_VIEW_NAME = "prison_population_time_series"
 PRISON_POPULATION_TIME_SERIES_DESCRIPTION = """Prison population time series """
 
 PRISON_POPULATION_TIME_SERIES_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date}),
     add_mapped_dimensions AS (
         SELECT 

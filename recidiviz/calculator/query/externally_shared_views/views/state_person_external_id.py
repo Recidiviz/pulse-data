@@ -38,7 +38,6 @@ STATE_PERSON_EXTERNAL_ID_VIEW_DESCRIPTION: str = (
 
 # query template
 STATE_PERSON_EXTERNAL_ID_QUERY_TEMPLATE: str = """
-    /*{description}*/
     SELECT DISTINCT
         state_code,
         person_id,

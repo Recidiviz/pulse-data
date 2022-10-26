@@ -26,7 +26,6 @@ US_TN_SENTENCE_SUMMARY_VIEW_NAME = "us_tn_sentence_summary"
 US_TN_SENTENCE_SUMMARY_VIEW_DESCRIPTION = """View that reduces sentence groups to 1 record and summarizes information about that sentence group"""
 
 US_TN_SENTENCE_SUMMARY_QUERY_TEMPLATE = """
-    /*{description}*/
     -- TODO(#10746): Remove sentencing pre-processing when TN sentences are ingested  
     WITH cte AS 
     (

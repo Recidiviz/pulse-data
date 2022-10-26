@@ -41,7 +41,6 @@ compared to the PO's total caseload
 """
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH downgrade_opportunities AS (
         SELECT
             state_code,

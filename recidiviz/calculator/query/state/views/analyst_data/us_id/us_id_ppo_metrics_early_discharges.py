@@ -26,7 +26,6 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_NAME = "us_id_ppo_metrics_early_discharg
 US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_DESCRIPTION = """View capturing early discharge grants and their associated early discharge request records"""
 
 US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE = """
-    /*{description}*/
     
     WITH valid_early_discharge_requests AS 
     (

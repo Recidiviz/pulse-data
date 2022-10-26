@@ -35,7 +35,6 @@ DASHBOARD_USER_RESTRICTIONS_DESCRIPTION = (
 
 # TODO(#8758): Add an `exported_at` column.
 DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH
     co_restricted_access AS (
         SELECT

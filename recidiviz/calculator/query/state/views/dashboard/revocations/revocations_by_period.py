@@ -27,7 +27,6 @@ REVOCATIONS_BY_PERIOD_VIEW_NAME = "revocations_by_period"
 REVOCATIONS_BY_PERIOD_DESCRIPTION = """ Revocations by metric month period """
 
 REVOCATIONS_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       metric_period_months,

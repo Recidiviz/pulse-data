@@ -32,7 +32,6 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION = """
 Revocation matrix comparison of summed supervision population counts """
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH by_district as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_district`

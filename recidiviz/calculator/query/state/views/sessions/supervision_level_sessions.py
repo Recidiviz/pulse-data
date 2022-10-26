@@ -29,7 +29,6 @@ SUPERVISION_LEVEL_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlap
 Recidiviz schema mappings, along with level transitions (upgrades/downgrades)"""
 
 SUPERVISION_LEVEL_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sub_sessions_attributes_unnested AS
     (
     SELECT DISTINCT

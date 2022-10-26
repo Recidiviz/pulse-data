@@ -32,8 +32,6 @@ PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = (
 )
 
 PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
-/*{description}*/
-
 WITH race_or_ethnicity_cte AS  (
     SELECT 
         state_code,

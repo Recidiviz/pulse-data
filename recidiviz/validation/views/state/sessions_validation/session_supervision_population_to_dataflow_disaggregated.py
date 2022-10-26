@@ -38,7 +38,6 @@ in_sessions (indicates a person / day in sessions, including inferred population
 """
 
 SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH population_dates AS
     (
     SELECT 

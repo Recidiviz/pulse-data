@@ -37,7 +37,6 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = (
 )
 
 SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH state_specific_supervision_groupings AS (
       SELECT
         person_id,

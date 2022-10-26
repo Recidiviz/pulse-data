@@ -35,7 +35,6 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = (
 )
 
 REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH releases AS (
         SELECT
           state_code,

@@ -32,7 +32,6 @@ CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_DESCRIPTION = (
 )
 
 CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         date_of_supervision,
         state_code as region_code,

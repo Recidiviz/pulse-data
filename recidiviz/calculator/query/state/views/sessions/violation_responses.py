@@ -96,7 +96,6 @@ This view also deduplicates to one violation per person per day by doing the fol
 """
 
 VIOLATION_RESPONSES_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH all_violations AS (
         SELECT
             state_code,

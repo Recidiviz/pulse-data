@@ -36,7 +36,6 @@ US_MO_CHARGES_PREPROCESSED_VIEW_DESCRIPTION = (
 
 # TODO(#10747): Remove this preprocessing once judicial district code is ingested
 US_MO_CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH parsed_judicial_district AS (
         SELECT
             "US_MO" AS state_code,
