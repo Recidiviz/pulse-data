@@ -400,7 +400,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -453,7 +453,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -520,7 +520,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -588,7 +588,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.SECONDARY
             )
         )
@@ -637,7 +637,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_raw_data_import_task(
-            _REGION, import_args
+            _REGION, DirectIngestInstance.PRIMARY, import_args
         )
 
         # Assert
@@ -653,7 +653,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -719,7 +719,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         mock_client.return_value.list_tasks.return_value = [task]
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -770,7 +770,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         state_code_list_patcher.start()
 
         self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
@@ -783,7 +783,8 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
     ) -> None:
         """Assert that all ingest-related queues are empty when no tasks are added to the relevant queues."""
         self.assertTrue(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_related_queues_are_empty(
-                region=_REGION, ingest_instance=DirectIngestInstance.PRIMARY
+            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
+                region=_REGION,
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
         )

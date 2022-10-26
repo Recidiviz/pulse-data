@@ -40,12 +40,20 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
             or tm.get_extract_and_merge_queue_info(
                 *queue_args,
             ).size()
-            or tm.get_raw_data_import_queue_info(controller.region).size()
+            # Fetch the queue information for where the raw data is being processed.
+            or tm.get_raw_data_import_queue_info(
+                region=controller.region,
+                ingest_instance=controller.raw_data_source_instance,
+            ).size()
             or tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
             ).size()
         ):
-            if tm.get_raw_data_import_queue_info(controller.region).size():
+            # Fetch the queue information for where the raw data is being processed.
+            if tm.get_raw_data_import_queue_info(
+                region=controller.region,
+                ingest_instance=controller.raw_data_source_instance,
+            ).size():
                 tm.test_run_next_raw_data_import_task()
                 tm.test_pop_finished_raw_data_import_task()
             if tm.get_ingest_view_materialization_queue_info(

@@ -144,6 +144,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
     def create_direct_ingest_raw_data_import_task(
         self,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
@@ -216,7 +217,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         )
 
     def get_raw_data_import_queue_info(
-        self, region: DirectIngestRegion
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> RawDataImportCloudTaskQueueInfo:
         with self.raw_data_import_queue.all_tasks_mutex:
             task_names = self.raw_data_import_queue.get_unfinished_task_names_unsafe()
