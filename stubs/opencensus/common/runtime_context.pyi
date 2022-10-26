@@ -15,9 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 from contextvars import ContextVar
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
 from opencensus.trace.tracers import ContextTracer
+from typing_extensions import ParamSpec
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 class _AsyncRuntimeContext:
     tracer: ContextTracer
@@ -28,6 +32,6 @@ class _AsyncRuntimeContext:
         def clear(self) -> None: ...
         def set(self, _value: Any) -> None: ...
 
-    def with_current_context(self, func: Callable) -> Callable: ...
+    def with_current_context(self, func: Callable[P, T]) -> Callable[P, T]: ...
 
 RuntimeContext: _AsyncRuntimeContext
