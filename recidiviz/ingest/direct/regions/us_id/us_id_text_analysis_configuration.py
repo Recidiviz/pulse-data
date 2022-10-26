@@ -38,9 +38,7 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="report of violation"),
     ]
     ABSCONSION = [
-        ScoringFuzzyMatcher(
-            search_term="abscond", matching_function=fuzz.partial_ratio
-        ),
+        ScoringFuzzyMatcher(search_term="abscond"),
         ScoringFuzzyMatcher(search_term="absconsion"),
     ]
     IN_CUSTODY = [
@@ -76,9 +74,4 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="treatment"),
     ]
     TREATMENT_COMPLETE = [RegexFuzzyMatcher(search_regex=".*complet.*")]
-    # TODO(#14891) Replace ABSCONSION with these matchers once reruns complete
-    ABSCONSION_V2 = [
-        ScoringFuzzyMatcher(search_term="abscond"),
-        ScoringFuzzyMatcher(search_term="absconsion"),
-    ]
     WARRANT_QUASHED = [RegexFuzzyMatcher(search_regex=".*quashed.*")]
