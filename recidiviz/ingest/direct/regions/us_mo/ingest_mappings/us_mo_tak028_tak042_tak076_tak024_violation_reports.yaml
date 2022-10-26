@@ -136,12 +136,13 @@ output:
                                 $middle_names: MINTL
                                 $surname: LNAME
                 is_draft:
+                  $is_null: FINAL_FORMED_CREATE_DATE
+                response_date:
                   $custom:
-                    $function: us_mo_custom_parsers.set_is_draft_on_response
+                    $function: us_mo_custom_parsers.set_response_date
                     $args:
                       final_formed_create_date: FINAL_FORMED_CREATE_DATE
                       response_date: BY_VE
-                response_date: BY_VE
                 response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
                 response_subtype: BY_VRT
                 supervision_violation_response_decisions:

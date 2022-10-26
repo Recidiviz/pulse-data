@@ -89,18 +89,19 @@ def set_charge_is_violent_from_ncic(ncic_code: str) -> bool:
     return bool(is_violent)
 
 
-def set_is_draft_on_response(final_formed_create_date: str, response_date: str) -> bool:
+def set_response_date(final_formed_create_date: str, response_date: str) -> str:
     """Finally formed documents are the ones that are no longer in a draft state.
     Updates the SupervisionViolationResponses based on whether or not a finally formed
     date is present in the raw data.
     """
+
     finally_formed_date = mo_julian_date_to_yyyymmdd(final_formed_create_date)
 
-    if finally_formed_date == response_date:
-        is_draft = False
+    if not finally_formed_date:
+        date = response_date
     else:
-        is_draft = True
-    return bool(is_draft)
+        date = finally_formed_date
+    return date
 
 
 JULIAN_DATE_STR_REGEX = re.compile(r"(\d?\d\d)(\d\d\d)")
