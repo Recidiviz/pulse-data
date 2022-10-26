@@ -78,6 +78,7 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER = SimpleBigQueryViewB
     description=REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

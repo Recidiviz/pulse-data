@@ -43,6 +43,7 @@ INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=INCARCERATION_ADMISSION_NULLS_QUERY_TEMPLATE,
     description=INCARCERATION_ADMISSION_NULLS_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

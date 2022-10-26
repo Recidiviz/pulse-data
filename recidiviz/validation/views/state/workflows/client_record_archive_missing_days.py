@@ -70,6 +70,7 @@ CLIENT_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENT_RECORD_ARCHIVE_MISSING_DAYS_QUERY_TEMPLATE,
     description=CLIENT_RECORD_ARCHIVE_MISSING_DAYS_DESCRIPTION,
     workflows_dataset=state_dataset_config.WORKFLOWS_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

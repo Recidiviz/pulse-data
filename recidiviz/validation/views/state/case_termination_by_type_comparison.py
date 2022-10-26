@@ -82,6 +82,7 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

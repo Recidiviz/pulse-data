@@ -55,6 +55,7 @@ REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER = SimpleBigQueryV
     description=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     view=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER.view_id,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

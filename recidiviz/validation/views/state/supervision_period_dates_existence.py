@@ -43,6 +43,7 @@ SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_PERIOD_DATES_EXISTENCE_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_DATES_EXISTENCE_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

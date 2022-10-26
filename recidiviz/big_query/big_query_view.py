@@ -293,11 +293,13 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     # projects. If an empty set, does not deploy in any projects.
     projects_to_deploy: Optional[Set[str]]
 
+    # TODO(#7453): This functionality should be shared between *View and *ViewBuilder classes.
     @property
     def address(self) -> BigQueryAddress:
         """Returns the address of this view, with no dataset overrides applied."""
         return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
 
+    # TODO(#7453): This functionality should be shared between *View and *ViewBuilder classes.
     @property
     def table_for_query(self) -> BigQueryAddress:
         """The (dataset_id, table_id) to use when querying from this view.
@@ -414,20 +416,3 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             should_deploy_predicate=self.should_deploy_predicate,
             **self.query_format_kwargs,
         )
-
-    # TODO(#7453): This functionality should be shared between *View and *ViewBuilder classes.
-    @property
-    def address(self) -> BigQueryAddress:
-        """The (dataset_id, table_id) address for this view"""
-        return BigQueryAddress(dataset_id=self.dataset_id, table_id=self.view_id)
-
-    @property
-    def table_for_query(self) -> BigQueryAddress:
-        """The (dataset_id, table_id) to use when querying from this view.
-
-        Will return the materialized view address when available, otherwise the plain
-        view address."""
-
-        if self.materialized_address:
-            return self.materialized_address
-        return self.address

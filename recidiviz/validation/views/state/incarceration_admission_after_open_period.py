@@ -68,6 +68,7 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_query_template=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE,
     description=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

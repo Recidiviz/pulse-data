@@ -47,6 +47,7 @@ OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OVERLAPPING_INCARCERATION_PERIODS_QUERY_TEMPLATE,
     description=OVERLAPPING_INCARCERATION_PERIODS_DESCRIPTION,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

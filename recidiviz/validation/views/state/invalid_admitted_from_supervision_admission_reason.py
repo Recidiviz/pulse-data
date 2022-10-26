@@ -58,6 +58,7 @@ INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER = SimpleBigQuery
     ),
     description=INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION,
     normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

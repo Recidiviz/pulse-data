@@ -74,6 +74,7 @@ REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION,
     dashboard_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     public_dashboard_dataset=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

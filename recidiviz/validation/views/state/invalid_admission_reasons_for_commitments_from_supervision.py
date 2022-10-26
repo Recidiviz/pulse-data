@@ -78,6 +78,7 @@ INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER = Simple
     ),
     description=INVALID_ADMISSION_REASONS_FOR_COMMITMENTS_FROM_SUPERVISION_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

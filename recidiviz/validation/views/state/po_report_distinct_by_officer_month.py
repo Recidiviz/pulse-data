@@ -43,6 +43,7 @@ PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_QUERY_TEMPLATE,
     description=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_DESCRIPTION,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

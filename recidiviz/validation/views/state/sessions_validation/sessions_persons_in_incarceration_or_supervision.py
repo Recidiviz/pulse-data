@@ -62,6 +62,7 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=SESSIONS_IN_INCARCERATION_OR_SUPERVISION_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

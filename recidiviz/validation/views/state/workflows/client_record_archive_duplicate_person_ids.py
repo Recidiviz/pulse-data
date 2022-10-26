@@ -55,6 +55,7 @@ CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_query_template=CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_QUERY_TEMPLATE,
     description=CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_DESCRIPTION,
     workflows_dataset=state_dataset_config.WORKFLOWS_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

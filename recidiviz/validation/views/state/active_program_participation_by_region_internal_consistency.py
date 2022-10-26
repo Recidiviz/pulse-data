@@ -55,6 +55,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER = Simpl
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_DESCRIPTION,
     validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     validated_table_id=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

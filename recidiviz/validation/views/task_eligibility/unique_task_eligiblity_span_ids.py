@@ -51,6 +51,7 @@ UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_QUERY_TEMPLATE,
     description=UNIQUE_TASK_ELIGIBILITY_SPAN_IDS_DESCRIPTION,
     task_eligibility_dataset=tes_dataset_config.TASK_ELIGIBILITY_DATASET_ID,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

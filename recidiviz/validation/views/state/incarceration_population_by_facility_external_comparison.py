@@ -83,6 +83,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_dataflow_facility_name_transformation=state_specific_dataflow_facility_name_transformation(),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

@@ -68,6 +68,7 @@ FTR_REFERRALS_COMPARISON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=FTR_REFERRALS_COMPARISON_QUERY_TEMPLATE,
     description=FTR_REFERRALS_COMPARISON_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

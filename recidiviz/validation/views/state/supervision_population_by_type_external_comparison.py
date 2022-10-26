@@ -76,6 +76,7 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBigQuery
     description=SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

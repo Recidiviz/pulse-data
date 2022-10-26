@@ -118,4 +118,5 @@ class FreshnessValidation:
             view_id=self.view_id,
             description=self.description,
             view_query_template=self.build_query_template(),
+            should_materialize=True,
         )

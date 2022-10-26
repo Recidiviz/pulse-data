@@ -87,6 +87,7 @@ POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER = Simp
     description=POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

@@ -69,6 +69,7 @@ INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER = SimpleBigQueryVie
     ),
     description=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_DESCRIPTION,
     normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

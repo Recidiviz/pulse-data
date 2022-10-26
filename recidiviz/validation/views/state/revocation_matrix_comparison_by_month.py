@@ -59,6 +59,7 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REVOCATION_MATRIX_COMPARISON_BY_MONTH_DESCRIPTION,
     view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
     shared_metric_views_dataset=state_dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

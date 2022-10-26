@@ -74,6 +74,7 @@ ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ADMISSION_PFI_POP_PFI_MISMATCH_QUERY_TEMPLATE,
     description=ADMISSION_PFI_POP_PFI_MISMATCH_DESCRIPTION,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
