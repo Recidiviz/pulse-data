@@ -64,14 +64,3 @@ resource "google_compute_router" "external_system_outbound_requests" {
   network = "default"
   region  = var.region
 }
-
-resource "google_compute_router_nat" "external_system_outbound_requests" {
-  name   = "external-system-outbound-requests"
-  router = google_compute_router.external_system_outbound_requests.name
-  region = var.region
-
-  nat_ip_allocate_option = "MANUAL_ONLY"
-  nat_ips                = [google_compute_address.external_system_outbound_requests.self_link]
-
-  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
-}
