@@ -327,8 +327,8 @@ def copy_dataset_schemas_to_sandbox(
         }
 
         copy_futures: Set[Future[BigQueryAddress]] = set()
-        for future in futures.as_completed(list_tables_futures):
-            source_table_addresses = future.result()
+        for list_table_future in futures.as_completed(list_tables_futures):
+            source_table_addresses = list_table_future.result()
             if source_table_addresses is not None:
                 copy_futures.update(
                     executor.submit(
@@ -338,8 +338,8 @@ def copy_dataset_schemas_to_sandbox(
                     for source_table_address in source_table_addresses
                 )
         logging.info("Copying schemas for [%s] tables", len(copy_futures))
-        for future in futures.as_completed(copy_futures):
-            destination_address = future.result()
+        for copy_future in futures.as_completed(copy_futures):
+            destination_address = copy_future.result()
             logging.info("Completed copy of schema to [%s]", destination_address)
 
 

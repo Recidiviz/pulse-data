@@ -28,20 +28,21 @@ import sys
 from math import ceil
 from typing import List, Tuple
 
-import recidiviz
 from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
 from recidiviz.tools.deploy.dataflow_template_helpers import load_pipeline_config_yaml
+from recidiviz.tools.deploy.logging import get_deploy_logs_dir
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.future_executor import FutureExecutor
+from recidiviz.utils.future_executor import map_fn_with_progress_bar
 
-RECIDIVIZ_ROOT = os.path.abspath(os.path.join(recidiviz.__file__, "../.."))
-DEPLOY_ROOT = os.path.join(RECIDIVIZ_ROOT, "recidiviz/tools/deploy")
-DEPLOY_LOG_DIRECTORY = os.path.join(DEPLOY_ROOT, "log")
-DEPLOY_PIPELINE_TEMPLATES_LOG = (
-    f"{DEPLOY_LOG_DIRECTORY}/deploy_all_pipeline_templates.log"
+DEPLOY_LOG_DIRECTORY = get_deploy_logs_dir()
+DEPLOY_PIPELINE_TEMPLATES_LOG = os.path.join(
+    DEPLOY_LOG_DIRECTORY, "deploy_all_pipeline_templates.log"
+)
+DEPLOY_PIPELINE_TEMPLATES_SUBPROCESS_LOG = os.path.join(
+    DEPLOY_LOG_DIRECTORY, "deploy_all_pipeline_templates_subprocess.log"
 )
 
 PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS = 8
@@ -66,7 +67,7 @@ def write_process_log(process: subprocess.CompletedProcess) -> None:
     if not os.path.exists(DEPLOY_LOG_DIRECTORY):
         os.mkdir(DEPLOY_LOG_DIRECTORY)
 
-    with open(DEPLOY_PIPELINE_TEMPLATES_LOG, "a+", encoding="utf-8") as f:
+    with open(DEPLOY_PIPELINE_TEMPLATES_SUBPROCESS_LOG, "a+", encoding="utf-8") as f:
         f.writelines(build_process_log(process))
 
 
@@ -123,18 +124,16 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
     num_pipelines = len(deploy_pipeline_kwargs)
     # The number of full rounds where each worker uploads a single pipeline
     num_upload_rounds = ceil(num_pipelines / PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS)
-    try:
-        with FutureExecutor.build(
-            find_and_deploy_single_pipeline_template,
-            deploy_pipeline_kwargs,
-            max_workers=PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS,
-        ) as execution:
 
-            execution.wait_with_progress_bar(
-                "Deploying pipeline templates...",
-                # Scale timeout as number of pipelines increases
-                timeout=(num_upload_rounds * (10 * 60)),
-            )
+    try:
+        map_fn_with_progress_bar(
+            fn=find_and_deploy_single_pipeline_template,
+            kwargs_list=deploy_pipeline_kwargs,
+            progress_bar_message="Deploying pipeline templates...",
+            max_workers=PARALLEL_TEMPLATE_DEPLOY_MAX_WORKERS,
+            timeout_sec=(num_upload_rounds * (10 * 60)),
+            logging_redirect_filename=DEPLOY_PIPELINE_TEMPLATES_LOG,
+        )
     except DeployPipelineFailedError:
         sys.exit(1)
 

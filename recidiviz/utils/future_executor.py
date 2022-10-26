@@ -19,11 +19,12 @@
 from concurrent import futures
 from concurrent.futures import Future
 from contextlib import contextmanager
-from typing import Callable, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 import attr
 from progress.bar import Bar
 
+from recidiviz.tools.deploy.logging import redirect_logging_to_file
 from recidiviz.utils import structured_logging
 
 
@@ -87,7 +88,9 @@ class FutureExecutor:
     @staticmethod
     @contextmanager
     def build(
-        func: Callable, kwargs_list: List[Dict], max_workers: Optional[int] = None
+        func: Callable,
+        kwargs_list: List[Dict[str, Any]],
+        max_workers: Optional[int] = None,
     ) -> Generator["FutureExecutor", None, None]:
         """Creates a ThreadPoolExecutor and corresponding FutureExecutor"""
         with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -99,3 +102,30 @@ class FutureExecutor:
             )
 
             yield future_execution
+
+
+def map_fn_with_progress_bar(
+    fn: Callable,
+    kwargs_list: List[Dict[str, Any]],
+    progress_bar_message: str,
+    max_workers: int,
+    timeout_sec: int,
+    logging_redirect_filename: str,
+) -> None:
+    """This will call `fn` with each set of args in `kwargs_list`, distributing the
+    work across `max_workers` threads.
+
+    Additionally, it will write out a progress bar to keep track of how many of the
+    calls have completed, and redirect logging for the individual calls to
+    `logging_redirect_filename`.
+    """
+    with redirect_logging_to_file(logging_redirect_filename), FutureExecutor.build(
+        fn,
+        kwargs_list,
+        max_workers,
+    ) as execution:
+
+        execution.wait_with_progress_bar(
+            progress_bar_message,
+            timeout=timeout_sec,
+        )

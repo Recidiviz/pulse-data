@@ -39,9 +39,9 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
-from recidiviz.tools.deploy.logging import get_deploy_logs_dir, redirect_logging_to_file
+from recidiviz.tools.deploy.logging import get_deploy_logs_dir
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.future_executor import FutureExecutor
+from recidiviz.utils.future_executor import map_fn_with_progress_bar
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -106,16 +106,14 @@ def update_raw_data_table_schemas() -> None:
     log_path = os.path.join(get_deploy_logs_dir(), "update_raw_data_table_schemas.log")
     logging.info("Writing logs to %s", log_path)
 
-    with redirect_logging_to_file(log_path), FutureExecutor.build(
-        update_raw_data_table_schema,
-        file_kwargs,
+    map_fn_with_progress_bar(
+        fn=update_raw_data_table_schema,
+        kwargs_list=file_kwargs,
+        progress_bar_message="Updating raw table schemas...",
         max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
-    ) as execution:
-
-        execution.wait_with_progress_bar(
-            "Updating raw table schemas...",
-            timeout=(10 * 60),  # 10 minutes
-        )
+        timeout_sec=(10 * 60),  # 10 minutes
+        logging_redirect_filename=log_path,
+    )
 
     logging.info("Update complete.")
 
