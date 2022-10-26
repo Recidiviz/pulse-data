@@ -45,6 +45,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
+    StateSpecificSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
@@ -109,6 +110,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 StateSpecificViolationResponseNormalizationDelegate,
                 StateSpecificProgramAssignmentNormalizationDelegate,
                 StateSpecificAssessmentNormalizationDelegate,
+                StateSpecificSentenceNormalizationDelegate,
             ],
             state_specific_required_reference_tables={
                 # We need to bring in the US_MO sentence status table to do
