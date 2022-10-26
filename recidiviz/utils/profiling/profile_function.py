@@ -20,10 +20,17 @@ import cProfile
 import io
 import pstats
 from functools import wraps
-from typing import Any, Callable
+from typing import Callable, TypeVar
+
+from typing_extensions import ParamSpec
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
-def profile_function(func: Callable, num_profile_lines: int = 25) -> Callable:
+def profile_function(
+    func: Callable[P, T], num_profile_lines: int = 25
+) -> Callable[P, T]:
     """Annotation that can be used to profile and print profiling information
     for a given function after each run of that function.
 
@@ -35,7 +42,7 @@ def profile_function(func: Callable, num_profile_lines: int = 25) -> Callable:
     """
 
     @wraps(func)
-    def wrap_with_profile(*args: Any, **kwargs: Any) -> Any:
+    def wrap_with_profile(*args: P.args, **kwargs: P.kwargs) -> T:
         profiler = cProfile.Profile()
         profiler.enable()
         return_value = func(*args, **kwargs)

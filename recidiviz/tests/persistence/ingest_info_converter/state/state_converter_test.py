@@ -47,7 +47,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -97,7 +97,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     @staticmethod
     def _convert_and_throw_on_errors(
-        ingest_info: IngestInfo, metadata: IngestMetadata
+        ingest_info: IngestInfo, metadata: LegacyStateIngestMetadata
     ) -> List[state_entities.StatePerson]:
         conversion_result: EntityDeserializationResult = (
             ingest_info_converter.convert_to_persistence_entities(ingest_info, metadata)

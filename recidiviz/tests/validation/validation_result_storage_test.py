@@ -86,6 +86,7 @@ class TestValidationResultStorage(unittest.TestCase):
             run_id="abc123",
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
+            runtime_seconds=1,
         )
 
         # Assert
@@ -109,6 +110,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ),
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 exception_log=None,
+                runtime_seconds=1,
             ),
             result,
         )
@@ -129,6 +131,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_category": "EXTERNAL_AGGREGATE",
                 "exception_log": None,
                 "trace_id": result.trace_id,
+                "runtime_seconds": 1,
             },
             result.to_serializable(),
         )
@@ -169,6 +172,7 @@ class TestValidationResultStorage(unittest.TestCase):
             run_id="abc123",
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
+            runtime_seconds=1,
         )
 
         # Assert
@@ -188,6 +192,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 exception_log=None,
+                runtime_seconds=1,
             ),
             result,
         )
@@ -208,6 +213,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_category": "EXTERNAL_INDIVIDUAL",
                 "exception_log": None,
                 "trace_id": result.trace_id,
+                "runtime_seconds": 1,
             },
             result.to_serializable(),
         )
@@ -246,6 +252,7 @@ class TestValidationResultStorage(unittest.TestCase):
             run_id="abc123",
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             result=job_result,
+            runtime_seconds=1,
         )
 
         # Assert
@@ -269,6 +276,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 exception_log=None,
+                runtime_seconds=1,
             ),
             result,
         )
@@ -297,6 +305,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_category": "EXTERNAL_AGGREGATE",
                 "trace_id": result.trace_id,
                 "exception_log": None,
+                "runtime_seconds": 1,
             },
             result.to_serializable(),
         )
@@ -326,6 +335,7 @@ class TestValidationResultStorage(unittest.TestCase):
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             job=validation_job,
             exception_log=None,
+            runtime_seconds=1,
         )
 
         # Assert
@@ -345,6 +355,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=None,
                 exception_log=None,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                runtime_seconds=1,
             ),
             result,
         )
@@ -365,6 +376,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "exception_log": None,
                 "trace_id": result.trace_id,
                 "validation_category": "EXTERNAL_AGGREGATE",
+                "runtime_seconds": 1,
             },
             result.to_serializable(),
         )
@@ -403,6 +415,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     exception_log=None,
+                    runtime_seconds=1,
                 ),
             ]
         )
@@ -437,6 +450,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ),
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
+            runtime_seconds=1,
         )
         storage_result_2 = ValidationResultForStorage(
             run_id="abc123",
@@ -464,6 +478,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ),
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
+            runtime_seconds=1,
         )
         storage_result_3 = ValidationResultForStorage(
             run_id="abc123",
@@ -480,6 +495,7 @@ class TestValidationResultStorage(unittest.TestCase):
             result_details=None,
             validation_category=ValidationCategory.CONSISTENCY,
             exception_log=None,
+            runtime_seconds=1,
         )
 
         # Act
@@ -511,6 +527,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_category": "EXTERNAL_AGGREGATE",
                     "exception_log": None,
                     "trace_id": storage_result_1.trace_id,
+                    "runtime_seconds": 1,
                 },
                 {
                     "run_id": "abc123",
@@ -528,6 +545,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_category": "EXTERNAL_AGGREGATE",
                     "exception_log": None,
                     "trace_id": storage_result_2.trace_id,
+                    "runtime_seconds": 1,
                 },
                 {
                     "run_id": "abc123",
@@ -545,6 +563,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_category": "CONSISTENCY",
                     "exception_log": None,
                     "trace_id": storage_result_3.trace_id,
+                    "runtime_seconds": 1,
                 },
             ],
         )

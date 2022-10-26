@@ -16,19 +16,17 @@
 # =============================================================================
 """Functionality to make it easier to create and export traces"""
 
+import time
 from contextvars import ContextVar
 from functools import wraps
-import time
-from typing import Any, Callable, Dict, List
+from typing import Callable, Dict, List, Tuple, TypeVar
 
 from flask import request
-from opencensus.stats import measure, view, aggregation
-from opencensus.trace import (
-    execution_context,
-    samplers,
-    span_context as span_ctx,
-    tracer as tracer_module,
-)
+from opencensus.stats import aggregation, measure, view
+from opencensus.trace import execution_context, samplers
+from opencensus.trace import span_context as span_ctx
+from opencensus.trace import tracer as tracer_module
+from typing_extensions import ParamSpec
 
 from recidiviz.utils import monitoring
 
@@ -49,8 +47,27 @@ monitoring.register_views([duration_distribution_view])
 # detect recursion.
 stack: ContextVar[List[int]] = ContextVar("stack", default=[])
 
+P = ParamSpec("P")
+T = TypeVar("T")
 
-def span(func: Callable) -> Callable:
+
+def time_and_trace(func: Callable[P, T]) -> Callable[P, Tuple[float, T]]:
+    """Wraps a function in a function that will emit a span to Cloud Trace covering the
+    duration of the execution and then return both the result of the function and the
+    execution duration.
+    """
+
+    @wraps(func)
+    def _wrapper(*args: P.args, **kwargs: P.kwargs) -> Tuple[float, T]:
+        start = time.perf_counter()
+        res = span(func)(*args, **kwargs)
+        end = time.perf_counter()
+        return (end - start), res
+
+    return _wrapper
+
+
+def span(func: Callable[P, T]) -> Callable[P, T]:
     """Creates a new span for this function in the trace.
 
     This allows us to visualize how much of the processing time of a given request is spent inside of this function
@@ -58,7 +75,7 @@ def span(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def run_inside_new_span(*args: Any, **kwargs: Any) -> None:
+    def run_inside_new_span(*args: P.args, **kwargs: P.kwargs) -> T:
         tracer: tracer_module.Tracer = execution_context.get_opencensus_tracer()
         with tracer.span(name=func.__qualname__) as new_span:
             new_span.add_attribute("recidiviz.function.module", func.__module__)

@@ -31,7 +31,7 @@ from opencensus.stats import aggregation, measure, view
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
-from recidiviz.utils import metadata, monitoring, structured_logging
+from recidiviz.utils import metadata, monitoring, structured_logging, trace
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.validation.configured_validations import (
     get_all_validations,
@@ -154,20 +154,25 @@ def execute_validation(
         # full, discarding connection" errors.
         max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
     ) as executor:
-        future_to_jobs = {
-            executor.submit(structured_logging.with_context(_run_job), job): job
+        future_to_jobs: Dict[
+            futures.Future[Tuple[float, DataValidationJobResult]], DataValidationJob
+        ] = {
+            executor.submit(
+                trace.time_and_trace(structured_logging.with_context(_run_job)), job
+            ): job
             for job in validation_jobs
         }
 
         for future in futures.as_completed(future_to_jobs):
             job = future_to_jobs[future]
             try:
-                result: DataValidationJobResult = future.result()
+                runtime_seconds, result = future.result()
                 results_to_store.append(
                     ValidationResultForStorage.from_validation_result(
                         run_id=run_id,
                         run_datetime=run_datetime,
                         result=result,
+                        runtime_seconds=runtime_seconds,
                     )
                 )
                 if result.validation_result_status == ValidationResultStatus.FAIL_HARD:
@@ -175,9 +180,10 @@ def execute_validation(
                 if result.validation_result_status == ValidationResultStatus.FAIL_SOFT:
                     failed_soft_validations.append(result)
                 logging.info(
-                    "Finished job [%s] for region [%s]",
+                    "Finished job [%s] for region [%s] in %.2f seconds",
                     job.validation.validation_name,
                     job.region_code,
+                    runtime_seconds,
                 )
             except Exception as e:
                 logging.error(
@@ -191,6 +197,7 @@ def execute_validation(
                         run_datetime=run_datetime,
                         job=job,
                         exception_log=e,
+                        runtime_seconds=runtime_seconds,
                     )
                 )
                 failed_to_run_validations.append(job)
@@ -338,8 +345,3 @@ def _emit_opencensus_failure_events(
         monitoring_tags = tags_for_job(result.validation_job)
         with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_validations, 1)
-
-
-def _readable_response(failed_validations: List[DataValidationJobResult]) -> str:
-    readable_output = "\n".join([str(f) for f in failed_validations])
-    return f"Failed validations:\n{readable_output}"

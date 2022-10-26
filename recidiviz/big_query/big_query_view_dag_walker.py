@@ -339,7 +339,9 @@ class BigQueryViewDagWalker:
                 Tuple[BigQueryViewDagNode, ParentResultsT, float],
             ] = {
                 executor.submit(
-                    _timed_func(structured_logging.with_context(view_process_fn)),
+                    trace.time_and_trace(
+                        structured_logging.with_context(view_process_fn)
+                    ),
                     node.view,
                     {},
                 ): (node, {}, time.perf_counter())
@@ -415,7 +417,7 @@ class BigQueryViewDagWalker:
                                 )
                             entered_queue_time = time.perf_counter()
                             future = executor.submit(
-                                _timed_func(
+                                trace.time_and_trace(
                                     structured_logging.with_context(view_process_fn)
                                 ),
                                 child_node.view,
@@ -664,21 +666,3 @@ class BigQueryViewDagWalker:
         called after populate_node_view_builders() is called on this BigQueryDagWalker.
         """
         return [node.view_builder for node in self.nodes_by_key.values()]
-
-
-def _timed_func(
-    func: Callable[[BigQueryView, ParentResultsT], ViewResultT]
-) -> Callable[[BigQueryView, ParentResultsT], Tuple[float, ViewResultT]]:
-    """Wraps a DAG node processing function in a function that will return both the
-    processing result and the execution time.
-    """
-
-    def _wrapper(
-        view: BigQueryView, parent_results: ParentResultsT
-    ) -> Tuple[float, ViewResultT]:
-        start = time.perf_counter()
-        res = trace.span(func)(view, parent_results)
-        end = time.perf_counter()
-        return (end - start), res
-
-    return _wrapper
