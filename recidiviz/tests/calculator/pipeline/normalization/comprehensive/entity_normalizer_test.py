@@ -59,6 +59,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -224,6 +225,74 @@ class TestNormalizeEntities(unittest.TestCase):
             }
         )
 
+        expected_additional_attributes_map.update(
+            {
+                StateCharge.__name__: {
+                    charge.charge_id: {
+                        "ncic_code_external": charge.ncic_code,
+                        "ncic_category_external": None,
+                        "description_external": charge.description,
+                        "is_violent_external": charge.is_violent,
+                        "is_drug_external": charge.is_drug,
+                        "is_sex_offense_external": charge.is_sex_offense,
+                        "uccs_code_uniform": 3160,
+                        "uccs_description_uniform": "Possession/Use of Unspecified Drug",
+                        "uccs_category_uniform": "Possession/Use of Unspecified Drug",
+                        "ncic_code_uniform": "3599",
+                        "ncic_description_uniform": "Dangerous Drugs (describe offense)",
+                        "ncic_category_uniform": "Dangerous Drugs",
+                        "nbirs_code_uniform": "35A",
+                        "nbirs_description_uniform": "Drug/Narcotic",
+                        "nbirs_category_uniform": "Drug/Narcotic",
+                        "crime_against_uniform": "Society",
+                        "is_drug_uniform": True,
+                        "is_violent_uniform": False,
+                        "is_sex_offense_uniform": None,
+                        "offense_completed_uniform": True,
+                        "offense_attempted_uniform": False,
+                        "offense_conspired_uniform": False,
+                    }
+                    for supervision_sentence in self.full_graph_person.supervision_sentences
+                    for charge in supervision_sentence.charges
+                    if charge.charge_id
+                }
+            }
+        )
+
+        expected_additional_attributes_map.update(
+            {
+                StateCharge.__name__: {
+                    charge.charge_id: {
+                        "ncic_code_external": charge.ncic_code,
+                        "ncic_category_external": None,
+                        "description_external": charge.description,
+                        "is_violent_external": charge.is_violent,
+                        "is_drug_external": charge.is_drug,
+                        "is_sex_offense_external": charge.is_sex_offense,
+                        "uccs_code_uniform": 3160,
+                        "uccs_description_uniform": "Possession/Use of Unspecified Drug",
+                        "uccs_category_uniform": "Possession/Use of Unspecified Drug",
+                        "ncic_code_uniform": "3599",
+                        "ncic_description_uniform": "Dangerous Drugs (describe offense)",
+                        "ncic_category_uniform": "Dangerous Drugs",
+                        "nbirs_code_uniform": "35A",
+                        "nbirs_description_uniform": "Drug/Narcotic",
+                        "nbirs_category_uniform": "Drug/Narcotic",
+                        "crime_against_uniform": "Society",
+                        "is_drug_uniform": True,
+                        "is_violent_uniform": False,
+                        "is_sex_offense_uniform": None,
+                        "offense_completed_uniform": True,
+                        "offense_attempted_uniform": False,
+                        "offense_conspired_uniform": False,
+                    }
+                    for incarceration_sentence in self.full_graph_person.incarceration_sentences
+                    for charge in incarceration_sentence.charges
+                    if charge.charge_id
+                }
+            }
+        )
+
         expected_output_entities: Dict[str, Sequence[Entity]] = {
             StateIncarcerationPeriod.__name__: [
                 attr.evolve(
@@ -261,9 +330,64 @@ class TestNormalizeEntities(unittest.TestCase):
             assessments=self.full_graph_person.assessments,
             incarceration_sentences=self.full_graph_person.incarceration_sentences,
             supervision_sentences=self.full_graph_person.supervision_sentences,
+            charge_offense_descriptions_to_labels=[
+                {
+                    "person_id": self.full_graph_person.person_id,
+                    "charge_id": charge.charge_id,
+                    "state_code": "US_XX",
+                    "offense_description": "DRUG POSSESSION",
+                    "probability": 0.993368719,
+                    "uccs_code": 3160,
+                    "uccs_description": "Possession/Use of Unspecified Drug",
+                    "uccs_category": "Possession/Use of Unspecified Drug",
+                    "ncic_code": "3599",
+                    "ncic_description": "Dangerous Drugs (describe offense)",
+                    "ncic_category": "Dangerous Drugs",
+                    "nbirs_code": "35A",
+                    "nbirs_description": "Drug/Narcotic",
+                    "nbirs_category": "Drug/Narcotic",
+                    "crime_against": "Society",
+                    "is_drug": True,
+                    "is_violent": False,
+                    "offense_completed": True,
+                    "offense_attempted": False,
+                    "offense_conspired": False,
+                }
+                for incarceration_sentence in self.full_graph_person.incarceration_sentences
+                for charge in incarceration_sentence.charges
+                if charge.charge_id
+            ]
+            + [
+                {
+                    "person_id": self.full_graph_person.person_id,
+                    "charge_id": charge.charge_id,
+                    "state_code": "US_XX",
+                    "offense_description": "DRUG POSSESSION",
+                    "probability": 0.993368719,
+                    "uccs_code": 3160,
+                    "uccs_description": "Possession/Use of Unspecified Drug",
+                    "uccs_category": "Possession/Use of Unspecified Drug",
+                    "ncic_code": "3599",
+                    "ncic_description": "Dangerous Drugs (describe offense)",
+                    "ncic_category": "Dangerous Drugs",
+                    "nbirs_code": "35A",
+                    "nbirs_description": "Drug/Narcotic",
+                    "nbirs_category": "Drug/Narcotic",
+                    "crime_against": "Society",
+                    "is_drug": True,
+                    "is_violent": False,
+                    "offense_completed": True,
+                    "offense_attempted": False,
+                    "offense_conspired": False,
+                }
+                for supervision_sentence in self.full_graph_person.supervision_sentences
+                for charge in supervision_sentence.charges
+                if charge.charge_id
+            ],
         )
-
-        self.assertEqual(expected_additional_attributes_map, additional_attributes_map)
+        self.assertDictEqual(
+            expected_additional_attributes_map, additional_attributes_map
+        )
 
         for entity_name, items in normalized_entities.items():
             self.assertEqual(expected_output_entities[entity_name], items)
