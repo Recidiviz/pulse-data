@@ -87,7 +87,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         )
 
     def get_raw_data_import_queue_info(
-        self, region: DirectIngestRegion
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,  # pylint: disable=unused-argument
     ) -> RawDataImportCloudTaskQueueInfo:
         return RawDataImportCloudTaskQueueInfo(
             queue_name="raw_data_import",
@@ -156,6 +158,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
     def create_direct_ingest_raw_data_import_task(
         self,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:

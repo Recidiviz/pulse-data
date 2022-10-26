@@ -326,7 +326,7 @@ class DirectIngestCloudTaskQueueManager:
 
     @abc.abstractmethod
     def get_raw_data_import_queue_info(
-        self, region: DirectIngestRegion
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> RawDataImportCloudTaskQueueInfo:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
@@ -413,6 +413,7 @@ class DirectIngestCloudTaskQueueManager:
     def create_direct_ingest_raw_data_import_task(
         self,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         pass
@@ -471,30 +472,41 @@ class DirectIngestCloudTaskQueueManager:
         }
         return body
 
-    def get_all_ingest_related_queue_info(
-        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
+    def _get_all_ingest_instance_queues(
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
     ) -> List[DirectIngestCloudTaskQueueInfo]:
-        """Returns all ingest-related queue information."""
+        """Returns all ingest instance related queue information."""
         ingest_queue_info: List[DirectIngestCloudTaskQueueInfo] = [
             self.get_scheduler_queue_info(region, ingest_instance),
-            self.get_raw_data_import_queue_info(region),
             self.get_ingest_view_materialization_queue_info(region, ingest_instance),
             self.get_extract_and_merge_queue_info(region, ingest_instance),
         ]
 
+        # TODO(#15450): Delete once raw data import can be conducted in SECONDARY.
+        if ingest_instance == DirectIngestInstance.PRIMARY:
+            ingest_queue_info.append(
+                self.get_raw_data_import_queue_info(region, ingest_instance)
+            )
+
+        # SFTP always writes data to the PRIMARY instance bucket, so only return the SFTP queue if the instance is
+        # PRIMARY.
         if (
             StateCode(region.region_code.upper())
             in get_direct_ingest_states_with_sftp_queue()
-        ):
+        ) and ingest_instance == DirectIngestInstance.PRIMARY:
             ingest_queue_info.append(self.get_sftp_queue_info(region))
 
         return ingest_queue_info
 
-    def all_ingest_related_queues_are_empty(
-        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
+    def all_ingest_instance_queues_are_empty(
+        self,
+        region: DirectIngestRegion,
+        ingest_instance: DirectIngestInstance,
     ) -> bool:
-        """Returns whether all ingest-related queues are empty."""
-        ingest_queue_info = self.get_all_ingest_related_queue_info(
+        """Returns whether all ingest instance related queues are empty."""
+        ingest_queue_info = self._get_all_ingest_instance_queues(
             region, ingest_instance
         )
         return all(queue_info.is_empty() for queue_info in ingest_queue_info)
@@ -521,12 +533,16 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         )
 
     def _get_raw_data_import_queue_manager(
-        self, region: DirectIngestRegion
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SingleCloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
+        # TODO(#12794): remove check once raw data import can be done in SECONDARY as well.
+        if ingest_instance != DirectIngestInstance.PRIMARY:
+            raise ValueError("Raw data import can only be done in PRIMARY.")
+
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.RAW_DATA_IMPORT,
             region.region_code,
-            DirectIngestInstance.PRIMARY,
+            ingest_instance,
         )
 
         return SingleCloudTaskQueueManager(
@@ -570,7 +586,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
     def _get_sftp_queue_manager(
         self, region: DirectIngestRegion
     ) -> SingleCloudTaskQueueManager[SftpCloudTaskQueueInfo]:
-        """Returns the appropriate SFTP queue for teh given region. This uses a standardized
+        """Returns the appropriate SFTP queue for the given region. This uses a standardized
         naming scheme based on the queue type."""
         return SingleCloudTaskQueueManager(
             queue_info_cls=SftpCloudTaskQueueInfo,
@@ -600,11 +616,11 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         ).get_queue_info(task_id_prefix=region.region_code)
 
     def get_raw_data_import_queue_info(
-        self, region: DirectIngestRegion
+        self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> RawDataImportCloudTaskQueueInfo:
-        return self._get_raw_data_import_queue_manager(region).get_queue_info(
-            task_id_prefix=region.region_code
-        )
+        return self._get_raw_data_import_queue_manager(
+            region, ingest_instance
+        ).get_queue_info(task_id_prefix=region.region_code)
 
     def get_ingest_view_materialization_queue_info(
         self,
@@ -692,6 +708,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
     def create_direct_ingest_raw_data_import_task(
         self,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         task_id = build_raw_data_import_task_id(region, data_import_args)
@@ -704,7 +721,9 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
 
         body = self._get_body_from_args(data_import_args)
 
-        self._get_raw_data_import_queue_manager(region).create_task(
+        self._get_raw_data_import_queue_manager(
+            region, raw_data_source_instance
+        ).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,

@@ -449,7 +449,10 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
         returns False.
         """
-        queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(self.region)
+        # Fetch the queue information for where the raw data is being processed.
+        queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(
+            region=self.region, ingest_instance=self.raw_data_source_instance
+        )
 
         raw_files_pending_import = (
             self.raw_file_metadata_manager.get_unprocessed_raw_files()
@@ -472,8 +475,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
             task_args = GcsfsRawDataBQImportArgs(raw_data_file_path)
             if not queue_info.is_raw_data_import_task_already_queued(task_args):
+                # Fetch the queue information for where the raw data is being processed.
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
-                    self.region, task_args
+                    self.region, self.raw_data_source_instance, task_args
                 )
                 did_schedule = True
 

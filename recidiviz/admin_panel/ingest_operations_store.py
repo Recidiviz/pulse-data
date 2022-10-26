@@ -213,7 +213,7 @@ class IngestOperationsStore(AdminPanelStore):
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=formatted_state_code
         )
-        if not self.cloud_task_manager.all_ingest_related_queues_are_empty(
+        if not self.cloud_task_manager.all_ingest_instance_queues_are_empty(
             region, instance
         ):
             raise DirectIngestInstanceError(
