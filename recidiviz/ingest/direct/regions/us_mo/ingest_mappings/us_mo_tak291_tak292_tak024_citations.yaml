@@ -51,10 +51,15 @@ output:
                       - JT_CSQ
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
                 is_draft:
+                  $or:
+                    - $is_null: FINAL_FORMED_CREATE_DATE
+                    - $equal:
+                        - FINAL_FORMED_CREATE_DATE
+                        - $literal("0")
+                response_date:
                   $custom:
-                    $function: us_mo_custom_parsers.set_is_draft_on_response
+                    $function: us_mo_custom_parsers.set_response_date
                     $args:
                       final_formed_create_date: FINAL_FORMED_CREATE_DATE
                       response_date: MAX_DATE
-                response_date: MAX_DATE
                 response_type: $literal_enum(StateSupervisionViolationResponseType.CITATION)
