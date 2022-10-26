@@ -39,10 +39,14 @@ from recidiviz.calculator.dataflow_orchestration_utils import (
 from recidiviz.calculator.normalized_state_update_lock_manager import (
     NormalizedStateUpdateLockManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
+    NORMALIZATION_MANAGERS,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_association_table,
     bq_schema_for_normalized_state_entity,
 )
 from recidiviz.calculator.query.state import dataset_config
@@ -417,13 +421,26 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
     jobs: List[PollingFuture] = []
 
     # Build a map of normalized entity table_id to the schema for that table.
-    normalized_table_id_to_schema = {
+    normalized_entity_table_ids_to_schema = {
         # We store normalized entities in tables with the same names as the tables of
         # their underlying base entity classes.
         schema_utils.get_state_database_entity_with_name(
             entity_cls.base_class_name()
         ).__tablename__: bq_schema_for_normalized_state_entity(entity_cls)
         for entity_cls in NORMALIZED_ENTITY_CLASSES
+    }
+    normalized_association_table_ids_to_schema = {
+        schema_utils.get_state_database_association_with_names(
+            child_cls.__name__, parent_cls.__name__
+        ).name: bq_schema_for_normalized_state_association_table(
+            child_cls.__name__, parent_cls.__name__
+        )
+        for manager in NORMALIZATION_MANAGERS
+        for (child_cls, parent_cls) in manager.normalized_entity_associations()
+    }
+    normalized_table_id_to_schema = {
+        **normalized_entity_table_ids_to_schema,
+        **normalized_association_table_ids_to_schema,
     }
 
     for table in bq_client.list_tables(non_normalized_dataset_id):
