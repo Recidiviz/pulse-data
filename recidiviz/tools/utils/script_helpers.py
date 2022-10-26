@@ -44,7 +44,7 @@ def prompt_for_confirmation(
 
     check = input(input_prompt)
     if check.lower() != accepted_response.lower():
-        logging.warning("\nResponded with [%s].Confirmation aborted.", check)
+        logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
         sys.exit(1)
 
 
