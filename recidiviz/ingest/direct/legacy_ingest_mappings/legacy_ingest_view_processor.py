@@ -21,10 +21,10 @@ intermediate ingest info objects and legacy ingest mappings files.
 #  ingest mappings design.
 import abc
 import logging
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, cast
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
@@ -158,7 +158,9 @@ class LegacyIngestViewProcessor(IngestViewProcessor):
             args.job_tag(),
         )
 
-        return persistence.write_ingest_info(ingest_info_proto, ingest_metadata)
+        return persistence.write_ingest_info(
+            ingest_info_proto, cast(LegacyStateIngestMetadata, ingest_metadata)
+        )
 
     def _parse_ingest_info(
         self,

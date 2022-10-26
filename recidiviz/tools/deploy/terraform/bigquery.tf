@@ -116,6 +116,11 @@ resource "google_bigquery_table" "validation_results" {
         "name": "failure_description",
         "type": "STRING",
         "mode": "NULLABLE"
+    },
+    {
+        "name": "runtime_seconds",
+        "type": "FLOAT64",
+        "mode": "NULLABLE"
     }
 ]
 EOF
