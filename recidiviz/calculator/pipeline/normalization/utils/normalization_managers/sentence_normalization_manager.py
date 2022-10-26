@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
@@ -35,6 +38,28 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionSentence,
 )
+
+
+# pylint: disable=unused-argument
+class StateSpecificSentenceNormalizationDelegate(StateSpecificDelegate):
+    """Interface for state-specific decisions involved in normalizing sentences
+    for calculations."""
+
+    def update_incarceration_sentence(
+        self, incarceration_sentence: StateIncarcerationSentence
+    ) -> StateIncarcerationSentence:
+        """Contains state-specific logic for updating certain fields on incarceration sentences.
+
+        By default, returns the incarceration sentence itself."""
+        return incarceration_sentence
+
+    def update_supervision_sentence(
+        self, supervision_sentence: StateSupervisionSentence
+    ) -> StateSupervisionSentence:
+        """Contains state-specific logic for updating certain fields on supervision sentences.
+
+        By default, returns the supervision sentence itself."""
+        return supervision_sentence
 
 
 class SentenceNormalizationManager(EntityNormalizationManager):
@@ -46,6 +71,7 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_sentences: List[StateSupervisionSentence],
         charge_offense_description_to_labels_list: List[Dict[str, Any]],
+        delegate: StateSpecificSentenceNormalizationDelegate,
     ) -> None:
         self._incarceration_sentences = incarceration_sentences
         self._supervision_sentences = supervision_sentences
@@ -60,6 +86,8 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         self._normalized_supervision_sentences_and_additional_attributes: Optional[
             Tuple[List[StateSupervisionSentence], AdditionalAttributesMap]
         ] = None
+
+        self.delegate = delegate
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
@@ -83,10 +111,14 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         """Performs normalization on incarceration sentences."""
 
         if not self._normalized_incarceration_sentences_and_additional_attributes:
+            incarceration_sentences_for_normalization = [
+                self.delegate.update_incarceration_sentence(incarceration_sentence)
+                for incarceration_sentence in self._incarceration_sentences
+            ]
             self._normalized_incarceration_sentences_and_additional_attributes = (
-                self._incarceration_sentences,
+                incarceration_sentences_for_normalization,
                 self.additional_attributes_map_for_normalized_incarceration_sentences(
-                    self._incarceration_sentences
+                    incarceration_sentences_for_normalization
                 ),
             )
         return self._normalized_incarceration_sentences_and_additional_attributes
@@ -110,10 +142,14 @@ class SentenceNormalizationManager(EntityNormalizationManager):
         """Performs normalization on supervision sentences."""
 
         if not self._normalized_supervision_sentences_and_additional_attributes:
+            supervision_sentences_for_normalization = [
+                self.delegate.update_supervision_sentence(supervision_sentence)
+                for supervision_sentence in self._supervision_sentences
+            ]
             self._normalized_supervision_sentences_and_additional_attributes = (
-                self._supervision_sentences,
+                supervision_sentences_for_normalization,
                 self.additional_attributes_map_for_normalized_supervision_sentences(
-                    self._supervision_sentences
+                    supervision_sentences_for_normalization
                 ),
             )
         return self._normalized_supervision_sentences_and_additional_attributes

@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.in
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     StateSpecificProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
+    StateSpecificSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -95,6 +98,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_recidivism_metrics_producer_delegate import (
     UsCaRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_sentence_normalization_delegate import (
+    UsCaSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_ca.us_ca_supervision_delegate import (
     UsCaSupervisionDelegate,
 )
@@ -131,6 +137,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_recidivism_metrics_producer_delegate import (
     UsCoRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_sentence_normalization_delegate import (
+    UsCoSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_supervision_delegate import (
     UsCoSupervisionDelegate,
 )
@@ -166,6 +175,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignm
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_recidivism_metrics_producer_delegate import (
     UsIdRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_sentence_normalization_delegate import (
+    UsIdSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
@@ -208,6 +220,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_recidivism_metrics_producer_delegate import (
     UsIxRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_sentence_normalization_delegate import (
+    UsIxSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_supervision_delegate import (
     UsIxSupervisionDelegate,
 )
@@ -243,6 +258,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_program_assignm
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_recidivism_metrics_producer_delegate import (
     UsMeRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_sentence_normalization_delegate import (
+    UsMeSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_me.us_me_supervision_delegate import (
     UsMeSupervisionDelegate,
@@ -280,6 +298,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_recidivism_metrics_producer_delegate import (
     UsMiRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_sentence_normalization_delegate import (
+    UsMiSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mi.us_mi_supervision_delegate import (
     UsMiSupervisionDelegate,
 )
@@ -316,6 +337,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_recidivism_metrics_producer_delegate import (
     UsMoRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_normalization_delegate import (
+    UsMoSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
 )
@@ -351,6 +375,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_program_assignm
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_recidivism_metrics_producer_delegate import (
     UsNdRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_sentence_normalization_delegate import (
+    UsNdSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
@@ -391,6 +418,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_recidivism_metrics_producer_delegate import (
     UsOrRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_sentence_normalization_delegate import (
+    UsOrSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_or.us_or_supervision_delegate import (
     UsOrSupervisionDelegate,
 )
@@ -427,6 +457,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_program_assignm
 from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_recidivism_metrics_producer_delegate import (
     UsOzRecidivismMetricsProducerDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_sentence_normalization_delegate import (
+    UsOzSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_oz.us_oz_supervision_delegate import (
     UsOzSupervisionDelegate,
 )
@@ -462,6 +495,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_program_assignm
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_recidivism_metrics_producer_delegate import (
     UsPaRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_sentence_normalization_delegate import (
+    UsPaSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
@@ -501,6 +537,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_program_assignm
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_recidivism_metrics_producer_delegate import (
     UsTnRecidivismMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_sentence_normalization_delegate import (
+    UsTnSentenceNormalizationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_tn.us_tn_supervision_delegate import (
     UsTnSupervisionDelegate,
@@ -572,6 +611,10 @@ def get_required_state_specific_delegates(
             ] = _get_state_specific_program_assignment_normalization_delegate(
                 state_code
             )
+        elif required_delegate is StateSpecificSentenceNormalizationDelegate:
+            required_state_specific_delegates[
+                required_delegate.__name__
+            ] = _get_state_specific_sentence_normalization_delegate(state_code)
         elif required_delegate is StateSpecificViolationResponseNormalizationDelegate:
             required_state_specific_delegates[
                 required_delegate.__name__
@@ -849,6 +892,40 @@ def _get_state_specific_program_assignment_normalization_delegate(
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
         return UsIxProgramAssignmentNormalizationDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def _get_state_specific_sentence_normalization_delegate(
+    state_code: str,
+) -> StateSpecificSentenceNormalizationDelegate:
+    """Returns the type of SentenceNormalizationDelegate that should be used for normalizing
+    StateIncarcerationSentence/StateSupervisionSentence entities from a given |state_code|."""
+    if state_code == StateCode.US_CA.value:
+        return UsCaSentenceNormalizationDelegate()
+    if state_code == StateCode.US_CO.value:
+        return UsCoSentenceNormalizationDelegate()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSentenceNormalizationDelegate()
+    if state_code == StateCode.US_ME.value:
+        return UsMeSentenceNormalizationDelegate()
+    if state_code == StateCode.US_MI.value:
+        return UsMiSentenceNormalizationDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoSentenceNormalizationDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdSentenceNormalizationDelegate()
+    if state_code == StateCode.US_OR.value:
+        return UsOrSentenceNormalizationDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaSentenceNormalizationDelegate()
+    if state_code == StateCode.US_TN.value:
+        return UsTnSentenceNormalizationDelegate()
+    if state_code == StateCode.US_OZ.value:
+        return UsOzSentenceNormalizationDelegate()
+    # TODO(#10703): Remove this state_code after merging US_IX into US_ID
+    if state_code == StateCode.US_IX.value:
+        return UsIxSentenceNormalizationDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 

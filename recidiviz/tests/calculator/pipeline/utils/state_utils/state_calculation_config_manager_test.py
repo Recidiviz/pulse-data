@@ -62,6 +62,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incar
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_program_assignment_normalization_delegate import (
     UsXxProgramAssignmentNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_sentence_normalization_delegate import (
+    UsXxSentenceNormalizationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
@@ -146,6 +149,7 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
         DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
     ),
     "StateSpecificAssessmentNormalizationDelegate": UsXxAssessmentNormalizationDelegate(),
+    "StateSpecificSentenceNormalizationDelegate": UsXxSentenceNormalizationDelegate(),
 }
 
 
