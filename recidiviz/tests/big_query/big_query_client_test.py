@@ -1112,7 +1112,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Cannot change the mode of field SchemaField\('field_1'.*\) to NULLABLE",
+            r"Cannot change the mode of field SchemaField\('field_1'.*\) to REQUIRED",
         ):
             self.bq_client.update_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields

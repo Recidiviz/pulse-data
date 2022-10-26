@@ -1764,7 +1764,7 @@ class BigQueryClientImpl(BigQueryClient):
 
                 if field.mode != desired_field.mode:
                     raise ValueError(
-                        f"Cannot change the mode of field {desired_field} to {field.mode}."
+                        f"Cannot change the mode of field {field} to {desired_field.mode}."
                     )
 
         # Remove any deprecated fields first as it involves copying the entire view
