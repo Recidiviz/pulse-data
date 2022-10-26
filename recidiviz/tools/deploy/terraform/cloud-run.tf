@@ -106,9 +106,9 @@ data "google_service_account" "justice_counts_cloud_run" {
 
 # Give JC service account permission to write logs
 resource "google_project_iam_member" "justice_counts_cloud_run_log_writer" {
-  project  = var.project_id
-  role     = "roles/logging.logWriter"
-  member   = "serviceAccount:${data.google_service_account.justice_counts_cloud_run.email}"
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${data.google_service_account.justice_counts_cloud_run.email}"
 }
 
 # Env vars from secrets
@@ -164,11 +164,13 @@ resource "google_cloud_run_service" "case-triage" {
 
     metadata {
       annotations = {
-        "autoscaling.knative.dev/minScale"        = 1
-        "autoscaling.knative.dev/maxScale"        = var.max_case_triage_instances
-        "run.googleapis.com/cloudsql-instances"   = local.joined_connection_string
+        "autoscaling.knative.dev/minScale"      = 1
+        "autoscaling.knative.dev/maxScale"      = var.max_case_triage_instances
+        "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
+        # Note: this access connector is called "redis", but it actually connects to all resources
+        # in the default network (Redis, Cloud NAT, etc.)
         "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
-        "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
+        "run.googleapis.com/vpc-access-egress"    = "all-traffic"
       }
 
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
@@ -359,7 +361,7 @@ module "unified-product-load-balancer" {
   project = var.project_id
 
   ssl                             = true
-  ssl_policy = local.is_production ? google_compute_ssl_policy.modern-ssl-policy.name : google_compute_ssl_policy.restricted-ssl-policy.name
+  ssl_policy                      = local.is_production ? google_compute_ssl_policy.modern-ssl-policy.name : google_compute_ssl_policy.restricted-ssl-policy.name
   managed_ssl_certificate_domains = local.is_production ? ["app-prod.recidiviz.org", "app.recidiviz.org"] : ["app-staging.recidiviz.org"]
   https_redirect                  = true
 
@@ -371,9 +373,9 @@ module "unified-product-load-balancer" {
           group = google_compute_region_network_endpoint_group.serverless_neg.id
         }
       ]
-      enable_cdn              = true
-      security_policy         = null
-       custom_request_headers  = [
+      enable_cdn      = true
+      security_policy = null
+      custom_request_headers = [
         "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
         "TLS_VERSION: {tls_version}",
         "TLS_CIPHER_SUITE: {tls_cipher_suite}",
