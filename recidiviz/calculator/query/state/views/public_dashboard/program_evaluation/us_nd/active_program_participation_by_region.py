@@ -37,7 +37,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = (
 )
 
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
      WITH program_locations as (
        SELECT
         'US_ND' AS state_code,

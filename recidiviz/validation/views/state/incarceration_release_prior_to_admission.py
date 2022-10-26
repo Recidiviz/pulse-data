@@ -35,7 +35,6 @@ INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_DESCRIPTION = (
 )
 
 INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
     WHERE release_date IS NOT NULL

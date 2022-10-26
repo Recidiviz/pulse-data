@@ -32,7 +32,6 @@ SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_DESCRIPTION = """ Comparison 
 
 
 SUPERVISION_POPULATION_BY_TYPE_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH external_validation_dates_and_supervision_types AS (
         -- Only compare states and months for which we have external validation data
         SELECT DISTINCT region_code, date_of_supervision, supervision_type FROM

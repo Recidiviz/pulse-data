@@ -41,7 +41,6 @@ A failure indicates a bug in the commitment from supervision identification
 calculation logic."""
 
 MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_QUERY_TEMPLATE = """
-    /*{description}*/
 SELECT
     state_code as region_code,
     person_id,

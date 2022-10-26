@@ -33,7 +33,6 @@ Comparison of external, prod, and staging data on incarceration releases
 """
 
 INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
-/*{description}*/
     /* TODO(#8153): Update views to only exist in or materialize in staging */
       SELECT
         region_code,

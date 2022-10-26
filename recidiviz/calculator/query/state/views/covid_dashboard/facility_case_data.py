@@ -27,7 +27,6 @@ FACILITY_CASE_DATA_VIEW_DESCRIPTION = (
 )
 
 FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cases AS (
     SELECT
         facility_id, c.*

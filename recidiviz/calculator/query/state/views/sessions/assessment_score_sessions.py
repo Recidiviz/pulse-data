@@ -30,7 +30,6 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         person_id,
         assessment_id,

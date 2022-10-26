@@ -31,7 +31,6 @@ SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_DESCRIPTION = """
 
 # TODO(#4491): Consider using `external_id` instead of `agent_external_id`
 SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT
       state_code, 
       EXTRACT(YEAR FROM request_date) AS year,

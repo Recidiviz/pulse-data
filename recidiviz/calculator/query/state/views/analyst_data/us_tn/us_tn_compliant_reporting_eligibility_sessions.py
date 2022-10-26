@@ -38,7 +38,6 @@ US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     -- TODO(#14425): Various updates to schema and logic of compliant reporting sessions
     WITH cte AS (
     SELECT 

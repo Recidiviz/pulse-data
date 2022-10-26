@@ -29,7 +29,6 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION = (
 )
 
 ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code, year, month, district, 
       IFNULL(admission_count, 0) AS admission_count, 

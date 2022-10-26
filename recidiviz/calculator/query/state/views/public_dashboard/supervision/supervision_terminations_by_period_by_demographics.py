@@ -36,7 +36,6 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Rates o
 This is typically used as a backup for the corresponding supervision_success* view when that view produces unreliable data (e.g. when the sentencing data in a state is inaccurate)."""
 
 SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_terminations AS (
       SELECT 
         state_code,

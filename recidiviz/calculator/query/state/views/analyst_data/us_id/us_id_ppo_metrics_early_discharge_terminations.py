@@ -32,7 +32,6 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_DESCRIPTION = """View captur
     identified from either supervision period termination reasons (probation) or incarceration sentence status (parole)"""
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_QUERY_TEMPLATE = """
-    /*{description}*/
 
     WITH successful_terminations_per_month AS 
     /* Proportion of successful terminations by month and supervision type with an associated early discharge grant, 

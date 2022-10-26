@@ -38,7 +38,6 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION 
     supervision type in a given metric period, the most recent one is chosen."""
 
 SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH revocations_by_period_by_person AS (
       SELECT
         state_code,

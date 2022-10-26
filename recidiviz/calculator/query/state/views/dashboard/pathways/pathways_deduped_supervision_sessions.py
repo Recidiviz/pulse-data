@@ -36,7 +36,6 @@ PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cte AS (
         /*
         Use equivalent logic from compartment_sessions to deduplicate individuals who have more than

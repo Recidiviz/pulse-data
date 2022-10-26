@@ -29,7 +29,6 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Connects sentence I
 judicial districts corresponding to the charges and court cases on the sentence."""
 
 SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision AS (
       SELECT
         ss.state_code,

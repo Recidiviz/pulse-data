@@ -34,7 +34,6 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_DESCRIPTION = """
     Individuals are not deduplicated; they will appear once per associated event."""
 
 PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     data_freshness AS ({last_updated_query})
 

@@ -29,7 +29,6 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION = (
 )
 
 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       sup.state_code,
       sup.person_id,

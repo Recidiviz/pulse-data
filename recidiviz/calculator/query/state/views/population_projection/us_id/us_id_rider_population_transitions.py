@@ -26,7 +26,6 @@ US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Rider
 by outflow compartment, and compartment duration (months)"""
 
 US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH rider_cohorts_per_run_date AS (
       SELECT
         state_code,

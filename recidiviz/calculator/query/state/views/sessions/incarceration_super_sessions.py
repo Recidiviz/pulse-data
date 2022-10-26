@@ -54,7 +54,6 @@ This was done mainly for the specific use-case of calculating LOS within a given
 """
 
 INCARCERATION_SUPER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH incarceration_super_session_lookup AS 
     (
     SELECT

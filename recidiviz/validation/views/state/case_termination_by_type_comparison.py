@@ -39,7 +39,6 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION = (
 # to ensure that the only rows that are NULL are the ones that we expect (i.e. ones that don't
 # feed into the table just yet).
 CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH by_month as (
       SELECT
         state_code as region_code, year, month,

@@ -30,7 +30,6 @@ COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION = """Combined view of supervisi
     session"""
 
 COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH release_metric_cte AS
     /*
     This query combines together 2 dataflow metrics (INCARCERATION_RELEASE and SUPERVISION_TERMINATION). Metrics are 

@@ -29,7 +29,6 @@ OFFENSE_TYPE_MAPPING_VIEW_NAME = "offense_type_mapping"
 OFFENSE_TYPE_MAPPING_VIEW_DESCRIPTION = "Reference view that creates a mapping from numerous offense_type categories to a smaller set of offense categories"
 
 OFFENSE_TYPE_MAPPING_QUERY_TEMPLATE = """
-    /*{description}*/
     # TODO(#10651): Create / hydrate is_violent flag for these states
     WITH us_id_offenses AS (
         SELECT DISTINCT state_code, 

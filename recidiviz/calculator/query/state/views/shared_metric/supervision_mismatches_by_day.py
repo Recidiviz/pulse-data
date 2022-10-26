@@ -30,7 +30,6 @@ Indexed by supervising officer and associated district-office to support aggrega
 """
 
 SUPERVISION_MISMATCHES_BY_DAY_QUERY_TEMPLATE = """
-/*{description}*/
 SELECT
     compliance.state_code,
     compliance.date_of_supervision,

@@ -34,7 +34,6 @@ REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_DESCRIPTION = """
 
 # TODO(#5034): Make deterministic and reduce complexity to be covered by metric output comparison script
 REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_QUERY_TEMPLATE = """
-    /*{description}*/
   SELECT
     state_code, year, month,
     officer_external_id,

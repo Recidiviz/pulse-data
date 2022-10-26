@@ -53,7 +53,6 @@ A new compartment level 2 super session is triggered by a change either in the `
 """
 
 COMPARTMENT_LEVEL_2_SUPER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH super_session_lookup AS 
     (
     SELECT

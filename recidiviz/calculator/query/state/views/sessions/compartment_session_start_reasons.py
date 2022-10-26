@@ -31,7 +31,6 @@ COMPARTMENT_SESSION_START_REASONS_VIEW_DESCRIPTION = """Combined view of supervi
  starts and incarceration admissions, used to determine the start reason of a session"""
 
 COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
-    /*{description}*/
     /*
     This query combines together 2 dataflow metrics (INCARCERATION_ADMISSION, SUPERVISION_START)
     and then does some de-duplicating across person / days. Each of these metrics is de-duplicated individually.

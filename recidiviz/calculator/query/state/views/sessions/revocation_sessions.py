@@ -64,7 +64,6 @@ In this example, the supervision session ID would be session 2 and the revocatio
 """
 
 REVOCATION_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         person_id,
         state_code,

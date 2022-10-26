@@ -25,7 +25,6 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_NAME = "us_id_ppo_metrics_supervision_l
 US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_DESCRIPTION = """Metric capturing number of people on limited or low supervision on the last day of each month for the last 2 years"""
 
 US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = """
-    /*{description}*/
 
     SELECT
       state_code,

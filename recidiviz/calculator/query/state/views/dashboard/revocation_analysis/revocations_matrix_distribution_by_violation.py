@@ -35,8 +35,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = """
-    /*{description}*/
-
     /*
  Relative frequency of each type of violation and condition violated for people who were revoked to prison. This is
  calculated as the total number of times each type of violation and condition violated was reported on all violations

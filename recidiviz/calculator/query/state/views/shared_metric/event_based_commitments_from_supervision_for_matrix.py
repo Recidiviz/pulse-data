@@ -33,7 +33,6 @@ Event based commitment from supervision admissions to support various matrix vie
 """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH metrics AS (
         SELECT
             state_code,

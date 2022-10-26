@@ -32,7 +32,6 @@ from recidiviz.justice_counts.dimensions.base import Dimension
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE = """
-/*{description}*/
 
 -- FETCH DATA
 -- Gets all of the table definitions that provide sufficient data to be used to calculate the given metric. This ensures
@@ -168,7 +167,6 @@ class FetchAndFilterMetricViewBuilder(SimpleBigQueryViewBuilder):
 
 
 SPATIAL_AGGREGATION_VIEW_TEMPLATE = """
-/*{description}*/
 
 SELECT
     {partition_columns_clause}{select_columns_clause}
@@ -851,7 +849,6 @@ def calculate_metric_view_chain(
 
 
 COMPARISON_VIEW_TEMPLATE = """
-/*{description}*/
 
 -- COMPARISON
 -- Compare against the most recent data that is at least one year older

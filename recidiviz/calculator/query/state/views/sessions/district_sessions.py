@@ -38,7 +38,6 @@ end date, then alphabetical order of the district-office.
 
 
 DISTRICT_SESSIONS_QUERY_TEMPLATE = """
-/*{description}*/
 WITH sub_sessions_attributes_unnested AS 
 (
 SELECT DISTINCT

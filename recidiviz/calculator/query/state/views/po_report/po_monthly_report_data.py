@@ -35,7 +35,6 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
 
 # TODO(#5034): Make deterministic and reduce complexity to be covered by metric output comparison script
 PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH report_data_per_officer AS (
       SELECT * FROM `{project_id}.{po_report_dataset}.report_data_by_officer_by_month_materialized`
     ),

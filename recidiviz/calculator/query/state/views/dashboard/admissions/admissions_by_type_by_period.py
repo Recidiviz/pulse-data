@@ -29,7 +29,6 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION = (
 )
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     -- Combine commitments from supervision with new admission incarcerations
     WITH combined_admissions AS (
       SELECT

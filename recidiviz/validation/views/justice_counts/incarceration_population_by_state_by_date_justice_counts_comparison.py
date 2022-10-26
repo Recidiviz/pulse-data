@@ -34,7 +34,6 @@ INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_NAME = 
 INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_DESCRIPTION = """ Comparison of justice counts population with internal incarceration population counts by month """
 
 INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT 
         jc_pop.state_code as region_code, 
         jc_pop.date_reported, 

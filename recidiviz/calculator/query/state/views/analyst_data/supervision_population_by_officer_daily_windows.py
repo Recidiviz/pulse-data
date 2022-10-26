@@ -31,7 +31,6 @@ SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_NAME = (
 SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_DESCRIPTION = "Captures supervision population as distinct number of people on supervision daily and over rolling date windows"
 
 SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH population_date_array AS
     (
         SELECT DISTINCT 

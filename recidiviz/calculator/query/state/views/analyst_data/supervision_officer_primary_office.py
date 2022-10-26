@@ -32,7 +32,6 @@ This table takes snapshots at the start of each month to determine modal office.
 """
 
 SUPERVISION_OFFICER_PRIMARY_OFFICE_QUERY_TEMPLATE = """
-/*{description}*/
 
 -- TODO(#15008): replace this with state-provided primary office in states where available
 

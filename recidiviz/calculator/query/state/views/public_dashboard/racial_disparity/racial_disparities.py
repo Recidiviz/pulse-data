@@ -31,7 +31,6 @@ RACIAL_DISPARITIES_VIEW_DESCRIPTION = (
 )
 
 RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH state_race_ethnicity_groups AS (
       SELECT state_code,
              {state_specific_race_or_ethnicity_groupings},

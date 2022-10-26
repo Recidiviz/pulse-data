@@ -33,7 +33,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION = (
 )
 
 INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH
     me_location_names AS (
         SELECT 

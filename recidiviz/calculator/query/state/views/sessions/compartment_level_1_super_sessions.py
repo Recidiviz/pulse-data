@@ -54,7 +54,6 @@ This view does not aggregate across in-state and out-of-state incarceration or s
 """
 
 COMPARTMENT_LEVEL_1_SUPER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH super_session_lookup AS 
     (
     SELECT

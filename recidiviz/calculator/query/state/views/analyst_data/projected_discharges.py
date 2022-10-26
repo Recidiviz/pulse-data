@@ -47,7 +47,6 @@ PROJECTED_DISCHARGES_VIEW_DESCRIPTION = """List of people actively on supervisio
 
 PROJECTED_DISCHARGES_QUERY_TEMPLATE = (
     """
-    /*{description}*/
     WITH """
     + US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE
     + """

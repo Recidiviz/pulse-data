@@ -31,7 +31,6 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION = (
 )
 
 SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH success_classifications AS (
       SELECT 
         state_code,

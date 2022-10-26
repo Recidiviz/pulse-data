@@ -32,7 +32,6 @@ PO_REPORT_CLIENTS_DESCRIPTION = """
 """
 
 PO_REPORT_CLIENTS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT DISTINCT
       state_code as region_code, review_month, email_address, 'pos_discharges_clients-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized`

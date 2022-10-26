@@ -28,7 +28,6 @@ NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME = (
 NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION = """Links NormalizedStateSupervisionPeriod entities to their associated supervising agents."""
 
 NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
-    /*{description}*/
 WITH normalized_sps_with_matched_officer_ids AS (
     SELECT
         norm_sup.person_id,

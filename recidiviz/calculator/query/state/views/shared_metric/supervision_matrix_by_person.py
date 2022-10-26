@@ -45,7 +45,6 @@ SUPPORTED_SUPERVISION_TYPES = [
 ]
 
 SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_with_agent_info AS (
         SELECT
             * EXCEPT(state_code, supervision_type),

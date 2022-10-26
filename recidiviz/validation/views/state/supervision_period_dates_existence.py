@@ -29,7 +29,6 @@ SUPERVISION_PERIOD_DATES_EXISTENCE_DESCRIPTION = (
 )
 
 SUPERVISION_PERIOD_DATES_EXISTENCE_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_supervision_period`
     WHERE start_date IS NULL

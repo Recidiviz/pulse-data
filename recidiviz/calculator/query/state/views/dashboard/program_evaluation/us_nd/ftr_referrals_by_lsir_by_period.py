@@ -34,7 +34,6 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION = """
 
 # TODO(#5334): Make this view deterministic by sorting by date_of_supervision and date_of_referral
 FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision AS (
       SELECT
         state_code,

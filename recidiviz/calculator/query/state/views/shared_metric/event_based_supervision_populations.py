@@ -31,8 +31,6 @@ EVENT_BASED_SUPERVISION_DESCRIPTION = """
  """
 
 EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
-    /*{description}*/
-    
     SELECT
       state_code,
       person_id,

@@ -28,7 +28,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_DESCRIPTION = """
     """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         "US_TN" AS state_code,
         po_first_name,

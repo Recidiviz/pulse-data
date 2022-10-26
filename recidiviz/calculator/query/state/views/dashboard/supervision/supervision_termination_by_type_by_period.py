@@ -34,7 +34,6 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_DESCRIPTION = """
 """
 
 SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         state_code, metric_period_months,
         COUNTIF(successful_termination) AS successful_termination,

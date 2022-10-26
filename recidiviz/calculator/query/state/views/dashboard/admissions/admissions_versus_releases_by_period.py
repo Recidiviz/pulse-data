@@ -34,7 +34,6 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_DESCRIPTION = (
 )
 
 ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       metric_period_months,

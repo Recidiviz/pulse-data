@@ -34,7 +34,6 @@ INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION = """Maps in
 
 
 INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH ips_to_all_sentences AS (
       -- Incarceration periods with all sentences --
       SELECT

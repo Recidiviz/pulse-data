@@ -38,7 +38,6 @@ Number of supervisees with overdue LSIR by PO by day
 """
 
 OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = """
-    /*{description}*/
 WITH overdue_lsir AS (
     SELECT
         compliance.state_code,

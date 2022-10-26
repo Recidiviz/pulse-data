@@ -38,7 +38,6 @@ METRIC_DATE_COLUMNS_BY_SINGLE_DAY_METRICS_TABLES_TO_MATERIALIZE: Dict[str, str] 
 }
 
 MOST_RECENT_SINGLE_DAY_JOBS_TEMPLATE: str = """
-    /*{description}*/
     WITH all_job_ids AS (
         SELECT DISTINCT
             job_id,

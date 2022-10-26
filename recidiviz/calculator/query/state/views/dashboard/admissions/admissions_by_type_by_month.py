@@ -26,7 +26,6 @@ ADMISSIONS_BY_TYPE_BY_MONTH_VIEW_NAME = "admissions_by_type_by_month"
 ADMISSIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """ Admissions by type by month """
 
 ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     -- Combine commitments from supervision with new admission incarcerations
     WITH combined_admissions AS (
       SELECT

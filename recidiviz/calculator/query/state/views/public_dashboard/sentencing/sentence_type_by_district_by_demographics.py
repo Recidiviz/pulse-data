@@ -34,7 +34,6 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Current incarcer
 
 # TODO(#3720): Improve the sentence type classification and make it less ND specific
 SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH incarceration_population AS (
       SELECT
         state_code,

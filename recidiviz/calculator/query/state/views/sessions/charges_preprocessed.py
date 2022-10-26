@@ -32,7 +32,6 @@ CHARGES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Charge Data"""
 CHARGES_PREPROCESSED_SPECIAL_STATES = ["US_MO"]
 
 CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         charge.*,
         COALESCE(charge.judicial_district_code, 'EXTERNAL_UNKNOWN') AS judicial_district,

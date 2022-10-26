@@ -78,7 +78,6 @@ SUPERVISION_LEVEL_ORDERED_PRIORITY = [
 ]
 
 SUPERVISION_LEVEL_DEDUP_PRIORITY_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT 
         correctional_level,
         correctional_level_priority,

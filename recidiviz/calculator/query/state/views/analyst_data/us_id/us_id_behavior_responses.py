@@ -31,7 +31,6 @@ US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
 US_ID_BEHAVIOR_RESPONSES_VIEW_DESCRIPTION = "View pulling from raw data in US_ID that captures PO actions corresponding to the IDOC Behavior Response Matrix"
 
 US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH combined AS (
         SELECT  
             pei.person_id,

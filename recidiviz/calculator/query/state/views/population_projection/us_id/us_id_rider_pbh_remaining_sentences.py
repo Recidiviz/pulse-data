@@ -27,8 +27,6 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION = """"US_ID Rider & Parole 
     compartment duration."""
 
 US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
-    /*{description}*/
-
     /*
     High level idea: treat the rider population transitions like a survival curve and select a subset of that
     distribution for each open rider session based on the time served before the run date. Shift this distribution

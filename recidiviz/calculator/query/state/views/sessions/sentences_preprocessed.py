@@ -35,7 +35,6 @@ INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_ND"]
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
 SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH
     sentences_cte AS
     (

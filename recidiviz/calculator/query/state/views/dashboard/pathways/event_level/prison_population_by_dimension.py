@@ -50,7 +50,6 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_DESCRIPTION = """Prison population by dimens
 """
 
 PRISON_POPULATION_BY_DIMENSION_VIEW_QUERY_TEMPLATE = """
-       /*{description}*/
     WITH length_of_stay_bins AS (
         SELECT 
         person_id,

@@ -50,7 +50,6 @@ class SamenessDataValidationCheckType(Enum):
 
 
 ERROR_ROWS_VIEW_BUILDER_TEMPLATE: str = """
-    /*{description}*/
     WITH validation as (
         {validation_view}
     )

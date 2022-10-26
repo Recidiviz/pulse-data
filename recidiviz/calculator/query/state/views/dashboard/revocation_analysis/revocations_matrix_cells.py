@@ -30,7 +30,6 @@ REVOCATIONS_MATRIX_CELLS_DESCRIPTION = """
  """
 
 REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         state_code,
         admission_type,

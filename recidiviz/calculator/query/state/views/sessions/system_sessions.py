@@ -62,7 +62,6 @@ This person would have two system sessions - one that encompasses compartment se
 """
 
 SYSTEM_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         state_code,
         person_id,

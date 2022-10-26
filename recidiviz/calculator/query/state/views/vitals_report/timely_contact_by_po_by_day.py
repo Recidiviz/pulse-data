@@ -35,7 +35,6 @@ Number of supervisees who have their contact requirements filled by PO by day
 """
 
 TIMELY_CONTACT_BY_PO_BY_DAY_QUERY_TEMPLATE = """
-    /*{description}*/
 WITH overdue_contacts AS (
     SELECT
         compliance.state_code,

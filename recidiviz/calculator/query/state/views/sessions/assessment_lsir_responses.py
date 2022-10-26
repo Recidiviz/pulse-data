@@ -27,7 +27,6 @@ ASSESSMENT_LSIR_RESPONSES_VIEW_DESCRIPTION = (
 )
 
 ASSESSMENT_LSIR_RESPONSES_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT * FROM `{project_id}.{sessions_dataset}.us_id_raw_lsir_assessments`
     UNION ALL 
     SELECT * FROM `{project_id}.{sessions_dataset}.us_nd_raw_lsir_assessments`

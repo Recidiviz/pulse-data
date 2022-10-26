@@ -37,7 +37,6 @@ STATE_RACE_ETHNICITY_POPULATION_VIEW_DESCRIPTION = (
 )
 
 STATE_RACE_ETHNICITY_POPULATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH total_state_population AS (
         SELECT
           state_code,

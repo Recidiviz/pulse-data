@@ -114,7 +114,6 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_NAME = (
 PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_DESCRIPTION = "Helper view providing all possible combinations of supervision dimension values. Useful for building exhaustive views."
 
 PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     constant_dimensions AS (
         SELECT

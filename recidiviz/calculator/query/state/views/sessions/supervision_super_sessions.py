@@ -74,7 +74,6 @@ A supervision super session aggregates together sessions of the following types:
 """
 
 SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_super_session_lookup AS
     /*
     Identify and create supervision super-session ids from sessions.

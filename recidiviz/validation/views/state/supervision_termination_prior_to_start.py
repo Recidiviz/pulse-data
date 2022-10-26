@@ -32,7 +32,6 @@ SUPERVISION_TERMINATION_PRIOR_TO_START_DESCRIPTION = (
 )
 
 SUPERVISION_TERMINATION_PRIOR_TO_START_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_supervision_period`
     WHERE termination_date IS NOT NULL

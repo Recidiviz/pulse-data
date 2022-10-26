@@ -31,7 +31,6 @@ OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_DESCRIPTION = (
 
 
 OVERDUE_DISCHARGE_ALERT_EXCLUSIONS_QUERY_TEMPLATE = """
-/*{description}*/
 WITH preliminary_eligibility AS (
     SELECT
         state_code,

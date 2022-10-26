@@ -30,7 +30,6 @@ FTR_REFERRALS_BY_PARTICIPATION_STATUS_DESCRIPTION = """
 """
 
 FTR_REFERRALS_BY_PARTICIPATION_STATUS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code, year, month,
       supervision_type, district,

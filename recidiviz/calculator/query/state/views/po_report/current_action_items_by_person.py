@@ -34,7 +34,6 @@ Unlike retrospective report data, this should be as up to date as possible.
 """
 
 CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH current_mismatches AS (
         SELECT 
             state_code,

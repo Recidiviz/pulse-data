@@ -34,7 +34,6 @@ Comparison of internal and external lists of supervision starts.
 """
 
 SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
-/*{description}*/
 WITH external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
   -- generate data to insert into the `supervision_start_person_level` table.

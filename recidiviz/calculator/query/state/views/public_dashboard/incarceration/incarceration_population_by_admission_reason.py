@@ -31,7 +31,6 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_NAME = (
 INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION = """Most recent daily incarceration population count broken down by reason for admission and demographics."""
 
 INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH state_specific_groupings AS (
       SELECT 
         person_id,

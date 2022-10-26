@@ -34,7 +34,6 @@ INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_DESCRIPTION = (
 )
 
 INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     non_zero_day_periods AS (
         -- Zero-day periods get largely filtered / collapsed out of our calc

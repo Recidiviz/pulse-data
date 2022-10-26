@@ -32,7 +32,6 @@ revocation, the most severe violation type.
 """
 
 REVOCATIONS_MATRIX_EVENTS_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH revocations AS (
         SELECT
             state_code,

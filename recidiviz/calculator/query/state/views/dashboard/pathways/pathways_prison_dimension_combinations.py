@@ -54,7 +54,6 @@ prison_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
 }
 
 PATHWAYS_PRISON_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH 
     constant_dimensions AS (
         SELECT

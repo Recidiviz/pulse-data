@@ -38,7 +38,6 @@ indicate whether the revocation appears in dataflow, sessions, or both.
 """
 
 REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH dataflow_revocations AS
     (
     SELECT DISTINCT

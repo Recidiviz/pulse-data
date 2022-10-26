@@ -34,7 +34,6 @@ Comparison of external, prod, and staging data on supervision starts
 """
 
 SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
-/*{description}*/
         /* TODO(#8153): Update views to only exist in or materialize in staging */
       SELECT
         /* DISTINCT is used here because we have have duplicate events for that person-day, and if the external

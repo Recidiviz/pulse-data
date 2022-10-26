@@ -31,7 +31,6 @@ US_ID_RAW_LSIR_ASSESSMENTS_VIEW_NAME = "us_id_raw_lsir_assessments"
 US_ID_RAW_LSIR_ASSESSMENTS_VIEW_DESCRIPTION = """Individual questions and components of the LSI-R assessment in ID, derived from raw tables"""
 
 US_ID_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH raw_assessments_clean AS (
         SELECT 
             'US_ID' as state_code,

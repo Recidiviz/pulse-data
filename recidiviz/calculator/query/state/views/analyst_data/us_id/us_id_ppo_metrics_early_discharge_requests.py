@@ -31,7 +31,6 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_NAME = (
 US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION = """Metric capturing number of unique people receiving a valid early discharge request each month for the past 3 years"""
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       /* Convert month label from first of month to last of month. If month is not yet complete, use current date 

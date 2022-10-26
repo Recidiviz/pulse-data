@@ -34,7 +34,6 @@ Supervision case compliance to state standards by person by month
 """
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH monthly_assessment_and_face_to_face_counts AS (
         SELECT
           person_id,

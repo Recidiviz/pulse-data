@@ -34,7 +34,6 @@ REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION = """
  """
 
 REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH revocations AS (
         SELECT
             state_code,

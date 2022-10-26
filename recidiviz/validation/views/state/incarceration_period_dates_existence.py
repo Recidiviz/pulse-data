@@ -29,7 +29,6 @@ INCARCERATION_PERIOD_DATES_EXISTENCE_DESCRIPTION = (
 )
 
 INCARCERATION_PERIOD_DATES_EXISTENCE_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_incarceration_period`
     WHERE admission_date IS NULL

@@ -36,7 +36,6 @@ US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     
     # associate person_id with AccountSAK
     WITH account_info AS (

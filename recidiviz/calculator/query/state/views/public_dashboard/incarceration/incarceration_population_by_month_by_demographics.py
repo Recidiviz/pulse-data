@@ -35,8 +35,6 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_NAME = (
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """First of the month incarceration population counts broken down by demographics."""
 
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
-    
     WITH state_specific_incarceration_groupings AS (
       SELECT
         person_id,

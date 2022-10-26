@@ -35,7 +35,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Rates of suc
 
 
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH supervision_completions AS (
       SELECT 
         state_code,

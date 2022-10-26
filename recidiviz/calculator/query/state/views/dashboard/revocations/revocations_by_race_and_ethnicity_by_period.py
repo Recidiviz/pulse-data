@@ -31,7 +31,6 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION = (
 )
 
 REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       state_code,
       race_or_ethnicity,

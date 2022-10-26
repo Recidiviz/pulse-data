@@ -44,7 +44,6 @@ PRISON_POPULATION_PERSON_LEVEL_VIEW_NAME = "prison_population_person_level"
 PRISON_POPULATION_PERSON_LEVEL_DESCRIPTION = """Prison person level population"""
 
 PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH all_rows AS (
         SELECT DISTINCT
             pop.state_code,

@@ -33,7 +33,6 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#7285): Migrate to use standard federaded export code path and delete this file
 #   and associated views.
 TABLE_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         *
     FROM EXTERNAL_QUERY("{project_id}.US.justice_counts_cloudsql", "{postgres_query}")

@@ -51,7 +51,6 @@ This view is unique on `person_id` and `compartment_level_0_super_session_id` an
 """
 
 COMPARTMENT_LEVEL_0_SUPER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH super_session_lookup AS 
     (
     SELECT

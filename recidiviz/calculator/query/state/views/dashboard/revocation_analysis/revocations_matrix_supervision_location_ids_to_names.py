@@ -27,7 +27,6 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME = (
 REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION = """ Mapping of supervision locations to view names only for locations present in revocations matrix data."""
 
 REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
       names.state_code,
       names.level_3_supervision_location_external_id,

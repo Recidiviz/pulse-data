@@ -31,7 +31,6 @@ SENDGRID_PO_REPORT_EMAIL_EVENTS_DESCRIPTION = """
  """
 
 SENDGRID_PO_REPORT_EMAIL_EVENTS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH monthly_report_message_ids AS (
         SELECT message_id
         FROM `{project_id}.{sendgrid_email_dataset}.raw_sendgrid_email_data`

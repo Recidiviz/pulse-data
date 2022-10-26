@@ -53,7 +53,6 @@ SESSIONS_SOURCE_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
 
 # query template
 SESSIONS_QUERY_TEMPLATE: str = """
-    /*{description}*/
     SELECT *
     FROM
         `{project_id}.{origin_dataset_id}.{origin_table_id}`

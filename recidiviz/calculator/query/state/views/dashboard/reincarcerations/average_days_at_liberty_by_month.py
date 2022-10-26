@@ -28,7 +28,6 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION = (
 )
 
 AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/  
     WITH returns AS (
       SELECT
         state_code,

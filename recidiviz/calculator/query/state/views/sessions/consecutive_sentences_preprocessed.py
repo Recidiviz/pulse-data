@@ -28,7 +28,6 @@ CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     --TODO(#14719): Develop consistent way of storing consecutive sentence IDs in state sentencing tables
     SELECT
         *

@@ -31,7 +31,6 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_DESCRIPTION = """View capturing
     for successful discharges in the past two years."""
 
 US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_QUERY_TEMPLATE = """
-    /*{description}*/
 
     WITH sentence_remaining AS (
       SELECT 

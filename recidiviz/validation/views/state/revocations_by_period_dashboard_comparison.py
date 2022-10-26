@@ -31,7 +31,6 @@ REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """
 Compares counts of revocations by source violation type between the dashboard and the public dashboard. """
 
 REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH dashboard_revocations_all_districts AS (
       SELECT * FROM `{project_id}.{dashboard_dataset}.revocations_by_period`
       WHERE district = 'ALL'

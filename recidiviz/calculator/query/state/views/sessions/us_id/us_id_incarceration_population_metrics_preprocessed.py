@@ -34,7 +34,6 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
-    /*{description}*/
     -- TODO(#15610): Remove preprocessing file when out of state facilities are flagged in sessions
     WITH incarceration_population_cte AS (
         SELECT 

@@ -31,7 +31,6 @@ associated with a given officer. Officer sessions may be overlapping.
 """
 
 SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sub_sessions_attributes_unnested AS (
     SELECT DISTINCT
         state_code, person_id, 

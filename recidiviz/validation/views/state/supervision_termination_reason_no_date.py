@@ -31,7 +31,6 @@ SUPERVISION_TERMINATION_REASON_NO_DATE_DESCRIPTION = (
 )
 
 SUPERVISION_TERMINATION_REASON_NO_DATE_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT *, state_code as region_code
     FROM `{project_id}.{state_dataset}.state_supervision_period`
     WHERE termination_date IS NULL

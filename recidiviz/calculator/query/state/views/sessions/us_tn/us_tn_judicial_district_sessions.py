@@ -30,7 +30,6 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_NAME = "us_tn_judicial_district_sessions"
 US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of judicial district off of pre-processed raw TN sentencing data"""
 
 US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/ 
     --TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics   
     WITH cte AS
     (

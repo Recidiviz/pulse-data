@@ -38,7 +38,6 @@ sessions may indicate gaps in supervision or periods supervised by officers with
 """
 
 SUPERVISION_TOOL_ACCESS_SESSIONS_QUERY_TEMPLATE = """
-/*{description}*/
 WITH 
 # sessionized view of each tool access type. currently access is granted but never revoked.
 # we use magic dates rather than NULLs to indicate open starts and ends to make intermediate comparisons easier,

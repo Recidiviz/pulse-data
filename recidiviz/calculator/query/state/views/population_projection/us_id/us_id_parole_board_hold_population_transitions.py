@@ -28,7 +28,6 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical
 by outflow compartment, and compartment duration (months)"""
 
 US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cohorts_per_run_date AS (
       SELECT
         state_code,

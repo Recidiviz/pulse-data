@@ -32,7 +32,6 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION = """
 Revocation matrix comparison of summed revocation counts between the grid cells and the month chart """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH cell_counts AS (
       SELECT 
         state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,

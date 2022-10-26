@@ -49,7 +49,6 @@ SUPERVISION_POPULATION_VIEW_DESCRIPTION = """Supervision population count.
 """
 
 SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sessions_by_month AS (
         SELECT 
             sessions.state_code,

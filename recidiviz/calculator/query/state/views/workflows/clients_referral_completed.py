@@ -32,7 +32,6 @@ CLIENTS_REFERRAL_COMPLETED_DESCRIPTION = """
 
 
 CLIENTS_REFERRAL_COMPLETED_QUERY_TEMPLATE = """
-    /*{description}*/
     SELECT
         person_id,
         state_code,

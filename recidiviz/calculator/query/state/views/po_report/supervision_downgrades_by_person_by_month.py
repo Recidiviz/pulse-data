@@ -30,7 +30,6 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_DESCRIPTION = (
 )
 
 SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH latest_downgrade_date AS (
         SELECT
             state_code, year, month, person_id,

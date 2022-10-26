@@ -24,8 +24,7 @@ FACILITY_METADATA_VIEW_NAME = "facility_metadata"
 
 FACILITY_METADATA_VIEW_DESCRIPTION = """Facility names, IDs, and additional metadata for all facilities for which we have case data."""
 
-FACILITY_METADATA_VIEW_QUERY_TEMPLATE = """
-    /*{description}*/
+FACILITY_METADATA_VIEW_QUERY_TEMPLATE = """Í
     WITH
     -- This ensures we are using the primary name from the alias table
     primary_alias AS (

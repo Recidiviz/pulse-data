@@ -25,7 +25,6 @@ US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_NAME = "us_id_non_bias_full_transi
 US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Board Hold total population by outflow compartment, and compartment duration (months)"""
 
 US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH remaining_sentences AS (
         -- Count the projected remaining sentences as part of the transition distribution so that the dist isn't bias towards short sentences
         SELECT

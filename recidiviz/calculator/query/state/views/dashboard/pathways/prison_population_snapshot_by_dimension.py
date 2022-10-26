@@ -50,7 +50,6 @@ PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
 )
 
 PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH get_last_updated AS ({get_pathways_incarceration_last_updated_date}),
     length_of_stay_bins AS (
         SELECT 

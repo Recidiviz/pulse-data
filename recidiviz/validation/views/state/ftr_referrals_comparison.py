@@ -31,7 +31,6 @@ FTR_REFERRALS_COMPARISON_DESCRIPTION = (
 )
 
 FTR_REFERRALS_COMPARISON_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH by_age as (
       SELECT state_code as region_code, metric_period_months, SUM(count) as referral_count
       FROM `{project_id}.{view_dataset}.ftr_referrals_by_age_by_period`

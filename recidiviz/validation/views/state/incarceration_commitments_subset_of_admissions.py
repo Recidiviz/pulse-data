@@ -31,7 +31,6 @@ INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_DESCRIPTION = """A view revealing
 also included in the admission metrics."""
 
 INCARCERATION_COMMITMENTS_SUBSET_OF_ADMISSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     (SELECT DISTINCT state_code as region_code, person_id, admission_date, admission_reason, included_in_state_population
     FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
     EXCEPT DISTINCT

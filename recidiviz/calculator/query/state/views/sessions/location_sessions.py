@@ -26,7 +26,6 @@ LOCATION_SESSIONS_VIEW_NAME = "location_sessions"
 LOCATION_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay associated with a given location. Location sessions may be overlapping."""
 
 LOCATION_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/
     WITH sub_sessions_attributes_unnested AS 
     (
     SELECT DISTINCT
