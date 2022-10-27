@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# 
+# Script to run `terraform plan`, setting necessary variables to their correct values.
+# 
+# Takes two positional arguments: project id (required) and terraform state file prefix (optional).
+# The state file prefix is used to run against a state file in a subdirectory of the bucket, and
+# will typically be called dev-[yourname].
+# 
+# Example usage:
+#   ./recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging
+#   ./recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging dev-danawillow
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
@@ -10,11 +20,12 @@ source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 # -z checks that the length of the string is 0
 # "${1:+x} is parameter expansion, if param is null or unset it returns nothing
 if [[ -z "${1:+x}" ]]; then
-    echo_error "usage: $0 <project_id>"
+    echo_error "usage: $0 <project_id> [tf_state_prefix]"
     run_cmd exit 1
 fi
 
 PROJECT_ID=$1
+TF_STATE_PREFIX=$2
 
 echo "##### Running for project $PROJECT_ID ########"
 
@@ -46,6 +57,7 @@ function terraform_with_debug {
 echo "##### Initializing Terraform ########"
 terraform_with_debug -chdir=$TERRAFORM_ROOT_PATH init \
   -backend-config "bucket=${STATE_BUCKET}" \
+  -backend-config "prefix=${TF_STATE_PREFIX}" \
   -reconfigure || exit_on_fail
 
 echo "##### Planning Terraform ########"
