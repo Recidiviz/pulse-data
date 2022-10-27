@@ -335,7 +335,6 @@ class TestValidationResultStorage(unittest.TestCase):
             run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             job=validation_job,
             exception_log=None,
-            runtime_seconds=1,
         )
 
         # Assert
@@ -355,7 +354,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=None,
                 exception_log=None,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-                runtime_seconds=1,
+                runtime_seconds=None,
             ),
             result,
         )
@@ -376,7 +375,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "exception_log": None,
                 "trace_id": result.trace_id,
                 "validation_category": "EXTERNAL_AGGREGATE",
-                "runtime_seconds": 1,
+                "runtime_seconds": None,
             },
             result.to_serializable(),
         )
