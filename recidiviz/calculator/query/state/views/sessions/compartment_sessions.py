@@ -197,7 +197,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         USING(compartment_level_1, compartment_level_2)
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` sl_dedup
         ON cte.correctional_level = sl_dedup.correctional_level
-        AND cte.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
     WHERE TRUE
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id 
         ORDER BY COALESCE(cl1_dedup.priority, 999), 
