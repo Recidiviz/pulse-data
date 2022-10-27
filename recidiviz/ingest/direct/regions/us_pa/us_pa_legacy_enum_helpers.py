@@ -41,7 +41,6 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
 ] = {
     StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
         # SCI CODES
-        "AOTH",  # Other - Use Sparingly
         "X",  # Unknown
     ],
     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
@@ -56,7 +55,6 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
         #  see these statuses on admissions that are neither parole board holds nor
         #  revocations.
         "APD",  # Parole Detainee
-        "APV",  # Parole Violator
     ],
     StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
         # SCI CODES
@@ -65,10 +63,22 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
         "ACT",  # County Transfer (transferred from a county jail, newly in DOC custody)
         "ADET",  # Detentioner
         "AFED",  # Federal Commitment
+        "AOTH",  # Other - Use Sparingly
     ],
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
         # SCI CODES
         "AE",  # Escape
+    ],
+    StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION: [
+        # SCI CODES
+        # TODO(#8346): There are a small amount of SCI admissions in US_PA that have
+        #  revocation statuses but are not classified as revocations due to the previous
+        #  SCI status for the person also being a revocations status. This represents
+        #  less than 1% of all non-transfer admissions, and we previously classified them as
+        #  INTERNAL_UNKNOWN because it's not actually clear what's happening when we
+        #  see these statuses on admissions that are neither parole board holds nor
+        #  revocations. With span refactoring, we are moving this to sanction admission, but may need investigation in the future.
+        "APV",  # Parole Violator
     ],
     StateIncarcerationPeriodAdmissionReason.TRANSFER: [
         # CCIS CODES
