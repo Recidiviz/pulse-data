@@ -601,7 +601,7 @@ def get_api_blueprint(
         }
 
         # fetch non-context datapoints
-        datapoints = DatapointInterface.get_datapoints_with_report_ids(
+        datapoints = DatapointInterface.get_datapoints_by_report_ids(
             session=current_session,
             report_ids=list(report_id_to_status.keys()),
             include_contexts=False,

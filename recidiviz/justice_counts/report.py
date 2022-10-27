@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Query, Session, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
+from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -38,6 +39,8 @@ from .utils.datetime_utils import convert_date_range_to_year_month
 
 class ReportInterface:
     """Contains methods for setting and getting Report info."""
+
+    ### Fetch from the DB ###
 
     @staticmethod
     def _get_report_query(session: Session, include_datapoints: bool = True) -> Query:
@@ -82,6 +85,8 @@ class ReportInterface:
             .all()
         )
 
+    ### Update DB ###
+
     @staticmethod
     def delete_reports_by_id(session: Session, report_ids: List[int]) -> None:
         session.query(schema.Report).filter(schema.Report.id.in_(report_ids)).delete()
@@ -105,15 +110,7 @@ class ReportInterface:
         report.last_modified_at = datetime.datetime.now(tz=datetime.timezone.utc)
         return report
 
-    @staticmethod
-    def _get_report_instance(
-        report_type: str,
-        date_range_start: datetime.date,
-    ) -> str:
-        if report_type == ReportingFrequency.MONTHLY.value:
-            month = date_range_start.strftime("%m")
-            return f"{month} {str(date_range_start.year)} Metrics"
-        return f"{str(date_range_start.year)} Annual Metrics"
+    ### Insert into DB ###
 
     @staticmethod
     def create_report(
@@ -177,38 +174,7 @@ class ReportInterface:
             recurring_report=recurring_report,
         )
 
-    @staticmethod
-    def get_date_range(
-        year: int, month: int, frequency: str
-    ) -> Tuple[datetime.date, datetime.date]:
-        """Given a year, month, and reporting frequency, determine the
-        start and end date for the report.
-        """
-        date_range_start = datetime.date(year, month, 1)
-        date_range_end = (
-            datetime.date(
-                year if month != 12 else (year + 1),
-                ((month + 1) if month != 12 else 1),
-                1,
-            )
-            if frequency == ReportingFrequency.MONTHLY.value
-            else datetime.date(year + 1, month, 1)
-        )
-        return (date_range_start, date_range_end)
-
-    @staticmethod
-    def get_editor_ids_to_names(
-        session: Session, reports: List[schema.Report]
-    ) -> Dict[str, str]:
-        editor_ids = set(
-            itertools.chain(*[report.modified_by or [] for report in reports])
-        )
-        return {
-            user.id: user.name
-            for user in UserAccountInterface.get_users_by_id(
-                session=session, user_account_ids=editor_ids
-            )
-        }
+    ### Export to FE ###
 
     @staticmethod
     def to_json_response(
@@ -245,6 +211,78 @@ class ReportInterface:
             "status": report.status.value,
             "is_recurring": report.is_recurring,
         }
+
+    ### Get Path ###
+
+    @staticmethod
+    def get_metrics_by_report(
+        session: Session, report: schema.Report
+    ) -> List[MetricInterface]:
+        """Given a report, determine all MetricDefinitions that must be populated
+        on this report, and convert them to MetricInterfaces. If the agency has already
+        started filling out the report, populate the MetricInterfaces with those values.
+        This method will be used to send a list of Metrics to the frontend to render
+        the report form in the Control Panel.
+
+        This involves the following logic:
+        1. Filter the MetricDefinitions in our registry to just those that are applicable
+           to this report, i.e. those that belong to the same criminal justice system pillar
+           as the reporting agency, and those that match the reporting frequency of
+           the given report.
+        2. Look up data that already exists on the report that is stored in Datapoint model.
+        3. Perform matching between the MetricDefinitions and the existing data.
+        4. Return a list of MetricInterfaces. If the agency has not filled out data for a
+           metric, its values will be None; otherwise they will be populated from the data
+           already stored in our database.
+        """
+        # We determine which metrics to include on this report based on:
+        #   - Agency system (e.g. only law enforcement)
+        #   - Report frequency (e.g. only annual metrics)
+        metric_definitions = MetricInterface.get_metric_definitions(
+            report_type=report.type,
+            systems={schema.System[system] for system in report.source.systems or []},
+        )
+
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=session, agency_id=report.source.id
+        )
+
+        # If data has already been reported for some metrics on this report,
+        # then `report.datapoints` will be non-empty. We also send build the
+        # DatapointsForMetric class with agency datapoints to see
+        # what metrics are enabled and disabled.
+        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
+            datapoints=report.datapoints + agency_datapoints
+        )
+
+        report_metrics = []
+        # For each metric that should be filled out on this report,
+        # construct a MetricInterface object
+
+        for metric_definition in metric_definitions:
+            reported_datapoints = metric_key_to_data_points.get(
+                metric_definition.key,
+                DatapointsForMetric(),
+            )
+            report_metrics.append(
+                MetricInterface(
+                    key=metric_definition.key,
+                    value=reported_datapoints.aggregated_value,
+                    is_metric_enabled=reported_datapoints.is_metric_enabled,
+                    contexts=reported_datapoints.get_reported_contexts(
+                        # convert context datapoints to MetricContextData
+                        metric_definition=metric_definition
+                    ),
+                    aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
+                        # convert dimension datapoints to MetricAggregatedDimensionData
+                        metric_definition=metric_definition
+                    ),
+                )
+            )
+
+        return report_metrics
+
+    ### Save Path ###
 
     @staticmethod
     def add_or_update_metric(
@@ -357,6 +395,8 @@ class ReportInterface:
             )
         return [dp for dp in datapoint_json_list if dp is not None]
 
+    ### Helpers ###
+
     @staticmethod
     def get_existing_datapoints_dict(
         reports: List[schema.Report],
@@ -383,72 +423,33 @@ class ReportInterface:
         }
 
     @staticmethod
-    def get_metrics_by_report(
-        session: Session, report: schema.Report
-    ) -> List[MetricInterface]:
-        """Given a report, determine all MetricDefinitions that must be populated
-        on this report, and convert them to MetricInterfaces. If the agency has already
-        started filling out the report, populate the MetricInterfaces with those values.
-        This method will be used to send a list of Metrics to the frontend to render
-        the report form in the Control Panel.
-
-        This involves the following logic:
-        1. Filter the MetricDefinitions in our registry to just those that are applicable
-           to this report, i.e. those that belong to the same criminal justice system pillar
-           as the reporting agency, and those that match the reporting frequency of
-           the given report.
-        2. Look up data that already exists on the report that is stored in Datapoint model.
-        3. Perform matching between the MetricDefinitions and the existing data.
-        4. Return a list of MetricInterfaces. If the agency has not filled out data for a
-           metric, its values will be None; otherwise they will be populated from the data
-           already stored in our database.
+    def get_date_range(
+        year: int, month: int, frequency: str
+    ) -> Tuple[datetime.date, datetime.date]:
+        """Given a year, month, and reporting frequency, determine the
+        start and end date for the report.
         """
-        # We determine which metrics to include on this report based on:
-        #   - Agency system (e.g. only law enforcement)
-        #   - Report frequency (e.g. only annual metrics)
-        metric_definitions = MetricInterface.get_metric_definitions(
-            report_type=report.type,
-            systems={schema.System[system] for system in report.source.systems or []},
-        )
-
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=report.source.id
-        )
-
-        # If data has already been reported for some metrics on this report,
-        # then `report.datapoints` will be non-empty. We also send build the
-        # DatapointsForMetricDefinition class with agency datapoints to see
-        # what metrics are enabled and disabled.
-        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
-            datapoints=report.datapoints + agency_datapoints
-        )
-
-        report_metrics = []
-        # For each metric that should be filled out on this report,
-        # construct a MetricInterface object
-
-        for metric_definition in metric_definitions:
-            reported_datapoints = metric_key_to_data_points.get(
-                metric_definition.key,
-                DatapointInterface.DatapointsForMetricDefinition(),
+        date_range_start = datetime.date(year, month, 1)
+        date_range_end = (
+            datetime.date(
+                year if month != 12 else (year + 1),
+                ((month + 1) if month != 12 else 1),
+                1,
             )
-            report_metrics.append(
-                MetricInterface(
-                    key=metric_definition.key,
-                    value=reported_datapoints.aggregated_value,
-                    is_metric_enabled=reported_datapoints.is_metric_enabled,
-                    contexts=reported_datapoints.get_reported_contexts(
-                        # convert context datapoints to MetricContextData
-                        metric_definition=metric_definition
-                    ),
-                    aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
-                        # convert dimension datapoints to MetricAggregatedDimensionData
-                        metric_definition=metric_definition
-                    ),
-                )
-            )
+            if frequency == ReportingFrequency.MONTHLY.value
+            else datetime.date(year + 1, month, 1)
+        )
+        return (date_range_start, date_range_end)
 
-        return report_metrics
+    @staticmethod
+    def _get_report_instance(
+        report_type: str,
+        date_range_start: datetime.date,
+    ) -> str:
+        if report_type == ReportingFrequency.MONTHLY.value:
+            month = date_range_start.strftime("%m")
+            return f"{month} {str(date_range_start.year)} Metrics"
+        return f"{str(date_range_start.year)} Annual Metrics"
 
     @staticmethod
     def get_reporting_frequency(report: schema.Report) -> ReportingFrequency:
@@ -468,6 +469,22 @@ class ReportInterface:
                 "from the report date range."
             )
         return inferred_frequency
+
+    @staticmethod
+    def get_editor_ids_to_names(
+        session: Session, reports: List[schema.Report]
+    ) -> Dict[str, str]:
+        editor_ids = set(
+            itertools.chain(*[report.modified_by or [] for report in reports])
+        )
+        return {
+            user.id: user.name
+            for user in UserAccountInterface.get_users_by_id(
+                session=session, user_account_ids=editor_ids
+            )
+        }
+
+    ### Misc ###
 
     @staticmethod
     def create_reports_for_new_agency(

@@ -337,7 +337,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 monthly_report.id,
             ]
 
-            datapoints = DatapointInterface.get_datapoints_with_report_ids(
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
                 session=session,
                 report_ids=report_ids,
                 include_contexts=False,
@@ -386,7 +386,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 monthly_report.id,
             ]
 
-            datapoints = DatapointInterface.get_datapoints_with_report_ids(
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
                 session=session,
                 report_ids=report_ids,
                 include_contexts=False,
