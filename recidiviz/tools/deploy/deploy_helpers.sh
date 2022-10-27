@@ -406,12 +406,13 @@ function deploy_terraform_infrastructure {
     PROJECT_ID=$1
     GIT_HASH=$2
     DOCKER_IMAGE_TAG=$3
+    TF_STATE_PREFIX=""
 
     echo "Starting terraform deployment..."
 
     while true
     do
-        reconfigure_terraform_backend "$PROJECT_ID"
+        reconfigure_terraform_backend "$PROJECT_ID" "$TF_STATE_PREFIX"
         run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
