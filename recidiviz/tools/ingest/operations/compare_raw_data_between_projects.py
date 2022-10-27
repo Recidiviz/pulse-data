@@ -31,7 +31,7 @@ import argparse
 import datetime
 import logging
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from google.cloud import bigquery, exceptions
 
@@ -47,10 +47,10 @@ from recidiviz.utils.string import StrictStringFormatter
 
 COMPARISON_TEMPLATE = """
 WITH compared AS (
-  SELECT {columns}, update_datetime
+  SELECT {columns}, {datetime_column} AS update_datetime
   FROM `{source_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
   EXCEPT DISTINCT
-  SELECT {columns}, update_datetime
+  SELECT {columns}, {datetime_column} AS update_datetime
   FROM `{comparison_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
 )
 SELECT update_datetime, COUNT(*) as num_missing_rows
@@ -64,6 +64,7 @@ def compare_raw_data_between_projects(
     region_code: str,
     source_project_id: str = environment.GCP_PROJECT_STAGING,
     comparison_project_id: str = environment.GCP_PROJECT_PRODUCTION,
+    truncate_update_datetime_part: Optional[str] = None,
 ) -> List[str]:
     """Compares the raw data between staging and production for a given region."""
     logging.info(
@@ -98,6 +99,11 @@ def compare_raw_data_between_projects(
                 raw_data_dataset_id=dataset_id,
                 raw_data_table_id=file_tag,
                 columns=columns,
+                datetime_column=(
+                    f"DATETIME_TRUNC(update_datetime, {truncate_update_datetime_part})"
+                    if truncate_update_datetime_part is not None
+                    else "update_datetime"
+                ),
             ),
             use_query_cache=True,
         )
@@ -179,6 +185,13 @@ def main() -> None:
         help="If set, also performs the converse comparison, ensuring that all data in "
         "production also exists in staging.",
     )
+    parser.add_argument(
+        "--truncate-update-datetime",
+        type=str,
+        choices=["SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH"],
+        help="The granularity to truncate the update datetime to before comparing. By "
+        "default the full datetime is used.",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -187,6 +200,7 @@ def main() -> None:
         region_code=args.region,
         source_project_id=environment.GCP_PROJECT_STAGING,
         comparison_project_id=environment.GCP_PROJECT_PRODUCTION,
+        truncate_update_datetime_part=args.truncate_update_datetime,
     )
 
     staging_failed_tables = []
@@ -195,6 +209,7 @@ def main() -> None:
             region_code=args.region,
             source_project_id=environment.GCP_PROJECT_PRODUCTION,
             comparison_project_id=environment.GCP_PROJECT_STAGING,
+            truncate_update_datetime_part=args.truncate_update_datetime,
         )
 
     logging.info("*****" * 20)
