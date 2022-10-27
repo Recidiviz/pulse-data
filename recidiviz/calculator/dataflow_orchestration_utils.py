@@ -22,6 +22,18 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
+def get_normalization_pipeline_enabled_states() -> Set[StateCode]:
+    pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
+
+    normalization_pipelines = pipeline_templates_yaml.pop_dicts(
+        "normalization_pipelines"
+    )
+    return {
+        StateCode(pipeline.peek("state_code", str))
+        for pipeline in normalization_pipelines
+    }
+
+
 def get_metric_pipeline_enabled_states() -> Set[StateCode]:
     """Returns all states that have scheduled metric pipelines that run."""
     pipeline_states: Set[StateCode] = set()

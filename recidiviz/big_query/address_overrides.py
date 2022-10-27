@@ -106,6 +106,12 @@ class BigQueryAddressOverrides:
             )
         return self._address_overrides.get(address, None)
 
+    def get_dataset(self, dataset: str) -> str:
+        """If the dataset has been fully overridden, returns the new dataset id.
+        Otherwise, returns the original.
+        """
+        return self._full_dataset_overrides.get(dataset, dataset)
+
     def to_builder(self, sandbox_prefix: str) -> "BigQueryAddressOverrides.Builder":
         return self.Builder(
             sandbox_prefix=sandbox_prefix,

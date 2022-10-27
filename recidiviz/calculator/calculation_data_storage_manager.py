@@ -20,7 +20,7 @@ import logging
 import uuid
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Dict, List, Tuple
+from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import flask
 from google.api_core.future.polling import PollingFuture
@@ -28,13 +28,14 @@ from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
 from more_itertools import one, peekable
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator import dataflow_config
 from recidiviz.calculator.dataflow_orchestration_utils import (
-    get_metric_pipeline_enabled_states,
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.calculator.normalized_state_update_lock_manager import (
     NormalizedStateUpdateLockManager,
@@ -57,6 +58,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     make_most_recent_metric_view_builders,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.string import StrictStringFormatter
@@ -92,9 +94,9 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
 
 @calculation_data_storage_manager_blueprint.route("/update_normalized_state_dataset")
 @requires_gae_auth
-def update_normalized_state_dataset() -> Tuple[str, HTTPStatus]:
+def update_normalized_state_dataset_endpoint() -> Tuple[str, HTTPStatus]:
     """Calls the _update_normalized_state_dataset function."""
-    _update_normalized_state_dataset()
+    update_normalized_state_dataset()
 
     return "", HTTPStatus.OK
 
@@ -396,11 +398,19 @@ def move_old_dataflow_metrics_to_cold_storage(dry_run: bool = False) -> None:
 
 
 def _load_normalized_state_dataset_into_empty_temp_dataset(
-    bq_client: BigQueryClient, dataset_id: str
+    bq_client: BigQueryClient,
+    state_codes: FrozenSet[StateCode],
+    temp_dataset_id: str,
+    overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
     """Builds a full normalized_state dataset in the specified empty dataset location.
     If the temp dataset does not exist, creates the dataset first with a table
     expiration."""
+    dataset_id = (
+        overrides.get_dataset(temp_dataset_id)
+        if overrides is not None
+        else temp_dataset_id
+    )
     dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
 
     # Create temp dataset that unified tables will be staged in.
@@ -409,14 +419,20 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
-    state_specific_normalized_dataset_ids: List[str] = [
-        normalized_state_dataset_for_state_code(
-            state_code,
+    state_specific_normalized_dataset_ids = []
+    for state_code in state_codes:
+        normalized_dataset_id = normalized_state_dataset_for_state_code(state_code)
+        state_specific_normalized_dataset_ids.append(
+            overrides.get_dataset(normalized_dataset_id)
+            if overrides is not None
+            else normalized_dataset_id
         )
-        for state_code in get_metric_pipeline_enabled_states()
-    ]
 
-    non_normalized_dataset_id = dataset_config.STATE_BASE_DATASET
+    non_normalized_dataset_id = (
+        overrides.get_dataset(dataset_config.STATE_BASE_DATASET)
+        if overrides is not None
+        else dataset_config.STATE_BASE_DATASET
+    )
 
     jobs: List[PollingFuture] = []
 
@@ -486,13 +502,20 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
         job.result()  # Wait for the job to complete.
 
 
-def _update_normalized_state_dataset() -> None:
+def update_normalized_state_dataset(
+    state_codes_filter: Optional[FrozenSet[StateCode]] = None,
+    address_overrides: Optional[BigQueryAddressOverrides] = None,
+) -> None:
     """Updates the normalized_state dataset with fresh data.
 
     First, builds a temporary dataset called `temp_normalized_state_TIMESTAMP` with
     data from each state's `us_xx_normalized_state` dataset (for each entity that is
     normalized) and the `state` dataset (for each entity that is not normalized). Then,
     replaces the `normalized_state` dataset with the contents of the temporary dataset.
+
+    If `state_codes_filter` is provided, then only copies data from
+    `us_xx_normalized_state` for that set of states, instead of all states with
+    normalization pipelines.
     """
     lock_id = str(uuid.uuid4())
     logging.info("Request lock id: %s", lock_id)
@@ -514,15 +537,30 @@ def _update_normalized_state_dataset() -> None:
 
     bq_client = BigQueryClientImpl()
 
+    if state_codes_filter is None:
+        state_codes_filter = frozenset(get_normalization_pipeline_enabled_states())
+    elif address_overrides is None:
+        raise ValueError(
+            "Address overrides must be provided when only running for a subset of "
+            f"states: {state_codes_filter}"
+        )
+
     temp_normalized_state_dataset_id = bq_client.add_timestamp_suffix_to_dataset_id(
         f"temp_{dataset_config.NORMALIZED_STATE_DATASET}"
     )
 
     _load_normalized_state_dataset_into_empty_temp_dataset(
-        bq_client, temp_normalized_state_dataset_id
+        bq_client,
+        state_codes_filter,
+        temp_normalized_state_dataset_id,
+        overrides=address_overrides,
     )
 
-    normalized_state_dataset_id = dataset_config.NORMALIZED_STATE_DATASET
+    normalized_state_dataset_id = (
+        address_overrides.get_dataset(dataset_config.NORMALIZED_STATE_DATASET)
+        if address_overrides is not None
+        else dataset_config.NORMALIZED_STATE_DATASET
+    )
     normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
         normalized_state_dataset_id
     )
@@ -539,7 +577,7 @@ def _update_normalized_state_dataset() -> None:
 
     logging.info(
         "Process of building [%s] dataset complete.",
-        dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset_id,
     )
 
     logging.info("Deleting temporary [%s] dataset.", temp_normalized_state_dataset_id)
