@@ -120,7 +120,7 @@ products:
       - state_code: US_ME
         environment: production
       - state_code: US_MO
-        environment: staging
+        environment: production
   - name: Pathways Prison Module
     description: Prison populations over time which can be drilled down by geographic region, demographic categories, time period, etc.
     exports:
