@@ -377,9 +377,13 @@ function verify_can_deploy {
 
 function reconfigure_terraform_backend {
   PROJECT_ID=$1
+  TF_STATE_PREFIX=$2
   echo "Reconfiguring Terraform backend..."
   rm -rf "${BASH_SOURCE_DIR}/.terraform/"
-  run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" init -backend-config "bucket=${PROJECT_ID}-tf-state" -reconfigure
+  run_cmd terraform -chdir="${BASH_SOURCE_DIR}/terraform" init \
+          -backend-config "bucket=${PROJECT_ID}-tf-state" \
+          -backend-config "prefix=${TF_STATE_PREFIX}" \
+          -reconfigure
 }
 
 function deploy_pipeline_templates {
