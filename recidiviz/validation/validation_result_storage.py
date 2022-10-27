@@ -67,7 +67,7 @@ class ValidationResultForStorage:
 
     validation_category: Optional[ValidationCategory] = attr.ib()
 
-    runtime_seconds: float = attr.ib()
+    runtime_seconds: Optional[float] = attr.ib()
     exception_log: Optional[Exception] = attr.ib()
 
     @trace_id.default
@@ -113,7 +113,6 @@ class ValidationResultForStorage:
         run_datetime: datetime.datetime,
         job: DataValidationJob,
         exception_log: Optional[Exception],
-        runtime_seconds: float,
     ) -> "ValidationResultForStorage":
         return cls(
             run_id=run_id,
@@ -129,7 +128,7 @@ class ValidationResultForStorage:
             result_details_type=None,
             result_details=None,
             validation_category=job.validation.validation_category,
-            runtime_seconds=runtime_seconds,
+            runtime_seconds=None,
             exception_log=exception_log,
         )
 

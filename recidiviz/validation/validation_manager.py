@@ -197,7 +197,6 @@ def execute_validation(
                         run_datetime=run_datetime,
                         job=job,
                         exception_log=e,
-                        runtime_seconds=runtime_seconds,
                     )
                 )
                 failed_to_run_validations.append(job)
