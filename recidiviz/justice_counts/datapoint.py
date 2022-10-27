@@ -19,37 +19,27 @@ import datetime
 import enum
 import json
 import logging
-from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
-import attr
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
-from recidiviz.justice_counts.metrics.metric_definition import (
-    AggregatedDimension,
-    IncludesExcludesSet,
-    IncludesExcludesSetting,
-    MetricDefinition,
-)
-from recidiviz.justice_counts.metrics.metric_interface import (
-    MetricAggregatedDimensionData,
-    MetricContextData,
-    MetricInterface,
-)
+from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
 from recidiviz.justice_counts.utils.persistence_utils import (
     delete_existing,
     expunge_existing,
     update_existing_or_create,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.utils.types import assert_type
 
 # Datapoints are unique by a tuple of:
 # <report ID, metric definition, context key, disaggregations>
@@ -67,63 +57,13 @@ class DatapointInterface:
     None the numeric value applies to a particular dimension.
     """
 
-    @staticmethod
-    def get_agency_datapoints(
-        session: Session,
-        agency_id: int,
-    ) -> List[schema.Datapoint]:
-        return (
-            session.query(schema.Datapoint)
-            .filter(schema.Datapoint.source_id == agency_id)
-            .all()
-        )
+    ### Fetch from the DB ###
 
     @staticmethod
-    def is_metric_disabled(
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        metric_key: str,
-        dimension_id: Optional[str] = None,
-    ) -> bool:
-        """This function returns true if a metric or disaggregation is turned off by
-        an agency."""
-        agency_datapoints = metric_key_to_agency_datapoints.get(metric_key, [])
-
-        if len(agency_datapoints) == 0:
-            return False
-
-        member_set = (
-            {d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]}
-            if dimension_id is not None
-            else set()
-        )
-
-        for datapoint in agency_datapoints:
-            # If a whole metric is disabled, then there is a disabled agency metric
-            # with both context key and dimension_identifier_to_member
-            # as None.
-            if (
-                datapoint.enabled is False
-                and datapoint.context_key is None
-                and datapoint.dimension_identifier_to_member is None
-            ):
-                return True
-
-            dimension_member = datapoint.get_dimension_member()
-            if (
-                datapoint.context_key is None
-                and dimension_member is not None
-                and dimension_member in member_set
-            ):
-                member_set.remove(dimension_member)
-
-        # If a whole disaggregation is disabled, then there is a disabled
-        # agency datapoint for each breakdown.
-        return dimension_id is not None and len(member_set) == 0
-
-    @staticmethod
-    def get_datapoints_with_report_ids(
+    def get_datapoints_by_report_ids(
         session: Session, report_ids: List[int], include_contexts: bool = True
     ) -> List[schema.Datapoint]:
+        """Given a list of report ids, get all datapoints belonging to those reports."""
         q = session.query(schema.Datapoint)
 
         # when fetching datapoints for data viz, no need to fetch context datapoints
@@ -137,46 +77,20 @@ class DatapointInterface:
         )
 
     @staticmethod
-    def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
-        """Each datapoint in the DB has a JSON `dimension_identifier_to_member`
-        dictionary that looks like `{"metric/prisons/staff/type": "SECURITY"}`.
-        This dictionary tells us that the datapoint is filtered on the dimension
-        class with identifier "metric/prisons/staff/type" (i.e. PrisonsStaffType)
-        and that the value of that filter is PrisonsStaffType.SECURITY. This
-        method parses the JSON blob to ultimately return this enum member --
-        -- e.g. in this case the return value is PrisonsStaffType.SECURITY.
+    def get_agency_datapoints(
+        session: Session,
+        agency_id: int,
+    ) -> List[schema.Datapoint]:
+        """Given an agency id, get all "Agency Datapoints" -- i.e. datapoints
+        that provide configuration information, rather than report data.
         """
-        if datapoint.dimension_identifier_to_member is None:
-            return None
-        if len(datapoint.dimension_identifier_to_member) != 1:
-            raise ValueError(
-                f"datapoint with id: {datapoint.id} has more than one disaggregation, which is currently not supported"
-            )
-        # example: dimension_member = "MALE"
-        dimension_id, dimension_member = list(
-            datapoint.dimension_identifier_to_member.items()
-        ).pop()
+        return (
+            session.query(schema.Datapoint)
+            .filter(schema.Datapoint.source_id == agency_id)
+            .all()
+        )
 
-        dimension_class = None
-        try:
-            dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
-                dimension_id
-            ]  # example: dimension_class = GenderRestricted
-        except KeyError:
-            logging.warning("Dimension identifier %s not found.", dimension_id)
-
-        dimension_enum_member = None
-        if dimension_class is not None:
-            try:
-                # example: dimension_enum_member = GenderRestricted.MALE
-                dimension_enum_member = dimension_class[dimension_member]
-            except KeyError:
-                logging.warning(
-                    "Dimension member %s not found in class %s",
-                    dimension_member,
-                    dimension_class,
-                )
-        return dimension_enum_member
+    ### Export to the FE ###
 
     @staticmethod
     def to_json_response(
@@ -191,7 +105,7 @@ class DatapointInterface:
 
         disaggregation_display_name = None
         dimension_display_name = None
-        dimension = DatapointInterface.get_dimension(datapoint)
+        dimension = get_dimension(datapoint)
 
         if dimension is not None:
             disaggregation_display_name = dimension.human_readable_name()
@@ -213,6 +127,234 @@ class DatapointInterface:
             "is_published": is_published,
             "frequency": frequency.value,
         }
+
+    ### Get Path: Both Agency and Report Datapoints ###
+
+    @staticmethod
+    def build_metric_key_to_datapoints(
+        datapoints: List[schema.Datapoint],
+    ) -> Dict[str, DatapointsForMetric]:
+        """Associate the datapoints with their metric and sort each datapoint by what
+        they represent (context, dimension, or aggregated_value). metric_key_to_data_points
+        is a dictionary of DatapointsForMetric. Each metric definition key points to a
+        DatapointsForMetric instance that stores datapoints by context, disaggregations,
+        or aggregated_value and by their classification as a report or agency datapoint.
+
+        This method will be called from two places: 1) getting a report and 2) getting the metric tab.
+        In the first case, the datapoints input will include agency and report datapoints, and in
+        the second case, it will just include agency datapoints.
+        """
+        metric_key_to_data_points = {}
+        for datapoint in datapoints:
+            # if no DatapointsForMetric exists for the metric definition, create one.
+            if datapoint.metric_definition_key not in metric_key_to_data_points:
+                metric_key_to_data_points[
+                    datapoint.metric_definition_key
+                ] = DatapointsForMetric()
+            metric_datapoints = metric_key_to_data_points[
+                datapoint.metric_definition_key
+            ]
+            if datapoint.context_key is not None:
+                key = datapoint.context_key
+                # If a datapoint represents a context, add it into a dictionary
+                # formatted as {context_key: datapoint}
+                if datapoint.report is not None:
+                    metric_datapoints.context_key_to_report_datapoint[key] = datapoint
+                elif datapoint.source is not None:
+                    metric_datapoints.context_key_to_agency_datapoint[key] = datapoint
+            elif datapoint.includes_excludes_key is not None:
+                if datapoint.dimension_identifier_to_member is not None:
+                    # If a datapoint represents an includes/excludes setting at the dimension level,
+                    # add it into a dictionary formatted as {dimension_id: {includes_excludes_key: datapoint}}
+                    dimension_identifier = list(
+                        datapoint.dimension_identifier_to_member.keys()
+                    ).pop()
+                    metric_datapoints.dimension_id_to_includes_excludes_key_to_datapoint[
+                        dimension_identifier
+                    ][
+                        datapoint.includes_excludes_key
+                    ] = datapoint
+                elif datapoint.dimension_identifier_to_member is None:
+                    # If a datapoint represents an includes/excludes setting at the metric level,
+                    # add it into a dictionary formatted as {includes_excludes_key: datapoint}
+                    if metric_datapoints.includes_excludes_key_to_datapoint is None:
+                        metric_datapoints.includes_excludes_key_to_datapoint = {}
+                    metric_datapoints.includes_excludes_key_to_datapoint[
+                        datapoint.includes_excludes_key
+                    ] = datapoint
+            elif datapoint.dimension_identifier_to_member is not None:
+                # If a datapoint represents an aggregated_dimension, add it into a dictionary
+                # formatted as {dimension_identifier: [all datapoints with same dimension identifier...]}
+                dimension_identifier = list(
+                    datapoint.dimension_identifier_to_member.keys()
+                ).pop()
+                if datapoint.report is not None:
+                    metric_datapoints.dimension_id_to_report_datapoints[
+                        dimension_identifier
+                    ].append(datapoint)
+                elif datapoint.source is not None:
+                    metric_datapoints.dimension_id_to_agency_datapoints[
+                        dimension_identifier
+                    ].append(datapoint)
+            elif datapoint.dimension_identifier_to_member is None:
+                if datapoint.report is not None:
+                    # If a datapoint has a report attached to it and has no context key or
+                    # dimension_identifier_to_member value, it represents the reported aggregate value
+                    # of a metric.
+                    metric_datapoints.aggregated_value = datapoint.get_value()
+                if datapoint.source is not None:
+                    # If a datapoint has a source attached to it and has no context key or
+                    # dimension_identifier_to_member value, it represents the weather or not the
+                    # datapoint is enabled. is_metric_enabled defaults to True. If there is no
+                    # corresponding agency datapoint, then the metric is on.
+                    metric_datapoints.is_metric_enabled = datapoint.enabled
+            else:
+                raise JusticeCountsServerError(
+                    code="invalid_datapoint",
+                    description=(
+                        "Datapoint does not represent a dimension, "
+                        "aggregate value, or context."
+                    ),
+                )
+        return metric_key_to_data_points
+
+    ### Save Path: Report Datapoints ###
+
+    @staticmethod
+    def add_datapoint(
+        session: Session,
+        report: schema.Report,
+        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+        value: Any,
+        user_account: schema.UserAccount,
+        metric_definition_key: str,
+        current_time: datetime.datetime,
+        context_key: Optional[ContextKey] = None,
+        value_type: Optional[ValueType] = None,
+        dimension: Optional[DimensionBase] = None,
+        use_existing_aggregate_value: bool = False,
+    ) -> Optional[Dict[str, Any]]:
+        """Given a Report and a MetricInterface, add a row to the datapoint table.
+        All datapoints associated with a metric are saved, even if the value is None.
+
+        The only exception to the above is if `use_existing_aggregate_value`
+        is True. in this case, if `datapoint.value` is None, we ignore it,
+        and fallback to whatever value is already in the db. If `datapoint.value`
+        is specified, prefer the existing value in the db, unless there isn't one,
+        in which case we save the incoming value.
+        """
+
+        # Don't save invalid datapoint values when publishing
+        if (
+            report.status == schema.ReportStatus.PUBLISHED
+            and value is not None
+            and (value_type is None or value_type == ValueType.NUMBER)
+        ):
+            try:
+                float(value)
+            except ValueError as e:
+                raise JusticeCountsServerError(
+                    code="invalid_datapoint_value",
+                    description=(
+                        "Datapoint represents a float value, but is a string. "
+                        f"Datapoint ID: {report.id}, value: {value}"
+                    ),
+                ) from e
+
+        # Check if there is an existing datapoint that needs to be updated,
+        # or if we need to create a new one. Datapoints are unique by a tuple of:
+        # <report, metric definition, context key, disaggregations>
+        datapoint_key = (
+            report.date_range_start,
+            report.date_range_end,
+            metric_definition_key,
+            context_key.value if context_key else None,
+            json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
+            if dimension
+            else None,
+        )
+        existing_datapoint = existing_datapoints_dict.get(datapoint_key)
+
+        if use_existing_aggregate_value:
+            # If this flag is set, and the incoming aggregate value does not match
+            # what's already in the DB, then keep the existing aggregate value.
+            if (
+                existing_datapoint is not None
+                and existing_datapoint.value is not None
+                and abs(float(existing_datapoint.value) - value) > 0
+            ):
+                logging.info(
+                    "The incoming (read or inferred) aggregate value (%s) does not match "
+                    "the existing aggregate value (%s). Keeping the existing value.",
+                    value,
+                    existing_datapoint.value,
+                )
+                return None
+
+        new_datapoint = schema.Datapoint(
+            value=str(value) if value is not None else value,
+            report_id=report.id,
+            metric_definition_key=metric_definition_key,
+            context_key=context_key.value if context_key else None,
+            value_type=value_type,
+            start_date=report.date_range_start,
+            end_date=report.date_range_end,
+            report=report,
+            dimension_identifier_to_member={
+                dimension.dimension_identifier(): dimension.dimension_name
+            }
+            if dimension
+            else None,
+        )
+
+        # Store the new datapoint in this dict, so that it can be
+        # referenced later, e.g. an explicit aggregate total
+        # will later be referenced by an inferred aggregate
+        existing_datapoints_dict[datapoint_key] = new_datapoint
+
+        # Creating the new datapoint might have added it to the session;
+        # to avoid constraint violation errors, remove it before adding
+        # it back later in this method.
+        expunge_existing(session, new_datapoint)
+
+        if existing_datapoint is None:
+            existing_datapoint_value = None
+            equal_to_existing = False
+            session.add(new_datapoint)
+        else:
+            # Save existing datapoint value before it gets overwritten in merge
+            existing_datapoint_value = existing_datapoint.value
+            # Compare values using `get_value` so e.g. 3 == 3.0
+            equal_to_existing = (
+                new_datapoint.get_value() == existing_datapoint.get_value()
+            )
+            new_datapoint.id = existing_datapoint.id
+            new_datapoint = session.merge(new_datapoint)
+            if not equal_to_existing:
+                session.add(
+                    schema.DatapointHistory(
+                        datapoint_id=existing_datapoint.id,
+                        user_account_id=user_account.id,
+                        timestamp=current_time,
+                        old_value=existing_datapoint_value,
+                        new_value=str(value) if value is not None else value,
+                    )
+                )
+
+        # Return datapoint json because datapoint values and metadata will be
+        # used in the bulk upload data summary pages.
+        return (
+            DatapointInterface.to_json_response(
+                datapoint=new_datapoint,
+                is_published=report.status == schema.ReportStatus.PUBLISHED,
+                frequency=schema.ReportingFrequency[report.type],
+                old_value=existing_datapoint_value if not equal_to_existing else None,
+            )
+            if new_datapoint is not None
+            else None
+        )
+
+    ### Save Path: Agency Datapoints ###
 
     @staticmethod
     def get_metric_settings_by_agency(
@@ -239,7 +381,7 @@ class DatapointInterface:
         for metric_definition in metric_definitions:
             datapoints = metric_key_to_data_points.get(
                 metric_definition.key,
-                DatapointInterface.DatapointsForMetricDefinition(),
+                DatapointsForMetric(),
             )
             agency_metrics.append(
                 MetricInterface(
@@ -431,497 +573,46 @@ class DatapointInterface:
                     )
                 )
 
-    @staticmethod
-    def add_datapoint(
-        session: Session,
-        report: schema.Report,
-        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        value: Any,
-        user_account: schema.UserAccount,
-        metric_definition_key: str,
-        current_time: datetime.datetime,
-        context_key: Optional[ContextKey] = None,
-        value_type: Optional[ValueType] = None,
-        dimension: Optional[DimensionBase] = None,
-        use_existing_aggregate_value: bool = False,
-    ) -> Optional[Dict[str, Any]]:
-        """Given a Report and a MetricInterface, add a row to the datapoint table.
-        All datapoints associated with a metric are saved, even if the value is None.
-
-        The only exception to the above is if `use_existing_aggregate_value`
-        is True. in this case, if `datapoint.value` is None, we ignore it,
-        and fallback to whatever value is already in the db. If `datapoint.value`
-        is specified, prefer the existing value in the db, unless there isn't one,
-        in which case we save the incoming value.
-        """
-
-        # Don't save invalid datapoint values when publishing
-        if (
-            report.status == schema.ReportStatus.PUBLISHED
-            and value is not None
-            and (value_type is None or value_type == ValueType.NUMBER)
-        ):
-            try:
-                float(value)
-            except ValueError as e:
-                raise JusticeCountsServerError(
-                    code="invalid_datapoint_value",
-                    description=(
-                        "Datapoint represents a float value, but is a string. "
-                        f"Datapoint ID: {report.id}, value: {value}"
-                    ),
-                ) from e
-
-        # Check if there is an existing datapoint that needs to be updated,
-        # or if we need to create a new one. Datapoints are unique by a tuple of:
-        # <report, metric definition, context key, disaggregations>
-        datapoint_key = (
-            report.date_range_start,
-            report.date_range_end,
-            metric_definition_key,
-            context_key.value if context_key else None,
-            json.dumps({dimension.dimension_identifier(): dimension.dimension_name})
-            if dimension
-            else None,
-        )
-        existing_datapoint = existing_datapoints_dict.get(datapoint_key)
-
-        if use_existing_aggregate_value:
-            # If this flag is set, and the incoming aggregate value does not match
-            # what's already in the DB, then keep the existing aggregate value.
-            if (
-                existing_datapoint is not None
-                and existing_datapoint.value is not None
-                and abs(float(existing_datapoint.value) - value) > 0
-            ):
-                logging.info(
-                    "The incoming (read or inferred) aggregate value (%s) does not match "
-                    "the existing aggregate value (%s). Keeping the existing value.",
-                    value,
-                    existing_datapoint.value,
-                )
-                return None
-
-        new_datapoint = schema.Datapoint(
-            value=str(value) if value is not None else value,
-            report_id=report.id,
-            metric_definition_key=metric_definition_key,
-            context_key=context_key.value if context_key else None,
-            value_type=value_type,
-            start_date=report.date_range_start,
-            end_date=report.date_range_end,
-            report=report,
-            dimension_identifier_to_member={
-                dimension.dimension_identifier(): dimension.dimension_name
-            }
-            if dimension
-            else None,
-        )
-
-        # Store the new datapoint in this dict, so that it can be
-        # referenced later, e.g. an explicit aggregate total
-        # will later be referenced by an inferred aggregate
-        existing_datapoints_dict[datapoint_key] = new_datapoint
-
-        # Creating the new datapoint might have added it to the session;
-        # to avoid constraint violation errors, remove it before adding
-        # it back later in this method.
-        expunge_existing(session, new_datapoint)
-
-        if existing_datapoint is None:
-            existing_datapoint_value = None
-            equal_to_existing = False
-            session.add(new_datapoint)
-        else:
-            # Save existing datapoint value before it gets overwritten in merge
-            existing_datapoint_value = existing_datapoint.value
-            # Compare values using `get_value` so e.g. 3 == 3.0
-            equal_to_existing = (
-                new_datapoint.get_value() == existing_datapoint.get_value()
-            )
-            new_datapoint.id = existing_datapoint.id
-            new_datapoint = session.merge(new_datapoint)
-            if not equal_to_existing:
-                session.add(
-                    schema.DatapointHistory(
-                        datapoint_id=existing_datapoint.id,
-                        user_account_id=user_account.id,
-                        timestamp=current_time,
-                        old_value=existing_datapoint_value,
-                        new_value=str(value) if value is not None else value,
-                    )
-                )
-
-        # Return datapoint json because datapoint values and metadata will be
-        # used in the bulk upload data summary pages.
-        return (
-            DatapointInterface.to_json_response(
-                datapoint=new_datapoint,
-                is_published=report.status == schema.ReportStatus.PUBLISHED,
-                frequency=schema.ReportingFrequency[report.type],
-                old_value=existing_datapoint_value if not equal_to_existing else None,
-            )
-            if new_datapoint is not None
-            else None
-        )
-
-    @attr.define
-    class DatapointsForMetricDefinition:
-        """Class that maps datapoints to their corresponding category (aggregate value, dimension, context)"""
-
-        is_metric_enabled: bool = attr.field(default=True)
-        aggregated_value: Optional[int] = None
-        context_key_to_agency_datapoint: Dict[str, schema.Datapoint] = attr.field(
-            factory=dict[str, schema.Datapoint]
-        )
-        dimension_id_to_agency_datapoints: Dict[
-            str, List[schema.Datapoint]
-        ] = attr.field(factory=(lambda: defaultdict(list)))
-        context_key_to_report_datapoint: Dict[str, schema.Datapoint] = attr.field(
-            factory=dict[str, schema.Datapoint]
-        )
-        dimension_id_to_report_datapoints: Dict[
-            str, List[schema.Datapoint]
-        ] = attr.field(factory=(lambda: defaultdict(list)))
-
-        # includes_excludes_key_to_datapoint will hold includes/excludes
-        # datapoints that at the metric level.
-        includes_excludes_key_to_datapoint: Dict[str, schema.Datapoint] = attr.field(
-            default=None
-        )
-        # dimension_id_to_includes_excludes_key_to_datapoint will hold
-        # includes/excludes datapoints that at the dimension level.
-        dimension_id_to_includes_excludes_key_to_datapoint: Dict[
-            str, Dict[str, schema.Datapoint]
-        ] = attr.field(factory=(lambda: defaultdict(dict)))
-
-        def get_reported_contexts(
-            self, metric_definition: MetricDefinition
-        ) -> List[MetricContextData]:
-            """
-            - This method first determines which contexts we expect for this dimension definition
-            - Then it looks at the contexts already reported in the database or saved as pre-filled
-            - recurring context options, and fills in any of the expected contexts that have already
-            - been reported with their reported value.
-            """
-            contexts = []
-            for context in metric_definition.contexts:
-                value = None
-                report_datapoint = self.context_key_to_report_datapoint.get(
-                    context.key.value
-                )
-                report_value = (
-                    report_datapoint.get_value()
-                    if report_datapoint is not None
-                    else None
-                )
-                report_status = (
-                    report_datapoint.report.status
-                    if report_datapoint is not None
-                    else schema.ReportStatus.NOT_STARTED
-                )
-                agency_datapoint = self.context_key_to_agency_datapoint.get(
-                    context.key.value
-                )
-                agency_value = (
-                    agency_datapoint.get_value()
-                    if agency_datapoint is not None
-                    else None
-                )
-                # If no data has been reported, the metric is enabled, AND the report is
-                # unpublished, fill context with the value of the agency datapoint.
-                value = (
-                    agency_value
-                    if report_value is None
-                    and self.is_metric_enabled is True
-                    and report_status != schema.ReportStatus.PUBLISHED
-                    else report_value
-                )
-                contexts.append(MetricContextData(key=context.key, value=value))
-            return contexts
-
-        def get_dimension_to_includes_excludes_member_to_setting(
-            self, aggregated_dimension_definition: AggregatedDimension
-        ) -> Dict[DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]]:
-            """This method returns an includes_excludes_member_to_setting dictionary
-            that is populated from datapoints that represent includes/excludes settings
-            at the dimension level."""
-            if aggregated_dimension_definition.dimension_to_includes_excludes is None:
-                return {}
-
-            dimension_to_includes_excludes_member_to_setting: Dict[
-                DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
-            ] = defaultdict(dict)
-            for dimension in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                aggregated_dimension_definition.dimension_identifier()
-            ]:
-                includes_excludes_set = (
-                    aggregated_dimension_definition.dimension_to_includes_excludes.get(
-                        dimension
-                    )
-                )
-                dimension_to_includes_excludes_member_to_setting[
-                    dimension
-                ] = self.get_includes_excludes_dict(
-                    includes_excludes_set=includes_excludes_set,
-                    dimension_id=dimension.dimension_identifier(),
-                )
-
-            return dimension_to_includes_excludes_member_to_setting
-
-        def _get_dimension_id_to_dimension_dicts(
-            self,
-            metric_definition: MetricDefinition,
-            create_dimension_to_value_dict: bool,
-        ) -> Dict[str, Dict[DimensionBase, Optional[Any]]]:
-            """Helper method that returns dimension_to_value and dimension_to_enabled_status
-            dictionaries. If create_dimension_to_value_dict is true, then this method will
-            return a dimension_id -> dimension_to_value dictionary. If not, it will return
-            dimension_id -> dimension_to_enabled_status."""
-
-            # dimension_id_to_dimension_values_dicts maps dimension identifier to their
-            # corresponding dimension_to_values dictionary
-            # e.g global/gender/restricted -> {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20...}
-            dimension_id_to_dimension_dicts: Dict[
-                str, Dict[DimensionBase, Optional[Any]]
-            ] = {
-                aggregated_dimension.dimension_identifier(): {
-                    d: None if create_dimension_to_value_dict else True
-                    for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                        aggregated_dimension.dimension_identifier()
-                    ]
-                }
-                for aggregated_dimension in metric_definition.aggregated_dimensions
-                or []
-            }
-
-            dimension_id_to_datapoint: Dict[str, List[schema.Datapoint]] = (
-                self.dimension_id_to_report_datapoints
-                if create_dimension_to_value_dict is True
-                else self.dimension_id_to_agency_datapoints
-            )
-            # When creating a dimension_to_value dictionary we're dealing with a report datapoint
-            # the value we're interested in is the actual data, whereas if we're creating
-            # dimension_to_enabled_status with an agency datapoint, the value we're interested
-            # in is the enabled status.
-            for dimension_id, dimension_datapoints in dimension_id_to_datapoint.items():
-                for datapoint in dimension_datapoints:
-
-                    dimension_enum_member = DatapointInterface.get_dimension(
-                        datapoint=datapoint
-                    )
-
-                    curr_dimension_dict = dimension_id_to_dimension_dicts.get(
-                        dimension_id
-                    )  # example: curr_dimension_dict = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: None, GenderRestricted.NON_BINARY: None...}
-
-                    if (
-                        dimension_enum_member is not None
-                        and curr_dimension_dict is not None
-                    ):
-                        curr_dimension_dict[dimension_enum_member] = (
-                            datapoint.get_value()
-                            if create_dimension_to_value_dict
-                            else datapoint.enabled
-                        )
-                        # update curr_dimension_to_values to add new dimension datapoint.
-                        # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
-                        dimension_id_to_dimension_dicts[
-                            dimension_id
-                        ] = curr_dimension_dict
-                        # update dimension_id_to_dimension_values_dicts dictionary -> {"global/gender/restricted": {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
-            return dimension_id_to_dimension_dicts
-
-        def get_dimension_id_to_dimension_to_value_dict(
-            self, metric_definition: MetricDefinition
-        ) -> Dict[str, Dict[DimensionBase, Any]]:
-            return self._get_dimension_id_to_dimension_dicts(
-                metric_definition=metric_definition, create_dimension_to_value_dict=True
-            )
-
-        def get_dimension_id_to_dimension_to_enabled_status_dict(
-            self,
-            metric_definition: MetricDefinition,
-        ) -> Dict[str, Dict[DimensionBase, Any]]:
-            return self._get_dimension_id_to_dimension_dicts(
-                metric_definition=metric_definition,
-                create_dimension_to_value_dict=False,
-            )
-
-        def get_includes_excludes_dict(
-            self,
-            includes_excludes_set: Optional[IncludesExcludesSet] = None,
-            dimension_id: Optional[str] = None,
-        ) -> Dict[enum.Enum, Optional[IncludesExcludesSetting]]:
-            """Returns the includes/excludes dicts. This is used to populate
-            the includes_excludes dict at the metric level and at the
-            dimension level."""
-            includes_excludes_dict: Dict[
-                enum.Enum, Optional[IncludesExcludesSetting]
-            ] = {}
-            if includes_excludes_set is None:
-                return includes_excludes_dict
-
-            if dimension_id is None and self.includes_excludes_key_to_datapoint is None:
-                return includes_excludes_dict
-
-            if (
-                dimension_id is not None
-                and self.dimension_id_to_includes_excludes_key_to_datapoint.get(
-                    dimension_id
-                )
-                is None
-            ):
-                return includes_excludes_dict
-
-            includes_excludes_key_to_datapoint = (
-                self.includes_excludes_key_to_datapoint
-                if dimension_id is None
-                else self.dimension_id_to_includes_excludes_key_to_datapoint.get(
-                    dimension_id
-                )
-            )
-            for (
-                member,
-                default,
-            ) in includes_excludes_set.member_to_default_inclusion_setting.items():
-                datapoint = assert_type(includes_excludes_key_to_datapoint, dict).get(
-                    member.name
-                )
-                includes_excludes_dict[member] = (
-                    IncludesExcludesSetting(datapoint.value)
-                    if datapoint is not None
-                    else default
-                )
-            return includes_excludes_dict
-
-        def get_aggregated_dimension_data(
-            self, metric_definition: MetricDefinition
-        ) -> List[MetricAggregatedDimensionData]:
-            """
-            - This method first looks at all dimensions that have already been reported in
-            the database, and extracts them into a dictionary dimension_id_to_dimension_values_dicts.
-            - As we fill out this dictionary, we make sure that each dimension_values dict is "complete",
-            i.e. contains all member values for that dimension. If one of the members hasn't been reported yet, it's value will be None.
-            - It's possible that not all dimensions we expect for this metric are in this dictionary,
-            i.e. if the user hasn't filled out any values for a particular dimension yet.
-            - Thus, at the end of the function, we look at all the dimensions that are expected for this metric,
-            and if one doesn't exist in the dictionary, we add it with all values set to None.
-            """
-            aggregated_dimensions = []
-            dimension_id_to_dimension_to_enabled_status = (
-                self.get_dimension_id_to_dimension_to_enabled_status_dict(
-                    metric_definition=metric_definition,
-                )
-            )
-
-            dimension_id_to_dimension_to_value = (
-                self.get_dimension_id_to_dimension_to_value_dict(
-                    metric_definition=metric_definition,
-                )
-            )
-
-            for aggregated_dimension in metric_definition.aggregated_dimensions or []:
-                aggregated_dimensions.append(
-                    MetricAggregatedDimensionData(
-                        dimension_to_value=dimension_id_to_dimension_to_value.get(
-                            aggregated_dimension.dimension_identifier()
-                        ),
-                        dimension_to_enabled_status=dimension_id_to_dimension_to_enabled_status.get(
-                            aggregated_dimension.dimension_identifier()
-                        ),
-                        dimension_to_includes_excludes_member_to_setting=self.get_dimension_to_includes_excludes_member_to_setting(
-                            aggregated_dimension_definition=aggregated_dimension
-                        ),
-                    ),
-                )
-
-            return aggregated_dimensions
+    ### Helpers ###
 
     @staticmethod
-    def build_metric_key_to_datapoints(
-        datapoints: List[schema.Datapoint],
-    ) -> Dict[str, DatapointsForMetricDefinition]:
-        """Associate the datapoints with their metric and sort each datapoint by what
-        they represent (context, dimension, or aggregated_value). metric_key_to_data_points
-        is a dictionary of DatapointsForMetricDefinition. Each metric definition key points to a
-        DatapointsForMetricDefinition instance that stores datapoints by context, disaggregations,
-        or aggregated_value and by their classification as a report or agency datapoint.
+    def is_metric_disabled(
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        metric_key: str,
+        dimension_id: Optional[str] = None,
+    ) -> bool:
+        """This function returns true if a metric or disaggregation is turned off by
+        an agency."""
+        agency_datapoints = metric_key_to_agency_datapoints.get(metric_key, [])
 
-        This method will be called from two places: 1) getting a report and 2) getting the metric tab.
-        In the first case, the datapoints input will include agency and report datapoints, and in
-        the second case, it will just include agency datapoints.
-        """
-        metric_key_to_data_points = {}
-        for datapoint in datapoints:
-            # if no DatapointsForMetricDefinition exists for the metric definition, create one.
-            if datapoint.metric_definition_key not in metric_key_to_data_points:
-                metric_key_to_data_points[
-                    datapoint.metric_definition_key
-                ] = DatapointInterface.DatapointsForMetricDefinition()
-            metric_datapoints = metric_key_to_data_points[
-                datapoint.metric_definition_key
-            ]
-            if datapoint.context_key is not None:
-                key = datapoint.context_key
-                # If a datapoint represents a context, add it into a dictionary
-                # formatted as {context_key: datapoint}
-                if datapoint.report is not None:
-                    metric_datapoints.context_key_to_report_datapoint[key] = datapoint
-                elif datapoint.source is not None:
-                    metric_datapoints.context_key_to_agency_datapoint[key] = datapoint
-            elif datapoint.includes_excludes_key is not None:
-                if datapoint.dimension_identifier_to_member is not None:
-                    # If a datapoint represents an includes/excludes setting at the dimension level,
-                    # add it into a dictionary formatted as {dimension_id: {includes_excludes_key: datapoint}}
-                    dimension_identifier = list(
-                        datapoint.dimension_identifier_to_member.keys()
-                    ).pop()
-                    metric_datapoints.dimension_id_to_includes_excludes_key_to_datapoint[
-                        dimension_identifier
-                    ][
-                        datapoint.includes_excludes_key
-                    ] = datapoint
-                elif datapoint.dimension_identifier_to_member is None:
-                    # If a datapoint represents an includes/excludes setting at the metric level,
-                    # add it into a dictionary formatted as {includes_excludes_key: datapoint}
-                    if metric_datapoints.includes_excludes_key_to_datapoint is None:
-                        metric_datapoints.includes_excludes_key_to_datapoint = {}
-                    metric_datapoints.includes_excludes_key_to_datapoint[
-                        datapoint.includes_excludes_key
-                    ] = datapoint
-            elif datapoint.dimension_identifier_to_member is not None:
-                # If a datapoint represents an aggregated_dimension, add it into a dictionary
-                # formatted as {dimension_identifier: [all datapoints with same dimension identifier...]}
-                dimension_identifier = list(
-                    datapoint.dimension_identifier_to_member.keys()
-                ).pop()
-                if datapoint.report is not None:
-                    metric_datapoints.dimension_id_to_report_datapoints[
-                        dimension_identifier
-                    ].append(datapoint)
-                elif datapoint.source is not None:
-                    metric_datapoints.dimension_id_to_agency_datapoints[
-                        dimension_identifier
-                    ].append(datapoint)
-            elif datapoint.dimension_identifier_to_member is None:
-                if datapoint.report is not None:
-                    # If a datapoint has a report attached to it and has no context key or
-                    # dimension_identifier_to_member value, it represents the reported aggregate value
-                    # of a metric.
-                    metric_datapoints.aggregated_value = datapoint.get_value()
-                if datapoint.source is not None:
-                    # If a datapoint has a source attached to it and has no context key or
-                    # dimension_identifier_to_member value, it represents the weather or not the
-                    # datapoint is enabled. is_metric_enabled defaults to True. If there is no
-                    # corresponding agency datapoint, then the metric is on.
-                    metric_datapoints.is_metric_enabled = datapoint.enabled
-            else:
-                raise JusticeCountsServerError(
-                    code="invalid_datapoint",
-                    description=(
-                        "Datapoint does not represent a dimension, "
-                        "aggregate value, or context."
-                    ),
-                )
-        return metric_key_to_data_points
+        if len(agency_datapoints) == 0:
+            return False
+
+        member_set = (
+            {d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]}
+            if dimension_id is not None
+            else set()
+        )
+
+        for datapoint in agency_datapoints:
+            # If a whole metric is disabled, then there is a disabled agency metric
+            # with both context key and dimension_identifier_to_member
+            # as None.
+            if (
+                datapoint.enabled is False
+                and datapoint.context_key is None
+                and datapoint.dimension_identifier_to_member is None
+            ):
+                return True
+
+            dimension_member = datapoint.get_dimension_member()
+            if (
+                datapoint.context_key is None
+                and dimension_member is not None
+                and dimension_member in member_set
+            ):
+                member_set.remove(dimension_member)
+
+        # If a whole disaggregation is disabled, then there is a disabled
+        # agency datapoint for each breakdown.
+        return dimension_id is not None and len(member_set) == 0
