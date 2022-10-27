@@ -17,7 +17,7 @@
 
 """Tests for validation/checks/sameness_check.py."""
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 from unittest import TestCase
 
 import pandas as pd
@@ -864,29 +864,7 @@ class TestSamenessPerRowValidationCheckerSQL(BigQueryViewTestCase):
             view_query_template="select * from `{project_id}.my_dataset.test_data`",
             should_materialize=True,
         )
-
-        first_row = mock_data_rows[0]
-        data_types: Dict[str, Union[Type, str]] = {}
-        for i, val in enumerate(first_row):
-            data_types[columns[i]] = type(val) if val is not None else object
-
-        if not view_builder.materialized_address:
-            raise ValueError("Expected the view builder to have a materialized address")
-
-        result = self.query_view_for_builder(
-            view_builder,
-            data_types,
-            # Sort on first column
-            columns[0:1],
-        )
-
-        # Mock materializing this validation view to a table
-        self.create_mock_bq_table(
-            dataset_id=view_builder.materialized_address.dataset_id,
-            table_id=view_builder.materialized_address.table_id,
-            mock_schema=mock_schema,
-            mock_data=result,
-        )
+        self.create_view(view_builder)
 
         return view_builder
 
