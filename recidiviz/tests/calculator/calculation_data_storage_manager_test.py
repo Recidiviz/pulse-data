@@ -48,6 +48,9 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tools.calculator.update_sandbox_normalized_state_dataset import (
+    build_address_overrides_for_update,
+)
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -395,7 +398,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     )
     @mock.patch(
         "recidiviz.calculator.calculation_data_storage_manager."
-        "get_metric_pipeline_enabled_states",
+        "get_normalization_pipeline_enabled_states",
     )
     def test_update_normalized_state_dataset(
         self, mock_pipeline_states: mock.MagicMock
@@ -427,7 +430,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager._update_normalized_state_dataset()
+        calculation_data_storage_manager.update_normalized_state_dataset()
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -472,7 +475,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                     destination_table_id="state_incarceration_period",
                     use_query_cache=True,
                 ),
-            ]
+            ],
+            any_order=True,
         )
         self.mock_client.copy_dataset_tables.assert_called_with(
             source_dataset_id=temporary_dataset_id,
@@ -491,7 +495,104 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     )
     @mock.patch(
         "recidiviz.calculator.calculation_data_storage_manager."
-        "get_metric_pipeline_enabled_states",
+        "get_normalization_pipeline_enabled_states",
+    )
+    def test_update_normalized_state_dataset_with_overrides(
+        self, mock_pipeline_states: mock.MagicMock
+    ) -> None:
+        OVERRIDE_PREFIX = "foo"
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.TableReference(self.mock_dataset, "state_incarceration_period"),
+            bigquery.TableReference(self.mock_dataset, "state_person"),
+        ]
+        self.mock_client.table_exists.return_value = False
+        temporary_dataset_id = "temp_normalized_state_2021_01_01_03_14_23_567800"
+        normalized_state_dataset_id = NORMALIZED_STATE_DATASET
+        self.mock_client.add_timestamp_suffix_to_dataset_id.return_value = (
+            temporary_dataset_id
+        )
+        self.mock_client.dataset_ref_for_id.side_effect = [
+            bigquery.dataset.DatasetReference(self.project_id, temporary_dataset_id),
+            bigquery.dataset.DatasetReference(
+                self.project_id, normalized_state_dataset_id
+            ),
+            bigquery.dataset.DatasetReference(self.project_id, temporary_dataset_id),
+        ]
+        mock_pipeline_states.return_value = [StateCode.US_XX, StateCode.US_YY]
+
+        copy_job: futures.Future = futures.Future()
+        copy_job.set_result(None)
+        self.mock_client.insert_into_table_from_table_async.return_value = copy_job
+
+        ip_schema = bq_schema_for_normalized_state_entity(
+            NormalizedStateIncarcerationPeriod
+        )
+
+        states = frozenset({StateCode.US_XX})
+        calculation_data_storage_manager.update_normalized_state_dataset(
+            state_codes_filter=states,
+            address_overrides=build_address_overrides_for_update(
+                dataset_override_prefix=OVERRIDE_PREFIX, states_to_override=states
+            ),
+        )
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, temporary_dataset_id
+                    ),
+                    default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, normalized_state_dataset_id
+                    )
+                ),
+            ]
+        )
+        self.mock_client.create_table_with_schema.assert_has_calls(
+            [mock.call(temporary_dataset_id, "state_incarceration_period", ip_schema)]
+        )
+        self.mock_client.copy_table.assert_has_calls(
+            [
+                mock.call(
+                    source_dataset_id=f"{OVERRIDE_PREFIX}_state",
+                    source_table_id="state_person",
+                    destination_dataset_id=temporary_dataset_id,
+                )
+            ]
+        )
+        self.mock_client.insert_into_table_from_table_async.assert_has_calls(
+            [
+                mock.call(
+                    source_dataset_id=f"{OVERRIDE_PREFIX}_us_xx_normalized_state",
+                    source_table_id="state_incarceration_period",
+                    destination_dataset_id=temporary_dataset_id,
+                    destination_table_id="state_incarceration_period",
+                    use_query_cache=True,
+                )
+            ]
+        )
+        self.mock_client.copy_dataset_tables.assert_called_with(
+            source_dataset_id=temporary_dataset_id,
+            destination_dataset_id=f"{OVERRIDE_PREFIX}_{normalized_state_dataset_id}",
+            overwrite_destination_tables=True,
+        )
+        self.mock_client.delete_dataset.assert_called_with(
+            bigquery.dataset.DatasetReference(self.project_id, temporary_dataset_id),
+            delete_contents=True,
+        )
+
+    @mock.patch(
+        "recidiviz.calculator.calculation_data_storage_manager."
+        "NORMALIZED_ENTITY_CLASSES",
+        [NormalizedStateIncarcerationPeriod],
+    )
+    @mock.patch(
+        "recidiviz.calculator.calculation_data_storage_manager."
+        "get_normalization_pipeline_enabled_states",
     )
     def test_update_normalized_state_dataset_destination_exists(
         self, mock_pipeline_states: mock.MagicMock
@@ -523,7 +624,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager._update_normalized_state_dataset()
+        calculation_data_storage_manager.update_normalized_state_dataset()
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -568,7 +669,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                     destination_table_id="state_incarceration_period",
                     use_query_cache=True,
                 ),
-            ]
+            ],
+            any_order=True,
         )
         self.mock_client.copy_dataset_tables.assert_called_with(
             source_dataset_id=temporary_dataset_id,
@@ -584,10 +686,10 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_lock_manager.acquire_lock(lock_id="any_lock_id")
 
         with self.assertRaises(GCSPseudoLockAlreadyExists):
-            calculation_data_storage_manager._update_normalized_state_dataset()
+            calculation_data_storage_manager.update_normalized_state_dataset()
 
     @patch(
-        "recidiviz.calculator.calculation_data_storage_manager._update_normalized_state_dataset"
+        "recidiviz.calculator.calculation_data_storage_manager.update_normalized_state_dataset"
     )
     def test_update_normalized_state_dataset_endpoint(
         self, mock_update: mock.MagicMock
