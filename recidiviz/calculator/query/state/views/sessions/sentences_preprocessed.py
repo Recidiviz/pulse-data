@@ -31,7 +31,7 @@ SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Sentencing Data"""
 
 # List of states that have separate sentence preprocessed views
 SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_TN"]
-INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_ND"]
+INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_ND", "US_CO"]
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
 SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
@@ -81,6 +81,10 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     UNION ALL
 
     SELECT * FROM `{project_id}.{sessions_dataset}.us_nd_incarceration_sentences_preprocessed`
+
+    UNION ALL
+
+    SELECT * FROM `{project_id}.{sessions_dataset}.us_co_incarceration_sentences_preprocessed`
 
     UNION ALL
 

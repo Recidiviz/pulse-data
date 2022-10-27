@@ -220,6 +220,12 @@ from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_
 from recidiviz.validation.views.state.sessions_validation.sentence_end_dates_before_start_dates import (
     SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.session_liberty_releases_with_no_sentence_completion_date import (
+    SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.sessions_validation.session_new_admissions_with_no_sentence_date_imposed import (
+    SESSION_NEW_ADMISSIONS_WITH_NO_SENTENCE_DATE_IMPOSED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
@@ -466,6 +472,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SESSION_NEW_ADMISSIONS_WITH_NO_SENTENCE_DATE_IMPOSED_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
