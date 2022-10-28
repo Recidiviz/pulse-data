@@ -26,6 +26,9 @@ import attr
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.normalization_utils import (
+    drop_fuzzy_matched_periods,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionViolationResponse,
@@ -250,13 +253,6 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         """
         return False
 
-    def drop_fuzzy_matched_periods(self) -> bool:
-        """Whether or not fuzzy-matched periods should be dropped for the state.
-        Fuzzy-matched periods are identified by having the string 'FUZZY_MATCHED' in the
-        external_id
-        """
-        return False
-
 
 class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     """Interface for generalized and state-specific normalization of
@@ -355,9 +351,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
             # Drop IPs that are fuzzy matched, as we are not yet confident in their
             # placement of a person's entire journey within the system
-            mid_processing_periods = self._handle_fuzzy_matched_periods(
-                mid_processing_periods
-            )
+            mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
 
             # Sort periods, and infer as much missing information as possible
             mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
@@ -1159,20 +1153,6 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         return merge_additional_attributes_maps(
             [shared_additional_attributes_map, ip_additional_attributes_map]
         )
-
-    def _handle_fuzzy_matched_periods(
-        self, mid_processing_periods: List[StateIncarcerationPeriod]
-    ) -> List[StateIncarcerationPeriod]:
-        """Drops IPs with the string 'FUZZY_MATCHED' in the external_id if
-        fuzzy-matched periods should be dropped for the given state."""
-        if not self.normalization_delegate.drop_fuzzy_matched_periods():
-            return mid_processing_periods
-
-        return [
-            ip
-            for ip in mid_processing_periods
-            if ip.external_id and "FUZZY_MATCHED" not in ip.external_id
-        ]
 
     def _process_fields_on_final_incarceration_period_set(
         self,
