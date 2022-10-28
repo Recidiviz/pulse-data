@@ -7,7 +7,9 @@ ADD ${FRONTEND_URL} frontend.tar.gz
 RUN mkdir /justice-counts
 RUN tar xvfz frontend.tar.gz -C /justice-counts --strip-components 1
 
-WORKDIR /justice-counts/publisher
+# Valid values are `publisher` and `agency-dashboard`
+ARG FRONTEND_APP=""
+WORKDIR /justice-counts/${FRONTEND_APP}
 RUN yarn config set network-timeout 300000
 RUN yarn
 RUN yarn build
@@ -31,7 +33,8 @@ COPY ./recidiviz/utils/ utils/
 WORKDIR /app
 
 # Add the built Justice Counts frontend to the image
-COPY --from=justice-counts-build /justice-counts/publisher/build /app/frontends/justice-counts/publisher/build
+ARG FRONTEND_APP=""
+COPY --from=justice-counts-build /justice-counts/${FRONTEND_APP}/build /app/frontends/justice-counts/build
 
 # This makes docker not report that our container is healthy until the flask workers are
 # started and returning 200 on the `/health` endpoint. This is initially only used by
