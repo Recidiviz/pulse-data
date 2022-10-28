@@ -537,7 +537,9 @@ class BulkUploader:
                 "post release": schema.System.POST_RELEASE,
             }
             for system_value, system_rows in system_value_to_rows.items():
-                normalized_system_value = system_value.lower().strip()
+                normalized_system_value = (
+                    system_value.lower().strip().replace("-", " ").replace("_", " ")
+                )
                 if normalized_system_value not in normalized_system_value_to_system:
                     metric_key_to_errors[None].append(
                         JusticeCountsBulkUploadException(
