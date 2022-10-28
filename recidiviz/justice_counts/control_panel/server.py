@@ -57,12 +57,14 @@ def create_app(config: Optional[Config] = None) -> Flask:
     """
     logging.getLogger().setLevel(logging.INFO)
 
-    # We use Flask to serve not only the backend, but also our React frontend,
-    # which lives in ../../frontends/justice_counts/control_panel
+    # We use Flask to serve not only the backend, but also the React frontend.
+    # This API actually powers two different frontends: Publisher and Agency Dashboards,
+    # both of which live in the justice-counts GH repo but are pulled into the same
+    # Docker image as the backend during deployment (see Dockerfile.justice-counts).
     static_folder = os.path.abspath(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            "../../../frontends/justice-counts/publisher/build/",
+            "../../../frontends/justice-counts/build/",
         )
     )
     if in_development():
