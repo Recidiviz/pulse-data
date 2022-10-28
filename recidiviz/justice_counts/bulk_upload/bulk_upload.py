@@ -405,6 +405,27 @@ class BulkUploader:
         metric_key_to_errors[metric_definition.key].append(missing_total_error)
         return metric_key_to_errors
 
+    def _maybe_raise_invalid_breakdown_error(
+        self, rows: List[Dict[str, Any]], metricfile: MetricFile
+    ) -> None:
+        if not metricfile.disaggregation:
+            # If _type is a substring of the column name, then the row column contains
+            # a breakdown name. For example, a column named "offense_type" would contain
+            # values such as "Drug", "Person", or "Public Order". These columns should only
+            # be in breakdown sheets.
+            is_type_column_list = ["_type" in col for row in rows for col in row.keys()]
+            if any(is_type_column_list):
+                description = (
+                    f"Breakdown data was provided in the {metricfile.canonical_filename} sheet, but this sheet "
+                    f"should only contain aggregate data."
+                )
+
+                raise JusticeCountsBulkUploadException(
+                    title="Invalid Breakdown Data in Aggregate Sheet",
+                    description=description,
+                    message_type=BulkUploadMessageType.ERROR,
+                )
+
     def _upload_rows(
         self,
         session: Session,
@@ -597,10 +618,11 @@ class BulkUploader:
         """
         metric_definition = metricfile.definition
         reporting_frequency = metric_definition.reporting_frequency
+        # Step 1: Warn if there are unexpected columns in the file
+        self._maybe_raise_invalid_breakdown_error(rows=rows, metricfile=metricfile)
+        # TODO(#13731): Add warnings for other unexpected columns
 
-        # TODO(#13731): Warn if there are unexpected columns in the file
-
-        # Step 1: Group the rows in this file by time range.
+        # Step 2: Group the rows in this file by time range.
         (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
             rows=rows, reporting_frequency=reporting_frequency
         )
