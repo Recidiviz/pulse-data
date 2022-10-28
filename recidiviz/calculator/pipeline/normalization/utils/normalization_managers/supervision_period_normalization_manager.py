@@ -25,6 +25,9 @@ from typing import List, Optional, Tuple, Type
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.normalization_utils import (
+    drop_fuzzy_matched_periods,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
@@ -206,6 +209,10 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             mid_processing_periods = self._drop_placeholder_periods(
                 periods_for_normalization
             )
+
+            # Drop SPs that are fuzzy matched, as we are not yet confident in their
+            # placement of a person's entire journey within the system
+            mid_processing_periods = drop_fuzzy_matched_periods(mid_processing_periods)
 
             # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
             #  periods with dates of 9999-12-31.
