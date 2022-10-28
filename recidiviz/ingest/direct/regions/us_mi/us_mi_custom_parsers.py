@@ -24,6 +24,7 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+from re import findall
 from typing import Optional
 
 from dateutil.relativedelta import relativedelta
@@ -123,3 +124,57 @@ def parole_possible(min_life: str, mcl: str, attempt: str) -> bool:
         return False
 
     return True
+
+
+def parse_charge_subclass(description: str) -> Optional[str]:
+    """If found in the description, returns a standardized string describing the degree of the charge"""
+
+    # match the word before the substring "DEG" in the description
+    degree_str = findall(r"\w+(?=\s+DEG)", description.upper())
+
+    # if we found no matches or more than one match, disregard and return None
+    if len(degree_str) == 0 or len(degree_str) > 1:
+        return None
+
+    # else standardize and return
+    deg_str = degree_str[0]
+
+    if deg_str == "FIRST":
+        return "1ST DEGREE"
+
+    if deg_str in ("SECOND", "COND-2ND"):
+        return "2ND DEGREE"
+
+    if deg_str == "THIRD":
+        return "3RD DEGREE"
+
+    if deg_str == "FOURTH":
+        return "4TH DEGREE"
+
+    # all other cases are already 1st, 2nd, 3rd, or 4th
+    return f"{deg_str} DEGREE"
+
+
+def parse_offense_type_ids(offense_type_ids: str, result_field: str) -> bool:
+    """Returns whether the offense_type_ids list contains an offense_type that would indicate the offense was a violent offense"""
+
+    id_types = {
+        "is_violent": [
+            "9715",  # Assaultive Felony
+            "7582",  # Assaultive Misdemeanor
+            "14503",  # Other Assaultive
+            "13553",  # PA 487 Violent Felonies
+        ],
+        "is_sex_offense": [
+            "2178",  # Sex Offender Registration
+            "14502",  # Sexual Offense
+        ],
+    }
+
+    offense_type_list = offense_type_ids.split(",")
+
+    for id_type in id_types[result_field]:
+        if id_type in offense_type_list:
+            return True
+
+    return False
