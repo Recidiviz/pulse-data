@@ -59,8 +59,49 @@ resource "google_compute_address" "external_system_outbound_requests" {
   region       = var.region
 }
 
-resource "google_compute_router" "external_system_outbound_requests" {
-  name    = "external-system-outbound-requests"
-  network = "default"
-  region  = var.region
+# The names of the following NATs and Routers all say "dataflow", but they're actually for all
+# resources in the "default" network.
+module "nat_us_central1" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-${var.project_id == "recidiviz-123" ? "us-" : ""}central1"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-${var.project_id == "recidiviz-123" ? "us-" : ""}central1"
+  region      = "us-central1"
+  nat_ips     = [google_compute_address.external_system_outbound_requests.self_link]
+}
+
+module "nat_us_west1" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat${var.project_id == "recidiviz-123" ? "-us-west1" : ""}"
+  router_name = "${local.nat_prefix}-dataflow-nat-router${var.project_id == "recidiviz-123" ? "-us-west-1" : ""}"
+  region      = "us-west1"
+}
+
+module "nat_us_east1" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-east1"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-east1"
+  region      = "us-east1"
+}
+
+module "nat_us_west2" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-west2"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-west2"
+  region      = "us-west2"
+}
+
+module "nat_us_west3" {
+  source = "./modules/nat"
+
+  nat_name    = "${local.nat_prefix}-dataflow-nat-us-west3"
+  router_name = "${local.nat_prefix}-dataflow-nat-router-us-west3"
+  region      = "us-west3"
+}
+
+locals {
+  nat_prefix = var.project_id == "recidiviz-123" ? "recidiviz-production" : var.project_id
 }
