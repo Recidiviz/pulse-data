@@ -43,4 +43,5 @@ class UsMiController(BaseDirectIngestController):
             "incarceration_periods",
             "supervision_periods",
             "sentences",
+            "state_charge",
         ]
