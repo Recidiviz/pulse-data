@@ -65,6 +65,27 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.string import get_closest_string
+
+
+def _get_ingest_view(
+    region: direct_ingest_regions.DirectIngestRegion, ingest_view_name: str
+) -> DirectIngestPreProcessedIngestView:
+    view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
+
+    ingest_views_by_name = {
+        view.ingest_view_name: view for view in view_collector.collect_view_builders()
+    }
+    if ingest_view_name not in ingest_views_by_name:
+        maybe_name = get_closest_string(
+            search=ingest_view_name, within=ingest_views_by_name.keys()
+        )
+        raise ValueError(
+            f"No view found with name '{ingest_view_name}'. Did you mean '{maybe_name}'?"
+        )
+
+    ingest_view = ingest_views_by_name[ingest_view_name].build()
+    return ingest_view
 
 
 def query_ingest_view(
@@ -72,11 +93,7 @@ def query_ingest_view(
 ) -> BigQueryResultsContentsHandle[str]:
     """Queries latest ingest view and returns results"""
     big_query_client = BigQueryClientImpl()
-    view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
-
-    ingest_view = view_collector.get_view_builder_by_view_name(
-        ingest_view_name=ingest_view_name
-    ).build()
+    ingest_view = _get_ingest_view(region, ingest_view_name)
 
     query = ingest_view.expanded_view_query(
         config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
