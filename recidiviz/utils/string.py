@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """General utilities for dealing with strings"""
+import operator
 import string
-from typing import Any, FrozenSet, Mapping, Sequence, Union
+from typing import Any, FrozenSet, Iterable, Mapping, Sequence, Union
 
 import attr
+import Levenshtein as lev
 
 
 @attr.s(kw_only=True)
@@ -47,3 +49,10 @@ class StrictStringFormatter(string.Formatter):
         )
         if unused_kwargs:
             raise ValueError(f"Unused kwargs passed: {unused_kwargs}")
+
+
+def get_closest_string(search: str, within: Iterable[str]) -> str:
+    return min(
+        ((maybe, lev.distance(search, maybe)) for maybe in within),
+        key=operator.itemgetter(1),
+    )[0]
