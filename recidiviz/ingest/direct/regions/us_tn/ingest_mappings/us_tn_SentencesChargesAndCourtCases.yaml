@@ -123,6 +123,24 @@ variables:
             - F
           StateChargeClassificationType.MISDEMEANOR:
             - M
+  - charge:
+      StateCharge:
+        external_id: $variable(sentence_external_id)
+        status: $literal_enum(StateChargeStatus.CONVICTED)
+        offense_date: OffenseDate
+        date_charged: PleaDate
+        county_code: ConvictionCounty
+        statute: ConvictionOffense
+        description: OffenseDescription
+        classification_type: $variable(charge_classification_type)
+        classification_subtype: ConvictionClass
+        is_violent: $variable(is_violent)
+        is_sex_offense: $variable(is_sex_offense)
+        charging_entity: Verdict
+        judicial_district_code: JudicialDistrict
+        judge_full_name:
+          $person_name:
+            $full_name: JudgeName
 output:
   StatePerson:
     external_ids:
@@ -178,23 +196,7 @@ output:
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
                 charges:
-                  - StateCharge:
-                      external_id: $variable(sentence_external_id)
-                      status: $literal_enum(StateChargeStatus.CONVICTED)
-                      offense_date: OffenseDate
-                      date_charged: PleaDate
-                      county_code: ConvictionCounty
-                      statute: ConvictionOffense
-                      description: OffenseDescription
-                      classification_type: $variable(charge_classification_type)
-                      classification_subtype: ConvictionClass
-                      is_violent: $variable(is_violent)
-                      is_sex_offense: $variable(is_sex_offense)
-                      charging_entity: Verdict
-                      judicial_district_code: JudicialDistrict
-                      judge_full_name:
-                        $person_name:
-                          $full_name: JudgeName
+                  - $variable(charge)
 
     supervision_sentences:
       - $conditional:
@@ -231,20 +233,4 @@ output:
                 conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 charges:
-                  - StateCharge:
-                      external_id: $variable(sentence_external_id)
-                      status: $literal_enum(StateChargeStatus.CONVICTED)
-                      offense_date: OffenseDate
-                      date_charged: PleaDate
-                      county_code: ConvictionCounty
-                      statute: ConvictionOffense
-                      description: OffenseDescription
-                      classification_type: $variable(charge_classification_type)
-                      classification_subtype: ConvictionClass
-                      is_violent: $variable(is_violent)
-                      is_sex_offense: $variable(is_sex_offense)
-                      charging_entity: Verdict
-                      judicial_district_code: JudicialDistrict
-                      judge_full_name:
-                        $person_name:
-                          $full_name: JudgeName
+                  - $variable(charge)

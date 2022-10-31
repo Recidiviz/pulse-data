@@ -256,18 +256,19 @@ class EntityTreeManifestFactory:
                         f"Child class type unexpectedly null for field [{field_name}] "
                         f"on [{entity_cls.__name__}]."
                     )
-                for raw_child_manifest in raw_fields_manifest.pop_dicts(field_name):
-                    child_manifest = build_manifest_from_raw(
-                        raw_field_manifest=raw_child_manifest,
-                        delegate=delegate,
-                        variable_manifests=variable_manifests,
-                        expected_result_type=delegate.get_entity_cls(
-                            child_entity_cls_name
-                        ),
-                    )
-                    if isinstance(child_manifest, ExpandableListItemManifest):
-                        child_manifests.append(child_manifest)
-                    elif issubclass(child_manifest.result_type, Entity):
+                child_expected_result_type = delegate.get_entity_cls(
+                    child_entity_cls_name
+                )
+                for child_manifest in build_manifests_list_from_raw(
+                    raw_fields_manifest,
+                    field_name,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=child_expected_result_type,
+                ):
+                    if isinstance(
+                        child_manifest, ExpandableListItemManifest
+                    ) or issubclass(child_manifest.result_type, Entity):
                         child_manifests.append(child_manifest)
                     else:
                         raise ValueError(
@@ -1223,8 +1224,12 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         delegate: IngestViewResultsParserDelegate,
         variable_manifests: Dict[str, VariableManifestNode],
     ) -> "ConcatenatedStringsManifest":
-        raw_concat_manifests = pop_raw_manifest_nodes_list(
-            raw_function_manifest, cls.VALUES_ARG_KEY
+        value_manifests = build_manifests_list_from_raw(
+            raw_function_manifest,
+            cls.VALUES_ARG_KEY,
+            delegate,
+            variable_manifests=variable_manifests,
+            expected_result_type=str,
         )
         separator = raw_function_manifest.pop_optional(cls.SEPARATOR_ARG_KEY, str)
         include_nulls = raw_function_manifest.pop_optional(
@@ -1232,12 +1237,7 @@ class ConcatenatedStringsManifest(ManifestNode[str]):
         )
         return ConcatenatedStringsManifest(
             separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
-            value_manifests=[
-                build_str_manifest_from_raw(
-                    raw_manifest, delegate, variable_manifests=variable_manifests
-                )
-                for raw_manifest in raw_concat_manifests
-            ],
+            value_manifests=value_manifests,
             include_nulls=(include_nulls if include_nulls is not None else True),
         )
 
@@ -1607,26 +1607,6 @@ class EqualsConditionManifest(ManifestNode[bool]):
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return self.value_manifests
 
-    @classmethod
-    def from_raw_manifest(
-        cls,
-        *,
-        raw_value_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewResultsParserDelegate,
-        variable_manifests: Dict[str, VariableManifestNode],
-    ) -> "EqualsConditionManifest":
-        return EqualsConditionManifest(
-            value_manifests=[
-                build_manifest_from_raw(
-                    raw_field_manifest=raw_value_manifest,
-                    delegate=delegate,
-                    variable_manifests=variable_manifests,
-                    expected_result_type=object,
-                )
-                for raw_value_manifest in raw_value_manifests
-            ],
-        )
-
 
 @attr.s(kw_only=True)
 class AndConditionManifest(ManifestNode[bool]):
@@ -1664,26 +1644,6 @@ class AndConditionManifest(ManifestNode[bool]):
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return self.condition_manifests
 
-    @classmethod
-    def from_raw_manifest(
-        cls,
-        *,
-        raw_condition_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewResultsParserDelegate,
-        variable_manifests: Dict[str, VariableManifestNode],
-    ) -> "AndConditionManifest":
-        return AndConditionManifest(
-            condition_manifests=[
-                build_manifest_from_raw_typed(
-                    raw_condition_manifest,
-                    delegate,
-                    variable_manifests=variable_manifests,
-                    expected_result_type=bool,
-                )
-                for raw_condition_manifest in raw_condition_manifests
-            ],
-        )
-
 
 @attr.s(kw_only=True)
 class OrConditionManifest(ManifestNode[bool]):
@@ -1720,26 +1680,6 @@ class OrConditionManifest(ManifestNode[bool]):
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return self.condition_manifests
-
-    @classmethod
-    def from_raw_manifest(
-        cls,
-        *,
-        raw_condition_manifests: List[Union[str, YAMLDict]],
-        delegate: IngestViewResultsParserDelegate,
-        variable_manifests: Dict[str, VariableManifestNode],
-    ) -> "OrConditionManifest":
-        return OrConditionManifest(
-            condition_manifests=[
-                build_manifest_from_raw_typed(
-                    raw_condition_manifest,
-                    delegate,
-                    variable_manifests=variable_manifests,
-                    expected_result_type=bool,
-                )
-                for raw_condition_manifest in raw_condition_manifests
-            ],
-        )
 
 
 @attr.s(kw_only=True)
@@ -2028,6 +1968,35 @@ def build_iterable_manifest_from_raw(
     )
 
 
+def build_manifests_list_from_raw(
+    parent_raw_manifest: YAMLDict,
+    list_field_name: str,
+    delegate: IngestViewResultsParserDelegate,
+    variable_manifests: Dict[str, VariableManifestNode],
+    expected_result_type: Type[ManifestNodeT],
+) -> List[ManifestNode[ManifestNodeT]]:
+    manifests = []
+    for list_item in parent_raw_manifest.pop(list_field_name, list):
+        raw_manifest: Union[str, YAMLDict]
+        if isinstance(list_item, str):
+            raw_manifest = list_item
+        elif isinstance(list_item, dict):
+            raw_manifest = YAMLDict(list_item)
+        else:
+            raise ValueError(
+                f"Unexpected raw manifest type in list: [{type(list_item)}]"
+            )
+        manifests.append(
+            build_manifest_from_raw(
+                raw_field_manifest=raw_manifest,
+                delegate=delegate,
+                variable_manifests=variable_manifests,
+                expected_result_type=expected_result_type,
+            )
+        )
+    return manifests
+
+
 def build_manifest_from_raw_typed(
     raw_field_manifest: Union[str, YAMLDict],
     delegate: IngestViewResultsParserDelegate,
@@ -2193,28 +2162,34 @@ def build_manifest_from_raw(
                 )
             )
         if manifest_node_name == AndConditionManifest.AND_CONDITION_KEY:
-            return AndConditionManifest.from_raw_manifest(
-                raw_condition_manifests=pop_raw_manifest_nodes_list(
-                    raw_field_manifest, manifest_node_name
+            return AndConditionManifest(
+                condition_manifests=build_manifests_list_from_raw(
+                    raw_field_manifest,
+                    manifest_node_name,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
                 ),
-                delegate=delegate,
-                variable_manifests=variable_manifests,
             )
         if manifest_node_name == OrConditionManifest.OR_CONDITION_KEY:
-            return OrConditionManifest.from_raw_manifest(
-                raw_condition_manifests=pop_raw_manifest_nodes_list(
-                    raw_field_manifest, manifest_node_name
+            return OrConditionManifest(
+                condition_manifests=build_manifests_list_from_raw(
+                    raw_field_manifest,
+                    manifest_node_name,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
                 ),
-                delegate=delegate,
-                variable_manifests=variable_manifests,
             )
         if manifest_node_name == EqualsConditionManifest.EQUALS_CONDITION_KEY:
-            return EqualsConditionManifest.from_raw_manifest(
-                raw_value_manifests=pop_raw_manifest_nodes_list(
-                    raw_field_manifest, manifest_node_name
+            return EqualsConditionManifest(
+                value_manifests=build_manifests_list_from_raw(
+                    raw_field_manifest,
+                    manifest_node_name,
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=object,
                 ),
-                delegate=delegate,
-                variable_manifests=variable_manifests,
             )
         if manifest_node_name == ENV_PROPERTY_KEY:
             property_name = raw_field_manifest.pop(ENV_PROPERTY_KEY, str)
@@ -2234,34 +2209,22 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
             )
-        if issubclass(expected_result_type, Entity):
+
+        # At this point we expect the manifest node name to be an entity class name
+        try:
             entity_cls = delegate.get_entity_cls(entity_cls_name=manifest_node_name)
-            return EntityTreeManifestFactory.from_raw_manifest(
-                raw_fields_manifest=raw_field_manifest.pop_dict(manifest_node_name),
-                delegate=delegate,
-                variable_manifests=variable_manifests,
-                entity_cls=entity_cls,
-            )
-        raise ValueError(
-            f"Unexpected manifest name [{manifest_node_name}]: [{raw_field_manifest}]"
+        except Exception as e:
+            raise ValueError(
+                f"Unexpected manifest name [{manifest_node_name}]: [{raw_field_manifest}]"
+            ) from e
+
+        return EntityTreeManifestFactory.from_raw_manifest(
+            raw_fields_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+            delegate=delegate,
+            variable_manifests=variable_manifests,
+            entity_cls=entity_cls,
         )
 
     raise ValueError(
         f"Unexpected manifest type: [{type(raw_field_manifest)}]: {raw_field_manifest}"
     )
-
-
-def pop_raw_manifest_nodes_list(
-    parent_raw_manifest: YAMLDict, list_field_name: str
-) -> List[Union[str, YAMLDict]]:
-    manifests: List[Union[str, YAMLDict]] = []
-    for raw_manifest in parent_raw_manifest.pop(list_field_name, list):
-        if isinstance(raw_manifest, str):
-            manifests.append(raw_manifest)
-        elif isinstance(raw_manifest, dict):
-            manifests.append(YAMLDict(raw_manifest))
-        else:
-            raise ValueError(
-                f"Unexpected raw manifest type in list: [{type(raw_manifest)}]"
-            )
-    return manifests
