@@ -57,7 +57,6 @@ REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     FULL OUTER JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics_materialized` d
         USING(person_id, state_code, reincarceration_date)
     WHERE EXTRACT(YEAR FROM reincarceration_date) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 20 YEAR))
-    ORDER BY 1,2,3
     """
 
 REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
