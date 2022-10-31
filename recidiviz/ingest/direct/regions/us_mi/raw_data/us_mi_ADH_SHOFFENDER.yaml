@@ -22,5 +22,6 @@ columns:
     is_pii: True
   - name: MugShotImagesCount
   - name: FkShAgencyCreatedBy
+    description: ID for agency that created this record (links with FkShAgencyCreatedBy in ADH_SHOFFENDER)
   - name: IsClosed
   - name: IsRestricted
