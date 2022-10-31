@@ -283,3 +283,12 @@ def nonnull_start_date_clause(column_name: str) -> str:
 def revert_nonnull_start_date_clause(column_name: str) -> str:
     """Convert start dates far in the future to NULL"""
     return f'IF({column_name} = "{MAGIC_START_DATE}", NULL, {column_name})'
+
+
+def array_concat_with_null(arrays_to_concat: List[str]) -> str:
+    """Concatenate arrays and handle null arrays"""
+    array_expr = []
+    for arr in arrays_to_concat:
+        array_expr.append(f"IFNULL({arr}, [])")
+
+    return f'ARRAY_CONCAT({", ".join(array_expr)})'

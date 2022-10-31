@@ -15,7 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ND Workflows supervision clients."""
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    array_concat_with_null,
+    nonnull_end_date_exclusive_clause,
+)
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
@@ -100,7 +103,8 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     nd_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            TRUE AS early_termination_eligible
+            TRUE AS early_termination_eligible,
+            ["earlyTermination"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
     ),
     nd_clients AS (
@@ -129,6 +133,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             FALSE AS limited_supervision_eligible,
             FALSE AS past_FTRD_eligible,
             FALSE AS supervision_level_downgrade_eligible,
+            {array_concat_with_null(["nd_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
         FROM join_nd_clients
         LEFT JOIN nd_eligibility USING(person_external_id)
     )

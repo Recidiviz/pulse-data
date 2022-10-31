@@ -120,4 +120,9 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
                 "supervision_level_downgrade_eligible"
             ]
 
+        if "all_eligible_opportunities" in data:
+            new_document["allEligibleOpportunities"] = data[
+                "all_eligible_opportunities"
+            ]
+
         return data["person_external_id"], new_document

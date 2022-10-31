@@ -15,14 +15,22 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_TN Workflows supervision clients."""
+from recidiviz.calculator.query.bq_utils import array_concat_with_null
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
-US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
+US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     tn_supervision_level_downgrade_eligibility AS (
         SELECT 
             external_id AS person_external_id,
             TRUE AS supervision_level_downgrade_eligible,
-        FROM `{project_id}.{workflows_dataset}.us_tn_supervision_level_downgrade_record_materialized`
+            ["supervisionLevelDowngrade"] AS eligible_opportunities,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_tn_supervision_level_downgrade_record_materialized`
+    ),
+    tn_compliant_reporting_eligibility AS (
+        SELECT
+            *,
+            CASE WHEN cr.compliant_reporting_eligible IS NOT NULL THEN ["compliantReporting"] ELSE [] END AS eligible_opportunities,
+        FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_compliant_reporting_logic_materialized` cr
     ),
     tn_clients AS (
         # Values set to NULL are not applicable for this state
@@ -50,7 +58,9 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = """
             FALSE AS limited_supervision_eligible,
             FALSE AS past_FTRD_eligible,
             IFNULL(supervision_level_downgrade_eligible, FALSE) AS supervision_level_downgrade_eligible,
-        FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
+            {array_concat_with_null(["tn_supervision_level_downgrade_eligibility.eligible_opportunities",
+                                     "tn_compliant_reporting_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
+        FROM tn_compliant_reporting_eligibility
         LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
     )
 """
