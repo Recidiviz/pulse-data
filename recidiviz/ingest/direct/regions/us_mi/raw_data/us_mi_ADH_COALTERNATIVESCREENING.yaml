@@ -36,6 +36,7 @@ columns:
   - name: DateDeleted
     is_datetime: True
   - name: IsDeleted
+    description: flag for whether this screening record was invalidated
   - name: IsCompleted
     description: flag for whether the screening was completed
   - name: IsComputed

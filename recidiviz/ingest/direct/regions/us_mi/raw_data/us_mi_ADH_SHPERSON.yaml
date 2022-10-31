@@ -36,6 +36,7 @@ columns:
     description: Email address
     is_pii: True
   - name: IsDeleted
+    description: Boolean flag for whether this person record should be treated as deleted/inactive
   - name: DateCreated
     is_datetime: True
   - name: DateUpdated
