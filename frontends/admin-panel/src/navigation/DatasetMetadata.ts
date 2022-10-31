@@ -26,9 +26,12 @@ export const VALIDATION_DETAIL_ROUTE_TEMPLATE = `${VALIDATION_STATUS_ROUTE}/deta
 
 export const routeForValidationDetail = (validationName?: string): string => {
   if (validationName === undefined) {
-    return VALIDATION_STATUS_ROUTE;
+    return VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE;
   }
-  return `${VALIDATION_STATUS_ROUTE}/${validationName}`;
+  return VALIDATION_DETAIL_ROUTE_TEMPLATE.replace(
+    ":validationName",
+    validationName
+  );
 };
 
 export const METADATA_DATASET_ROUTE_TEMPLATE = "/admin/:dataset/dataset";

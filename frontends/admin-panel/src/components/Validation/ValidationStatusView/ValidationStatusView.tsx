@@ -19,7 +19,13 @@ import { Layout, List, Menu, MenuProps } from "antd";
 import { Content } from "antd/lib/layout/layout";
 import Sider from "antd/lib/layout/Sider";
 import { FC, useEffect } from "react";
-import { Route, Switch, useHistory, useLocation } from "react-router-dom";
+import {
+  Redirect,
+  Route,
+  Switch,
+  useHistory,
+  useLocation,
+} from "react-router-dom";
 import { fetchValidationStatus } from "../../../AdminPanelAPI";
 import { useFetchedDataProtobuf } from "../../../hooks";
 import {
@@ -269,6 +275,7 @@ const ValidationStatusView: FC<ValdiationStatusViewProps> = ({
                   loading={loading}
                 />
               </Route>
+              <Redirect to={VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE} />
             </Switch>
           </Content>
         </Layout>
