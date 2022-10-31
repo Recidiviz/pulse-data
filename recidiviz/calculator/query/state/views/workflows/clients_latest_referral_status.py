@@ -35,7 +35,6 @@ CLIENTS_LATEST_REFERRAL_STATUS_DESCRIPTION = """
 
 
 CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH 
     status_updates AS (
         {user_event_template(

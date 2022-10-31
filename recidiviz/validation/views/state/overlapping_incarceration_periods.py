@@ -37,7 +37,6 @@ OVERLAPPING_INCARCERATION_PERIODS_DESCRIPTION = """ Incarceration periods with a
 period with overlapping dates """
 
 OVERLAPPING_INCARCERATION_PERIODS_QUERY_TEMPLATE = f"""
-  /*{{description}}*/
   {overlapping_periods_query(StateIncarcerationPeriod)}
 """
 

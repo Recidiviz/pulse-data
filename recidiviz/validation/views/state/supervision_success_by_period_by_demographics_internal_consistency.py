@@ -55,7 +55,6 @@ MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["race_or_ethnicity", "gender"]
 NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["age_bucket"]
 
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {internal_consistency_query(partition_columns=PARTITION_COLUMNS,
                             mutually_exclusive_breakdown_columns=MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS,
                             non_mutually_exclusive_breakdown_columns=NON_MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS,

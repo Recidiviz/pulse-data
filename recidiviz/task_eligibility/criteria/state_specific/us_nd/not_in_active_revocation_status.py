@@ -37,7 +37,6 @@ _DESCRIPTION = """Describes the spans of time during which someone in ND is not
 currently in the process of being revoked."""
 
 _QUERY_TEMPLATE = f"""
-/*{{description}}*/
 WITH critical_date_update_datetimes AS (
     SELECT
         state_code,

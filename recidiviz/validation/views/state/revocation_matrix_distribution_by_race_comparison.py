@@ -38,7 +38,6 @@ Revocation matrix comparison of summed counts across race """
 
 
 REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {sums_and_totals_consistency_query(
     view_builder=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER,
     breakdown_dimensions=['race'],

@@ -42,7 +42,6 @@ CALCULATED_COLUMNS_TO_VALIDATE = ["participation_count"]
 MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS = ["race_or_ethnicity"]
 
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {internal_consistency_query(partition_columns=PARTITION_COLUMNS,
                             mutually_exclusive_breakdown_columns=MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS,
                             calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}

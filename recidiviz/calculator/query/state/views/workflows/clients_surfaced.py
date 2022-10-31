@@ -34,7 +34,6 @@ CLIENTS_SURFACED_DESCRIPTION = """
     """
 
 CLIENTS_SURFACED_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     {user_event_template(
         "frontend_surfaced_in_list", add_columns=["opportunity_type"]
     )}

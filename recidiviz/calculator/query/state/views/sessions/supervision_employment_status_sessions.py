@@ -28,7 +28,6 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_NAME = (
 SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_DESCRIPTION = """View of continuous periods of unemployment or employment overlapping with time on supervision"""
 
 SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
-/* {description} */
     #TODO(#12307): Replace unnesting logic with efficient sessionization template.
     WITH date_array AS (
         SELECT *

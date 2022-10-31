@@ -38,7 +38,7 @@ class BigQueryView(bigquery.TableReference):
     # know whether they will be used so it always makes them available to the query. If
     # the query does not use them this is not indicative of a bug.
     QUERY_FORMATTER = StrictStringFormatter(
-        allowed_unused_keywords=frozenset({"description", "project_id"})
+        allowed_unused_keywords=frozenset({"project_id"})
     )
 
     def __init__(
@@ -86,11 +86,8 @@ class BigQueryView(bigquery.TableReference):
             dataset_id, default_project=project_id
         )
         super().__init__(dataset_ref, view_id)
-        # TODO(#14545): Stop adding description to query_format_kwargs
-        self.query_format_kwargs = {
-            **query_format_kwargs,
-            "description": description,
-        }
+        self.query_format_kwargs = query_format_kwargs
+
         self._view_id = view_id
         self._description = description
         self._view_query_template = view_query_template

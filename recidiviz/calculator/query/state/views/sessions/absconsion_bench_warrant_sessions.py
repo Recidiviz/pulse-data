@@ -30,7 +30,6 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_NAME = "absconsion_bench_warrant_sessions
 ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of continuous periods of stay on absconsion/bench warrant status"""
 
 ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH
     /*
     Combine absconsion/BW sessions from `compartment_sessions` and `supervision_level_sessions`

@@ -40,7 +40,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
 
 # TODO(#10742): implement violation fields
 SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
-    /* {description} */
     WITH
     data_freshness AS ({get_pathways_supervision_last_updated_date})
     ,

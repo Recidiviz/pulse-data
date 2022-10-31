@@ -86,7 +86,6 @@ def generate_state_specific_population(
 
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH supervision_population_metrics AS (
         {hack_us_id_absconsions('most_recent_supervision_population_span_to_single_day_metrics_materialized', include_state_pop=True)}
     ),

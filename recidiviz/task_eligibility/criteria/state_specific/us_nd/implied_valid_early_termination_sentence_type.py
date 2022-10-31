@@ -45,7 +45,6 @@ docstars_offenders.
 """
 
 _QUERY_TEMPLATE = f"""
-/*{{description}}*/
 WITH
 {task_deadline_critical_date_update_datetimes_cte(
     task_type=StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,

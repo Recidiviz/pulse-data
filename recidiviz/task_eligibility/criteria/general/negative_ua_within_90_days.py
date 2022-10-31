@@ -35,7 +35,6 @@ someone with a history of drug/alcohol risk has a recent negative
 urine analysis test and no positive result within 90 days"""
 
 _QUERY_TEMPLATE = f"""
-/*{{description}}*/
     WITH check_spans AS (
     /* This CTE checks for ALCOHOL/DRUG offenses as a proxy for alcohol or drug risk and sets a start date for needing a
     urine analysis test as the earliest date imposed for a alcohol/drug offense */

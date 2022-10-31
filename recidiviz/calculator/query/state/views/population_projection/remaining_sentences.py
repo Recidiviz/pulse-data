@@ -27,7 +27,6 @@ REMAINING_SENTENCES_VIEW_NAME = "remaining_sentences"
 REMAINING_SENTENCES_VIEW_DESCRIPTION = """"Current total population by compartment, outflow compartment, and months until transition will be made"""
 
 REMAINING_SENTENCES_QUERY_TEMPLATE = """
-    /* {description} */
 
     SELECT
       state_code,

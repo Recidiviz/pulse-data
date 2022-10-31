@@ -49,7 +49,6 @@ US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_DESCRIPTION = """
     for early discharge from supervision in Idaho 
     """
 US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = f"""
- /*{{description}}*/
    WITH notes AS(
     --violations
         SELECT 

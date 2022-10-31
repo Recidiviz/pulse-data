@@ -47,7 +47,6 @@ MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
 ]
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
-    /* {description} */
     WITH historical_dates AS (
       -- Set the historical date array from Jan 2016 to the start of the current month
       SELECT *

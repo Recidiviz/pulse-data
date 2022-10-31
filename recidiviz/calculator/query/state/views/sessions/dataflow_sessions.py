@@ -72,7 +72,6 @@ This table is the source of other sessions tables such as `compartment_sessions`
 """
 
 DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH population_cte AS
     /*
     Union together incarceration and supervision population metrics (both in state and out of state). There are cases in 

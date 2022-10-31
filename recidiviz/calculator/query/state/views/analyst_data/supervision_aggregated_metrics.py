@@ -183,7 +183,6 @@ USING
         """
 
     query_template = f"""
-/*{{description}}*/
 
 -- unnested date array starting at SUPERVISION_METRICS_START_DATE
 -- through the last day of the most recent complete month

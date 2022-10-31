@@ -92,7 +92,6 @@ def make_overall_score_queries_by_state(field: str) -> str:
 
 
 VITALS_TIME_SERIES_TEMPLATE = f"""
-  /*{{description}}*/
   WITH timely_discharge AS (
     {generate_time_series_query("discharge", "timely_discharge", "supervision_population_due_for_release_by_po_by_day")}
   ), timely_risk_assessment AS (

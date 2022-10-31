@@ -37,7 +37,6 @@ Comparison of values between internal and external lists of person-level release
 """
 
 RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {recidivism_person_level_query(include_unmatched_people=True)}
 """
 

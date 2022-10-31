@@ -34,7 +34,6 @@ month, we filter for the most severe violation type (i.e. "new crime" violation 
 """
 
 REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH violation_reports AS (
       {VIOLATION_REPORTS_QUERY}
     ),

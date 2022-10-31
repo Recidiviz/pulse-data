@@ -37,7 +37,6 @@ US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """TN Sta
 """
 
 US_TN_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
-    /*{{description}}*/   
     --TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics
     WITH overlapping_periods_cte AS 
     (

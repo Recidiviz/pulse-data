@@ -34,7 +34,6 @@ CLIENTS_REFERRAL_FORM_VIEWED_DESCRIPTION = """
     """
 
 CLIENTS_REFERRAL_FORM_VIEWED_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     {user_event_template(
         "frontend_referral_form_viewed", add_columns=["opportunity_type"]
     )}

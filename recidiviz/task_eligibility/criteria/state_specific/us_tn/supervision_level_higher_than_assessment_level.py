@@ -35,7 +35,6 @@ is supervised at a stricter level than the risk assessment policy recommends.
 """
 
 _QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH supervision_and_assessments AS (
       SELECT 
         state_code, 

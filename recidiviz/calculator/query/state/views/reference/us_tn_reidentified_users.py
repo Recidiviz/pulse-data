@@ -30,7 +30,6 @@ US_TN_REIDENTIFIED_USERS_VIEW_NAME = "us_tn_reidentified_users"
 US_TN_REIDENTIFIED_USERS_VIEW_DESCRIPTION = """View of re-identified dashboard users"""
 
 US_TN_REIDENTIFIED_USERS_QUERY_TEMPLATE = """
-    /* {description} */
     SELECT
         user_hash AS user_id,
         StaffId as user_external_id,

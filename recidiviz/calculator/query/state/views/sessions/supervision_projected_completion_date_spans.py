@@ -40,7 +40,6 @@ indicated by the sentences that were active during that span.
 STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [StateCode.US_ND]
 
 _QUERY_TEMPLATE = f"""
-    /*{{description}}*/
 WITH all_states_spans AS (
     SELECT
         span.state_code,

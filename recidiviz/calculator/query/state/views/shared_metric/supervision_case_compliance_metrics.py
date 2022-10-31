@@ -30,7 +30,6 @@ Case compliance metrics with supervising_officer_external_id pulled directly fro
 """
 
 SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
-/*{{description}}*/
     {hack_us_id_absconsions('most_recent_supervision_case_compliance_metrics_materialized')}
 """
 

@@ -34,7 +34,6 @@ date). This criteria is the logical opposite of the
 `SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE` view"""
 
 _QUERY_TEMPLATE = f"""
-/*{{description}}*/
 SELECT
     state_code,
     person_id,

@@ -49,9 +49,6 @@ More about PSA: https://advancingpretrial.org/psa/about
 """
 
 PSA_RISK_SCORES_QUERY_TEMPLATE = """
-/*
-{description}
-*/
 
 -- renaming compartment_sessions data for convenience
 WITH compartment_sessions AS (

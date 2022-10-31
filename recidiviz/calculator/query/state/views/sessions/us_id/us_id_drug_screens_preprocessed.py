@@ -32,7 +32,6 @@ US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_NAME = "us_id_drug_screens_preprocessed"
 US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of drug screens in Idaho over the last 20 years, unique on person, date, and sample type"""
 
 US_ID_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
-    /* {description} */
     WITH drug_screens_raw_cte AS (
         SELECT DISTINCT
             person_id,

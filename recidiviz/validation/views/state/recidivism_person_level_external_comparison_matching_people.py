@@ -38,7 +38,6 @@ agree the person was included in a release cohort.
 """
 
 RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {recidivism_person_level_query(include_unmatched_people=False)}
 """
 

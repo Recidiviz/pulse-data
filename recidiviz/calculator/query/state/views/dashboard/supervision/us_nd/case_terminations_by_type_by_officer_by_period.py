@@ -35,7 +35,6 @@ and metric period months (1, 3, 6, 12, 36).
 """
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     {_get_query_prep_statement()}
     SELECT
       state_code,

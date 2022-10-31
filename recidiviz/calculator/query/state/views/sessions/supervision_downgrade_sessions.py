@@ -54,9 +54,6 @@ within person_id.
 """
 
 SUPERVISION_DOWNGRADE_SESSIONS_QUERY_TEMPLATE = f"""
-/*
-{{description}}
-*/
 
 WITH 
 -- dates when a client was surfaced in a day zero report

@@ -30,7 +30,6 @@ MICROSIM_PROJECTED_TRANSITIONS_VIEW_DESCRIPTION = (
 TRANSITIONS_START_DATE = "2016-06-01"
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
-    /* {description} */
     WITH historical_transitions AS (
         SELECT
             state_code,

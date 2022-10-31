@@ -57,7 +57,6 @@ def _get_query_prep_statement() -> str:
 
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     {_get_query_prep_statement()}
     SELECT
       state_code, year, month,

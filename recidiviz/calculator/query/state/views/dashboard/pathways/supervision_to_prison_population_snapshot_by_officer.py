@@ -37,7 +37,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_DESCRIPTION = """Admissions
 
 
 SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
-    /* {description} */
     WITH
     data_freshness AS ({get_pathways_supervision_last_updated_date})
     ,

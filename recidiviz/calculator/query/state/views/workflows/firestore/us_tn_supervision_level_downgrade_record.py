@@ -38,7 +38,6 @@ US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_DESCRIPTION = """
     Query for relevant metadata needed to support supervision level downgrade opportunity in Tennessee 
     """
 US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
- /*{{description}}*/
 SELECT 
    pei.external_id, 
    tes.state_code,
