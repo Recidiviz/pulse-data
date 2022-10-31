@@ -46,6 +46,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import SUPERVISION_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
@@ -443,7 +444,17 @@ def get_api_blueprint(
                 )
             }
             metric_definitions = MetricInterface.get_metric_definitions(
-                systems={schema.System[system] for system in agency.systems or []}
+                systems={
+                    schema.System[system]
+                    for system in agency.systems or []
+                    if schema.System[system] in SUPERVISION_SYSTEMS
+                }
+                if system == "SUPERVISION"
+                # Only send over metric definitions for the current system unless
+                # the agency is uploading for supervision, which sheets contain
+                # data for many supervision systems such as POST_RELEASE, PAROLE,
+                # and PROBATION
+                else {schema.System[system]}
             )
 
             (

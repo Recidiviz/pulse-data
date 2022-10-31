@@ -17,7 +17,17 @@
 """ Contains Justice Counts constants """
 import enum
 
+from recidiviz.persistence.database.schema.justice_counts.schema import System
+
 
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
     METRICS_TAB = "METRICS_TAB"
+
+
+SUPERVISION_SYSTEMS = [
+    System.POST_RELEASE,
+    System.PAROLE,
+    System.PROBATION,
+    System.SUPERVISION,
+]
