@@ -15,7 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ID Workflows supervision clients."""
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    array_concat_with_null,
+    nonnull_end_date_exclusive_clause,
+)
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
@@ -117,18 +120,21 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         SELECT
             external_id AS person_external_id,
             TRUE AS limited_supervision_eligible,
+            ["LSU"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_transfer_to_limited_supervision_form_record_materialized`
     ),
     id_earned_discharge_eligibility AS (
         SELECT
             external_id AS person_external_id,
             TRUE AS earned_discharge_eligible,
+            ["earnedDischarge"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
     ),
     id_past_FTRD_eligibility AS (
         SELECT
             external_id AS person_external_id,
             TRUE AS past_FTRD_eligible,
+            ["pastFTRD"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_full_term_discharge_from_supervision_request_record_materialized`
     ),
     id_clients AS (
@@ -157,6 +163,11 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             IFNULL(limited_supervision_eligible, FALSE) AS limited_supervision_eligible,
             IFNULL(past_FTRD_eligible, FALSE) AS past_FTRD_eligible,
             FALSE AS supervision_level_downgrade_eligible,
+            {array_concat_with_null([
+                "id_earned_discharge_eligibility.eligible_opportunities",
+                "id_lsu_eligibility.eligible_opportunities",
+                "id_past_FTRD_eligibility.eligible_opportunities"
+            ])} AS all_eligible_opportunities,
         FROM join_id_clients
         LEFT JOIN id_earned_discharge_eligibility USING(person_external_id)
         LEFT JOIN id_lsu_eligibility USING (person_external_id)
