@@ -108,11 +108,13 @@ const ValidationFailureTable: FC<ValdiationFailureTableProps> = ({
         sorter: (a: ValidationStatusRecord, b: ValidationStatusRecord) =>
           optionalStringSort(a.getStateCode(), b.getStateCode()),
         defaultSortOrder: "ascend",
-        filters: allStates.map((state: string) => ({
-          text: state,
-          value: state,
-        })),
-        filteredValue: selectedState ? [selectedState] : null,
+        filters: selectedState
+          ? undefined
+          : allStates.map((state: string) => ({
+              text: state,
+              value: state,
+            })),
+        filteredValue: selectedState ? [selectedState] : undefined,
         onFilter: (value, record: ValidationStatusRecord) =>
           record.getStateCode() === value,
       },

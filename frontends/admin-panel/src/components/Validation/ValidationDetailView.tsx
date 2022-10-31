@@ -15,75 +15,64 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, Breadcrumb, PageHeader } from "antd";
-import { useState } from "react";
-import { Link, useHistory, useLocation, useParams } from "react-router-dom";
-import { fetchValidationStateCodes } from "../../AdminPanelAPI";
-import { VALIDATION_STATUS_ROUTE } from "../../navigation/DatasetMetadata";
+import { Alert, Breadcrumb, Layout } from "antd";
+import { FC } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  addStateCodeQueryToLink,
+  VALIDATION_STATUS_ROUTE,
+} from "../../navigation/DatasetMetadata";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
-import StateSelector from "../Utilities/StateSelector";
 import ValidationDetails from "./ValidationDetails";
 
 interface MatchParams {
   validationName: string;
 }
 
-const ValidationDetailView = (): JSX.Element => {
+interface ValidationDetailViewProps {
+  stateCode: string | null;
+  stateCodeChange: (value: StateCodeInfo) => void;
+}
+
+const ValidationDetailView: FC<ValidationDetailViewProps> = ({
+  stateCode,
+  stateCodeChange,
+}) => {
   const { validationName } = useParams<MatchParams>();
-
-  const history = useHistory();
-
-  const location = useLocation();
-  const queryString = location.search;
-  const params = new URLSearchParams(queryString);
-
-  const updateQueryParams = (stateCodeInput: string) => {
-    const locationObj = {
-      search: `?stateCode=${stateCodeInput}`,
-    };
-    history.push(locationObj);
-  };
-
-  const [stateCodesData, setStateCodesData] =
-    useState<StateCodeInfo[] | undefined>();
-
-  const state = stateCodesData?.find(
-    (value: StateCodeInfo) => value.code === params.get("stateCode")
-  );
-
-  const updateState = (value: StateCodeInfo) => {
-    updateQueryParams(value.code);
-  };
 
   return (
     <>
-      <Breadcrumb>
-        <Breadcrumb.Item>
-          <Link to={VALIDATION_STATUS_ROUTE}>Validation Status</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>{validationName}</Breadcrumb.Item>
-      </Breadcrumb>
-      <PageHeader
+      <StateSelectorPageHeader
         title="Validation Details"
         subTitle="Shows the detailed status for the validation in this state."
-        extra={
-          <StateSelector
-            fetchStateList={fetchValidationStateCodes}
-            onFetched={(stateList) => setStateCodesData(stateList)}
-            onChange={updateState}
-            value={state?.code}
-          />
-        }
+        stateCode={stateCode}
+        onChange={stateCodeChange}
       />
-      {state ? (
-        <ValidationDetails validationName={validationName} stateInfo={state} />
-      ) : (
-        <Alert
-          message="A region must be selected to view the below information"
-          type="warning"
-          showIcon
-        />
-      )}
+      <Layout className="content-side-padding">
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            <Link
+              to={addStateCodeQueryToLink(VALIDATION_STATUS_ROUTE, stateCode)}
+            >
+              Validation Status
+            </Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>{validationName}</Breadcrumb.Item>
+        </Breadcrumb>
+        {stateCode ? (
+          <ValidationDetails
+            validationName={validationName}
+            stateCode={stateCode}
+          />
+        ) : (
+          <Alert
+            message="A region must be selected to view the below information"
+            type="warning"
+            showIcon
+          />
+        )}
+      </Layout>
     </>
   );
 };

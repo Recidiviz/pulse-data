@@ -20,9 +20,8 @@ import {
   SamenessPerViewValidationResultDetails,
   ValidationStatusRecord,
 } from "../../recidiviz/admin_panel/models/validation_pb";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
 
-export const ANCHOR_VALIDATION_SUMMARY_FAILURES = "summary-failures";
+export const ANCHOR_VALIDATION_FAILURE_SUMMARY = "failure-summary";
 export const ANCHOR_VALIDATION_HARD_FAILURES = "hard-failures";
 export const ANCHOR_VALIDATION_SOFT_FAILURES = "soft-failures";
 export const ANCHOR_VALIDATION_FULL_RESULTS = "full-results";
@@ -40,7 +39,7 @@ export enum RecordStatus {
 
 export interface ValidationDetailsProps {
   validationName: string;
-  stateInfo: StateCodeInfo;
+  stateCode: string;
 }
 
 export interface ValidationDetailsGraphProps {

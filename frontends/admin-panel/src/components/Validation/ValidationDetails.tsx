@@ -60,14 +60,14 @@ import ValidationErrorTable from "./ValidationErrorTable";
 
 const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
-  stateInfo,
+  stateCode,
 }) => {
   const [validationDescription, setValidationDescription] =
     React.useState<string | undefined>(undefined);
 
   const fetchErrorTable = React.useCallback(() => {
-    return fetchValidationErrorTable(validationName, stateInfo.code);
-  }, [validationName, stateInfo]);
+    return fetchValidationErrorTable(validationName, stateCode);
+  }, [validationName, stateCode]);
 
   const { loading: errorTableLoading, data: errorTable } =
     useFetchedDataJSON<ValidationErrorTableData>(fetchErrorTable);
@@ -83,7 +83,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       : "recidiviz-staging";
 
     // Time range is set to 5 days which should be fine since ValidationDetails is focusing on the most recent runs.
-    return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateInfo.code}%22;timeRange=P5D?project=${queryEnv}`;
+    return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateCode}%22;timeRange=P5D?project=${queryEnv}`;
   };
 
   // TODO(#9480): Allow user to see more than last 14 days.
@@ -96,8 +96,8 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       setValidationDescription(text);
     }
 
-    return fetchValidationDetails(validationName, stateInfo.code);
-  }, [validationName, stateInfo]);
+    return fetchValidationDetails(validationName, stateCode);
+  }, [validationName, stateCode]);
 
   const validationFetched = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchResults,

@@ -15,37 +15,38 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert, Layout, List, Menu, MenuProps, Typography } from "antd";
+import { Layout, List, Menu, MenuProps } from "antd";
 import { Content } from "antd/lib/layout/layout";
 import Sider from "antd/lib/layout/Sider";
-import { useEffect } from "react";
-import { useHistory, useLocation } from "react-router-dom";
-import { fetchValidationStatus } from "../../AdminPanelAPI";
-import { useFetchedDataProtobuf } from "../../hooks";
+import { FC, useEffect } from "react";
+import { Route, Switch, useHistory, useLocation } from "react-router-dom";
+import { fetchValidationStatus } from "../../../AdminPanelAPI";
+import { useFetchedDataProtobuf } from "../../../hooks";
+import {
+  VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE,
+  VALIDATION_STATUS_FULL_RESULTS_ROUTE,
+} from "../../../navigation/DatasetMetadata";
 import {
   ValidationStatusRecord,
   ValidationStatusRecords,
-} from "../../recidiviz/admin_panel/models/validation_pb";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
-import { scrollToAnchor } from "../Utilities/GeneralUtilities";
-import uniqueStates from "../Utilities/UniqueStates";
+} from "../../../recidiviz/admin_panel/models/validation_pb";
+import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
+import { StateCodeInfo } from "../../IngestOperationsView/constants";
+import { scrollToAnchor } from "../../Utilities/GeneralUtilities";
+import uniqueStates from "../../Utilities/UniqueStates";
 import {
+  ANCHOR_VALIDATION_FAILURE_SUMMARY,
   ANCHOR_VALIDATION_FULL_RESULTS,
   ANCHOR_VALIDATION_HARD_FAILURES,
   ANCHOR_VALIDATION_SOFT_FAILURES,
-  ANCHOR_VALIDATION_SUMMARY_FAILURES,
-  RecordStatus,
-} from "./constants";
+} from "../constants";
 import {
   chooseIdNameForCategory,
   formatDatetime,
   readableNameForCategoryId,
-} from "./utils";
-import ValidationCategoryFullResultsTable from "./ValidationCategoryFullResultsTable";
-import ValidationFailureTable from "./ValidationFailureTable";
-
-const { Title } = Typography;
+} from "../utils";
+import ValidationFailureSummary from "./ValidationFailureSummary";
+import ValidationFullResults from "./ValidationFullResults";
 
 interface MetadataItem {
   key: string;
@@ -75,36 +76,85 @@ const getMenuItems: (
   stateCode: string | null
 ) => MenuProps["items"] = (categoryIds: string[], stateCode: string | null) => {
   return [
-    getItem(
-      "Summary Failures",
-      `#${ANCHOR_VALIDATION_SUMMARY_FAILURES}`,
-      null,
-      [
-        getItem("Hard Failures", `#${ANCHOR_VALIDATION_HARD_FAILURES}`),
-        getItem("Soft Failures", `#${ANCHOR_VALIDATION_SOFT_FAILURES}`),
-      ]
-    ),
+    getItem("Failure Summary", ANCHOR_VALIDATION_FAILURE_SUMMARY, null, [
+      getItem("Hard Failures", ANCHOR_VALIDATION_HARD_FAILURES),
+      getItem("Soft Failures", ANCHOR_VALIDATION_SOFT_FAILURES),
+    ]),
     getItem(
       "Full Results",
-      `#${ANCHOR_VALIDATION_FULL_RESULTS}`,
+      ANCHOR_VALIDATION_FULL_RESULTS,
       null,
       stateCode
         ? categoryIds.map((categoryId) => {
-            return getItem(
-              readableNameForCategoryId(categoryId),
-              `#${categoryId}`
-            );
+            return getItem(readableNameForCategoryId(categoryId), categoryId);
           })
         : undefined
     ),
   ];
 };
 
-const ValidationStatusView = (): JSX.Element => {
+const getIdToUrlMap: (
+  categoryIds: string[],
+  stateCode: string | null
+) => Map<string, { pathname: string; hash?: string }> = (
+  categoryIds: string[],
+  stateCode: string | null
+) => {
+  const links: [string, { pathname: string; hash?: string }][] = [
+    [
+      ANCHOR_VALIDATION_FAILURE_SUMMARY,
+      {
+        pathname: VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE,
+      },
+    ],
+    [
+      ANCHOR_VALIDATION_HARD_FAILURES,
+      {
+        pathname: VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE,
+        hash: `#${ANCHOR_VALIDATION_HARD_FAILURES}`,
+      },
+    ],
+    [
+      ANCHOR_VALIDATION_SOFT_FAILURES,
+      {
+        pathname: VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE,
+        hash: `#${ANCHOR_VALIDATION_SOFT_FAILURES}`,
+      },
+    ],
+    [
+      ANCHOR_VALIDATION_FULL_RESULTS,
+      {
+        pathname: VALIDATION_STATUS_FULL_RESULTS_ROUTE,
+      },
+    ],
+  ];
+  const fullResultsLinks: [string, { pathname: string; hash?: string }][] =
+    stateCode
+      ? categoryIds.map((categoryId) => [
+          categoryId,
+          {
+            pathname: VALIDATION_STATUS_FULL_RESULTS_ROUTE,
+            hash: `#${categoryId}`,
+          },
+        ])
+      : [];
+
+  return new Map<string, { pathname: string; hash?: string }>(
+    links.concat(fullResultsLinks)
+  );
+};
+
+interface ValdiationStatusViewProps {
+  stateCode: string | null;
+  stateCodeChange: (value: StateCodeInfo) => void;
+}
+
+const ValidationStatusView: FC<ValdiationStatusViewProps> = ({
+  stateCode,
+  stateCodeChange,
+}) => {
   const history = useHistory();
   const { pathname, hash, search } = useLocation();
-  const queryParams = new URLSearchParams(search);
-  const stateCode = queryParams.get("stateCode");
 
   const { loading, data } = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchValidationStatus,
@@ -155,16 +205,16 @@ const ValidationStatusView = (): JSX.Element => {
   }, [hash, data]);
 
   const onClick: MenuProps["onClick"] = (e) => {
+    const map = getIdToUrlMap(categoryIds, stateCode);
+    const link = map.get(e.key);
+    if (!link) {
+      throw new Error(`Could not find link map for: ${e.key}`);
+    }
     history.push({
-      pathname,
-      hash: e.key,
-      search: queryParams.toString(),
+      pathname: link.pathname,
+      hash: link.hash,
+      search,
     });
-  };
-
-  const stateCodeChange = (value: StateCodeInfo) => {
-    queryParams.set("stateCode", value.code);
-    history.push({ search: queryParams.toString() });
   };
 
   return (
@@ -181,7 +231,7 @@ const ValidationStatusView = (): JSX.Element => {
             style={{ marginTop: "5px" }}
             onClick={onClick}
             mode="inline"
-            selectedKeys={[pathname + hash]}
+            selectedKeys={[getIdForUrl(pathname, categoryIds, stateCode, hash)]}
             items={getMenuItems(categoryIds, stateCode)}
             defaultOpenKeys={getMenuItems([], stateCode)?.map(
               (x) => x?.key?.toString() || ""
@@ -200,57 +250,26 @@ const ValidationStatusView = (): JSX.Element => {
                 </List.Item>
               )}
             />
-            <Title id={ANCHOR_VALIDATION_SUMMARY_FAILURES} level={1}>
-              Failure Summary
-            </Title>
-            <Title id={ANCHOR_VALIDATION_HARD_FAILURES} level={2}>
-              Hard Failures
-            </Title>
-            <ValidationFailureTable
-              statuses={[RecordStatus.FAIL_HARD, RecordStatus.BROKEN]}
-              records={records}
-              allStates={allStates}
-              selectedState={stateCode}
-              categoryIds={categoryIds}
-              loading={loading}
-            />
-            <Title id={ANCHOR_VALIDATION_SOFT_FAILURES} level={2}>
-              Soft Failures
-            </Title>
-            <ValidationFailureTable
-              statuses={[RecordStatus.FAIL_SOFT]}
-              records={records}
-              allStates={allStates}
-              selectedState={stateCode}
-              categoryIds={categoryIds}
-              loading={loading}
-            />
-            <Title id={ANCHOR_VALIDATION_FULL_RESULTS} level={1}>
-              Full Results
-            </Title>
-            {stateCode ? (
-              categoryIds.sort().map((categoryId) => {
-                return (
-                  <>
-                    <Title id={categoryId} level={2}>
-                      {readableNameForCategoryId(categoryId)}
-                    </Title>
-                    <ValidationCategoryFullResultsTable
-                      selectedStates={stateCode ? [stateCode] : allStates}
-                      categoryId={categoryId}
-                      dictOfCategoryIdsToRecords={dictOfCategoryIdsToRecords}
-                      loading={loading}
-                    />
-                  </>
-                );
-              })
-            ) : (
-              <Alert
-                message="Select a region to view region-specific validation category details"
-                type="warning"
-                showIcon
-              />
-            )}
+            <Switch>
+              <Route path={VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE}>
+                <ValidationFailureSummary
+                  stateCode={stateCode}
+                  categoryIds={categoryIds}
+                  allStates={allStates}
+                  records={records}
+                  loading={loading}
+                />
+              </Route>
+              <Route path={VALIDATION_STATUS_FULL_RESULTS_ROUTE}>
+                <ValidationFullResults
+                  stateCode={stateCode}
+                  categoryIds={categoryIds}
+                  allStates={allStates}
+                  dictOfCategoryIdsToRecords={dictOfCategoryIdsToRecords}
+                  loading={loading}
+                />
+              </Route>
+            </Switch>
           </Content>
         </Layout>
       </Layout>
@@ -259,3 +278,18 @@ const ValidationStatusView = (): JSX.Element => {
 };
 
 export default ValidationStatusView;
+
+function getIdForUrl(
+  pathname: string,
+  categoryIds: string[],
+  stateCode: string | null,
+  hash?: string
+): string {
+  const map = getIdToUrlMap(categoryIds, stateCode);
+  const entries = Array.from(map.entries());
+  const link = entries.find(
+    ([_, mapLink]) =>
+      mapLink.pathname === pathname && (mapLink.hash === hash || hash === "")
+  );
+  return link ? link[0] : "";
+}

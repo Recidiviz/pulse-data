@@ -45,8 +45,7 @@ import POFeedbackView from "./POFeedbackView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
-import ValidationDetailView from "./Validation/ValidationDetailView";
-import ValidationStatusView from "./Validation/ValidationStatusView";
+import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 
 type MenuItem = Required<MenuProps>["items"][number];
 
@@ -200,12 +199,8 @@ const App = (): JSX.Element => {
             component={DataFreshnessView}
           />
           <Route
-            path={DatasetMetadata.VALIDATION_DETAIL_ROUTE_TEMPLATE}
-            component={ValidationDetailView}
-          />
-          <Route
             path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
-            component={ValidationStatusView}
+            component={ValidationStatusOverview}
           />
           <Route
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
