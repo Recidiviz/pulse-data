@@ -20,7 +20,9 @@ import MetadataDataset from "../models/MetadataDatasets";
 export const DATA_FRESHNESS_ROUTE = "/admin/ingest_metadata/data_freshness";
 
 export const VALIDATION_STATUS_ROUTE = `/admin/${MetadataDataset.VALIDATION}/status`;
-export const VALIDATION_DETAIL_ROUTE_TEMPLATE = `${VALIDATION_STATUS_ROUTE}/:validationName`;
+export const VALIDATION_STATUS_FAILURE_SUMMARY_ROUTE = `${VALIDATION_STATUS_ROUTE}/failure_summary`;
+export const VALIDATION_STATUS_FULL_RESULTS_ROUTE = `${VALIDATION_STATUS_ROUTE}/full_results`;
+export const VALIDATION_DETAIL_ROUTE_TEMPLATE = `${VALIDATION_STATUS_ROUTE}/details/:validationName`;
 
 export const routeForValidationDetail = (validationName?: string): string => {
   if (validationName === undefined) {

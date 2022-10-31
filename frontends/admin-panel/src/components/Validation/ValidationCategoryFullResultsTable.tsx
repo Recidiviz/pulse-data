@@ -45,7 +45,7 @@ const ValidationCategoryFullResultsTable: FC<ValidationCategoryFullResultsTableP
       state: string
     ): ColumnType<MetadataRecord<ValidationStatusRecord>> {
       return {
-        title: state,
+        title: selectedStates.length > 1 ? state : "Status",
         key: state,
         onCell: (record) => {
           return {
