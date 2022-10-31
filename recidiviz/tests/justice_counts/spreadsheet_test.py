@@ -352,7 +352,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             spreadsheet = session.query(schema.Spreadsheet).one()
             self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
 
-    def test_ingest_json_response_invalid_breakdowns(self) -> None:
+    def test_ingest_json_response_sheet_errors(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = self.test_schema_objects.test_user_A
             agency = self.test_schema_objects.test_agency_A
@@ -367,8 +367,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             session.add(spreadsheet)
             file = (
-                self.bulk_upload_test_files
-                / "law_enforcement/calls_for_service_breakdown_error.xlsx"
+                self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
             ).open("rb")
             (
                 metric_key_to_datapoint_jsons,
@@ -390,7 +389,20 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(len(json_response["metrics"]), 7)
             for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.calls_for_service.key:
+                if metric["key"] == law_enforcement.annual_budget.key:
+                    self.assertEqual(len(metric["metric_errors"]), 1)
+                    for sheet in metric["metric_errors"]:
+                        if sheet["sheet_name"] == "annual_budget":
+                            self.assertEqual(
+                                {
+                                    "title": "Monthly Data Provided for Annual Metric",
+                                    "subtitle": None,
+                                    "description": "This sheet should not contain a month column.",
+                                    "type": "ERROR",
+                                },
+                                sheet["messages"][0],
+                            )
+                elif metric["key"] == law_enforcement.calls_for_service.key:
                     self.assertEqual(len(metric["metric_errors"]), 1)
                     for sheet in metric["metric_errors"]:
                         if sheet["sheet_name"] == "calls_for_service":
