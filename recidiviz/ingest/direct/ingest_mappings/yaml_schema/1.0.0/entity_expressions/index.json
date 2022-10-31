@@ -6,6 +6,9 @@
       "$ref": "../generic_expressions/conditional.json"
     },
     {
+      "$ref": "../generic_expressions/variable.json"
+    },
+    {
       "$ref": "entity_tree.json"
     }
   ]

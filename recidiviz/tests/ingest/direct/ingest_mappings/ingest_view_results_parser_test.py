@@ -364,6 +364,47 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_list_field_variable_entity(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="ABC123",
+                        id_type="A",
+                    ),
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="123ABC",
+                        id_type="B",
+                    ),
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="XYZ987",
+                        id_type="A",
+                    ),
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="111000",
+                        id_type="C",
+                    ),
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_ingest_view("list_field_variable_entity")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_boolean_field(self) -> None:
         # Arrange
         expected_output = [

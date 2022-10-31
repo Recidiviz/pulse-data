@@ -42,6 +42,9 @@
               },
               {
                 "$ref": "enum_expressions/index.json"
+              },
+              {
+                "$ref": "entity_expressions/entity_tree.json"
               }
             ]
           }
