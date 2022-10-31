@@ -211,7 +211,7 @@ def _rematerialize_all_deployed_views(
     except Exception as e:
         with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
-        raise e from e
+        raise e
 
 
 def create_managed_dataset_and_deploy_views_for_view_builders(

@@ -918,6 +918,46 @@ class ViewManagerTest(unittest.TestCase):
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
 
+    def test_rematerialize_all_deployed_views_raises_error(self) -> None:
+        """Tests the /view_update/rematerialize_all_deployed_views endpoint failures."""
+
+        self.mock_client.materialize_view_to_table.side_effect = Exception(
+            "Something bad happened!"
+        )
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=True,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+        ]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        with self.assertRaises(Exception) as e:
+            # pylint: disable=protected-access
+            view_update_manager._rematerialize_all_deployed_views(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                all_view_builders=mock_view_builders,
+            )
+        self.assertEqual(
+            str(e.exception),
+            "Failed to materialize view [BigQueryAddress(dataset_id='my_views_dataset', "
+            "table_id='my_fake_view')]",
+        )
+        self.assertEqual(str(e.exception.__context__), "Something bad happened!")
+
     def test_valid_view_query_templates(self) -> None:
         """Validates that the view_query_template does not contain any raw GCP
         project_id values. Note that this prevents views from referencing project IDs
