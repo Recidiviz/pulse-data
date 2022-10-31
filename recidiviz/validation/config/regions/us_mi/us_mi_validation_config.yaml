@@ -19,6 +19,12 @@ max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: .035
     override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
+  - validation_name: supervision_population_by_type_external_comparison
+    hard_max_allowed_error_override: .05
+    override_reason:
+      Some error is expected because MI has told us that their validation numbers for suprevision have some weirdness.
+      Some investigation is required however for the case where validations are producing different results in
+      staging vs production.  Current failing level as of 10/28 is 4.0% in staging and 3.2% in production #TODO(#16338)
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 1500
@@ -50,3 +56,6 @@ num_allowed_rows_overrides:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 100000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 69,392 rows #TODO(#16237)
+  - validation_name: supervision_termination_reason_no_date
+    hard_num_allowed_rows_override: 10
+    override_reason: Needs investigation.  Current failing level as of 10/28 is 3 rows #TODO(#16337)
