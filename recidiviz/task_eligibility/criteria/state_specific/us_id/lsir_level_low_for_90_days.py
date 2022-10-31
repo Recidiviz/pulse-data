@@ -47,7 +47,6 @@ someone in ID has a LSI-R score at or below the low potential level to reoffend 
 """
 
 _QUERY_TEMPLATE = f"""
-/*{{description}}*/
 WITH LSIR_level_gender AS(
   /* This CTE creates a view of LSIR-score level by gender according to updated
   Idaho Supervision Categories (07/21/2020) */

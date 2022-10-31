@@ -38,7 +38,6 @@ Revocation matrix comparison of summed counts across gender """
 
 
 REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_QUERY_TEMPLATE = f"""
-/*{{description}}*/
 {sums_and_totals_consistency_query(
     view_builder=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER,
     breakdown_dimensions=['gender'],

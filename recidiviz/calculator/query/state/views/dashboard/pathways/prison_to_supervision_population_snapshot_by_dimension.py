@@ -37,7 +37,6 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_DESCRIPTION = (
 
 
 PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
-    /* {description} */
     WITH
     data_freshness AS ({last_updated_query})
     , event_counts AS (

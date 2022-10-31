@@ -64,9 +64,6 @@ person-day, the GROUP BY clause should include all attribute name columns as wel
 """
 
 PERSON_EVENTS_QUERY_TEMPLATE = """
-/*
-{description}
-*/
 
 -- transitions to liberty or supervision
 -- only include in-state starts. So out-of-state to in-state is included, but 

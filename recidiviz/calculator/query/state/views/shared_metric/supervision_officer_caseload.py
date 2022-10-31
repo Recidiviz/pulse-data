@@ -39,7 +39,6 @@ SUPERVISION_OFFICER_CASELOAD_VIEW_NAME = "supervision_officer_caseload"
 SUPERVISION_OFFICER_CASELOAD_DESCRIPTION = "Caseload per officer per time period."
 
 SUPERVISION_OFFICER_CASELOAD_QUERY_TEMPLATE = """
-    /* {description} */
     WITH cte AS (
         SELECT DISTINCT
             s.state_code,

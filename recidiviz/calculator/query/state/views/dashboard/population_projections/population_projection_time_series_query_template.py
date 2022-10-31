@@ -19,7 +19,6 @@
 
 def population_projection_query(compartment: str) -> str:
     return f"""
-        /*{{description}}*/
         WITH prepared_data AS (
           SELECT
             * EXCEPT (simulation_group),

@@ -32,7 +32,6 @@ US_MO_HOUSING_STAY_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
-    /* {{description}} */
     --TODO(#14709): Templatize sub-sessionization query
     WITH confinement_type_priority_cte AS
     /*

@@ -73,7 +73,6 @@ for use in the supervision_{level_name}_unnested_metrics table.
     client_period_table = f"{{project_id}}.{{sessions_dataset}}.{table}"
 
     query_template = f"""
-/*{{description}}*/
 
 WITH 
 -- define supervision population

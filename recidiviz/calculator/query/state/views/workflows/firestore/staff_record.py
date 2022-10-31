@@ -43,7 +43,6 @@ STAFF_RECORD_DESCRIPTION = """
     """
 
 STAFF_RECORD_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH 
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})

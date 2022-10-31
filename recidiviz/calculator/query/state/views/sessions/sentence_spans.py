@@ -30,7 +30,6 @@ SENTENCE_SPANS_VIEW_NAME = "sentence_spans"
 SENTENCE_SPANS_VIEW_DESCRIPTION = """Spans of time when a collection of sentences were being served or pending served and already imposed"""
 
 SENTENCE_SPANS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH
     /*
     Combine the sentence imposed groups with the individual sentences with columns for

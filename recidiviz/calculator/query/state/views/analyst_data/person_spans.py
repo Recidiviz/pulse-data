@@ -36,9 +36,6 @@ PERSON_SPANS_VIEW_DESCRIPTION = (
 )
 
 PERSON_SPANS_QUERY_TEMPLATE = """
-/*
-{description}
-*/
 
 -- compartment_sessions
 SELECT

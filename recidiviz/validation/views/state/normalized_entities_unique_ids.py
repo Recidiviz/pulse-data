@@ -33,7 +33,6 @@ NORMALIZED_ENTITIES_UNIQUE_IDS_DESCRIPTION = """Reveals when normalization pipel
 are creating entities with duplicate ID values."""
 
 NORMALIZED_ENTITIES_UNIQUE_IDS_QUERY_TEMPLATE = f"""
-  /*{{description}}*/
   {unique_entity_id_values_query()}
 """
 

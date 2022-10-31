@@ -28,7 +28,6 @@ Preprocessed view of drug screen tests and results, unique on person, date, and 
 type"""
 
 DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
-/* {description} */
 
 SELECT * FROM `{project_id}.{sessions_dataset}.us_id_drug_screens_preprocessed`
 UNION ALL

@@ -33,7 +33,6 @@ AUGMENTED_AGENT_INFO_DESCRIPTION = """Agent information table that adds agent in
 
 # TODO(#4159) Remove the US_PA state-specific logic once we have given and surnames set in ingest
 AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH
     agents_base AS (
       SELECT

@@ -41,7 +41,6 @@ OVERLAPPING_SUPERVISION_PERIODS_DESCRIPTION = (
 )
 
 OVERLAPPING_SUPERVISION_PERIODS_QUERY_TEMPLATE = f"""
-  /*{{description}}*/
   {overlapping_periods_query(StateSupervisionPeriod)}
 """
 

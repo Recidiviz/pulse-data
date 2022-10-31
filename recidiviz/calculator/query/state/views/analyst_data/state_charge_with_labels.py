@@ -51,7 +51,6 @@ def null_if_low_probability(
 
 
 STATE_CHARGE_WITH_LABELS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     --TODO(#14102): Replace all usages of this view with normalize_state.state_charge once the schema change request to hydrate these fields in normalization is implemented
     WITH offense_desc_labels_dedup AS
     /*

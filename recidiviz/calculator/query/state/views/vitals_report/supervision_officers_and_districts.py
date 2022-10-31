@@ -32,7 +32,6 @@ Mapping of supervision officers and their districts
 enabled_states = ("US_ND", "US_ID")
 
 SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
    WITH us_id_roster AS (
         SELECT DISTINCT 
             'US_ID' AS state_code,

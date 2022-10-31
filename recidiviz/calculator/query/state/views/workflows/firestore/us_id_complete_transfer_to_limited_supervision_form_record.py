@@ -51,7 +51,6 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_DESCRIPTION = """
     for individuals that may be eligible 
     """
 US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
- /*{{description}}*/
  WITH sentence_charge_description AS (
       SELECT
         sent.state_code,

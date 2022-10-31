@@ -38,7 +38,6 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """TN State
 """
 
 US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
-    /*{{description}}*/   
     -- TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
     WITH overlapping_periods_cte AS 

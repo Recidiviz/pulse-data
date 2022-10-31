@@ -29,7 +29,6 @@ US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 US_MO_CONFINEMENT_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
-    /* {{description}} */
     WITH housing_stay_cte AS
     (
     SELECT 

@@ -34,7 +34,6 @@ CLIENT_RECORD_ARCHIVE_VIEW_DESCRIPTION = (
 )
 
 CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
-    /* {description} */
     WITH
     split_path AS (
         SELECT

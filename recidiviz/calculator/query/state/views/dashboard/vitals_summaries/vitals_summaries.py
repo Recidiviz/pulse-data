@@ -145,7 +145,6 @@ def generate_overall_scores(
 
 
 VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH most_recent_supervision_dates_per_state AS (
     SELECT DISTINCT
         state_code,

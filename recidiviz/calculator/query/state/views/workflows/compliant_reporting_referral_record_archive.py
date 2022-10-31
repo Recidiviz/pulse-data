@@ -36,7 +36,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_DESCRIPTION = (
 )
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
-    /* {description} */
     WITH
     client_to_referral_record_migration_date AS (
         -- This CTE selects the earliest date that `remaining_criteria_needed` is populated in the referral record.

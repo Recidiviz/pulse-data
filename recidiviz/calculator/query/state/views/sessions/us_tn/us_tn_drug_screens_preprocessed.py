@@ -47,8 +47,7 @@ Preprocessed view of drug screens in Tennessee over the last 20 years, unique on
 date, and sample type"""
 
 US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
-    /* {description} */
-    
+   
     WITH tn_contacts AS
     (
         SELECT 

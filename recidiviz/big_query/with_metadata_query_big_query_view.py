@@ -40,11 +40,6 @@ class WithMetadataQueryBigQueryView(BigQueryView):
         address_overrides: Optional[BigQueryAddressOverrides],
         **metadata_query_format_kwargs: str,
     ):
-        # "description" gets added to the BigQueryView kwargs when the view is built;
-        # remove it here so it doesn't conflict with the parameter
-        # TODO(#14545): Remove this once description no longer is added to the kwargs.
-        delegate_query_format_kwargs = delegate.query_format_kwargs.copy()
-        del delegate_query_format_kwargs["description"]
 
         super().__init__(
             dataset_id=delegate.dataset_id,
@@ -55,7 +50,7 @@ class WithMetadataQueryBigQueryView(BigQueryView):
             address_overrides=address_overrides,
             clustering_fields=delegate.clustering_fields,
             should_deploy_predicate=None,
-            **delegate_query_format_kwargs,
+            **delegate.query_format_kwargs,
         )
 
         metadata_query_no_overrides = self._format_view_query(

@@ -38,7 +38,6 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """PA State
 """
 
 US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
-    /*{{description}}*/
     -- TODO(#15613): Remove PA community confinement recategorization when hydrated in population metrics
     WITH overlapping_periods_cte AS 
     (

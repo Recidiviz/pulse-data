@@ -52,7 +52,6 @@ STATE_SPECIFIC_SUPPORTED_RACE_VALUES_LIST = f"""
 
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     
     WITH supervision_counts AS (
     SELECT

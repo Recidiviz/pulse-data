@@ -33,7 +33,6 @@ Absconsion report recommendations by person by month.
 """
 
 ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = f"""
-    /*{{description}}*/
     WITH violation_reports AS (
       {VIOLATION_REPORTS_QUERY}
     )

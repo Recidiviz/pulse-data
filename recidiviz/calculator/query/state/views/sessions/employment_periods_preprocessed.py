@@ -26,7 +26,6 @@ EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_NAME = "employment_periods_preprocessed"
 EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_DESCRIPTION = """View of preprocessed employment information across states. Currently supports Idaho."""
 
 EMPLOYMENT_PERIODS_PREPROCESSED_QUERY_TEMPLATE = """
-    /* {description} */
     #TODO(#12548): Deprecate state preprocessing views once employment data exists in state schema
     SELECT * FROM `{project_id}.{sessions_dataset}.us_id_employment_periods_preprocessed`
 """

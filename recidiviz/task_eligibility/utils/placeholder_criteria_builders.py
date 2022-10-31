@@ -31,7 +31,6 @@ def state_agnostic_placeholder_query_template(reason_query: str) -> str:
     """
     # TODO(#15105): simplify this query once missing spans can be set to default True
     return f"""
-/*{{description}}*/
 SELECT
     state_code,
     person_id,

@@ -36,7 +36,6 @@ US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_DESCRIPTION = (
 )
 
 US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_QUERY_TEMPLATE = """
-/* {description} */
     #TODO(#12548): Deprecate state preprocessing views once employment data exists in state schema
     SELECT DISTINCT
         person.person_id,
