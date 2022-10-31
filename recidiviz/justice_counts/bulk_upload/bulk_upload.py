@@ -705,6 +705,15 @@ class BulkUploader:
                 month = self._get_column_value(
                     row=row, column_name="month", column_type=int
                 )
+            elif (
+                reporting_frequency == ReportingFrequency.ANNUAL
+                and row.get("month") is not None
+            ):
+                raise JusticeCountsBulkUploadException(
+                    title="Monthly Data Provided for Annual Metric",
+                    description="This sheet should not contain a month column.",
+                    message_type=BulkUploadMessageType.ERROR,
+                )
             else:
                 # TODO(#13731): Look up whether this agency uses fiscal years
                 month = 1
