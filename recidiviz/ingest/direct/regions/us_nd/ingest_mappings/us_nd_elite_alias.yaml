@@ -16,6 +16,7 @@ input_columns:
   - CREATE_DATETIME
   - MODIFY_DATETIME
 unused_columns:
+  - SEX_CODE # We no longer use elite_alias as the source of truth for gender
   - OFFENDER_ID # This particular id appears unused elsewhere
   - ALIAS_OFFENDER_ID # This particular id appears unused elsewhere
   - CREATE_DATETIME # No apparent use for these at the moment
@@ -55,12 +56,6 @@ output:
                   - M
                 StatePersonAliasType.NICKNAME:
                   - N
-    gender:
-      $enum_mapping:
-        $raw_text: SEX_CODE
-        $mappings:
-          StateGender.MALE: M
-          StateGender.FEMALE: F
     races:
       - $conditional:
           - $if:
