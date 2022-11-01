@@ -111,14 +111,12 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     # TODO(#11437): `dry_run` will go away once development of the DAG integration is complete
     if dry_run:
         time.sleep(10)
-        cloud_task_id = "test_cloud_task_id"
     else:
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=view_builders,
             historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         )
-        cloud_task_id = get_current_cloud_task_id()
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
 
@@ -126,7 +124,7 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     success_persister.record_success_in_bq(
         deployed_view_builders=view_builders,
         runtime_sec=runtime_sec,
-        cloud_task_id=cloud_task_id,
+        cloud_task_id=get_current_cloud_task_id(),
     )
     logging.info("All managed views successfully updated and materialized.")
 
