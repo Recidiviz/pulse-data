@@ -43,21 +43,21 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         that they are currently serving
         */
         ROW_NUMBER() OVER(PARTITION BY lk.person_id, lk.sentence_group_id, lk.sentence_level
-            ORDER BY sentence.max_sentence_length_days_calculated DESC, lk.sentence_id) = 1 AS is_longest_in_level,
+            ORDER BY sentence.max_sentence_length_days_calculated DESC, sentence.sentence_id, sentence.charge_id) = 1 AS is_longest_in_level,
         
         /*
         This field is used to identify the longest sentence within an imposed group, regardless of its level. This is
         used to pull the most severe offense information
         */
         ROW_NUMBER() OVER(PARTITION BY lk.person_id, lk.date_imposed
-            ORDER BY sentence.max_sentence_length_days_calculated DESC, lk.sentence_id) = 1 AS is_longest_in_imposed_group,
+            ORDER BY sentence.max_sentence_length_days_calculated DESC, sentence.sentence_id, sentence.charge_id) = 1 AS is_longest_in_imposed_group,
     
         /*
         This field is used to identify the first sentence within an imposed group. This generally should be the same as 
         the longest, unless a child has a longer sentence that its parent
         */   
         ROW_NUMBER() OVER(PARTITION BY lk.person_id, lk.date_imposed
-            ORDER BY sentence_level ASC, sentence.max_sentence_length_days_calculated DESC, lk.sentence_id) = 1 AS is_first_sentence,
+            ORDER BY sentence_level ASC, sentence.max_sentence_length_days_calculated DESC, sentence.sentence_id, sentence.charge_id) = 1 AS is_first_sentence,
             
         MAX(sentence_level) OVER(PARTITION BY lk.person_id, lk.date_imposed) - 
             MIN(sentence_level) OVER(PARTITION BY lk.person_id, lk.date_imposed) + 1 AS num_levels,
