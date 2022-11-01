@@ -58,8 +58,14 @@ WITH LSIR_level_gender AS(
       {nonnull_end_date_clause('''DATE_ADD(score.score_end_date, INTERVAL 1 DAY)''')} AS score_end_date,
       ses.start_date AS supervision_start_date,
       ses.end_date AS supervision_end_date,
-      score.assessment_score,
-      score.assessment_score_bucket AS lsir_level
+      CASE
+          WHEN ((gender != "MALE" OR gender IS NULL) AND assessment_score <=22) THEN "LOW"
+          WHEN ((gender != "MALE" OR gender IS NULL)
+                                AND (assessment_score BETWEEN 23 AND 30)) THEN "MODERATE"
+          WHEN (gender = "MALE" AND assessment_score <=20) THEN "LOW"
+          WHEN (gender = "MALE" AND (assessment_score BETWEEN 21 AND 28)) THEN "MODERATE"
+          ELSE "HIGH"
+          END AS lsir_level
   FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`ses
     ON score.state_code = ses.state_code
@@ -123,7 +129,8 @@ critical_date_spans AS (
         score_span_end_date AS end_datetime,
         DATE_ADD(score_span_start_date, INTERVAL 90 DAY) AS critical_date
     FROM lsir_spans
-    WHERE lsir_level = "LOW" 
+    WHERE lsir_level = "LOW"
+
 ),
 {critical_date_has_passed_spans_cte()},
 {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
