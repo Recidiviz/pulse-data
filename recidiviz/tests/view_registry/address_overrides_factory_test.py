@@ -196,11 +196,6 @@ class TestAddressOverrides(unittest.TestCase):
             )
             override_address = overrides.get_sandbox_address(address)
             if override_address is None:
-                # TODO(#15671): HACK ALERT - Remove this logic once querying Cloud SQL
-                #  connections is stable again and the justice counts views can be
-                #  refreshed as part of the deploy.
-                if "justice_counts" in address.dataset_id:
-                    continue
                 raise ValueError(f"Found no override for {address}")
             self.assertTrue(override_address.dataset_id.startswith(expected_prefix))
 

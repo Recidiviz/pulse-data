@@ -101,11 +101,6 @@ def address_overrides_for_view_builders(
         sandbox_prefix=view_dataset_override_prefix
     )
     for builder in view_builders:
-        # TODO(#15671): HACK ALERT - Remove this logic once querying Cloud SQL
-        #  connections is stable again and the justice counts views can be refreshed
-        #  as part of the deploy.
-        if "justice_counts" in builder.dataset_id:
-            continue
         address_overrides_builder.register_sandbox_override_for_address(
             BigQueryAddress(dataset_id=builder.dataset_id, table_id=builder.view_id)
         )
