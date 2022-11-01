@@ -19,6 +19,10 @@ normalization_pipelines:
     state_code: US_ID
     region: us-west1
   - pipeline: comprehensive_normalization
+    job_name: us-ix-normalization
+    state_code: US_IX
+    region: us-west1
+  - pipeline: comprehensive_normalization
     job_name: us-me-normalization
     state_code: US_ME
     region: us-west1
@@ -142,6 +146,33 @@ incremental_metric_pipelines:
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     region: us-west1
 
+  # Full US_IX calculations with no time limit
+  - pipeline: population_span_metrics
+    job_name: full-us-ix-population-span-metrics
+    state_code: US_IX
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-east1
+  - pipeline: supervision_metrics
+    job_name: full-us-ix-supervision-metrics
+    state_code: US_IX
+    metric_types: SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
+    region: us-central1
+  - pipeline: incarceration_metrics
+    job_name: full-us-ix-incarceration-metrics
+    state_code: US_IX
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
+    region: us-west1
+  - pipeline: violation_metrics
+    job_name: full-us-ix-violation-metrics
+    state_code: US_IX
+    metric_types: VIOLATION
+    region: us-east1
+  - pipeline: program_metrics
+    job_name: full-us-ix-program-metrics
+    state_code: US_IX
+    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    region: us-west1
+
   # Full US_PA calculations with no time limit
   - pipeline: population_span_metrics
     job_name: full-us-pa-population-span-metrics
@@ -260,6 +291,14 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_POPULATION
     region: us-west3
 
+  # Daily US_IX calculations
+  - pipeline: incarceration_metrics
+    job_name: us-ix-incarceration-metrics-36
+    state_code: US_IX
+    calculation_month_count: 36
+    metric_types: INCARCERATION_POPULATION
+    region: us-west3
+
   # Daily US_PA calculations
   - pipeline: supervision_metrics
     job_name: us-pa-supervision-metrics-36
@@ -319,6 +358,12 @@ historical_metric_pipelines:
   - pipeline: incarceration_metrics
     job_name: us-id-historical-incarceration-metrics-240
     state_code: US_ID
+    calculation_month_count: 240
+    metric_types: INCARCERATION_POPULATION
+    region: us-west1
+  - pipeline: incarceration_metrics
+    job_name: us-ix-historical-incarceration-metrics-240
+    state_code: US_IX
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
     region: us-west1
