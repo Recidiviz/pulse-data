@@ -1092,9 +1092,17 @@ class TestViewUpdateEndpoints(unittest.TestCase):
     @mock.patch(
         "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
     )
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.get_current_cloud_task_id",
+        return_value="test_cloud_task_id",
+    )
     @mock.patch("time.sleep")
     def test_update_all_managed_views_dry_run(
-        self, _: MagicMock, _mock_bq_client: MagicMock, _mock_time_sleep: MagicMock
+        self,
+        _: MagicMock,
+        _mock_bq_client: MagicMock,
+        _mock_get_current_cloud_task_id: MagicMock,
+        _mock_time_sleep: MagicMock,
     ) -> None:
         """Tests the /view_update/update_all_managed_views endpoint dry run."""
 
