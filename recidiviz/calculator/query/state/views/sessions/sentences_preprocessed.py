@@ -248,7 +248,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         ROW_NUMBER() OVER (
             PARTITION BY state_code, person_id
-            ORDER BY date_imposed, effective_date, external_id, charge_id
+            ORDER BY date_imposed, effective_date, external_id, sentence_id, charge_id
         ) AS sentences_preprocessed_id,
         *,
     FROM sentences_with_session_id_imposed
