@@ -25,7 +25,7 @@ if [[ -z "${1:+x}" ]]; then
 fi
 
 PROJECT_ID=$1
-TF_STATE_PREFIX=$2
+TF_STATE_PREFIX=${2:-""}
 
 echo "##### Running for project $PROJECT_ID ########"
 
