@@ -15,10 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Button, Form, Input, Modal } from "antd";
+import { Alert, Button, Form, Input, Modal } from "antd";
+import { rem } from "polished";
 import * as React from "react";
 import { useState } from "react";
-import { DirectIngestInstance } from "../IngestOperationsView/constants";
+import {
+  DirectIngestInstance,
+  GCP_STORAGE_BASE_URL,
+} from "../IngestOperationsView/constants";
 import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
 // TODO(#13406): Remove flag once raw data can be processed in secondary.
@@ -68,6 +72,22 @@ interface ActionRegionConfirmationFormProps {
   ingestInstance?: DirectIngestInstance | undefined;
 }
 
+interface CodeBlockProps {
+  children: React.ReactNode;
+}
+
+const EmbeddedCode = ({ children }: CodeBlockProps): JSX.Element => (
+  <code
+    style={{
+      backgroundColor: "#ffffff00",
+      display: "inline",
+      fontSize: rem("11px"),
+    }}
+  >
+    {children}
+  </code>
+);
+
 const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> =
   ({
     visible,
@@ -86,6 +106,9 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       : regionCode.toUpperCase().concat("_", action.toUpperCase());
     const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
     const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
+    const secondaryBucketURL = `${GCP_STORAGE_BASE_URL}${projectId}-direct-ingest-state-${regionCode
+      .toLowerCase()
+      .replace("_", "-")}-secondary`;
     const [
       ingestRerunRawDataSourceInstance,
       setIngestRerunRawDataSourceInstance,
@@ -173,13 +196,19 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             using raw data already processed in PRIMARY.
           </li>
           <li>
-            If SECONDARY, then the rerun will first import/process raw data in
-            SECONDARY, then regenerate ingest view results.
+            If SECONDARY, then you will need to first copy all raw data files
+            into the SECONDARY ingest bucket that should be used for this rerun.
+            Then the rerun will import that raw data to the
+            <code>us_xx_raw_data_secondary</code> dataset in BigQuery and
+            generate ingest view results based on that data.
           </li>
         </ul>
-        <i>
-          For now, the raw data source for secondary reruns can only be PRIMARY.
-        </i>
+        {disabledSecondaryIngestRerunRawDataSource ? (
+          <i>
+            For now, the raw data source for secondary reruns can only be
+            PRIMARY.
+          </i>
+        ) : null}
         <div
           style={{
             display: "flex",
@@ -209,9 +238,7 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
           </Button>
         </div>
         <br />
-        <br />
-        <b> Ingest Rerun Summary </b>
-        <br />
+        <h2> Ingest Rerun Summary </h2>
         The rerun will have the following configurations:
         <ul>
           <li>
@@ -240,6 +267,69 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             </b>
             {ingestRerunRawDataSourceInstance}
           </li>
+          <br />
+          {ingestRerunRawDataSourceInstance === "SECONDARY" ? (
+            <div>
+              <Alert
+                message={
+                  <>
+                    <b style={{ color: "red" }}>BEFORE KICKING OFF THE RERUN</b>
+                  </>
+                }
+                type="warning"
+                description={
+                  <>
+                    <b style={{ color: "red" }}>
+                      You must first copy the raw data files you would like to
+                      ingest in this rerun to the SECONDARY ingest bucket.
+                    </b>
+                    <ul>
+                      <li>
+                        <p>
+                          This raw data will become the source of truth in{" "}
+                          <EmbeddedCode>
+                            {regionCode.toLowerCase()}_raw_data
+                          </EmbeddedCode>
+                          once the results of this rerun are flashed to primary.
+                        </p>
+                      </li>
+                      <li>
+                        <p>
+                          In order to copy the raw files, you will likely want
+                          to take advantage of the following scripts:
+                          <ul>
+                            <li>
+                              <EmbeddedCode>
+                                copy_raw_state_files_between_projects
+                              </EmbeddedCode>
+                            </li>
+                            <li>
+                              <EmbeddedCode>
+                                move_raw_state_files_from_storage
+                              </EmbeddedCode>
+                            </li>
+                          </ul>
+                          These will copy and move raw files from the desired
+                          storage bucket to the secondary ingest bucket.
+                        </p>
+                      </li>
+                      <li>
+                        <b>
+                          Confirm that the raw files you would like to re-ingest
+                          are present in the{" "}
+                          <a href={secondaryBucketURL}>
+                            secondary ingest bucket
+                          </a>
+                          .
+                        </b>
+                      </li>
+                    </ul>
+                  </>
+                }
+                showIcon
+              />
+            </div>
+          ) : null}
         </ul>
         <p>
           Type <b>{confirmationRegEx}</b> below to confirm.
@@ -297,9 +387,7 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
           }}
         >
           <div>
-            <b>
-              Current Ingest Instance Statuses <br />
-            </b>
+            <h2>Current Ingest Instance Statuses</h2>
             <i>
               In order to start a new ingest rerun, the SECONDARY instance
               status needs to be NO_RERUN_IN_PROGRESS.
