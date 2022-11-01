@@ -39,7 +39,7 @@ WITH critical_date_spans AS (
     state_code,
     person_id,
     start_date AS start_datetime,
-    end_date AS end_datetime,
+    DATE_ADD(end_date, INTERVAL 1 DAY) AS end_datetime,
     DATE_ADD(start_date, INTERVAL 1 YEAR) AS critical_date,
   FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
   WHERE compartment_level_1 = "SUPERVISION"
