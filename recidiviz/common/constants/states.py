@@ -108,7 +108,7 @@ ALTERNATE_INGEST_US_ID_STATE_INFO = {
     ALTERNATE_INGEST_US_ID_STATE_CODE: us.states.State(
         **{
             "fips": "90",
-            "name": "Idaho",
+            "name": "Idaho ATLAS",
             "abbr": "IX",
             "is_territory": False,
             "is_obsolete": False,
