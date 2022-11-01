@@ -29,8 +29,9 @@ Steps:
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.move_raw_state_files_from_storage \
-    --project-id recidiviz-staging --region us_tn \
-    --start-date-bound 2022-03-24 --dry-run True
+    --source-project-id recidiviz-staging --source-raw-data-instance SECONDARY \
+    --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
+    --region us_tn --start-date-bound 2022-03-24 --dry-run True
 """
 
 import argparse
@@ -39,6 +40,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import threading
 from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
@@ -56,14 +58,25 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    secondary_raw_data_import_enabled_in_state,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_ls,
     gsutil_mv,
 )
 from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.string import StrictStringFormatter
@@ -88,15 +101,18 @@ class MoveFilesFromStorageController:
 
     def __init__(
         self,
-        project_id: str,
+        source_project_id: str,
+        destination_project_id: str,
+        source_raw_data_instance: DirectIngestInstance,
+        destination_raw_data_instance: DirectIngestInstance,
         region: str,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
         file_filter: Optional[str],
     ):
-
-        self.project_id = project_id
+        self.source_project_id = source_project_id
+        self.destination_project_id = destination_project_id
         self.region = region
         self.state_code = StateCode(region.upper())
         self.start_date_bound = start_date_bound
@@ -104,17 +120,20 @@ class MoveFilesFromStorageController:
         self.dry_run = dry_run
         self.file_filter = file_filter
 
-        self.storage_bucket = gcsfs_direct_ingest_storage_directory_path_for_state(
-            region_code=region,
-            # Raw files are only ever stored in the PRIMARY storage bucket
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            project_id=self.project_id,
+        self.source_raw_data_instance = source_raw_data_instance
+        self.destination_raw_data_instance = destination_raw_data_instance
+
+        self.source_storage_bucket = (
+            gcsfs_direct_ingest_storage_directory_path_for_state(
+                region_code=region,
+                ingest_instance=self.source_raw_data_instance,
+                project_id=self.source_project_id,
+            )
         )
-        self.ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
+        self.destination_ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
             region_code=region,
-            # Raw files are only ever processed in the PRIMARY ingest bucket
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            project_id=self.project_id,
+            ingest_instance=self.destination_raw_data_instance,
+            project_id=self.destination_project_id,
         )
 
         self.mutex = threading.Lock()
@@ -135,20 +154,21 @@ class MoveFilesFromStorageController:
             logging.info("Running in DRY RUN mode for region [%s]", self.region)
 
         prompt_for_confirmation(
-            f"This will move [{self.region}] files in [{self.project_id}] that were uploaded starting on date"
-            f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}].",
-            accepted_response_override=self.project_id,
+            f"This will move [{self.region}] files from [{self.source_project_id}] storage that were uploaded starting "
+            f"on date [{self.start_date_bound}] and ending on date [{self.end_date_bound}] to ingest bucket in "
+            f"[{self.destination_project_id}].",
             dry_run=self.dry_run,
         )
 
         prompt_for_confirmation(
-            f"Pausing queues {self._queues_to_pause()} in project [{self.project_id}] "
+            f"Pausing queues {self._queues_to_pause()} in destination project [{self.source_project_id}] "
             f"- continue?",
             dry_run=self.dry_run,
         )
 
         if not self.dry_run:
-            self.pause_and_purge_queues()
+            self.pause_and_purge_destination_queues()
+            self.validate_secondary_ingest_status()
 
         logging.info("Finding files to move...")
         date_subdir_paths = self.get_date_subdir_paths()
@@ -179,9 +199,9 @@ class MoveFilesFromStorageController:
                 "Move complete! See results in [%s].\n"
                 "\nNext steps:"
                 "\n1. (If doing a full re-ingest) Drop Google Cloud database for [%s]"
-                "\n2. Resume queues here:",
+                "\n2. Resume destination queues here:",
                 self.log_output_path,
-                self.project_id,
+                self.destination_project_id,
             )
 
             for queue_name in self._queues_to_pause():
@@ -189,7 +209,7 @@ class MoveFilesFromStorageController:
 
     def get_date_subdir_paths(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_raw_files(
-            storage_bucket_path=self.storage_bucket.abs_path(),
+            storage_bucket_path=self.source_storage_bucket.abs_path(),
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )
@@ -240,7 +260,7 @@ class MoveFilesFromStorageController:
 
     def queue_console_url(self, queue_name: str) -> str:
         """Returns the url to the GCP console page for a queue with a given name."""
-        return f"https://console.cloud.google.com/cloudtasks/queue/us-east1/{queue_name}?project={self.project_id}"
+        return f"https://console.cloud.google.com/cloudtasks/queue/us-east1/{queue_name}?project={self.destination_project_id}"
 
     def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url."""
@@ -254,29 +274,79 @@ class MoveFilesFromStorageController:
         if "error" in response:
             raise ValueError(response["error"])
 
-    def pause_queue(self, queue_name: str) -> None:
+    def pause_destination_project_queue(self, queue_name: str) -> None:
         """Posts a request to pause the queue with the given name."""
-        logging.info("Pausing [%s] in [%s]", queue_name, self.project_id)
+        logging.info(
+            "Pausing [%s] in destination project [%s]",
+            queue_name,
+            self.destination_project_id,
+        )
         self.do_post_request(
             StrictStringFormatter().format(
-                self.PAUSE_QUEUE_URL, project_id=self.project_id, queue_name=queue_name
+                self.PAUSE_QUEUE_URL,
+                project_id=self.destination_project_id,
+                queue_name=queue_name,
             )
         )
 
-    def purge_queue(self, queue_name: str) -> None:
+    def purge_destination_queue(self, queue_name: str) -> None:
         """Posts a request to purge the queue with the given name."""
-        logging.info("Purging [%s] in [%s]", queue_name, self.project_id)
+        logging.info(
+            "Purging [%s] in destination project [%s]",
+            queue_name,
+            self.destination_project_id,
+        )
         self.do_post_request(
             StrictStringFormatter().format(
-                self.PURGE_QUEUE_URL, project_id=self.project_id, queue_name=queue_name
+                self.PURGE_QUEUE_URL,
+                project_id=self.destination_project_id,
+                queue_name=queue_name,
             )
         )
 
-    def pause_and_purge_queues(self) -> None:
+    def pause_and_purge_destination_queues(self) -> None:
         """Pauses and purges Direct Ingest queues for the specified project."""
         for queue_name in self._queues_to_pause():
-            self.pause_queue(queue_name)
-            self.purge_queue(queue_name)
+            self.pause_destination_project_queue(queue_name)
+            self.purge_destination_queue(queue_name)
+
+    def validate_secondary_ingest_status(self) -> None:
+        """Validate the secondary ingest status is correct"""
+        if self.destination_raw_data_instance == DirectIngestInstance.SECONDARY:
+            secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+                self.state_code.value,
+                DirectIngestInstance.SECONDARY,
+            )
+            with SessionFactory.for_proxy(
+                SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+            ) as session:
+                # Retrieve raw data source instance, if it exists.
+                raw_data_source_instance: Optional[
+                    DirectIngestInstance
+                ] = secondary_status_manager.get_raw_data_source_instance(session)
+
+            # If a SECONDARY rerun is in progress (as indicated by a nonnull source
+            # instance) and the rerun is reading from PRIMARY, we should not be
+            # copying to SECONDARY.
+            if (
+                raw_data_source_instance
+                and raw_data_source_instance != DirectIngestInstance.SECONDARY
+            ):
+                raise ValueError(
+                    "The SECONDARY instance is expecting to read raw files from "
+                    "PRIMARY, not SECONDARY. We should not be copying raw data "
+                    "into the SECONDARY bucket right now."
+                )
+
+            # If we have reached this point, there is no rerun in progress or there
+            # IS a rerun in progress with a SECONDARY raw data source. Both are valid
+            # situations to copy files over to SECONDARY (e.g. new files that have
+            # come in since the rerun started).
+
+        logging.info(
+            "Can proceed with movement of files to %s ingest bucket.",
+            self.destination_raw_data_instance.value,
+        )
 
     def get_files_to_move_from_path(self, gs_dir_path: str) -> List[str]:
         """Returns files directly in the given directory that should be moved back into the ingest directory."""
@@ -323,7 +393,9 @@ class MoveFilesFromStorageController:
         if not re.match(self.FILE_TO_MOVE_RE, file_name):
             raise ValueError(f"Invalid file name {file_name}")
 
-        return os.path.join("gs://", self.ingest_bucket.abs_path(), file_name)
+        return os.path.join(
+            "gs://", self.destination_ingest_bucket.abs_path(), file_name
+        )
 
     def write_moves_to_log_file(self) -> None:
         self.moves_list.sort()
@@ -348,9 +420,33 @@ def main() -> None:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "--project-id",
+        "--source-project-id",
+        choices=GCP_PROJECTS,
         required=True,
-        help="Which project's files should be moved (e.g. recidiviz-123).",
+        help="Which project's files should be moved from (e.g. recidiviz-123).",
+    )
+
+    parser.add_argument(
+        "--destination-project-id",
+        choices=GCP_PROJECTS,
+        required=True,
+        help="Which project's files should be moved to (e.g. recidiviz-123).",
+    )
+
+    parser.add_argument(
+        "--source-raw-data-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        help="Used to identify which instance ingest bucket the raw data should be moved from.",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--destination-raw-data-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        help="Used to identify which instance ingest bucket the raw data should be moved to.",
+        required=True,
     )
 
     parser.add_argument("--region", required=True, help="E.g. 'us_nd'")
@@ -383,15 +479,33 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    with local_project_id_override(args.project_id):
-        MoveFilesFromStorageController(
-            project_id=args.project_id,
-            region=args.region,
-            start_date_bound=args.start_date_bound,
-            end_date_bound=args.end_date_bound,
-            dry_run=args.dry_run,
-            file_filter=args.file_filter,
-        ).run_move()
+    # TODO(#15450): Delete check once secondary raw data import is live.
+    if (
+        args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
+        and not secondary_raw_data_import_enabled_in_state(
+            StateCode(args.region.upper())
+        )
+    ):
+        logging.info(
+            "Cannot proceed with movement of raw state files from storage to SECONDARY ingest bucket because "
+            "raw data import is not yet launched in %s. Exiting.",
+            args.region.upper(),
+        )
+        sys.exit()
+
+    with local_project_id_override(args.destination_project_id):
+        with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
+            MoveFilesFromStorageController(
+                source_project_id=args.source_project_id,
+                destination_project_id=args.destination_project_id,
+                source_raw_data_instance=args.source_raw_data_instance,
+                destination_raw_data_instance=args.destination_raw_data_instance,
+                region=args.region,
+                end_date_bound=args.end_date_bound,
+                start_date_bound=args.start_date_bound,
+                dry_run=args.dry_run,
+                file_filter=args.file_filter,
+            ).run_move()
 
 
 if __name__ == "__main__":

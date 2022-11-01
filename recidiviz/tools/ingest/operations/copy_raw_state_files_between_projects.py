@@ -26,13 +26,19 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_projects \
     --region us_tn --source-project-id recidiviz-123 \
-    --destination-project-id recidiviz-staging --start-date-bound 2022-03-24 --dry-run True
+    --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
+    --start-date-bound 2022-03-24 --dry-run True
 """
 import argparse
 import logging
+import sys
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
@@ -45,6 +51,8 @@ from recidiviz.utils.params import str_to_bool
 
 def main() -> None:
     """Executes the main flow of the script."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -62,6 +70,14 @@ def main() -> None:
         "--destination-project-id",
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         help="Used to select which GCP project against which to run this script.",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--destination-raw-data-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        help="Used to identify which instance the raw data should be copied to.",
         required=True,
     )
 
@@ -86,19 +102,32 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    # TODO(#15450): Delete check once secondary raw data import is live.
+    if (
+        args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
+        and not secondary_raw_data_import_enabled_in_state(
+            StateCode(args.region.upper())
+        )
+    ):
+        logging.info(
+            "Cannot proceed with copy of raw state files to SECONDARY because raw data import is not yet "
+            "launched in %s. Exiting.",
+            args.region.upper(),
+        )
+        sys.exit()
 
     source_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
         region_code=args.region,
-        # Raw files are only ever stored in the PRIMARY storage bucket
+        # limit the source raw data instance to only PRIMARY.
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=args.source_project_id,
     )
-    destination_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
-        region_code=args.region,
-        # Raw files are only ever stored in the PRIMARY storage bucket
-        ingest_instance=DirectIngestInstance.PRIMARY,
-        project_id=args.destination_project_id,
+    destination_region_storage_dir_path = (
+        gcsfs_direct_ingest_storage_directory_path_for_state(
+            region_code=args.region,
+            ingest_instance=args.destination_raw_data_instance,
+            project_id=args.destination_project_id,
+        )
     )
     OperateOnStorageRawFilesController(
         region_code=args.region,

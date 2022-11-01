@@ -181,36 +181,48 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         # If there isn't yet a completed rerun, return all status rows.
         return self._get_rows_after_timestamp(session=session, timestamp=datetime.min)
 
-    def get_raw_data_source_instance(self) -> Optional[DirectIngestInstance]:
+    def get_raw_data_source_instance(
+        self, session: Optional[Session] = None
+    ) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
-        with SessionFactory.using_database(self.db_key) as session:
-            # Raw data source can only be PRIMARY for PRIMARY instances.
-            if self.ingest_instance == DirectIngestInstance.PRIMARY:
-                return DirectIngestInstance.PRIMARY
+        # Raw data source can only be PRIMARY for PRIMARY instances.
+        if self.ingest_instance == DirectIngestInstance.PRIMARY:
+            return DirectIngestInstance.PRIMARY
 
-            # Raw data source can be PRIMARY or SECONDARY for SECONDARY instances,
-            # depending on the configurations of the secondary rerun.
-            current_rerun_status_rows = self._get_status_rows_of_current_rerun(
-                session=session
-            )
-            if not current_rerun_status_rows:
-                return None
+        if session:
+            return self._get_raw_data_source_instance(session)
+        with SessionFactory.using_database(self.db_key) as query_session:
+            return self._get_raw_data_source_instance(query_session)
 
-            current_rerun_start_status = one(
-                row.status
-                for row in current_rerun_status_rows
-                if row.status in VALID_START_OF_RERUN_STATUSES[self.ingest_instance]
-            )
+    def _get_raw_data_source_instance(
+        self, query_session: Session
+    ) -> Optional[DirectIngestInstance]:
+        """Returns the current raw data source of the ingest instance associated with
+        this status manager.
+        """
+        # Raw data source can be PRIMARY or SECONDARY for SECONDARY instances,
+        # depending on the configurations of the secondary rerun.
+        current_rerun_status_rows = self._get_status_rows_of_current_rerun(
+            session=query_session
+        )
+        if not current_rerun_status_rows:
+            return None
 
-            # If the rerun only involves regenerating and running ingest views, then the
-            # raw data source is PRIMARY.
-            if current_rerun_start_status == DirectIngestStatus.STANDARD_RERUN_STARTED:
-                return DirectIngestInstance.PRIMARY
+        current_rerun_start_status = one(
+            row.status
+            for row in current_rerun_status_rows
+            if row.status in VALID_START_OF_RERUN_STATUSES[self.ingest_instance]
+        )
 
-            # Otherwise, this means that the raw data source is SECONDARY.
-            return DirectIngestInstance.SECONDARY
+        # If the rerun only involves regenerating and running ingest views, then the
+        # raw data source is PRIMARY.
+        if current_rerun_start_status == DirectIngestStatus.STANDARD_RERUN_STARTED:
+            return DirectIngestInstance.PRIMARY
+
+        # Otherwise, this means that the raw data source is SECONDARY.
+        return DirectIngestInstance.SECONDARY
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""

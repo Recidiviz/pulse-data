@@ -44,6 +44,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.common.common_utils import google_api_retry_predicate
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data, regions
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -1038,3 +1039,10 @@ def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileCon
         ] = DirectIngestRegionRawFileConfig(region_code_lower)
 
     return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
+
+
+# TODO(#15450): Delete once secondary raw data import is live.
+def secondary_raw_data_import_enabled_in_state(
+    state_code: StateCode,  # pylint: disable=unused-argument
+) -> bool:
+    return False
