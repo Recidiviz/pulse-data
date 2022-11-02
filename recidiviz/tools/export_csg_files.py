@@ -179,7 +179,7 @@ def generate_metric_export_configs(
         specialized_purpose_for_incarceration,
         purpose_for_incarceration_subtype,
         supervising_officer_external_id,
-        supervising_district_external_id,
+        level_1_supervision_location_external_id AS supervising_district_external_id,
         age,
         prioritized_race_or_ethnicity,
         gender,
@@ -337,7 +337,7 @@ def session_export_config(
         query_parameters=[],
         intermediate_dataset_id=TEMP_DATASET_NAME,
         intermediate_table_name=f"{state_code}_{session_name}_session",
-        output_uri=f"gs://{target_bucket}/recidiviz_sessionized_data/{state_code.lower()}/{UNDERSCORE_TODAY}/{state_code.lower()}_{session_name}_sessions.csv",
+        output_uri=f"gs://{target_bucket}/recidiviz_sessionized_data/{state_code.lower()}/{UNDERSCORE_TODAY}/{state_code.lower()}_{session_name}_sessions-*.csv",
         output_format=DestinationFormat.CSV,
     )
 
