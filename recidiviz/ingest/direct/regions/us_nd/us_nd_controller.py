@@ -25,7 +25,6 @@ from recidiviz.common.constants.state.external_id_types import (
     US_ND_ELITE_BOOKING,
     US_ND_SID,
 )
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
@@ -53,7 +52,6 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
 from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
     IngestGatingContext,
     gen_convert_person_ids_to_external_id_objects,
-    gen_set_agent_type,
     gen_set_is_life_sentence_hook,
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_custom_parsers import (
@@ -67,7 +65,6 @@ from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     IngestObject,
-    StateAgent,
     StateAssessment,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
@@ -75,7 +72,6 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonEthnicity,
     StatePersonExternalId,
     StateProgramAssignment,
-    StateSupervisionContact,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -114,11 +110,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "docstars_lsi_chronology": [self._process_lsir_assessments],
             "docstars_ftr_episode": [self._process_ftr_episode],
-            "docstars_contacts_v2": [
-                self._add_supervision_officer_to_contact,
-                gen_set_agent_type(StateAgentType.SUPERVISION_OFFICER),
-                self._add_contact_fields,
-            ],
         }
 
         self.primary_key_override_hook_by_file: Dict[
@@ -233,53 +224,6 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             return US_ND_SID
 
         raise ValueError(f"File [{file_tag}] doesn't have a known external id type")
-
-    @staticmethod
-    def _add_supervision_officer_to_contact(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the current supervising officer onto the extracted supervision contact."""
-        supervising_officer_last_name = row.get("LNAME")
-        supervising_officer_first_name = row.get("FNAME")
-        supervising_officer_id = row.get("OFFICER")
-        if (
-            not supervising_officer_last_name
-            or not supervising_officer_first_name
-            or not supervising_officer_id
-        ):
-            return
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionContact):
-                agent_to_create = StateAgent(
-                    full_name=f"{supervising_officer_first_name} {supervising_officer_last_name}",
-                    state_agent_id=supervising_officer_id,
-                    agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-                )
-                create_if_not_exists(
-                    agent_to_create, extracted_object, "contacted_agent"
-                )
-
-    def _add_contact_fields(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds a code string to various contact fields to the extracted supervision contact."""
-        codes: List[str] = list(
-            filter(len, [row.get(f"CONTACT_CODE_{i}", "") for i in range(1, 7)])
-        )
-        code_str = "-".join(codes)
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateSupervisionContact):
-                extracted_object.contact_type = code_str
-                extracted_object.contact_method = code_str
-                extracted_object.status = code_str
-                extracted_object.location = code_str
 
     @staticmethod
     def _rationalize_race_and_ethnicity(

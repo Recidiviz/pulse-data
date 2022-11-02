@@ -1,26 +1,69 @@
-# This file associates the columns outputted from the query in `view_docstars_contacts` to corresponding Ingest Object
-# fields.
-
-# For detailed information about each of the columns present in the original table, `docstars_contacts`, please see
-# http://go/us-nd-docstars-contacts-raw-table/.
-key_mappings:
-  RecID: state_supervision_contact.state_supervision_contact_id
-  CONTACT_DATE: state_supervision_contact.contact_date
-  CATEGORY: state_supervision_contact.contact_reason
-
-primary_key:
-  RecID: state_supervision_contact.state_supervision_contact_id
-
-ancestor_keys:
-  SID: state_person.state_person_id
-
-keys_to_ignore:
-  - LNAME # The last name of the supervising officer. Handled manually in controller.
-  - FNAME # The first name of the supervising officer. Handled manually in controller.
-  - OFFICER # The id of the supervising officer. Handled manually in controller.
-  - CONTACT_CODE_1 # One of 6 codes specifying information about the contact. Handled manually in controller.
-  - CONTACT_CODE_2 # One of 6 codes specifying information about the contact. Handled manually in controller.
-  - CONTACT_CODE_3 # One of 6 codes specifying information about the contact. Handled manually in controller.
-  - CONTACT_CODE_4 # One of 6 codes specifying information about the contact. Handled manually in controller.
-  - CONTACT_CODE_5 # One of 6 codes specifying information about the contact. Handled manually in controller.
-  - CONTACT_CODE_6 # One of 6 codes specifying information about the contact. Handled manually in controller.
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - RecID
+  - CONTACT_DATE
+  - CATEGORY
+  - SID
+  - OFFICER
+  - FNAME
+  - LNAME
+  - CONTACT_CODE_1
+  - CONTACT_CODE_2
+  - CONTACT_CODE_3
+  - CONTACT_CODE_4
+  - CONTACT_CODE_5
+  - CONTACT_CODE_6
+unused_columns: []
+variables:
+  - contact_code_full:
+      $concat:
+        $values:
+          - CONTACT_CODE_1
+          - CONTACT_CODE_2
+          - CONTACT_CODE_3
+          - CONTACT_CODE_4
+          - CONTACT_CODE_5
+          - CONTACT_CODE_6
+        $separator: "-"
+        $include_nulls: false
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    supervision_contacts:
+      - StateSupervisionContact:
+          external_id: RecID
+          contact_date: CONTACT_DATE
+          contacted_agent:
+            StateAgent:
+              external_id: OFFICER
+              full_name:
+                $person_name:
+                  $given_names: FNAME
+                  $surname: LNAME
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          contact_reason:
+            $enum_mapping:
+              $raw_text: CATEGORY
+              $mappings:
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "Supervision"
+          contact_type:
+            $enum_mapping:
+              $raw_text: $variable(contact_code_full)
+              $custom_parser: us_nd_custom_enum_parsers.supervision_contact_type_mapper
+          location:
+            $enum_mapping:
+              $raw_text: $variable(contact_code_full)
+              $custom_parser: us_nd_custom_enum_parsers.supervision_contact_location_mapper
+          status:
+            $enum_mapping:
+              $raw_text: $variable(contact_code_full)
+              $custom_parser: us_nd_custom_enum_parsers.supervision_contact_status_mapper
+          contact_method:
+            $enum_mapping:
+              $raw_text: $variable(contact_code_full)
+              $custom_parser: us_nd_custom_enum_parsers.supervision_contact_method_mapper

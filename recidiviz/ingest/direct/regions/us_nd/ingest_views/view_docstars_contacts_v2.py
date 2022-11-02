@@ -43,9 +43,9 @@ WITH contacts_with_split_supervisor_name AS (
   FROM {docstars_contacts}
   WHERE CONTACT_CODE IS NOT NULL
   # Exclude system generated entries, as those don't represent contacts.
-  AND CONTACT_CODE != "SG"
+  AND CONTACT_CODE != 'SG'
   # ND includes supervision and FTR contacts. Only include supervision contacts
-  AND CATEGORY = "Supervision"
+  AND CATEGORY = 'Supervision'
  )
 SELECT 
   RecID,
