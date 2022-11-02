@@ -155,6 +155,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         special_conditions_programming_fsw_completion_date
     FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_referral_materialized`
     WHERE compliant_reporting_eligible IS NOT NULL
+    AND remaining_criteria_needed <= 1
 """
 
 COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
