@@ -71,7 +71,8 @@ def create_parser() -> argparse.ArgumentParser:
         "--frontend-tag", help="Name of the frontend tag to deploy."
     )
     frontend_group.add_argument(
-        "--frontend-branch", help="Name of the frontend branch to deploy."
+        "--frontend-branch-or-sha",
+        help="Name of the frontend branch or commit sha to deploy.",
     )
 
     parser.add_argument(
@@ -92,18 +93,18 @@ def main(
     backend_tag: Optional[str],
     backend_branch: Optional[str],
     frontend_tag: Optional[str],
-    frontend_branch: Optional[str],
+    frontend_branch_or_sha: Optional[str],
     frontend_app: str,
     subdirectory: str,
 ) -> None:
     """Run the Justice Counts Build-JC-Docker-Image Cloud Build Trigger."""
-    if frontend_branch:
-        frontend_url = f"https://github.com/Recidiviz/justice-counts/archive/{frontend_branch}.tar.gz"
+    if frontend_branch_or_sha:
+        frontend_url = f"https://github.com/Recidiviz/justice-counts/archive/{frontend_branch_or_sha}.tar.gz"
     elif frontend_tag:
         frontend_url = f"https://github.com/Recidiviz/justice-counts/archive/refs/tags/{frontend_tag}.tar.gz"
     else:
         raise ValueError(
-            "Must specify either the `frontend_branch` or `frontend_tag` argument."
+            "Must specify either the `frontend_branch_or_sha` or `frontend_tag` argument."
         )
 
     substitutions = {
@@ -160,7 +161,7 @@ if __name__ == "__main__":
             backend_tag=args.backend_tag,
             backend_branch=args.backend_branch,
             frontend_tag=args.frontend_tag,
-            frontend_branch=args.frontend_branch,
+            frontend_branch_or_sha=args.frontend_branch_or_sha,
             frontend_app=args.frontend_app,
             subdirectory=args.subdirectory,
         )
