@@ -33,6 +33,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
+)
 from recidiviz.common.str_field_utils import parse_datetime
 
 OTHER_STATE_FACILITY = "OOS"
@@ -225,3 +231,66 @@ def parse_classification_type_from_raw_text(
     if raw_text.startswith("M"):
         return StateChargeClassificationType.MISDEMEANOR
     return StateChargeClassificationType.INTERNAL_UNKNOWN
+
+
+def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactType:
+    """Parses the contact type from a string containing the contact codes."""
+
+    codes = raw_text.split("-")
+
+    # If collateral or face-to-face is explicitly set in the contact codes, we will use the
+    # direct mapping.
+    if "CC" in codes:
+        return StateSupervisionContactType.COLLATERAL
+
+    if "FF" in codes:
+        return StateSupervisionContactType.DIRECT
+
+    # Otherwise, we assume that any home visit, office visit, or employment visit counts as a direct contact.
+    if any(code in ["HV", "OO", "OV"] for code in codes):
+        return StateSupervisionContactType.DIRECT
+
+    return StateSupervisionContactType.INTERNAL_UNKNOWN
+
+
+def supervision_contact_location_mapper(
+    raw_text: str,
+) -> StateSupervisionContactLocation:
+    """Parses the contact location from a string containing the contact codes."""
+
+    codes = raw_text.split("-")
+
+    # There may multiple codes that indicate multiple locations.
+    # This prioritizes home visits, then employment visits and then supervising office visits.
+    if "HV" in codes:
+        return StateSupervisionContactLocation.RESIDENCE
+    if "OO" in codes:
+        return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+    if "OV" in codes:
+        return StateSupervisionContactLocation.SUPERVISION_OFFICE
+    return StateSupervisionContactLocation.INTERNAL_UNKNOWN
+
+
+def supervision_contact_status_mapper(raw_text: str) -> StateSupervisionContactStatus:
+    """Parses the contact status from a string containing the contact codes."""
+    codes = raw_text.split("-")
+
+    # If explicitly set as attempted, we'll use the direct mapping.
+    # Otherwise, we assume the contact was completed.
+    if any(code in ["AC", "NS"] for code in codes):
+        return StateSupervisionContactStatus.ATTEMPTED
+
+    return StateSupervisionContactStatus.COMPLETED
+
+
+def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactMethod:
+    """Parses the contact method from a string containing the contact codes."""
+    codes = raw_text.split("-")
+
+    # We assume that a visit is done in person. Otherwise, if we find a notion of communication, then
+    # we assume virtual.
+    if any(code in ["HV", "OO", "OV"] for code in codes):
+        return StateSupervisionContactMethod.IN_PERSON
+    if "OC" in codes:  # Offender Communication
+        return StateSupervisionContactMethod.VIRTUAL
+    return StateSupervisionContactMethod.INTERNAL_UNKNOWN

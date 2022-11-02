@@ -27,11 +27,11 @@ columns:
   - name: SUPERVISOR_ID
     description: |-
       ID of the supervisor of this officer.
+  - name: LOGINNAME
+    description: |-
+      System login name of the officer.
   - name: RecDate
     is_datetime: True
     description: |-
       When this record was first created in the source system.
-  - name: LOGINNAME
-    description: |-
-      System login name of the officer.
 always_historical_export: True

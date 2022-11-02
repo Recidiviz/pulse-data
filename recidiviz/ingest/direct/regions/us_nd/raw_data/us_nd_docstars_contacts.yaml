@@ -14,10 +14,6 @@ columns:
     description: |-
       External id for a unique person from the Docstars system.
   - name: TIME_STAMP
-  - name: CONTACT_DATE
-    is_datetime: True
-    description: |-
-      When this contact occurred.
   - name: CONTACT_CODE
     description: |-
       - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.
@@ -121,5 +117,9 @@ columns:
   - name: ORIGINATOR
     description: |-
       The name of the supervision officer associated with this contact.
+  - name: CONTACT_DATE
+    is_datetime: True
+    description: |-
+      When this contact occurred.
   - name: RecDate
   - name: LASTUPDATE
