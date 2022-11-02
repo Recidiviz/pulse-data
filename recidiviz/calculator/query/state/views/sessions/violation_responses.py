@@ -126,7 +126,7 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
                 ORDER BY 
                     COALESCE(is_most_severe_violation_type_of_all_violations, FALSE) DESC,
                     COALESCE(is_most_severe_response_decision_of_all_violations, FALSE) DESC,
-                    violation_date DESC
+                    violation_date DESC, supervision_violation_id
             ) AS rn,
         FROM 
             `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
