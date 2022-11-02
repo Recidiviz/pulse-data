@@ -228,7 +228,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             ON sen.state_code = offense_type_ref.state_code
             AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, external_id, charge_id, sentence_type
-            ORDER BY ABS(sentence_to_session_offset_days) ASC) = 1
+            ORDER BY ABS(sentence_to_session_offset_days) ASC, ses.session_id ASC) = 1
     
         UNION ALL
     
