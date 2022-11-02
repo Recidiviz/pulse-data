@@ -44,6 +44,11 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
+# TODO(#11437): Remove dry_run from name once dag flow tested and working
+_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
+    "trigger_DRY_RUN_update_all_managed_views_task"
+)
+_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "wait_for_view_update_all_success"
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
 _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = r"wait_for_(us_[a-z]{2})_validations_completion"
 
@@ -263,6 +268,27 @@ class TestCalculationPipelineDags(unittest.TestCase):
                 {_TRIGGER_REMATERIALIZATION_TASK_ID}, wait_task.upstream_task_ids
             )
 
+    def test_trigger_update_all_managed_views_upstream_of_wait(self) -> None:
+        """Tests that update_all_managed_views trigger happens directly before we wait
+        for the update all views endpoint to finish.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID},
+            wait_task.upstream_task_ids,
+        )
+
     def test_rematerialization_endpoint(self) -> None:
         """Tests that rematerialization triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
@@ -281,6 +307,41 @@ class TestCalculationPipelineDags(unittest.TestCase):
             self.assertEqual(
                 trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
                 "/view_update/rematerialize_all_deployed_views",
+            )
+
+    def test_update_all_managed_views_endpoint(self) -> None:
+        """Tests that update_all_managed_views triggers the proper endpoint."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        trigger_cloud_task_task = dag.get_task(
+            _TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID
+        )
+
+        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+            raise ValueError(
+                f"Expected type CloudTasksTaskCreateOperator, found "
+                f"[{type(trigger_cloud_task_task)}]."
+            )
+
+        self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
+
+        self.assertEqual(
+            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+            "/view_update/update_all_managed_views?dry_run=True",
+        )
+
+    def test_update_all_managed_views_only_called_in_historic_dag(self) -> None:
+        """Tests that update_all_managed_views is only called in the historical dag."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        for dag_id in self.calc_pipeline_dag_ids:
+            if dag_id == self.HISTORICAL_DAG_ID:
+                continue
+            dag = dag_bag.dags[dag_id]
+            with self.assertRaises(Exception) as context:
+                dag.get_task(_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
+            self.assertTrue(
+                f"Task {_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID} not found"
+                in str(context.exception)
             )
 
     def test_validations_endpoint(self) -> None:

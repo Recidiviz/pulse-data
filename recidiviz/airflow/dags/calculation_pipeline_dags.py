@@ -180,6 +180,36 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
     )
 
 
+def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
+    queue_location = "us-east1"
+    queue_name = "bq-view-update"
+    task_path = CloudTasksClient.task_path(
+        project_id,
+        location=queue_location,
+        queue=queue_name,
+        task=uuid.uuid4().hex,
+    )
+    # TODO(#11437): Remove dry_run=True once dag flow tested and working
+    task = tasks_v2.types.Task(
+        name=task_path,
+        app_engine_http_request={
+            "http_method": "POST",
+            "relative_uri": "/view_update/update_all_managed_views?dry_run=True",
+            "body": json.dumps({}).encode(),
+        },
+    )
+    # TODO(#11437): Remove dry_run from name once dag flow tested and working
+    return CloudTasksTaskCreateOperator(
+        task_id="trigger_DRY_RUN_update_all_managed_views_task",
+        location=queue_location,
+        queue_name=queue_name,
+        task=task,
+        # This will trigger the task regardless of the failure or success of the
+        # upstream pipelines.
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+
 def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "validations"
@@ -208,7 +238,9 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
     )
 
 
-def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> None:
+def execute_calculations(
+    use_historical: bool, should_trigger_exports: bool, should_update_all_views: bool
+) -> None:
     """This represents the overall execution of our calculation pipelines.
 
     The series of steps is as follows:
@@ -241,6 +273,22 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
         #  is reliably back down under 2 hours.
         timeout=(60 * 60 * 4),
     )
+
+    if should_update_all_views:
+        trigger_update_all_views = trigger_update_all_managed_views_operator()
+
+        wait_for_update_all_views = BQResultSensor(
+            task_id="wait_for_view_update_all_success",
+            query_generator=FinishedCloudTaskQueryGenerator(
+                project_id=project_id,
+                cloud_task_create_operator_task_id=trigger_update_all_views.task_id,
+                tracker_dataset_id="view_update_metadata",
+                tracker_table_id="view_update_tracker",
+            ),
+            timeout=(60 * 60 * 4),
+        )
+
+        trigger_update_all_views >> wait_for_update_all_views
 
     update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 
@@ -367,7 +415,9 @@ def execute_calculations(use_historical: bool, should_trigger_exports: bool) -> 
 def incremental_dag() -> None:
     """This executes the calculations for all of the incremental pipelines."""
 
-    execute_calculations(use_historical=False, should_trigger_exports=True)
+    execute_calculations(
+        use_historical=False, should_trigger_exports=True, should_update_all_views=False
+    )
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -384,7 +434,9 @@ def incremental_dag() -> None:
 def historical_dag() -> None:
     """This executes the calculations for all of the historical pipelines."""
 
-    execute_calculations(use_historical=True, should_trigger_exports=False)
+    execute_calculations(
+        use_historical=True, should_trigger_exports=False, should_update_all_views=True
+    )
 
 
 incremental_dag = incremental_dag()
