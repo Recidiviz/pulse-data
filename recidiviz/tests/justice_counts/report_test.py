@@ -529,7 +529,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 9)
+            self.assertEqual(len(total_datapoints), 25)
 
             # We should have nine datapoints with non-null values: one for aggregated (total) residents
             # and eight for each race and ethnicity
@@ -539,7 +539,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
 
-            self.assertEqual(len(datapoints_with_value), 9)
+            self.assertEqual(len(datapoints_with_value), 25)
 
             self.assertEqual(
                 datapoints_with_value[0].get_value(),
@@ -551,44 +551,50 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 datapoints_with_value[1].get_value(),
                 aggregated_dimensions[0].dimension_to_value[
-                    RaceAndEthnicity.AMERICAN_INDIAN_ALASKAN_NATIVE
+                    RaceAndEthnicity.HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE
                 ],
             )
             self.assertEqual(
                 datapoints_with_value[2].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.ASIAN],
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.HISPANIC_ASIAN
+                ],
             )
             self.assertEqual(
                 datapoints_with_value[3].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.BLACK],
-            )
-            self.assertEqual(
-                datapoints_with_value[3].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.BLACK],
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.HISPANIC_BLACK
+                ],
             )
             self.assertEqual(
                 datapoints_with_value[4].get_value(),
                 aggregated_dimensions[0].dimension_to_value[
-                    RaceAndEthnicity.EXTERNAL_UNKNOWN
+                    RaceAndEthnicity.HISPANIC_MORE_THAN_ONE_RACE
                 ],
             )
             self.assertEqual(
                 datapoints_with_value[5].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.HISPANIC],
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER
+                ],
             )
             self.assertEqual(
                 datapoints_with_value[6].get_value(),
                 aggregated_dimensions[0].dimension_to_value[
-                    RaceAndEthnicity.NATIVE_HAWAIIAN_PACIFIC_ISLANDER
+                    RaceAndEthnicity.HISPANIC_WHITE
                 ],
             )
             self.assertEqual(
                 datapoints_with_value[7].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.OTHER],
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.HISPANIC_OTHER
+                ],
             )
             self.assertEqual(
                 datapoints_with_value[8].get_value(),
-                aggregated_dimensions[0].dimension_to_value[RaceAndEthnicity.WHITE],
+                aggregated_dimensions[0].dimension_to_value[
+                    RaceAndEthnicity.HISPANIC_UNKNOWN
+                ],
             )
 
     def test_update_metric_no_change(self) -> None:
