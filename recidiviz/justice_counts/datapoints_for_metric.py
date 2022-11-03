@@ -69,10 +69,10 @@ class DatapointsForMetric:
     includes_excludes_key_to_datapoint: Dict[str, schema.Datapoint] = attr.field(
         default=None
     )
-    # dimension_id_to_includes_excludes_key_to_datapoint will hold
+    # dimension_to_includes_excludes_key_to_datapoint will hold
     # includes/excludes datapoints that at the dimension level.
-    dimension_id_to_includes_excludes_key_to_datapoint: Dict[
-        str, Dict[str, schema.Datapoint]
+    dimension_to_includes_excludes_key_to_datapoint: Dict[
+        DimensionBase, Dict[str, schema.Datapoint]
     ] = attr.field(factory=(lambda: defaultdict(dict)))
 
     ### Top level methods used to construct MetricInterface ###
@@ -164,7 +164,7 @@ class DatapointsForMetric:
     def get_includes_excludes_dict(
         self,
         includes_excludes_set: Optional[IncludesExcludesSet] = None,
-        dimension_id: Optional[str] = None,
+        dimension: Optional[DimensionBase] = None,
     ) -> Dict[enum.Enum, Optional[IncludesExcludesSetting]]:
         """Returns the includes/excludes dicts. This is used to populate
         the includes_excludes dict at the metric level and at the
@@ -173,24 +173,20 @@ class DatapointsForMetric:
         if includes_excludes_set is None:
             return includes_excludes_dict
 
-        if dimension_id is None and self.includes_excludes_key_to_datapoint is None:
+        if dimension is None and self.includes_excludes_key_to_datapoint is None:
             return includes_excludes_dict
 
         if (
-            dimension_id is not None
-            and self.dimension_id_to_includes_excludes_key_to_datapoint.get(
-                dimension_id
-            )
+            dimension is not None
+            and self.dimension_to_includes_excludes_key_to_datapoint.get(dimension)
             is None
         ):
             return includes_excludes_dict
 
         includes_excludes_key_to_datapoint = (
             self.includes_excludes_key_to_datapoint
-            if dimension_id is None
-            else self.dimension_id_to_includes_excludes_key_to_datapoint.get(
-                dimension_id
-            )
+            if dimension is None
+            else self.dimension_to_includes_excludes_key_to_datapoint.get(dimension)
         )
         for (
             member,
@@ -232,7 +228,7 @@ class DatapointsForMetric:
                 dimension
             ] = self.get_includes_excludes_dict(
                 includes_excludes_set=includes_excludes_set,
-                dimension_id=dimension.dimension_identifier(),
+                dimension=dimension,
             )
 
         return dimension_to_includes_excludes_member_to_setting

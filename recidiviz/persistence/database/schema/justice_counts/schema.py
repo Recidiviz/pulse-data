@@ -29,7 +29,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 import enum
 import re
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 from sqlalchemy import BOOLEAN
 from sqlalchemy.dialects.postgresql import JSONB
@@ -586,23 +586,28 @@ class Datapoint(JusticeCountsBase):
                     ) from e
         return value
 
-    def get_dimension_id(self) -> Optional[str]:
+    def get_dimension_id_and_member(
+        self,
+    ) -> Optional[Tuple[Optional[str], Optional[str]]]:
         if self.dimension_identifier_to_member is None:
-            return None
+            return (None, None)
         if len(self.dimension_identifier_to_member) > 1:
             raise ValueError(
                 "Datapoints with more than one dimension are not currently supported."
             )
-        return list(self.dimension_identifier_to_member.keys())[0]
+        return list(self.dimension_identifier_to_member.items())[0]
+
+    def get_dimension_id(self) -> Optional[str]:
+        id_and_member = self.get_dimension_id_and_member()
+        if id_and_member is None:
+            return None
+        return id_and_member[0]
 
     def get_dimension_member(self) -> Optional[str]:
-        if self.dimension_identifier_to_member is None:
+        id_and_member = self.get_dimension_id_and_member()
+        if id_and_member is None:
             return None
-        if len(self.dimension_identifier_to_member) > 1:
-            raise ValueError(
-                "Datapoints with more than one dimension are not currently supported."
-            )
-        return list(self.dimension_identifier_to_member.values())[0]
+        return id_and_member[1]
 
 
 class ReportTableInstance(JusticeCountsBase):
