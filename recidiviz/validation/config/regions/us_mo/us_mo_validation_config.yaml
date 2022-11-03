@@ -23,12 +23,13 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 7500
+    hard_num_allowed_rows_override: 20000
     override_reason:
       In MO we rely on a table where they build incarceration period
       spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
       rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
       query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010.
+      Inital investigations into this show entity deletion as the main culprit. A new full historical dump will be needed to correct these.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 2500
     override_reason:
@@ -38,10 +39,8 @@ num_allowed_rows_overrides:
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
       at 1699 as of 07/01/2022. 2041 as of 9/27/2022. Will require more investigation.
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 200
-    override_reason:
-      TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
-      actually using it. Doing so will likely make these edge case periods go away.
+    hard_num_allowed_rows_override: 700
+    override_reason: TODO(#15905). TODO(#16331) - Similar to failing overlapping_incarceration_periods, entity deletion appears to be a major culprit for duplicate periods over time (causing this validation to fail when the duplicate period is an open one. A new full historical dump will be needed to correct these.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 80
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly.
