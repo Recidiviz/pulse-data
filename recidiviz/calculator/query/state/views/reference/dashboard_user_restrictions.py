@@ -170,30 +170,53 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         GROUP BY LOWER(EMAIL)
     ),
     nd_restricted_access AS (
+        WITH line_staff_users AS (
+            SELECT
+                'US_ND' AS state_code,
+                CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
+            FROM {project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest
+            WHERE CAST(status AS STRING) = "(1)"
+        )
+        , line_staff_permissions AS (
+            SELECT DISTINCT
+                u.state_code,
+                u.email_address,
+                'line_staff_user' as internal_role,
+                COALESCE(p.workflows, dflt.workflows) AS workflows
+            FROM line_staff_users u
+            LEFT JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` p
+            USING (email_address, state_code)
+            JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` dflt
+            ON dflt.email_address is null and u.state_code = dflt.state_code
+        )
         SELECT
             'US_ND' AS state_code,
-            LOWER(leadership.email_address) AS restricted_user_email,
+            LOWER(COALESCE(leadership.email_address, line_staff.email_address)) AS restricted_user_email,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
-            internal_role,
+            COALESCE(leadership.internal_role, line_staff.internal_role) AS internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
             FALSE AS should_see_beta_charts,
-            TO_JSON_STRING(STRUCT(
-                community_projections,
-                facilities_projections,
-                community_practices,
-                system_libertyToPrison,
-                system_prison,
-                system_prisonToSupervision,
-                system_supervision,
-                system_supervisionToLiberty,
-                system_supervisionToPrison,
-                operations,
-                workflows
-            )) AS routes
+            CASE
+              WHEN leadership.internal_role LIKE '%leadership_role%'
+                  THEN TO_JSON_STRING(STRUCT(
+                      system_libertyToPrison,
+                      system_prison,
+                      system_prisonToSupervision,
+                      system_supervision,
+                      system_supervisionToLiberty,
+                      system_supervisionToPrison,
+                      operations,
+                      TRUE AS workflows
+                  ))
+              ELSE TO_JSON_STRING(STRUCT(line_staff.workflows))
+            END AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
+        FULL OUTER JOIN
+            line_staff_permissions line_staff
+        USING (email_address, state_code)
     ),
     tn_restricted_access AS (
         SELECT
@@ -278,6 +301,9 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     description=DASHBOARD_USER_RESTRICTIONS_DESCRIPTION,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         StateCode.US_MO.value
+    ),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        StateCode.US_ND.value
     ),
     columns=[
         "state_code",
