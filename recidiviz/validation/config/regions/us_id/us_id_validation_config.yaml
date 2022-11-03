@@ -1,6 +1,7 @@
 # Configuration for which validations to run for region US_ID.
 
 region_code: US_ID
+dev_mode: True
 exclusions:
   - validation_name: incarceration_population_by_facility_external_comparison
     exclusion_type: BROKEN
