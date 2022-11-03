@@ -166,14 +166,22 @@ class DatapointInterface:
                 if datapoint.dimension_identifier_to_member is not None:
                     # If a datapoint represents an includes/excludes setting at the dimension level,
                     # add it into a dictionary formatted as {dimension_id: {includes_excludes_key: datapoint}}
-                    dimension_identifier = list(
-                        datapoint.dimension_identifier_to_member.keys()
-                    ).pop()
-                    metric_datapoints.dimension_id_to_includes_excludes_key_to_datapoint[
-                        dimension_identifier
-                    ][
-                        datapoint.includes_excludes_key
-                    ] = datapoint
+                    dimension_id = datapoint.get_dimension_id()
+                    dimension_member = datapoint.get_dimension_member()
+                    if dimension_member is None or dimension_id is None:
+                        raise JusticeCountsServerError(
+                            code="invalid_datapoint",
+                            description=(
+                                "Datapoint representing a breakdown does not have a valid, "
+                                "dimension member or id."
+                            ),
+                        )
+                    dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
+                        dimension_member
+                    ]
+                    metric_datapoints.dimension_to_includes_excludes_key_to_datapoint[
+                        dimension
+                    ][datapoint.includes_excludes_key] = datapoint
                 elif datapoint.dimension_identifier_to_member is None:
                     # If a datapoint represents an includes/excludes setting at the metric level,
                     # add it into a dictionary formatted as {includes_excludes_key: datapoint}
