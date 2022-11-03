@@ -47,4 +47,5 @@ class UsOzController(BaseDirectIngestController):
             "vfds_periods",
             "nd_person_details",
             "nd_periods",
+            "gloFS_person",
         ]
