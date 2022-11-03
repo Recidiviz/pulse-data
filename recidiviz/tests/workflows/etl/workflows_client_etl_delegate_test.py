@@ -228,6 +228,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 row,
             )
 
+    @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
     @patch("google.cloud.firestore.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
@@ -244,6 +245,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
         mock_batch_writer: MagicMock,
         mock_get_collection: MagicMock,
         _mock_firestore_client: MagicMock,
+        _mock_firestore_admin_client: MagicMock,
     ) -> None:
         """Tests that the ETL Delegate for Client imports the collection with the document ID."""
         mock_batch_set = MagicMock()

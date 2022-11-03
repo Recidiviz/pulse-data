@@ -18,13 +18,14 @@
 import unittest
 from datetime import datetime
 from unittest import mock
+from unittest.mock import Mock
 
 from mock import call
 
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 
 
-class BigQueryClientImplTest(unittest.TestCase):
+class FirestoreClientImplTest(unittest.TestCase):
     """Tests for FirestoreClientImpl"""
 
     def setUp(self) -> None:
@@ -35,14 +36,22 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.client_patcher = mock.patch(
             "recidiviz.firestore.firestore_client.firestore.Client"
         )
+        self.admin_client_patcher = mock.patch(
+            "recidiviz.firestore.firestore_client.firestore_admin_v1.FirestoreAdminClient"
+        )
         self.client_fn = self.client_patcher.start()
         self.mock_client = mock.MagicMock()
+        self.mock_admin_client = mock.MagicMock()
         self.client_fn.return_value = self.mock_client
+        self.admin_client_fn = self.admin_client_patcher.start()
+        self.admin_client_fn.return_value = self.mock_admin_client
+
         self.firestore_client = FirestoreClientImpl(project_id=self.mock_project_id)
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
+        self.admin_client_fn.stop()
 
     def test_delete_old_documents(self) -> None:
         self.mock_collection = mock.MagicMock()
@@ -55,4 +64,41 @@ class BigQueryClientImplTest(unittest.TestCase):
                 call("stateCode", "==", "US_XX"),
                 call().where("__lastUpdated", "<", datetime(2022, 1, 1)),
             ]
+        )
+
+    def test_list_collections_with_indexes(self) -> None:
+        """Tests that list_collections_with_indexes is called with the correct args and correctly parses
+        the index name for the collection name."""
+        mock_index = Mock()
+        mock_index.configure_mock(
+            name="projects/test-project-id/databases/(default)/collectionGroups/clients/indexes/123"
+        )
+        self.mock_admin_client.list_indexes.return_value = [mock_index]
+        collections = self.firestore_client.list_collections_with_indexes()
+        self.mock_admin_client.list_indexes.assert_called_with(
+            parent="projects/test-project-id/databases/"
+            "(default)/collectionGroups/all"
+        )
+        self.assertEqual(["clients"], collections)
+
+    def test_index_exists_for_collection(self) -> None:
+        """Tests that index_exists_for_collection returns expected values."""
+        mock_index = Mock()
+        mock_index.configure_mock(
+            name="projects/test-project-id/databases/(default)/collectionGroups/clients/indexes/123"
+        )
+        self.mock_admin_client.list_indexes.return_value = [mock_index]
+
+        self.assertTrue(self.firestore_client.index_exists_for_collection("clients"))
+        self.assertFalse(
+            self.firestore_client.index_exists_for_collection("other_collection")
+        )
+
+    def test_create_index(self) -> None:
+        """Tests that create_index is called with the correct args."""
+        self.firestore_client.create_index("clients", {"request": "request stuff"})
+        self.mock_admin_client.create_index.assert_called_with(
+            parent="projects/test-project-id/databases/"
+            "(default)/collectionGroups/clients",
+            index={"request": "request stuff"},
         )
