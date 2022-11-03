@@ -329,7 +329,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 metrics[2]  # type: ignore[index]
                 .aggregated_dimensions[2]
-                .dimension_to_value[RaceAndEthnicity.BLACK],
+                .dimension_to_value[RaceAndEthnicity.HISPANIC_BLACK],
                 50,
             )
 
@@ -524,6 +524,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(metric_key_to_errors), 2)
             self.maxDiff = None
             arrest_errors = metric_key_to_errors[law_enforcement.total_arrests.key]
+            print("ERRORS THANKS", arrest_errors)
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]
             self.assertEqual(arrest_error.title, "Missing Total Value")
