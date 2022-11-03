@@ -485,6 +485,12 @@ transfer_periods_incarceration_cte AS (
                 OR
                 End_TransferTypeDesc LIKE 'DOC Facility%'
             )
+                -- Also include "District Office if SubTypeName is Fugitive Unit
+        OR (
+            DOCLocationToTypeName = 'District Office'
+            AND
+            DOCLocationToSubTypeName = 'Fugitive Unit'
+            )
         )
 )"""
 

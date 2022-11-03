@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - period_id
+  - Start_TransferDate
+  - End_TransferDate
+  - Start_TransferReasonDesc
+  - End_TransferReasonDesc
+  - DOCLocationToName
+  - DOCLocationToTypeName
+  - LegalStatusDesc
+  - Bed_SecurityLevelDesc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - period_id
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: DOCLocationToTypeName
+              $mappings:
+                StateIncarcerationType.STATE_PRISON:
+                  - Adult Facility/Institution
+                  - Juvenile Facility
+                StateIncarcerationType.COUNTY_JAIL:
+                  - Jail
+                StateIncarcerationType.OUT_OF_STATE:
+                  - State
+                StateIncarcerationType.FEDERAL_PRISON:
+                  - Federal Facility
+                StateIncarcerationType.INTERNAL_UNKNOWN:
+                  - District Office # Related to 'Court Action' in to DOC
+          admission_date: Start_TransferDate
+          release_date: End_TransferDate
+          custody_level:
+            $enum_mapping:
+              $raw_text: Bed_SecurityLevelDesc
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.CLOSE: Close
+                StateIncarcerationPeriodCustodyLevel.MEDIUM: Medium
+                StateIncarcerationPeriodCustodyLevel.MINIMUM: Minimum
+          facility: DOCLocationToName
+          #housing_unit: TODO(#16082) still need to find how to pull this in
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text: LegalStatusDesc
+              $mappings:
+                StateSpecializedPurposeForIncarceration.GENERAL:
+                  - Termer
+                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                  - Rider
+                StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD:
+                  - Parole Violator
+                StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
+                  - Non Idaho Commitment
+          admission_reason:
+            $enum_mapping:
+              $raw_text: Start_TransferReasonDesc
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - Administrative
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - Escape
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - Initial Facility Intake
+                  - Court Action
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - Assigned
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
+                  - Pending Custody Intake
+          release_reason:
+            $enum_mapping:
+              $raw_text: End_TransferReasonDesc
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - Release to Supervision
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - Escape
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - Discharged from DOC
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - Pending Custody Intake
+                  - Initial Facility Intake
+                  - Administrative
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - Assigned # Transferred to other state

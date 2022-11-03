@@ -212,6 +212,7 @@ class BigQueryViewTestCase(unittest.TestCase):
             # back to strings for comparison.
             datetime.datetime,
             datetime.date,
+            pd.Timestamp,
             # Collection types are not hashable so there are issues with setting
             # collection type columns as index columns.
             list,
