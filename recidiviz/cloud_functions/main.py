@@ -39,7 +39,6 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
     PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
     TRIGGER_HISTORICAL_DAG_FLAG,
-    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
 )
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
@@ -132,8 +131,6 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
             severity="INFO",
             message="Managed views will be deployed after refresh.",
         )
-        # Always update managed views when refreshing the state schema after a deploy
-        data[UPDATE_MANAGED_VIEWS_REQUEST_ARG] = "true"
 
         if trigger_historical_dag:
             cloud_functions_log(

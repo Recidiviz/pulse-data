@@ -217,8 +217,7 @@ function pre_deploy_configure_infrastructure {
     verify_hash "$COMMIT_HASH"
     run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id "${PROJECT}" --test-schema-only
 
-    # TODO(#11437): Remove this step once we have view updates in the DAG. Instead,
-    #  update all reference views in the DAG before pipelines run.
+    # TODO(#16451): Update all reference views in the DAG before pipelines run.
     echo "Deploying reference_views and ancestors"
     verify_hash "$COMMIT_HASH"
     run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project-id "${PROJECT}" --dataset-ids-to-load reference_views
