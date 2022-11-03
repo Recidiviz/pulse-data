@@ -31,13 +31,53 @@ mmddyy_format_lower_bound_update_date = 0
 iso_format_lower_bound_update_date = 0
 
 FOCTEST_ORAS_ASSESSMENTS_WEEKLY = """
-    SELECT *
+    SELECT 
+        E04,
+        E05,
+        E06,
+        FOCLIST,
+        E01,
+        E03,
+        E08,
+        E09,
+        E10,
+        E11,
+        E12,
+        E13,
+        E14,
+        E15,
+        E16,
+        E17,
+        E18,
+        E19,
+        E20,
+        E21,
+        E22,
+        E23
     FROM
         FOCTEST.ORAS_ASSESSMENTS_WEEKLY;
     """
 
 ORAS_WEEKLY_SUMMARY_UPDATE = """
-    SELECT *
+    SELECT 
+        OFFENDER_NAME,
+        AGENCY_NAME,
+        DATE_OF_BIRTH,
+        GENDER,
+        ETHNICITY,
+        DOC_ID,
+        ASSESSMENT_TYPE,
+        RISK_LEVEL,
+        OVERRIDE_RISK_LEVEL,
+        OVERRIDE_RISK_REASON,
+        ASSESSMENT_OUTCOME,
+        ASSESSMENT_STATUS,
+        SCORE,
+        DATE_CREATED,
+        USER_CREATED,
+        RACE,
+        BIRTH_DATE,
+        CREATED_DATE
     FROM
         FOCTEST.ORAS_WEEKLY_SUMMARY_UPDATE
     WHERE 
@@ -45,13 +85,43 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
     """
 
 LANTERN_DA_RA_LIST = """
-    SELECT *
+    SELECT 
+        DISTRICT,
+        REGION,
+        LAST_NAME,
+        FIRST_NAME,
+        EMAIL,
+        STATUS,
+        RECORD_DATE
     FROM
         LANTERN.DA_RA_LIST;
     """
 
 LBAKRCOD_TAK146 = f"""
-    SELECT *
+    SELECT 
+        FH$SCD,
+        FH$SDE,
+        FH$FOI,
+        FH$WB,
+        FH$WW,
+        FH$WSF,
+        FH$VTR,
+        FH$ISC,
+        FH$SST,
+        FH$ORC,
+        FH$CTO,
+        FH$OPT,
+        FH$CTC,
+        FH$CTP,
+        FH$ARC,
+        FH$PFI,
+        FH$NCR,
+        FH$CUS,
+        FH$DCR,
+        FH$TCR,
+        FH$DLU,
+        FH$TLU,
+        FH$UID
     FROM
         LBAKRCOD.TAK146
     WHERE
@@ -60,7 +130,69 @@ LBAKRCOD_TAK146 = f"""
     """
 
 LBAKRDTA_TAK001 = f"""
-    SELECT *
+    SELECT 
+        EK$DOC,
+        EK$CYC,
+        EK$ALN,
+        EK$AFN,
+        EK$AMI,
+        EK$AGS,
+        EK$NRN,
+        EK$SID,
+        EK$FBI,
+        EK$OLN,
+        EK$OLC,
+        EK$FOI,
+        EK$PLC,
+        EK$FLC,
+        EK$OLA,
+        EK$PLA,
+        EK$FLA,
+        EK$AV,
+        EK$LE,
+        EK$LTR
+        EK$TPF,
+        EK$NM,
+        EK$TAT,
+        EK$WRF,
+        EK$DTF,
+        EK$WTF,
+        EK$SOQ,
+        EK$RAC,
+        EK$ETH,
+        EK$SEX,
+        EK$HTF,
+        EK$HTI,
+        EK$WGT,
+        EK$BIL,
+        EK$HAI,
+        EK$EYE,
+        EK$SKI,
+        EK$MAS,
+        EK$DEP,
+        EK$SIB,
+        EK$REL,
+        EK$COF,
+        EK$SCO,
+        EK$XDM,
+        EK$XDO,
+        EK$XEM,
+        EK$XEO,
+        EK$XPM,
+        EK$XPO,
+        EK$XCM,
+        EK$XCO,
+        EK$XBM,
+        EK$XBO,
+        EK$PU,
+        EK$PUL,
+        EK$PRF,
+        EK$DCR,
+        EK$TCR,
+        EK$DLU,
+        EK$TLU,
+        EK$REA,
+        EK$UID
     FROM
         LBAKRDTA.TAK001
     WHERE
@@ -69,7 +201,25 @@ LBAKRDTA_TAK001 = f"""
     """
 
 LBAKRDTA_TAK017 = f"""
-    SELECT *
+    SELECT 
+        BN$DOC,
+        BN$CYC,
+        BN$OR0,
+        BN$HE,
+        BN$HS,
+        BN$TCR,
+        BN$DCR,
+        BN$PIN,
+        BN$PLN,
+        BN$HPT,
+        BN$LOC,
+        BN$COM,
+        BN$LRM,
+        BN$LBD,
+        BN$LRU,
+        BN$HDS,
+        BN$DLU,
+        BN$TLU
     FROM
         LBAKRDTA.TAK017
     WHERE
@@ -78,7 +228,49 @@ LBAKRDTA_TAK017 = f"""
     """
 
 LBAKRDTA_TAK020 = f"""
-    SELECT *
+    SELECT 
+        BQ$DOC,
+        BQ$CYC,
+        BQ$BSN,
+        BQ$BAV,
+        BQ$PBA,
+        BQ$PH,
+        BQ$HRN,
+        BQ$TPN,
+        BQ$GUD,
+        BQ$PRV,
+        BQ$PR,
+        BQ$RRS,
+        BQ$SCN,
+        BQ$REF,
+        BQ$PDS,
+        BQ$ESN,
+        BQ$SDS,
+        BQ$SEO,
+        BQ$SOC,
+        BQ$RFB,
+        BQ$VCN,
+        BQ$VCP,
+        BQ$OFN,
+        BQ$OFP,
+        BQ$PBN,
+        BQ$NA,
+        BQ$PA,
+        BQ$HRF,
+        BQ$RTC,
+        BQ$RV,
+        BQ$OAP,
+        BQ$AO,
+        BQ$OR,
+        BQ$OM,
+        BQ$ON,
+        BQ$ABF,
+        BQ$SOF,
+        BQ$SS,
+        BQ$DCR,
+        BQ$TCR,
+        BQ$DLU,
+        BQ$TLU
     FROM
         LBAKRDTA.TAK020
     WHERE
@@ -87,7 +279,38 @@ LBAKRDTA_TAK020 = f"""
     """
 
 LBAKRDTA_TAK022 = f"""
-    SELECT *
+    SELECT 
+        BS$DOC,
+        BS$CYC,
+        BS$SEO,
+        BS$LEO,
+        BS$SCF,
+        BS$CRT,
+        BS$NRN,
+        BS$ASO,
+        BS$NCI,
+        BS$OCN,
+        BS$CLT,
+        BS$CNT,
+        BS$CLA,
+        BS$POF,
+        BS$ACL,
+        BS$CCI,
+        BS$CRQ,
+        BS$CNS,
+        BS$CRC,
+        BS$CRD,
+        BS$PD,
+        BS$DO,
+        BS$PLE,
+        BS$COD,
+        BS$AR,
+        BS$UID,
+        BS$DCR,
+        BS$TCR,
+        BS$UIU,
+        BS$DLU,
+        BS$TLU
     FROM
         LBAKRDTA.TAK022
     WHERE
@@ -96,7 +319,33 @@ LBAKRDTA_TAK022 = f"""
     """
 
 LBAKRDTA_TAK023 = f"""
-    SELECT *
+    SELECT 
+        BT$DOC,
+        BT$CYC,
+        BT$SEO,
+        BT$SD,
+        BT$SLY,
+        BT$SLM,
+        BT$SLD,
+        BT$CRR,
+        BT$PC,
+        BT$ABS,
+        BT$ABU,
+        BT$ABT,
+        BT$PIE,
+        BT$SRC,
+        BT$SRF,
+        BT$PCR,
+        BT$EM,
+        BT$OTD,
+        BT$OH,
+        BT$SCT,
+        BT$RE,
+        BT$SDI,
+        BT$DCR,
+        BT$TCR,
+        BT$DLU,
+        BT$TLU
     FROM
         LBAKRDTA.TAK023
     WHERE
@@ -105,7 +354,28 @@ LBAKRDTA_TAK023 = f"""
     """
 
 LBAKRDTA_TAK024 = f"""
-    SELECT *
+    SELECT 
+        BU$DOC,
+        BU$CYC,
+        BU$SEO,
+        BU$FSO,
+        BU$SF,
+        BU$SBY,
+        BU$SBM,
+        BU$SBD,
+        BU$PBT,
+        BU$SLY,
+        BU$SLM,
+        BU$SLD,
+        BU$SAI,
+        BU$EMP,
+        BU$FRC,
+        BU$WEA,
+        BU$DEF,
+        BU$DCR,
+        BU$TCR,
+        BU$DLU,
+        BU$TLU
     FROM
         LBAKRDTA.TAK024
     WHERE
@@ -114,7 +384,16 @@ LBAKRDTA_TAK024 = f"""
     """
 
 LBAKRDTA_TAK025 = f"""
-    SELECT *
+    SELECT 
+        BV$DOC,
+        BV$CYC,
+        BV$SSO,
+        BV$SEO,
+        BV$FSO,
+        BV$DCR,
+        BV$TCR,
+        BV$DLU,
+        BV$TLU
     FROM
         LBAKRDTA.TAK025
     WHERE
@@ -123,7 +402,18 @@ LBAKRDTA_TAK025 = f"""
     """
 
 LBAKRDTA_TAK026 = f"""
-    SELECT *
+    SELECT 
+        BW$DOC,
+        BW$CYC,
+        BW$SSO,
+        BW$SCD,
+        BW$SY,
+        BW$SM,
+        BW$CSC,
+        BW$DCR,
+        BW$TCR,
+        BW$DLU,
+        BW$TLU
     FROM
         LBAKRDTA.TAK026
     WHERE
@@ -132,7 +422,37 @@ LBAKRDTA_TAK026 = f"""
     """
 
 LBAKRDTA_TAK028 = f"""
-    SELECT *
+    SELECT 
+        BY$DOC,
+        BY$CYC,
+        BY$VSN,
+        BY$VE,
+        BY$VWI,
+        BY$VRT,
+        BY$VSI,
+        BY$VPH,
+        BY$VBG,
+        BY$VA,
+        BY$VIC,
+        BY$DAX,
+        BY$VC,
+        BY$VD,
+        BY$VIH,
+        BY$VIM,
+        BY$VIL,
+        BY$VOR,
+        BY$PIN,
+        BY$PLN,
+        BY$PON,
+        BY$RCA,
+        BY$VTY,
+        BY$DV,
+        BY$DCR,
+        BY$TCR,
+        BY$UID,
+        BY$DLU,
+        BY$TLU,
+        BY$UIU
     FROM
         LBAKRDTA.TAK028
     WHERE
@@ -141,7 +461,19 @@ LBAKRDTA_TAK028 = f"""
     """
 
 LBAKRDTA_TAK034 = f"""
-    SELECT *
+    SELECT 
+        CE$DOC,
+        CE$CYC,
+        CE$HF,
+        CE$OR0,
+        CE$EH,
+        CE$PIN,
+        CE$PLN,
+        CE$PON,
+        CE$DCR,
+        CE$TCR,
+        CE$DLU,
+        CE$TLU
     FROM
         LBAKRDTA.TAK034
     WHERE
@@ -150,7 +482,52 @@ LBAKRDTA_TAK034 = f"""
     """
 
 LBAKRDTA_TAK039 = f"""
-    SELECT *
+    SELECT 
+        DN$DOC
+        DN$CYC,
+        DN$NSN,
+        DN$PIN,
+        DN$PLN,
+        DN$PON,
+        DN$NED,
+        DN$RC,
+        DN$NSV,
+        DN$DA,
+        DN$DP,
+        DN$AB,
+        DN$UAS,
+        DN$POS,
+        DN$SFP,
+        DN$SOR,
+        DN$PST,
+        DN$A01,
+        DN$A02,
+        DN$A03,
+        DN$A04,
+        DN$A05,
+        DN$A06,
+        DN$A07,
+        DN$A08,
+        DN$A09,
+        DN$A10,
+        DN$A11,
+        DN$A12,
+        DN$S01,
+        DN$S02,
+        DN$S03,
+        DN$S04,
+        DN$S05,
+        DN$S06,
+        DN$S07,
+        DN$S08,
+        DN$S09,
+        DN$S10,
+        DN$S11,
+        DN$S12,
+        DN$DCR,
+        DN$TCR,
+        DN$DLU,
+        DN$TLU
     FROM
         LBAKRDTA.TAK039
     WHERE
@@ -159,7 +536,40 @@ LBAKRDTA_TAK039 = f"""
     """
 
 LBAKRDTA_TAK040 = f"""
-    SELECT *
+    SELECT 
+        DQ$DOC
+        DQ$CYC,
+        DQ$SSR,
+        DQ$NRN,
+        DQ$PND,
+        DQ$CD,
+        DQ$FD,
+        DQ$OAB,
+        DQ$OA,
+        DQ$OFB,
+        DQ$OF,
+        DQ$TSE,
+        DQ$MSO,
+        DQ$NDM,
+        DQ$NDO,
+        DQ$NEM,
+        DQ$NEO,
+        DQ$NPM,
+        DQ$NPO,
+        DQ$NCM,
+        DQ$NCO,
+        DQ$NBM,
+        DQ$NBO,
+        DQ$OCA,
+        DQ$OCL,
+        DQ$OC1,
+        DQ$OC2,
+        DQ$OC3,
+        DQ$SOP,
+        DQ$DCR,
+        DQ$TCR,
+        DQ$DLU,
+        DQ$TLU
     FROM
         LBAKRDTA.TAK040
     WHERE
@@ -168,7 +578,17 @@ LBAKRDTA_TAK040 = f"""
     """
 
 LBAKRDTA_TAK042 = f"""
-    SELECT *
+    SELECT 
+        CF$DOC,
+        CF$CYC,
+        CF$VSN,
+        CF$TSS,
+        CF$VCV,
+        CF$NBR,
+        CF$DCR,
+        CF$TCR,
+        CF$DLU,
+        CF$TLU
     FROM
         LBAKRDTA.TAK042
     WHERE
@@ -177,7 +597,27 @@ LBAKRDTA_TAK042 = f"""
     """
 
 LBAKRDTA_TAK065 = f"""
-    SELECT *
+    SELECT 
+        CS$DOC,
+        CS$CYC,
+        CS$OLC,
+        CS$OLA,
+        CS$PLC,
+        CS$PLA,
+        CS$FLC,
+        CS$FLA,
+        CS$LTR,
+        CS$REA,
+        CS$AV,
+        CS$NM,
+        CS$DD,
+        CS$TAT,
+        CS$TDT,
+        CS$DCR,
+        CS$TCR,
+        CS$DLU,
+        CS$TLU,
+        CS$UID
     FROM
         LBAKRDTA.TAK065
     WHERE
@@ -186,7 +626,16 @@ LBAKRDTA_TAK065 = f"""
     """
 
 LBAKRDTA_TAK076 = f"""
-    SELECT *
+    SELECT 
+        CZ$DOC,
+        CZ$CYC,
+        CZ$VSN,
+        CZ$SEO,
+        CZ$FSO,
+        CZ$DCR,
+        CZ$TCR,
+        CZ$DLU,
+        CZ$TLU
     FROM
         LBAKRDTA.TAK076
     WHERE
@@ -195,7 +644,28 @@ LBAKRDTA_TAK076 = f"""
     """
 
 LBAKRDTA_TAK090 = f"""
-    SELECT *
+    SELECT 
+        DD$DOC,
+        DD$CYC,
+        DD$JAS,
+        DD$JAC,
+        DD$JAV,
+        DD$JAF,
+        DD$JAR,
+        DD$JAA,
+        DD$JCS,
+        DD$JCT,
+        DD$JCC,
+        DD$JCV,
+        DD$JCF,
+        DD$JCR,
+        DD$JCA,
+        DD$UID,
+        DD$DCR,
+        DD$TCR,
+        DD$UIU,
+        DD$DLU,
+        DD$TLU,
     FROM
         LBAKRDTA.TAK090
     WHERE
@@ -204,7 +674,20 @@ LBAKRDTA_TAK090 = f"""
     """
 
 LBAKRDTA_TAK142 = f"""
-    SELECT *
+    SELECT 
+        E6$DOC,
+        E6$CYC,
+        E6$DON,
+        E6$DOS,
+        E6$FFS,
+        E6$DSN,
+        E6$DIN,
+        E6$UID,
+        E6$DCR,
+        E6$TCR,
+        E6$DLU,
+        E6$TLU,
+        E6$DCV
     FROM
         LBAKRDTA.TAK142
     WHERE
@@ -213,7 +696,23 @@ LBAKRDTA_TAK142 = f"""
     """
 
 LBAKRDTA_TAK222 = f"""
-    SELECT *
+    SELECT 
+        IB$DOC,
+        IB$CYC,
+        IB$BDS,
+        IB$BT,
+        IB$BS,
+        IB$BVD,
+        IB$PON,
+        IB$STO,
+        IB$BDC,
+        IB$DON,
+        IB$DCR,
+        IB$TCR,
+        IB$UID,
+        IB$DLU,
+        IB$TLU,
+        IB$UIU
     FROM
         LBAKRDTA.TAK222
     WHERE
@@ -222,7 +721,20 @@ LBAKRDTA_TAK222 = f"""
     """
 
 LBAKRDTA_TAK223 = f"""
-    SELECT *
+    SELECT 
+        IE$DOC,
+        IE$CYC,
+        IE$BDS,
+        IE$BDT,
+        IE$BDX,
+        IE$BDA,
+        IE$BT,
+        IE$TCR,
+        IE$DCR,
+        IE$UID,
+        IE$DLU,
+        IE$TLU,
+        IE$UIU
     FROM
         LBAKRDTA.TAK223
     WHERE
@@ -231,13 +743,43 @@ LBAKRDTA_TAK223 = f"""
     """
 
 LBAKRDTA_TAK158 = """
-    SELECT *
+    SELECT 
+        F1$DOC,
+        F1$CYC,
+        F1$SQN,
+        F1$SST,
+        F1$CD,
+        F1$ORC,
+        F1$CTO,
+        F1$OPT,
+        F1$CTC,
+        F1$SY,
+        F1$CTP,
+        F1$ARC,
+        F1$PFI,
+        F1$OR0,
+        F1$WW,
+        F1$MSO,
+        F1$SEO,
+        F1$DCR,
+        F1$TCR
     FROM
         LBAKRDTA.TAK158;
     """
 
 LBAKRDTA_TAK291 = f"""
-    SELECT *
+    SELECT 
+        JS$DOC,
+        JS$CYC,
+        JS$CSQ,
+        JS$SEO,
+        JS$FSO,
+        JS$DCR,
+        JS$TCR,
+        JS$UID,
+        JS$DLU,
+        JS$TLU,
+        JS$UIU
     FROM
         LBAKRDTA.TAK291
     WHERE
@@ -246,7 +788,20 @@ LBAKRDTA_TAK291 = f"""
     """
 
 LBAKRDTA_TAK292 = f"""
-    SELECT *
+    SELECT
+        JT$DOC,
+        JT$CYC,
+        JT$CSQ,
+        JT$TSS,
+        JT$VCV,
+        JT$VG,
+        JT$CCO,
+        JT$DCR,
+        JT$TCR,
+        JT$UID,
+        JT$DLU,
+        JT$TLU,
+        JT$UIU
     FROM
         LBAKRDTA.TAK292
     WHERE
@@ -255,7 +810,14 @@ LBAKRDTA_TAK292 = f"""
     """
 
 LBAKRDTA_VAK003 = f"""
-    SELECT *
+    SELECT 
+        DOC_ID_DOB,
+        DOB,
+        DOB_VERIFIED_IND,
+        CREATE_DT,
+        CREATE_TM,
+        UPDATE_DT,
+        UPDATE_TM
     FROM
         LBAKRDTA.VAK003
     WHERE
@@ -264,7 +826,25 @@ LBAKRDTA_VAK003 = f"""
     """
 
 LBCMDATA_APFX90 = f"""
-    SELECT *
+    SELECT 
+        BDGNO,
+        EMPSSN,
+        LNAME,
+        FNAME,
+        MINTL,
+        WRKLOC,
+        DEPCOD,
+        DIVCOD,
+        SECCOD,
+        DEPCLS,
+        CLSTTL,
+        STRDTE,
+        DTEORD,
+        ENDDTE,
+        CRTDTE,
+        CRTTME,
+        UPDDTE,
+        UPDTME
     FROM
         LBCMDATA.APFX90
     WHERE
@@ -273,7 +853,22 @@ LBCMDATA_APFX90 = f"""
     """
 
 LBCMDATA_APFX91 = f"""
-    SELECT *
+    SELECT 
+        BDGNO,
+        EMPSSN,
+        LNAME,
+        FNAME,
+        MINTL,
+        WRKLOC,
+        DEPCOD,
+        DIVCOD,
+        SECCOD,
+        DEPCLS,
+        CLSTTL,
+        STRDTE,
+        DTEORD,
+        CRTDTE,
+        CRTTME
     FROM
         LBCMDATA.APFX91
     WHERE
@@ -281,13 +876,41 @@ LBCMDATA_APFX91 = f"""
     """
 
 OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = """
-    SELECT *
+    SELECT 
+        DOC_ID,
+        CYCLE_NO,
+        OFNDR_CYCLE_REF_ID,
+        ACTUAL_START_DT,
+        PROJECTED_STOP_DT,
+        ACTUAL_STOP_DT,
+        SUPERVSN_ENH_TYPE_CD,
+        SUPERVSN_ENH_TYPE_DESC,
+        SUPERVSN_COUNTY_CD,
+        COUNTY_NM,
+        EXIT_TYPE_CD,
+        EXIT_TYPE_DESC,
+        SUPERVSN_ENH_CD,
+        SUPERVSN_ENH_DESC,
+        SUPERVSN_ENH_RSN_CD,
+        SUPERVSN_ENH_RSN_DESC,
+        SUPERVSN_ENH_REF_ID
     FROM
         OFNDR_PDB.FOC_SUPERVISION_ENHANCEMENTS_VW;
     """
 
 MO_CASEPLANS_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        ASSESSMENT_ID,
+        DOC_ID,
+        MOCIS_DOC_ID,
+        FOCLIST,
+        AGENCY_NAME,
+        INSTRUMENT_NAME,
+        CREATED_BY,
+        CREATED_AT,
+        CASE_PLAN_DATE
     FROM
         ORAS.MO_CASEPLANS_DB2
     WHERE
@@ -302,7 +925,15 @@ MO_CASEPLANS_DB2 = """
 # unless specifically asked to do so.
 # TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_INFO_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        CASE_PLAN_NEED_ID,
+        FOCLIST,
+        DOMAIN_NAME,
+        PRIORITY_NAME,
+        RISK_LEVEL,
+        CREATED_BY
     FROM
         ORAS.MO_CASEPLAN_INFO_DB2;
     """
@@ -315,13 +946,29 @@ MO_CASEPLAN_INFO_DB2 = """
 # unless specifically asked to do so.
 # TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_TARGETS_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        CASE_PLAN_NEED_ID,
+        TARGET_ID,
+        FOCLIST,
+        TARGET_NAME
     FROM
         ORAS.MO_CASEPLAN_TARGETS_DB2;
     """
 
 MO_CASEPLAN_GOALS_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        CASE_PLAN_NEED_ID,
+        CASE_PLAN_TARGET_ID,
+        CASE_PLAN_GOAL_ID,
+        FOCLIST,
+        GOAL_TEXT,
+        CREATED_AT,
+        CREATED_BY,
+        UPDATED_AT
     FROM
         ORAS.MO_CASEPLAN_GOALS_DB2
     WHERE
@@ -337,7 +984,18 @@ MO_CASEPLAN_GOALS_DB2 = """
 # unless specifically asked to do so.
 # TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_OBJECTIVES_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        CASE_PLAN_NEED_ID,
+        CASE_PLAN_NEED_GOAL_ID,
+        CASE_PLAN_OBJECTIVE_ID,
+        FOCLIST,
+        OBJECTIVE_TEXT,
+        FREQUENCY,
+        START_DATE,
+        END_DATE,
+        CREATED_BY
     FROM
         ORAS.MO_CASEPLAN_OBJECTIVES_DB2;
     """
@@ -350,7 +1008,19 @@ MO_CASEPLAN_OBJECTIVES_DB2 = """
 # unless specifically asked to do so.
 # TODO(##12970) - Revisit this process once SFTP / Automated transfer process is addressed with MO
 MO_CASEPLAN_TECHNIQUES_DB2 = """
-    SELECT *
+    SELECT 
+        OFFENDER_ID,
+        CASE_PLAN_ID,
+        OBJECTIVE_ID,
+        TECHNIQUE_ID,
+        FOCLIST,
+        TECHNIQUE_TEXT,
+        HOURS_ASSIGNED,
+        HOURS_COMPLETED,
+        OFFENDER_PROGRAM_ASSIGNMENT_ID,
+        TECHNIQUE_TYPE,
+        TECHNIQUE_DETAIL,
+        CREATED_BY
     FROM
         ORAS.MO_CASEPLAN_TECHNIQUES_DB2;
     """
