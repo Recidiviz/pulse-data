@@ -189,18 +189,16 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
         queue=queue_name,
         task=uuid.uuid4().hex,
     )
-    # TODO(#11437): Remove dry_run=True once dag flow tested and working
     task = tasks_v2.types.Task(
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            "relative_uri": "/view_update/update_all_managed_views?dry_run=True",
+            "relative_uri": "/view_update/update_all_managed_views",
             "body": json.dumps({}).encode(),
         },
     )
-    # TODO(#11437): Remove dry_run from name once dag flow tested and working
     return CloudTasksTaskCreateOperator(
-        task_id="trigger_DRY_RUN_update_all_managed_views_task",
+        task_id="trigger_update_all_managed_views_task",
         location=queue_location,
         queue_name=queue_name,
         task=task,
@@ -288,7 +286,11 @@ def execute_calculations(
             timeout=(60 * 60 * 4),
         )
 
-        trigger_update_all_views >> wait_for_update_all_views
+        (
+            trigger_update_all_views
+            >> wait_for_update_all_views
+            >> trigger_view_rematerialize
+        )
 
     update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 

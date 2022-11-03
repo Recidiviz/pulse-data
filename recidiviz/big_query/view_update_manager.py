@@ -17,14 +17,13 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 import datetime
 import logging
-import time
 from concurrent import futures
 from concurrent.futures import Future
 from enum import Enum
 from http import HTTPStatus
 from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
 
-from flask import Blueprint, request
+from flask import Blueprint
 from google.api_core import retry
 from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
@@ -96,9 +95,6 @@ def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
 view_update_manager_blueprint = Blueprint("view_update", __name__)
 
 
-# TODO(#11437): We are aware that this endpoint will regularly time out, since updating
-#  all views takes a long time. This endpoint is a **temporary** solution,
-#  and will be deleted once we put the BigQuery view update into the DAG.
 @view_update_manager_blueprint.route("/update_all_managed_views", methods=["POST"])
 @requires_gae_auth
 @retry.Retry(predicate=retry_predicate)
@@ -106,17 +102,12 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
     start = datetime.datetime.now()
     view_builders = deployed_view_builders(metadata.project_id())
-    dry_run = request.args.get("dry_run", default=False, type=bool)
 
-    # TODO(#11437): `dry_run` will go away once development of the DAG integration is complete
-    if dry_run:
-        time.sleep(10)
-    else:
-        create_managed_dataset_and_deploy_views_for_view_builders(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            view_builders_to_update=view_builders,
-            historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        )
+    create_managed_dataset_and_deploy_views_for_view_builders(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_builders_to_update=view_builders,
+        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    )
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
 

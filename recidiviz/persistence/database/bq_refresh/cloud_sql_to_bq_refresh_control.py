@@ -28,7 +28,6 @@ from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
     PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
-    UPDATE_MANAGED_VIEWS_REQUEST_ARG,
 )
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
@@ -45,7 +44,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils import pubsub_helper
 from recidiviz.utils.auth.gae import requires_gae_auth
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
@@ -78,9 +76,6 @@ def wait_for_ingest_to_create_tasks(
         )
 
     pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
-    update_managed_views_arg = get_value_from_request(UPDATE_MANAGED_VIEWS_REQUEST_ARG)
-
-    logging.info("Update managed views arg in request: [%s]", update_managed_views_arg)
 
     if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
         # If no pipeline_run_type_arg is specified for the STATE schema, then we default
@@ -114,7 +109,6 @@ def wait_for_ingest_to_create_tasks(
             lock_id=lock_id,
             schema=schema_arg,
             pipeline_run_type=pipeline_run_type_arg,
-            update_managed_views=update_managed_views_arg,
         )
         return "", HTTPStatus.OK
 
@@ -122,7 +116,6 @@ def wait_for_ingest_to_create_tasks(
     task_manager.create_refresh_bq_schema_task(
         schema_type=schema_type,
         pipeline_run_type=pipeline_run_type_arg,
-        update_managed_views=update_managed_views_arg,
     )
     return "", HTTPStatus.OK
 
@@ -170,38 +163,6 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
         )
 
     federated_bq_schema_refresh(schema_type=schema_type)
-
-    if schema_type is SchemaType.STATE:
-        update_managed_views_arg = get_value_from_request(
-            UPDATE_MANAGED_VIEWS_REQUEST_ARG
-        )
-
-        json_data_text = request.get_data(as_text=True)
-        logging.info("Request data: %s", json_data_text)
-        logging.info("Update managed views arg: [%s]", update_managed_views_arg)
-
-        if update_managed_views_arg:
-            logging.info(
-                "Creating task to hit /view_update/update_all_managed_views endpoint."
-            )
-
-            # TODO(#11437): Hitting this endpoint here is a **temporary** solution,
-            #  and will be deleted once we put the BigQuery view update into the DAG.
-            task_manager = BQRefreshCloudTaskManager()
-            task_manager.create_update_managed_views_task()
-
-        pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
-
-        if (
-            pipeline_run_type_arg
-            and pipeline_run_type_arg != PIPELINE_RUN_TYPE_NONE_VALUE
-        ):
-            logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
-
-            pubsub_helper.publish_message_to_topic(
-                message="State export to BQ complete",
-                topic=f"v1.calculator.trigger_{pipeline_run_type_arg.lower()}_pipelines",
-            )
 
     # Unlock export lock when all BQ exports complete
     lock_manager = CloudSqlToBQLockManager()

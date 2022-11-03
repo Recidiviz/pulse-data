@@ -44,10 +44,7 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
-# TODO(#11437): Remove dry_run from name once dag flow tested and working
-_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
-    "trigger_DRY_RUN_update_all_managed_views_task"
-)
+_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "trigger_update_all_managed_views_task"
 _WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "wait_for_view_update_all_success"
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
 _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = r"wait_for_(us_[a-z]{2})_validations_completion"
@@ -285,7 +282,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
         self.assertEqual(_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
         self.assertEqual(
-            {_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID},
+            {_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID},
             wait_task.upstream_task_ids,
         )
 
@@ -314,7 +311,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
         trigger_cloud_task_task = dag.get_task(
-            _TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID
+            _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID
         )
 
         if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
@@ -327,7 +324,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
         self.assertEqual(
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-            "/view_update/update_all_managed_views?dry_run=True",
+            "/view_update/update_all_managed_views",
         )
 
     def test_update_all_managed_views_only_called_in_historic_dag(self) -> None:
@@ -338,9 +335,9 @@ class TestCalculationPipelineDags(unittest.TestCase):
                 continue
             dag = dag_bag.dags[dag_id]
             with self.assertRaises(Exception) as context:
-                dag.get_task(_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
+                dag.get_task(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
             self.assertTrue(
-                f"Task {_TRIGGER_DRY_RUN_UPDATE_ALL_MANAGED_VIEWS_TASK_ID} not found"
+                f"Task {_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID} not found"
                 in str(context.exception)
             )
 
