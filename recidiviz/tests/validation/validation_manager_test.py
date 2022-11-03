@@ -482,7 +482,7 @@ class TestFetchValidations(TestCase):
         # validation data for the newly promoted region.
         self.assertCountEqual(
             launched_state_codes,
-            ["US_CO", "US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"],
+            ["US_CO", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"],
         )
 
         for state_code, config in region_configs_to_validate.items():
