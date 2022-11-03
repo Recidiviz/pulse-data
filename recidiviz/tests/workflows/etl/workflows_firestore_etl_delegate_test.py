@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 import mock.mock
 from freezegun import freeze_time
+from google.api_core.exceptions import AlreadyExists
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import (
@@ -80,6 +81,7 @@ class FakeFileStream:
 # which ultimately means we have to patch the individual client methods instead of the
 # entire class (because our test instance already has a reference to the real class,
 # which also references google.cloud at instantiation, which is why we have to patch that too)
+@patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
 @patch("google.cloud.firestore.Client")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
@@ -93,10 +95,11 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
     def test_run_etl_respects_batching(
         self,
         mock_get_file_stream: mock.MagicMock,
-        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_delete_old_documents: mock.MagicMock,
         mock_batch_writer: mock.MagicMock,
         mock_get_collection: mock.MagicMock,
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate respects the max batch size for writing to Firestore."""
         mock_batch_writer.return_value = FakeBatchWriter(verify_batch_size=True)
@@ -110,10 +113,11 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
     def test_run_etl_timestamp(
         self,
         mock_get_file_stream: mock.MagicMock,
-        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_delete_old_documents: mock.MagicMock,
         mock_batch_writer: mock.MagicMock,
-        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate adds timestamp to each loaded record."""
         mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
@@ -127,11 +131,12 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
 
     def test_run_etl_delete_outdated(
         self,
-        mock_get_file_stream: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_get_file_stream: mock.MagicMock,
         mock_delete_old_documents: mock.MagicMock,
-        mock_batch_writer: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+        _mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate deletes records with outdated timestamps"""
         mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
@@ -147,11 +152,12 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
 
     def test_run_etl_transform_error(
         self,
-        mock_get_file_stream: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_delete_old_documents: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_batch_writer: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_get_collection: mock.MagicMock,  # pylint: disable=unused-argument
-        mock_firestore_client: mock.MagicMock,  # pylint: disable=unused-argument
+        mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        _mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate logs an error when transform_row raises Exception"""
 
@@ -172,3 +178,81 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
                         delegate.run_etl("US_XX", "test_export.json")
                         mock_logger.assert_called_once()
                         assert mock_transform.call_count == 2
+
+    @patch(
+        "recidiviz.firestore.firestore_client.FirestoreClientImpl.index_exists_for_collection"
+    )
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.create_index")
+    def test_run_etl_creates_index_if_needed(
+        self,
+        mock_create_index: mock.MagicMock,
+        mock_index_exists_for_collection: mock.MagicMock,
+        _mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        _mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
+    ) -> None:
+        """Tests that the ETL Delegate calls create_index if one does not exist yet."""
+        with local_project_id_override("test-project"):
+            mock_index_exists_for_collection.return_value = False
+            delegate = TestETLDelegate()
+            delegate.run_etl("US_XX", "test_export.json")
+            mock_create_index.assert_called_once_with(
+                "testOpportunity",
+                {
+                    "name": "testOpportunity",
+                    "query_scope": "COLLECTION",
+                    "fields": [
+                        {"field_path": "stateCode", "order": "ASCENDING"},
+                        {"field_path": "__loadedAt", "order": "ASCENDING"},
+                    ],
+                },
+            )
+
+    @patch(
+        "recidiviz.firestore.firestore_client.FirestoreClientImpl.index_exists_for_collection"
+    )
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.create_index")
+    def test_run_etl_does_not_create_index_if_exists(
+        self,
+        mock_create_index: mock.MagicMock,
+        mock_index_exists_for_collection: mock.MagicMock,
+        _mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        _mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
+    ) -> None:
+        """Tests that the ETL Delegate does not call create_index if one already exists."""
+        with local_project_id_override("test-project"):
+            mock_index_exists_for_collection.return_value = True
+            delegate = TestETLDelegate()
+            delegate.run_etl("US_XX", "test_export.json")
+            mock_create_index.assert_not_called()
+
+    @patch(
+        "recidiviz.firestore.firestore_client.FirestoreClientImpl.index_exists_for_collection"
+    )
+    @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.create_index")
+    def test_run_etl_does_not_create_index_on_exists_exception(
+        self,
+        mock_create_index: mock.MagicMock,
+        mock_index_exists_for_collection: mock.MagicMock,
+        _mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        _mock_batch_writer: mock.MagicMock,
+        _mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
+    ) -> None:
+        """Tests that the ETL Delegate logs when creating an index fails on the AlreadyExists exception."""
+        with local_project_id_override("test-project"):
+            mock_index_exists_for_collection.return_value = False
+            mock_create_index.side_effect = AlreadyExists("Index already exists.")
+            with self.assertLogs(level="INFO") as log:
+                delegate = TestETLDelegate()
+                delegate.run_etl("US_XX", "test_export.json")
+                self.assertTrue("Index already exists." in str(log.output))

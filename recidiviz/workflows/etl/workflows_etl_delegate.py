@@ -22,6 +22,8 @@ import os
 from datetime import datetime, timezone
 from typing import Dict, Iterator, List, Optional, TextIO, Tuple
 
+from google.api_core.exceptions import AlreadyExists
+
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
@@ -119,7 +121,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
         etl_timestamp = datetime.now(timezone.utc)
 
-        # step 1: load new documents
+        # step 1: Load new documents
         for file_stream in self.get_file_stream(state_code, filename):
             while line := file_stream.readline():
                 try:
@@ -153,7 +155,33 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
             collection_name,
         )
 
-        # step 2: delete any pre-existing documents that we didn't just overwrite
+        # step 2: Create composite indexes if they do not exist
+        if not firestore_client.index_exists_for_collection(collection_name):
+            try:
+                create_index_request = {
+                    "name": collection_name,
+                    "query_scope": "COLLECTION",
+                    "fields": [
+                        {"field_path": "stateCode", "order": "ASCENDING"},
+                        {"field_path": "__loadedAt", "order": "ASCENDING"},
+                    ],
+                }
+                logging.info(
+                    "Creating composite index for collection: %s", collection_name
+                )
+                operation = firestore_client.create_index(
+                    collection_name, create_index_request
+                )
+                # Wait for index creation to complete
+                operation.result()
+            except AlreadyExists:
+                # This race condition is unlikely to happen, but we want to protect from it just in case.
+                logging.info(
+                    "Skip create composite index for collection %s. Index already exists.",
+                    collection_name,
+                )
+
+        # step 3: Delete any pre-existing documents that we didn't just overwrite
         firestore_client.delete_old_documents(
             collection_name, state_code, self.timestamp_key, etl_timestamp
         )

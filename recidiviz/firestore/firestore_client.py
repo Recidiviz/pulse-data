@@ -17,10 +17,12 @@
 """Client wrapper for interacting with Firestore."""
 import abc
 import logging
+import re
 from datetime import datetime
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from google.cloud import firestore
+from google.api_core.operation import Operation
+from google.cloud import firestore, firestore_admin_v1
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.query import Query
@@ -59,6 +61,22 @@ class FirestoreClient(abc.ABC):
         """Returns a batch for writing to Firestore."""
 
     @abc.abstractmethod
+    def list_collections_with_indexes(self) -> List[str]:
+        """Lists all the collection names that have an index created."""
+
+    @abc.abstractmethod
+    def index_exists_for_collection(self, collection_name: str) -> bool:
+        """Returns whether a collection already has an index created."""
+
+    @abc.abstractmethod
+    def create_index(
+        self,
+        collection_name: str,
+        create_index_request: firestore_admin_v1.types.CreateIndexRequest,
+    ) -> Operation:
+        """Creates a composite index for the given collection_name using the create_index_request."""
+
+    @abc.abstractmethod
     def delete_collection(self, collection_path: str) -> None:
         """Deletes a collection from Firestore."""
 
@@ -92,7 +110,10 @@ class FirestoreClientImpl(FirestoreClient):
             )
 
         self._project_id = project_id
+        # (default) is the database name automatically assigned by Firestore to the default database in a project.
+        self.database_name = "(default)"
         self.client = firestore.Client(project=self.project_id)
+        self.admin_client = firestore_admin_v1.FirestoreAdminClient()
 
     @property
     def project_id(self) -> str:
@@ -109,6 +130,34 @@ class FirestoreClientImpl(FirestoreClient):
 
     def batch(self) -> firestore.WriteBatch:
         return self.client.batch()
+
+    def list_collections_with_indexes(self) -> List[str]:
+        # Collection ID is set to 'all' in the request because `list_indexes` always prints all the
+        # indexes in a project, regardless of the collection group specified. 'all' does not mean anything here,
+        # any string provided will work, but it can not be left blank.
+        project_path = f"projects/{self.project_id}/databases/{self.database_name}/collectionGroups/all"
+        indexes = list(self.admin_client.list_indexes(parent=project_path))
+        collections = []
+        for index in indexes:
+            # index.name returns a string that matches:
+            # "projects/{project_id}/databases/{database_name}/collectionGroups/{collection_name}/indexes/{index_id}"
+            match = re.search(r"collectionGroups/(.+)/indexes", index.name)
+            if match:
+                collections.append(match.group(1))
+        return collections
+
+    def index_exists_for_collection(self, collection_name: str) -> bool:
+        return collection_name in self.list_collections_with_indexes()
+
+    def create_index(
+        self,
+        collection_name: str,
+        create_index_request: firestore_admin_v1.types.CreateIndexRequest,
+    ) -> Operation:
+        project_path = f"projects/{self.project_id}/databases/{self.database_name}/collectionGroups/{collection_name}"
+        return self.admin_client.create_index(
+            parent=project_path, index=create_index_request
+        )
 
     def delete_collection(self, collection_path: str) -> None:
         logging.info('Deleting collection "%s"', collection_path)

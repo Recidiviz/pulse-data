@@ -51,6 +51,7 @@ class FakeFileStream:
         return str(self.values_written)
 
 
+@patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
 @patch("google.cloud.firestore.Client")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
@@ -65,6 +66,7 @@ class WorkflowsDemoDataTest(TestCase):
         _mock_batch_method: mock.MagicMock,
         mock_get_collection: mock.MagicMock,
         _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Tests that the ETL Delegate uses collection with a demo prefix"""
 
@@ -79,6 +81,7 @@ class WorkflowsDemoDataTest(TestCase):
         mock_batch_method: mock.MagicMock,
         _mock_get_collection: mock.MagicMock,
         _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
     ) -> None:
         """Verifies that the delegates used for demo data can process their fixtures successfully"""
 
