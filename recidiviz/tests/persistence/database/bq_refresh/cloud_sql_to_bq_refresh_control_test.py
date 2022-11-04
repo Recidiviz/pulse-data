@@ -89,11 +89,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.mock_task_manager_fn = self.task_manager_patcher.start()
         self.mock_task_manager_fn.return_value = self.mock_task_manager
 
+        self.pubsub_helper_patcher = mock.patch(
+            f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper"
+        )
+        self.mock_pubsub_helper = self.pubsub_helper_patcher.start()
+
     def tearDown(self) -> None:
         self.mock_project_id_patcher.stop()
         self.mock_project_number_patcher.stop()
         self.fs_patcher.stop()
         self.task_manager_patcher.stop()
+        self.pubsub_helper_patcher.stop()
 
     def assertIsOnlySchemaLocked(self, schema_type: SchemaType) -> None:
         for s in SchemaType:
@@ -138,6 +144,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
+            message=mock.ANY, topic="v1.calculator.trigger_incremental_pipelines"
+        )
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_kick_all_schedulers.assert_called()
 
@@ -177,6 +186,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
+            message=mock.ANY, topic="v1.calculator.trigger_historical_pipelines"
+        )
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_kick_all_schedulers.assert_called()
 
@@ -215,6 +227,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.CASE_TRIAGE))
         mock_kick_all_schedulers.assert_not_called()
 
@@ -238,6 +251,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             response.data.decode(), "Unexpected value for schema_arg: [GARBAGE_SCHEMA]"
         )
         mock_federated_refresh.assert_not_called()
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
@@ -261,6 +275,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             "Unsupported schema type: [SchemaType.JUSTICE_COUNTS]",
         )
         mock_federated_refresh.assert_not_called()
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
@@ -287,6 +302,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             "Expected lock for [STATE] BQ refresh to already exist.",
         )
         mock_federated_refresh.assert_not_called()
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
@@ -323,6 +339,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             "Expected to be able to proceed with refresh before this endpoint was called for [STATE].",
         )
         mock_federated_refresh.assert_not_called()
+        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(
