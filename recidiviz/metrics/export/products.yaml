@@ -68,8 +68,9 @@ products:
     exports:
       - OVERDUE_DISCHARGE
     states:
-      - state_code: US_ID
-        environment: production
+      # TODO(#16465): Turn this back on
+      # - state_code: US_ID
+      #   environment: production
       - state_code: US_PA
         environment: production
   - name: PO Report
@@ -77,8 +78,9 @@ products:
     exports:
       - PO_MONTHLY
     states:
-      - state_code: US_ID
-        environment: production
+      # TODO(#16465): Turn this back on
+      # - state_code: US_ID
+      #   environment: production
       - state_code: US_PA
         environment: staging
       - state_code: US_MO
@@ -88,8 +90,9 @@ products:
     exports:
       - PUBLIC_DASHBOARD
     states:
-      - state_code: US_ID
-        environment: staging
+      # TODO(#16465): Turn this back on
+      # - state_code: US_ID
+      #   environment: staging
       - state_code: US_ME
         environment: staging
       - state_code: US_ND
@@ -103,8 +106,9 @@ products:
     exports:
       - VITALS
     states:
-      - state_code: US_ID
-        environment: production
+      # TODO(#16465): Turn this back on
+      # - state_code: US_ID
+      #   environment: production
       - state_code: US_ND
         environment: production
   - name: Pathways
@@ -131,14 +135,15 @@ products:
         environment: production
       - state_code: US_CO
         environment: production
-  - name: Pathways With Population Projections
-    description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
-    exports:
-      - PATHWAYS_AND_PROJECTIONS
-      - PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL
-    states:
-      - state_code: US_ID
-        environment: production
+  # TODO(#16465): Turn this back on
+  # - name: Pathways With Population Projections
+  #   description: Prison and Supervision populations and transitions over time including prison and supervsion population projections. Also see PATHWAYS for Pathways exports that do not include projections.
+  #   exports:
+  #     - PATHWAYS_AND_PROJECTIONS
+  #     - PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL
+  #   states:
+  #     - state_code: US_ID
+  #       environment: production
   - name: Workflows
     description: Workflows is a collection of data and tools that help POs and supervisors provide services to their clients and hold themselves accountable.
     exports:
@@ -148,5 +153,6 @@ products:
         environment: production
       - state_code: US_ND
         environment: production
-      - state_code: US_ID
-        environment: production
+      # TODO(#16465): Turn this back on
+      # - state_code: US_ID
+      #   environment: production
