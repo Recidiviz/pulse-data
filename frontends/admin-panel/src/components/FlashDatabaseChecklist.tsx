@@ -279,7 +279,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>Pause all of the ingest-related queues for {stateCode}.</p>
             }
             actionButtonTitle="Pause Queues"
-            actionButtonEnabled={isReadyToFlash}
+            actionButtonEnabled={proceedWithFlash === false}
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
@@ -293,7 +293,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 databases until the lock is released.
               </p>
             }
-            actionButtonEnabled={isReadyToFlash}
+            actionButtonEnabled={proceedWithFlash === false}
             actionButtonTitle="Acquire Lock"
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
@@ -309,7 +309,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonTitle="Update Ingest Instance Status"
-            actionButtonEnabled={isReadyToFlash}
+            actionButtonEnabled={proceedWithFlash === false}
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
                 stateCode,
@@ -836,19 +836,36 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     !isReadyToFlash &&
     !isFlashInProgress &&
     !isFlashCancellationInProgress &&
+    proceedWithFlash === null &&
     // This check makes it so we don't show the "can't flash" component
     // when you set the status to FLASH_COMPLETE in the middle of the checklist.
     currentStep === 0
   ) {
     /* If we have loaded a status but it does not indicate that we can proceed with flashing, show an alert on top of the checklist */
+    /* Regardless of status, we can cancel a flash to primary at any time */
     const cannotFlashDescription = `Primary: ${currentPrimaryIngestInstanceStatus}. Secondary: ${currentSecondaryIngestInstanceStatus}.`;
     activeComponent = (
-      <Alert
-        message="Cannot proceed with flash to primary. Secondary instance needs to have the status 'READY_TO_FLASH'."
-        description={cannotFlashDescription}
-        type="info"
-        showIcon
-      />
+      <div>
+        <Alert
+          message="Cannot proceed with flash to primary. Secondary instance needs to have the status 'READY_TO_FLASH'."
+          description={cannotFlashDescription}
+          type="info"
+          showIcon
+        />
+        <br />
+        <h3 style={{ color: "green" }}>
+          Regardless of ingest instance status, you may proceed with cleaning up
+          the secondary instance and canceling the flash:{" "}
+          <Button
+            type="primary"
+            onClick={async () => {
+              setProceedWithFlash(false);
+            }}
+          >
+            CLEAN UP SECONDARY + CANCEL FLASH
+          </Button>
+        </h3>
+      </div>
     );
   } else if (proceedWithFlash === null && isReadyToFlash) {
     activeComponent = (
@@ -883,7 +900,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         extra={
           <StateSelector
             fetchStateList={fetchIngestStateCodes}
-            onChange={setNewState}
+            onChange={(state) => {
+              setNewState(state);
+              /* Reset whether to proceed with flash */
+              setProceedWithFlash(null);
+            }}
             initialValue={null}
           />
         }
