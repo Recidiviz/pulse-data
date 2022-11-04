@@ -1,23 +1,18 @@
-key_mappings:
-  RecID: state_assessment.state_assessment_id
-  AssessmentDate: state_assessment.assessment_date
-
-ancestor_keys:
-  SID: state_person.state_person_id
-
-primary_key:
-  RecID: state_assessment.state_assessment_id
-
-keys_to_ignore:
-  - LastUpdate # No apparent use for this
-  - LSI_CHARGE # No apparent use for this
-  - INACTIVEDATE # No apparent use for this
-  - RecDate # No apparent use for this
-  - CREATED_BY # Unused -- Is this the person who administered the assessment?
-  - VERSION_ID # No apparent use for this
-  - COMPLETE # No apparent use for this
-  - SUPERLEVEL # We get a more recent value in Docstars Offenders
-  - CHtotal # The following domain/question values are handled manually
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - SID
+  - RecID
+  - AssessmentDate
+  - LastUpdate
+  - LSI_CHARGE
+  - INACTIVEDATE
+  - RecDate
+  - CREATED_BY
+  - VERSION_ID
+  - COMPLETE
+  - SUPERLEVEL
+  - CHtotal
   - EETotal
   - FnclTotal
   - FMTotal
@@ -40,3 +35,63 @@ keys_to_ignore:
   - Q40Value
   - Q51value
   - Q52Value
+unused_columns:
+  - LastUpdate
+  - LSI_CHARGE
+  - INACTIVEDATE
+  - RecDate
+  - CREATED_BY
+  - VERSION_ID
+  - COMPLETE
+  - SUPERLEVEL
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    assessments:
+      - StateAssessment:
+          external_id: RecID
+          assessment_date: AssessmentDate
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_type: $literal_enum(StateAssessmentType.LSIR)
+          assessment_metadata:
+            $json_dict:
+              domain_criminal_history: CHtotal
+              domain_education_employment: EETotal
+              domain_financial: FnclTotal
+              domain_family_marital: FMTotal
+              domain_accommodation: AccomTotal
+              domain_leisure_recreation: LRTotal
+              domain_companions: Cptotal
+              domain_alcohol_drug_problems: AdTotal
+              domain_emotional_personal: EPTotal
+              domain_attitudes_orientation: AOTotal
+              question_18: Q18value
+              question_19: Q19value
+              question_20: Q20value
+              question_21: Q21value
+              question_23: Q23Value
+              question_24: Q24Value
+              question_25: Q25Value
+              question_27: Q27Value
+              question_31: Q31Value
+              question_39: Q39Value
+              question_40: Q40Value
+              question_51: Q51value
+              question_52: Q52Value
+          assessment_score:
+            $custom:
+              $function: us_nd_custom_parsers.get_score_sum
+              $args:
+                d1: CHtotal
+                d2: EETotal
+                d3: FnclTotal
+                d4: FMTotal
+                d5: AccomTotal
+                d6: LRTotal
+                d7: Cptotal
+                d8: AdTotal
+                d9: EPTotal
+                d10: AOTotal

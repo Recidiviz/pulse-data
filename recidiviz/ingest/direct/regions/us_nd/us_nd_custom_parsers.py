@@ -176,3 +176,35 @@ def normalize_judicial_district_code(judicial_district_code_text: str) -> Option
         return judicial_district_code_text
 
     return _JUDICIAL_DISTRICT_CODE_MAPPINGS[judicial_district_code_text]
+
+
+def get_score_sum(
+    d1: str,
+    d2: str,
+    d3: str,
+    d4: str,
+    d5: str,
+    d6: str,
+    d7: str,
+    d8: str,
+    d9: str,
+    d10: str,
+) -> str:
+    score_sum = 0
+    scores = [
+        d1,
+        d2,
+        d3,
+        d4,
+        d5,
+        d6,
+        d7,
+        d8,
+        d9,
+        d10,
+    ]
+    for score in scores:
+        score = str(score)
+        if score.strip():
+            score_sum += int(score.strip())
+    return str(score_sum)
