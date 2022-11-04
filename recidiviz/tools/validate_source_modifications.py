@@ -150,6 +150,7 @@ CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
 IGNORE_KEY = "ignore"
 BUILD_INFRA_KEY = "build_infra"
+US_IX_KEY = "us_ix"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # admin panel files
@@ -246,6 +247,17 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                 }
             )
         ),
+    ],
+    # Ensure that any files copied from ID are kept in sync between the two regions.
+    US_IX_KEY: [
+        RequiredModificationSets.for_symmetric_check(
+            frozenset(
+                {
+                    "recidiviz/ingest/direct/regions/us_id/raw_data/us_id_current_day_daily_summary.yaml",
+                    "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
+                }
+            )
+        )
     ],
 }
 
