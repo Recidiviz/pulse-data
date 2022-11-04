@@ -12,10 +12,6 @@ columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
-  - name: AssessmentDate
-    is_datetime: True
-    description: |-
-      When the LSIR assessment occurred.
   - name: CHtotal
     description: |-
       Total score of the Criminal History domain questions.
@@ -85,21 +81,9 @@ columns:
   - name: AOTotal
     description: |-
       Total score of the Attitudes/Orientation domain questions.
-  - name: LastUpdate
-    is_datetime: True
-    description: |-
-      When this record was most recently updated.
   - name: LSI_CHARGE
     description: |-
       Always the value "1".
-  - name: INACTIVEDATE
-    is_datetime: True
-    description: |-
-      When this assessment became inactive.
-  - name: RecDate
-    is_datetime: True
-    description: |-
-      When this record was first created in the source system.
   - name: CREATED_BY
     description: |-
       Who this record was created by.
@@ -112,3 +96,18 @@ columns:
   - name: SUPERLEVEL
     description: |-
       Supervision level determined by the LSIR assessment.
+  - name: AssessmentDate
+    is_datetime: True
+    description: |-
+      When the LSIR assessment occurred.
+  - name: LastUpdate
+    description: |-
+      When this record was most recently updated.
+  - name: INACTIVEDATE
+    is_datetime: True
+    description: |-
+      When this assessment became inactive.
+  - name: RecDate
+    is_datetime: True
+    description: |-
+      When this record was first created in the source system.
