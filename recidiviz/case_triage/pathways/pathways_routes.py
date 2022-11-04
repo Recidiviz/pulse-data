@@ -25,6 +25,7 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas import load_api_schema
+from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (
     get_dimension_transformer,
@@ -39,7 +40,7 @@ from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
 from recidiviz.case_triage.pathways.pathways_authorization import (
-    build_authorization_handler,
+    on_successful_authorization,
 )
 from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.utils.environment import in_offline_mode
@@ -85,7 +86,9 @@ def create_pathways_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Pathways"""
     api = Blueprint("pathways", __name__)
 
-    handle_authorization = build_authorization_handler()
+    handle_authorization = build_authorization_handler(
+        on_successful_authorization, "dashboard_auth0"
+    )
 
     @api.before_request
     def validate_authentication() -> None:

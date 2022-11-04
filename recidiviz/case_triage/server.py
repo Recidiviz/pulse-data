@@ -51,6 +51,9 @@ from recidiviz.case_triage.util import (
     get_redis_connection_options,
     get_sessions_redis,
 )
+from recidiviz.case_triage.workflows.workflows_routes import (
+    create_workflows_api_blueprint,
+)
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
@@ -212,10 +215,10 @@ def set_headers(response: Response) -> Response:
 write_key = os.getenv("SEGMENT_WRITE_KEY", "")
 segment_client = CaseTriageSegmentClient(write_key)
 
-
 # Routes & Blueprints
 pathways_api_blueprint = create_pathways_api_blueprint()
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
+workflows_blueprint = create_workflows_api_blueprint()
 # Only the pathways endpoints are accessible in offline mode
 if not in_offline_mode():
     auth0_configuration = get_secret("case_triage_auth0")
@@ -233,6 +236,7 @@ if not in_offline_mode():
     app.register_blueprint(api_blueprint, url_prefix="/api")
     app.register_blueprint(auth_blueprint, url_prefix="/auth")
     app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
+    app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
 
     app.add_url_rule(
         "/refresh_auth_store",

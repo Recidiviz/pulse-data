@@ -57,3 +57,9 @@ write_to_file '5432' recidiviz/local/gsm/pathways_db_port
 # Set up application-specific configuration in GCS
 write_to_file "[{\"email\": \"${USER_EMAIL}\", \"is_admin\": true}]" recidiviz/case_triage/local/gcs/case-triage-data/allowlist_v2.json
 write_to_file '{}' recidiviz/case_triage/local/gcs/case-triage-data/feature_variants.json
+
+# These secrets are used to insert contact notes for TN
+US_TN_INSERT_CONTACT_NOTE_URL=$(get_secret recidiviz-staging workflows_us_tn_insert_contact_note_url)
+US_TN_INSERT_CONTACT_NOTE_KEY=$(get_secret recidiviz-staging workflows_us_tn_insert_contact_note_key)
+write_to_file "$US_TN_INSERT_CONTACT_NOTE_URL" recidiviz/local/gsm/workflows_us_tn_insert_contact_note_url
+write_to_file "$US_TN_INSERT_CONTACT_NOTE_KEY" recidiviz/local/gsm/workflows_us_tn_insert_contact_note_key

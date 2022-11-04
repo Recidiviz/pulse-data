@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Implements authorization for Pathways routes"""
-import json
 import os
 from http import HTTPStatus
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 from flask import request
 
@@ -27,14 +26,8 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
 )
 from recidiviz.common.constants.states import _FakeStateCode
 from recidiviz.common.str_field_utils import capitalize_first
-from recidiviz.utils.auth.auth0 import (
-    Auth0Config,
-    AuthorizationError,
-    build_auth0_authorization_handler,
-)
-from recidiviz.utils.environment import in_offline_mode
+from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
-from recidiviz.utils.secrets import get_secret
 
 
 def on_successful_authorization(
@@ -109,24 +102,3 @@ def on_successful_authorization(
         return
 
     raise AuthorizationError(code="not_authorized", description="Access denied")
-
-
-def build_authorization_handler() -> Callable:
-    """Loads Auth0 configuration secret and builds the middleware"""
-
-    if in_offline_mode():
-        # Offline mode does not require authorization since it is only returning fixture data.
-        return lambda: on_successful_authorization({}, offline_mode=True)
-
-    dashboard_auth0_configuration = get_secret("dashboard_auth0")
-
-    if not dashboard_auth0_configuration:
-        raise ValueError("Missing Dashboard Auth0 configuration secret")
-
-    authorization_config = Auth0Config.from_config_json(
-        json.loads(dashboard_auth0_configuration)
-    )
-
-    return build_auth0_authorization_handler(
-        authorization_config, on_successful_authorization
-    )
