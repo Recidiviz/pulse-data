@@ -84,10 +84,6 @@ variable "insights_config" {
   default = null
 }
 
-# TODO(#14874): Remove when prod-data-client has been deprecated
-# Used for allowing access from `prod-data-client` to the CloudSQL instance
-data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "prod_data_client_cidr" }
-
 # Data from Google Secrets Manager is added in this terraform module's scope
 # The following secrets are used to configure the instance:
 # =========================================================
@@ -145,53 +141,48 @@ resource "google_sql_database_instance" "data" {
       name  = "log_connections"
       value = "on"
     }
-    
+
     database_flags {
       name  = "log_disconnections"
       value = "on"
     }
-    
+
     database_flags {
       name  = "log_duration"
       value = "on"
     }
-    
+
     database_flags {
       name  = "log_lock_waits"
       value = "on"
     }
-    
+
     database_flags {
       name  = "log_statement"
       value = "all"
     }
-    
+
     database_flags {
       name  = "log_hostname"
       value = "on"
     }
-    
+
     database_flags {
       name  = "log_min_messages"
       value = "info"
     }
 
-    
+
     database_flags {
       name  = "log_min_duration_statement"
       value = 0
     }
-    
+
 
     ip_configuration {
       ipv4_enabled = true
       require_ssl  = var.require_ssl_connection
 
-      # TODO(#14874): Remove when prod-data-client has been deprecated
-      authorized_networks {
-        name  = "prod-data-client"
-        value = data.google_secret_manager_secret_version.prod_data_client_cidr.secret_data
-      }
     }
 
     location_preference {
