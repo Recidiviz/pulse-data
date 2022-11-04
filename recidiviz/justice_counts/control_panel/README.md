@@ -10,15 +10,15 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ### Aliases
 
-See the [scripts] section of our Pipfile for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
+See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-data/blob/71d117466a7a1a07ed1dc0157bb0f8952abdd62d/Pipfile#L200) for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
 
 ### Development secrets
 
 The following application secrets are stored in Google Secrets Manager (GSM):
 
-- justice_counts_auth0: A JSON blob containing Auth0 clientID, audience, domain, and algorithm
-- justice_counts_secret_key: A Flask secret key used for securely signing the session cookie
-- justice_counts_segment_key: Public key the backend serves to the control panel frontend to send analytics to the right Segment destination
+- `justice_counts_auth0`: A JSON blob containing Auth0 clientID, audience, domain, and algorithm
+- `justice_counts_secret_key`: A Flask secret key used for securely signing the session cookie
+- `justice_counts_segment_key`: Public key the backend serves to the control panel frontend to send analytics to the right Segment destination
 
 When running locally, we pull these secrets from GSM and write them to our local filesystem. The application code detects if we are in development, and if so, reads the secrets from our filesystem instead of GSM (see the `get_secret` method).
 
@@ -30,10 +30,12 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 
 ## Running locally
 
-1. Build the Docker image. (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 5, which will take precendence over the frontend that is bundled in the docker image.)
+1. Build the Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 5, which will take precendence over the frontend that is bundled in the docker image.)
 
 ```bash
-pipenv run docker-build-jc --build-arg JC_FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
+pipenv run docker-build-jc \
+  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
+  --build-arg FRONTEND_APP=publisher
 ```
 
 2. Run `docker-compose`:
@@ -48,15 +50,15 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-3. (Optional) Load fixtures:
+3. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
 ```
 
-4. Clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory
+4. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
 
-5. Run `yarn install` and `yarn run dev`
+5. Run `yarn install` and `yarn run dev`.
 
 6. You should see the application running on `localhost:3000`!
 
@@ -65,24 +67,16 @@ pipenv run fixtures-jc
 1. Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
 2. In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
 
+## Connect to the staging Postgres database
+
+1. Run `brew install jq`.
+2. From within `pulse-data`, run `pipenv run cloudsql`.
+3. This will launch an interactive script. Select `recidiviz-staging` and then `justice-counts`. Select `yes` when asked if you want write access.
+4. You should see a `postgres=>` prompt. Run `\dt` to see a list of tables.
+
 ## Deploying
 
-The backend and frontend of the application are deployed together in the same Docker image to Google Cloud Run. To build a Docker image for deployment:
-
-1. Checkout the branch you want to deploy.
-2. Build the Docker image. Specify which version of the frontend to include by referencing a tarball. You can either use a branch name via `https://github.com/Recidiviz/justice-counts/archive/<branch name>.tar.gz` or a tag name via `https://github.com/Recidiviz/justice-counts/archive/refs/tags/<tag name>.tar.gz`.
-
-```bash
-pipenv run docker-build-jc --build-arg JC_FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
-```
-
-3. Push the image to Docker:
-
-```bash
-docker push us.gcr.io/recidiviz-staging/<your name>-test
-```
-
-4. Go to the Revisions tab of our GCP Cloud Run service (either staging or production) and select the image you just pushed in the previous step.
+Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_playtesting.sh` scripts in the `pulse-data/recidiviz/tools/deploy/justice_counts` directory.
 
 ## SQLAlchemy Primer
 
