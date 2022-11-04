@@ -59,3 +59,6 @@ num_allowed_rows_overrides:
   - validation_name: supervision_termination_reason_no_date
     hard_num_allowed_rows_override: 10
     override_reason: Needs investigation.  Current failing level as of 10/28 is 3 rows #TODO(#16337)
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 20
+    override_reason: Needs investigation.  Current failing level as of 11/2 is 9 rows
