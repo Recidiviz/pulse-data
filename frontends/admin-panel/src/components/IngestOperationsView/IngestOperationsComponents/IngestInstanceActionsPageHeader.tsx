@@ -17,8 +17,8 @@
 
 import { PageHeader, Popover } from "antd";
 import classNames from "classnames";
+import { useEffect, useState } from "react";
 import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
-import { useFetchedDataJSON } from "../../../hooks";
 import {
   RegionAction,
   regionActionNames,
@@ -44,11 +44,21 @@ interface IngestActionsPageHeaderProps {
 
 const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
   ({ stateCode, instance, ingestInstanceSummary, onRefreshIngestSummary }) => {
-    const { data: statusInfo } = useFetchedDataJSON<IngestInstanceStatusInfo>(
-      () => {
-        return getCurrentIngestInstanceStatusInformation(stateCode, instance);
-      }
-    );
+    const [statusInfo, setStatusInfo] =
+      useState<IngestInstanceStatusInfo | undefined>();
+
+    useEffect(() => {
+      const setCurrentIngestInstanceStatusInformation = async () => {
+        const response = await getCurrentIngestInstanceStatusInformation(
+          stateCode,
+          instance
+        );
+        const newStatusInfo =
+          (await response.json()) as IngestInstanceStatusInfo;
+        setStatusInfo(newStatusInfo);
+      };
+      setCurrentIngestInstanceStatusInformation();
+    }, [stateCode, instance]);
 
     const IngestInstanceStatusPopoverContent = (
       <div>
