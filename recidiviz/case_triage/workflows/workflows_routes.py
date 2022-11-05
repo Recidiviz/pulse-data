@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes to support external requests from Workflows."""
+import requests
 from flask import Blueprint, Response, current_app, jsonify, request
 from flask_wtf.csrf import generate_csrf
 
@@ -50,5 +51,10 @@ def create_workflows_api_blueprint() -> Blueprint:
         data = assert_type(request.json, dict)
         response = WorkflowsExternalRequestInterface.insert_contact_note(data)
         return response
+
+    @workflows_api.get("/ip")
+    def ip() -> Response:
+        ip_response = requests.get("http://curlmyip.org", timeout=10)
+        return jsonify({"ip": ip_response.text})
 
     return workflows_api
