@@ -23,6 +23,7 @@ from typing import List, Optional
 import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
@@ -31,6 +32,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
     DirectIngestSftpFileMetadataManager,
+)
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
@@ -45,6 +49,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
     DirectIngestSftpFileMetadata,
 )
+from recidiviz.utils import environment
 
 
 class PostgresDirectIngestSftpFileMetadataManager(DirectIngestSftpFileMetadataManager):
@@ -236,7 +241,12 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         """Returns metadata for the unprocessed raw files in the operations table for
         this region.
         """
-        if self.raw_data_instance == DirectIngestInstance.SECONDARY:
+        if (
+            self.raw_data_instance == DirectIngestInstance.SECONDARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(self.region_code.upper())
+            )
+        ):
             raise DirectIngestInstanceError(
                 f"Invalid ingest instance [{self.raw_data_instance}] provided."
                 f"Raw files should only be processed in a primary ingest instance,"
@@ -263,3 +273,39 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 self._raw_file_schema_metadata_as_entity(metadata)
                 for metadata in results
             ]
+
+    def get_non_invalidated_files(self) -> List[DirectIngestRawFileMetadata]:
+        if (
+            self.raw_data_instance == DirectIngestInstance.SECONDARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(self.region_code.upper())
+            )
+        ):
+            raise DirectIngestInstanceError(
+                f"Invalid ingest instance [{self.raw_data_instance}] provided."
+                f"Raw files should only be processed in a primary ingest instance,"
+                f"not the secondary instance. "
+            )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(schema.DirectIngestRawFileMetadata).filter_by(
+                region_code=self.region_code,
+                is_invalidated=False,
+                raw_data_instance=self.raw_data_instance.value,
+            )
+            results = query.all()
+
+            return [
+                self._raw_file_schema_metadata_as_entity(metadata)
+                for metadata in results
+            ]
+
+    @environment.test_only
+    def mark_file_as_invalidated(self, path: GcsfsFilePath) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = dao.get_raw_file_metadata_row_for_path(
+                session, self.region_code, path, self.raw_data_instance
+            )
+            metadata.is_invalidated = True

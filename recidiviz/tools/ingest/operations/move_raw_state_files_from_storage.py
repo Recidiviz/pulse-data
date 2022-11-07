@@ -479,7 +479,6 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    # TODO(#15450): Delete check once secondary raw data import is live.
     if (
         args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
         and not secondary_raw_data_import_enabled_in_state(

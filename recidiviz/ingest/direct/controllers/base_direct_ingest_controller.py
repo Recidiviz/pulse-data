@@ -101,6 +101,7 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_man
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
@@ -276,8 +277,12 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self._ingest_view_materialization_args_generator = None
             return
 
-        # TODO(#12794): Remove once raw data source can be SECONDARY.
-        if self._raw_data_source_instance == DirectIngestInstance.SECONDARY:
+        if (
+            self._raw_data_source_instance == DirectIngestInstance.SECONDARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(self.region_code().upper())
+            )
+        ):
             raise ValueError(
                 f"Invalid raw data source instance [{self._raw_data_source_instance.value}] "
                 f"provided."
@@ -897,6 +902,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         if (
             unprocessed_raw_paths
             and self.raw_data_source_instance == DirectIngestInstance.SECONDARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(self.region_code().upper())
+            )
         ):
             raise ValueError(
                 f"Raw data import not supported from SECONDARY ingest bucket "
@@ -923,7 +931,12 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
             return
 
-        if self.raw_data_source_instance == DirectIngestInstance.SECONDARY:
+        if (
+            self.raw_data_source_instance == DirectIngestInstance.SECONDARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(self.region_code().upper())
+            )
+        ):
             raise ValueError(
                 f"Raw data import not supported from the SECONDARY instance. Raw "
                 f"data task for [{data_import_args.raw_data_file_path}] should never "
