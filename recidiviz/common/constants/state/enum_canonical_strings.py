@@ -67,6 +67,7 @@ state_assessment_class_social = "SOCIAL"
 state_assessment_class_substance_abuse = "SUBSTANCE_ABUSE"
 
 state_assessment_type_cssm = "CSSM"
+state_assessment_type_compas = "COMPAS"
 state_assessment_type_hiq = "HIQ"
 state_assessment_type_j_soap = "J_SOAP"
 state_assessment_type_lsir = "LSIR"
