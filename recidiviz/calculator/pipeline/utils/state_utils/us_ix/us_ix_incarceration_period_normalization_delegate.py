@@ -15,12 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_IX implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+from typing import List, Optional
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsIxIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_IX implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def incarceration_admission_reason_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """For now, in US_IX, all ADMITTED_FROM_SUPERVISION admission reasons have the
+        admission reason raw text of PENDING CUSTODY INTAKE. Changing to TEMPORARY CUSTODY
+        for now, until more information is ingested."""
+        if (
+            incarceration_period.admission_reason
+            == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+        ):
+            return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+
+        return None
