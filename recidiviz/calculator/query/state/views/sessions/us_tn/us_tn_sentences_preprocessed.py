@@ -92,7 +92,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
-    LEFT JOIN `{project_id}.{analyst_dataset}.state_charge_with_labels_materialized` charge
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
@@ -131,7 +131,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
-    LEFT JOIN `{project_id}.{analyst_dataset}.state_charge_with_labels_materialized` charge
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     LEFT JOIN `{project_id}.{raw_dataset}.OffenderStatute_latest` statute
@@ -194,16 +194,16 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.ncic_code,
         sen.statute,
         COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
-        sen.uccs_code_uniform,
-        sen.uccs_description_uniform,
-        sen.uccs_category_uniform,
-        sen.ncic_code_uniform,
-        sen.ncic_description_uniform,
-        sen.ncic_category_uniform,
-        sen.nbirs_code_uniform,
-        sen.nbirs_description_uniform,
-        sen.nbirs_category_uniform,
-        sen.crime_against_uniform,
+        CAST(sen.uccs_code_uniform AS INT64) AS uccs_code_uniform,
+        COALESCE(sen.uccs_description_uniform, 'EXTERNAL_UNKNOWN') AS uccs_description_uniform,
+        COALESCE(sen.uccs_category_uniform, 'EXTERNAL_UNKNOWN') AS uccs_category_uniform,
+        COALESCE(sen.ncic_code_uniform, 'EXTERNAL_UNKNOWN') AS ncic_code_uniform,
+        COALESCE(sen.ncic_description_uniform, 'EXTERNAL_UNKNOWN') AS ncic_description_uniform,
+        COALESCE(sen.ncic_category_uniform, 'EXTERNAL_UNKNOWN') AS ncic_category_uniform,
+        COALESCE(sen.nbirs_code_uniform, 'EXTERNAL_UNKNOWN') AS nbirs_code_uniform,
+        COALESCE(sen.nbirs_description_uniform, 'EXTERNAL_UNKNOWN') AS nbirs_description_uniform,
+        COALESCE(sen.nbirs_category_uniform, 'EXTERNAL_UNKNOWN') AS nbirs_category_uniform,
+        COALESCE(sen.crime_against_uniform, 'EXTERNAL_UNKNOWN') AS crime_against_uniform,
         sen.is_drug_uniform,
         sen.is_violent_uniform,
         sen.offense_completed_uniform,
@@ -258,6 +258,7 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_base_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )
