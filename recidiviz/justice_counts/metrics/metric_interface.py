@@ -23,6 +23,10 @@ from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 import attr
 
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metricfile import MetricFile
+from recidiviz.justice_counts.metricfiles.metricfile_registry import (
+    SYSTEM_TO_METRICFILES,
+)
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
     IncludesExcludesSetting,
@@ -74,6 +78,18 @@ class MetricInterface:
         # MetricDefinition that this MetricInterface corresponds to
         return METRIC_KEY_TO_METRIC[self.key]
 
+    @property
+    def metric_files(self) -> List[MetricFile]:
+        # MetricFiles that this MetricInterface corresponds to
+        system_metric_files = SYSTEM_TO_METRICFILES[self.metric_definition.system]
+        metric_files_for_metric = list(
+            filter(
+                lambda metric: metric.definition.key == self.key,
+                system_metric_files,
+            )
+        )
+        return metric_files_for_metric
+
     ### To/From JSON ###
 
     def to_json(self, entry_point: DatapointGetRequestEntryPoint) -> Dict[str, Any]:
@@ -111,6 +127,10 @@ class MetricInterface:
                     }
                 )
 
+        metric_filenames = [
+            metric_file.canonical_filename for metric_file in self.metric_files
+        ]
+
         return {
             "key": self.key,
             "system": self.metric_definition.system.value.replace("_", " ")
@@ -126,6 +146,7 @@ class MetricInterface:
             "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled,
             "frequency": frequency,
+            "filenames": metric_filenames,
             "definitions": [
                 d.to_json() for d in self.metric_definition.definitions or []
             ],

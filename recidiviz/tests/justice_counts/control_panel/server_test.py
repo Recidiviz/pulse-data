@@ -194,7 +194,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
         self.assertEqual(metrics[2]["key"], law_enforcement.total_arrests.key)
 
-    def test_get_agency_metrics(self) -> None:
+    def shared_test_get_agency_metrics_published_data(self, endpoint: str) -> None:
+        """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
         self.session.add_all(
             [
                 self.test_schema_objects.test_user_A,
@@ -213,7 +214,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
                 agency_ids=[agency.id],
             )
-            response = self.client.get(f"/api/agencies/{agency.id}/metrics")
+            response = self.client.get(f"/api/agencies/{agency.id}/{endpoint}")
 
         self.assertEqual(response.status_code, 200)
         metrics = assert_type(response.json, list)
@@ -452,6 +453,36 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(metrics[6]["key"], prisons.staff_use_of_force_incidents.key)
         self.assertEqual(metrics[7]["key"], prisons.grievances_upheld.key)
+
+        # test filenames
+        self.assertEqual(metrics[0]["filenames"], ["annual_budget"])
+        self.assertEqual(
+            metrics[1]["filenames"], ["total_staff", "total_staff_by_type"]
+        )
+        self.assertEqual(metrics[2]["filenames"], ["admissions", "admissions_by_type"])
+        self.assertEqual(
+            metrics[3]["filenames"],
+            [
+                "population",
+                "population_by_type",
+                "population_by_race",
+                "population_by_gender",
+            ],
+        )
+        self.assertEqual(
+            metrics[4]["filenames"], ["readmissions", "readmissions_by_type"]
+        )
+        self.assertEqual(metrics[5]["filenames"], ["releases", "releases_by_type"])
+        self.assertEqual(
+            metrics[6]["filenames"], ["use_of_force", "use_of_force_by_type"]
+        )
+        self.assertEqual(metrics[7]["filenames"], ["grievances_upheld"])
+
+    def test_get_agency_metrics(self) -> None:
+        self.shared_test_get_agency_metrics_published_data(endpoint="metrics")
+
+    def test_get_agency_published_data(self) -> None:
+        self.shared_test_get_agency_metrics_published_data(endpoint="published_data")
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A

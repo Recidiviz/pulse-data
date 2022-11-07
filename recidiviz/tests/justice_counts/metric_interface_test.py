@@ -177,6 +177,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Annual Budget",
                 "enabled": True,
                 "frequency": "ANNUAL",
+                "filenames": ["annual_budget"],
                 "settings": [],
                 "contexts": [
                     {
@@ -226,6 +227,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "settings": [],
                 "contexts": [
                     {
@@ -309,6 +311,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "enabled": False,
                 "frequency": "ANNUAL",
+                "filenames": ["civilian_complaints_sustained"],
                 "definitions": [
                     {
                         "term": "Complaint",
@@ -359,6 +362,12 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Total Arrests",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "filenames": [
+                    "arrests",
+                    "arrests_by_type",
+                    "arrests_by_race",
+                    "arrests_by_gender",
+                ],
                 "settings": [],
                 "contexts": [
                     {
@@ -663,6 +672,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": False,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
                 "definitions": [
@@ -728,6 +738,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
                 "definitions": [
@@ -793,6 +804,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "settings": [],
                 "contexts": [
                     {
@@ -870,6 +882,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
                 "definitions": [
@@ -1348,6 +1361,7 @@ class TestJusticeCountsMetricInterface(TestCase):
             "category": prisons.grievances_upheld.category.value,
             "label": prisons.grievances_upheld.display_name,
             "frequency": prisons.grievances_upheld.reporting_frequencies[0].value,
+            "filenames": ["grievances_upheld"],
             "value": 200,
             "disaggregations": [],
             "contexts": [],
