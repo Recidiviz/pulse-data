@@ -65,7 +65,13 @@ STATE_CHARGE_WITH_LABELS_QUERY_TEMPLATE = f"""
     QUALIFY ROW_NUMBER() OVER(PARTITION BY offense_description ORDER BY probability DESC) = 1
     )
     SELECT
-        state_charge.*,
+        state_charge.* EXCEPT (
+            uccs_code_uniform, offense_attempted_uniform, uccs_category_uniform,
+            offense_completed_uniform, ncic_category_uniform, is_drug_uniform,
+            nbirs_code_uniform, crime_against_uniform, nbirs_category_uniform,
+            ncic_description_uniform, ncic_code_uniform, uccs_description_uniform,
+            offense_conspired_uniform, is_violent_uniform, nbirs_description_uniform
+        ),
         probability AS probability_match_uniform,
         {null_if_low_probability('l.uccs_code')} AS uccs_code_uniform,
         {hydrate_by_probability('l.uccs_description')} AS uccs_description_uniform,

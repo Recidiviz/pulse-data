@@ -18,7 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
@@ -51,7 +51,7 @@ US_MO_CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         charge.*,
         judicial_district
-    FROM `{project_id}.{analyst_dataset}.state_charge_with_labels_materialized` charge
+    FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
     LEFT JOIN parsed_judicial_district district
         USING (state_code, person_id, external_id)
     WHERE state_code = "US_MO"
@@ -65,7 +65,7 @@ US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_MO_CHARGES_PREPROCESSED_VIEW_DESCRIPTION,
     raw_dataset=raw_latest_views_dataset_for_region("us_mo"),
     state_base_dataset=STATE_BASE_DATASET,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=False,
 )
 

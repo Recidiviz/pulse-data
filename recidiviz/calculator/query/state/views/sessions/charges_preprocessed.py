@@ -18,7 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -35,7 +35,7 @@ CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         charge.*,
         COALESCE(charge.judicial_district_code, 'EXTERNAL_UNKNOWN') AS judicial_district,
-    FROM `{project_id}.{analyst_dataset}.state_charge_with_labels_materialized` charge
+    FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
     WHERE charge.state_code NOT IN ('{special_states}')
 
     UNION ALL
@@ -50,7 +50,7 @@ CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CHARGES_PREPROCESSED_VIEW_NAME,
     view_query_template=CHARGES_PREPROCESSED_QUERY_TEMPLATE,
     description=CHARGES_PREPROCESSED_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     special_states="', '".join(CHARGES_PREPROCESSED_SPECIAL_STATES),
     should_materialize=False,
