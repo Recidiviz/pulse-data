@@ -6,6 +6,7 @@ data_classification: source
 encoding: windows-1252
 primary_key_cols:
   - FkCoAssessment
+  - FkCoSyScale
 columns:
   - name: FkCoAssessment
     description: ID for assessment record (links with RecId in ADH_COASESSMENT)
