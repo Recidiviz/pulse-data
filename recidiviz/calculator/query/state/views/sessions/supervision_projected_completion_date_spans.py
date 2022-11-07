@@ -82,7 +82,8 @@ SELECT
     a.state_code,
     a.person_id,
     a.start_date,
-    a.end_date,
+    IF(MAX(COALESCE(a.end_date,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date,'9999-12-31'),
+      NULL, a.end_date) AS end_date,
     COALESCE(id.projected_completion_date_external, a.projected_completion_date_max) AS projected_completion_date_max,
 FROM all_states_spans a
 LEFT JOIN id_max_date id

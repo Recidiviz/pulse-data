@@ -32,6 +32,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_id import (
     income_verified_within_3_months,
     lsir_level_low_for_90_days,
     no_active_nco,
+    not_at_liberty,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -57,6 +58,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         income_verified_within_3_months.VIEW_BUILDER,
         no_active_nco.VIEW_BUILDER,
         on_supervision_at_least_one_year.VIEW_BUILDER,
+        not_at_liberty.VIEW_BUILDER,
     ],
 )
 
