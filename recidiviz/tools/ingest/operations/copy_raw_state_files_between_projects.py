@@ -102,7 +102,6 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # TODO(#15450): Delete check once secondary raw data import is live.
     if (
         args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
         and not secondary_raw_data_import_enabled_in_state(

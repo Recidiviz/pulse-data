@@ -428,6 +428,25 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Assert
         self.assertEqual([], self.raw_metadata_manager.get_unprocessed_raw_files())
 
+    def test_get_non_invalidated_raw_files_when_no_files(self) -> None:
+        # Assert
+        self.assertEqual([], self.raw_metadata_manager.get_non_invalidated_files())
+
+    def test_get_non_invalidated_raw_files(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+        # Assert
+        self.assertEqual(1, len(self.raw_metadata_manager.get_non_invalidated_files()))
+
+        self.raw_metadata_manager.mark_file_as_invalidated(raw_unprocessed_path_1)
+
+        # Assert
+        self.assertEqual([], self.raw_metadata_manager.get_non_invalidated_files())
+
     def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
         # Arrange
         raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(

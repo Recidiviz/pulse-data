@@ -158,8 +158,7 @@ class DownloadFilesFromSftpController:
 
         self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code,
-            # TODO(#12794): Change to be based on the instance the raw file is processed in once we can ingest in
-            # multiple instances.
+            # Note - SFTP only uploads to the PRIMARY bucket.
             DirectIngestInstance.PRIMARY,
         )
 

@@ -58,8 +58,12 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
 )
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
+    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -93,6 +97,35 @@ class IngestOperationsStore(AdminPanelStore):
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
+
+    def _verify_clean_raw_data_state(
+        self, state_code: StateCode, instance: DirectIngestInstance
+    ) -> None:
+        """Confirm that all raw file metadata / data has been invalidated."""
+
+        raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code=state_code.value, raw_data_instance=instance
+        )
+
+        # Confirm there aren't non-invalidated raw files for the instance. The metadata state should be completely
+        # clean before kicking off a rerun.
+        if len(raw_data_manager.get_non_invalidated_files()) != 0:
+            raise DirectIngestInstanceError(
+                "Cannot kick off ingest rerun, as there are still unprocessed raw files on Postgres."
+            )
+
+        # Confirm that there isn't any secondary raw data on BQ
+        secondary_raw_data_dataset = raw_tables_dataset_for_region(
+            region_code=state_code.value
+        )
+        if (
+            self.bq_client.dataset_exists(secondary_raw_data_dataset)
+            and len(list(self.bq_client.list_tables(secondary_raw_data_dataset))) > 0
+        ):
+            raise DirectIngestInstanceError(
+                f"There are raw data results in {secondary_raw_data_dataset} that have not been"
+                f"cleaned up. Cannot proceed with ingest rerun."
+            )
 
     def _verify_clean_ingest_view_state(
         self, state_code: StateCode, instance: DirectIngestInstance
@@ -204,10 +237,14 @@ class IngestOperationsStore(AdminPanelStore):
                 "Ingest reruns can only be kicked off for SECONDARY instances."
             )
 
-        # TODO(#12794): remove check once raw data source can be SECONDARY as well.
-        if raw_data_source_instance != DirectIngestInstance.PRIMARY:
+        if (
+            raw_data_source_instance != DirectIngestInstance.PRIMARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(formatted_state_code.upper())
+            )
+        ):
             raise DirectIngestInstanceError(
-                "Ingest reruns can only have raw data source as PRIMARY."
+                f"Ingest reruns can only have raw data source as PRIMARY for state=[{formatted_state_code.upper}]."
             )
 
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -222,8 +259,13 @@ class IngestOperationsStore(AdminPanelStore):
                 "which have remaining tasks."
             )
 
-        # TODO(#12794): Once raw data instance can be SECONDARY, confirm that there are
-        #  no pending raw processing jobs in SECONDARY.
+        if (
+            raw_data_source_instance == DirectIngestInstance.SECONDARY
+            and secondary_raw_data_import_enabled_in_state(
+                StateCode(formatted_state_code.upper())
+            )
+        ):
+            self._verify_clean_raw_data_state(state_code, raw_data_source_instance)
 
         # Confirm that all ingest view metadata / data has been invalidated.
         self._verify_clean_ingest_view_state(state_code, instance)

@@ -32,6 +32,9 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     SingleCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    secondary_raw_data_import_enabled_in_state,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
@@ -484,8 +487,12 @@ class DirectIngestCloudTaskQueueManager:
             self.get_extract_and_merge_queue_info(region, ingest_instance),
         ]
 
-        # TODO(#15450): Delete once raw data import can be conducted in SECONDARY.
-        if ingest_instance == DirectIngestInstance.PRIMARY:
+        if (
+            ingest_instance == DirectIngestInstance.PRIMARY
+            or secondary_raw_data_import_enabled_in_state(
+                StateCode(region.region_code.upper())
+            )
+        ):
             ingest_queue_info.append(
                 self.get_raw_data_import_queue_info(region, ingest_instance)
             )
@@ -535,8 +542,12 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
     def _get_raw_data_import_queue_manager(
         self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SingleCloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
-        # TODO(#12794): remove check once raw data import can be done in SECONDARY as well.
-        if ingest_instance != DirectIngestInstance.PRIMARY:
+        if (
+            ingest_instance != DirectIngestInstance.PRIMARY
+            and not secondary_raw_data_import_enabled_in_state(
+                StateCode(region.region_code.upper())
+            )
+        ):
             raise ValueError("Raw data import can only be done in PRIMARY.")
 
         queue_name = _queue_name_for_queue_type(
