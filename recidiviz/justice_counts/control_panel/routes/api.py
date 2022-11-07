@@ -400,6 +400,24 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
+    def get_agency_published_data(agency_id: str) -> Response:
+        try:
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session, agency=agency
+            )
+            metrics_json = [
+                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                for metric in metrics
+            ]
+            return jsonify(metrics_json)
+
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/spreadsheets", methods=["POST"])
     @auth_decorator
     def upload_spreadsheet() -> Response:
