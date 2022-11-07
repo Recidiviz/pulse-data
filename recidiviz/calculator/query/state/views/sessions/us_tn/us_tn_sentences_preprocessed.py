@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -255,7 +255,7 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     raw_dataset=US_TN_RAW_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    state_base_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,

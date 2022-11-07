@@ -18,7 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -164,7 +164,7 @@ OFFENSE_TYPE_MAPPING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=OFFENSE_TYPE_MAPPING_VIEW_NAME,
     view_query_template=OFFENSE_TYPE_MAPPING_QUERY_TEMPLATE,
     description=OFFENSE_TYPE_MAPPING_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    base_dataset=NORMALIZED_STATE_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
     should_materialize=True,
 )
