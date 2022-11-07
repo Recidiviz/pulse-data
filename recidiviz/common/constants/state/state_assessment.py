@@ -68,6 +68,7 @@ class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
     CSSM = state_enum_strings.state_assessment_type_cssm
+    COMPAS = state_enum_strings.state_assessment_type_compas
     HIQ = state_enum_strings.state_assessment_type_hiq
     J_SOAP = state_enum_strings.state_assessment_type_j_soap
     LSIR = state_enum_strings.state_assessment_type_lsir
@@ -121,6 +122,7 @@ class StateAssessmentType(StateEntityEnum):
 
 _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAssessmentType.CSSM: "Criminal Sentiments Scale – Modified (CSM-R)",
+    StateAssessmentType.COMPAS: "Correctional Offender Management Profiling for Alternative Sanctions (COMPAS)",
     StateAssessmentType.HIQ: "Hostile Interpretations Questionnaire (HIQ) ",
     StateAssessmentType.J_SOAP: "Juvenile Sex Offender Assessment Protocol-II "
     "(J-SOAP-II)",
@@ -224,6 +226,7 @@ _STATE_ASSESSMENT_CLASS_MAP = {
 
 _STATE_ASSESSMENT_TYPE_MAP = {
     "CSSM": StateAssessmentType.CSSM,
+    "COMPAS": StateAssessmentType.COMPAS,
     "HIQ": StateAssessmentType.HIQ,
     "J SOAP": StateAssessmentType.J_SOAP,
     "LSIR": StateAssessmentType.LSIR,
