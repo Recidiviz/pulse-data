@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -260,7 +260,7 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    state_base_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     special_states="', '".join(SENTENCES_PREPROCESSED_SPECIAL_STATES),
     incarceration_special_states="', '".join(

@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -103,7 +103,7 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     raw_dataset=raw_latest_views_dataset_for_region("us_nd"),
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    state_base_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
 )
 

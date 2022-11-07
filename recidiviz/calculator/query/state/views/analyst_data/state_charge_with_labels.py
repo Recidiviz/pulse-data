@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -92,7 +92,7 @@ STATE_CHARGE_WITH_LABELS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=STATE_CHARGE_WITH_LABELS_VIEW_NAME,
     view_query_template=STATE_CHARGE_WITH_LABELS_QUERY_TEMPLATE,
     description=STATE_CHARGE_WITH_LABELS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    base_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
