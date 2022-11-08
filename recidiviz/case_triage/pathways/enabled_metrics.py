@@ -25,13 +25,11 @@ from recidiviz.case_triage.pathways.metrics.metric_query_builders import ALL_MET
 from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder import (
     MetricQueryBuilder,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 
-# TODO(#13950): Replace with StateCode
-ENABLED_METRICS_BY_STATE: Dict[_FakeStateCode, List[MetricQueryBuilder]] = {
-    _FakeStateCode(state_code): ALL_METRICS
-    for state_code in get_pathways_enabled_states()
+ENABLED_METRICS_BY_STATE: Dict[StateCode, List[MetricQueryBuilder]] = {
+    StateCode(state_code): ALL_METRICS for state_code in get_pathways_enabled_states()
 }
 
 ENABLED_METRICS_BY_STATE_BY_NAME = {

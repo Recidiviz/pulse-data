@@ -32,15 +32,14 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
 )
 from recidiviz.case_triage.util import get_pathways_metric_redis
 from recidiviz.cloud_memorystore import utils as cloud_memorystore_utils
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 
 
 @attr.s(auto_attribs=True)
 class PathwaysMetricCache:
     """Contains functionality for fetching metrics from cache"""
 
-    # TODO(#13950): Replace with StateCode
-    state_code: _FakeStateCode
+    state_code: StateCode
     metric_fetcher: PathwaysMetricFetcher
     redis: Redis
 
@@ -98,7 +97,7 @@ class PathwaysMetricCache:
                     self.fetch(mapper=mapper, params=params)
 
     @classmethod
-    def build(cls, state_code: _FakeStateCode) -> "PathwaysMetricCache":
+    def build(cls, state_code: StateCode) -> "PathwaysMetricCache":
         return PathwaysMetricCache(
             state_code=state_code,
             metric_fetcher=PathwaysMetricFetcher(state_code=state_code),

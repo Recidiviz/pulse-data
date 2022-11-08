@@ -27,7 +27,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
 )
@@ -45,7 +45,7 @@ class PathwaysPopulationProjectionMetricTestBase(PathwaysMetricTestBase):
         ...
 
     def test_metrics_base(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(

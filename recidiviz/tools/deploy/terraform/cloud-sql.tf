@@ -95,8 +95,8 @@ module "pathways_database" {
 }
 
 locals {
-  # Add demo states to staging for pentesting
-  pathways_enabled_states = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_XX", "US_YY"] : [])
+  # Add demo states to staging for demo mode
+  pathways_enabled_states = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
 
   joined_connection_string = join(
     ", ",

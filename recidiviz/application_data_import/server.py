@@ -39,7 +39,7 @@ from recidiviz.case_triage.pathways.pathways_database_manager import (
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     SingleCloudTaskQueueManager,
@@ -84,8 +84,7 @@ PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import"
 @app.route("/import/pathways/<state_code>/<filename>", methods=["POST"])
 def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     """Imports a CSV file from GCS into the Pathways Cloud SQL database"""
-    # TODO(#13950): Replace with StateCode
-    if not _FakeStateCode.is_state_code(state_code.upper()):
+    if not StateCode.is_state_code(state_code.upper()):
         return (
             f"Unknown state_code [{state_code}] received, must be a valid state code.",
             HTTPStatus.BAD_REQUEST,
@@ -148,7 +147,7 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
                 )
             )
 
-    metric_cache = PathwaysMetricCache.build(_FakeStateCode(state_code))
+    metric_cache = PathwaysMetricCache.build(StateCode(state_code))
     for metric in get_metrics_for_entity(db_entity):
         metric_cache.reset_cache(metric)
 
