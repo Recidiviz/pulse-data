@@ -588,7 +588,7 @@ class Datapoint(JusticeCountsBase):
 
     def get_dimension_id_and_member(
         self,
-    ) -> Optional[Tuple[Optional[str], Optional[str]]]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         if self.dimension_identifier_to_member is None:
             return (None, None)
         if len(self.dimension_identifier_to_member) > 1:

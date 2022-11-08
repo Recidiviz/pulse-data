@@ -166,8 +166,10 @@ class DatapointInterface:
                 if datapoint.dimension_identifier_to_member is not None:
                     # If a datapoint represents an includes/excludes setting at the dimension level,
                     # add it into a dictionary formatted as {dimension_id: {includes_excludes_key: datapoint}}
-                    dimension_id = datapoint.get_dimension_id()
-                    dimension_member = datapoint.get_dimension_member()
+                    (
+                        dimension_id,
+                        dimension_member,
+                    ) = datapoint.get_dimension_id_and_member()
                     if dimension_member is None or dimension_id is None:
                         raise JusticeCountsServerError(
                             code="invalid_datapoint",
