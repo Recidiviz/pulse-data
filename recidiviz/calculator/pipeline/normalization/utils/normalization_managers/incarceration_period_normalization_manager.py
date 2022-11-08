@@ -116,6 +116,20 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         By default, uses the one on the incarceration period as ingested."""
         return incarceration_period.admission_reason
 
+    # TODO(#16507) - Refactor our incarceration admission reason methods so that they are either combined or named
+    #  based on how they are determining the admission reason.
+    def incarceration_transfer_admission_reason_override(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """States may require specific logic that determines a TRANSFER admission reason for an
+        incarceration period using inference from other periods.
+        By default, uses the one on the incarceration period as ingested."""
+        return sorted_incarceration_periods[
+            incarceration_period_list_index
+        ].admission_reason
+
     def incarceration_facility_override(
         self,
         incarceration_period: StateIncarcerationPeriod,
@@ -1165,7 +1179,15 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         """
         updated_periods: List[StateIncarcerationPeriod] = []
 
+        for index, ip in enumerate(incarceration_periods):
+            # for admission reason changes inferred using adjacent incarceration periods
+            ip.admission_reason = self.normalization_delegate.incarceration_transfer_admission_reason_override(
+                incarceration_period_list_index=index,
+                sorted_incarceration_periods=incarceration_periods,
+            )
+
         for ip in incarceration_periods:
+            # for admission reasons changes inferred using periods and incarceration sentences
             ip.admission_reason = (
                 self.normalization_delegate.incarceration_admission_reason_override(
                     ip, incarceration_sentences

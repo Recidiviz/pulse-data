@@ -55,6 +55,37 @@ class UsMoIncarcerationNormalizationDelegate(
             if t != StateIncarcerationType.STATE_PRISON
         }
 
+    def incarceration_transfer_admission_reason_override(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """Infers the correct admission_reason enum value for periods that are identical
+        to the period before with the exception of a facility change. This is needed
+        because when adding in the facility level info, the admission_reasons raw values
+        did not shift Compares admission_reason_raw_text in adjacent periods
+        when the release reason on the first period is TRANSFER"""
+
+        ip = sorted_incarceration_periods[incarceration_period_list_index]
+
+        if incarceration_period_list_index > 0:
+            previous_period = sorted_incarceration_periods[
+                incarceration_period_list_index - 1
+            ]
+        else:
+            return ip.admission_reason
+
+        if (
+            previous_period.release_reason
+            == StateIncarcerationPeriodReleaseReason.TRANSFER
+            and ip.admission_date == previous_period.release_date
+            and ip.admission_reason_raw_text
+            == previous_period.admission_reason_raw_text
+        ):
+            return StateIncarcerationPeriodAdmissionReason.TRANSFER
+
+        return ip.admission_reason
+
     def get_pfi_info_for_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,

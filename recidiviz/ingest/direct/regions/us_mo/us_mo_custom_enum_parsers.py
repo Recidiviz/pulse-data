@@ -1118,6 +1118,9 @@ def parse_incarceration_period_termination_reason(
     raw_text: str,
 ) -> StateIncarcerationPeriodReleaseReason:
     """Parse admission reason from raw text"""
+
+    if raw_text.upper() == "NONE@@NONE@@NONE":
+        return StateIncarcerationPeriodReleaseReason.TRANSFER
     (
         END_SCD_CODES,
         END_STATUS_CODE,
