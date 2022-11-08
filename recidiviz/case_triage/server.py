@@ -25,7 +25,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
-from sqlalchemy import func
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import recidiviz
@@ -163,10 +162,6 @@ if in_offline_mode():
     # Python logs at the warning level by default, but in offline mode we'll want to know that it's
     # made progress loading the data in at server start and other info steps.
     logging.basicConfig(level=logging.DEBUG)
-
-    # Override the SQL current_date function to return a constant so we don't have to change dates
-    # in fixture files as time passes.
-    func.current_date = lambda: "2021-12-15"
 
     def initialize_pathways_db_from_fixtures() -> None:
         state_code = PATHWAYS_OFFLINE_DEMO_STATE.value.lower()

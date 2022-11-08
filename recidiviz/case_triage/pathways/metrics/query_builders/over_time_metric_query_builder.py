@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ MetricQueryBuilder for events over time metrics """
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 import attr
 from sqlalchemy import Column, Integer, distinct, func, select, text
@@ -30,6 +30,8 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     MetricQueryBuilder,
 )
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
+
+PATHWAYS_DEMO_CURRENT_DATE = "2021-12-15"
 
 
 @attr.s(auto_attribs=True)
@@ -58,6 +60,12 @@ class OverTimeMetricQueryBuilder(MetricQueryBuilder):
         )
         earliest_date = self._build_earliest_date_query(time_periods_asc[-1])
 
+        def latest_date() -> Any:
+            if params.demo:
+                # Return a constant so we don't have to change dates in fixture files as time passes.
+                return PATHWAYS_DEMO_CURRENT_DATE
+            return func.current_date()
+
         event_counts = (
             Query(
                 [
@@ -84,7 +92,7 @@ class OverTimeMetricQueryBuilder(MetricQueryBuilder):
         all_months = Query(
             func.generate_series(
                 earliest_date.c.date - text("INTERVAL '2 MONTHS'"),
-                func.current_date(),
+                latest_date(),
                 "1 month",
             ).label("date")
         ).subquery()

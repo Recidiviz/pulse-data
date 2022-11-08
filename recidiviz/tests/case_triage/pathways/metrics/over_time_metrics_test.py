@@ -137,14 +137,35 @@ class TestPrisonPopulationOverTime(OverTimeMetricTestBase, TestCase):
         self,
     ) -> List[Dict[str, int]]:
         return [
-            {"avg90day": 1, "count": 2, "month": 1, "year": 2022},
-            {"avg90day": 1, "count": 2, "month": 2, "year": 2022},
-            {"avg90day": 2, "count": 2, "month": 3, "year": 2022},
+            {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
+            {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+            {"avg90day": 2, "count": 2, "month": 1, "year": 2022},
+            {"avg90day": 1, "count": 0, "month": 2, "year": 2022},
+            {"avg90day": 1, "count": 0, "month": 3, "year": 2022},
         ]
 
     @property
     def expected_metadata(self) -> Dict[str, Any]:
         return {"lastUpdated": "2022-08-03"}
+
+    def test_demo(self) -> None:
+        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
+        results = metric_fetcher.fetch(
+            self.query_builder,
+            self.query_builder.build_params(
+                {
+                    "filters": {Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},
+                    "demo": True,
+                }
+            ),
+        )
+        self.test.assertEqual(
+            [
+                {"avg90day": 1, "count": 2, "month": 11, "year": 2021},
+                {"avg90day": 1, "count": 2, "month": 12, "year": 2021},
+            ],
+            results["data"],
+        )
 
 
 class TestLibertyToPrisonTransitionsOverTime(OverTimeMetricTestBase, TestCase):

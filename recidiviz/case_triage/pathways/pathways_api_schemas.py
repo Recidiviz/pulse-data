@@ -47,6 +47,7 @@ for metric_class in ALL_METRICS:
             ),
             fields.List(fields.Str),
         ),
+        "demo": fields.Boolean(),
     }
     if any(
         field.name == "group" for field in attr.fields(metric_class.get_params_class())

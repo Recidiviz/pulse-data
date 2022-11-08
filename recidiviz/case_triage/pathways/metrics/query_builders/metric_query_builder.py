@@ -36,6 +36,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
 @attr.s(auto_attribs=True)
 class FetchMetricParams:
     filters: Dict[Dimension, List[str]] = attr.field(factory=dict)
+    demo: bool = attr.field(default=False)
 
     @property
     def sorted_filters(self) -> List[Tuple[str, List[str]]]:

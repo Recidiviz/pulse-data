@@ -142,6 +142,9 @@ def create_pathways_api_blueprint() -> Blueprint:
         if "group" in request.args:
             source_data["group"] = request.args["group"]
 
+        if state_code == StateCode.US_OZ:
+            source_data["demo"] = True
+
         fetch_metric_params_schema = load_api_schema(
             FETCH_METRIC_SCHEMAS_BY_NAME[metric_name],
             source_data=source_data,
