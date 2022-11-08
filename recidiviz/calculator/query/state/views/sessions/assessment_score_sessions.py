@@ -35,6 +35,7 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
         assessment_id,
         state_code,
         assessment_date,
+        LEAD(assessment_date) OVER(PARTITION BY person_id ORDER BY assessment_date) AS score_end_date_exclusive,
         LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(PARTITION BY person_id ORDER BY assessment_date) AS score_end_date,
         assessment_type,
         assessment_class,

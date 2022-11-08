@@ -40,7 +40,7 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
+            end_date_exclusive,
             "SESSIONS" AS source,
         FROM
             `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` a
@@ -55,28 +55,30 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
+            end_date_exclusive,
             "SUPERVISION_LEVELS" AS source,
         FROM
             `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` a
         WHERE
             supervision_level IN ("ABSCONDED", "WARRANT")
     ),
-    {create_sub_sessions_with_attributes("absconsion_periods")}
+    {create_sub_sessions_with_attributes("absconsion_periods", end_date_field_name='end_date_exclusive')}
     , absconsion_sub_sessions_cte AS (
         SELECT DISTINCT
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
         FROM sub_sessions_with_attributes
     )
     SELECT 
-        *
+        *,
+        end_date_exclusive AS end_date,
     FROM (
         {aggregate_adjacent_spans(
             table_name="absconsion_sub_sessions_cte",
-            session_id_output_name='absconsion_bench_warrant_session_id'
+            session_id_output_name='absconsion_bench_warrant_session_id',
+            end_date_field_name='end_date_exclusive'
         )}
     )
 """

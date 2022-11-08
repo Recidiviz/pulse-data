@@ -41,6 +41,7 @@ US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_QUERY_TEMPLATE = """
         person.person_id,
         "US_ID" AS state_code,
         SAFE_CAST(SPLIT(employment.startdate, ' ')[OFFSET(0)] AS DATE) AS employment_start_date,
+        SAFE_CAST(SPLIT(employment.enddate, ' ')[OFFSET(0)] AS DATE) AS employment_end_date_exclusive,
         SAFE_CAST(SPLIT(employment.enddate, ' ')[OFFSET(0)] AS DATE) AS employment_end_date,
         SAFE_CAST(SPLIT(employment.verifydate, ' ')[OFFSET(0)] AS DATE) AS last_verified_date,
         COALESCE(UPPER(employment.jobtitle), "UNKNOWN") AS job_title,

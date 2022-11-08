@@ -80,7 +80,7 @@ REVOCATION_COHORT_SESSIONS_QUERY_TEMPLATE = """
         ON r.months_since_start>=i.cohort_months
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` c
         ON c.person_id = r.person_id
-        AND DATE_ADD(r.supervision_start_date, INTERVAL i.cohort_months MONTH) BETWEEN c.start_date AND COALESCE(c.end_date, '9999-01-01')
+        AND DATE_ADD(r.supervision_start_date, INTERVAL i.cohort_months MONTH) BETWEEN c.start_date AND COALESCE(DATE_SUB(c.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
     """
 
 REVOCATION_COHORT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -83,7 +83,7 @@ sample AS (
         {"state_code," if level_name == "state" else ""}
         person_id,
         start_date AS sample_start_date,
-        -- TODO(#14675): remove the DATE_ADD when session end_dates are exclusive
+        -- TODO(#16462): remove the DATE_ADD when session end_dates are exclusive
         DATE_ADD(end_date, INTERVAL 1 DAY) AS sample_end_date,
     FROM
         `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
@@ -123,7 +123,7 @@ sample AS (
     FROM (
         SELECT
             * EXCEPT (end_date),
-            -- TODO(#14675): remove the DATE_ADD when end_dates are exclusive upstream
+            -- TODO(#16462): remove the DATE_ADD when end_dates are exclusive upstream
             DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
         FROM
             `{client_period_table}`

@@ -26,7 +26,9 @@ from recidiviz.calculator.query.bq_utils import (
 
 
 def create_sub_sessions_with_attributes(
-    table_name: str, use_magic_date_end_dates: bool = False
+    table_name: str,
+    use_magic_date_end_dates: bool = False,
+    end_date_field_name: str = "end_date",
 ) -> str:
     """Creates the `sub_sessions_with_attributes` CTE by:
     1) Creating non-overlapping sub-session time spans that cover the time period
@@ -49,8 +51,8 @@ Create the periods CTE with non-null end dates for easier date logic
 */
 periods_cte AS (
     SELECT
-        input.* EXCEPT(end_date),
-        {nonnull_end_date_clause('input.end_date')} AS end_date,
+        input.* EXCEPT({end_date_field_name}),
+        {nonnull_end_date_clause(f'input.{end_date_field_name}')} AS {end_date_field_name},
     FROM {table_name} input
 ),
 /*
@@ -68,13 +70,13 @@ start_dates AS (
     SELECT DISTINCT
         orig.state_code,
         orig.person_id,
-        new_start_dates.end_date AS start_date,
+        new_start_dates.{end_date_field_name} AS start_date,
     FROM periods_cte orig
     INNER JOIN periods_cte new_start_dates
         ON orig.state_code = new_start_dates.state_code
         AND orig.person_id = new_start_dates.person_id
-        AND new_start_dates.end_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
+        AND new_start_dates.{end_date_field_name}
+            BETWEEN orig.start_date AND DATE_SUB(orig.{end_date_field_name}, INTERVAL 1 DAY)
 ),
 /*
 Generate the full list of the new sub-session end dates including all unique end dates
@@ -84,19 +86,19 @@ end_dates AS (
     SELECT DISTINCT
         state_code,
         person_id,
-        end_date,
+        {end_date_field_name},
     FROM periods_cte
     UNION DISTINCT
     SELECT DISTINCT
         orig.state_code,
         orig.person_id,
-        new_end_dates.start_date AS end_date,
+        new_end_dates.start_date AS {end_date_field_name},
     FROM periods_cte orig
     INNER JOIN periods_cte new_end_dates
         ON orig.state_code = new_end_dates.state_code
         AND orig.person_id = new_end_dates.person_id
         AND new_end_dates.start_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.end_date, INTERVAL 1 DAY)
+            BETWEEN orig.start_date AND DATE_SUB(orig.{end_date_field_name}, INTERVAL 1 DAY)
 ),
 /*
 Join start and end dates together to create smaller sub-sessions. Each start date gets
@@ -109,12 +111,12 @@ sub_sessions AS (
         start_dates.state_code,
         start_dates.person_id,
         start_dates.start_date,
-        MIN(end_dates.end_date) AS end_date,
+        MIN(end_dates.{end_date_field_name}) AS {end_date_field_name},
     FROM start_dates
     INNER JOIN end_dates
         ON start_dates.state_code = end_dates.state_code
         AND start_dates.person_id = end_dates.person_id
-        AND start_dates.start_date < end_dates.end_date
+        AND start_dates.start_date < end_dates.{end_date_field_name}
     GROUP BY state_code, person_id, start_date
 ),
 /*
@@ -126,13 +128,13 @@ sub_sessions_with_attributes AS (
         se.person_id,
         se.state_code,
         se.start_date,
-        {'se.end_date' if use_magic_date_end_dates else revert_nonnull_end_date_clause('se.end_date')} AS end_date,
-        c.* EXCEPT (person_id, state_code, start_date, end_date),
+        {f'se.{end_date_field_name}' if use_magic_date_end_dates else revert_nonnull_end_date_clause(f'se.{end_date_field_name}')} AS {end_date_field_name},
+        c.* EXCEPT (person_id, state_code, start_date, {end_date_field_name}),
     FROM sub_sessions se
     INNER JOIN periods_cte c
         ON c.person_id = se.person_id
         AND c.state_code = se.state_code
-        AND se.start_date BETWEEN c.start_date AND DATE_SUB(c.end_date, INTERVAL 1 DAY)
+        AND se.start_date BETWEEN c.start_date AND DATE_SUB(c.{end_date_field_name}, INTERVAL 1 DAY)
     UNION ALL
 
     /*
@@ -145,16 +147,16 @@ sub_sessions_with_attributes AS (
         single_day.person_id,
         single_day.state_code,
         single_day.start_date,
-        single_day.end_date,
-        all_periods.* EXCEPT (person_id, state_code, start_date, end_date),
+        single_day.{end_date_field_name},
+        all_periods.* EXCEPT (person_id, state_code, start_date, {end_date_field_name}),
     FROM periods_cte single_day
     INNER JOIN periods_cte all_periods
         ON single_day.person_id = all_periods.person_id
         AND single_day.state_code = all_periods.state_code
         -- Add the attributes of the zero-day period as well as any sessions that it
         -- falls within
-        AND single_day.start_date BETWEEN all_periods.start_date AND all_periods.end_date
-    WHERE single_day.start_date = single_day.end_date
+        AND single_day.start_date BETWEEN all_periods.start_date AND all_periods.{end_date_field_name}
+    WHERE single_day.start_date = single_day.{end_date_field_name}
 )
 """
 
@@ -164,6 +166,7 @@ def aggregate_adjacent_spans(
     attribute: Optional[Union[str, List[str]]] = None,
     session_id_output_name: Optional[str] = "session_id",
     is_struct: Optional[bool] = False,
+    end_date_field_name: str = "end_date",
 ) -> str:
     """
     Function that aggregates together temporally adjacent spans for which the specified attribute(s) do not
@@ -243,26 +246,26 @@ def aggregate_adjacent_spans(
         state_code,
         {session_id_output_name},
         MIN(start_date) AS start_date,
-        {revert_nonnull_end_date_clause('MAX(end_date)')} AS end_date,
+        {revert_nonnull_end_date_clause(f'MAX({end_date_field_name})')} AS {end_date_field_name},
         {aggregation_str}
     FROM
         (
         SELECT 
             *,
             SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY person_id, state_code
-                ORDER BY start_date, end_date) AS {session_id_output_name}
+                ORDER BY start_date, {end_date_field_name}) AS {session_id_output_name}
         FROM
             (
             SELECT
                 person_id,
                 state_code,
                 start_date,
-                {nonnull_end_date_clause('end_date')} AS end_date,
-                COALESCE(LAG(end_date) OVER w != start_date, TRUE) AS date_gap,
+                {nonnull_end_date_clause(f'{end_date_field_name}')} AS {end_date_field_name},
+                COALESCE(LAG({end_date_field_name}) OVER w != start_date, TRUE) AS date_gap,
                 {attribute_change_str}
                 {attribute_col_str}
             FROM {table_name}
-            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, {nonnull_end_date_clause('end_date')})
+            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})
             )
         )
         GROUP BY 1,2,3

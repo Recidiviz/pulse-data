@@ -56,6 +56,7 @@ This table is the source of other sessions tables such as `compartment_sessions`
 |	state_code	|	State	|
 |	start_date	|	Start day of session	|
 |	end_date	|	Last full day of session	|
+|	end_date_exclusive	|	Day that session ends	|
 |	session_attributes	|	This is an array that stores values for metric_source, compartment_level_1, compartment_level_2, correctional_level, supervising_officer_external_id, and compartment_location in cases where there is more than of these values on a given day. This field allows us to unnest to create overlapping sessions and look at cases where a person has more than one attribute for a given time period	|
 |	last_day_of_data	|	The last day for which we have data, specific to a state. The is is calculated as the state min of the max day of which we have population data across supervision and population metrics within a state. For example, if in ID the max incarceration population date value is 2021-09-01 and the max supervision population date value is 2021-09-02, we would say that the last day of data for ID is 2021-09-01.	|
 
@@ -88,7 +89,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT 
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive AS end_date,        
+        end_date_exclusive,     
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
@@ -128,7 +129,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive AS end_date,        
+        end_date_exclusive,      
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
@@ -169,7 +170,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT
         state_code,
         metric_source,
-        MAX(GREATEST(start_date,end_date)) AS last_day_of_data
+        MAX(GREATEST(start_date,end_date_exclusive)) AS last_day_of_data
     FROM population_cte
     GROUP BY 1,2
     )
@@ -183,14 +184,14 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     GROUP BY 1
     )
     ,
-    {create_sub_sessions_with_attributes(table_name='population_cte', use_magic_date_end_dates=True)}
+    {create_sub_sessions_with_attributes(table_name='population_cte', use_magic_date_end_dates=True, end_date_field_name='end_date_exclusive')}
     ,
     sub_sessions_with_attributes_dedup AS
     (
     SELECT
         person_id,
         start_date,
-        end_date,
+        end_date_exclusive,
         state_code,
         ARRAY_AGG(
             STRUCT(
@@ -226,7 +227,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 judicial_district_code
             ) AS session_attributes,
     FROM sub_sessions_with_attributes
-    WHERE start_date != end_date
+    WHERE start_date != end_date_exclusive
     GROUP BY 1,2,3,4
     )
     ,
@@ -239,7 +240,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                         table_name='sub_sessions_with_attributes_dedup',
                         attribute='session_attributes',
                         session_id_output_name='dataflow_session_id',
-                        is_struct=True
+                        is_struct=True,
+                        end_date_field_name='end_date_exclusive'
                     )}
     )
     SELECT 
@@ -247,7 +249,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         dataflow_session_id,
         state_code,
         start_date,
-        DATE_SUB(end_date, INTERVAL 1 DAY) AS end_date,
+        DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        end_date_exclusive,
         session_attributes,
         last_day_of_data,
     FROM sessionized_cte

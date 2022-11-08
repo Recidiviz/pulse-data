@@ -51,6 +51,7 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	dataflow_session_id_end	|	Session ID from `dataflow_sessions` at end of compartment session	|
 |	start_date	|	Day that a person's session starts. This will correspond with the incarceration admission or supervision start date	|
 |	end_date	|	Last full-day of a person's session. The release or termination date will be the `end_date` + 1 day	|
+|	end_date_exclusive	|	The day that a person's session ends.	|
 |	state_code	|	State	|
 |	compartment_level_1	|	Level 1 Compartment. Possible values are: <br>-`INCARCERATION`<br>-`INCARCERATION_OUT_OF_STATE`<br>-`SUPERVISION`<br>-`SUPERVISION_OUT_OF_STATE`<br>-`RELEASE`<br>-`INTERNAL_UNKNOWN`, <br>-`PENDING_CUSTODY`<br>-`PENDING_SUPERVISION`<br>-`SUSPENSION`<br>ERRONEOUS_RELEASE	|
 |	compartment_level_2	|	Level 2 Compartment. Possible values for the incarceration compartments are: <br>-`GENERAL`<br>-`PAROLE_BOARD_HOLD`<br>-`TREATMENT_IN_PRISON` <br>-`SHOCK_INCARCERATION`<br>-`ABSCONSION`<br>-`INTERNAL_UNKNOWN`<br>-`COMMUNITY_CONFINEMENT`<br>-`TEMPORARY_CUSTODY`<br><br>Possible values for the supervision compartments are: <br>-`PROBATION`<br>-`PAROLE`<br>-`ABSCONSION`<br>-`DUAL`<br>-`BENCH_WARRANT`<br>-`INFORMAL_PROBATION`<br>-`INTERNAL_UNKNOWN`<br><br>All other `compartment_level_1` values have the same value for `compartment_level_1` and `comparmtent_level_2`	|
@@ -131,7 +132,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id,
         state_code,
         start_date,
-        end_date,
+        end_date_exclusive,
         session_attributes.metric_source,
         session_attributes.compartment_level_1 AS compartment_level_1,
         session_attributes.compartment_level_2 AS compartment_level_2,
@@ -153,7 +154,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id,
         state_code,
         start_date,
-        end_date,
+        end_date_exclusive,
         compartment_level_1,
         CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
         supervising_officer_external_id,
@@ -188,7 +189,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         cte.case_type,
         cte.judicial_district_code,
         cte.start_date,
-        cte.end_date,
+        cte.end_date_exclusive,
         cte.last_day_of_data,
     FROM dual_recategorization_cte cte
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_dedup_priority` cl1_dedup
@@ -231,7 +232,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS case_type,
         CAST(NULL AS STRING) AS judicial_district_code,
         start_date,
-        end_date,
+        end_date_exclusive,
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
     FROM
         (
@@ -239,10 +240,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             person_id,
             dataflow_session_id,
             state_code,
-            --new session starts the day after the current row's end date
-            DATE_ADD(end_date, INTERVAL 1 DAY) as start_date,
-            --new session ends the day before the following row's start date
-            DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date,
+            --new session starts the day of the current row's end date exclusive
+            end_date_exclusive AS start_date,
+            --new session ends the day the following row starts
+            LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC) AS end_date_exclusive,
             last_day_of_data
         FROM dedup_compartment_cte 
         )
@@ -252,7 +253,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     sessions, and will therefore be excluded. In cases where there is a currently active session, no release record will 
     be created because the release record start date will be null.
     */
-    WHERE COALESCE(end_date, '9999-01-01') >= start_date
+    WHERE COALESCE(end_date_exclusive, '9999-01-01') > start_date
     )
     ,
     session_full_coverage_cte AS
@@ -300,7 +301,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         compartment_level_2,
         last_day_of_data,
         MIN(start_date) AS start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
         CASE WHEN metric_source != 'INFERRED' THEN MIN(dataflow_session_id) END AS dataflow_session_id_start,
         CASE WHEN metric_source != 'INFERRED' THEN MAX(dataflow_session_id) END AS dataflow_session_id_end,
         ANY_VALUE(supervising_officer_external_id_start) AS supervising_officer_external_id_start,
@@ -372,7 +373,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.judicial_district_code_start,
         sessions.judicial_district_code_end,
         sessions.start_date,
-        sessions.end_date,
+        sessions.end_date_exclusive,
         starts.start_reason,
         starts.start_sub_reason,
         ends.end_reason,
@@ -386,7 +387,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LAG(ends.end_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_reason,
         LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
         LEAD(starts.start_sub_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_sub_reason,
-        LAG(sessions.end_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_date,
+        LAG(sessions.end_date_exclusive) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_date_exclusive,
         LEAD(sessions.start_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_date,
     FROM sessions_aggregated AS sessions
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_session_start_reasons_materialized` starts
@@ -396,7 +397,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         OR (starts.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
         OR (starts.compartment_level_1 = 'INCARCERATION' AND sessions.compartment_level_1 = 'INCARCERATION_OUT_OF_STATE'))
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_session_end_reasons_materialized` ends
-        ON ends.end_date = sessions.end_date
+        ON ends.release_termination_date = sessions.end_date_exclusive
         AND ends.person_id = sessions.person_id
         AND (sessions.compartment_level_1 = ends.compartment_level_1
         OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
@@ -459,7 +460,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         judicial_district_code_start,
         judicial_district_code_end,
         start_date,
-        end_date,
+        end_date_exclusive,
         start_reason,
         start_sub_reason,
         end_reason,
@@ -500,12 +501,12 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
                 AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
-                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date, DAY) <= {mo_data_gap_days}) AS inferred_missing_data, 
+                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date_exclusive, DAY) < {mo_data_gap_days}) AS inferred_missing_data, 
             metric_source = 'INFERRED'
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND state_code = 'US_MO'
-                AND DATE_DIFF(COALESCE(next_start_date, last_day_of_data), prev_end_date, DAY) > {mo_data_gap_days} AS inferred_mo_release,
+                AND DATE_DIFF(COALESCE(next_start_date, last_day_of_data), prev_end_date_exclusive, DAY) >= {mo_data_gap_days} AS inferred_mo_release,
             metric_source = 'INFERRED'
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND next_start_reason = 'RETURN_FROM_SUSPENSION'
@@ -551,7 +552,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         earliest_start_date,
         last_day_of_data,
         MIN(start_date) AS start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
         ANY_VALUE(supervising_officer_external_id_start) AS supervising_officer_external_id_start,
         ANY_VALUE(supervising_officer_external_id_end) AS supervising_officer_external_id_end,
         ANY_VALUE(compartment_location_start) AS compartment_location_start,
@@ -562,7 +563,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ANY_VALUE(case_type_end) AS case_type_end, 
         ANY_VALUE(judicial_district_code_start) AS judicial_district_code_start,
         ANY_VALUE(judicial_district_code_end) AS judicial_district_code_end, 
-        SUM(CASE WHEN metric_source = 'INFERRED' THEN DATE_DIFF(COALESCE(end_date, last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
+        SUM(CASE WHEN metric_source = 'INFERRED' THEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive,INTERVAL 1 DAY), last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
     FROM
         (
         /*
@@ -608,7 +609,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         first.dataflow_session_id_start,
         last.dataflow_session_id_end,
         s.start_date,
-        s.end_date,
+        s.end_date_exclusive,
         s.state_code,
         s.compartment_level_1,
         s.compartment_level_2,
@@ -622,7 +623,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         s.case_type_end,
         s.judicial_district_code_start,
         s.judicial_district_code_end,
-        DATE_DIFF(COALESCE(s.end_date, first.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
+        DATE_DIFF(COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), first.last_day_of_data), s.start_date, DAY)+1 AS session_length_days,
         s.session_days_inferred,
         first.start_reason,
         first.start_sub_reason,
@@ -634,7 +635,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LEAD(s.compartment_level_1) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_1,
         LEAD(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_2,
         CAST(FLOOR(DATE_DIFF(s.start_date, demographics.birthdate, DAY) / 365.25) AS INT64) AS age_start,
-        CAST(FLOOR(DATE_DIFF(COALESCE(s.end_date, first.last_day_of_data), demographics.birthdate, DAY) / 365.25) AS INT64) AS age_end,     
+        CAST(FLOOR(DATE_DIFF(COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), first.last_day_of_data), demographics.birthdate, DAY) / 365.25) AS INT64) AS age_end,     
         demographics.gender,
         demographics.prioritized_race_or_ethnicity,
         assessment_end.assessment_score AS assessment_score_end,
@@ -644,12 +645,12 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         AND s.start_date = first.start_date
     LEFT JOIN session_with_ids_2 last
         ON s.person_id = last.person_id
-        AND COALESCE(s.end_date,'9999-01-01') = COALESCE(last.end_date,'9999-01-01')
+        AND COALESCE(s.end_date_exclusive,'9999-01-01') = COALESCE(last.end_date_exclusive,'9999-01-01')
     LEFT JOIN `{project_id}.{sessions_dataset}.person_demographics_materialized` demographics
         ON s.person_id = demographics.person_id
         AND s.state_code = demographics.state_code
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment_end
-        ON COALESCE(s.end_date, '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
+        ON COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
         AND s.person_id = assessment_end.person_id
         AND s.state_code = assessment_end.state_code
     ),
@@ -669,8 +670,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             ) AS assmt_score_start_order,
     FROM sessions_additional_attributes sessions
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` assessment_start
-        ON assessment_start.assessment_date <= COALESCE(sessions.end_date, '9999-01-01')
-        AND sessions.start_date <= COALESCE(assessment_start.score_end_date, '9999-01-01')
+        ON assessment_start.assessment_date < COALESCE(sessions.end_date_exclusive, '9999-01-01')
+        AND sessions.start_date < COALESCE(assessment_start.score_end_date_exclusive, '9999-01-01')
         AND assessment_start.person_id = sessions.person_id
         AND assessment_start.state_code = sessions.state_code
     WHERE TRUE
@@ -686,7 +687,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id_start,
         dataflow_session_id_end,
         start_date,
-        end_date,
+        DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        end_date_exclusive,
         sessions.state_code,
         sessions.compartment_level_1,
         sessions.compartment_level_2,
@@ -775,7 +777,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         -- only sessions with null start/end reason values will be inferred
         AND (inferred_end.original_end_reason = 'ALL'
             OR COALESCE(inferred_end.original_end_reason,'NONE') = COALESCE(sessions.end_reason,'NONE'))
-    WHERE NOT (sessions.compartment_level_1 = 'DEATH' AND end_date IS NULL)
+    WHERE NOT (sessions.compartment_level_1 = 'DEATH' AND end_date_exclusive IS NULL)
 """
 COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,

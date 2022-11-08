@@ -195,7 +195,7 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
     is recorded before they show up in population metrics and therefore in sessions */
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` current_session
         ON current_session.person_id = violations.person_id
-        AND violations.response_date BETWEEN current_session.start_date AND COALESCE(current_session.end_date, '9999-01-01')
+        AND violations.response_date BETWEEN current_session.start_date AND COALESCE(DATE_SUB(current_session.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized` super_sessions
         ON current_session.person_id = super_sessions.person_id
         AND current_session.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end        

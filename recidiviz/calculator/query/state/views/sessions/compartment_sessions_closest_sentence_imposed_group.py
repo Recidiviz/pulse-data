@@ -47,7 +47,7 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
         AND a.state_code = b.state_code
         -- Check for overlap between session and sentence group (effective date to projected completion date max)
         AND COALESCE(b.projected_completion_date_max, b.completion_date) > a.start_date
-        AND COALESCE(a.end_date, "9999-01-01") > b.effective_date
+        AND COALESCE(DATE_SUB(a.end_date_exclusive, INTERVAL 1 DAY), "9999-01-01") > b.effective_date
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY a.person_id, a.session_id
         ORDER BY ABS(COALESCE(DATE_DIFF(b.date_imposed, a.start_date, DAY), 999999999))

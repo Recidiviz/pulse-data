@@ -17,7 +17,9 @@
 """Sessionized view of judicial district off of pre-processed raw TN sentencing data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
@@ -29,7 +31,7 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_NAME = "us_tn_judicial_district_sessions"
 
 US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of judicial district off of pre-processed raw TN sentencing data"""
 
-US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
+US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = f"""
     --TODO(#10747): Remove judicial district preprocessing once hydrated in population metrics   
     WITH cte AS
     (
@@ -37,8 +39,8 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         state_code,
         judicial_district_code,
-        sentence_effective_date AS judicial_district_start_date,
-        LEAD(DATE_SUB(sentence_effective_date, INTERVAL 1 DAY)) OVER(PARTITION BY person_id ORDER BY sentence_effective_date) AS judicial_district_end_date,
+        sentence_effective_date AS start_date,
+        LEAD(sentence_effective_date) OVER(PARTITION BY person_id ORDER BY sentence_effective_date) AS end_date_exclusive,
     FROM
         (
         SELECT 
@@ -46,10 +48,10 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
             'US_TN' AS state_code,
             CAST(jd.JudicialDistrict AS STRING) AS judicial_district_code,
             CAST(CAST(s.SentenceEffectiveDate AS datetime) AS DATE) AS sentence_effective_date,
-        FROM `{project_id}.{raw_dataset}.Sentence_latest` s
-        JOIN `{project_id}.{raw_dataset}.JOIdentification_latest` jd
+        FROM `{{project_id}}.{{raw_dataset}}.Sentence_latest` s
+        JOIN `{{project_id}}.{{raw_dataset}}.JOIdentification_latest` jd
             USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber) 
-        JOIN `{project_id}.{state_base_dataset}.state_person_external_id` ex
+        JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` ex
             ON ex.external_id = s.OffenderID
             AND ex.state_code = 'US_TN'
         --This needs to be unique on person id and sentence effective date in order to work properly. It is very
@@ -61,27 +63,10 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
     ,
     sessionized_cte AS 
     (
-    SELECT
-        person_id,
-        state_code,
-        judicial_district_session_id,
-        judicial_district_code,
-        MIN(judicial_district_start_date) AS judicial_district_start_date,
-        CASE WHEN LOGICAL_AND(judicial_district_end_date IS NOT NULL) THEN MAX(judicial_district_end_date) END AS judicial_district_end_date,
-    FROM
-        (  
-        SELECT
-            *,
-            SUM(new_session) OVER(PARTITION BY person_id ORDER BY judicial_district_start_date) AS judicial_district_session_id
-        FROM
-            (
-            SELECT
-              *,
-              IF(COALESCE(LAG(judicial_district_code) OVER(PARTITION BY person_id ORDER BY judicial_district_start_date) != judicial_district_code, TRUE),1,0) as new_session
-            FROM cte
-            )
-        )
-    GROUP BY 1,2,3,4
+    {aggregate_adjacent_spans(table_name='cte',
+                       attribute='judicial_district_code',
+                       session_id_output_name='judicial_district_session_id',
+                       end_date_field_name='end_date_exclusive')}
     )
     ,
     last_day_of_data_cte AS
@@ -93,13 +78,13 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
         SELECT 
             start_date_inclusive, 
             end_date_exclusive 
-        FROM `dataflow_metrics_materialized.most_recent_incarceration_population_span_metrics_materialized`
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
         WHERE state_code = 'US_TN'
         UNION ALL
         SELECT 
             start_date_inclusive, 
             end_date_exclusive 
-        FROM `dataflow_metrics_materialized.most_recent_incarceration_population_span_metrics_materialized`
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
         WHERE state_code = 'US_TN'
         )
     )
@@ -108,11 +93,12 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         judicial_district_session_id,
         judicial_district_code,
-        judicial_district_start_date,
-        CASE WHEN judicial_district_end_date <= last_day_of_data THEN judicial_district_end_date END AS judicial_district_end_date,
+        start_date AS judicial_district_start_date,
+        CASE WHEN DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) <= last_day_of_data THEN end_date_exclusive END AS judicial_district_end_date_exclusive,
+        DATE_SUB(CASE WHEN DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) <= last_day_of_data THEN end_date_exclusive END, INTERVAL 1 DAY) AS judicial_district_end_date,
     FROM sessionized_cte
     JOIN last_day_of_data_cte ON TRUE
-    WHERE judicial_district_start_date<=last_day_of_data
+    WHERE start_date<=last_day_of_data
 """
 
 US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -122,6 +108,7 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_DESCRIPTION,
     raw_dataset=US_TN_RAW_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )
 

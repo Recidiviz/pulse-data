@@ -286,6 +286,7 @@ SELECT
     start_date,
     # convert magic date back to NULL for open periods
     IF(end_date = '9999-01-01', NULL, end_date) as end_date,
+    DATE_ADD(IF(end_date = '9999-01-01', NULL, end_date), INTERVAL 1 DAY) AS end_date_exclusive,
     has_case_triage_access,
     has_po_report_access,
 FROM tool_access_sessions

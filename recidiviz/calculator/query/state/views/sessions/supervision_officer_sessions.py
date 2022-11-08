@@ -36,7 +36,7 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
         state_code, person_id, 
         session_attributes.supervising_officer_external_id,
         start_date,
-        end_date,
+        end_date_exclusive,
         dataflow_session_id,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
@@ -48,7 +48,8 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         supervising_officer_session_id,
         MIN(start_date) start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
+        DATE_SUB(CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END, INTERVAL 1 DAY) AS end_date,
         MIN(dataflow_session_id) AS dataflow_session_id_start,
         MAX(dataflow_session_id) AS dataflow_session_id_end,
     FROM (
@@ -62,7 +63,7 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
                 session.person_id, 
                 session.supervising_officer_external_id,
                 session.start_date,
-                session.end_date,
+                session.end_date_exclusive,
                 session.dataflow_session_id,
                 -- Only count an officer toward an officer change once if officer was not present at all in preceding session
                 MIN(IF(
@@ -73,7 +74,7 @@ SUPERVISION_OFFICER_SESSIONS_QUERY_TEMPLATE = """
             LEFT JOIN sub_sessions_attributes_unnested as session_lag
                 ON session.state_code = session_lag.state_code
                 AND session.person_id = session_lag.person_id
-                AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+                AND session.start_date = session_lag.end_date_exclusive
             GROUP BY 1,2,3,4,5,6
             )
     )

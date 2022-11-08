@@ -41,7 +41,8 @@ COMPARTMENT_SESSIONS_UNNESTED_QUERY_TEMPLATE = """
         ss_level_2.start_date AS compartment_level_2_super_session_start,
         ss_supervision.start_date AS supervision_super_session_start,
         system.start_date AS system_session_start,
-        sessions.end_date,
+        sessions.end_date_exclusive,
+        DATE_SUB(sessions.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         sessions.session_id,
         sessions.dataflow_session_id_start,
         sessions.dataflow_session_id_end,
@@ -76,7 +77,7 @@ COMPARTMENT_SESSIONS_UNNESTED_QUERY_TEMPLATE = """
         ON sessions.person_id = ss_supervision.person_id
         AND sessions.session_id BETWEEN ss_supervision.session_id_start AND ss_supervision.session_id_end
     , UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE, INTERVAL 9 YEAR), CURRENT_DATE, INTERVAL 1 DAY)) AS population_date
-    WHERE population_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
+    WHERE population_date BETWEEN sessions.start_date AND COALESCE(DATE_SUB(sessions.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01')
     )
     /*
     The above CTE is left joined back to compartment sessions to pull in information associated with all of the preceding sessions

@@ -45,7 +45,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
     SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive AS end_date,
+        end_date_exclusive,
         metric_type AS metric_source,
         df.state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
@@ -72,7 +72,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
     SELECT
         person_id,
         judicial_district_start_date AS start_date,
-        DATE_ADD(judicial_district_end_date, INTERVAL 1 DAY) AS end_date,
+        judicial_district_end_date_exclusive AS end_date_exclusive,
         CAST(NULL AS STRING) AS metric_source,
         state_code,
         CAST(NULL AS STRING) AS compartment_level_1,
@@ -89,7 +89,8 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
     FROM `{{project_id}}.{{sessions_dataset}}.us_tn_judicial_district_sessions_materialized` s
     )
     ,
-    {create_sub_sessions_with_attributes(table_name='overlapping_periods_cte', use_magic_date_end_dates=True)}
+    {create_sub_sessions_with_attributes(table_name='overlapping_periods_cte', use_magic_date_end_dates=True,
+                                         end_date_field_name='end_date_exclusive')}
     ,
     sub_sessions_with_attributes_dedup AS
     (
@@ -99,7 +100,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
         (
         SELECT 
             * EXCEPT(judicial_district_code),
-            FIRST_VALUE(judicial_district_code) OVER(PARTITION BY person_id, state_code, start_date, end_date 
+            FIRST_VALUE(judicial_district_code) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive 
                 ORDER BY IF(judicial_district_code IS NULL,1,0)) AS judicial_district_code,
         FROM sub_sessions_with_attributes
         )
@@ -108,7 +109,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
     SELECT 
         person_id,
         start_date,
-        {revert_nonnull_end_date_clause('end_date')} AS end_date,
+        {revert_nonnull_end_date_clause('end_date_exclusive')} AS end_date_exclusive,
         metric_source,
         state_code,
         compartment_level_1,

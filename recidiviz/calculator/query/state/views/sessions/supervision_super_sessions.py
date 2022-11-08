@@ -41,6 +41,7 @@ The view has a couple of important uses:
 |	supervision_super_session_id	|	Super session identifier	|
 |	start_date	|	Super session start date	|
 |	end_date	|	Super session end date	|
+|	end_date_exclusive	|	Super session end date exclusive|
 |	state_code	|	State	|
 |	incarceration_days	|	Number of days of the super session that are spent incarcerated. Someone spends part of their supervision super-session incarcerated because of parole board holds and shock incarceration 	|
 |	session_length_days	|	Difference between session start date and session end date. For active sessions the session start date is differenced from the last day of data	|
@@ -122,7 +123,7 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
         last_day_of_data,
         MIN(start_date) AS start_date,
         --this is done to ensure we take a null end date if present instead of the max
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,        
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,        
         --keep track of the number of days within a supervision super-session that a person is incarcerated (parole board holds)
         SUM(CASE WHEN compartment_level_1 = 'INCARCERATION' THEN session_length_days ELSE 0 END) AS incarceration_days,
         --store the session ids at start and end for easy joining
@@ -140,10 +141,11 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
         s.person_id,
         s.supervision_super_session_id,
         s.start_date,
-        s.end_date,
+        s.end_date_exclusive,
+        DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         s.state_code,
         s.incarceration_days,
-        DATE_DIFF(COALESCE(s.end_date, s.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
+        DATE_DIFF(COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), s.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
         s.session_id_start,
         s.session_id_end,
         first.start_reason,

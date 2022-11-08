@@ -87,7 +87,7 @@ day_zero_reports AS (
     INNER JOIN
         `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
     ON
-         DATE(event_datetime) BETWEEN start_date AND IFNULL(end_date, "9999-01-01")
+         DATE(event_datetime) BETWEEN start_date AND IFNULL(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), "9999-01-01")
     WHERE
         event = "delivered"
 )
@@ -152,13 +152,13 @@ day_zero_reports AS (
         ON
             compliance_metrics.person_id = assessment_score_sessions.person_id
             AND compliance_metrics.date_of_supervision BETWEEN assessment_score_sessions.assessment_date 
-                AND IFNULL(assessment_score_sessions.score_end_date, CURRENT_DATE('US/Eastern'))
+                AND IFNULL(DATE_SUB(assessment_score_sessions.score_end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
         LEFT JOIN
             `{{project_id}}.{{sessions_dataset}}.supervision_tool_access_sessions_materialized` supervision_tool_access_sessions
         ON
             compliance_metrics.person_id = supervision_tool_access_sessions.person_id 
             AND date_of_supervision BETWEEN supervision_tool_access_sessions.start_date 
-                AND IFNULL(supervision_tool_access_sessions.end_date, CURRENT_DATE('US/Eastern'))
+                AND IFNULL(DATE_SUB(supervision_tool_access_sessions.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
         LEFT JOIN
             day_zero_reports
         ON

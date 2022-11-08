@@ -36,7 +36,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         session_attributes.supervision_office,
         session_attributes.supervision_district,
         start_date,
-        end_date,
+        end_date_exclusive,
         dataflow_session_id,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
@@ -54,7 +54,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         supervision_district,
         location_session_id_unordered,
         MIN(start_date) start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
         MIN(dataflow_session_id) AS dataflow_session_id_start,
         MAX(dataflow_session_id) AS dataflow_session_id_end,
         FROM
@@ -74,7 +74,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                 /*
                 This subquery does a self join to identify cases where a person's location has changed. This is more complicated
                 that looking at the preceding session because a person can have multiple locations simultaneously. Therefore,
-                we join in sessions based on the end_date being one day prior to the session start_date. Because of the way 
+                we join in sessions based on the end_date_exclusive being equal to the session start_date. Because of the way 
                 that dataflow sessions are constructed, this will capture the location that a person was in prior to the current 
                 session, and then we check whether or not any of those joining sessions has the same location value. 
                 Dataflow sessions maintains non-overlaps and is defined along boundaries of any session attribute changing, which means
@@ -90,7 +90,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     session.supervision_office,
                     session.supervision_district,
                     session.start_date,
-                    session.end_date,
+                    session.end_date_exclusive,
                     -- Only count a location toward an location change once if location was not present at all in preceding session
                     session.dataflow_session_id,
                     MIN(IF(session_lag.location = session.location, 0, 1)) AS location_changed
@@ -98,7 +98,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                 LEFT JOIN sub_sessions_attributes_unnested as session_lag
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
-                    AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+                    AND session.start_date = session_lag.end_date_exclusive
                 GROUP BY 1,2,3,4,5,6,7,8,9
                 )
             )           
@@ -110,7 +110,8 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
     */
     SELECT 
         * EXCEPT(location_session_id_unordered),
-        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01'), location) AS location_session_id
+        DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date_exclusive,'9999-01-01'), location) AS location_session_id
     FROM sessionized_cte 
     """
 

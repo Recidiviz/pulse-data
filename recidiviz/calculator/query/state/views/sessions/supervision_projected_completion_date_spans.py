@@ -45,7 +45,7 @@ WITH all_states_spans AS (
         span.state_code,
         span.person_id,
         span.start_date,
-        span.end_date,
+        span.end_date_exclusive,
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
@@ -56,10 +56,9 @@ WITH all_states_spans AS (
         AND span.person_id = sess.person_id
         -- Restrict to spans that overlap with supervision sessions
         AND sess.compartment_level_1 = "SUPERVISION"
-        -- Use less than or equal to for sessions inclusive end_date but strictly less
-        -- than for sentence spans exclusive end_date
-        AND span.start_date <= {nonnull_end_date_clause('sess.end_date')}
-        AND sess.start_date < {nonnull_end_date_clause('span.end_date')}
+        -- Use strictly less than for exclusive end_dates
+        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
+        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
     WHERE
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
@@ -82,14 +81,16 @@ SELECT
     a.state_code,
     a.person_id,
     a.start_date,
-    IF(MAX(COALESCE(a.end_date,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date,'9999-12-31'),
-      NULL, a.end_date) AS end_date,
+    IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
+      NULL, a.end_date_exclusive) AS end_date_exclusive,
+    IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
+      NULL, a.end_date_exclusive) AS end_date,
     COALESCE(id.projected_completion_date_external, a.projected_completion_date_max) AS projected_completion_date_max,
 FROM all_states_spans a
 LEFT JOIN id_max_date id
     ON id.person_id = a.person_id 
     AND id.state_code = a.state_code
-    AND CURRENT_DATE('US/Pacific') <= end_date 
+    AND CURRENT_DATE('US/Pacific') <= end_date_exclusive 
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
