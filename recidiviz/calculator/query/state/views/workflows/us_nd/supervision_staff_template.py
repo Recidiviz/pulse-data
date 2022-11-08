@@ -22,7 +22,8 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             officer_id AS id,
             state_code,
-            CAST(officers.status AS STRING) = "(1)" AS is_active, 
+            CAST(officers.status AS STRING) = "(1)" AS is_active,
+            CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
         FROM `{project_id}.{workflows_dataset}.client_record`
         LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest` officers
             ON officer_id = officers.OFFICER
@@ -34,7 +35,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             ids.state_code,
             full_name AS name,
             districts.district_name AS district,
-            leadership.email_address AS email,
+            ids.email_address AS email,
             true AS has_caseload,
             names.given_names as given_names,
             names.surname as surname,
@@ -42,14 +43,6 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
             ON ids.id = names.external_id 
             AND ids.state_code = names.state_code
-        LEFT JOIN (
-            SELECT 
-                internal_id, 
-                email_address,
-            FROM `{project_id}.{static_reference_tables_dataset}.us_nd_leadership_users`
-            WHERE workflows = true
-        ) leadership
-            ON ids.id = leadership.internal_id
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON ids.state_code = districts.state_code 
             AND ids.id = districts.supervising_officer_external_id
