@@ -12,6 +12,8 @@ columns:
   - name: Created_On_Date
   - name: E_Violation_Disposition_Type_Desc
     description: Description of this violation disposition type.
+  - name: E_Violation_Disposition_Type_Full_Desc
+    description: A more complete description of this violation disposition type.
   - name: Juvenile_Ind
   - name: Locking_Tsp
   - name: Logical_Delete_Ind
