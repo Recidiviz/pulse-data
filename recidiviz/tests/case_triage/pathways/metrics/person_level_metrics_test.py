@@ -30,7 +30,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     PathwaysMetricTestBase,
 )
@@ -48,7 +48,7 @@ class PathwaysPersonLevelMetricTestBase(PathwaysMetricTestBase):
         ...
 
     def test_metrics_base(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(_FakeStateCode.US_TN)
+        metric_fetcher = PathwaysMetricFetcher(StateCode.US_TN)
         results = metric_fetcher.fetch(self.query_builder, FetchMetricParams())
 
         self.test.assertEqual(list(results.keys()), ["data", "metadata"])
@@ -173,7 +173,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
         return {"lastUpdated": "2022-08-05"}
 
     def test_metrics_filter(self) -> None:
-        results = PathwaysMetricFetcher(state_code=_FakeStateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(state_code=StateCode.US_TN).fetch(
             self.query_builder,
             FetchMetricParams(
                 filters={
@@ -222,7 +222,7 @@ class TestPrisonToSupervisionTransitionsPersonLevel(
 
     def test_filter_timePeriod(self) -> None:
         """Tests that person id 6 is not included in the response"""
-        results = PathwaysMetricFetcher(_FakeStateCode.US_TN).fetch(
+        results = PathwaysMetricFetcher(StateCode.US_TN).fetch(
             self.query_builder,
             FetchMetricParams(
                 filters={Dimension.TIME_PERIOD: [TimePeriod.MONTHS_0_6.value]},

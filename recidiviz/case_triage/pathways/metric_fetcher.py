@@ -32,7 +32,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 
 
@@ -40,8 +40,7 @@ from recidiviz.common.str_field_utils import snake_to_camel
 class PathwaysMetricFetcher:
     """Interface for fetching metrics from Cloud SQL"""
 
-    # TODO(#13950): Replace with StateCode
-    state_code: _FakeStateCode
+    state_code: StateCode
     database_manager: PathwaysDatabaseManager = attr.ib(factory=PathwaysDatabaseManager)
 
     @cached_property

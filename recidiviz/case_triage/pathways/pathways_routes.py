@@ -42,7 +42,7 @@ from recidiviz.case_triage.pathways.pathways_api_schemas import (
 from recidiviz.case_triage.pathways.pathways_authorization import (
     on_successful_authorization,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import in_offline_mode
 
 PATHWAYS_ALLOWED_ORIGINS = [
@@ -126,8 +126,7 @@ def create_pathways_api_blueprint() -> Blueprint:
 
     @api.get("/<state>/<metric_name>")
     def metrics(state: str, metric_name: str) -> Response:
-        # TODO(#13950): Replace with StateCode
-        state_code = _FakeStateCode(state)
+        state_code = StateCode(state)
 
         try:
             metric_mapper = ENABLED_METRICS_BY_STATE_BY_NAME[state_code][metric_name]

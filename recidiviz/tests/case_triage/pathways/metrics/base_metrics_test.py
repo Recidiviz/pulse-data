@@ -39,7 +39,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
     FetchMetricParams,
     MetricQueryBuilder,
 )
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -147,11 +147,11 @@ class TestPathwaysMetricFetcher(TestCase):
         )
 
     def test_enabled_metric_without_table(self) -> None:
-        metric_fetcher = PathwaysMetricFetcher(state_code=_FakeStateCode.US_CO)
+        metric_fetcher = PathwaysMetricFetcher(state_code=StateCode.US_CO)
 
         with self.assertRaises(MetricNotEnabledError):
             metric_fetcher.fetch(
-                ENABLED_METRICS_BY_STATE_BY_NAME[_FakeStateCode.US_CO][
+                ENABLED_METRICS_BY_STATE_BY_NAME[StateCode.US_CO][
                     "LibertyToPrisonTransitionsOverTime"
                 ],
                 FetchMetricParams(),

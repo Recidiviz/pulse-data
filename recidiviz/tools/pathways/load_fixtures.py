@@ -66,7 +66,7 @@ from recidiviz.case_triage.pathways.pathways_database_manager import (
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import SQLAlchemyModelType
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import (
@@ -192,7 +192,7 @@ def main(
     # Reset cache after all fixtures have been added because PathwaysMetricCache will initialize
     # a DB engine, and we can't import the metrics if the engine has already been initialized.
     for state in state_codes:
-        metric_cache = PathwaysMetricCache.build(_FakeStateCode(state))
+        metric_cache = PathwaysMetricCache.build(StateCode(state))
         for table in tables:
             for metric in get_metrics_for_entity(table):
                 logging.info("resetting cache for %s %s", state, metric.name)

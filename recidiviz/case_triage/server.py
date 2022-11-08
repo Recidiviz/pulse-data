@@ -30,7 +30,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 import recidiviz
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    PATHWAYS_OFFLINE_STATE,
+    PATHWAYS_OFFLINE_DEMO_STATE,
 )
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
@@ -169,7 +169,7 @@ if in_offline_mode():
     func.current_date = lambda: "2021-12-15"
 
     def initialize_pathways_db_from_fixtures() -> None:
-        state_code = PATHWAYS_OFFLINE_STATE.value.lower()
+        state_code = PATHWAYS_OFFLINE_DEMO_STATE.value.lower()
         create_dbs([state_code], SchemaType.PATHWAYS)
         db_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name=state_code)
         engine = SQLAlchemyEngineManager.init_engine(db_key)
