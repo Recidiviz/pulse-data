@@ -79,54 +79,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 ],
             )
 
-    def test_context_validation(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "The required context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is missing",
-        ):
-            MetricInterface(
-                key=law_enforcement.calls_for_service.key,
-                value=100000,
-                contexts=[],
-                aggregated_dimensions=[],
-                enforce_validation=True,
-            )
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r"The context ContextKey.ALL_CALLS_OR_CALLS_RESPONDED is reported as a <enum 'CallsRespondedOptions'> but typed as a \(<class 'str'>,\).",
-        ):
-            MetricInterface(
-                key=law_enforcement.calls_for_service.key,
-                value=100000,
-                contexts=[
-                    MetricContextData(
-                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-                        value=CallsRespondedOptions.ALL_CALLS,
-                    )
-                ],
-                aggregated_dimensions=[],
-                enforce_validation=True,
-            )
-
-    def test_aggregated_dimensions_validation(self) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "The following required dimensions are missing: {'metric/law_enforcement/calls_for_service/type'}",
-        ):
-            MetricInterface(
-                key=law_enforcement.calls_for_service.key,
-                value=100000,
-                contexts=[
-                    MetricContextData(
-                        key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-                        value=CallsRespondedOptions.ALL_CALLS.value,
-                    )
-                ],
-                aggregated_dimensions=[],
-                enforce_validation=True,
-            )
-
     def test_is_disaggregation_enabled(self) -> None:
         is_disabled = MetricAggregatedDimensionData(
             dimension_to_enabled_status={d: False for d in GenderRestricted},
@@ -605,9 +557,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                         value="additional context",
                     )
                 ],
-                # TODO(#13556) Backend validation needs to match new frontend validation
-                # enforce_validation=True
-                enforce_validation=False,
             ),
             MetricInterface.from_json(
                 json=response_json,
@@ -628,9 +577,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 value=100,
                 contexts=[],
                 aggregated_dimensions=[],
-                # TODO(#13556) Backend validation needs to match new frontend validation
-                # enforce_validation=True
-                enforce_validation=False,
             ),
             MetricInterface.from_json(
                 json=response_json,
@@ -654,7 +600,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
-                enforce_validation=False,
             ),
         )
 
@@ -950,7 +895,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
-                enforce_validation=False,
             ),
         )
 
@@ -987,7 +931,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                     )
                 ],
                 is_metric_enabled=True,
-                enforce_validation=False,
             ),
         )
 
@@ -1013,7 +956,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=True,
-                enforce_validation=False,
             ),
         )
 
@@ -1040,7 +982,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                     )
                 ],
                 is_metric_enabled=True,
-                enforce_validation=False,
             ),
         )
 
@@ -1329,7 +1270,6 @@ class TestJusticeCountsMetricInterface(TestCase):
             key=prisons.grievances_upheld.key,
             is_metric_enabled=True,
             value=200,
-            enforce_validation=False,
             includes_excludes_member_to_setting={
                 PrisonGrievancesIncludesExcludes.UPHELD: IncludesExcludesSetting.NO,
                 PrisonGrievancesIncludesExcludes.REMEDY: IncludesExcludesSetting.NOT_AVAILABLE,

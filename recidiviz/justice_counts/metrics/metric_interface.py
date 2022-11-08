@@ -54,24 +54,26 @@ class MetricInterface:
 
     # The key of the metric (i.e. `MetricDefinition.key`) that is being reported
     key: str
+
     # The value entered for the metric. If the metric has breakdowns, this is the
     # total, aggregate value summed across all dimensions.
     value: Optional[float] = attr.field(default=None)
+
     # Weather or not the metric is enabled for an agency.
     is_metric_enabled: bool = attr.field(default=True)
+
     # Additional context that the agency reported on this metric
     contexts: List[MetricContextData] = attr.field(factory=list)
+
     # Values for aggregated dimensions
     aggregated_dimensions: List[MetricAggregatedDimensionData] = attr.field(
         factory=list
     )
+
     # Values for includes_excludes settings at the metric level.
     includes_excludes_member_to_setting: Dict[
         enum.Enum, Optional[IncludesExcludesSetting]
     ] = attr.field(default={})
-
-    # TODO(#12418) [Backend] Figure out when/when not to validate MetricInterfaces
-    enforce_validation: Optional[bool] = False
 
     @property
     def metric_definition(self) -> MetricDefinition:
@@ -235,10 +237,6 @@ class MetricInterface:
             aggregated_dimensions=disaggregations,
             includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             is_metric_enabled=json.get("enabled", True),
-            # TODO(#13556) Backend validation needs to match new frontend validation
-            # Right now, if you only publish a subset of the metrics, this will error
-            # enforce_validation=report_status=ReportStatus.PUBLISHED
-            enforce_validation=False,
         )
 
     ### Helpers ###
@@ -302,86 +300,3 @@ class MetricInterface:
                 description="No metrics found for this report or agency.",
             )
         return metric_definitions
-
-    ### Validations ###
-
-    @value.validator
-    def validate_value(self, _attribute: attr.Attribute, value: Any) -> None:
-        """Validate that for each reported aggregate dimension for which sum_to_total = True,
-        the reported values for this aggregate dimension sum to the total value metric"""
-
-        if value is None or not self.enforce_validation:
-            return
-
-        dimension_identifier_to_reported_dimension = {
-            dimension.dimension_identifier(): dimension
-            for dimension in self.aggregated_dimensions
-        }
-        for dimension_definition in self.metric_definition.aggregated_dimensions or []:
-            dimension_identifier = dimension_definition.dimension_identifier()
-            reported_dimension = dimension_identifier_to_reported_dimension.get(
-                dimension_identifier
-            )
-            if (
-                not reported_dimension
-                or not dimension_definition.should_sum_to_total
-                or reported_dimension.dimension_to_value is None
-            ):
-                continue
-
-            reported_dimension_values = reported_dimension.dimension_to_value.values()
-            if len([value for value in reported_dimension_values if value is None]) > 0:
-                # If any dimension values haven't been reported yet, skip validation
-                return
-
-            # we know at this point that no values are None, but add the filter explicitly to make
-            # mypy happy
-            if sum(filter(None, reported_dimension_values)) != value:
-                raise ValueError(
-                    f"Sums across dimension {dimension_identifier} do not equal "
-                    "the total metric value."
-                )
-
-    @contexts.validator
-    def validate_contexts(self, _attribute: attr.Attribute, value: Any) -> None:
-        # Validate that any reported context is of the right type, and that
-        # all required contexts have been reported
-        if not self.enforce_validation:
-            return
-
-        context_key_to_reported_context = {
-            context.key: context for context in value or []
-        }
-        for context in self.metric_definition.contexts or []:
-            reported_context = context_key_to_reported_context.get(context.key)
-
-            if not reported_context or not reported_context.value:
-                if context.required:
-                    raise ValueError(f"The required context {context.key} is missing.")
-                continue
-
-            if not isinstance(reported_context.value, context.value_type.python_type()):
-                raise ValueError(
-                    f"The context {context.key} is reported as a {type(reported_context.value)} "
-                    f"but typed as a {context.value_type.python_type()}."
-                )
-
-    @aggregated_dimensions.validator
-    def validate_aggregate_dimensions(
-        self, _attribute: attr.Attribute, value: Any
-    ) -> None:
-        if not self.enforce_validation:
-            return
-
-        # Validate that all required aggregated dimensions have been reported
-        required_dimensions = {
-            dimension.dimension_identifier()
-            for dimension in self.metric_definition.aggregated_dimensions or []
-            if dimension.required is True
-        }
-        reported_dimensions = {dimension.dimension_identifier() for dimension in value}
-        missing_dimensions = required_dimensions.difference(reported_dimensions)
-        if len(missing_dimensions) > 0:
-            raise ValueError(
-                f"The following required dimensions are missing: {missing_dimensions}"
-            )
