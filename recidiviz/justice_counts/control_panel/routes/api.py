@@ -70,6 +70,8 @@ def get_api_blueprint(
 
         return jsonify({"csrf": generate_csrf(secret_key)})
 
+    ### Users ###
+
     @api_blueprint.route("/users", methods=["PATCH"])
     @auth_decorator
     def update_user_email_and_name() -> Response:
@@ -151,10 +153,50 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    ### Reports Overview ###
+
+    @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])
+    @auth_decorator
+    @raise_if_user_is_unauthorized
+    def get_reports_by_agency_id(agency_id: str) -> Response:
+        """Gets a list of reports for the specified agency id.
+        Used for rendering the Reports Overview page.
+        """
+        try:
+            agency_ids = get_agency_ids_from_session()
+            if int(agency_id) not in agency_ids:
+                raise JusticeCountsServerError(
+                    code="justice_counts_agency_permission",
+                    description="User does not belong to the agency they are attempting to get agencies for.",
+                )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=reports
+            )
+            report_json = [
+                ReportInterface.to_json_response(
+                    session=current_session,
+                    report=r,
+                    editor_ids_to_names=editor_ids_to_names,
+                )
+                for r in reports
+            ]
+
+            return jsonify(report_json)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    ### Individual Reports ###
+
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])
     @auth_decorator
     @raise_if_user_is_unauthorized
     def get_report_by_id(report_id: Optional[str] = None) -> Response:
+        """Get the details for a specified report. Used for rendering
+        the Data Entry page.
+        """
         try:
             report_id_int = int(assert_type(report_id, str))
             report = ReportInterface.get_report_by_id(
@@ -184,6 +226,9 @@ def get_api_blueprint(
     @auth_decorator
     @raise_if_user_is_unauthorized
     def update_report(report_id: Optional[str] = None) -> Response:
+        """Update a report's metadata and/or the metrics on the report.
+        Used by the Data Entry page.
+        """
         try:
             report_id_int = int(assert_type(report_id, str))
             request_dict = assert_type(request.json, dict)
@@ -240,39 +285,12 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])
-    @auth_decorator
-    @raise_if_user_is_unauthorized
-    def get_reports_by_agency_id(agency_id: str) -> Response:
-        try:
-            agency_ids = get_agency_ids_from_session()
-            if int(agency_id) not in agency_ids:
-                raise JusticeCountsServerError(
-                    code="justice_counts_agency_permission",
-                    description="User does not belong to the agency they are attempting to get agencies for.",
-                )
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=current_session, agency_id=int(agency_id)
-            )
-            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
-                session=current_session, reports=reports
-            )
-            report_json = [
-                ReportInterface.to_json_response(
-                    session=current_session,
-                    report=r,
-                    editor_ids_to_names=editor_ids_to_names,
-                )
-                for r in reports
-            ]
-
-            return jsonify(report_json)
-        except Exception as e:
-            raise _get_error(error=e) from e
-
     @api_blueprint.route("/reports", methods=["POST"])
     @auth_decorator
     def create_report() -> Response:
+        """Create a new report.
+        Used by the Reports Overview page.
+        """
         try:
             request_json = assert_type(request.json, dict)
             agency_id = assert_type(request_json.get("agency_id"), int)
@@ -321,6 +339,9 @@ def get_api_blueprint(
     @api_blueprint.route("/reports", methods=["DELETE"])
     @auth_decorator
     def delete_reports() -> Response:
+        """Delete a report.
+        Used by the Reports Overview page.
+        """
         try:
             request_json = assert_type(request.json, dict)
             report_ids = request_json.get("report_ids")
@@ -351,10 +372,37 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    ### Metric Settings ###
+
+    @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["GET"])
+    @auth_decorator
+    def get_agency_metric_settings(agency_id: str) -> Response:
+        """Get the contexts and configuration for each of an agency's metrics.
+        Used by the Metric Configuration page in Settings.
+        """
+        try:
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session, agency=agency
+            )
+            metrics_json = [
+                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                for metric in metrics
+            ]
+            return jsonify(metrics_json)
+
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["PUT"])
     @auth_decorator
     @raise_if_user_is_unauthorized
     def update_metric_settings(agency_id: str) -> Response:
+        """Update the contexts and configuration for an agency's metrics.
+        Used by the Metric Configuration page in Settings.
+        """
         try:
             request_json = assert_type(request.json, dict)
             agency = AgencyInterface.get_agency_by_id(
@@ -381,47 +429,58 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["GET"])
+    ### Bulk Upload ###
+
+    @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
-    def get_agency_metric_settings(agency_id: str) -> Response:
+    def get_spreadsheets(agency_id: str) -> Response:
+        """Get a list of spreadsheets uploaded by an agency.
+        Used for rendering the Uploaded Files page.
+        """
+        agency_ids = get_agency_ids_from_session()
+        if int(agency_id) not in agency_ids:
+            raise JusticeCountsServerError(
+                code="bad_user_permissions",
+                description="User does not have the permissions to view this list of spreadsheets because they do not belong to the correct agency.",
+            )
         try:
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
+            spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
+                agency_id=int(agency_id), session=current_session
             )
-            metrics = DatapointInterface.get_metric_settings_by_agency(
-                session=current_session, agency=agency
+            return jsonify(
+                [
+                    SpreadsheetInterface.get_spreadsheet_json(
+                        spreadsheet=spreadsheet, session=current_session
+                    )
+                    for spreadsheet in spreadsheets
+                ]
             )
-            metrics_json = [
-                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
-                for metric in metrics
-            ]
-            return jsonify(metrics_json)
-
         except Exception as e:
             raise _get_error(error=e) from e
 
-    @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
-    def get_agency_published_data(agency_id: str) -> Response:
-        try:
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
-            )
-            metrics = DatapointInterface.get_metric_settings_by_agency(
-                session=current_session, agency=agency
-            )
-            metrics_json = [
-                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
-                for metric in metrics
-            ]
-            return jsonify(metrics_json)
+    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["GET"])
+    @auth_decorator
+    def download_spreadsheet(
+        spreadsheet_id: str,
+    ) -> response.Response:
+        """Download a spreadsheet from GCP and return the file.
+        Used by the Uploaded Files page.
+        """
+        agency_ids = get_agency_ids_from_session()
+        file = SpreadsheetInterface.download_spreadsheet(
+            spreadsheet_id=int(spreadsheet_id),
+            agency_ids=agency_ids,
+            session=current_session,
+        )
 
-        except Exception as e:
-            raise _get_error(error=e) from e
+        return send_file(path_or_file=file.local_file_path, as_attachment=True)
 
     @api_blueprint.route("/spreadsheets", methods=["POST"])
     @auth_decorator
     def upload_spreadsheet() -> Response:
-        """Upload spreadsheet for an agency."""
+        """Upload a spreadsheet for an agency.
+        Used by the Bulk Upload flow.
+        """
         data = assert_type(request.form, dict)
         agency_id = int(data["agency_id"])
         system = data["system"]
@@ -505,48 +564,12 @@ def get_api_blueprint(
             )
         )
 
-    @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["GET"])
-    @auth_decorator
-    def download_spreadsheet(
-        spreadsheet_id: str,
-    ) -> response.Response:
-        """Download a spreadsheet from GCP and return the file"""
-        agency_ids = get_agency_ids_from_session()
-        file = SpreadsheetInterface.download_spreadsheet(
-            spreadsheet_id=int(spreadsheet_id),
-            agency_ids=agency_ids,
-            session=current_session,
-        )
-
-        return send_file(path_or_file=file.local_file_path, as_attachment=True)
-
-    @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
-    @auth_decorator
-    def get_spreadsheets(agency_id: str) -> Response:
-        agency_ids = get_agency_ids_from_session()
-        if int(agency_id) not in agency_ids:
-            raise JusticeCountsServerError(
-                code="bad_user_permissions",
-                description="User does not have the permissions to view this list of spreadsheets because they do not belong to the correct agency.",
-            )
-        try:
-            spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
-                agency_id=int(agency_id), session=current_session
-            )
-            return jsonify(
-                [
-                    SpreadsheetInterface.get_spreadsheet_json(
-                        spreadsheet=spreadsheet, session=current_session
-                    )
-                    for spreadsheet in spreadsheets
-                ]
-            )
-        except Exception as e:
-            raise _get_error(error=e) from e
-
     @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PATCH"])
     @auth_decorator
     def update_spreadsheet(spreadsheet_id: str) -> Response:
+        """Update a spreadsheet's metadata.
+        Used by the Uploaded Files page.
+        """
         try:
             permissions = g.user_context.permissions if "user_context" in g else []
             request_json = assert_type(request.json, dict)
@@ -582,6 +605,9 @@ def get_api_blueprint(
     @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["DELETE"])
     @auth_decorator
     def delete_spreadsheet(spreadsheet_id: str) -> Response:
+        """Delete a spreadsheet.
+        Used by the Uploaded Files page.
+        """
         try:
             SpreadsheetInterface.delete_spreadsheet(
                 session=current_session,
@@ -599,6 +625,8 @@ def get_api_blueprint(
             and "." in filename
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
+
+    ### Dashboards ###
 
     def get_agency_datapoints(agency_id: str, published_only: bool = False) -> Response:
         permissions = g.user_context.permissions if "user_context" in g else []
@@ -689,6 +717,24 @@ def get_api_blueprint(
     def get_published_datapoints_by_agency_id(agency_id: str) -> Response:
         try:
             return get_agency_datapoints(agency_id=agency_id, published_only=True)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
+    def get_agency_published_data(agency_id: str) -> Response:
+        try:
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session, agency=agency
+            )
+            metrics_json = [
+                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                for metric in metrics
+            ]
+            return jsonify(metrics_json)
+
         except Exception as e:
             raise _get_error(error=e) from e
 
