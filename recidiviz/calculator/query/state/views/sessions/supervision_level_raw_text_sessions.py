@@ -38,7 +38,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         session_attributes.correctional_level AS supervision_level,
         session_attributes.correctional_level_raw_text AS supervision_level_raw_text,
         start_date,
-        end_date,
+        end_date_exclusive,
         dataflow_session_id,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
@@ -76,7 +76,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         correctional_level_priority,
         is_discretionary_level,
         MIN(start_date) start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
         MIN(dataflow_session_id) AS dataflow_session_id_start,
         MAX(dataflow_session_id) AS dataflow_session_id_end,
         FROM
@@ -95,14 +95,14 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
                     session.correctional_level_priority,
                     session.is_discretionary_level,
                     session.start_date,
-                    session.end_date,
+                    session.end_date_exclusive,
                     session.dataflow_session_id,
                     MIN(IF(session_lag.supervision_level_raw_text = session.supervision_level_raw_text, 0, 1)) AS level_changed
                 FROM deduped_cte session
                 LEFT JOIN deduped_cte as session_lag
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
-                    AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+                    AND session.start_date = session_lag.end_date_exclusive
                 GROUP BY 1,2,3,4,5,6,7,8,9
                 )
             )
@@ -113,7 +113,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
     (
     SELECT
         *  EXCEPT(supervision_level_session_id_unordered),
-        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01')) AS supervision_level_session_id
+        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date_exclusive,'9999-01-01')) AS supervision_level_session_id
     FROM sessionized_cte
     ORDER BY supervision_level_session_id
     )
@@ -126,14 +126,15 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         session.supervision_level,
         session.supervision_level_raw_text,
         session.start_date,
-        session.end_date,
+        session.end_date_exclusive,
+        DATE_SUB(session.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         session_lag.supervision_level AS previous_supervision_level,
         session_lag.supervision_level_raw_text AS previous_supervision_level_raw_text,
     FROM sessionized_cte_ordered session
     LEFT JOIN sessionized_cte_ordered session_lag
         ON session.state_code = session_lag.state_code
             AND session.person_id = session_lag.person_id
-            AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+            AND session.start_date = session_lag.end_date_exclusive
     """
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

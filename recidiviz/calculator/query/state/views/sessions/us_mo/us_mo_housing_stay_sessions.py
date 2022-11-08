@@ -76,7 +76,8 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
     WHERE start_date > "2000-01-01"
     )
     ,
-    {create_sub_sessions_with_attributes(table_name='periods_with_priority_cte', use_magic_date_end_dates=True)}
+    {create_sub_sessions_with_attributes(table_name='periods_with_priority_cte', use_magic_date_end_dates=True,
+                                         end_date_field_name='end_date_exclusive')}
     ,
     sessions_with_attributes_dedup AS
     /*
@@ -89,16 +90,25 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT 
       *
     FROM sub_sessions_with_attributes
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive 
         ORDER BY confinement_type_priority, stay_type_priority, facility_code) = 1
     )
+    ,
+    sessionized_cte AS 
+    (
     /*
     At this point we now have non-overlapping sessions and can just use our standard sessionization logic to aggregate
     together temporally adjacent sessions with identical attributes.
     */
     {aggregate_adjacent_spans(table_name='sessions_with_attributes_dedup',
                        attribute=['facility_code','stay_type','confinement_type'],
-                       session_id_output_name='housing_stay_session_id')}
+                       session_id_output_name='housing_stay_session_id',
+                       end_date_field_name='end_date_exclusive')}
+    )
+    SELECT 
+        *,
+        end_date_exclusive AS end_date
+    FROM sessionized_cte
 """
 
 US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

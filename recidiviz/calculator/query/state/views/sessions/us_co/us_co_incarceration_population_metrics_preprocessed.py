@@ -39,7 +39,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         SELECT
             person_id,
             start_date_inclusive AS start_date,
-            end_date_exclusive AS end_date,                   
+            end_date_exclusive,                   
             metric_type AS metric_source,
             state_code,
             IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
@@ -61,7 +61,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         pop.person_id,
         pop.start_date,
-        pop.end_date,
+        pop.end_date_exclusive,
         pop.metric_source,
         pop.state_code,
         pop.compartment_level_1,

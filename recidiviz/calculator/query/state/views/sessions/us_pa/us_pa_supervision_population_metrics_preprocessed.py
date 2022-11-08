@@ -44,7 +44,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive AS end_date,
+        end_date_exclusive,
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
@@ -67,7 +67,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive AS end_date,
+        end_date_exclusive,
         CAST(NULL AS STRING) AS metric_source,
         state_code,
         CAST(NULL AS STRING) AS compartment_level_1,
@@ -87,7 +87,8 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         AND REGEXP_CONTAINS(facility, "^[123]\\d\\d\\D*")
     )
     ,
-    {create_sub_sessions_with_attributes(table_name='overlapping_periods_cte', use_magic_date_end_dates=True)}
+    {create_sub_sessions_with_attributes(table_name='overlapping_periods_cte', use_magic_date_end_dates=True,
+                                         end_date_field_name='end_date_exclusive')}
     ,
     sub_sessions_with_attributes_dedup AS
     (    
@@ -100,10 +101,10 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         SELECT 
             *,
             -- If we have a duplicate with a NULL value for metric_source it is a CCC overlap because this field is only NULL for the CCC sessions.
-            LOGICAL_OR(metric_source IS NULL) OVER(PARTITION BY person_id, state_code, start_date, end_date)
-                AND LOGICAL_OR(compartment_level_1 = 'SUPERVISION') OVER(PARTITION BY person_id, state_code, start_date, end_date) AS is_ccc_overlap,
+            LOGICAL_OR(metric_source IS NULL) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive)
+                AND LOGICAL_OR(compartment_level_1 = 'SUPERVISION') OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive) AS is_ccc_overlap,
             -- Get the name of the facility from CCC sessions
-            FIRST_VALUE(facility) OVER(PARTITION BY person_id, state_code, start_date, end_date ORDER BY IF(facility IS NULL,1,0)) AS ccc_facility,
+            FIRST_VALUE(facility) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive ORDER BY IF(facility IS NULL,1,0)) AS ccc_facility,
         FROM sub_sessions_with_attributes
         )
     -- Drop rows representing time on CCC from the incarceration metric as the supervision metric row is now recategorized
@@ -112,7 +113,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     SELECT 
         person_id,
         start_date,
-        {revert_nonnull_end_date_clause('end_date')} AS end_date,
+        {revert_nonnull_end_date_clause('end_date_exclusive')} AS end_date_exclusive,
         metric_source,
         state_code,
         compartment_level_1,

@@ -41,19 +41,20 @@ SENTENCE_SPANS_QUERY_TEMPLATE = f"""
             sent.state_code,
             sent.person_id,
             attr.date_imposed AS start_date,
-            attr.completion_date AS end_date,
+            attr.completion_date AS end_date_exclusive,
             sent.sentence_imposed_group_id,
             attr.sentences_preprocessed_id,
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
         UNNEST(offense_attributes) AS attr
         WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
     ),
-    {create_sub_sessions_with_attributes("sentences")}
+    {create_sub_sessions_with_attributes("sentences", end_date_field_name='end_date_exclusive')}
     SELECT
         state_code,
         person_id,
         start_date,
-        end_date,
+        end_date_exclusive,
+        end_date_exclusive AS end_date,
         ARRAY_AGG(
             DISTINCT sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
         ) AS sentence_imposed_group_id_array,
@@ -61,7 +62,7 @@ SENTENCE_SPANS_QUERY_TEMPLATE = f"""
             DISTINCT sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
         ) AS sentences_preprocessed_id_array,
     FROM sub_sessions_with_attributes
-    GROUP BY state_code, person_id, start_date, end_date
+    GROUP BY 1,2,3,4,5
 """
 
 SENTENCE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

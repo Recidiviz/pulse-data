@@ -54,11 +54,11 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
         INNER JOIN 
             `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized` s
         ON 
-            d.date BETWEEN s.start_date AND COALESCE(s.end_date, CURRENT_DATE("US/Eastern"))
+            d.date BETWEEN s.start_date AND COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE("US/Eastern"))
         LEFT JOIN 
             `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized` e
         ON 
-            d.date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date, CURRENT_DATE("US/Eastern"))
+            d.date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date_exclusive, CURRENT_DATE("US/Eastern"))
             AND s.person_id = e.person_id
             AND s.state_code = e.state_code
         WHERE 
@@ -73,14 +73,14 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
         FROM (
             SELECT
                 person_id,
-                employment_end_date,
+                employment_end_date_exclusive,
                 employment_end_reason,
             FROM 
                 `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
             UNION ALL
             SELECT
                 person_id,
-                DATE_SUB(start_date, INTERVAL 1 DAY) AS employment_end_date,
+                DATE_SUB(start_date, INTERVAL 1 DAY) AS employment_end_date_exclusive,
                 "INCARCERATED" AS employment_end_reason
             FROM
                 `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized`
@@ -89,7 +89,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
         )
         # Prioritize INCARCERATED end reason, and dedup to one employment end reason per person-date
         QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY person_id, employment_end_date
+            PARTITION BY person_id, employment_end_date_exclusive
             ORDER BY CASE WHEN employment_end_reason = "INCARCERATED" THEN 0 ELSE 1 END, employment_end_reason
         ) = 1
     )
@@ -100,6 +100,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
             state_code,
             employment_session_id,
             MIN(date) AS employment_status_start_date,
+            NULLIF(MAX(date), CURRENT_DATE("US/Eastern")) AS employment_status_end_date_exclusive,
             NULLIF(MAX(date), CURRENT_DATE("US/Eastern")) AS employment_status_end_date,
             MIN(earliest_employment_period_start_date) AS earliest_employment_period_start_date,
             MAX(last_verified_date) AS last_verified_date,
@@ -127,7 +128,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
         employment_end_reasons b
     ON 
         a.person_id = b.person_id
-        AND a.employment_status_end_date = b.employment_end_date    
+        AND a.employment_status_end_date = b.employment_end_date_exclusive    
 """
 
 SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

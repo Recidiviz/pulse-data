@@ -36,6 +36,7 @@ This view is unique on `person_id` and `compartment_level_0_super_session_id` an
 |	compartment_level_0 |	Identical to `compartment_level_1` with the exception of in-state and out-of-state aggregation for both incarceration and supervision	|
 |	start_date	|	Super-session start date	|
 |	end_date	|	Super-session end date	|
+|	end_date_exclusive	|	Super-session exclusive end date|
 |	state_code	|	State	|
 |	session_length_days	|	Difference between session start date and session end date. For active sessions the session start date is differenced from the last day of data	|
 |	session_id_start	|	Compartment session id associated with the start of the super-session. This field and the following field are used to join sessions and super-sessions	|
@@ -93,7 +94,7 @@ COMPARTMENT_LEVEL_0_SUPER_SESSIONS_QUERY_TEMPLATE = """
         last_day_of_data,
         MIN(start_date) AS start_date,
         --this is done to ensure we take a null end date if present instead of the max
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,        
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,        
         --store the session ids at start and end for easy joining
         MIN(session_id) AS session_id_start,
         MAX(session_id) AS session_id_end,
@@ -110,9 +111,10 @@ COMPARTMENT_LEVEL_0_SUPER_SESSIONS_QUERY_TEMPLATE = """
         s.compartment_level_0_super_session_id,
         s.compartment_level_0,
         s.start_date,
-        s.end_date,
+        s.end_date_exclusive,
+        DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
         s.state_code,
-        DATE_DIFF(COALESCE(s.end_date, s.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
+        DATE_DIFF(COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), s.last_day_of_data), s.start_date, DAY) + 1 AS session_length_days,
         s.session_id_start,
         s.session_id_end,
         first.start_reason,

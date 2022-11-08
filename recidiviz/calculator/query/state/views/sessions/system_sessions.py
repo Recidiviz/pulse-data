@@ -53,6 +53,7 @@ This person would have two system sessions - one that encompasses compartment se
 |	system_session_id	|	System session identifier. A new ID is triggered based on a LIBERTY compartment session	|
 |	start_date	|	System session start date	|
 |	end_date	|	System session end date	|
+|	end_date	|	System session exclusive end date	|
 |	incarceration_days	|	Days of system session spent in incarceration	|
 |	supervision_days	|	Days of system session spent under supervision	|
 |	session_length_days	|	Total length of system session	|
@@ -67,7 +68,8 @@ SYSTEM_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         system_session_id,
         MIN(start_date) AS start_date,
-        CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
+        DATE_SUB(CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END, INTERVAL 1 DAY) AS end_date,
         SUM(CASE WHEN compartment_level_1 = 'INCARCERATION' 
             THEN session_length_days ELSE 0 END) incarceration_days,
         SUM(CASE WHEN compartment_level_1 = 'SUPERVISION' 

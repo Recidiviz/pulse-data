@@ -44,7 +44,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
             h.BN_HE = "0", 
             NULL,
             SAFE.PARSE_DATE("%Y%m%d", h.BN_HE)
-        ) AS end_date,
+        ) AS end_date_exclusive,
         IFNULL(h.BN_PLN, "EXTERNAL_UNKNOWN") AS facility_code,
         IF (
             h.BN_HPT IS NULL,
@@ -81,7 +81,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         *
     FROM cte
-    WHERE start_date <= COALESCE(end_date,'9999-01-01')
+    WHERE start_date <= COALESCE(end_date_exclusive,'9999-01-01')
 """
 
 US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

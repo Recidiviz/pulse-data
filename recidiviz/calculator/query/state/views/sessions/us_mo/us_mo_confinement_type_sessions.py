@@ -35,9 +35,18 @@ US_MO_CONFINEMENT_TYPE_SESSIONS_QUERY_TEMPLATE = f"""
         *
     FROM `{{project_id}}.{{sessions_dataset}}.us_mo_housing_stay_sessions_materialized`
     )
+    ,
+    sessionized_cte AS
+    (
    {aggregate_adjacent_spans(table_name='housing_stay_cte',
                        attribute='confinement_type',
-                       session_id_output_name='confinement_type_session_id')}
+                       session_id_output_name='confinement_type_session_id',
+                       end_date_field_name='end_date_exclusive')}
+    )
+    SELECT
+        *,
+        end_date_exclusive AS end_date
+    FROM sessionized_cte
 """
 
 US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -239,7 +239,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND ses.state_code = sen.state_code
         -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
         AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
-        AND sen.date_imposed < COALESCE(ses.end_date, CURRENT_DATE('US/Eastern'))
+        AND sen.date_imposed < COALESCE(DATE_SUB(ses.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
     LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
         ON sen.state_code = offense_type_ref.state_code
         AND sen.description = offense_type_ref.offense_type

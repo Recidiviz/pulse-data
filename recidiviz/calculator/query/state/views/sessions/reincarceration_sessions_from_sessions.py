@@ -88,9 +88,8 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
         release_session.person_id,
         release_session.state_code,
         release_session.session_id AS release_session_id,
-        --release_date is the day after the session end_date which represents the last full day in the compartment
-        DATE_ADD(release_session.end_date, INTERVAL 1 DAY) AS release_date,
-        DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), DAY) AS days_since_release,
+        release_session.end_date_exclusive AS release_date,
+        DATE_DIFF(release_session.last_day_of_data, release_session.end_date_exclusive, DAY) AS days_since_release,
         
          /* 
         The two fields below calculate a calender count of months and years between the last day of data and the release
@@ -105,16 +104,16 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
         across months, we compare the month and day of a year across years.
         */
             
-        DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), MONTH) 
-            - IF(EXTRACT(DAY FROM DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>EXTRACT(DAY FROM release_session.last_day_of_data), 1, 0) months_since_release,
+        DATE_DIFF(release_session.last_day_of_data, release_session.end_date_exclusive, MONTH) 
+            - IF(EXTRACT(DAY FROM release_session.end_date_exclusive)>EXTRACT(DAY FROM release_session.last_day_of_data), 1, 0) months_since_release,
         DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), YEAR) 
-            - IF(FORMAT_DATE("%m%d", DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>FORMAT_DATE("%m%d", release_session.last_day_of_data), 1, 0) years_since_release,
+            - IF(FORMAT_DATE("%m%d", release_session.end_date_exclusive)>FORMAT_DATE("%m%d", release_session.last_day_of_data), 1, 0) years_since_release,
         
         CASE WHEN reincarceration_session.start_date IS NOT NULL THEN 1 ELSE 0 END AS reincarceration,
 
         reincarceration_session.session_id AS reincarceration_session_id,
         reincarceration_session.start_date AS reincarceration_date,
-        DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY) - 1 AS release_to_reincarceration_days,
+        DATE_DIFF(reincarceration_session.start_date, release_session.end_date_exclusive, DAY) AS release_to_reincarceration_days,
         
         /*
         The two fields below calculate the time between release to reincarceration date in calender months and
@@ -133,10 +132,10 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
         had instead been on 3/15/21, the value would be 1 because the reincarceration did occur within 1 month.
         */
          
-        DATE_DIFF(reincarceration_session.start_date, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), MONTH) 
-            - IF(EXTRACT(DAY FROM DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>=EXTRACT(DAY FROM reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_months,
+        DATE_DIFF(reincarceration_session.start_date, release_session.end_date_exclusive, MONTH) 
+            - IF(EXTRACT(DAY FROM release_session.end_date_exclusive)>=EXTRACT(DAY FROM reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_months,
         DATE_DIFF(reincarceration_session.start_date, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), YEAR) 
-            - IF(FORMAT_DATE("%m%d", DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>=FORMAT_DATE("%m%d", reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_years,
+            - IF(FORMAT_DATE("%m%d", release_session.end_date_exclusive)>=FORMAT_DATE("%m%d", reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_years,
             
        
         ROW_NUMBER() OVER(PARTITION BY release_session.person_id, release_session.session_id ORDER BY reincarceration_session.session_id) AS rn
@@ -144,7 +143,7 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` reincarceration_session 
         ON reincarceration_session.person_id = release_session.person_id 
         AND reincarceration_session.compartment_level_1 IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE')
-        AND reincarceration_session.start_date > release_session.end_date
+        AND reincarceration_session.start_date >= release_session.end_date_exclusive
         AND reincarceration_session.compartment_level_2 NOT IN ('PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY','SHOCK_INCARCERATION','COMMUNITY_CONFINEMENT')
         AND (reincarceration_session.inflow_from_level_1 NOT IN ('INCARCERATION', 'INCARCERATION_OUT_OF_STATE') 
             OR reincarceration_session.inflow_from_level_2 IN ('PAROLE_BOARD_HOLD', 'TEMPORARY_CUSTODY','SHOCK_INCARCERATION','COMMUNITY_CONFINEMENT'))

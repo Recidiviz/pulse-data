@@ -45,7 +45,7 @@ SELECT DISTINCT
     person_id, 
     session_attributes.supervision_district AS district,
     start_date,
-    end_date,
+    end_date_exclusive,
     dataflow_session_id,
 FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
 UNNEST(session_attributes) session_attributes
@@ -61,7 +61,7 @@ SELECT
     district,
     district_session_id_unordered,
     MIN(start_date) start_date,
-    CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
+    CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
     MIN(dataflow_session_id) AS dataflow_session_id_start,
     MAX(dataflow_session_id) AS dataflow_session_id_end,
     FROM
@@ -77,7 +77,7 @@ SELECT
                 session.person_id, 
                 session.district,
                 session.start_date, 
-                session.end_date,
+                session.end_date_exclusive,
                 -- Only count a district toward an district change once if district was not present at all in preceding session,
                 session.dataflow_session_id,
                 MIN(IF(session_lag.district = session.district, 0, 1)) AS district_changed
@@ -85,7 +85,7 @@ SELECT
             LEFT JOIN sub_sessions_attributes_unnested as session_lag
                 ON session.state_code = session_lag.state_code
                 AND session.person_id = session_lag.person_id
-                AND session.start_date = DATE_ADD(session_lag.end_date, INTERVAL 1 DAY)
+                AND session.start_date = session_lag.end_date_exclusive
             GROUP BY 1,2,3,4,5,6
             )
         )           
@@ -93,7 +93,8 @@ GROUP BY 1,2,3,4
 )
 SELECT 
     *  EXCEPT(district_session_id_unordered),
-    ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date,'9999-01-01'), district) AS district_session_id
+    DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+    ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date_exclusive,'9999-01-01'), district) AS district_session_id
 FROM sessionized_cte 
 """
 DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
