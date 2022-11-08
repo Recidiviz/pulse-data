@@ -192,6 +192,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.STABLE,
                 StateAssessmentType.STATIC_99,
                 StateAssessmentType.TCU_DRUG_SCREEN,
+                StateAssessmentType.COMPAS,
             ]:
                 logging.warning(
                     "Cannot determine assessment score bucket - assessment type %s is unsupported.",

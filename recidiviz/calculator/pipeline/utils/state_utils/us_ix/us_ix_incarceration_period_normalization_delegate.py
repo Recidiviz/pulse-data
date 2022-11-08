@@ -48,4 +48,4 @@ class UsIxIncarcerationNormalizationDelegate(
         ):
             return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
 
-        return None
+        return incarceration_period.admission_reason
