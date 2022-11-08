@@ -37,11 +37,106 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_sp_index_for_tests,
 )
+
+
+class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
+    """Tests functions in TestUsMoIncarcerationNormalizationDelegate."""
+
+    def setUp(self) -> None:
+        self.delegate = UsMoIncarcerationNormalizationDelegate()
+
+    def test_incarceration_periods_transfer_admission_reasons_valid_transfer(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            release_date=date(2009, 1, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            admission_date=date(2009, 1, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason_raw_text="NONE@@NONE@@NONE",
+        )
+
+        self.assertEqual(
+            StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            self.delegate.incarceration_transfer_admission_reason_override(
+                1,
+                [
+                    incarceration_period_1,
+                    incarceration_period_2,
+                ],
+            ),
+        )
+
+    def test_incarceration_periods_transfer_admission_reasons_invalid_transfer(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            release_date=date(2009, 1, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            admission_date=date(2009, 2, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        self.assertNotEqual(
+            StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            self.delegate.incarceration_transfer_admission_reason_override(
+                1,
+                [
+                    incarceration_period_1,
+                    incarceration_period_2,
+                ],
+            ),
+        )
+
+    def test_incarceration_periods_transfer_admission_reasons_first_period(
+        self,
+    ) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            release_date=date(2009, 1, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=StateCode.US_MO.value,
+            admission_date=date(2009, 2, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="40I2000",
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        self.assertEqual(
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            self.delegate.incarceration_transfer_admission_reason_override(
+                0,
+                [
+                    incarceration_period_1,
+                    incarceration_period_2,
+                ],
+            ),
+        )
 
 
 class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
