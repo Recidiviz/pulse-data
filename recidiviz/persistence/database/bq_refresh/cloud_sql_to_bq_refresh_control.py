@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Endpoints and control logic for the CloudSQL -> BigQuery refresh."""
+import datetime
 import json
 import logging
+import time
 import uuid
 from http import HTTPStatus
 from typing import Optional, Tuple
@@ -24,12 +26,17 @@ from typing import Optional, Tuple
 import flask
 from flask import request
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.rematerialization_success_persister import (
+    RefreshBQDatasetSuccessPersister,
+)
 from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
     PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
 )
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
+from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
     BQRefreshCloudTaskManager,
@@ -121,6 +128,7 @@ def wait_for_ingest_to_create_tasks(
     return "", HTTPStatus.OK
 
 
+# TODO(#15929): This function will be deleted once the new refresh_bq_dataset endpoint is setup added to the DAG
 @cloud_sql_to_bq_blueprint.route(
     "/refresh_bq_schema/<schema_arg>", methods=["GET", "POST"]
 )
@@ -194,6 +202,82 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     # Kick scheduler to restart ingest
     if schema_type in {SchemaType.STATE, SchemaType.OPERATIONS}:
         kick_all_schedulers()
+
+    return "", HTTPStatus.OK
+
+
+@cloud_sql_to_bq_blueprint.route(
+    "/refresh_bq_dataset/<schema_arg>", methods=["GET", "POST"]
+)
+@requires_gae_auth
+def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """Performs a full refresh of BigQuery data for a given schema, pulling data from
+    the appropriate CloudSQL Postgres instance.
+
+    On completion, triggers Dataflow pipelines (when necessary), releases the refresh
+    lock and restarts any paused ingest work.
+    """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsupported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    lock_manager = CloudSqlToBQLockManager()
+
+    try:
+        can_proceed = lock_manager.can_proceed(schema_type)
+    except GCSPseudoLockDoesNotExist as e:
+        logging.exception(e)
+        # Since this endpoint is being called in the context of an Airflow DAG,
+        # the DAG should have already acquired a lock before invoking this endpoint.
+        return (
+            f"Expected lock for [{schema_arg}] BQ refresh to already exist.",
+            HTTPStatus.EXPECTATION_FAILED,
+        )
+
+    if not can_proceed:
+        return (
+            f"Expected to be able to proceed with refresh before this endpoint was "
+            f"called for [{schema_arg}].",
+            HTTPStatus.EXPECTATION_FAILED,
+        )
+
+    dry_run = request.args.get("dry_run", default=False, type=bool)
+    start = datetime.datetime.now()
+
+    # TODO(#11437): `dry_run` will go away once development of the DAG integration is complete
+    if dry_run:
+        time.sleep(10)
+    else:
+        federated_bq_schema_refresh(schema_type=schema_type)
+
+    # Unlock export lock when all BQ exports complete
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.release_lock(schema_type)
+    logging.info(
+        "Done running refresh for [%s], unlocking Postgres to BigQuery export",
+        schema_type.value,
+    )
+
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = RefreshBQDatasetSuccessPersister(bq_client=BigQueryClientImpl())
+    success_persister.record_success_in_bq(
+        schema_type=schema_type,
+        runtime_sec=runtime_sec,
+        cloud_task_id=get_current_cloud_task_id(),
+    )
+
+    logging.info("Finished saving success record to database.")
 
     return "", HTTPStatus.OK
 

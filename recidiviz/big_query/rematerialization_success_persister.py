@@ -28,6 +28,8 @@ from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 
 #  Dataset with metadata about view update operations
+from recidiviz.persistence.database.schema_utils import SchemaType
+
 VIEW_UPDATE_METADATA_DATASET = "view_update_metadata"
 
 # Table that holds info about successful rematerialization jobs
@@ -43,6 +45,12 @@ REMATERIAIZATION_RUNTIME_SEC_COL = "rematerializaton_runtime_sec"
 VIEW_UPDATE_TRACKER_TABLE_ID = "view_update_tracker"
 
 ViEW_UPDATE_RUNTIME_SEC_COL = "view_update_runtime_sec"
+
+# Table that hold information about refresh BQ dataset jubs
+REFRESH_BQ_DATASET_TRACKER_TABLE_ID = "refresh_bq_dataset_tracker"
+
+REFRESH_BQ_DATASET_RUNTIME_SEC_COL = "refresh_bq_dataset_runtime_sec"
+SCHEMA_TYPE_COL = "schema_type"
 
 
 class SuccessPersister:
@@ -62,15 +70,6 @@ class SuccessPersister:
     @abc.abstractmethod
     def _get_table_schema(self) -> List[bigquery.SchemaField]:
         """Returns table schema to use for recording successes."""
-
-    @abc.abstractmethod
-    def record_success_in_bq(
-        self,
-        deployed_view_builders: List[BigQueryViewBuilder],
-        runtime_sec: int,
-        cloud_task_id: str,
-    ) -> None:
-        """Records a success row in BQ."""
 
 
 class RematerializationSuccessPersister(SuccessPersister):
@@ -172,6 +171,53 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
             ),
             bigquery.SchemaField(
                 name=ViEW_UPDATE_RUNTIME_SEC_COL,
+                field_type=bigquery.enums.SqlTypeNames.INT64.value,
+                mode="REQUIRED",
+            ),
+        ]
+
+
+class RefreshBQDatasetSuccessPersister(SuccessPersister):
+    """Class that persists runtime of successful refresh of BQ datasets."""
+
+    def __init__(self, bq_client: BigQueryClient):
+        super().__init__(bq_client, REFRESH_BQ_DATASET_TRACKER_TABLE_ID)
+
+    def record_success_in_bq(
+        self,
+        schema_type: SchemaType,
+        runtime_sec: int,
+        cloud_task_id: str,
+    ) -> None:
+
+        success_row = {
+            CLOUD_TASK_ID_COL: cloud_task_id,
+            SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
+            SCHEMA_TYPE_COL: schema_type,
+            REFRESH_BQ_DATASET_RUNTIME_SEC_COL: runtime_sec,
+        }
+
+        self.bq_row_streamer.stream_rows([success_row])
+
+    def _get_table_schema(self) -> List[bigquery.SchemaField]:
+        return [
+            bigquery.SchemaField(
+                name=CLOUD_TASK_ID_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=SUCCESS_TIMESTAMP_COL,
+                field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=SCHEMA_TYPE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=REFRESH_BQ_DATASET_RUNTIME_SEC_COL,
                 field_type=bigquery.enums.SqlTypeNames.INT64.value,
                 mode="REQUIRED",
             ),
