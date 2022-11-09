@@ -67,7 +67,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 1)
+            self.assertEqual(len(datapoints), 4)
             self.assertEqual(datapoints[0].enabled, False)
             self.assertEqual(datapoints[0].metric_definition_key, agency_metric.key)
             self.assertEqual(datapoints[0].dimension_identifier_to_member, None)
@@ -88,25 +88,25 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), len(CallType))
-            datapoints.sort(
-                key=lambda d: list(d.dimension_identifier_to_member.values())[0]
-            )
-            self.assertEqual(datapoints[0].enabled, False)
-            self.assertEqual(
-                datapoints[0].dimension_identifier_to_member,
-                {CallType.dimension_identifier(): "EMERGENCY"},
-            )
+            self.assertEqual(len(datapoints), len(CallType) + 1)
+            # top level metric
+            self.assertEqual(datapoints[0].enabled, True)
+            # dimensions
             self.assertEqual(datapoints[1].enabled, False)
             self.assertEqual(
                 datapoints[1].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "EMERGENCY"},
+            )
+            self.assertEqual(datapoints[2].enabled, False)
+            self.assertEqual(
+                datapoints[2].dimension_identifier_to_member,
                 {CallType.dimension_identifier(): "NON_EMERGENCY"},
             )
             self.assertEqual(
-                datapoints[2].dimension_identifier_to_member,
+                datapoints[3].dimension_identifier_to_member,
                 {CallType.dimension_identifier(): "UNKNOWN"},
             )
-            self.assertEqual(datapoints[2].enabled, False)
+            self.assertEqual(datapoints[3].enabled, False)
 
     def test_save_agency_datapoints_disable_single_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -123,15 +123,22 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 2)
-            self.assertEqual(datapoints[0].enabled, False)
-            self.assertEqual(datapoints[1].enabled, False)
+            self.assertEqual(len(datapoints), 4)
+            # top level metric
+            self.assertEqual(datapoints[0].enabled, True)
+            # dimensions
+            self.assertEqual(datapoints[1].enabled, True)
             self.assertEqual(
-                datapoints[0].dimension_identifier_to_member,
+                datapoints[1].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "EMERGENCY"},
+            )
+            self.assertEqual(datapoints[2].enabled, False)
+            self.assertEqual(
+                datapoints[2].dimension_identifier_to_member,
                 {CallType.dimension_identifier(): "NON_EMERGENCY"},
             )
             self.assertEqual(
-                datapoints[1].dimension_identifier_to_member,
+                datapoints[3].dimension_identifier_to_member,
                 {CallType.dimension_identifier(): "UNKNOWN"},
             )
 
@@ -150,8 +157,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 3)
-            # Reenable DETENTION disaggregation, this will delete the datapoint
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(datapoints[1].enabled, False)
+            # Reenable DETENTION disaggregation
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 use_partially_disabled_disaggregation=True, include_disaggregation=True
             )
@@ -162,7 +170,12 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 2)
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(datapoints[3].enabled, True)
+            self.assertEqual(
+                datapoints[3].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "EMERGENCY"},
+            )
 
     def test_save_agency_datapoints_reenable_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -179,7 +192,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 1)
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(datapoints[0].enabled, False)
+
             agency_metric = self.test_schema_objects.get_agency_metric_interface(
                 is_metric_enabled=True
             )
@@ -190,7 +205,12 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 0)
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(datapoints[3].enabled, True)
+            self.assertEqual(
+                datapoints[3].dimension_identifier_to_member,
+                None,
+            )
 
     def test_save_agency_datapoints_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -207,11 +227,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            # One context datapoint, 3 disaggregation datapoints
-            self.assertEqual(len(datapoints), 4)
+            # 1 top level datapoint, 1 context datapoint, 3 disaggregation datapoints
+            self.assertEqual(len(datapoints), 5)
             for datapoint in datapoints:
                 if datapoint.context_key is None:
-                    self.assertEqual(datapoint.enabled, False)
+                    if datapoint.dimension_identifier_to_member is None:
+                        self.assertEqual(datapoint.enabled, True)
+                    else:
+                        self.assertEqual(datapoint.enabled, False)
                 else:
                     self.assertEqual(
                         datapoint.context_key, ContextKey.ADDITIONAL_CONTEXT.value
@@ -240,7 +263,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             datapoints = session.query(Datapoint).all()
             # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes) + 1)
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(len(datapoint_histories), 0)
             agency_metric = MetricInterface(
@@ -258,7 +281,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             datapoints = session.query(Datapoint).all()
             # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes) + 1)
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(
                 len(datapoint_histories), len(PrisonBudgetIncludesExcludes)
