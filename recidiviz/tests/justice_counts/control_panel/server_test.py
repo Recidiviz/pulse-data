@@ -886,11 +886,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 0)
             agency_datapoints = self.session.query(Datapoint).all()
 
-            # 17 total datapoints: 1 metric datapoint, 2 breakdown datapoints,
-            # 13 includes/excludes datapoints (2 at the metric
-            # level, 11 at the disaggregation level), and 1 and
-            # one context datapoint.
-            self.assertEqual(len(agency_datapoints), 17)
+            # 24 total datapoints:
+            # 3 enabled/disabled metric datapoints (one for each metric)
+            # 7 enabled/disabled dimension datapoints (one for each dimension)
+            # 13 includes/excludes datapoints (2 at the metric level, 11 at the disaggregation level)
+            # 1 context datapoint
+            self.assertEqual(len(agency_datapoints), 24)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
@@ -960,7 +961,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 2)
             agency_datapoints = self.session.query(Datapoint).all()
             # Amount of agency_datapoints won't change. Only two datapoints were updated.
-            self.assertEqual(len(agency_datapoints), 17)
+            self.assertEqual(len(agency_datapoints), 24)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,

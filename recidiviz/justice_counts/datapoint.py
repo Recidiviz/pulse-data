@@ -35,7 +35,6 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
 from recidiviz.justice_counts.utils.persistence_utils import (
-    delete_existing,
     expunge_existing,
     update_existing_or_create,
 )
@@ -441,18 +440,31 @@ class DatapointInterface:
            settings describe what data is used to make up aggregate or disaggregation values.
         """
 
-        if agency_metric.is_metric_enabled is False:
-            # Turn off the whole metric
+        # 1. Enable / disable top level metric
+        update_existing_or_create(
+            ingested_entity=schema.Datapoint(
+                metric_definition_key=agency_metric.key,
+                source=agency,
+                enabled=agency_metric.is_metric_enabled,
+                dimension_identifier_to_member=None,
+            ),
+            session=session,
+        )
+
+        # 2. Set default contexts
+        for context in agency_metric.contexts:
             update_existing_or_create(
-                ingested_entity=schema.Datapoint(
+                schema.Datapoint(
                     metric_definition_key=agency_metric.key,
                     source=agency,
-                    enabled=False,
+                    context_key=context.key.value,
+                    value=context.value,
                     dimension_identifier_to_member=None,
                 ),
-                session=session,
+                session,
             )
 
+        # 3. Set top-level includes/excludes
         if (
             agency_metric.metric_definition.includes_excludes is not None
             and agency_metric.includes_excludes_member_to_setting is not None
@@ -472,78 +484,46 @@ class DatapointInterface:
                     agency_metric=agency_metric,
                 )
 
-        if agency_metric.is_metric_enabled is True:
-            # When metric is re-enabled, delete corresponding agency datapoint.
-            delete_existing(
-                session=session,
-                ingested_entity=schema.Datapoint(
-                    source=agency,
-                    metric_definition_key=agency_metric.key,
-                    dimension_identifier_to_member=None,
-                ),
-                entity_cls=schema.Datapoint,
-            )
+        for aggregated_dimension in agency_metric.aggregated_dimensions:
+            for (
+                dimension,
+                is_dimension_enabled,
+            ) in (aggregated_dimension.dimension_to_enabled_status or {}).items():
+                # If is_dimension_enabled is None, then there are no deltas associated
+                # with a dimension datapoint and there is no need to update/create/delete
+                # the datapoint.
+                dimension_identifier_to_member = {
+                    dimension.dimension_identifier(): dimension.dimension_name
+                }
 
-            # Pre-fill contexts
-            for context in agency_metric.contexts:
+                # 1b. Enable / disable metric dimensions
                 update_existing_or_create(
-                    schema.Datapoint(
+                    ingested_entity=schema.Datapoint(
                         metric_definition_key=agency_metric.key,
                         source=agency,
-                        context_key=context.key.value,
-                        value=context.value,
-                        dimension_identifier_to_member=None,
+                        dimension_identifier_to_member=dimension_identifier_to_member,
+                        enabled=is_dimension_enabled,
                     ),
-                    session,
+                    session=session,
                 )
-            for aggregated_dimension in agency_metric.aggregated_dimensions:
-                if aggregated_dimension.dimension_to_enabled_status is not None:
-                    for (
-                        dimension,
-                        is_dimension_enabled,
-                    ) in aggregated_dimension.dimension_to_enabled_status.items():
-                        # If is_dimension_enabled is None, then there are no deltas associated
-                        # with a dimension datapoint and there is no need to update/create/delete
-                        # the datapoint.
-                        dimension_identifier_to_member = {
-                            dimension.dimension_identifier(): dimension.dimension_name
-                        }
-                        if is_dimension_enabled is False:
-                            update_existing_or_create(
-                                ingested_entity=schema.Datapoint(
-                                    metric_definition_key=agency_metric.key,
-                                    source=agency,
-                                    dimension_identifier_to_member=dimension_identifier_to_member,
-                                    enabled=False,
-                                ),
-                                session=session,
-                            )
-                        if is_dimension_enabled is True:
-                            delete_existing(
-                                session=session,
-                                ingested_entity=schema.Datapoint(
-                                    source=agency,
-                                    metric_definition_key=agency_metric.key,
-                                    dimension_identifier_to_member=dimension_identifier_to_member,
-                                ),
-                                entity_cls=schema.Datapoint,
-                            )
-                        for (
-                            member,
-                            setting,
-                        ) in aggregated_dimension.dimension_to_includes_excludes_member_to_setting.get(
-                            dimension, {}
-                        ).items():
-                            # For each reported includes/excludes setting, create a new datapoint
-                            DatapointInterface.add_includes_excludes_datapoint(
-                                session=session,
-                                member=member,
-                                setting=setting,
-                                dimension_identifier_to_member=dimension_identifier_to_member,
-                                agency=agency,
-                                user_account=user_account,
-                                agency_metric=agency_metric,
-                            )
+
+                # 3b. Set disaggregation-level includes/excludes
+                for (member, setting,) in (
+                    aggregated_dimension.dimension_to_includes_excludes_member_to_setting.get(
+                        dimension
+                    )
+                    or {}
+                ).items():
+                    # For each reported includes/excludes setting, create a new datapoint
+                    DatapointInterface.add_includes_excludes_datapoint(
+                        session=session,
+                        member=member,
+                        setting=setting,
+                        dimension_identifier_to_member=dimension_identifier_to_member,
+                        agency=agency,
+                        user_account=user_account,
+                        agency_metric=agency_metric,
+                    )
 
     @staticmethod
     def add_includes_excludes_datapoint(
