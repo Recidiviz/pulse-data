@@ -24,7 +24,7 @@ from typing import List
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
     METADATA_EXCLUDED_PROPERTIES,
@@ -114,7 +114,7 @@ class StatePersonBigQueryViewCollector(
                 should_deploy_predicate=table_column_checker.get_has_column_predicate(
                     col
                 ),
-                base_dataset=STATE_BASE_DATASET,
+                base_dataset=NORMALIZED_STATE_DATASET,
             )
             for col in get_enum_property_names(entity)
             if col not in METADATA_EXCLUDED_PROPERTIES
@@ -132,7 +132,7 @@ class StatePersonBigQueryViewCollector(
                     should_deploy_predicate=table_column_checker.get_has_column_predicate(
                         col
                     ),
-                    base_dataset=STATE_BASE_DATASET,
+                    base_dataset=NORMALIZED_STATE_DATASET,
                 )
                 for col in get_non_enum_property_names(entity)
                 if col not in METADATA_EXCLUDED_PROPERTIES
