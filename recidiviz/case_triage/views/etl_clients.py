@@ -145,7 +145,7 @@ supervision_start_dates AS (
     e.projected_completion_date_max AS projected_end_date,
     IF (sessions_start_date IS NOT NULL, sessions_start_date, latest_periods.start_date) AS supervision_start_date,
   FROM
-    `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` pop
+    `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` pop
   LEFT JOIN
     `{project_id}.{base_dataset}.state_person`
   USING (person_id, gender, state_code)
@@ -174,8 +174,11 @@ supervision_start_dates AS (
   LEFT JOIN `{project_id}.{sessions_dataset}.supervision_projected_completion_date_spans_materialized` e
         ON pop.state_code = e.state_code
         AND pop.person_id = e.person_id
-        AND pop.date_of_supervision BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
+        AND CURRENT_DATE('US/Eastern') 
+            BETWEEN e.start_date
+            AND COALESCE(DATE_SUB(e.end_date, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
   WHERE pop.included_in_state_population
+    AND pop.end_date_exclusive IS NULL
 ),
 export_time AS (
   SELECT CURRENT_TIMESTAMP AS exported_at

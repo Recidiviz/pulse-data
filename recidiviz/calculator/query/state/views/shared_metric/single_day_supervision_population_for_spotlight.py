@@ -50,14 +50,15 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       IFNULL(pop.judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       IFNULL(pop.supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
       IFNULL(pop.supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
-      pop.date_of_supervision
+      CURRENT_DATE('US/Eastern') AS date_of_supervision,
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` pop
+      `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` pop
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_projected_completion_date_spans_materialized` e
         ON pop.state_code = e.state_code
         AND pop.person_id = e.person_id
-        AND pop.date_of_supervision BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
+        AND CURRENT_DATE('US/Eastern') BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
     WHERE pop.included_in_state_population
+        AND pop.end_date_exclusive IS NULL
     """
 
 SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
