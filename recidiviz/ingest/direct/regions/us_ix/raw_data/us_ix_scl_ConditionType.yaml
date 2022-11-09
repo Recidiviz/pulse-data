@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: scl_ConditionType
+file_description: |-
+  Table that provides descriptions of special conditions of supervision.
+data_classification: source
+primary_key_cols:
+  - ConditionTypeId
+columns:
+  - name: ConditionTypeId
+    description: |-
+      Primary key of this table.
+  - name: ConditionTypeDesc
+    description: |-
+      Description of the supervision condition.
+  - name: ConditionTypeAbbrev
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: SYS_ROW_IND
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: SYSTEM_REF_TX
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: SYSTEM_REF_COMMENTS_TX
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: SupervisionTypeId
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Standard
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ParoleBoard
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Discretion
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InsertUserId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: UpdateUserId
+    description: |-
+      TODO(#15329): Fill in column description
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: ConditionTypePeriodId
+    description: |-
+      TODO(#15329): Fill in column description
