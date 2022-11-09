@@ -48,9 +48,15 @@ columns:
     description: |-
       Pod within location. Only for incarceration status.
   - name: body_loc_cd
+    description: |-
+      Facility code of where the person is currently physically located.
   - name: body_loc_desc
+    description: |-
+      Description of where the person is currently physically located.
   - name: assgn_rsn_cd
   - name: assgn_rsn_desc
+    description: |-
+      Description of why the person is assigned to the current location.
   - name: AllStatus
     description: |-
       Concatenation of `stat1`, `stat2`, and `stat3`
