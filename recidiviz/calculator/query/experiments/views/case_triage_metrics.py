@@ -21,9 +21,9 @@ from recidiviz.calculator.query.experiments.dataset_config import (
     EXPERIMENTS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     PO_REPORT_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
@@ -143,7 +143,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
         INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
             ON selected.user_id = recipients.segment_id
-        LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` client
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` client
             ON selected.person_external_id = client.external_id
             AND recipients.state_code = client.state_code
         LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` supervision_level_metrics
@@ -299,7 +299,7 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     case_triage_dataset=CASE_TRIAGE_DATASET,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

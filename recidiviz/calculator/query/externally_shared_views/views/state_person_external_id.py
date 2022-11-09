@@ -24,7 +24,7 @@ from recidiviz.calculator.query.externally_shared_views.dataset_config import (
     CSG_CONFIG,
     EXTERNALLY_SHARED_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -76,7 +76,7 @@ for (
             view_id=view_prefix + STATE_PERSON_EXTERNAL_ID_VIEW_NAME,
             view_query_template=STATE_PERSON_EXTERNAL_ID_QUERY_TEMPLATE,
             description=STATE_PERSON_EXTERNAL_ID_VIEW_DESCRIPTION,
-            origin_dataset_id=STATE_BASE_DATASET,
+            origin_dataset_id=NORMALIZED_STATE_DATASET,
             allowed_states=str(allowed_states),
             should_materialize=True,
             materialized_address_override=BigQueryAddress(

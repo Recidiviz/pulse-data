@@ -18,8 +18,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -76,7 +76,7 @@ WITH last_day_of_data AS (
     FROM
         `{project_id}.{us_id_raw_data_up_to_date_dataset}.DoPro_Participant_latest` a
     INNER JOIN
-        `{project_id}.{state_base_dataset}.state_person_external_id` b
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
     ON
         a.ofndr_num = b.external_id
     WHERE
@@ -97,7 +97,7 @@ WITH last_day_of_data AS (
     FROM
         `{project_id}.{us_id_raw_data_up_to_date_dataset}.geo_cis_participants_latest` a
     INNER JOIN
-        `{project_id}.{state_base_dataset}.state_person_external_id` b
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
     ON
         a.person_external_id = b.external_id
     WHERE
@@ -120,7 +120,7 @@ geo_cis_referral_matched AS (
     FROM
         `{project_id}.{static_reference_dataset}.geo_cis_referrals_matched` a
     INNER JOIN 
-        `{project_id}.{state_base_dataset}.state_person_external_id` b
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
     ON
         a.person_external_id = b.external_id
     WHERE
@@ -158,7 +158,7 @@ geo_cis_referral_matched AS (
     FROM 
         `{project_id}.{static_reference_dataset}.us_pa_temporary_reprieves` a
     INNER JOIN
-        `{project_id}.{state_base_dataset}.state_person_external_id` b
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
     ON
         a.external_id = b.external_id
         AND b.id_type = "US_PA_INMATE"
@@ -190,7 +190,7 @@ geo_cis_referral_matched AS (
     USING
         (CCISMvmt_Id)
     INNER JOIN
-        `{project_id}.{state_base_dataset}.state_person_external_id` b
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` b
     ON
         a.Inmate_Number = b.external_id
         AND b.id_type = "US_PA_INMATE"
@@ -235,7 +235,7 @@ PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSON_ASSIGNMENTS_QUERY_TEMPLATE,
     description=PERSON_ASSIGNMENTS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
     us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_pa"),

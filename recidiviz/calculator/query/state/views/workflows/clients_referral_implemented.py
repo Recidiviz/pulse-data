@@ -17,6 +17,7 @@
 """View of workflow referrals implemented by agency staff."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -63,7 +64,7 @@ CLIENTS_REFERRAL_IMPLEMENTED_QUERY_TEMPLATE = """
         person_id,
         downgrade_events.*,
     FROM downgrade_events
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON downgrade_events.state_code = pei.state_code
         AND downgrade_events.person_external_id = pei.external_id
 """
@@ -74,7 +75,7 @@ CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENTS_REFERRAL_IMPLEMENTED_QUERY_TEMPLATE,
     description=CLIENTS_REFERRAL_IMPLEMENTED_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

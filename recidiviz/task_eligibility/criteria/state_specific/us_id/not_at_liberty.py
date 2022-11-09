@@ -17,7 +17,7 @@
 """Defines a criteria span view that shows the most recent span of time
 for which someone has been moved to liberty
 """
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -53,7 +53,7 @@ FROM (
     ORDER BY move_dtd DESC
   ) = 1
 )
-INNER JOIN `{project_id}.{state_dataset}.state_person_external_id`
+INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
   ON person_external_id = external_id
   AND id_type = 'US_ID_DOC'
 WHERE move_typ = 'H'
@@ -64,7 +64,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ID,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        state_dataset=STATE_BASE_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region("us_id"),
         meets_criteria_default=True,
     )
