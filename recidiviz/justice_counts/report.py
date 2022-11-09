@@ -31,6 +31,7 @@ from recidiviz.justice_counts.dimensions.dimension_registry import (
 from recidiviz.justice_counts.metrics.metric_definition import ReportingFrequency
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -294,7 +295,7 @@ class ReportInterface:
         existing_datapoints_dict: Optional[
             Dict[DatapointUniqueKey, schema.Datapoint]
         ] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[DatapointJson]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
         update the existing metric in-place.
@@ -316,7 +317,7 @@ class ReportInterface:
             or ReportInterface.get_existing_datapoints_dict(reports=[report])
         )
 
-        datapoint_json_list: List[Optional[Dict[str, Any]]] = []
+        datapoint_json_list: List[Optional[DatapointJson]] = []
         # First, add a datapoint for the aggregated_value
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         metric_definition = METRIC_KEY_TO_METRIC[report_metric.key]

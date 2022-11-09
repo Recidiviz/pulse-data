@@ -33,6 +33,7 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
 from recidiviz.justice_counts.utils.persistence_utils import (
     expunge_existing,
@@ -97,7 +98,7 @@ class DatapointInterface:
         is_published: bool,
         frequency: schema.ReportingFrequency,
         old_value: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> DatapointJson:
         """Serializes Datapoint object into json format for consumption in the Justice Counts Control Panel"""
         metric_definition = METRIC_KEY_TO_METRIC[datapoint.metric_definition_key]
         metric_display_name = metric_definition.display_name
@@ -242,7 +243,7 @@ class DatapointInterface:
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
         use_existing_aggregate_value: bool = False,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[DatapointJson]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
         All datapoints associated with a metric are saved, even if the value is None.
 

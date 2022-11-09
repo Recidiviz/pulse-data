@@ -16,7 +16,8 @@
 # =============================================================================
 """This class implements tests for Justice Counts MetricInterface class."""
 
-from typing import Any, Dict
+from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List
 from unittest import TestCase
 
 from recidiviz.common.constants.justice_counts import ContextKey
@@ -42,6 +43,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricContextData,
     MetricInterface,
 )
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 from recidiviz.utils.types import assert_type
 
@@ -152,6 +154,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     },
                 ],
                 "disaggregations": [],
+                "datapoints": None,
             },
         )
 
@@ -169,6 +172,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "system": "Law Enforcement",
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
+                "datapoints": None,
                 "description": metric_definition.description,
                 "definitions": [
                     d.to_json() for d in metric_definition.definitions or []
@@ -223,18 +227,21 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "enabled": True,
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "key": "Emergency",
                                 "label": "Emergency",
                                 "value": 20,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Non-emergency",
                                 "label": "Non-emergency",
                                 "value": 60,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 20,
@@ -291,6 +298,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     },
                 ],
                 "disaggregations": [],
+                "datapoints": None,
             },
         )
 
@@ -308,6 +316,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
                 "definitions": [],
+                "datapoints": None,
                 "category": metric_definition.category.value,
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
@@ -351,30 +360,35 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "enabled": True,
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "key": "Drug",
                                 "label": "Drug",
                                 "value": 60,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Person",
                                 "label": "Person",
                                 "value": 10,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Property",
                                 "label": "Property",
                                 "value": 40,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Unknown",
                                 "label": "Unknown",
                                 "value": 10,
                                 "enabled": True,
                             },
                             {
+                                "datapoints": None,
                                 "key": "Other",
                                 "label": "Other",
                                 "value": 0,
@@ -620,6 +634,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
+                "datapoints": None,
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -649,16 +664,19 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "display_name": "Call Types",
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
@@ -686,6 +704,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
+                "datapoints": None,
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -715,16 +734,19 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "display_name": "Call Types",
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
@@ -781,6 +803,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "system": "Law Enforcement",
                 "unit": "CALLS",
                 "value": None,
+                "datapoints": None,
                 "disaggregations": [
                     {
                         "key": CallType.dimension_identifier(),
@@ -791,16 +814,19 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "display_name": "Call Types",
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
@@ -830,6 +856,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
+                "datapoints": None,
                 "definitions": [
                     {
                         "definition": "One case that represents a request for police "
@@ -859,16 +886,193 @@ class TestJusticeCountsMetricInterface(TestCase):
                         "display_name": "Call Types",
                         "dimensions": [
                             {
+                                "datapoints": None,
                                 "enabled": True,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                             },
                             {
+                                "datapoints": None,
+                                "enabled": False,
+                                "label": CallType.UNKNOWN.value,
+                                "key": CallType.UNKNOWN.value,
+                            },
+                        ],
+                    }
+                ],
+            },
+        )
+
+    def test_to_json_with_datapoints(self) -> None:
+        metric_definition = law_enforcement.calls_for_service
+        metric_interface = self.test_schema_objects.get_agency_metric_interface(
+            is_metric_enabled=False
+        )
+        aggregate_datapoints_json: List[DatapointJson] = []
+        aggregate_datapoints_json.extend(
+            [
+                {
+                    "dimension_display_name": None,
+                    "disaggregation_display_name": None,
+                    "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 14887,
+                    "is_published": True,
+                    "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                    "metric_display_name": "Calls for Service",
+                    "old_value": None,
+                    "report_id": 314,
+                    "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                    "value": 10,
+                },
+                {
+                    "dimension_display_name": None,
+                    "disaggregation_display_name": None,
+                    "end_date": "Thu, 01 Dec 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 14922,
+                    "is_published": True,
+                    "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                    "metric_display_name": "Calls for Service",
+                    "old_value": None,
+                    "report_id": 315,
+                    "start_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                    "value": 11,
+                },
+            ]
+        )
+        dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
+            str, DefaultDict[str, List[DatapointJson]]
+        ] = defaultdict(lambda: defaultdict(list))
+        dimension_id_to_dimension_member_to_datapoints_json[
+            CallType.dimension_identifier()
+        ][CallType.EMERGENCY.name] = [
+            {
+                "dimension_display_name": "Emergency",
+                "disaggregation_display_name": "Call Type",
+                "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                "frequency": "MONTHLY",
+                "id": 14891,
+                "is_published": True,
+                "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "metric_display_name": "Calls for Service",
+                "old_value": None,
+                "report_id": 314,
+                "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                "value": 51890,
+            }
+        ]
+        dimension_id_to_dimension_member_to_datapoints_json[
+            CallType.dimension_identifier()
+        ][CallType.NON_EMERGENCY.name] = [
+            {
+                "dimension_display_name": "Non-emergency",
+                "disaggregation_display_name": "Call Type",
+                "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                "frequency": "MONTHLY",
+                "id": 14892,
+                "is_published": True,
+                "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "metric_display_name": "Calls for Service",
+                "old_value": None,
+                "report_id": 314,
+                "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                "value": 66995,
+            }
+        ]
+        dimension_id_to_dimension_member_to_datapoints_json[
+            CallType.dimension_identifier()
+        ][CallType.UNKNOWN.name] = [
+            {
+                "dimension_display_name": "Unknown",
+                "disaggregation_display_name": "Call Type",
+                "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                "frequency": "MONTHLY",
+                "id": 14893,
+                "is_published": True,
+                "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "metric_display_name": "Calls for Service",
+                "old_value": None,
+                "report_id": 314,
+                "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                "value": 24062,
+            }
+        ]
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+                aggregate_datapoints_json=aggregate_datapoints_json,
+                dimension_id_to_dimension_member_to_datapoints_json=dimension_id_to_dimension_member_to_datapoints_json,
+            ),
+            {
+                "key": metric_definition.key,
+                "enabled": False,
+                "category": metric_definition.category.value,
+                "frequency": "MONTHLY",
+                "filenames": ["calls_for_service", "calls_for_service_by_type"],
+                "contexts": [],
+                "settings": [],
+                "datapoints": aggregate_datapoints_json,
+                "definitions": [
+                    {
+                        "definition": "One case that represents a request for police "
+                        "service generated by the community and "
+                        "received through an emergency or "
+                        "non-emergency method (911, 311, 988, online "
+                        "report). Count all calls for service, "
+                        "regardless of whether an underlying incident "
+                        "report was filed.",
+                        "term": "Calls for service",
+                    }
+                ],
+                "display_name": metric_definition.display_name,
+                "description": metric_definition.description,
+                "label": "Calls for Service",
+                "reporting_note": metric_definition.reporting_note,
+                "system": "Law Enforcement",
+                "unit": "CALLS",
+                "value": None,
+                "disaggregations": [
+                    {
+                        "key": CallType.dimension_identifier(),
+                        "enabled": False,
+                        "required": True,
+                        "helper_text": None,
+                        "should_sum_to_total": False,
+                        "display_name": "Call Types",
+                        "dimensions": [
+                            {
+                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
+                                    CallType.dimension_identifier()
+                                ][
+                                    CallType.EMERGENCY.name
+                                ],
+                                "enabled": False,
+                                "label": CallType.EMERGENCY.value,
+                                "key": CallType.EMERGENCY.value,
+                            },
+                            {
+                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
+                                    CallType.dimension_identifier()
+                                ][
+                                    CallType.NON_EMERGENCY.name
+                                ],
+                                "enabled": False,
+                                "label": CallType.NON_EMERGENCY.value,
+                                "key": CallType.NON_EMERGENCY.value,
+                            },
+                            {
+                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
+                                    CallType.dimension_identifier()
+                                ][
+                                    CallType.UNKNOWN.name
+                                ],
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
@@ -1053,6 +1257,7 @@ class TestJusticeCountsMetricInterface(TestCase):
             "display_name": "Prisons Release Types",
             "dimensions": [
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.SENTENCE_COMPLETION.value,
                     "key": PrisonsReleaseType.SENTENCE_COMPLETION.value,
@@ -1090,6 +1295,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     ],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
@@ -1139,6 +1345,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     ],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
@@ -1188,6 +1395,7 @@ class TestJusticeCountsMetricInterface(TestCase):
                     ],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "key": PrisonsReleaseType.DEATH.value,
                     "label": PrisonsReleaseType.DEATH.value,
@@ -1213,30 +1421,35 @@ class TestJusticeCountsMetricInterface(TestCase):
                     ],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.TRANSFER.value,
                     "key": PrisonsReleaseType.TRANSFER.value,
                     "settings": [],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
                     "key": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
                     "settings": [],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
                     "key": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
                     "settings": [],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.UNKNOWN.value,
                     "key": PrisonsReleaseType.UNKNOWN.value,
                     "settings": [],
                 },
                 {
+                    "datapoints": None,
                     "enabled": True,
                     "label": PrisonsReleaseType.OTHER.value,
                     "key": PrisonsReleaseType.OTHER.value,
@@ -1304,6 +1517,7 @@ class TestJusticeCountsMetricInterface(TestCase):
             "filenames": ["grievances_upheld"],
             "value": 200,
             "disaggregations": [],
+            "datapoints": None,
             "contexts": [],
             "settings": [
                 {

@@ -17,7 +17,7 @@
 """Base class for the reported value(s) for a Justice Counts metric dimension."""
 
 import enum
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar
 
 import attr
 
@@ -31,6 +31,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     IncludesExcludesSet,
     IncludesExcludesSetting,
 )
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import DatapointGetRequestEntryPoint
 
 MetricAggregatedDimensionDataT = TypeVar(
@@ -75,6 +76,9 @@ class MetricAggregatedDimensionData:
         self,
         dimension_definition: AggregatedDimension,
         entry_point: DatapointGetRequestEntryPoint,
+        dimension_member_to_datapoints_json: Optional[
+            DefaultDict[str, List[DatapointJson]]
+        ] = None,
     ) -> Dict[str, Any]:
         is_disaggregation_enabled = (
             self.dimension_to_enabled_status is not None
@@ -91,6 +95,7 @@ class MetricAggregatedDimensionData:
             "dimensions": self.dimension_to_json(
                 entry_point=entry_point,
                 dimension_to_includes_excludes=dimension_definition.dimension_to_includes_excludes,
+                dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
             ),
             "enabled": is_disaggregation_enabled,
         }
@@ -215,6 +220,9 @@ class MetricAggregatedDimensionData:
         dimension_to_includes_excludes: Optional[
             Dict[DimensionBase, IncludesExcludesSet]
         ] = None,
+        dimension_member_to_datapoints_json: Optional[
+            Dict[str, List[DatapointJson]]
+        ] = None,
     ) -> List[Dict[str, Any]]:
         """This method would be called in two scenarios: 1) We are getting the json of
         a report metric which will have both dimension_to_enabled_status and dimension_to_value
@@ -227,6 +235,11 @@ class MetricAggregatedDimensionData:
                     "key": dimension.to_enum().value,
                     "label": dimension.dimension_value,
                     "enabled": status,
+                    "datapoints": dimension_member_to_datapoints_json.get(
+                        dimension.to_enum().name
+                    )
+                    if dimension_member_to_datapoints_json is not None
+                    else None,
                 }
                 if (
                     dimension_to_includes_excludes is not None
