@@ -128,45 +128,45 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
 
     # Hispanic
     HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "Hispanic / American Indian / Alaskan Native"
+        "American Indian / Alaskan Native / Hispanic"
     )
-    HISPANIC_ASIAN = "Hispanic / Asian"
-    HISPANIC_BLACK = "Hispanic / Black"
-    HISPANIC_MORE_THAN_ONE_RACE = "Hispanic / More than one race"
+    HISPANIC_ASIAN = "Asian / Hispanic"
+    HISPANIC_BLACK = "Black / Hispanic"
+    HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Hispanic"
     HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Hispanic / Native Hawaiian / Pacific Islander"
+        "Native Hawaiian / Pacific Islander / Hispanic"
     )
-    HISPANIC_WHITE = "Hispanic / White"
-    HISPANIC_OTHER = "Hispanic / Other"
-    HISPANIC_UNKNOWN = "Hispanic / Unknown"
+    HISPANIC_WHITE = "White / Hispanic"
+    HISPANIC_OTHER = "Other / Hispanic"
+    HISPANIC_UNKNOWN = "Unknown / Hispanic"
 
     # Not Hispanic
     NOT_HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "Not Hispanic / American Indian / Alaskan Native"
+        "American Indian / Alaskan Native / Not Hispanic"
     )
-    NOT_HISPANIC_ASIAN = "Not Hispanic / Asian"
-    NOT_HISPANIC_BLACK = "Not Hispanic / Black"
-    NOT_HISPANIC_MORE_THAN_ONE_RACE = "Not Hispanic / More than one race"
+    NOT_HISPANIC_ASIAN = "Asian / Not Hispanic"
+    NOT_HISPANIC_BLACK = "Black / Not Hispanic"
+    NOT_HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Not Hispanic"
     NOT_HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Not Hispanic / Native Hawaiian / Pacific Islander"
+        "Native Hawaiian / Pacific Islander / Not Hispanic"
     )
-    NOT_HISPANIC_WHITE = "Not Hispanic / White"
-    NOT_HISPANIC_OTHER = "Not Hispanic / Other"
-    NOT_HISPANIC_UNKNOWN = "Not Hispanic / Unknown"
+    NOT_HISPANIC_WHITE = "White / Not Hispanic"
+    NOT_HISPANIC_OTHER = "Other / Not Hispanic"
+    NOT_HISPANIC_UNKNOWN = "Unknown / Not Hispanic"
 
     # Unknown Ethnicity
     UNKNOWN_ETHNICITY_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "Unknown Ethnicity / American Indian / Alaskan Native"
+        "American Indian / Alaskan Native / Unknown Ethnicity"
     )
-    UNKNOWN_ETHNICITY_ASIAN = "Unknown Ethnicity / Asian"
-    UNKNOWN_ETHNICITY_BLACK = "Unknown Ethnicity / Black"
-    UNKNOWN_ETHNICITY_MORE_THAN_ONE_RACE = "Unknown Ethnicity / More than one race"
+    UNKNOWN_ETHNICITY_ASIAN = "Asian / Unknown Ethnicity"
+    UNKNOWN_ETHNICITY_BLACK = "Black / Unknown Ethnicity"
+    UNKNOWN_ETHNICITY_MORE_THAN_ONE_RACE = "More than one race / Unknown Ethnicity"
     UNKNOWN_ETHNICITY_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Unknown Ethnicity / Native Hawaiian / Pacific Islander"
+        "Native Hawaiian / Pacific Islander / Unknown Ethnicity"
     )
-    UNKNOWN_ETHNICITY_WHITE = "Unknown Ethnicity / White"
-    UNKNOWN_ETHNICITY_OTHER = "Unknown Ethnicity / Other"
-    UNKNOWN_ETHNICITY_UNKNOWN = "Unknown Ethnicity / Unknown"
+    UNKNOWN_ETHNICITY_WHITE = "White / Unknown Ethnicity"
+    UNKNOWN_ETHNICITY_OTHER = "Other / Unknown Ethnicity"
+    UNKNOWN_ETHNICITY_UNKNOWN = "Unknown / Unknown Ethnicity"
 
     @classmethod
     def dimension_identifier(cls) -> str:
