@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements helper functions for use in Auth endpoint tests."""
 
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import sql
 
@@ -40,7 +40,7 @@ def generate_fake_user_restrictions(
     can_access_leadership_dashboard: bool = True,
     can_access_case_triage: bool = False,
     should_see_beta_charts: bool = False,
-    routes: dict = None,
+    routes: Optional[dict] = None,
     include_hash: bool = True,
 ) -> DashboardUserRestrictions:
     return DashboardUserRestrictions(
@@ -69,10 +69,10 @@ def generate_fake_rosters(
     email: str,
     region_code: str,
     role: str,
-    external_id: str = None,
-    district: str = None,
-    first_name: str = None,
-    last_name: str = None,
+    external_id: Optional[str] = None,
+    district: Optional[str] = None,
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
 ) -> Roster:
     return Roster(
         state_code=region_code,
@@ -88,10 +88,10 @@ def generate_fake_rosters(
 def generate_fake_default_permissions(
     state: str,
     role: str,
-    can_access_leadership_dashboard: bool = None,
-    can_access_case_triage: bool = None,
-    should_see_beta_charts: bool = None,
-    routes: dict = None,
+    can_access_leadership_dashboard: Optional[bool] = None,
+    can_access_case_triage: Optional[bool] = None,
+    should_see_beta_charts: Optional[bool] = None,
+    routes: Optional[dict] = None,
 ) -> StateRolePermissions:
     return StateRolePermissions(
         state_code=state,
@@ -106,11 +106,11 @@ def generate_fake_default_permissions(
 def generate_fake_user_overrides(
     email: str,
     region_code: str,
-    external_id: str = None,
-    role: str = None,
-    district: str = None,
-    first_name: str = None,
-    last_name: str = None,
+    external_id: Optional[str] = None,
+    role: Optional[str] = None,
+    district: Optional[str] = None,
+    first_name: Optional[str] = None,
+    last_name: Optional[str] = None,
     blocked: bool = False,
 ) -> UserOverride:
     return UserOverride(
@@ -127,9 +127,9 @@ def generate_fake_user_overrides(
 
 def generate_fake_permissions_overrides(
     email: str,
-    can_access_leadership_dashboard: bool = None,
-    can_access_case_triage: bool = None,
-    should_see_beta_charts: bool = None,
+    can_access_leadership_dashboard: Optional[bool] = None,
+    can_access_case_triage: Optional[bool] = None,
+    should_see_beta_charts: Optional[bool] = None,
     routes: dict = sql.null(),
 ) -> PermissionsOverride:
     return PermissionsOverride(

@@ -33,7 +33,6 @@ from typing import (
 import apache_beam as beam
 from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.pvalue import PBegin
-from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.base_pipeline import (
@@ -255,11 +254,6 @@ class NormalizeEntities(beam.DoFn):
 
         yield person_id, normalized_entities, additional_attributes_map
 
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
     # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
     # pylint: disable=W0223
 
@@ -317,8 +311,3 @@ class NormalizedEntityTreeWritableDicts(beam.DoFn):
             output_dict = json_serializable_dict(entity_dict)
 
             yield beam.pvalue.TaggedOutput(entity_name, output_dict)
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass

@@ -111,6 +111,7 @@ class BigQueryClient:
     DEFAULT_REGION = "US"
 
     @property
+    @abc.abstractmethod
     def project_id(self) -> str:
         """The Google Cloud project id for this client."""
 
@@ -387,7 +388,7 @@ class BigQueryClient:
         self,
         *,
         query_str: str,
-        query_parameters: List[bigquery.ScalarQueryParameter] = None,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         use_query_cache: bool,
     ) -> bigquery.QueryJob:
         """Runs a query in BigQuery asynchronously.
@@ -631,7 +632,7 @@ class BigQueryClient:
         dataset_id: str,
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
-        clustering_fields: List[str] = None,
+        clustering_fields: Optional[List[str]] = None,
         date_partition_field: Optional[str] = None,
     ) -> bigquery.Table:
         """Creates a table in the given dataset with the given schema fields. Raises an
@@ -1150,7 +1151,7 @@ class BigQueryClientImpl(BigQueryClient):
         self,
         *,
         query_str: str,
-        query_parameters: List[bigquery.ScalarQueryParameter] = None,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         use_query_cache: bool,
     ) -> bigquery.QueryJob:
         job_config = bigquery.QueryJobConfig(use_query_cache=use_query_cache)
@@ -1541,8 +1542,8 @@ class BigQueryClientImpl(BigQueryClient):
         dataset_id: str,
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
-        clustering_fields: List[str] = None,
-        date_partition_field: Optional[str] = None,
+        clustering_fields: Optional[List[str]] = None,
+        date_partition_field: Optional[Optional[str]] = None,
     ) -> bigquery.Table:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 

@@ -163,7 +163,7 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
     def extract_and_populate_data(
         self,
         content: Union[str, Iterator[Dict[str, str]]],
-        ingest_info: IngestInfo = None,
+        ingest_info: Optional[IngestInfo] = None,
     ) -> IngestInfo:
         """This function does all the work of taking the users yaml file
         and content and returning a populated data class.  This function
@@ -323,7 +323,7 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
         value: str,
         ingest_info: IngestInfo,
         seen_map: Dict[int, Set[str]],
-        ancestor_chain: Dict[str, str] = None,
+        ancestor_chain: Optional[Dict[str, str]] = None,
         **create_args: Any,
     ) -> List[IngestObject]:
         """If the column key is one we want to set on the object, set it on the

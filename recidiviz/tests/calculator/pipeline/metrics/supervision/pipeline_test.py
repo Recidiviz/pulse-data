@@ -542,7 +542,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         state_code: str,
         data_dict: DataTablesDict,
         expected_metric_types: Set[SupervisionMetricType],
-        expected_violation_types: Set[ViolationType] = None,
+        expected_violation_types: Optional[Set[ViolationType]] = None,
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
@@ -1085,16 +1085,24 @@ class TestClassifyEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        supervision_periods: List[entities.StateSupervisionPeriod] = None,
-        incarceration_periods: List[entities.StateIncarcerationPeriod] = None,
-        incarceration_sentences: List[entities.StateIncarcerationSentence] = None,
-        supervision_sentences: List[entities.StateSupervisionSentence] = None,
-        violation_responses: List[entities.StateSupervisionViolationResponse] = None,
-        assessments: List[entities.StateAssessment] = None,
-        supervision_contacts: List[entities.StateSupervisionContact] = None,
-        supervision_period_judicial_district_association: List[Dict[Any, Any]] = None,
-        supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
-        supervision_location_to_names_association: List[Dict[Any, Any]] = None,
+        supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
+        incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
+        incarceration_sentences: Optional[
+            List[entities.StateIncarcerationSentence]
+        ] = None,
+        supervision_sentences: Optional[List[entities.StateSupervisionSentence]] = None,
+        violation_responses: Optional[
+            List[entities.StateSupervisionViolationResponse]
+        ] = None,
+        assessments: Optional[List[entities.StateAssessment]] = None,
+        supervision_contacts: Optional[List[entities.StateSupervisionContact]] = None,
+        supervision_period_judicial_district_association: Optional[
+            List[Dict[Any, Any]]
+        ] = None,
+        supervision_period_to_agent_association: Optional[List[Dict[Any, Any]]] = None,
+        supervision_location_to_names_association: Optional[
+            List[Dict[Any, Any]]
+        ] = None,
     ) -> Dict[str, List[Any]]:
         return {
             entities.StatePerson.__name__: [person],
@@ -1515,7 +1523,7 @@ class SupervisionPipelineFakeWriteMetricsToBigQuery(FakeWriteMetricsToBigQuery):
         self,
         output_table: str,
         expected_output_tags: Collection[str],
-        expected_violation_types: Set[ViolationType] = None,
+        expected_violation_types: Optional[Set[ViolationType]] = None,
     ):
         super().__init__(output_table, expected_output_tags)
         self._expected_violation_types = expected_violation_types

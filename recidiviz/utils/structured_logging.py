@@ -19,7 +19,7 @@
 import logging
 import sys
 from types import TracebackType
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from google.cloud.logging import Client, handlers
 from opencensus.common.runtime_context import RuntimeContext
@@ -50,12 +50,12 @@ class ContextualLogRecord(logging.LogRecord):
         msg: str,
         args: Tuple[Any, ...],
         exc_info: Union[
-            Tuple[type, BaseException, Optional[TracebackType]],
+            Tuple[Type[BaseException], BaseException, Optional[TracebackType]],
             Tuple[None, None, None],
             None,
         ],
-        func: str = None,
-        sinfo: str = None,
+        func: Optional[str] = None,
+        sinfo: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(

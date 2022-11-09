@@ -15,10 +15,12 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Helpers for querying user events logged from Workflows"""
-from typing import List
+from typing import List, Optional
 
 
-def user_event_template(table_name: str, add_columns: List[str] = None) -> str:
+def user_event_template(
+    table_name: str, add_columns: Optional[List[str]] = None
+) -> str:
     if add_columns is None:
         add_columns = []
 

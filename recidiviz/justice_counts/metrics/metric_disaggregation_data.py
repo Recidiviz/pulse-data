@@ -134,7 +134,7 @@ class MetricAggregatedDimensionData:
                     dimension: dimension_enum_value_to_value.get(
                         dimension.to_enum().value, None
                     )
-                    for dimension in dimension_class
+                    for dimension in dimension_class  # type: ignore[attr-defined]
                 }
             )  # example: {RaceAndEthnicity.BLACK: 50, RaceAndEthnicity.WHITE: 20})
 
@@ -146,7 +146,7 @@ class MetricAggregatedDimensionData:
                 dimension.to_enum().value,
                 default_dimension_enabled_status,
             )
-            for dimension in dimension_class
+            for dimension in dimension_class  # type: ignore[attr-defined]
         }  # example: {RaceAndEthnicity.BLACK: True, RaceAndEthnicity.WHITE: False}
 
         if (
@@ -162,7 +162,9 @@ class MetricAggregatedDimensionData:
 
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
-        ] = {dimension: {} for dimension in dimension_class}
+        ] = {
+            dimension: {} for dimension in dimension_class  # type: ignore[attr-defined]
+        }
 
         # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "N/A"},
         # "WHITE": {"SETTING_1": "No", "SETTING_2", "Yes"}}
@@ -174,7 +176,7 @@ class MetricAggregatedDimensionData:
             for dim in dimensions or []
         }
 
-        for dimension in dimension_class:
+        for dimension in dimension_class:  # type: ignore[attr-defined]
             # For each dimension that is part of the aggregated dimension,
             # get the IncludesExcludesSet, which contains all the
             # members of the includes/excludes enum as well as the default settings.

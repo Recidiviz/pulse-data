@@ -211,7 +211,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
     def __init__(
         self,
         *,
-        project_id: str = None,
+        project_id: Optional[str] = None,
         region_code: str,
         view_id: str,
         description: str,
@@ -337,7 +337,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
     def __init__(
         self,
         *,
-        project_id: str = None,
+        project_id: Optional[str] = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
@@ -378,7 +378,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
     def __init__(
         self,
         *,
-        project_id: str = None,
+        project_id: Optional[str] = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
         include_undocumented_columns: bool = False,
@@ -413,7 +413,7 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
     def __init__(
         self,
         *,
-        project_id: str = None,
+        project_id: Optional[str] = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],

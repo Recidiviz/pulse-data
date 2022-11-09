@@ -58,7 +58,7 @@ def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
     if dimension_class is not None:
         try:
             # example: dimension_enum_member = GenderRestricted.MALE
-            dimension_enum_member = dimension_class[dimension_member]
+            dimension_enum_member = dimension_class[dimension_member]  # type: ignore[misc]
         except KeyError:
             logging.warning(
                 "Dimension member %s not found in class %s",

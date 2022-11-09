@@ -31,7 +31,7 @@ class TestSingleStateETLDelegate(WorkflowsSingleStateETLDelegate):
     _COLLECTION_NAME_BASE = "testCollection"
 
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
-        pass
+        return (None, None)
 
     def run_etl(self, _state_code: str, _filename: str) -> None:
         pass

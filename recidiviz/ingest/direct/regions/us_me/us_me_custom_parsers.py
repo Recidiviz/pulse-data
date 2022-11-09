@@ -30,10 +30,10 @@ from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, pa
 
 
 def total_days_from_ymd(
-    years: str = None,
-    months: str = None,
-    days: str = None,
-    start_date: str = None,
+    years: str,
+    months: str,
+    days: str,
+    start_date: str,
 ) -> str:
     """Returns a total number of days equal to the given number of years, months, and days, as a string.
 
@@ -44,17 +44,22 @@ def total_days_from_ymd(
 
     If all of years, months, and days are none, this returns "0".
     """
+    if not years and not months and not days:
+        return "0"
+
     # Date format is "YYYY-MM-DD HH:MM:SS UTC"
     format_est_sent_date = safe_strptime(start_date, "%Y-%m-%d %H:%M:%S")
     if format_est_sent_date and format_est_sent_date.year >= 9900:
-        start_date = None
-    if not years and not months and not days:
-        return "0"
-    return str(parse_days_from_duration_pieces(years, months, days, start_date))
+        clean_start_date = None
+    else:
+        clean_start_date = start_date
+    return str(parse_days_from_duration_pieces(years, months, days, clean_start_date))
 
 
 def compute_earned_time(
-    days_earned: str = None, days_lost: str = None, days_restored: str = None
+    days_earned: str,
+    days_lost: str,
+    days_restored: str,
 ) -> str:
     """Returns the total number of days earned time available for this sentence, as a string.
 

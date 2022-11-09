@@ -1080,7 +1080,7 @@ class CalculationDocumentationGenerator:
         def _get_enum_class_name_for_schema_field(
             schema_field: bigquery.SchemaField,
         ) -> str:
-            enum_cls = get_enum_cls(attr.fields_dict(metric)[schema_field.name])
+            enum_cls = get_enum_cls(attr.fields_dict(metric)[schema_field.name])  # type: ignore[arg-type]
 
             if not enum_cls:
                 return ""

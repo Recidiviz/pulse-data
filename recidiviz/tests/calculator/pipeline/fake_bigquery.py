@@ -199,7 +199,7 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
 class FakeReadFromBigQueryFactory:
     """Factory class that vends fake constructors that can be used to mock the ReadFromBigQuery object."""
 
-    def __init__(self, data_dict_query_fn: DataDictQueryFn = None):
+    def __init__(self, data_dict_query_fn: Optional[DataDictQueryFn] = None):
         self._data_dict_query_fn: DataDictQueryFn = (
             data_dict_query_fn
             if data_dict_query_fn

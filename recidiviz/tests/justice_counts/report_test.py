@@ -867,13 +867,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                         d: None
                         for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                             a.dimension.dimension_identifier()
-                        ]
+                        ]  # type: ignore[attr-defined]
                     },
                     dimension_to_enabled_status={
                         d: True
                         for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                             a.dimension.dimension_identifier()
-                        ]
+                        ]  # type: ignore[attr-defined]
                     },
                     dimension_to_includes_excludes_member_to_setting={},
                 )

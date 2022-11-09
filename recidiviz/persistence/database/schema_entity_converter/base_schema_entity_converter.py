@@ -220,7 +220,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         else:
             raise DatabaseConversionError(f"Unable to convert class [{src.__class__}]")
 
-        for field, attribute in attr.fields_dict(entity_cls).items():
+        for field, attribute in attr.fields_dict(entity_cls).items():  # type: ignore[arg-type]
             v = getattr(src, field)
 
             if not isinstance(attribute, attr.Attribute):

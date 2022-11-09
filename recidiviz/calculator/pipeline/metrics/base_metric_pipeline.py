@@ -36,7 +36,6 @@ from typing import (
 import apache_beam as beam
 import attr
 from apache_beam.pvalue import AsList, PBegin
-from apache_beam.runners.pipeline_context import PipelineContext
 from apache_beam.typehints import with_input_types, with_output_types
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
@@ -474,11 +473,6 @@ class ProduceMetrics(beam.DoFn):
         for metric in metrics:
             yield metric
 
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
 
 @with_input_types(
     beam.typehints.Tuple[
@@ -567,11 +561,6 @@ class ClassifyResults(beam.DoFn):
                 raise ValueError("Found unexpected null person_id.")
             yield person_id, (person, results)
 
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
 
 @with_input_types(RecidivizMetric)
 @with_output_types(beam.typehints.Dict[str, Any])
@@ -610,8 +599,3 @@ class RecidivizMetricWritableDict(beam.DoFn):
                 "Attempting to convert an object that is not a RecidivizMetric into a "
                 "writable dict for BigQuery."
             )
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass

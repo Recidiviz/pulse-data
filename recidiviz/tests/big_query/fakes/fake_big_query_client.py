@@ -61,10 +61,10 @@ class FakeQueryJob:
 
     def result(
         self,
-        page_size: int = None,
-        max_results: int = None,
-        retry: int = None,
-        timeout: int = None,
+        page_size: Optional[int] = None,
+        max_results: Optional[int] = None,
+        retry: Optional[int] = None,
+        timeout: Optional[int] = None,
     ) -> Iterator[bigquery.table.Row]:
         if page_size is not None:
             raise NotImplementedError(
@@ -212,7 +212,7 @@ class FakeBigQueryClient(BigQueryClient):
         self,
         *,
         query_str: str,
-        query_parameters: List[bigquery.ScalarQueryParameter] = None,
+        query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
         use_query_cache: bool,
     ) -> bigquery.QueryJob:
         def run_query_fn() -> DataFrame:
@@ -320,7 +320,7 @@ class FakeBigQueryClient(BigQueryClient):
         dataset_id: str,
         table_id: str,
         schema_fields: List[bigquery.SchemaField],
-        clustering_fields: List[bigquery.SchemaField] = None,
+        clustering_fields: Optional[List[bigquery.SchemaField]] = None,
         date_partition_field: Optional[str] = None,
     ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")

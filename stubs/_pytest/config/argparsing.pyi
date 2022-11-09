@@ -16,21 +16,15 @@
 # =============================================================================
 from typing import Any, Optional
 
-
 class OptionGroup:
     name: str
     description: str
     parser: "Parser"
 
-    def addoption(self, *opts: str, **attrs: Any) -> None:
-        ...
-
+    def addoption(self, *opts: str, **attrs: Any) -> None: ...
 
 class Parser:
-    def addoption(self, *opts: str, **attrs: Any) -> None:
-        ...
-
+    def addoption(self, *opts: str, **attrs: Any) -> None: ...
     def getgroup(
         self, name: str, description: str = "", after: Optional[str] = None
-    ) -> OptionGroup:
-        ...
+    ) -> OptionGroup: ...

@@ -375,7 +375,7 @@ def build_metric(
     """Builds a RecidivizMetric of the defined metric_class using the provided
     information.
     """
-    metric_attributes = attr.fields_dict(metric_class).keys()
+    metric_attributes = attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
 
     person_attributes = person_characteristics(
         person, person_age, person_metadata, metrics_producer_delegate

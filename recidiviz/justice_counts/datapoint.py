@@ -180,7 +180,7 @@ class DatapointInterface:
                         )
                     dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
                         dimension_member
-                    ]
+                    ]  # type: ignore[misc]
                     metric_datapoints.dimension_to_includes_excludes_key_to_datapoint[
                         dimension
                     ][datapoint.includes_excludes_key] = datapoint
@@ -599,7 +599,9 @@ class DatapointInterface:
             return False
 
         member_set = (
-            {d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]}
+            {
+                d.dimension_name for d in DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id]  # type: ignore[attr-defined]
+            }
             if dimension_id is not None
             else set()
         )

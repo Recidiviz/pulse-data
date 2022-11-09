@@ -82,7 +82,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def extract_and_populate_data(
-        self, content: HtmlElement, ingest_info: IngestInfo = None
+        self, content: HtmlElement, ingest_info: Optional[IngestInfo] = None
     ) -> IngestInfo:
         pass
 
@@ -92,8 +92,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
         lookup_keys: Union[str, List[str]],
         values: List[Optional[str]],
         seen_map: Dict[int, Set[str]],
-        ancestor_chain: Dict[str, str] = None,
-        enforced_ancestor_types: Dict[str, str] = None,
+        ancestor_chain: Optional[Dict[str, str]] = None,
+        enforced_ancestor_types: Optional[Dict[str, str]] = None,
         **create_args: Any,
     ) -> List[IngestObject]:
         """Contains the logic to set or create a field on an ingest object.

@@ -108,7 +108,7 @@ class TestBQSchemaForNormalizedStateEntity(unittest.TestCase):
         base_ip = StateIncarcerationPeriod
 
         normalized_ip_field_names = set(attr.fields_dict(normalized_ip).keys())
-        base_ip_field_names = set(attr.fields_dict(base_ip).keys())
+        base_ip_field_names = set(attr.fields_dict(base_ip).keys())  # type: ignore[arg-type]
         fields_unique_to_norm_ip = normalized_ip_field_names.difference(
             base_ip_field_names
         )
