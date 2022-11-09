@@ -24,7 +24,7 @@ FRONTEND_APP=''
 function print_usage {
     echo_error "usage: $0 -b BACKEND_VERSION -f FRONTEND_VERSION -a FRONTEND_APP"
     echo_error "  -b: Version with which to tag the backend commit (e.g. v1.0.0)."
-    echo_error "  -f: Vesion with which to tag the frontend commit (e.g. v.1.1.0)."
+    echo_error "  -f: Version with which to tag the frontend commit (e.g. v.1.1.0)."
     echo_error "  -a: Frontend app to deploy (either publisher or agency-dashboard)."
     run_cmd exit 1
 }
@@ -154,8 +154,7 @@ echo "Pushing tag [${FRONTEND_TAG}] to remote..."
 run_cmd git push origin "${FRONTEND_TAG}"
 
 echo "Adding frontend and backend version tags to the Docker image..."
-run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${FRONTEND_TAG}"
-run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${BACKEND_TAG}"
+run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${FRONTEND_TAG}" "${REMOTE_IMAGE_BASE}:${BACKEND_TAG}"
 
 # TODO(#16325): Create release candidate branches to facilitate cherry-picks.
 
