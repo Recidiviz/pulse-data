@@ -35,7 +35,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           dataflow.supervision_type,
           supervising_officer_external_id AS officer_id,
           projected_end.projected_completion_date_max AS expiration_date
-        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` dataflow
+        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
           ON dataflow.state_code = sessions.state_code
           AND dataflow.person_id = sessions.person_id
@@ -44,11 +44,12 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
             ON dataflow.state_code = projected_end.state_code
             AND dataflow.person_id = projected_end.person_id
-            AND dataflow.date_of_supervision
+            AND CURRENT_DATE("US/Eastern")
                 BETWEEN projected_end.start_date
                     AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
         WHERE dataflow.state_code = 'US_ID' AND dataflow.included_in_state_population
-        AND supervising_officer_external_id IS NOT NULL
+          AND dataflow.end_date_exclusive IS NULL
+          AND supervising_officer_external_id IS NOT NULL
     ),
     us_id_supervision_level_start AS (
     # This CTE selects the most recent supervision level for each person with an active supervision period,

@@ -69,10 +69,11 @@ dataflow_metrics AS (
   judicial_district_code, 
   supervising_officer_external_id,
   full_name
-  FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized` dataflow
+  FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_span_metrics_materialized` dataflow
   LEFT JOIN probation_officer
     USING (supervising_officer_external_id)
   WHERE state_code = 'US_ND' AND dataflow.included_in_state_population
+    AND dataflow.end_date_exclusive IS NULL
   --choose only one judicial district per individual since individuals with overlapping supervision sentences
   --will have multiple rows in dataflow
   QUALIFY ROW_NUMBER() 

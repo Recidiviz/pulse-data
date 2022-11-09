@@ -148,10 +148,11 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     WITH most_recent_supervision_dates_per_state AS (
     SELECT DISTINCT
         state_code,
-        date_of_supervision as most_recent_date_of_supervision,
+        CURRENT_DATE('US/Eastern') as most_recent_date_of_supervision,
       FROM
-        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_single_day_supervision_population_span_to_single_day_metrics_materialized`
+        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
       WHERE included_in_state_population
+        AND end_date_exclusive IS NULL
     ), 
     timely_discharge AS (
      {generate_entity_summary_query('timely_discharge', 'supervision_population_due_for_release_by_po_by_day')}
