@@ -1,19 +1,37 @@
-key_mappings:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-primary_key:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-keys_to_ignore:
-  - OFFENDER_BOOK_ID # Booking ID - handled manually in the controller
-  - BOOKING_NO # This particular id appears unused elsewhere
-  - LIVING_UNIT_ID # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
-  - ACTIVE_FLAG # No apparent use for this. SentenceGroupStatus taken from BOOKING_STATUS.
-  - IN_OUT_STATUS # No apparent use for these at the moment
-  - BOOKING_BEGIN_DATE # Self-reported as unreliable. Covered elsewhere anyway
-  - BOOKING_END_DATE # Self-reported as unreliable. Covered elsewhere anyway
-  - BOOKING_TYPE # Always institution commitment (INST), which is implied
-  - BOOKING_STATUS # No apparent use for these at the moment
-  - AGY_LOC_ID # Provided in finer detail in External Movements file
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ROOT_OFFENDER_ID
+  - OFFENDER_BOOK_ID
+  - BOOKING_NO
+  - LIVING_UNIT_ID
+  - ACTIVE_FLAG
+  - IN_OUT_STATUS
+  - BOOKING_BEGIN_DATE
+  - BOOKING_END_DATE
+  - BOOKING_TYPE
+  - BOOKING_STATUS
+  - AGY_LOC_ID
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+unused_columns:
+  - BOOKING_NO
+  - LIVING_UNIT_ID
+  - ACTIVE_FLAG
+  - IN_OUT_STATUS
+  - BOOKING_BEGIN_DATE
+  - BOOKING_END_DATE
+  - BOOKING_TYPE
+  - BOOKING_STATUS
+  - AGY_LOC_ID
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+      - StatePersonExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")

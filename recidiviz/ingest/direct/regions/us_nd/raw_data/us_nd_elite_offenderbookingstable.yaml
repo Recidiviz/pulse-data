@@ -18,14 +18,6 @@ columns:
   - name: ROOT_OFFENDER_ID
     description: |-
       External id for a unique person from the Elite system.
-  - name: BOOKING_BEGIN_DATE
-    is_datetime: True
-    description: |-
-      When the booking began, i.e. when the series of interactions first began. Self-reported as unreliable.
-  - name: BOOKING_END_DATE
-    is_datetime: True
-    description: |-
-      When the booking ended, i.e. when the series of interactions was finally closed. Self-reported as unreliable.
   - name: BOOKING_NO
     description: |-
       A separate external ID for the booking, unused elsewhere in the system.
@@ -47,6 +39,14 @@ columns:
   - name: BOOKING_TYPE
     description: |-
       Type of booking. Always institution commitment (INST), which is implied.
+  - name: BOOKING_BEGIN_DATE
+    is_datetime: True
+    description: |-
+      When the booking began, i.e. when the series of interactions first began. Self-reported as unreliable.
+  - name: BOOKING_END_DATE
+    is_datetime: True
+    description: |-
+      When the booking ended, i.e. when the series of interactions was finally closed. Self-reported as unreliable.
   - name: CREATE_DATETIME
     is_datetime: True
     description: |-
