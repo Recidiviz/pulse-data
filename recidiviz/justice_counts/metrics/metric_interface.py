@@ -18,7 +18,7 @@
 
 import enum
 import itertools
-from typing import Any, Dict, List, Optional, Set, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
 
@@ -40,6 +40,7 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     METRIC_KEY_TO_METRIC,
     METRICS_BY_SYSTEM,
 )
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import DatapointGetRequestEntryPoint
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -94,7 +95,14 @@ class MetricInterface:
 
     ### To/From JSON ###
 
-    def to_json(self, entry_point: DatapointGetRequestEntryPoint) -> Dict[str, Any]:
+    def to_json(
+        self,
+        entry_point: DatapointGetRequestEntryPoint,
+        aggregate_datapoints_json: Optional[List[DatapointJson]] = None,
+        dimension_id_to_dimension_member_to_datapoints_json: Optional[
+            DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
+        ] = None,
+    ) -> Dict[str, Any]:
         """Returns the json form of the MetricInterface object."""
 
         dimension_id_to_dimension_definition = {
@@ -149,6 +157,7 @@ class MetricInterface:
             "enabled": self.is_metric_enabled,
             "frequency": frequency,
             "filenames": metric_filenames,
+            "datapoints": aggregate_datapoints_json,
             "definitions": [
                 d.to_json() for d in self.metric_definition.definitions or []
             ],
@@ -161,6 +170,11 @@ class MetricInterface:
                     dimension_definition=dimension_id_to_dimension_definition[
                         d.dimension_identifier()
                     ],
+                    dimension_member_to_datapoints_json=dimension_id_to_dimension_member_to_datapoints_json.get(
+                        d.dimension_identifier()
+                    )
+                    if dimension_id_to_dimension_member_to_datapoints_json is not None
+                    else None,
                     entry_point=entry_point,
                 )
                 for d in self.aggregated_dimensions

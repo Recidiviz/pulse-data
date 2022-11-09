@@ -16,9 +16,10 @@
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
 import logging
+from collections import defaultdict
 from http import HTTPStatus
 from itertools import groupby
-from typing import Callable, Optional
+from typing import Callable, DefaultDict, List, Optional
 
 import pandas as pd
 from flask import Blueprint, Response, g, jsonify, make_response, request, send_file
@@ -45,6 +46,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import SUPERVISION_SYSTEMS
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -726,11 +728,69 @@ def get_api_blueprint(
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=int(agency_id)
             )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=current_session,
+                agency_id=int(agency_id),
+                # we are only fetching reports here to get the list of report
+                # ids in an agency, so no need to fetch datapoints here
+                include_datapoints=False,
+                published_only=True,
+            )
+            report_id_to_status = {report.id: report.status for report in reports}
+            report_id_to_frequency = {
+                report.id: ReportInterface.get_reporting_frequency(report)
+                for report in reports
+            }
+            # fetch non-context datapoints
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
+                session=current_session,
+                report_ids=list(report_id_to_status.keys()),
+                include_contexts=False,
+            )
+
+            # Serialize datapoints into json format.
+            # group aggregate datapoints by metric.
+            metric_key_to_aggregate_datapoints_json: DefaultDict[
+                str, List[DatapointJson]
+            ] = defaultdict(list)
+            # group breakdown datapoints by metric, disaggregation, and dimension.
+            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
+                str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
+            ] = defaultdict(
+                lambda: defaultdict(lambda: defaultdict(list))
+            )
+            for datapoint in datapoints:
+                datapoint_json = DatapointInterface.to_json_response(
+                    datapoint=datapoint,
+                    is_published=True,
+                    frequency=report_id_to_frequency[datapoint.report_id],
+                )
+                (
+                    dimension_id,
+                    dimension_member,
+                ) = datapoint.get_dimension_id_and_member()
+                if dimension_id is not None and dimension_member is not None:
+                    metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
+                        datapoint.metric_definition_key
+                    ][dimension_id][dimension_member].append(datapoint_json)
+                else:
+                    metric_key_to_aggregate_datapoints_json[
+                        datapoint.metric_definition_key
+                    ].append(datapoint_json)
+
             metrics = DatapointInterface.get_metric_settings_by_agency(
                 session=current_session, agency=agency
             )
             metrics_json = [
-                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                metric.to_json(
+                    entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+                    aggregate_datapoints_json=metric_key_to_aggregate_datapoints_json.get(
+                        metric.key
+                    ),
+                    dimension_id_to_dimension_member_to_datapoints_json=metric_key_to_dimension_id_to_dimension_member_to_datapoints_json.get(
+                        metric.key
+                    ),
+                )
                 for metric in metrics
             ]
             return jsonify(metrics_json)

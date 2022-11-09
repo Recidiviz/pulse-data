@@ -219,6 +219,18 @@ class JusticeCountsSchemaTestObjects:
             agency=self.test_agency_E
         )
 
+        self.test_report_monthly_prisons = schema.Report(
+            source=self.test_agency_G,
+            type="MONTHLY",
+            instance="generated_instance_id",
+            status=schema.ReportStatus.NOT_STARTED,
+            date_range_start=datetime.date.fromisoformat("2022-06-01"),
+            date_range_end=datetime.date.fromisoformat("2022-07-01"),
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            created_at=datetime.date.fromisoformat("2022-05-30"),
+        )
+
         # Metrics
         self.reported_budget_metric = (
             JusticeCountsSchemaTestObjects.get_reported_budget_metric()
@@ -256,6 +268,22 @@ class JusticeCountsSchemaTestObjects:
                         RaceAndEthnicity.NOT_HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER: 0,
                         RaceAndEthnicity.NOT_HISPANIC_OTHER: 1030,
                         RaceAndEthnicity.NOT_HISPANIC_WHITE: 1000,
+                    }
+                )
+            ],
+        )
+        self.reported_admissions_metric = MetricInterface(
+            key=prisons.admissions.key,
+            value=1000,
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_value={
+                        PrisonsOffenseType.DRUG: 1,
+                        PrisonsOffenseType.OTHER: 2,
+                        PrisonsOffenseType.PERSON: 3,
+                        PrisonsOffenseType.PROPERTY: 4,
+                        PrisonsOffenseType.PUBLIC_ORDER: 5,
+                        PrisonsOffenseType.UNKNOWN: 6,
                     }
                 )
             ],

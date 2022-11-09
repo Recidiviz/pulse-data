@@ -41,6 +41,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -200,7 +201,7 @@ class SpreadsheetInterface:
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_definitions: Optional[List[MetricDefinition]] = None,
     ) -> Tuple[
-        Dict[str, List[Dict[str, Any]]],
+        Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
@@ -256,7 +257,7 @@ class SpreadsheetInterface:
 
     @staticmethod
     def get_ingest_spreadsheet_json(
-        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],

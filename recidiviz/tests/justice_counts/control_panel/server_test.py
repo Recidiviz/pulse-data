@@ -19,6 +19,7 @@ import datetime
 import os
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, Dict, List
 from unittest import mock
 
 import pandas as pd
@@ -194,30 +195,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
         self.assertEqual(metrics[2]["key"], law_enforcement.total_arrests.key)
 
-    def shared_test_get_agency_metrics_published_data(self, endpoint: str) -> None:
+    def shared_test_agency_metrics(self, metrics: List[Dict[str, Any]]) -> None:
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
-        self.session.add_all(
-            [
-                self.test_schema_objects.test_user_A,
-                self.test_schema_objects.test_agency_G,
-            ]
-        )
-        self.session.commit()
-        agency = self.session.query(Agency).one()
-        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
-            agency_id=agency.id
-        )
-        self.session.add_all(agency_datapoints)
-        self.session.commit()
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
-            )
-            response = self.client.get(f"/api/agencies/{agency.id}/{endpoint}")
-
-        self.assertEqual(response.status_code, 200)
-        metrics = assert_type(response.json, list)
         self.assertEqual(len(metrics), 8)
         # Annual Budget metric is turned off
         self.assertEqual(metrics[0]["key"], prisons.annual_budget.key)
@@ -302,86 +281,141 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             PrisonsOffenseType.dimension_identifier(),
         )
         self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
+
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"],
+            metrics[2]["disaggregations"][0]["dimensions"][0]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][0]["label"],
+            PrisonsOffenseType.PERSON.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][0]["key"],
+            PrisonsOffenseType.PERSON.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][0]["settings"],
             [
                 {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.PERSON.value,
-                    "key": PrisonsOffenseType.PERSON.value,
-                    "settings": [
-                        {
-                            "key": member.name,
-                            "label": member.value,
-                            "included": default_setting.value,
-                            "default": default_setting.value,
-                        }
-                        for member, default_setting in dimension_to_includes_excludes[
-                            PrisonsOffenseType.PERSON
-                        ].member_to_default_inclusion_setting.items()
-                    ],
-                },
-                {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.PROPERTY.value,
-                    "key": PrisonsOffenseType.PROPERTY.value,
-                    "settings": [
-                        {
-                            "key": member.name,
-                            "label": member.value,
-                            "included": default_setting.value,
-                            "default": default_setting.value,
-                        }
-                        for member, default_setting in dimension_to_includes_excludes[
-                            PrisonsOffenseType.PROPERTY
-                        ].member_to_default_inclusion_setting.items()
-                    ],
-                },
-                {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.DRUG.value,
-                    "key": PrisonsOffenseType.DRUG.value,
-                    "settings": [
-                        {
-                            "key": member.name,
-                            "label": member.value,
-                            "included": default_setting.value,
-                            "default": default_setting.value,
-                        }
-                        for member, default_setting in dimension_to_includes_excludes[
-                            PrisonsOffenseType.DRUG
-                        ].member_to_default_inclusion_setting.items()
-                    ],
-                },
-                {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.PUBLIC_ORDER.value,
-                    "key": PrisonsOffenseType.PUBLIC_ORDER.value,
-                    "settings": [
-                        {
-                            "key": member.name,
-                            "label": member.value,
-                            "included": default_setting.value,
-                            "default": default_setting.value,
-                        }
-                        for member, default_setting in dimension_to_includes_excludes[
-                            PrisonsOffenseType.PUBLIC_ORDER
-                        ].member_to_default_inclusion_setting.items()
-                    ],
-                },
-                {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.OTHER.value,
-                    "key": PrisonsOffenseType.OTHER.value,
-                    "settings": [],
-                },
-                {
-                    "enabled": False,
-                    "label": PrisonsOffenseType.UNKNOWN.value,
-                    "key": PrisonsOffenseType.UNKNOWN.value,
-                    "settings": [],
-                },
+                    "key": member.name,
+                    "label": member.value,
+                    "included": default_setting.value,
+                    "default": default_setting.value,
+                }
+                for member, default_setting in dimension_to_includes_excludes[
+                    PrisonsOffenseType.PERSON
+                ].member_to_default_inclusion_setting.items()
             ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["label"],
+            PrisonsOffenseType.PROPERTY.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["key"],
+            PrisonsOffenseType.PROPERTY.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["settings"],
+            [
+                {
+                    "key": member.name,
+                    "label": member.value,
+                    "included": default_setting.value,
+                    "default": default_setting.value,
+                }
+                for member, default_setting in dimension_to_includes_excludes[
+                    PrisonsOffenseType.PROPERTY
+                ].member_to_default_inclusion_setting.items()
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["label"],
+            PrisonsOffenseType.DRUG.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["key"],
+            PrisonsOffenseType.DRUG.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["settings"],
+            [
+                {
+                    "key": member.name,
+                    "label": member.value,
+                    "included": default_setting.value,
+                    "default": default_setting.value,
+                }
+                for member, default_setting in dimension_to_includes_excludes[
+                    PrisonsOffenseType.DRUG
+                ].member_to_default_inclusion_setting.items()
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["label"],
+            PrisonsOffenseType.PUBLIC_ORDER.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["key"],
+            PrisonsOffenseType.PUBLIC_ORDER.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["settings"],
+            [
+                {
+                    "key": member.name,
+                    "label": member.value,
+                    "included": default_setting.value,
+                    "default": default_setting.value,
+                }
+                for member, default_setting in dimension_to_includes_excludes[
+                    PrisonsOffenseType.PUBLIC_ORDER
+                ].member_to_default_inclusion_setting.items()
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["label"],
+            PrisonsOffenseType.OTHER.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["key"],
+            PrisonsOffenseType.OTHER.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["settings"],
+            [],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["enabled"], False
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["label"],
+            PrisonsOffenseType.UNKNOWN.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["key"],
+            PrisonsOffenseType.UNKNOWN.value,
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["settings"],
+            [],
         )
 
         self.assertEqual(metrics[3]["key"], prisons.average_daily_population.key)
@@ -479,10 +513,273 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[7]["filenames"], ["grievances_upheld"])
 
     def test_get_agency_metrics(self) -> None:
-        self.shared_test_get_agency_metrics_published_data(endpoint="metrics")
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_G,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one()
+        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
+            agency_id=agency.id
+        )
+        self.session.add_all(agency_datapoints)
+        self.session.commit()
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            response = self.client.get(f"/api/agencies/{agency.id}/metrics")
+
+        self.assertEqual(response.status_code, 200)
+        metrics = assert_type(response.json, list)
+        self.shared_test_agency_metrics(metrics=metrics)
+        self.assertEqual(metrics[0]["datapoints"], None)
+        self.assertEqual(metrics[1]["datapoints"], None)
+        self.assertEqual(metrics[2]["datapoints"], None)
+        self.assertEqual(metrics[3]["datapoints"], None)
+        self.assertEqual(metrics[4]["datapoints"], None)
+        self.assertEqual(metrics[5]["datapoints"], None)
+        self.assertEqual(metrics[6]["datapoints"], None)
+        self.assertEqual(metrics[7]["datapoints"], None)
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][0]["datapoints"], None
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["datapoints"], None
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["datapoints"], None
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["datapoints"], None
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["datapoints"], None
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"], None
+        )
 
     def test_get_agency_published_data(self) -> None:
-        self.shared_test_get_agency_metrics_published_data(endpoint="published_data")
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_G,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one()
+        agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
+            agency_id=agency.id
+        )
+        self.session.add_all(agency_datapoints)
+        self.session.commit()
+
+        user_A = self.test_schema_objects.test_user_A
+        report_unpublished = self.test_schema_objects.test_report_monthly_prisons
+        report_published = self.test_schema_objects.test_report_monthly_prisons
+        report_published.status = schema.ReportStatus.PUBLISHED
+        report_published.date_range_start = datetime.date.fromisoformat("2022-07-01")
+        report_published.date_range_end = datetime.date.fromisoformat("2022-08-01")
+        self.session.add_all([report_unpublished, report_published, user_A])
+
+        report_metric = self.test_schema_objects.reported_admissions_metric
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_unpublished,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_published,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            response = self.client.get(f"/api/agencies/{agency.id}/published_data")
+
+        self.assertEqual(response.status_code, 200)
+        metrics = assert_type(response.json, list)
+
+        self.shared_test_agency_metrics(metrics=metrics)
+
+        self.assertEqual(metrics[0]["datapoints"], None)
+        self.assertEqual(metrics[1]["datapoints"], None)
+        self.assertEqual(
+            metrics[2]["datapoints"],
+            [
+                {
+                    "dimension_display_name": None,
+                    "disaggregation_display_name": None,
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 13,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 1000.0,
+                },
+                {
+                    "dimension_display_name": None,
+                    "disaggregation_display_name": None,
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 20,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 1000.0,
+                },
+            ],
+        )
+        self.assertEqual(metrics[3]["datapoints"], None)
+        self.assertEqual(metrics[4]["datapoints"], None)
+        self.assertEqual(metrics[5]["datapoints"], None)
+        self.assertEqual(metrics[6]["datapoints"], None)
+        self.assertEqual(metrics[7]["datapoints"], None)
+
+        self.assertEqual(metrics[2]["key"], prisons.admissions.key)
+        self.assertEqual(metrics[2]["enabled"], True)
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["key"],
+            PrisonsOffenseType.dimension_identifier(),
+        )
+        self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][0]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Person",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 14,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 3.0,
+                }
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][1]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Property",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 15,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 4.0,
+                }
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][2]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Drug",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 16,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 1.0,
+                }
+            ],
+        )
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][3]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Public Order",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 17,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 5.0,
+                }
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][4]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Other",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 18,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 2.0,
+                }
+            ],
+        )
+
+        self.assertEqual(
+            metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"],
+            [
+                {
+                    "dimension_display_name": "Unknown",
+                    "disaggregation_display_name": "Prisons Offense Type",
+                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
+                    "frequency": "MONTHLY",
+                    "id": 19,
+                    "is_published": True,
+                    "metric_definition_key": "PRISONS_ADMISSIONS",
+                    "metric_display_name": "Admissions",
+                    "old_value": None,
+                    "report_id": report_published.id,
+                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
+                    "value": 6.0,
+                }
+            ],
+        )
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A

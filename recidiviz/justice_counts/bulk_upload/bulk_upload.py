@@ -52,6 +52,7 @@ from recidiviz.justice_counts.metrics.metric_registry import (
     METRICS_BY_SYSTEM,
 )
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
@@ -101,7 +102,7 @@ class BulkUploader:
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_definitions: Optional[List[MetricDefinition]] = None,
     ) -> Tuple[
-        Dict[str, List[Dict[str, Any]]],
+        Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Iterate through all tabs in an Excel spreadsheet and upload them
@@ -127,7 +128,7 @@ class BulkUploader:
             reports=reports
         )
 
-        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]] = defaultdict(
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]] = defaultdict(
             list
         )
         metric_key_to_errors: Dict[
@@ -240,7 +241,7 @@ class BulkUploader:
     def _add_missing_metric_errors(
         self,
         actual_sheet_names: List[str],
-        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
@@ -302,7 +303,7 @@ class BulkUploader:
         self,
         actual_breakdown_sheet_names: Set[str],
         expected_breakdown_sheet_names: Set[str],
-        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
@@ -433,7 +434,7 @@ class BulkUploader:
         rows: List[Dict[str, Any]],
         sheet_name: str,
         agency_id: int,
-        metric_key_to_datapoint_jsons: Dict[str, List[Dict[str, Any]]],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
@@ -443,7 +444,7 @@ class BulkUploader:
         invalid_sheetnames: List[str],
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
-        Dict[str, List[Dict[str, Any]]],
+        Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Generally, a file will only contain metrics for one system. In the case
@@ -594,7 +595,7 @@ class BulkUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-    ) -> List[Dict[str, Any]]:
+    ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
         The rows should be formatted according to the technical specification, and contain
