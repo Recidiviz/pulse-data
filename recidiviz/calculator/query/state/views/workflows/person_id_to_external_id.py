@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -33,7 +34,7 @@ PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE = """
         external_id AS person_external_id,
         person_id,
         state_code,
-    FROM `{project_id}.{state_base_dataset}.state_person_external_id`
+    FROM `{project_id}.{normalized_state_dataset}.state_person_external_id`
     WHERE state_code != "US_ND" 
         OR (state_code = "US_ND" AND id_type = "US_ND_SID")
 """
@@ -43,7 +44,7 @@ PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=PERSON_ID_TO_EXTERNAL_ID_VIEW_NAME,
     view_query_template=PERSON_ID_TO_EXTERNAL_ID_QUERY_TEMPLATE,
     description=PERSON_ID_TO_EXTERNAL_ID_DESCRIPTION,
-    state_base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":
