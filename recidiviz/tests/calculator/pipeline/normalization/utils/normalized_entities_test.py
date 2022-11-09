@@ -193,7 +193,7 @@ def classes_in_normalized_entity_subtree(
 
     while unexplored_nodes:
         node_entity_class = unexplored_nodes.pop()
-        for field in attr.fields_dict(node_entity_class):
+        for field in attr.fields_dict(node_entity_class):  # type: ignore[arg-type]
             related_class_name = attr_field_referenced_cls_name_for_field_name(
                 node_entity_class, field
             )

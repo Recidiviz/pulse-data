@@ -21,5 +21,5 @@ class Config:
     attributes: dict
     config_file_name: str
     def __init__(
-        self, file_: Optional[str] = None, attributes: Dict[str, Any] = None
+        self, file_: Optional[str] = None, attributes: Optional[Dict[str, Any]] = None
     ): ...

@@ -82,7 +82,7 @@ class SelectedColumnsBigQueryViewBuilder(
         view_id: str,
         view_query_template: str,
         columns: List[str],
-        description: str = None,
+        description: Optional[str] = None,
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,

@@ -44,7 +44,9 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
 
 class FakeBatchWriter(TestCase):
     def __init__(
-        self, verify_batch_size: bool = False, verify_timestamp: datetime = None
+        self,
+        verify_batch_size: bool = False,
+        verify_timestamp: Optional[datetime] = None,
     ) -> None:
         super().__init__()
         self.doc_count = 0

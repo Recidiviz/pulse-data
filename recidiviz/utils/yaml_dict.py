@@ -28,7 +28,8 @@ import yaml
 # dictionaries, but not lists.
 #
 # Mypy's new type engine does not support recursive types yet, so for now this does not actually provide type safety.
-YAMLDictType = Dict[str, Union[str, float, "YAMLDictType"]]  # type: ignore
+YAMLDictValueType = Union[str, float, "YAMLDictType", List["YAMLDictValueType"], None]  # type: ignore
+YAMLDictType = Dict[str, YAMLDictValueType]  # type: ignore
 
 T = TypeVar("T")
 

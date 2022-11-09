@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-from typing import Callable, Type
+from typing import Callable, Optional, Type
 
 def handler(
-    event_class: Type, handler_: Callable = None, _decorator: bool = False
+    event_class: Type, handler_: Optional[Callable] = None, _decorator: bool = False
 ) -> Callable[[Callable], Callable]: ...

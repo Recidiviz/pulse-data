@@ -339,7 +339,7 @@ def _get_dimension_columns_for_metric_class(
     state_code, the person_id, and any date fields specific to the metric (e.g. date_of_supervision)."""
     dimension_columns: List[str] = ["state_code", "person_id"]
 
-    attr_fields = attr.fields_dict(metric_class)
+    attr_fields = attr.fields_dict(metric_class)  # type: ignore[arg-type]
     schema_fields = metric_class.bq_schema_for_metric_table()
     for field in schema_fields:
         if (

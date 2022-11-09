@@ -584,12 +584,14 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        incarceration_periods: List[StateIncarcerationPeriod] = None,
-        supervision_periods: List[StateSupervisionPeriod] = None,
-        violation_responses: List[entities.StateSupervisionViolationResponse] = None,
-        assessments: List[entities.StateAssessment] = None,
-        ip_to_judicial_district_kv: List[Dict[Any, Any]] = None,
-        person_id_to_county_kv: List[Dict[Any, Any]] = None,
+        incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
+        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        violation_responses: Optional[
+            List[entities.StateSupervisionViolationResponse]
+        ] = None,
+        assessments: Optional[List[entities.StateAssessment]] = None,
+        ip_to_judicial_district_kv: Optional[List[Dict[Any, Any]]] = None,
+        person_id_to_county_kv: Optional[List[Dict[Any, Any]]] = None,
     ) -> Dict[str, List]:
         return {
             StatePerson.__name__: [person],

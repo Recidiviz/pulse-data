@@ -140,7 +140,7 @@ def generate_fake_computed_opportunity(
 
 def generate_fake_reminder(
     opportunity: Opportunity,
-    deferred_until: datetime = None,
+    deferred_until: Optional[datetime] = None,
 ) -> OpportunityDeferral:
     if deferred_until is None:
         deferred_until = datetime.now() + timedelta(days=7)

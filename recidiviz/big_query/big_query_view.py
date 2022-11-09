@@ -400,7 +400,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         )
 
     def _build(
-        self, *, address_overrides: BigQueryAddressOverrides = None
+        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
     ) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,

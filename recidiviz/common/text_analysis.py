@@ -66,6 +66,7 @@ if not _nltk_path in data.path:
 class FuzzyMatcher(abc.ABC):
     """Abstract class for performing fuzzy matching of free text against a search term."""
 
+    @abc.abstractmethod
     def matches(self, text: str) -> bool:
         """Abstract method to determine if a piece of free text matches the search term."""
 

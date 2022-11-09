@@ -96,4 +96,4 @@ class VerifiableBytesReader(io.BufferedIOBase, BinaryIO):
     # This is overridden purely to appease mypy which otherwise will complain about
     # incompatible definitions in super classes.
     def __enter__(self) -> "VerifiableBytesReader":
-        pass
+        return self

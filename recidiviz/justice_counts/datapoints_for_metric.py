@@ -218,7 +218,7 @@ class DatapointsForMetric:
         ] = defaultdict(dict)
         for dimension in DIMENSION_IDENTIFIER_TO_DIMENSION[
             aggregated_dimension_definition.dimension_identifier()
-        ]:
+        ]:  # type: ignore[attr-defined]
             includes_excludes_set = (
                 aggregated_dimension_definition.dimension_to_includes_excludes.get(
                     dimension
@@ -269,7 +269,7 @@ class DatapointsForMetric:
                 d: None if create_dimension_to_value_dict else True
                 for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                     aggregated_dimension.dimension_identifier()
-                ]
+                ]  # type: ignore[attr-defined]
             }
             for aggregated_dimension in metric_definition.aggregated_dimensions or []
         }

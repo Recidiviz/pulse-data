@@ -20,7 +20,7 @@ from a SQL Database."""
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, Iterable, List, Type
+from typing import Dict, Iterable, List, Optional, Type
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -109,7 +109,9 @@ def read_placeholder_persons(
 
 
 def read_people(
-    session: Session, full_name: str = None, birthdate: datetime.date = None
+    session: Session,
+    full_name: Optional[str] = None,
+    birthdate: Optional[datetime.date] = None,
 ) -> List[schema.StatePerson]:
     """Read all people matching the optional surname and birthdate. If neither
     the surname or birthdate are provided, then read all people."""

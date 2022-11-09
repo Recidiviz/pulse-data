@@ -267,7 +267,7 @@ class ModuleFinder:
         self,
         name: str,
         caller: Optional[Module] = None,
-        fromlist: List[str] = None,
+        fromlist: Optional[List[str]] = None,
         level: int = -1,
     ) -> Optional[Module]:
         self.msg(3, "import_hook", name, caller, fromlist, level)

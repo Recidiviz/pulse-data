@@ -41,7 +41,7 @@ class DirectIngestRawDataTableLatestViewBuilder(
     def __init__(
         self,
         *,
-        project_id: str = None,
+        project_id: Optional[str] = None,
         region_code: str,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,

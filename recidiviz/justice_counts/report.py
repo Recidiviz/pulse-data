@@ -351,7 +351,7 @@ class ReportInterface:
         for aggregated_dimension in metric_definition.aggregated_dimensions or []:
             for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                 aggregated_dimension.dimension.dimension_identifier()
-            ]:
+            ]:  # type: ignore[attr-defined]
                 if d not in all_dimensions_to_values:
                     # If this dimension wasn't reported, skip it. Don't add a blank
                     # datapoint, which will overwrite any previously reported values.

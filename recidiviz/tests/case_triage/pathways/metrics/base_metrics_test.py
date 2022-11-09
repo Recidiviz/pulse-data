@@ -52,7 +52,9 @@ from recidiviz.tests.case_triage.pathways import fixtures
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-def load_metrics_fixture(model: PathwaysBase, filename: str = None) -> List[Dict]:
+def load_metrics_fixture(
+    model: PathwaysBase, filename: Optional[str] = None
+) -> List[Dict]:
     filename = f"{model.__tablename__}.csv" if filename is None else filename
     fixture_path = os.path.join(os.path.dirname(fixtures.__file__), filename)
     results = []

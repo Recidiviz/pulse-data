@@ -20,7 +20,7 @@
 TODO(#8905): Delete this whole file once ingest mappings overhaul is complete for all states.
 """
 
-from typing import Dict, Sequence, Set, Union
+from typing import Dict, Optional, Sequence, Set, Union
 
 import attr
 from more_itertools import one
@@ -133,8 +133,10 @@ _HIERARCHY_MAP: Dict[
 
 def get_ancestor_class_sequence(
     class_name: "AncestorClassName",
-    ancestor_chain: Dict["AncestorClassName", str] = None,
-    enforced_ancestor_choices: Dict["AncestorChoiceKey", "AncestorClassName"] = None,
+    ancestor_chain: Optional[Dict["AncestorClassName", str]] = None,
+    enforced_ancestor_choices: Optional[
+        Dict["AncestorChoiceKey", "AncestorClassName"]
+    ] = None,
 ) -> Sequence["AncestorClassName"]:
     """Returns the sequence of ancestor classes leading from the root of the
     object graph, a Person type, all the way to the given |class_name|.

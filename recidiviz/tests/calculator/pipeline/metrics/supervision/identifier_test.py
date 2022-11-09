@@ -6613,7 +6613,7 @@ def expected_population_events(
     supervising_officer_external_id: Optional[str] = None,
     level_1_supervision_location_external_id: Optional[str] = None,
     level_2_supervision_location_external_id: Optional[str] = None,
-    case_compliances: Dict[date, SupervisionCaseCompliance] = None,
+    case_compliances: Optional[Dict[date, SupervisionCaseCompliance]] = None,
     judicial_district_code: Optional[str] = None,
     supervision_downgrade_date: Optional[date] = None,
     supervision_downgrade_occurred: Optional[bool] = False,

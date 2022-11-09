@@ -59,7 +59,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
         self._set_person_on_dst(person, dst)
         entity_cls: Type[Entity] = self._get_entity_class(dst)
 
-        for field, _ in attr.fields_dict(entity_cls).items():
+        for field, _ in attr.fields_dict(entity_cls).items():  # type: ignore[arg-type]
             if not self._direction_checker:
                 raise ValueError("Found unexpectedly null direction checker.")
             if self._direction_checker.is_back_edge(dst, field):

@@ -59,7 +59,7 @@ def _metrics_with_enum_field_of_type(
     return [
         metric
         for metric in DATAFLOW_METRICS_TO_TABLES
-        if (field := attr.fields_dict(metric).get(enum_field_name)) is not None
+        if (field := attr.fields_dict(metric).get(enum_field_name)) is not None  # type: ignore[arg-type]
         and get_enum_cls(field) == enum_field_type
     ]
 
@@ -73,7 +73,7 @@ def _validate_metric_has_all_fields(
     Raises an error if the metric does not contain all of the fields.
     """
     for field in fields_to_validate:
-        if (attr.fields_dict(metric).get(field)) is None:
+        if (attr.fields_dict(metric).get(field)) is None:  # type: ignore[arg-type]
             raise ValueError(
                 f"The {metric.__name__} does not contain metric field: " f"{field}."
             )

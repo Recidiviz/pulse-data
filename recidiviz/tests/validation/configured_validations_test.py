@@ -72,7 +72,7 @@ class TestConfiguredValidations(unittest.TestCase):
         validations = get_all_validations()
         for validation in validations:
             try:
-                attr.validate(validation)
+                attr.validate(validation)  # type: ignore[arg-type]
             except Exception as e:
                 self.fail(
                     f"{validation.validation_name} threw an unexpected exception: {e}"
@@ -98,7 +98,7 @@ class TestConfiguredValidations(unittest.TestCase):
             BigQueryViewCollector.collect_view_builders_in_module(
                 # TODO(python/mypy#5374): Remove the ignore type when abstract class
                 #  assignments are supported.
-                builder_type=BigQueryViewBuilder,  # type: ignore[misc]
+                builder_type=BigQueryViewBuilder,  # type: ignore[type-abstract]
                 view_dir_module=views_module,
                 recurse=True,
                 view_builder_attribute_name_regex=".*_VIEW_BUILDER",

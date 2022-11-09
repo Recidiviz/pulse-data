@@ -18,7 +18,7 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from unittest import mock
 
 from freezegun import freeze_time
@@ -2120,7 +2120,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 def expected_metrics_count(
     supervision_events: List[SupervisionEvent],
     include_all_metrics: bool = True,
-    metric_to_include: SupervisionMetricType = None,
+    metric_to_include: Optional[SupervisionMetricType] = None,
     out_of_state_population: bool = False,
 ) -> int:
     """Calculates the expected number of characteristic combinations given the supervision time events

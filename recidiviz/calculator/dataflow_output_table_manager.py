@@ -86,7 +86,7 @@ def update_dataflow_metric_tables_schemas(
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
         clustering_fields = None
         if all(
-            cluster_field in attr.fields_dict(metric_class).keys()
+            cluster_field in attr.fields_dict(metric_class).keys()  # type: ignore[arg-type]
             for cluster_field in dataflow_config.METRIC_CLUSTERING_FIELDS
         ):
             # Only apply clustering if the table has all of the metric clustering

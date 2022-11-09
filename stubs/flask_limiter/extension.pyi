@@ -14,15 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from flask import Flask
 
 class Limiter(object):
     def __init__(
         self,
-        app: Flask = None,
-        key_func: Callable[[], str] = None,
+        app: Optional[Flask] = None,
+        key_func: Optional[Callable[[], str]] = None,
         default_limits: List[str] = [],
         storage_uri: str = "memory://",
         storage_options: Dict[Any, Any] = {},

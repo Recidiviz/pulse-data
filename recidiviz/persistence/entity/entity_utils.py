@@ -450,7 +450,7 @@ class CoreEntityFieldIndex:
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
-        for field, attribute in attr.fields_dict(entity.__class__).items():
+        for field, attribute in attr.fields_dict(entity.__class__).items():  # type: ignore[arg-type]
             # TODO(#1908): Update traversal logic if relationship fields can be
             # different types aside from Entity and List
             if is_forward_ref(attribute) or is_list(attribute):
@@ -630,7 +630,7 @@ def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
 def print_entity_trees(
     entities_list: Sequence[CoreEntity],
     print_tree_structure_only: bool = False,
-    python_id_to_fake_id: Dict[int, int] = None,
+    python_id_to_fake_id: Optional[Dict[int, int]] = None,
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ):
@@ -663,7 +663,7 @@ def print_entity_tree(
     entity: CoreEntity,
     print_tree_structure_only: bool = False,
     indent: int = 0,
-    python_id_to_fake_id: Dict[int, int] = None,
+    python_id_to_fake_id: Optional[Dict[int, int]] = None,
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
 ):
@@ -825,7 +825,7 @@ def get_all_entities_from_tree(
 def get_entities_by_type(
     all_entities: Sequence[DatabaseEntity],
     field_index: CoreEntityFieldIndex,
-    entities_of_type: Dict[Type, List[DatabaseEntity]] = None,
+    entities_of_type: Optional[Dict[Type, List[DatabaseEntity]]] = None,
     seen_entities: Optional[Set[int]] = None,
 ) -> Dict[Type, List[DatabaseEntity]]:
     """Creates a list of entities for each entity type present in the provided
@@ -937,7 +937,7 @@ def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optiona
         return None
 
     parent_cls = obj.__class__
-    attribute = attr.fields_dict(parent_cls).get(property_name)
+    attribute = attr.fields_dict(parent_cls).get(property_name)  # type: ignore[arg-type]
     if not attribute:
         return None
 
@@ -960,7 +960,7 @@ def _is_property_flat_field(obj: Entity, property_name: str) -> bool:
     if not isinstance(obj, Entity):
         raise TypeError(f"Unexpected type [{type(obj)}]")
 
-    attribute = attr.fields_dict(obj.__class__).get(property_name)
+    attribute = attr.fields_dict(obj.__class__).get(property_name)  # type: ignore[arg-type]
 
     if not attribute:
         raise ValueError(
