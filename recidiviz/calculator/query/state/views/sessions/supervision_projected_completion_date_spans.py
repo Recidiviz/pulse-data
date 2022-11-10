@@ -18,7 +18,10 @@
 as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -91,7 +94,7 @@ FROM all_states_spans a
 LEFT JOIN id_max_date id
     ON id.person_id = a.person_id 
     AND id.state_code = a.state_code
-    AND CURRENT_DATE('US/Pacific') <= COALESCE(end_date_exclusive, "9999-12-31")
+    AND CURRENT_DATE('US/Pacific') <= {nonnull_end_date_exclusive_clause('a.end_date_exclusive')}
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
