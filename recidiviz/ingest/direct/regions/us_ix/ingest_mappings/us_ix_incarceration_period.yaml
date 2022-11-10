@@ -69,38 +69,121 @@ output:
             $enum_mapping:
               $raw_text: Start_TransferReasonDesc
               $mappings:
-                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  - Administrative
-                StateIncarcerationPeriodAdmissionReason.ESCAPE:
-                  - Escape
-                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
-                  - Initial Facility Intake
-                  - Court Action
-                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
-                  - Return from Escape
-                StateIncarcerationPeriodAdmissionReason.TRANSFER:
-                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
-                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
-                  - Assigned
                 StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION:
                   - Pending Custody Intake
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - Escape
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - Administrative
+                  - Administrative Transfer
+                  - Assigned To Jail
+                  - Civil Commitment
+                  - Civil Commitment Pending
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - Court Action
+                  - Initial Facility Intake
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - Return from Escape
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - Return From Bond
+                  - Return From Temporary Release
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - Return From Parole
+                StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
+                  - Sanction
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - Assigned To Work Release
+                  - Death Row
+                  - Home Electronic Monitoring
+                  - Independent Living Program
+                  - Pre-Release Assignment
+                  - Segregation -Administration
+                  - Segregation -Mental Health
+                  - Segregation -Protective Custody
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
+                  - Mental Health Treatment
+                  - Substance Abuse And Therapeutic Program Assignment
+                  - Temporary Remand To Custody
+                  - Wellness Hold
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - Emergency Transfer
+                  - Jail To Jail
+                  - Offender Moves Location
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                  - Return From Court
+                  - Returned To Jail
+                  - Transfer To Hospital
+                StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - Assigned
+                  - Contract In
+                  - Interstate Compact Facility In
+                  - Return Other Jurisdictions
+                  - Serving Local Jail Sentence
+                  - Serving Other Jurisdiction
+                  - Serving Out of State Sentence
           release_reason:
             $enum_mapping:
               $raw_text: End_TransferReasonDesc
               $mappings:
-                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
-                  - Release to Supervision
-                StateIncarcerationPeriodReleaseReason.TRANSFER:
-                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - Release to Parole
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - Death - Natural
+                  - Death - Unnatural
                 StateIncarcerationPeriodReleaseReason.ESCAPE:
                   - Escape
+                StateIncarcerationPeriodReleaseReason.EXECUTION:
+                  - Execution
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  - Administrative
+                  - Administrative Transfer
+                  - Assigned To Jail
+                  - Court Action
+                  - Initial Facility Intake
+                  - Other Unspecified Release
+                  - Pending Custody Intake
+                  - Release Court Order
+                  - Return From Bond
+                  - Substance Abuse And Therapeutic Program Assignment
+                  - Temporary Remand To Custody
+                  - Wellness Hold
+                StateIncarcerationPeriodReleaseReason.PARDONED:
+                  - Release Clemency/Pardon
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
+                  - Out On Bond
+                  - Reinstate Parole
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - Intensive Re-entry Program
+                  - Release to Supervision
                 StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
                   - Return from Escape
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - Discharged from DOC
-                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
-                  - Pending Custody Intake
-                  - Initial Facility Intake
-                  - Administrative
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - Assigned To Work Release
+                  - Death Row
+                  - Home Electronic Monitoring
+                  - Independent Living Program
+                  - Pre-Release Assignment
+                  - Segregation -Administration
+                  - Segregation -Mental Health
+                  - Segregation -Protective Custody
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - Authorized Temporary Release
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - Emergency Transfer
+                  - Jail To Jail
+                  - Offender Moves Location
+                  - Out To Court # TODO(#16366): Revisit the cases when out to court signifies transfer to federal
+                  - Return From Court
+                  - Returned To Jail
+                  - Transfer To Hospital
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - Assigned # Transferred to other state
+                  - Contract Out
+                  - Deported
+                  - Federal Custody
+                  - Interstate Compact Facility Out
+                  - Serving Local Jail Sentence
+                  - Serving Other Jurisdiction
+                  - Serving Out of State Sentence
