@@ -218,6 +218,15 @@ class BigQueryQueryRewriter:
             " EXTRACT({clause})::integer{end}",
         )
 
+        # EXTRACT DATE returns a DATE type in BQ and PARSE_TIMESTAMP creates a parseable timestamp.
+        # This takes xx_column, converts it to a timestamp, and then extracts the date from it,
+        # Turning EXTRACT(DATE FROM PARSE_TIMESTAMP(format, timestamp_col))
+        # and becomes TO_TIMESTAMP()::timestamp::date
+        query = _replace_iter(
+            query,
+            r"EXTRACT\(DATE\sFROM\s(SAFE\.)?PARSE_TIMESTAMP\((?P<fmt>.+?), (?P<col>.+?)\)\)?",
+            "TO_TIMESTAMP({col}, {fmt})::TIMESTAMP::DATE",
+        )
         # EXTRACT DATE returns a DATE type in BQ, this strips out the EXTRACT(DATE FROM timestamp_col) AS xx_column
         # and becomes timestamp_col::date
         query = _replace_iter(

@@ -1,15 +1,41 @@
-key_mappings:
-  ParoleNumber: state_person.state_person_id
-
-child_key_mappings:
-  ParoleNumber: state_person_external_id.state_person_external_id_id
-  InterviewDate: state_assessment.assessment_date
-  LSIRScore: state_assessment.assessment_score
-
-primary_key:
-  ParoleNumber: state_person.state_person_id
-
-keys_to_ignore:
-  - ParoleCountID # Parole count id (meaning unclear) - handled manually in the controller
-  - ReleaseStatus # Release status (meaning unclear) - handled manually in the controller
-  - LsirID # Index of a particular instance of this assessment taken by a particular person - handled manually in the controller
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_dbo_tbllmnTestScore` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ParoleNumber
+  - LsirID
+  - ParoleCountID # Parole count id (meaning unclear)
+  - LSIRScore # Index of a particular instance of this assessment taken by a particular person
+  - ReleaseStatus # Release status (meaning unclear)
+  - InterviewDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - ParoleNumber
+                - ParoleCountID
+                - LsirID
+                - ReleaseStatus
+          assessment_type: $literal_enum(StateAssessmentType.LSIR)
+          assessment_class: $literal_enum(StateAssessmentClass.RISK)
+          assessment_date: InterviewDate
+          assessment_score: LSIRScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $separator: "††"
+                  $values:
+                    - InterviewDate
+                    - $literal("LSIR")
+                    - LSIRScore
+              $custom_parser: us_pa_custom_enum_parsers.assessment_level_mapper

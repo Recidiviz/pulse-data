@@ -22,7 +22,6 @@ TODO(#8902): This file should become empty and be deleted when we have fully mig
 """
 from typing import Dict, List, Optional
 
-from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -597,22 +596,3 @@ def concatenate_ccis_incarceration_period_purpose_codes(row: Dict[str, str]) -> 
     program_type = row["program_id"] or "None"
 
     return f"{code_type}-{program_type}"
-
-
-def assessment_level_mapper(
-    assessment_level_raw_text: Optional[str],
-) -> Optional[StateAssessmentLevel]:
-    """Maps an assessment_level_raw_text code to the corresponding StateAssessmentLevel, if applicable."""
-    if not assessment_level_raw_text:
-        return None
-
-    if assessment_level_raw_text.startswith("UNKNOWN"):
-        return StateAssessmentLevel.EXTERNAL_UNKNOWN
-
-    for assessment_level in StateAssessmentLevel:
-        if assessment_level_raw_text == assessment_level.value:
-            return assessment_level
-
-    raise ValueError(
-        f"Unexpected assessment_level_raw_text: {assessment_level_raw_text}"
-    )
