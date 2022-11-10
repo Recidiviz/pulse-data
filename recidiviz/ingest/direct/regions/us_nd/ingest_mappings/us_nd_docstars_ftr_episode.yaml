@@ -1,26 +1,20 @@
-key_mappings:
-  EPISODE_ID: state_program_assignment.state_program_assignment_id
-  ASSIGNED_PROVIDER_ID: state_program_assignment.program_id
-  LOCATION_ID: state_program_assignment.program_location_id
-  STATUS: state_program_assignment.participation_status
-  SUBMITTED: state_program_assignment.referral_date
-  ADMITTED_DATE: state_program_assignment.start_date
-
-ancestor_keys:
-  SID: state_person.state_person_id
-
-primary_key:
-  EPISODE_ID: state_program_assignment.state_program_assignment_id
-
-keys_to_ignore:
-  - STATUS_DATE # Handled manually in controller.
-  - PENDING_CODE # Always null.
-  - ALLOW_VIEWING # Checking with ND. No apparent use for now.
-  - PEER_SUPPORT_OFFERED # Checking with ND. No apparent use for now.
-  - PEER_SUPPORT_ACCEPTED # Checking with ND. No apparent use for now.
-  - SN_LAST_UPDATED_DATE # Checking with ND. No apparent use for now.
-  - COORDINATOR_GUID # Checking with ND. No apparent use for now.
-  - PREFERRED_PROVIDER_ID # Everything below processed manually
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - EPISODE_ID
+  - ASSIGNED_PROVIDER_ID
+  - LOCATION_ID
+  - STATUS
+  - SUBMITTED
+  - ADMITTED_DATE
+  - STATUS_DATE
+  - PENDING_CODE
+  - ALLOW_VIEWING
+  - PEER_SUPPORT_OFFERED
+  - PEER_SUPPORT_ACCEPTED
+  - SN_LAST_UPDATED_DATE
+  - COORDINATOR_GUID
+  - PREFERRED_PROVIDER_ID
   - PREFERRED_LOCATION_ID
   - STRENGTHS
   - NEEDS
@@ -33,3 +27,62 @@ keys_to_ignore:
   - SPECIALIST_INITIAL
   - SUBMITTED_BY
   - SUBMITTED_BY_NAME
+  - SID
+unused_columns:
+  - PEER_SUPPORT_OFFERED
+  - SN_LAST_UPDATED_DATE
+  - PEER_SUPPORT_ACCEPTED
+  - COORDINATOR_GUID
+  - ALLOW_VIEWING
+  - PENDING_CODE
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: SID
+          id_type: $literal("US_ND_SID")
+    program_assignments:
+      - StateProgramAssignment:
+          external_id: EPISODE_ID
+          program_id: ASSIGNED_PROVIDER_ID
+          program_location_id: LOCATION_ID
+          participation_status:
+            $enum_mapping:
+              $raw_text: STATUS
+              $mappings:
+                StateProgramAssignmentParticipationStatus.DENIED:
+                  - Denied
+                StateProgramAssignmentParticipationStatus.DISCHARGED:
+                  - Discharged
+                StateProgramAssignmentParticipationStatus.PENDING:
+                  - Pending
+                  - Submitted
+                  - Pending Coordinator
+                StateProgramAssignmentParticipationStatus.REFUSED:
+                  - Refused
+                StateProgramAssignmentParticipationStatus.IN_PROGRESS:
+                  - In Progress
+          referral_date: SUBMITTED
+          start_date: ADMITTED_DATE
+          discharge_date:
+            $conditional:
+              - $if:
+                  $equal:
+                    - STATUS
+                    - $literal("Discharged")
+                $then: STATUS_DATE
+          referral_metadata:
+            $json_dict:
+              preferred_provider_id: PREFERRED_PROVIDER_ID
+              preferred_location_id: PREFERRED_LOCATION_ID
+              strengths: STRENGTHS
+              needs: NEEDS
+              is_clinical_assessment: IS_CLINICAL_ASSESSMENT
+              functional_impairments: FUNCTIONAL_IMPAIRMENTS
+              assessment_location: ASSESSMENT_LOCATION
+              referral_reason: REFERRAL_REASON
+              specialist_first_name: SPECIALIST_FIRST_NAME
+              specialist_last_name: SPECIALIST_LAST_NAME
+              specialist_initial: SPECIALIST_INITIAL
+              submitted_by: SUBMITTED_BY
+              submitted_by_name: SUBMITTED_BY_NAME
