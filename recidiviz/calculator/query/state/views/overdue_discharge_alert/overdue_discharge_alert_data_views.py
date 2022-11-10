@@ -81,12 +81,12 @@ FROM `{project_id}.{analyst_dataset}.projected_discharges_materialized` projecte
 INNER JOIN overdue_discharge_alert_recipients
     ON overdue_discharge_alert_recipients.state_code = projected_discharges.state_code
     AND overdue_discharge_alert_recipients.external_id = projected_discharges.supervising_officer_external_id
-LEFT OUTER JOIN `{project_id}.{shared_metric_views_dataset}.overdue_discharge_alert_exclusions` overdue_discharge_alert_exclusions
-    ON overdue_discharge_alert_exclusions.state_code = projected_discharges.state_code
-    AND overdue_discharge_alert_exclusions.person_external_id = projected_discharges.person_external_id
+# NOTE: We used to filter these results by an overdue_discharge_alert_exclusions view
+# that read from static tables with specific exclusions for ID (see 
+https://github.com/Recidiviz/pulse-data/blob/82f00684dfe689088e72dc06fb0cea07fede46a9/recidiviz/calculator/query/state/views/shared_metric/overdue_discharge_alert_exclusions.py). 
+# We may want to # re-introduce a similar filter in the future.
 WHERE
-    overdue_discharge_alert_exclusions.state_code IS NULL
-    AND projected_end_date <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 60 DAY)
+    projected_end_date <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 60 DAY)
 GROUP BY
     overdue_discharge_alert_recipients.state_code,
     overdue_discharge_alert_recipients.district,
@@ -103,7 +103,6 @@ OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
-    shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     discharge_struct=DISCHARGE_STRUCT_FRAGMENT,
