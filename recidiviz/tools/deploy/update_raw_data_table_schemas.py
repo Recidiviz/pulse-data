@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
@@ -39,6 +40,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.future_executor import map_fn_with_progress_bar
@@ -51,7 +53,10 @@ def update_raw_data_table_schema(state_code: str, raw_file_tag: str) -> None:
     addition, adds the necessary file_id and update_datetime columns to the schema."""
     bq_client = BigQueryClientImpl()
 
-    raw_data_dataset_id = raw_tables_dataset_for_region(state_code)
+    # TODO(#16565): Update to thread through instance in function.
+    raw_data_dataset_id = raw_tables_dataset_for_region(
+        state_code=StateCode(state_code.upper()), instance=DirectIngestInstance.PRIMARY
+    )
     region_config = get_region_raw_file_config(state_code)
     raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
 
@@ -99,7 +104,10 @@ def update_raw_data_table_schemas() -> None:
     logging.info("Creating raw data datasets (if necessary)...")
     bq_client = BigQueryClientImpl()
     for state_code in state_codes:
-        raw_data_dataset_id = raw_tables_dataset_for_region(state_code.value)
+        # TODO(#16565): Update to thread through instance in function.
+        raw_data_dataset_id = raw_tables_dataset_for_region(
+            state_code=state_code, instance=DirectIngestInstance.PRIMARY
+        )
         raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
         bq_client.create_dataset_if_necessary(raw_data_dataset_ref)
 

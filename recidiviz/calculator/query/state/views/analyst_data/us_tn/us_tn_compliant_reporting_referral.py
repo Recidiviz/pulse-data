@@ -25,6 +25,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -200,7 +201,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_TN.value
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )

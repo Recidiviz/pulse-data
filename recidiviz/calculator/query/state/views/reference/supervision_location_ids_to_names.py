@@ -23,6 +23,7 @@ from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -179,19 +180,19 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_MO.value
+        state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
     ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ND.value
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_PA.value
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ME.value
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
     us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_MI.value
+        state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
     ),
 )
 

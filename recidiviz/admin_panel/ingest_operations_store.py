@@ -98,10 +98,10 @@ class IngestOperationsStore(AdminPanelStore):
     def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
 
-    def _verify_clean_raw_data_state(
+    def _verify_clean_secondary_raw_data_state(
         self, state_code: StateCode, instance: DirectIngestInstance
     ) -> None:
-        """Confirm that all raw file metadata / data has been invalidated."""
+        """Confirm that all raw file metadata / data has been invalidated in SECONDARY."""
 
         raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=state_code.value, raw_data_instance=instance
@@ -116,7 +116,7 @@ class IngestOperationsStore(AdminPanelStore):
 
         # Confirm that there isn't any secondary raw data on BQ
         secondary_raw_data_dataset = raw_tables_dataset_for_region(
-            region_code=state_code.value
+            state_code=state_code, instance=instance
         )
         if (
             self.bq_client.dataset_exists(secondary_raw_data_dataset)
@@ -265,7 +265,9 @@ class IngestOperationsStore(AdminPanelStore):
                 StateCode(formatted_state_code.upper())
             )
         ):
-            self._verify_clean_raw_data_state(state_code, raw_data_source_instance)
+            self._verify_clean_secondary_raw_data_state(
+                state_code, raw_data_source_instance
+            )
 
         # Confirm that all ingest view metadata / data has been invalidated.
         self._verify_clean_ingest_view_state(state_code, instance)

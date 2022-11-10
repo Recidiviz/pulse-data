@@ -26,7 +26,6 @@ python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --
 python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_mo
 """
 
-
 import argparse
 import datetime
 import logging
@@ -36,12 +35,14 @@ from typing import Dict, List, Optional, Tuple
 from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -77,7 +78,11 @@ def compare_raw_data_between_projects(
     raw_file_config = DirectIngestRegionRawFileConfig(region_code)
 
     bq_client = BigQueryClientImpl(project_id=source_project_id)
-    dataset_id = raw_tables_dataset_for_region(region_code, sandbox_dataset_prefix=None)
+    dataset_id = raw_tables_dataset_for_region(
+        state_code=StateCode(region_code.upper()),
+        instance=DirectIngestInstance.PRIMARY,
+        sandbox_dataset_prefix=None,
+    )
     source_dataset = bq_client.dataset_ref_for_id(dataset_id)
 
     query_jobs: Dict[str, bigquery.QueryJob] = {}

@@ -34,9 +34,11 @@ from recidiviz.calculator.pipeline.supplemental.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -128,7 +130,9 @@ US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_DESCRIPTION,
     supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=False,
 )
 

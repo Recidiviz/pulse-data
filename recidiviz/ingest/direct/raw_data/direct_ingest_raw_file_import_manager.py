@@ -61,6 +61,7 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -590,6 +591,7 @@ class DirectIngestRawFileImportManager:
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
         csv_reader: GcsfsCsvReader,
+        instance: DirectIngestInstance,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         sandbox_dataset_prefix: Optional[str] = None,
         allow_incomplete_configs: bool = False,
@@ -613,10 +615,9 @@ class DirectIngestRawFileImportManager:
             region_code=self.region.region_code,
             regions_module_override=self.region.region_module,
         ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
-        # TODO(#12795): Pass a raw_data_source_instance into the constructor so you
-        #  can thread it through here.
         self.raw_tables_dataset = raw_tables_dataset_for_region(
-            region_code=self.region.region_code,
+            state_code=StateCode(self.region.region_code.upper()),
+            instance=instance,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
 
@@ -961,7 +962,6 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
         file_metadata: DirectIngestRawFileMetadata,
         temp_output_directory_path: GcsfsDirectoryPath,
     ):
-
         super().__init__(path, fs, include_header=False)
         self.file_metadata = file_metadata
         self.temp_output_directory_path = temp_output_directory_path

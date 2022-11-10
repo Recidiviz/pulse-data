@@ -34,12 +34,14 @@ from typing import Dict, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 
 
@@ -50,7 +52,10 @@ def _get_columns_by_file(
     columns_by_file: Dict[str, List[RawTableColumnInfo]] = {}
 
     raw_data_dataset = raw_tables_dataset_for_region(
-        state_code, sandbox_dataset_prefix=None
+        state_code=StateCode(state_code),
+        # Raw data is only directly uploaded by states to PRIMARY.
+        instance=DirectIngestInstance.PRIMARY,
+        sandbox_dataset_prefix=None,
     )
 
     query_string = f"""

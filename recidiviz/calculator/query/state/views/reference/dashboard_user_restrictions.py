@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -300,10 +301,10 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE,
     description=DASHBOARD_USER_RESTRICTIONS_DESCRIPTION,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_MO.value
+        state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
     ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ND.value
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     columns=[
         "state_code",

@@ -35,9 +35,11 @@ from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_raw_project
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_projected_discharges import (
     US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -100,9 +102,15 @@ PROJECTED_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=STATE_BASE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_dataset=REFERENCE_VIEWS_DATASET,
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
-    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_pa"),
-    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_mo"),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=True,
 )
 

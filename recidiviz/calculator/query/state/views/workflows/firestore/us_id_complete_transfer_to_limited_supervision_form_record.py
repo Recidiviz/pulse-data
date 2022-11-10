@@ -35,6 +35,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -410,7 +411,9 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = Simple
         StateCode.US_ID
     ),
     should_materialize=True,
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":

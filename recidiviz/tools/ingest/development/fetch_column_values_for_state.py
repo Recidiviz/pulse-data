@@ -38,6 +38,7 @@ from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
@@ -47,6 +48,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawTableColumnInfo,
     get_region_raw_file_config,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
@@ -69,7 +71,10 @@ def _get_known_values(
         return column
 
     raw_data_dataset = raw_tables_dataset_for_region(
-        region_code=region_code.lower(), sandbox_dataset_prefix=sandbox_dataset_prefix
+        state_code=StateCode(region_code.upper()),
+        # Raw data is only directly uploaded by states to PRIMARY.
+        instance=DirectIngestInstance.PRIMARY,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
 
     query_string = f"""

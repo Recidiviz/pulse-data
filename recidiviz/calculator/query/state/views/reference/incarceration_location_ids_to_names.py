@@ -23,6 +23,7 @@ from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -183,7 +184,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ME.value
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
 )
 

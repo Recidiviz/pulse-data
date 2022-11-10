@@ -36,9 +36,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -134,7 +136,9 @@ US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_DESCRIPTION,
     supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    us_id_raw_data_dataset=raw_tables_dataset_for_region("us_id"),
+    us_id_raw_data_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=False,
 )
 

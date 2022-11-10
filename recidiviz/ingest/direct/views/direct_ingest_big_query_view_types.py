@@ -24,6 +24,7 @@ import attr
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -33,6 +34,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRegionRawFileConfig,
     get_region_raw_file_config,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
@@ -222,11 +224,15 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         **additional_query_template_kwargs: Any,
     ):
         view_dataset_id = raw_latest_views_dataset_for_region(
-            region_code=region_code.lower(),
+            state_code=StateCode(region_code.upper()),
+            # TODO(#16565): Update to thread through instance in class.
+            instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
         self.raw_table_dataset_id = raw_tables_dataset_for_region(
-            region_code,
+            state_code=StateCode(region_code.upper()),
+            # TODO(#16565): Update to thread through instance in class.
+            instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
         columns_clause = self._columns_clause_for_config(raw_file_config)

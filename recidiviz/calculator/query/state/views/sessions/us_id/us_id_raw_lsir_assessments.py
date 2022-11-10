@@ -20,9 +20,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -109,7 +111,9 @@ US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     lsir_question_array=",".join([str(x) for x in range(1, 55)]),
     should_materialize=False,
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":

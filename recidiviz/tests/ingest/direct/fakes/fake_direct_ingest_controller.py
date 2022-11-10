@@ -225,6 +225,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         temp_output_directory_path: GcsfsDirectoryPath,
         big_query_client: BigQueryClient,
         csv_reader: GcsfsCsvReader,
+        instance: DirectIngestInstance,
     ):
         super().__init__(
             region=region,
@@ -235,6 +236,7 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
                 region.region_code
             ),
             csv_reader=csv_reader,
+            instance=instance,
         )
         self.imported_paths: List[GcsfsFilePath] = []
 
