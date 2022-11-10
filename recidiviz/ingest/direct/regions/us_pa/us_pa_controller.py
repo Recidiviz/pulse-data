@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_PA."""
-import json
 import re
 from enum import Enum
 from typing import Dict, List, Optional, Type
@@ -31,7 +30,6 @@ from recidiviz.common.constants.state.standard_enum_overrides import (
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
 )
@@ -78,11 +76,10 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks i
     gen_convert_person_ids_to_external_id_objects,
     gen_label_single_external_id_hook,
 )
-from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import (
-    set_date_specific_lsir_fields,
+from recidiviz.ingest.direct.regions.us_pa.us_pa_custom_enum_parsers import (
+    assessment_level_mapper,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_legacy_enum_helpers import (
-    assessment_level_mapper,
     concatenate_ccis_incarceration_period_end_codes,
     concatenate_ccis_incarceration_period_purpose_codes,
     concatenate_ccis_incarceration_period_start_codes,
@@ -98,7 +95,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
-    StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StatePerson,
@@ -146,8 +142,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
-                self._generate_doc_assessment_external_id,
-                self._enrich_doc_assessments,
             ],
             "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
             "ccis_incarceration_period": [
@@ -158,8 +152,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             ],
             "dbo_LSIHistory": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
-                self._generate_pbpp_assessment_external_id,
-                self._enrich_pbpp_assessments,
             ],
             "supervision_period_v4": supervision_period_postprocessors,
         }
@@ -599,99 +591,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]:
             return US_PA_PBPP
         return None
-
-    ASSESSMENT_CLASSES: Dict[str, StateAssessmentClass] = {
-        "CSS-M": StateAssessmentClass.SOCIAL,
-        "HIQ": StateAssessmentClass.SOCIAL,
-        "LSI-R": StateAssessmentClass.RISK,
-        "RST": StateAssessmentClass.RISK,
-        "ST99": StateAssessmentClass.SEX_OFFENSE,
-        "TCU": StateAssessmentClass.SUBSTANCE_ABUSE,
-    }
-
-    @staticmethod
-    def _generate_doc_assessment_external_id(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the assessment external_id to the extracted state assessment."""
-        control_number = row["Control_Number"]
-        inmate_number = row["Inmate_number"]
-        test_id = row["Test_Id"]
-        version_number = row["AsmtVer_Num"]
-        external_id = "-".join([control_number, inmate_number, test_id, version_number])
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateAssessment):
-                extracted_object.state_assessment_id = external_id
-
-    def _enrich_doc_assessments(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Enriches the assessment object with additional metadata."""
-
-        def _rst_metadata() -> Optional[Dict]:
-            version_flag = row.get("RSTRvsd_Flg", None)
-            if version_flag:
-                return {"latest_version": version_flag in ["1", "-1"]}
-            return None
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateAssessment):
-                assessment_type = (
-                    obj.assessment_type.strip() if obj.assessment_type else ""
-                )
-                assessment_class = self.ASSESSMENT_CLASSES.get(assessment_type, None)
-                if assessment_class:
-                    obj.assessment_class = assessment_class.value
-
-                if assessment_type == "RST":
-                    rst_metadata = _rst_metadata()
-                    if rst_metadata:
-                        obj.assessment_metadata = json.dumps(rst_metadata)
-
-                if assessment_type == "LSI-R":
-                    set_date_specific_lsir_fields(obj)
-
-    @staticmethod
-    def _generate_pbpp_assessment_external_id(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Adds the assessment external_id to the extracted state assessment."""
-        parole_number = row["ParoleNumber"]
-        parole_count_id = row["ParoleCountID"]
-        lsir_instance = row["LsirID"]
-        release_status = row["ReleaseStatus"]
-        external_id = "-".join(
-            [parole_number, parole_count_id, lsir_instance, release_status]
-        )
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StateAssessment):
-                extracted_object.state_assessment_id = external_id
-
-    @staticmethod
-    def _enrich_pbpp_assessments(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Enriches the assessment object with additional metadata."""
-        for obj in extracted_objects:
-            if isinstance(obj, StateAssessment):
-                obj.assessment_type = StateAssessmentType.LSIR.value
-                obj.assessment_class = StateAssessmentClass.RISK.value
-                set_date_specific_lsir_fields(obj)
 
     @staticmethod
     def _set_incarceration_sentence_id(
