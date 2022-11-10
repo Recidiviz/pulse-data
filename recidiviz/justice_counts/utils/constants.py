@@ -19,6 +19,8 @@ import enum
 
 from recidiviz.persistence.database.schema.justice_counts.schema import System
 
+REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
+
 
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
