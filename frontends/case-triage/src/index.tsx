@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2021 Recidiviz, Inc.
+// Copyright (C) 2022 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,12 +31,12 @@ import "react-truncate-list/dist/styles.css";
 import styled from "styled-components/macro";
 import { trackScrolledToBottom } from "./analytics";
 import { breakpoints } from "./components/styles";
-import Home from "./routes/Home";
 import Onboarding from "./routes/Onboarding";
 import Verify from "./routes/Verify";
 import StoreProvider from "./stores";
 import { redactLocalStorageCache } from "./utils";
 import "./window.d";
+import HangTight from "./routes/HangTight";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -84,7 +84,7 @@ ReactDOM.render(
         <RoutingContainer>
           <Verify path="verify" />
           <Onboarding path="onboarding" />
-          <Home path="/" />
+          <HangTight path="/" />
         </RoutingContainer>
       </ToastProvider>
     </StoreProvider>
