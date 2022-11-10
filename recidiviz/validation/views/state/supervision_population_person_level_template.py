@@ -26,8 +26,15 @@ WITH
 external_data AS (
   -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
   -- data to insert into the `supervision_population_person_level` table.
-  SELECT region_code, person_external_id, date_of_supervision, district, supervising_officer, supervision_level
-  FROM `{{project_id}}.{{external_accuracy_dataset}}.supervision_population_person_level`
+  SELECT
+    region_code,
+    person_external_id,
+    external_id_type,
+    date_of_supervision,
+    district,
+    supervising_officer,
+    supervision_level
+  FROM `{{project_id}}.{{external_accuracy_dataset}}.supervision_population_person_level_materialized`
 ),
 external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
@@ -42,9 +49,8 @@ external_data_with_ids AS (
     FROM external_data
     LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
-    -- Limit to supervision IDs in states that have multiple
-    AND (region_code != 'US_ND' OR id_type = 'US_ND_SID')
-    AND (region_code != 'US_PA' OR id_type = 'US_PA_PBPP')
+    -- Limit to the correct ID type in states that have multiple
+    AND external_data.external_id_type = all_state_person_ids.id_type
 ),
 sanitized_internal_metrics AS (
   SELECT
@@ -53,9 +59,9 @@ sanitized_internal_metrics AS (
       person_external_id, 
       CAST(person_id AS STRING) AS person_id,
       CASE  
-        # TODO(#3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
-        #  this case.
-        # US_ID - All low supervision unit POs had inconsistent data before July 2020.
+        -- TODO(#3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
+        --  this case.
+        -- US_ID - All low supervision unit POs had inconsistent data before July 2020.
         WHEN state_code = 'US_ID' 
             AND supervising_officer_external_id IN ('REGARCIA', 'CAMCDONA', 'SLADUKE', 'COLIMSUP') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
@@ -70,14 +76,14 @@ sanitized_internal_metrics AS (
    WHERE CASE
      WHEN state_code = 'US_ID' 
      THEN
-       # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
-       # The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
-       #    - `INFORMAL_PROBATION` - although IDOC does not actively supervise these folks, they can be revoked 
-       #       and otherwise punished as if they were actively on supervision. 
-       #    - `INTERNAL_UNKNOWN` - vast majority of these people are folks with active bench warrants
-       supervision_type IN ('PROBATION', 'PAROLE', 'DUAL') 
-       # TODO(#3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter. 
-       AND supervising_district_external_id IS NOT NULL
+        -- Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
+        -- The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
+        --    - `INFORMAL_PROBATION` - although IDOC does not actively supervise these folks, they can be revoked
+        --       and otherwise punished as if they were actively on supervision.
+        --    - `INTERNAL_UNKNOWN` - vast majority of these people are folks with active bench warrants
+        supervision_type IN ('PROBATION', 'PAROLE', 'DUAL')
+        -- TODO(#3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter.
+        AND supervising_district_external_id IS NOT NULL
      ELSE TRUE
    END
    AND included_in_state_population

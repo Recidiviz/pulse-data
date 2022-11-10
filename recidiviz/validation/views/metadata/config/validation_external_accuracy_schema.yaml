@@ -59,7 +59,7 @@ tables:
       - discharge_date
       - parole_decision
       - jurisdiction_decision_code_id
-  - name: supervision_population_person_level
+  - name: supervision_population_person_level_materialized
     columns:
       - region_code
       - person_external_id
