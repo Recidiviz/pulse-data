@@ -20,6 +20,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -71,7 +72,7 @@ US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBui
     description="A view detailing the incarceration population at the person level for CODOC.",
     view_query_template=VIEW_QUERY_TEMPLATE,
     us_co_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_CO.value
+        state_code=StateCode.US_CO, instance=DirectIngestInstance.PRIMARY
     ),
 )
 

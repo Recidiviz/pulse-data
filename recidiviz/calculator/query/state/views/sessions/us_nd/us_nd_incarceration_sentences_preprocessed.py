@@ -21,9 +21,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -101,7 +103,9 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_id=US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=US_ND_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    raw_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    raw_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],

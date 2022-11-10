@@ -33,6 +33,7 @@ from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -76,12 +77,12 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_TN.value
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ND.value
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
 )
 

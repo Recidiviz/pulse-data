@@ -22,9 +22,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -237,8 +239,12 @@ PERSON_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_id"),
-    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_pa"),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
+    ),
     covid_start=COVID_POLICY_START_DATE,
     covid_end=COVID_POLICY_END_DATE,
     should_materialize=True,

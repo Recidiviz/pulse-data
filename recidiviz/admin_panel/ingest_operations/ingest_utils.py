@@ -47,6 +47,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 
 
@@ -151,6 +152,8 @@ def import_raw_files_to_bq_sandbox(
             big_query_client=BigQueryClientImpl(),
             sandbox_dataset_prefix=sandbox_dataset_prefix,
             allow_incomplete_configs=allow_incomplete_configs,
+            # Sandbox instance can be primary
+            instance=DirectIngestInstance.PRIMARY,
         )
 
         bq_client = BigQueryClientImpl()

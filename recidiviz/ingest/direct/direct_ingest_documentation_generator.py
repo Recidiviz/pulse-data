@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
@@ -49,7 +50,6 @@ found in `{latest_views_dataset}`.
 
 ## Table of Contents
 """
-
 
 STATE_RAW_DATA_FILE_HEADER_PATH = "raw_data.md"
 
@@ -73,16 +73,19 @@ class DirectIngestDocumentationGenerator:
         if StateCode.is_state_code(region_code):
             state_code = StateCode(region_code.upper())
             state_name = state_code.get_state().name
-            state_code_lower = state_code.value.lower()
 
             file_header = StrictStringFormatter().format(
                 STATE_RAW_DATA_FILE_HEADER_TEMPLATE,
                 state_name=state_name,
                 raw_tables_dataset=raw_tables_dataset_for_region(
-                    state_code_lower, sandbox_dataset_prefix=None
+                    state_code=state_code,
+                    instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
                 ),
                 latest_views_dataset=raw_latest_views_dataset_for_region(
-                    state_code_lower, sandbox_dataset_prefix=None
+                    state_code=state_code,
+                    instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
                 ),
             )
         else:

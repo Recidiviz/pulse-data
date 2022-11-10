@@ -300,6 +300,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             temp_output_directory_path=self.temp_output_directory_path,
             big_query_client=self.big_query_client,
             csv_reader=self.csv_reader,
+            instance=self._raw_data_source_instance,
         )
         self._ingest_view_materialization_args_generator = (
             IngestViewMaterializationArgsGenerator(

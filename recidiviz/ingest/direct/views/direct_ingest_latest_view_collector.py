@@ -20,6 +20,7 @@ from typing import Callable, List, Optional
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
@@ -28,6 +29,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableLatestView,
 )
@@ -52,7 +54,10 @@ class DirectIngestRawDataTableLatestViewBuilder(
         self.should_deploy_predicate = should_deploy_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
         self.dataset_id = raw_latest_views_dataset_for_region(
-            region_code=self.region_code.lower(), sandbox_dataset_prefix=None
+            state_code=StateCode(self.region_code.upper()),
+            # TODO(#16565): Update to thread through instance in class.
+            instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
         self.projects_to_deploy = None
         self.materialized_address = None
@@ -79,7 +84,9 @@ class DirectIngestRawDataTableLatestViewCollector(
     ):
         self.region_code = region_code
         self.src_raw_tables_dataset = raw_tables_dataset_for_region(
-            self.region_code,
+            state_code=StateCode(self.region_code.upper()),
+            # TODO(#16565): Update to thread through instance in class.
+            instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=src_raw_tables_sandbox_dataset_prefix,
         )
 

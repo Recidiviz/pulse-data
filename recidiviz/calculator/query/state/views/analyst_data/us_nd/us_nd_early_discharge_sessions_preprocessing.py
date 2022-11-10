@@ -28,9 +28,11 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -135,7 +137,9 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     state_dataset=STATE_BASE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":

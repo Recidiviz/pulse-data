@@ -29,6 +29,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.criteria.state_specific.us_nd.implied_valid_early_termination_supervision_level import (
     _CRITERIA_NAME as supervision_level_criteria,
 )
@@ -46,7 +47,6 @@ US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_DESCRIPTION = """
     View of early termination record for form completion for individuals that are
     currently eligible for early termination 
     """
-
 
 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE = """
 WITH probation_officer AS(
@@ -263,7 +263,9 @@ US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQ
         StateCode.US_ND
     ),
     should_materialize=True,
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
     supervision_level_criteria=supervision_level_criteria,
 )
 

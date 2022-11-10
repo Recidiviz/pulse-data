@@ -19,9 +19,11 @@ to allow analysis of violations that are associated with a given compartment"""
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -218,7 +220,9 @@ VIOLATION_RESPONSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_dataset=dataset_config.STATE_BASE_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
-    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region("us_nd"),
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
 )
 
 if __name__ == "__main__":

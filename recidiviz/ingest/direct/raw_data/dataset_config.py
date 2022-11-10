@@ -17,20 +17,27 @@
 """Helpers for generating datasets related to raw state data."""
 from typing import Optional
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
-# TODO(#12795): Pass a raw_data_source_instance into this function
+
 def raw_tables_dataset_for_region(
-    region_code: str, sandbox_dataset_prefix: Optional[str] = None
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> str:
     """Returns the dataset containing raw data tables for this region."""
+    suffix = "_secondary" if instance == DirectIngestInstance.SECONDARY else ""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return f"{prefix}{region_code.lower()}_raw_data"
+    return f"{prefix}{state_code.value.lower()}_raw_data{suffix}"
 
 
-# TODO(#12795): Pass a raw_data_source_instance into this function
 def raw_latest_views_dataset_for_region(
-    region_code: str, sandbox_dataset_prefix: Optional[str] = None
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> str:
     """Returns the dataset containing raw data "latest" views for this region."""
+    suffix = "_secondary" if instance == DirectIngestInstance.SECONDARY else ""
     prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
-    return f"{prefix}{region_code.lower()}_raw_data_up_to_date_views"
+    return f"{prefix}{state_code.value.lower()}_raw_data_up_to_date_views{suffix}"

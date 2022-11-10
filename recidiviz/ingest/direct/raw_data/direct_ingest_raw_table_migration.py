@@ -21,14 +21,15 @@ import os
 import re
 from typing import List, Optional, Tuple
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
-
 
 RAW_DATA_SUBDIR = "raw_data"
 MIGRATIONS_SUBDIR = "migrations"
@@ -79,7 +80,9 @@ class RawTableMigration:
         because these migrations can be defined as top-level vars where the project_id is not yet available.
         """
         dataset_id = raw_tables_dataset_for_region(
-            region_code=self._region_code_lower,
+            state_code=StateCode(self._region_code_lower.upper()),
+            # TODO(#16568): create migrations for both instances.
+            instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         return f"{metadata.project_id()}.{dataset_id}.{self.file_tag}"

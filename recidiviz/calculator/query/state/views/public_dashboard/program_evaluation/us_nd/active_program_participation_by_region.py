@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -91,7 +92,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     region_dimension=bq_utils.unnest_column("region_id", "region_id"),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        StateCode.US_ND.value
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
 )
 

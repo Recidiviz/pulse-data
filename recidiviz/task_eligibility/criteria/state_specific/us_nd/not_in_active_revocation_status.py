@@ -22,6 +22,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -88,7 +89,10 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        us_nd_raw_data=raw_tables_dataset_for_region("us_nd"),
+        us_nd_raw_data=raw_tables_dataset_for_region(
+            state_code=StateCode.US_ND,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
     )
 )

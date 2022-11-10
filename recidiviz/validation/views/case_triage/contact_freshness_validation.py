@@ -24,9 +24,11 @@ from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_DATASET,
     CASE_TRIAGE_FEDERATED_DATASET,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views.case_triage.utils import MAX_DAYS_STALE
@@ -45,7 +47,10 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             region_code="US_ID",
             assertion_name="RAW_DATA_WAS_IMPORTED",
             description="Checks that we've imported raw data in the last 24 hours, but not the received data is timely",
-            dataset=raw_tables_dataset_for_region("us_id"),
+            dataset=raw_tables_dataset_for_region(
+                state_code=StateCode.US_ID,
+                instance=DirectIngestInstance.PRIMARY,
+            ),
             table="sprvsn_cntc",
             date_column_clause="CAST(update_datetime AS DATE)",
             allowed_days_stale=MAX_DAYS_STALE,
@@ -54,7 +59,10 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             region_code="US_ID",
             assertion_name="RAW_DATA_WAS_EDITED_WITHIN_EXPECTED_PERIOD",
             description="Checks that the imported data contains edits from within the freshness threshold",
-            dataset=raw_tables_dataset_for_region("us_id"),
+            dataset=raw_tables_dataset_for_region(
+                state_code=StateCode.US_ID,
+                instance=DirectIngestInstance.PRIMARY,
+            ),
             table="sprvsn_cntc",
             date_column_clause="SAFE_CAST(SPLIT(updt_dt, ' ')[OFFSET(0)] AS DATE)",
             allowed_days_stale=MAX_DAYS_STALE,
@@ -63,7 +71,10 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             region_code="US_ID",
             assertion_name="RAW_DATA_CONTAINS_RELEVANT_DATA_FROM_EXPECTED_PERIOD",
             description="Checks that the imported data contains contacts from within the freshness threshold",
-            dataset=raw_tables_dataset_for_region("us_id"),
+            dataset=raw_tables_dataset_for_region(
+                state_code=StateCode.US_ID,
+                instance=DirectIngestInstance.PRIMARY,
+            ),
             table="sprvsn_cntc",
             date_column_clause="SAFE_CAST(SPLIT(cntc_dt, ' ')[OFFSET(0)] AS DATE)",
             allowed_days_stale=MAX_DAYS_STALE,
@@ -110,7 +121,6 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
         ),
     ],
 ).to_big_query_view_builder()
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

@@ -48,6 +48,7 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.views.dataset_config import (
     validation_dataset_for_state,
     validation_oneoff_dataset_for_state,
@@ -55,16 +56,22 @@ from recidiviz.validation.views.dataset_config import (
 
 RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS = {
     raw_tables_dataset_for_region(
-        state_code.value.lower(), sandbox_dataset_prefix=None
+        state_code=state_code,
+        instance=instance,
+        sandbox_dataset_prefix=None,
     ): f"Raw data tables from {StateCode.get_state(state_code)}"
+    for instance in DirectIngestInstance
     for state_code in StateCode
 }
 RAW_TABLE_DATASETS = set(RAW_DATA_TABLE_DATASETS_TO_DESCRIPTIONS.keys())
 
 LATEST_VIEW_DATASETS = {
     raw_latest_views_dataset_for_region(
-        state_code.value.lower(), sandbox_dataset_prefix=None
+        state_code=state_code,
+        instance=instance,
+        sandbox_dataset_prefix=None,
     )
+    for instance in DirectIngestInstance
     for state_code in StateCode
 }
 
@@ -103,7 +110,6 @@ VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS = {
 VALIDATION_DATASETS = set(VALIDATION_DATASETS_TO_DESCRIPTIONS.keys()).union(
     set(VALIDATION_ONEOFF_DATASETS_TO_DESCRIPTIONS.keys())
 )
-
 
 NORMALIZED_DATASETS_TO_DESCRIPTIONS = {
     **{

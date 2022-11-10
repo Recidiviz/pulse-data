@@ -22,6 +22,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -151,7 +152,10 @@ def get_incarceration_population_person_level_view_builder() -> SimpleBigQueryVi
         us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
             StateCode.US_PA
         ),
-        us_tn_raw_data_up_to_date_dateset=raw_latest_views_dataset_for_region("us_tn"),
+        us_tn_raw_data_up_to_date_dateset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
         **region_dataset_params,
     )
 
