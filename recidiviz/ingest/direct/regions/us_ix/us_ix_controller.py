@@ -45,7 +45,13 @@ class UsIxController(BaseDirectIngestController):
 
         if not in_gcp_production():
             tags.extend(
-                ["person", "assessments", "drug_screen", "incarceration_period"]
+                [
+                    "person",
+                    "assessments",
+                    "drug_screen",
+                    "incarceration_period",
+                    "supervision_contacts",
+                ]
             )
 
         return tags

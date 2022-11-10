@@ -1,0 +1,212 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId #external_id
+  - OffenderNoteInfoId #external_id
+  - NoteDate
+  - contact_type
+  - contact_title #reason_raw_text
+  - contact_location #location_raw_text and concat for method
+  - contact_result
+  - verified_employment
+  - resulted_in_arrest
+  - StaffId #contact_agent_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_contacts:
+      - StateSupervisionContact:
+          contacted_agent:
+            StateAgent:
+              external_id: StaffId
+              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - OffenderNoteInfoId
+          verified_employment:
+            $equal:
+              - verified_employment
+              - $literal("1")
+          contact_date: NoteDate
+          contact_method:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - contact_location
+                    - contact_type
+                  $separator: "##"
+                  $include_nulls: true
+              $custom_parser: us_ix_custom_enum_parsers.contact_method_from_contact_fields
+          location:
+            $enum_mapping:
+              $raw_text: contact_location
+              $mappings:
+                StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT:
+                  - "ALTERNATE WORK SITE"
+                StateSupervisionContactLocation.COURT:
+                  - "COURT"
+                  - "DRUG COURT"
+                StateSupervisionContactLocation.FIELD:
+                  - "18" # Field Visit
+                  - "964" # Field Contact
+                  - "FIELD"
+                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "568" # LSU Review (Semi-Annual)
+                  - "ASSOCIATE"
+                  - "COMMUNITY SERVICE SITE"
+                  - "COMPACT STATE"
+                  - "CONVERSION"
+                  - "CRIME SCENE"
+                  - "FAMILY"
+                  - "OTHER"
+                  - "WBOR"
+                StateSupervisionContactLocation.JAIL:
+                  - "JAIL"
+                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
+                  - "474" # Law Enforcement
+                  - "LAW ENFORCEMENT AGENCY"
+                StateSupervisionContactLocation.PAROLE_COMMISSION:
+                  - "486" # Parole Commission
+                  - "PAROLE COMMISSION"
+                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
+                  - "16" # Employment Site Check
+                  - "EMPLOYER"
+                StateSupervisionContactLocation.RESIDENCE:
+                  - "21" # Home Contact
+                  - "471" #Personal Home Contact
+                  - "966" # Resident Verification
+                  - "RESIDENCE"
+                  - "OTHER RESIDENCE"
+                StateSupervisionContactLocation.SUPERVISION_OFFICE:
+                  - "28" # Office Contact
+                  - "592" # Office
+                  - "OFFICE"
+                  - "INTERSTATE OFFICE"
+                StateSupervisionContactLocation.TREATMENT_PROVIDER:
+                  - "TREATMENT PROVIDER"
+              $ignore:
+                - "EMAIL"
+                - "FAX"
+                - "MAIL"
+                - "TELEPHONE"
+          contact_type:
+            $enum_mapping:
+              $raw_text: contact_type
+              $mappings:
+                StateSupervisionContactType.COLLATERAL:
+                  - "Collateral"
+                  - "Mental Health Collateral"
+                  - "Attorney (LSU)"
+                  - "Care Coordination"
+                  - "Court Official (LSU)"
+                  - "Mentor"
+                  - "Prosecutor (LSU)"
+                  - "Victim"
+                StateSupervisionContactType.DIRECT:
+                  - "42" # Telephone
+                  - "35" # Personal Telephone Contact
+                  - "447" # Face To Face
+                  - "474" # Law Enforcement
+                  - "486" # Parole Commission
+                  - "72 Hour Initial Contact"
+                  - "APP Smart Phone"
+                  - "Face To Face"
+                  - "Home Visit"
+                  - "Law Enforcement"
+                  - "Mail"
+                  - "Negative Contact"
+                  - "Parole Commission"
+                  - "Telephone"
+                  - "Virtual"
+                  - "Written Correspondence"
+                  - "WBOR System"
+                StateSupervisionContactType.INTERNAL_UNKNOWN:
+                  - "Agreement Of Supervision"
+                  - "Conversion"
+                  - "Employment"
+                  - "Employment Site Check"
+                  - "Financial Obligations"
+                  - "Follow Up (LSU)"
+                  - "Gangs & STG"
+                  - "IC Addendum"
+                  - "IC Addendum Response"
+                  - "IC Case Closure"
+                  - "IC Compact Action RQ"
+                  - "IC Fee"
+                  - "IC Notice Of Arrival"
+                  - "IC Notice Of Departure"
+                  - "IC Progress Report"
+                  - "IC Reply To Transfer"
+                  - "IC Reporting Instructions"
+                  - "IC Response To ROV"
+                  - "IC RPT Of Violation"
+                  - "IC Transfer Request"
+                  - "IC Written Correspnd"
+                  - "Interstate"
+                  - "IRM-New Felony,Firearm,Abscond"
+                  - "Mental Health Eval"
+                  - "Monthly Report"
+                  - "Office"
+                  - "Programming"
+                  - "Records Check"
+                  - "Reentry Grant"
+                  - "Reentry Services"
+                  - "Returned Mail (LSU)"
+                  - "SUD Funding Approved"
+                  - "SUD Funding Denied Clinical"
+                  - "SUD Funding Denied Fiscal"
+                  - "Suspect"
+                  - "Transition Fund"
+                  - "Transition Fund Approved"
+                  - "Transition Fund Deny"
+                  - "Transition Fund Deny FY"
+                  - "Treatment Fund"
+                  - "Treatment Fund Approved"
+                  - "Treatment Fund Deny"
+                  - "Treatment Fund Deny FY"
+                  - "Written Court"
+          contact_reason:
+            $enum_mapping:
+              $raw_text: contact_title
+              $mappings:
+                StateSupervisionContactReason.INITIAL_CONTACT:
+                  - "72 HOUR INITIAL"
+                  - "585" # 72 Hour Initial Contact
+                StateSupervisionContactReason.EMERGENCY_CONTACT:
+                  - "CRITICAL"
+                StateSupervisionContactReason.GENERAL_CONTACT:
+                  - "GENERAL"
+                StateSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "CONVERSION"
+                  - "GENERAL REINFORCEMENT"
+                  - "GENERAL DISAPPROVAL"
+          status:
+            $enum_mapping:
+              $raw_text: contact_result
+              $mappings:
+                StateSupervisionContactStatus.COMPLETED:
+                  - "SUCCESSFUL"
+                  - "PROGRESS REVIEW"
+                  - "FACE TO FACE"
+                  - "ARREST"
+                StateSupervisionContactStatus.ATTEMPTED:
+                  - "ATTEMPTED"
+                  - "INQUIRY"
+                  - "FAILED TO REPORT"
+                  - "1" # Attempted Employment Verification
+                  - "2" # Attempted Home Contact
+                  - "4" # Attempted Telephone Contact
+                  - "5" #Attempted Urine Screen
+          resulted_in_arrest:
+            $equal:
+              - resulted_in_arrest
+              - $literal("Contact Result':' ARREST")

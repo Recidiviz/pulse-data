@@ -22,3 +22,26 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ix_custom_enum_parsers.<function name>
 """
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactMethod,
+)
+
+
+def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContactMethod:
+    location_text, type_text = raw_text.split("##")
+    if location_text == "TELEPHONE":
+        return StateSupervisionContactMethod.TELEPHONE
+    if location_text in ("MAIL", "EMAIL", "FAX", "WBOR"):
+        return StateSupervisionContactMethod.WRITTEN_MESSAGE
+    if type_text == "VIRTUAL":
+        return StateSupervisionContactMethod.VIRTUAL
+    if type_text == "WRITTEN CORRESPONDENCE":
+        return StateSupervisionContactMethod.WRITTEN_MESSAGE
+    if (
+        type_text not in ("COLLATERAL", "MENTAL HEALTH COLLATERAL")
+        and location_text != "NONE"
+    ):
+        return StateSupervisionContactMethod.IN_PERSON
+    if type_text in ("NEGATIVE CONTACT", "447", "OFFICE"):
+        return StateSupervisionContactMethod.IN_PERSON
+    return StateSupervisionContactMethod.INTERNAL_UNKNOWN
