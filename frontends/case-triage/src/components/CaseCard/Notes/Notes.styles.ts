@@ -15,7 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { animation, fonts, palette, spacing } from "@recidiviz/design-system";
+import {
+  animation,
+  palette,
+  spacing,
+  typography,
+} from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled, { css } from "styled-components/macro";
 
@@ -42,12 +47,11 @@ export const Input = styled.input`
   border: none;
   color: currentColor;
   flex: 1 1 auto;
-  font-family: ${fonts.body};
-  font-size: ${rem(16)};
   height: ${rem(24)};
   letter-spacing: -0.01em;
   line-height: 1.5;
   padding: 0;
+  ${typography.Sans16}
 
   &:focus {
     outline: none;
@@ -68,8 +72,6 @@ export const AddNoteButton = styled.button.attrs({ type: "button" })`
   border: none;
   color: ${palette.signal.links};
   cursor: pointer;
-  font-family: ${fonts.body};
-  font-size: ${rem(16)};
   font-weight: 500;
   margin: 0;
   outline-offset: -${rem(spacing.xxs)};
@@ -77,6 +79,7 @@ export const AddNoteButton = styled.button.attrs({ type: "button" })`
   text-align: left;
   transition: color ${animation.defaultDurationMs}ms;
   width: 100%;
+  ${typography.Sans16}
 
   &:hover,
   &:focus {

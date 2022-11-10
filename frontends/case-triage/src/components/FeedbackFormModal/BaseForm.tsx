@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { Header24, Icon, IconSVG } from "@recidiviz/design-system";
 import * as React from "react";
 import { FormikBag, FormikProps, withFormik } from "formik";
 import CaseUpdatesStore, {
@@ -71,7 +71,7 @@ const InnerForm = ({
       </CloseButton>
       {header}
       <FormComponent>
-        <H3>{title}</H3>
+        <Header24>{title}</Header24>
         <Description htmlFor="feedback_form_comment">{description}</Description>
 
         <Input

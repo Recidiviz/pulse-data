@@ -19,7 +19,7 @@ import {
   CardSection,
   DropdownMenu,
   DropdownToggle,
-  H2,
+  Header34,
   palette,
   spacing,
 } from "@recidiviz/design-system";
@@ -92,11 +92,11 @@ export const ClientNameSupervisionLevel = styled.div`
   align-items: flex-start;
 `;
 
-export const FirstClientListHeading = styled(H2)`
+export const FirstClientListHeading = styled(Header34)`
   margin-bottom: ${rem(spacing.lg)};
 `;
 
-export const ClientListHeading = styled(H2)`
+export const ClientListHeading = styled(Header34)`
   margin-top: ${rem(spacing.lg)};
   margin-bottom: ${rem(spacing.lg)};
 `;

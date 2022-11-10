@@ -1606,10 +1606,10 @@
   resolved "https://registry.yarnpkg.com/@fontsource/libre-baskerville/-/libre-baskerville-4.5.0.tgz#82871a1e7fc5b2455b37db17342f73aade205eca"
   integrity sha512-Mutp11P4DtpYYT3NlB5i5TQ7GU53NL1AHcLnqEQDRkLBFuziILhXwOsE+J5IID16qqJ3+VwynkvWLjDoWCijOw==
 
-"@fontsource/libre-franklin@^4.1.0":
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/@fontsource/libre-franklin/-/libre-franklin-4.5.0.tgz#6193cd6e5ef64b3d5a3c02420d79ea81a276c73e"
-  integrity sha512-pFJyUqbnQhuyyOa84GoAqZacRp4CTaZehBWD5/g8TaJXzmV3uKJpDczfYafE+UnMKKW60RLNx0NCucrDMnn3Zg==
+"@fontsource/public-sans@^4.5.3":
+  version "4.5.11"
+  resolved "https://registry.yarnpkg.com/@fontsource/public-sans/-/public-sans-4.5.11.tgz#a95f6129c8bf092da7ae956eebf688b35b389e2c"
+  integrity sha512-waejL3VQnifnLVwQGcW2bULD2vUaevjE9OKmOSAmBACAebZnnYznHL+NL4NgW6B+b1wyltmIr6jBF5XMZVWgYA==
 
 "@fortawesome/fontawesome-common-types@^0.2.36":
   version "0.2.36"
@@ -2116,13 +2116,13 @@
     "@react-spring/shared" "~9.4.3-beta.0"
     "@react-spring/types" "~9.4.3-beta.0"
 
-"@recidiviz/design-system@^2.7.0":
-  version "2.7.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-2.7.0.tgz#25b67d141d88ab20548a08bf98284201b1ad1d34"
-  integrity sha512-Bnl/xGmY9k1QpHptKZa/QPIY99Cbmw1rxam70GRiZiKHY7ePdvHn8XucaFE1dJUyq/gDWC/KJSatJxZQpy1pgQ==
+"@recidiviz/design-system@^4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-4.1.0.tgz#56409605acbf9e35652f6fbfc1028799172d351d"
+  integrity sha512-SCPMc/XWOA3135eatqPkM4uQ9JRO2NcAexL3FM8xsW6cUldGJRDnZZ99zE0yElgHDga5fS7blsqRf5YNP6rYOg==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
-    "@fontsource/libre-franklin" "^4.1.0"
+    "@fontsource/public-sans" "^4.5.3"
     "@types/react-tabs" "^2.3.2"
     body-scroll-lock "^3.1.5"
     polished "^4.1.0"

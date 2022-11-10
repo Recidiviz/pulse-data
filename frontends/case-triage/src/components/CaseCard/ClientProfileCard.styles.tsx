@@ -1,7 +1,7 @@
 import styled from "styled-components/macro";
 import { rem } from "polished";
 import {
-  H3,
+  Header24,
   Icon,
   palette,
   spacing,
@@ -10,7 +10,7 @@ import {
   Tabs,
 } from "@recidiviz/design-system";
 
-export const ClientName = styled(H3)`
+export const ClientName = styled(Header24)`
   margin-top: 0;
   margin-right: auto;
   margin-bottom: 0;

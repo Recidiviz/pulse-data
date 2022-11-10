@@ -14,20 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
+import { Button, palette, Sans14, spacing } from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled from "styled-components/macro";
 
-export const UserFlex = styled.div`
+export const UserFlex = styled(Sans14)`
   display: flex;
   align-items: center;
 
   position: relative;
 
   text-align: right;
-  letter-spacing: -0.01em;
-  font-feature-settings: "ss04" on;
-  font-family: ${fonts.body};
   color: ${palette.text.normal};
 `;
 

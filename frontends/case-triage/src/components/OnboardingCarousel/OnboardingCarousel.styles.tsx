@@ -16,7 +16,13 @@
 // =============================================================================
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
+import {
+  Button,
+  palette,
+  Sans16,
+  spacing,
+  typography,
+} from "@recidiviz/design-system";
 import { CarouselControls } from "../Carousel";
 import { device } from "../styles";
 
@@ -53,10 +59,9 @@ export const OnboardingImageContainer = styled.div`
 `;
 
 export const OnboardingHeadingText = styled.h1`
-  font-size: ${rem(20)};
-  font-family: ${fonts.heading};
   font-weight: normal;
   margin-top: ${rem(40)};
+  ${typography.Header24}
 
   @media screen and ${device.tablet} {
     margin-top: ${rem(80)};
@@ -64,18 +69,15 @@ export const OnboardingHeadingText = styled.h1`
   }
 `;
 
-export const OnboardingBodyText = styled.div`
-  font-size: ${rem(16)};
-  font-family: ${fonts.body};
+export const OnboardingBodyText = styled(Sans16).attrs({ as: "div" })`
   font-weight: normal;
 
   margin-top: ${rem(24)};
   margin-bottom: ${rem(40)};
 
   @media screen and ${device.tablet} {
-    font-size: ${rem(18)};
-    line-height: 1.7;
     margin-bottom: ${rem(80)};
+    ${typography.Sans18}
   }
 `;
 

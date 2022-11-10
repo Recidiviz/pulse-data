@@ -16,7 +16,7 @@
 // =============================================================================
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
+import { Button, palette, spacing, typography } from "@recidiviz/design-system";
 import { Form } from "formik";
 
 export const Input = styled.textarea`
@@ -24,16 +24,15 @@ export const Input = styled.textarea`
   border-width: 0;
   border-radius: ${rem(4)};
   color: ${palette.text.normal};
-  font-size: ${rem(16)};
-  font-family ${fonts.body};
   padding: ${rem(spacing.md)};
   width: 100%;
   height: ${rem(117)};
   resize: none;
 
+  ${typography.Sans16}
+
   &::placeholder {
-    color: ${palette.text.caption};
-    font-family: ${fonts.body};
+    ${typography.Sans16}
   }
 `;
 
