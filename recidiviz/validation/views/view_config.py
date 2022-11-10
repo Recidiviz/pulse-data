@@ -75,7 +75,7 @@ from recidiviz.validation.views.external_data.supervision_population_by_type imp
     get_supervision_population_by_type_view_builder,
 )
 from recidiviz.validation.views.external_data.supervision_population_person_level import (
-    SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+    get_supervision_population_person_level_view_builder,
 )
 from recidiviz.validation.views.external_data.supervision_start_person_level import (
     SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
@@ -198,7 +198,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER,
             RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
             SUPERVISION_EARLY_DISCHARGE_PERSON_LEVEL_VIEW_BUILDER,
-            SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            get_supervision_population_person_level_view_builder(),
             SUPERVISION_START_PERSON_LEVEL_VIEW_BUILDER,
             SUPERVISION_TERMINATION_PERSON_LEVEL_VIEW_BUILDER,
             get_supervision_population_by_type_view_builder(),
