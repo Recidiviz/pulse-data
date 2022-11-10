@@ -91,7 +91,7 @@ FROM all_states_spans a
 LEFT JOIN id_max_date id
     ON id.person_id = a.person_id 
     AND id.state_code = a.state_code
-    AND CURRENT_DATE('US/Pacific') <= end_date_exclusive 
+    AND CURRENT_DATE('US/Pacific') <= COALESCE(end_date_exclusive, "9999-12-31")
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
