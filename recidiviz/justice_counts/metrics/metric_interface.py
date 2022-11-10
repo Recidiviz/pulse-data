@@ -27,6 +27,9 @@ from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
     IncludesExcludesSetting,
@@ -75,6 +78,9 @@ class MetricInterface:
     includes_excludes_member_to_setting: Dict[
         enum.Enum, Optional[IncludesExcludesSetting]
     ] = attr.field(default={})
+
+    # Values for the metric's custom reporting frequency.
+    custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()
 
     @property
     def metric_definition(self) -> MetricDefinition:
@@ -156,6 +162,10 @@ class MetricInterface:
             "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled,
             "frequency": frequency,
+            "custom_frequency": self.custom_reporting_frequency.frequency.value
+            if self.custom_reporting_frequency.frequency is not None
+            else None,
+            "starting_month": self.custom_reporting_frequency.starting_month,
             "filenames": metric_filenames,
             "datapoints": aggregate_datapoints_json,
             "definitions": [
@@ -243,7 +253,6 @@ class MetricInterface:
                 code="report_metric_no_value",
                 description="No value field is included in request json",
             )
-
         return cls(
             key=json["key"],
             value=json.get("value"),
@@ -251,6 +260,7 @@ class MetricInterface:
             aggregated_dimensions=disaggregations,
             includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             is_metric_enabled=json.get("enabled", True),
+            custom_reporting_frequency=CustomReportingFrequency.from_json(json),
         )
 
     ### Helpers ###

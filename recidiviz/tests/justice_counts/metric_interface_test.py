@@ -32,6 +32,9 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToProbationIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     CallsRespondedOptions,
@@ -44,6 +47,9 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricInterface,
 )
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    ReportingFrequency,
+)
 from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 from recidiviz.utils.types import assert_type
 
@@ -131,6 +137,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Annual Budget",
                 "enabled": True,
                 "frequency": "ANNUAL",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["annual_budget"],
                 "settings": [],
                 "contexts": [
@@ -183,6 +191,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Calls for Service",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "settings": [],
                 "contexts": [
@@ -270,6 +280,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "enabled": False,
                 "frequency": "ANNUAL",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["civilian_complaints_sustained"],
                 "definitions": [
                     {
@@ -323,6 +335,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "label": "Total Arrests",
                 "enabled": True,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": [
                     "arrests",
                     "arrests_by_type",
@@ -631,6 +645,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": False,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
@@ -701,6 +717,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
@@ -771,6 +789,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "settings": [],
                 "contexts": [
@@ -853,6 +873,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": True,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
@@ -1015,6 +1037,8 @@ class TestJusticeCountsMetricInterface(TestCase):
                 "enabled": False,
                 "category": metric_definition.category.value,
                 "frequency": "MONTHLY",
+                "custom_frequency": None,
+                "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
                 "settings": [],
@@ -1514,6 +1538,8 @@ class TestJusticeCountsMetricInterface(TestCase):
             "category": prisons.grievances_upheld.category.value,
             "label": prisons.grievances_upheld.display_name,
             "frequency": prisons.grievances_upheld.reporting_frequencies[0].value,
+            "custom_frequency": None,
+            "starting_month": None,
             "filenames": ["grievances_upheld"],
             "value": 200,
             "disaggregations": [],
@@ -1557,6 +1583,53 @@ class TestJusticeCountsMetricInterface(TestCase):
                     "default": "No",
                 },
             ],
+        }
+
+        self.assertEqual(
+            metric_interface.to_json(
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            ),
+            metric_interface_json,
+        )
+        self.assertEqual(
+            MetricInterface.from_json(
+                json=metric_interface_json,
+                entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+            ),
+            metric_interface,
+        )
+
+    def test_custom_reporting_frequency(self) -> None:
+        metric_interface = MetricInterface(
+            key=law_enforcement.annual_budget.key,
+            is_metric_enabled=True,
+            custom_reporting_frequency=CustomReportingFrequency(
+                frequency=ReportingFrequency.ANNUAL, starting_month=1
+            ),
+            aggregated_dimensions=[],
+            contexts=[],
+        )
+
+        metric_interface_json = {
+            "key": law_enforcement.annual_budget.key,
+            "enabled": True,
+            "system": "Law Enforcement",
+            "display_name": law_enforcement.annual_budget.display_name,
+            "description": law_enforcement.annual_budget.description,
+            "definitions": [],
+            "reporting_note": law_enforcement.annual_budget.reporting_note,
+            "unit": law_enforcement.annual_budget.metric_type.unit,
+            "category": law_enforcement.annual_budget.category.value,
+            "label": law_enforcement.annual_budget.display_name,
+            "frequency": law_enforcement.annual_budget.reporting_frequencies[0].value,
+            "custom_frequency": "ANNUAL",
+            "starting_month": 1,
+            "filenames": ["annual_budget"],
+            "value": None,
+            "disaggregations": [],
+            "contexts": [],
+            "settings": [],
+            "datapoints": None,
         }
 
         self.assertEqual(
