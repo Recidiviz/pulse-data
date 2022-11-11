@@ -82,8 +82,7 @@ INNER JOIN overdue_discharge_alert_recipients
     ON overdue_discharge_alert_recipients.state_code = projected_discharges.state_code
     AND overdue_discharge_alert_recipients.external_id = projected_discharges.supervising_officer_external_id
 # NOTE: We used to filter these results by an overdue_discharge_alert_exclusions view
-# that read from static tables with specific exclusions for ID (see 
-https://github.com/Recidiviz/pulse-data/blob/82f00684dfe689088e72dc06fb0cea07fede46a9/recidiviz/calculator/query/state/views/shared_metric/overdue_discharge_alert_exclusions.py). 
+# that read from static tables with specific exclusions for ID (see https://github.com/Recidiviz/pulse-data/blob/82f00684dfe689088e72dc06fb0cea07fede46a9/recidiviz/calculator/query/state/views/shared_metric/overdue_discharge_alert_exclusions.py). 
 # We may want to # re-introduce a similar filter in the future.
 WHERE
     projected_end_date <= DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 60 DAY)
