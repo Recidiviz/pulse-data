@@ -154,14 +154,17 @@ class DatapointInterface:
             metric_datapoints = metric_key_to_data_points[
                 datapoint.metric_definition_key
             ]
+
+            # CONTEXTS
             if datapoint.context_key is not None:
                 key = datapoint.context_key
-                # If a datapoint represents a context, add it into a dictionary
-                # formatted as {context_key: datapoint}
-                if datapoint.report is not None:
-                    metric_datapoints.context_key_to_report_datapoint[key] = datapoint
-                elif datapoint.source is not None:
+                # Note: Report-level contexts are deprecated!
+                if datapoint.source is not None:
+                    # If a datapoint represents a context, add it into a dictionary
+                    # formatted as {context_key: datapoint}
                     metric_datapoints.context_key_to_agency_datapoint[key] = datapoint
+
+            # INCLUDES / EXCLUDES
             elif datapoint.includes_excludes_key is not None:
                 if datapoint.dimension_identifier_to_member is not None:
                     # If a datapoint represents an includes/excludes setting at the dimension level,
@@ -192,6 +195,8 @@ class DatapointInterface:
                     metric_datapoints.includes_excludes_key_to_datapoint[
                         datapoint.includes_excludes_key
                     ] = datapoint
+
+            # DIMENSIONS
             elif datapoint.dimension_identifier_to_member is not None:
                 # If a datapoint represents an aggregated_dimension, add it into a dictionary
                 # formatted as {dimension_identifier: [all datapoints with same dimension identifier...]}
@@ -206,6 +211,8 @@ class DatapointInterface:
                     metric_datapoints.dimension_id_to_agency_datapoints[
                         dimension_identifier
                     ].append(datapoint)
+
+            # TOP-LEVEL METRIC
             elif datapoint.dimension_identifier_to_member is None:
                 if datapoint.report is not None:
                     # If a datapoint has a report attached to it and has no context key or
@@ -218,6 +225,7 @@ class DatapointInterface:
                     # datapoint is enabled. is_metric_enabled defaults to True. If there is no
                     # corresponding agency datapoint, then the metric is on.
                     metric_datapoints.is_metric_enabled = datapoint.enabled
+
             else:
                 raise JusticeCountsServerError(
                     code="invalid_datapoint",
@@ -400,7 +408,7 @@ class DatapointInterface:
                     includes_excludes_member_to_setting=datapoints.get_includes_excludes_dict(
                         includes_excludes_set=metric_definition.includes_excludes
                     ),
-                    contexts=datapoints.get_reported_contexts(
+                    contexts=datapoints.get_agency_contexts(
                         # convert context datapoints to MetricContextData
                         metric_definition=metric_definition
                     ),

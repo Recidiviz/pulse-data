@@ -270,10 +270,6 @@ class ReportInterface:
                     key=metric_definition.key,
                     value=reported_datapoints.aggregated_value,
                     is_metric_enabled=reported_datapoints.is_metric_enabled,
-                    contexts=reported_datapoints.get_reported_contexts(
-                        # convert context datapoints to MetricContextData
-                        metric_definition=metric_definition
-                    ),
                     aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
                         # convert dimension datapoints to MetricAggregatedDimensionData
                         metric_definition=metric_definition
