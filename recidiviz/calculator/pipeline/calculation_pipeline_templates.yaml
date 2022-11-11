@@ -262,6 +262,13 @@ incremental_metric_pipelines:
     region: us-west3
 
   # Daily US_ND calculations
+  # TODO(#15541) Remove when downstream views are switched to population spans.
+  - pipeline: supervision_metrics
+    job_name: us-nd-supervision-metrics-36
+    state_code: US_ND
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION
+    region: us-east1
   - pipeline: incarceration_metrics
     job_name: us-nd-incarceration-metrics-36
     state_code: US_ND
@@ -284,6 +291,13 @@ incremental_metric_pipelines:
     region: us-east1
 
   # Daily US_ID calculations
+  # TODO(#15541) Remove when downstream views are switched to population spans.
+  - pipeline: supervision_metrics
+    job_name: us-id-supervision-metrics-36
+    state_code: US_ID
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-central1
   - pipeline: incarceration_metrics
     job_name: us-id-incarceration-metrics-36
     state_code: US_ID
@@ -314,6 +328,13 @@ incremental_metric_pipelines:
     region: us-east1
 
   # Daily US_TN calculations
+  # TODO(#15541) Remove when downstream views are switched to population spans.
+  - pipeline: supervision_metrics
+    job_name: us-tn-supervision-metrics-36
+    state_code: US_TN
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION
+    region: us-west1
   - pipeline: incarceration_metrics
     job_name: us-tn-incarceration-metrics-36
     state_code: US_TN
@@ -329,6 +350,12 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_POPULATION
     calculation_month_count: 36
     region: us-west3
+  - pipeline: supervision_metrics
+    job_name: us-me-supervision-metrics-36
+    state_code: US_ME
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west3
 
   # Daily US_MI calculations
   # TODO(#15541) Remove when downstream views are switched to population spans.
@@ -338,6 +365,12 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_POPULATION
     calculation_month_count: 36
     region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-mi-supervision-metrics-36
+    state_code: US_MI
+    metric_types: SUPERVISION_POPULATION
+    calculation_month_count: 36
+    region: us-west3
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
@@ -361,6 +394,12 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
     region: us-west1
+  - pipeline: supervision_metrics
+    job_name: us-id-historical-supervision-metrics-240
+    state_code: US_ID
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west1
   - pipeline: incarceration_metrics
     job_name: us-ix-historical-incarceration-metrics-240
     state_code: US_IX
@@ -373,11 +412,23 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
     region: us-west3
+  - pipeline: supervision_metrics
+    job_name: us-mo-historical-supervision-metrics-240
+    state_code: US_MO
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west3
   - pipeline: incarceration_metrics
     job_name: us-nd-historical-incarceration-metrics-240
     state_code: US_ND
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
+    region: us-east1
+  - pipeline: supervision_metrics
+    job_name: us-nd-historical-supervision-metrics-240
+    state_code: US_ND
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION
     region: us-east1
   - pipeline: incarceration_metrics
     job_name: us-pa-historical-incarceration-metrics-360
@@ -385,6 +436,18 @@ historical_metric_pipelines:
     calculation_month_count: 360
     metric_types: INCARCERATION_POPULATION
     region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-pa-historical-supervision-metrics-240
+    state_code: US_PA
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-tn-historical-supervision-metrics-240
+    state_code: US_TN
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION
+    region: us-west1
   - pipeline: incarceration_metrics
     job_name: us-tn-historical-incarceration-metrics-240
     state_code: US_TN
@@ -397,12 +460,24 @@ historical_metric_pipelines:
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
     region: us-west3
+  - pipeline: supervision_metrics
+    job_name: us-me-historical-supervision-metrics-240
+    state_code: US_ME
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
+    region: us-west3
   - pipeline: incarceration_metrics
     job_name: us-mi-historical-incarceration-metrics-240
     state_code: US_MI
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
     region: us-central1
+  - pipeline: supervision_metrics
+    job_name: us-mi-historical-supervision-metrics-240
+    state_code: US_MI
+    calculation_month_count: 240
+    metric_types: SUPERVISION_POPULATION
+    region: us-west3
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental
