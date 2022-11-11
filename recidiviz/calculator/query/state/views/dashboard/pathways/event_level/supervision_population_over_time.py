@@ -50,9 +50,9 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBui
     delegate=SelectedColumnsBigQueryViewBuilder(
         columns=[
             "state_code",
-            "person_id",
             "date_in_population",
             "time_period",
+            "person_id",
             "supervision_district",
             "supervision_level",
             "race",

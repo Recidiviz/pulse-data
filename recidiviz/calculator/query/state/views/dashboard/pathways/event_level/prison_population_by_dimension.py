@@ -96,12 +96,12 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         columns=[
             "state_code",
             "person_id",
+            "age_group",
+            "facility",
             "gender",
             "admission_reason",
-            "facility",
-            "age_group",
-            "length_of_stay",
             "race",
+            "length_of_stay",
         ],
         dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
             ["gender", "admission_reason", "facility", "age_group", "race"]
