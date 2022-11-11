@@ -18,19 +18,9 @@
 as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
-)
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,12 +34,12 @@ indicated by the sentences that were active during that span.
 STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [StateCode.US_ND]
 
 _QUERY_TEMPLATE = f"""
-WITH all_states_spans AS (
     SELECT
         span.state_code,
         span.person_id,
         span.start_date,
         span.end_date_exclusive,
+        span.end_date_exclusive AS end_date,
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
@@ -67,34 +57,11 @@ WITH all_states_spans AS (
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
         -- separately in supervision sentences
-        (sent.state_code NOT IN ("{{excluded_incarceration_states}}") OR sent.sentence_type = "SUPERVISION")
+        (sent.state_code NOT IN ("{{excluded_incarceration_states}}", "US_ID") OR sent.sentence_type = "SUPERVISION")
     GROUP BY 1, 2, 3, 4
-),
-#TODO(#15410) remove piping of raw data once validation issues are addressed
-id_max_date AS ( 
-  SELECT 
-  "US_ID" AS state_code,
-  pei.person_id,
-  SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sent_ftrd_dt) AS DATE) AS projected_completion_date_external,
-FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.summary_ofndr_ftrd_dt_recidiviz_latest` ftrd
-INNER JOIN `{{project_id}}.{{normalized_dataset}}.state_person_external_id` pei
-  ON ftrd.ofndr_num = pei.external_id
-  AND pei.state_code = 'US_ID'
-)
-SELECT 
-    a.state_code,
-    a.person_id,
-    a.start_date,
-    IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
-      NULL, a.end_date_exclusive) AS end_date_exclusive,
-    IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
-      NULL, a.end_date_exclusive) AS end_date,
-    COALESCE(id.projected_completion_date_external, a.projected_completion_date_max) AS projected_completion_date_max,
-FROM all_states_spans a
-LEFT JOIN id_max_date id
-    ON id.person_id = a.person_id 
-    AND id.state_code = a.state_code
-    AND CURRENT_DATE('US/Pacific') <= {nonnull_end_date_exclusive_clause('a.end_date_exclusive')}
+UNION ALL
+    SELECT * 
+    FROM `{{project_id}}.{{sessions_dataset}}.us_id_supervision_projected_completion_date_spans_materialized`
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -103,10 +70,6 @@ SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    normalized_dataset=NORMALIZED_STATE_DATASET,
-    raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
-    ),
     excluded_incarceration_states='", "'.join(
         [state.name for state in STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION]
     ),
