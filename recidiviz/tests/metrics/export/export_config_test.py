@@ -21,7 +21,10 @@ from unittest.mock import Mock
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
+from recidiviz.big_query.export.export_query_config import (
+    ExportOutputFormatType,
+    ExportValidationType,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export.export_config import (
     _VIEW_COLLECTION_EXPORT_CONFIGS,
@@ -34,7 +37,9 @@ from recidiviz.metrics.export.export_config import (
     ProductExportConfig,
     ProductStateConfig,
 )
+from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.string import StrictStringFormatter
@@ -250,6 +255,24 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             len(VIEW_COLLECTION_EXPORT_INDEX.keys()),
         )
 
+    def test_metric_export_validations_match_formats(self) -> None:
+        gcsfs = FakeGCSFileSystem()
+        for config_collection in _VIEW_COLLECTION_EXPORT_CONFIGS:
+            configs = config_collection.export_configs_for_views_to_export(
+                self.mock_project_id
+            )
+
+            try:
+                get_delegate_export_map(
+                    gcsfs_client=gcsfs,
+                    export_name=config_collection.export_name,
+                    export_configs=configs,
+                )
+            except Exception as e:
+                self.fail(
+                    f"Export configured with validation not matching its export type: {e}"
+                )
+
     def test_metric_export_state_agnostic(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-agnostic."""
@@ -278,10 +301,10 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                         project_id=self.mock_project_id,
                     )
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             )
         ]
 
@@ -315,10 +338,10 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             )
         ]
 
@@ -352,10 +375,10 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                         project_id=self.mock_project_id,
                     )
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             )
         ]
 
@@ -386,10 +409,10 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             )
         ]
 

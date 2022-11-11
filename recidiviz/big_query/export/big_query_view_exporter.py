@@ -41,10 +41,12 @@ class BigQueryViewExporter:
     """Interface for implementations which export BigQuery view results to specific locations in specific formats."""
 
     def __init__(
-        self, bq_client: BigQueryClient, validator: BigQueryViewExportValidator
+        self,
+        bq_client: BigQueryClient,
+        validators: Sequence[BigQueryViewExportValidator],
     ):
         self.bq_client = bq_client
-        self.validator = validator
+        self.validators = validators
 
     @abc.abstractmethod
     def export(
@@ -83,11 +85,12 @@ class BigQueryViewExporter:
 
         exported_paths = []
         for config, output_path in exported_configs_and_paths:
-            if not self.validator.validate(output_path, config.allow_empty):
-                raise ViewExportValidationError(
-                    f"Validation on path {output_path.abs_path()} failed the metric file export. "
-                    f"Stopping execution here."
-                )
+            for validator in self.validators:
+                if not validator.validate(output_path, config.allow_empty):
+                    raise ViewExportValidationError(
+                        f"Validation on path {output_path.abs_path()} failed on validator {validator}. "
+                        f"Stopping execution here without completing the export."
+                    )
             exported_paths.append(output_path)
 
         return exported_paths
@@ -103,7 +106,10 @@ class JsonLinesBigQueryViewExporter(BigQueryViewExporter):
         self, export_configs: Sequence[ExportBigQueryViewConfig]
     ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
         for config in export_configs:
-            if ExportOutputFormatType.JSON not in config.export_output_formats:
+            if (
+                ExportOutputFormatType.JSON
+                not in config.export_output_formats_and_validations.keys()
+            ):
                 raise ValueError(
                     "JsonLinesBigQueryViewExporter received config that does not export to JSON"
                 )
@@ -133,61 +139,73 @@ class CSVBigQueryViewExporter(BigQueryViewExporter):
     """View exporter which produces results in CSV format and exports to Google Cloud Storage.
 
     This format is natively supported by the BigQuery Export API so this is a thin wrapper around that call.
-    Note: This exporter does strip the header from the outputted CSV.
     """
 
     def export(
         self, export_configs: Sequence[ExportBigQueryViewConfig]
     ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
         for config in export_configs:
-            if (
-                ExportOutputFormatType.CSV not in config.export_output_formats
-                and ExportOutputFormatType.HEADERLESS_CSV
-                not in config.export_output_formats
-            ):
+            export_output_formats = config.export_output_formats_and_validations.keys()
+            if ExportOutputFormatType.CSV not in export_output_formats:
                 raise ValueError(
                     "CSVBigQueryViewExporter received config that does not export to CSV"
                 )
-            if (
-                ExportOutputFormatType.CSV in config.export_output_formats
-                and ExportOutputFormatType.HEADERLESS_CSV
-                in config.export_output_formats
-            ):
-                raise ValueError(
-                    "CSVBigQueryViewExporter cannot export CSV both with and without headers."
-                )
 
-        export_and_query_configs = [
-            (c, c.as_export_query_config(bigquery.DestinationFormat.CSV))
+        export_query_configs = [
+            c.as_export_query_config(bigquery.DestinationFormat.CSV)
             for c in export_configs
-            if ExportOutputFormatType.HEADERLESS_CSV in c.export_output_formats
-            or ExportOutputFormatType.CSV in c.export_output_formats
         ]
 
-        headerless_export_query_configs = [
-            query_config
-            for export_config, query_config in export_and_query_configs
-            if ExportOutputFormatType.HEADERLESS_CSV
-            in export_config.export_output_formats
-        ]
         self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=headerless_export_query_configs,
-            print_header=False,
-            use_query_cache=True,
-        )
-
-        headered_export_query_configs = [
-            query_config
-            for export_config, query_config in export_and_query_configs
-            if ExportOutputFormatType.CSV in export_config.export_output_formats
-        ]
-        self.bq_client.export_query_results_to_cloud_storage(
-            export_configs=headered_export_query_configs,
+            export_configs=export_query_configs,
             print_header=True,
             use_query_cache=True,
         )
 
         return [
-            (export_config, GcsfsFilePath.from_absolute_path(query_config.output_uri))
-            for export_config, query_config in export_and_query_configs
+            (
+                export_config,
+                GcsfsFilePath.from_absolute_path(export_query_config.output_uri),
+            )
+            for export_config, export_query_config in zip(
+                export_configs, export_query_configs
+            )
+        ]
+
+
+class HeaderlessCSVBigQueryViewExporter(BigQueryViewExporter):
+    """View exporter which produces results in CSV format and exports to Google Cloud Storage.
+
+    This format is natively supported by the BigQuery Export API so this is a thin wrapper around that call.
+    """
+
+    def export(
+        self, export_configs: Sequence[ExportBigQueryViewConfig]
+    ) -> List[Tuple[ExportBigQueryViewConfig, GcsfsFilePath]]:
+        for config in export_configs:
+            export_output_formats = config.export_output_formats_and_validations.keys()
+            if ExportOutputFormatType.HEADERLESS_CSV not in export_output_formats:
+                raise ValueError(
+                    "HeaderlessCSVBigQueryViewExporter received config that does not export to Headerless CSV"
+                )
+
+        export_query_configs = [
+            c.as_export_query_config(bigquery.DestinationFormat.CSV)
+            for c in export_configs
+        ]
+
+        self.bq_client.export_query_results_to_cloud_storage(
+            export_configs=export_query_configs,
+            print_header=False,
+            use_query_cache=True,
+        )
+
+        return [
+            (
+                export_config,
+                GcsfsFilePath.from_absolute_path(export_query_config.output_uri),
+            )
+            for export_config, export_query_config in zip(
+                export_configs, export_query_configs
+            )
         ]

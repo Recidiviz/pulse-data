@@ -26,15 +26,21 @@ from opencensus.stats import view as opencensus_view
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_export_validator import (
+    BigQueryViewExportValidator,
     ExistsBigQueryViewExportValidator,
+    NonEmptyColumnsBigQueryViewExportValidator,
 )
 from recidiviz.big_query.export.big_query_view_exporter import (
     BigQueryViewExporter,
     CSVBigQueryViewExporter,
+    HeaderlessCSVBigQueryViewExporter,
     JsonLinesBigQueryViewExporter,
     ViewExportValidationError,
 )
-from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
+from recidiviz.big_query.export.export_query_config import (
+    ExportOutputFormatType,
+    ExportValidationType,
+)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -95,6 +101,10 @@ monitoring.register_views(
 )
 
 export_blueprint = Blueprint("export", __name__)
+
+
+class ViewExportConfigurationError(Exception):
+    """Error thrown when views are misconfigured."""
 
 
 # TODO(#4593): We might be able to get rid of this endpoint entirely once we run the
@@ -254,7 +264,6 @@ def do_metric_export_for_configs(
     """Triggers the export given the export_configs."""
 
     gcsfs_client = GcsfsFactory.build()
-    delegate_export_map = get_delegate_export_map(gcsfs_client, override_view_exporter)
 
     for export_name, view_export_configs in export_configs.items():
         export_log_message = f"Starting [{export_name}] export"
@@ -264,6 +273,9 @@ def do_metric_export_for_configs(
 
         logging.info(export_log_message)
 
+        delegate_export_map = get_delegate_export_map(
+            gcsfs_client, export_name, view_export_configs, override_view_exporter
+        )
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
         # as a warning, but not block on the rest of the exports.
         try:
@@ -300,45 +312,96 @@ def do_metric_export_for_configs(
 
 def get_delegate_export_map(
     gcsfs_client: GCSFileSystem,
+    export_name: str,
+    export_configs: Sequence[ExportBigQueryViewConfig],
     override_view_exporter: Optional[BigQueryViewExporter] = None,
 ) -> Dict[ExportOutputFormatType, BigQueryViewExporter]:
     """Builds the delegate_export_map, mapping the csv_exporter, json_exporter, and metric_exporter
     to the correct ExportOutputFormatType.
     """
-    if override_view_exporter is None:
-        bq_client = BigQueryClientImpl()
-
-        # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
-        # so we just check for existence
-        csv_exporter = CSVBigQueryViewExporter(
-            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
-        )
-        json_exporter = JsonLinesBigQueryViewExporter(
-            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
-        )
-        metric_exporter = OptimizedMetricBigQueryViewExporter(
-            bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client)
-        )
-        with_metadata_query_exporter = WithMetadataQueryBigQueryViewExporter(
-            bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
-        )
-
-        delegate_export_map = {
-            ExportOutputFormatType.CSV: csv_exporter,
-            ExportOutputFormatType.HEADERLESS_CSV: csv_exporter,
-            ExportOutputFormatType.JSON: json_exporter,
-            ExportOutputFormatType.METRIC: metric_exporter,
-            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: with_metadata_query_exporter,
-        }
-    else:
-        delegate_export_map = {
+    if override_view_exporter:
+        return {
             ExportOutputFormatType.CSV: override_view_exporter,
             ExportOutputFormatType.HEADERLESS_CSV: override_view_exporter,
             ExportOutputFormatType.JSON: override_view_exporter,
             ExportOutputFormatType.METRIC: override_view_exporter,
             ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: override_view_exporter,
         }
-    return delegate_export_map
+
+    bq_client = BigQueryClientImpl()
+
+    validator_mappings = {
+        ExportValidationType.EXISTS: ExistsBigQueryViewExportValidator(gcsfs_client),
+        ExportValidationType.NON_EMPTY_COLUMNS: NonEmptyColumnsBigQueryViewExportValidator(
+            gcsfs_client, contains_headers=True
+        ),
+        ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS: NonEmptyColumnsBigQueryViewExportValidator(
+            gcsfs_client, contains_headers=False
+        ),
+        ExportValidationType.OPTIMIZED: OptimizedMetricBigQueryViewExportValidator(
+            gcsfs_client
+        ),
+    }
+
+    # Determine which validators this set of export configs set for each type. It fails if
+    # different configs set the same output format type with different validators.
+    validators_for_type: Dict[
+        ExportOutputFormatType, List[BigQueryViewExportValidator]
+    ] = {}
+    for config in export_configs:
+        for (
+            export_format,
+            validations,
+        ) in config.export_output_formats_and_validations.items():
+            validators = [validator_mappings[val_type] for val_type in validations]
+
+            unsupported_validators = [
+                validator
+                for validator in validators
+                if not validator.supports_output_type(export_format)
+            ]
+
+            if unsupported_validators:
+                raise ViewExportConfigurationError(
+                    f"""Export {export_name} validator(s) {unsupported_validators} do not support export format {export_format}"""
+                )
+
+            if (
+                export_format in validators_for_type
+                and validators_for_type[export_format] != validators
+            ):
+                raise ViewExportConfigurationError(
+                    f"""Validators for export format {export_format} ({validators}) do not match
+                    previously configured validations ({validators_for_type[export_format]})"""
+                )
+            validators_for_type[export_format] = validators
+
+    csv_exporter = CSVBigQueryViewExporter(
+        bq_client, validators_for_type.get(ExportOutputFormatType.CSV, [])
+    )
+    headerless_csv_exporter = HeaderlessCSVBigQueryViewExporter(
+        bq_client, validators_for_type.get(ExportOutputFormatType.HEADERLESS_CSV, [])
+    )
+    json_exporter = JsonLinesBigQueryViewExporter(
+        bq_client, validators_for_type.get(ExportOutputFormatType.JSON, [])
+    )
+    metric_exporter = OptimizedMetricBigQueryViewExporter(
+        bq_client, validators_for_type.get(ExportOutputFormatType.METRIC, [])
+    )
+    with_metadata_query_exporter = WithMetadataQueryBigQueryViewExporter(
+        bq_client,
+        validators_for_type.get(
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA, []
+        ),
+    )
+
+    return {
+        ExportOutputFormatType.CSV: csv_exporter,
+        ExportOutputFormatType.HEADERLESS_CSV: headerless_csv_exporter,
+        ExportOutputFormatType.JSON: json_exporter,
+        ExportOutputFormatType.METRIC: metric_exporter,
+        ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: with_metadata_query_exporter,
+    }
 
 
 def export_views_with_exporters(
@@ -358,7 +421,7 @@ def export_views_with_exporters(
         staging_configs = [
             config.pointed_to_staging_subdirectory()
             for config in export_configs
-            if export_type in config.export_output_formats
+            if export_type in config.export_output_formats_and_validations.keys()
         ]
 
         logging.info(
