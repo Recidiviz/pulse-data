@@ -35,18 +35,25 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION = """Event based i
 
 SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
     SELECT
-      state_code,
-      person_id,
-      admission_reason,
-      prioritized_race_or_ethnicity,
-      IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
+      pop.state_code,
+      pop.person_id,
+      sess.start_reason AS admission_reason,
+      pop.prioritized_race_or_ethnicity,
+      IFNULL(pop.gender, 'EXTERNAL_UNKNOWN') as gender,
       {age_bucket},
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
-      date_of_stay,
-      facility,
-      commitment_from_supervision_supervision_type
+      CURRENT_DATE('US/Eastern') AS date_of_stay,
+      pop.facility,
+      inc.supervision_type AS commitment_from_supervision_supervision_type
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized`
+      (SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
+        WHERE included_in_state_population and end_date_exclusive IS NULL) pop
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sess
+        ON CURRENT_DATE('US/Eastern') BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+        AND pop.person_id = sess.person_id
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` inc
+        ON sess.person_id = inc.person_id
+        AND sess.start_date = inc.admission_date
     WHERE {state_specific_facility_exclusion}
     """
 
@@ -57,8 +64,11 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE,
     description=SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
-    age_bucket=spotlight_age_buckets(),
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(
+        "pop"
+    ),
+    age_bucket=spotlight_age_buckets("pop.age"),
 )
 
 if __name__ == "__main__":
