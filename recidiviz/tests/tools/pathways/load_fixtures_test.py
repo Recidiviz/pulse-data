@@ -133,7 +133,7 @@ class TestLoadFixtures(TestCase):
             path=GcsfsFilePath.from_absolute_path(
                 f"gs://{bucket}/US_XX/supervision_population_over_time.csv"
             ),
-            contents="US_XX,0001,2022-01-01,months_7_12,District 1,HIGH,HISPANIC",
+            contents="US_XX,2022-01-01,months_7_12,0001,District 1,HIGH,HISPANIC",
             content_type="text/csv",
         )
 

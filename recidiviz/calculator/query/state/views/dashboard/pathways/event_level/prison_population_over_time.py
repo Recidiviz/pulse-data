@@ -99,13 +99,13 @@ PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
     delegate=SelectedColumnsBigQueryViewBuilder(
         columns=[
             "state_code",
-            "person_id",
             "date_in_population",
             "time_period",
+            "person_id",
+            "age_group",
+            "facility",
             "gender",
             "admission_reason",
-            "facility",
-            "age_group",
             "race",
         ],
         dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
