@@ -74,5 +74,11 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
         state_codes = set(get_direct_ingest_states_with_sftp_queue())
         self.assertEqual(
             state_codes,
-            {StateCode.US_ID, StateCode.US_PA, StateCode.US_ME, StateCode.US_MI},
+            {
+                StateCode.US_ID,
+                StateCode.US_PA,
+                StateCode.US_ME,
+                StateCode.US_MI,
+                StateCode.US_MO,
+            },
         )
