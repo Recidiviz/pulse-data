@@ -365,8 +365,8 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
 
     parser.add_argument(
         "--headers",
-        help="Whether to write headers into the CSV file. Defaults to True.",
-        type=bool,
+        help="Whether to write headers into the CSV file. Defaults to True. Specify --no-headers to set to false.",
+        action=argparse.BooleanOptionalAction,
         default=True,
         required=False,
     )
