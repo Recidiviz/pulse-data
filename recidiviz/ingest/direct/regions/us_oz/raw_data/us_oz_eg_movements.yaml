@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: eg_movements
+file_description: |-
+  Contains information about when people have moved from one city to another. The table
+  is set up to track a person's primary residence city over time.
+data_classification: source
+primary_key_cols: [ID]
+columns:
+  - name: ID
+    description: A unique number used to identify this movement.
+  - name: PersonID
+    description: A unique number used to identify this person in the system.
+    is_pii: True
+  - name: Date
+    description: The date on which the person moved to this location (MM/DD/YYYY).
+    is_datetime: True
+  - name: Location
+    description: The location to which the person moved.
