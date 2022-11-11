@@ -34,7 +34,6 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
     COVID_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
-    CORE_DASHBOARD_VIEW_BUILDERS,
     LANTERN_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
@@ -488,12 +487,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="LANTERN",
-    ),
-    # Core Dashboard views
-    ExportViewCollectionConfig(
-        view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
-        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="CORE",
     ),
     # Public Dashboard views
     ExportViewCollectionConfig(

@@ -77,6 +77,7 @@ class ProgramMetric(RecidivizMetric[ProgramMetricType], PersonLevelMetric):
         """Should be implemented by metric subclasses to return a description of the metric."""
 
 
+# TODO(#16605): This whole metric can be deleted since its output is no longer used.
 @attr.s
 class ProgramReferralMetric(
     ProgramMetric, AssessmentMetricMixin, SupervisionLocationMixin

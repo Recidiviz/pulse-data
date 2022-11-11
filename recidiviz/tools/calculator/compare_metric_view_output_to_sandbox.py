@@ -80,12 +80,6 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import (
-    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_period import (
-    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
@@ -134,9 +128,6 @@ OUTPUT_COMPARISON_TEMPLATE = """
 
 # These views are known to not have deterministic output
 VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT = [
-    # Averaging of float values non-deterministic
-    AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER,
-    AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
     # TODO(#5034): must be deterministic and have reduced complexity to be included
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 ]

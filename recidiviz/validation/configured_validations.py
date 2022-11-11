@@ -74,12 +74,6 @@ from recidiviz.validation.views.state.active_program_participation_by_region_int
 from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
     ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.case_termination_by_type_comparison import (
-    CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.ftr_referrals_comparison import (
-    FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
@@ -214,9 +208,6 @@ from recidiviz.validation.views.state.revocation_matrix_distribution_by_gender_c
 from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_comparison import (
     REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison import (
-    REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
@@ -261,14 +252,8 @@ from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_
 from recidiviz.validation.views.state.supervision_start_person_level_external_comparison import (
     SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.supervision_success_by_month_dashboard_comparison import (
-    SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.supervision_success_by_period_by_demographics_internal_consistency import (
     SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.supervision_success_by_period_dashboard_comparison import (
-    SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_termination_person_level_external_comparison import (
     SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -493,32 +478,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
-            view_builder=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="absconsions",
-            comparison_columns=["absconsions_by_month", "absconsions_from_po_report"],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="discharges",
-            comparison_columns=["discharges_by_month", "discharges_from_po_report"],
-            hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
-            comparison_columns=[
-                "age_bucket_sum",
-                "risk_level_sum",
-                "gender_sum",
-                "race_sum",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
             view_builder=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
             comparison_columns=PO_REPORT_COMPARISON_COLUMNS,
             validation_category=ValidationCategory.CONSISTENCY,
@@ -612,55 +571,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             comparison_columns=[
                 "recommended_for_revocation_count_all",
                 "recommended_for_revocation_count_sum",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
-            comparison_columns=[
-                "dashboard_revocation_count",
-                "public_dashboard_revocation_count",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="termination",
-            comparison_columns=[
-                "dashboard_successful_termination",
-                "public_dashboard_successful_termination",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="completion",
-            comparison_columns=[
-                "dashboard_projected_completion",
-                "public_dashboard_projected_completion",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="termination",
-            comparison_columns=[
-                "dashboard_successful_termination",
-                "public_dashboard_successful_termination",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
-            validation_name_suffix="completion",
-            comparison_columns=[
-                "dashboard_projected_completion",
-                "public_dashboard_projected_completion",
             ],
             validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,

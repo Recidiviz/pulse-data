@@ -21,23 +21,14 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.shared_metric.admission_types_per_state_for_matrix import (
     ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.event_based_admissions import (
-    EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.event_based_commitments_from_supervision import (
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.shared_metric.event_based_commitments_from_supervision_for_matrix import (
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.shared_metric.event_based_program_referrals import (
-    EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.shared_metric.event_based_supervision_populations import (
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.shared_metric.event_based_supervision_populations_with_commitments_for_rate_denominators import (
-    EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.shared_metric.overdue_discharge_outcomes import (
     OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER,
@@ -69,11 +60,8 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_terminatio
 
 SHARED_METRIC_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER,
-    EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
-    EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER,
     EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
-    EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_BUILDER,
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
     ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
