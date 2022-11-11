@@ -21,7 +21,6 @@ import datetime
 
 from freezegun import freeze_time
 
-from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -31,7 +30,6 @@ from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
-    MetricContextData,
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -804,13 +802,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ].dimension_to_value,
                 {d: None for d in OffenseType},
             )
-            self.assertEqual(
-                total_arrests.contexts,
-                [
-                    MetricContextData(key=context.key, value=None)
-                    for context in law_enforcement.total_arrests.contexts
-                ],
-            )
 
     def test_get_metrics_for_nonempty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -854,13 +845,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             # Population metric should be blank
             self.assertEqual(arrests.value, None)
-            self.assertEqual(
-                arrests.contexts,
-                [
-                    MetricContextData(key=c.key, value=None)
-                    for c in law_enforcement.total_arrests.contexts
-                ],
-            )
             expected_arrest_dimensions = [
                 MetricAggregatedDimensionData(
                     dimension_to_value={
@@ -1102,50 +1086,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     schema.System.PAROLE.value,
                     schema.System.PROBATION.value,
                 },
-            )
-
-    def test_backfill_contexts(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            annual_report = self.test_schema_objects.test_report_annual
-            agency = self.test_schema_objects.test_agency_B
-
-            session.add_all([agency, annual_report])
-            session.flush()
-            session.refresh(annual_report)
-            # add report in draft state and add metric
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=annual_report,
-                report_metric=self.test_schema_objects.get_reported_budget_metric(
-                    include_contexts=False
-                ),
-                user_account=self.test_schema_objects.test_user_A,
-            )
-            report_metrics = ReportInterface.get_metrics_by_report(
-                session=session, report=annual_report
-            )
-            budget_metric = filter(
-                lambda x: x.key == law_enforcement.annual_budget.key, report_metrics
-            )
-            self.assertEqual(list(budget_metric)[0].contexts[0].value, None)
-            # add pre-filled context
-            agency_datapoint = schema.Datapoint(
-                metric_definition_key=law_enforcement.annual_budget.key,
-                context_key=ContextKey.PRIMARY_FUNDING_SOURCE.value,
-                source_id=agency.id,
-                value="THIS IS AN AGENCY PREFILLED DATAPOINT",
-            )
-            session.add(agency_datapoint)
-            session.flush()
-            report_metrics = ReportInterface.get_metrics_by_report(
-                session=session, report=annual_report
-            )
-            budget_metric = filter(
-                lambda x: x.key == law_enforcement.annual_budget.key, report_metrics
-            )
-            self.assertEqual(
-                list(budget_metric)[0].contexts[0].value,
-                "THIS IS AN AGENCY PREFILLED DATAPOINT",
             )
 
     def test_create_reports_for_new_agency(self) -> None:
