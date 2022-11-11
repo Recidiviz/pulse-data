@@ -22,13 +22,6 @@ products:
     exports:
       - COVID_DASHBOARD
     environment: production
-  - name: Core Dashboard
-    description: Core dashboard provides leadership with an understanding of community supervision and revocation trends.
-    exports:
-      - CORE
-    states:
-      - state_code: US_ND
-        environment: production
   - name: Justice Counts
     description: The Justice Counts Data Dashboards are designed to keep policymakers and other actors in the CJ arena informed of basic trends on the corrections systems in all fifty states.
     is_state_agnostic: True

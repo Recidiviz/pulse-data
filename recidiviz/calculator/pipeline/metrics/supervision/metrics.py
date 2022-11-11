@@ -141,6 +141,7 @@ A person is excluded from the supervision population on any days that they are a
 
     # Optional characteristics
 
+    # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
     # The projected end date for the person's supervision term.
     projected_end_date: Optional[date] = attr.ib(default=None)
 
@@ -217,6 +218,7 @@ If a person has a `StateSupervisionSentence` with a `projected_completion_date` 
     # Whether this represents a successful completion
     successful_completion: bool = attr.ib(default=None)
 
+    # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
     # Days served for this sentence
     sentence_days_served: int = attr.ib(default=None)
 
@@ -258,6 +260,7 @@ If a person has a supervision period with a `termination_date` of 2017-10-18, th
 
     # Optional characteristics
 
+    # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
     # Change in scores between the assessment right before termination and first
     # reliable assessment while on supervision. The first "reliable" assessment is
     # determined by state-specific logic.

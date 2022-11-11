@@ -55,18 +55,6 @@ max_allowed_error_overrides:
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
-  - validation_name: revocations_by_period_dashboard_comparison
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_month_dashboard_comparison_completion
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_completion
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_termination
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 1200

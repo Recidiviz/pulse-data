@@ -7,16 +7,6 @@ exclusions:
     exclusion_reason:
       ND ingest constructs one supervision period per supervision sentence - we expect supervision
       periods to overlap
-  - validation_name: case_termination_by_type_comparison_absconsions
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason:
-      This validation is currently being used for the PO monthly report, and currently, we do not support
-      the PO monthly report for ND.
-  - validation_name: case_termination_by_type_comparison_discharges
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason:
-      This validation is currently being used for the PO monthly report, and currently, we do not support
-      the PO monthly report for ND.
 max_allowed_error_overrides:
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 0.05
@@ -24,18 +14,6 @@ max_allowed_error_overrides:
       Given the very small size of some facilities in ND, this is actually a very strict threshold and we
       likely will not be able to do better. We're also already checking facility accuracy over the whole population with
       incarceration_population_person_level_external_comparison_matching_people validation.
-  - validation_name: supervision_success_by_month_dashboard_comparison_completion
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_month_dashboard_comparison_termination
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_completion
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
-  - validation_name: supervision_success_by_period_dashboard_comparison_termination
-    hard_max_allowed_error_override: 1.0
-    override_reason: Needs investigation.
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.001
     override_reason:
