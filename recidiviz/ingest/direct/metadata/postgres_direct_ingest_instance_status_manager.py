@@ -19,6 +19,7 @@ statuses transitions, please refer to http://go/ingest-instance-status-flow."""
 from datetime import datetime
 from typing import List, Optional
 
+import pytz
 from more_itertools import one
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -142,7 +143,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 new_row = schema.DirectIngestInstanceStatus(
                     region_code=self.region_code,
                     instance=self.ingest_instance.value,
-                    timestamp=datetime.now(),
+                    timestamp=datetime.now(tz=pytz.UTC),
                     status=status.value,
                 )
                 session.add(new_row)
@@ -246,7 +247,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             new_row = schema.DirectIngestInstanceStatus(
                 region_code=self.region_code,
                 instance=self.ingest_instance.value,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(tz=pytz.UTC),
                 status=status.value,
             )
             session.add(new_row)
