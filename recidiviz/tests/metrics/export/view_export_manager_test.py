@@ -33,11 +33,15 @@ from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidat
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+    ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export import view_export_manager
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
-from recidiviz.metrics.export.view_export_manager import export_blueprint
+from recidiviz.metrics.export.view_export_manager import (
+    ViewExportConfigurationError,
+    export_blueprint,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
@@ -193,7 +197,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=metric_view,
@@ -202,10 +208,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/{self.mock_state_code}"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             ),
         ]
 
@@ -241,7 +247,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=metric_view,
@@ -250,10 +258,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             ),
         ]
 
@@ -289,7 +297,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                },
             )
         ]
 
@@ -301,10 +311,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             )
         ]
         mock_view_exporter.export_and_validate.assert_has_calls(
@@ -380,7 +390,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=metric_view,
@@ -389,10 +401,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-bucket-without-state-codes"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+                },
             ),
         ]
 
@@ -452,6 +464,43 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         view_export_manager.export_view_data_to_cloud_storage(
             self.mock_export_name, override_view_exporter=mock_view_exporter
         )
+
+    def test_invalid_export_configuration(self) -> None:
+        """Tests that an invalid export configuration throws"""
+
+        # These need to be created manually here because our ExportViewCollectionConfig framework
+        # actually gives no ability to create configurations with different export types per config
+        # except by not setting export_output_formats_and_validations at all, which sets it to a
+        # correctly-configured default.
+        view_export_configs = [
+            ExportBigQueryViewConfig(
+                view=self.mock_view_builder.build(),
+                intermediate_table_name=f"{self.mock_view_builder.view_id}_intermediate",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory"
+                ),
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.CSV: [ExportValidationType.EXISTS],
+                },
+            ),
+            ExportBigQueryViewConfig(
+                view=self.mock_metric_view_builder.build(),
+                intermediate_table_name=f"{self.mock_metric_view_builder.view_id}_intermediate",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory"
+                ),
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.CSV: [
+                        ExportValidationType.NON_EMPTY_COLUMNS
+                    ],
+                },
+            ),
+        ]
+
+        with self.assertRaises(ViewExportConfigurationError):
+            view_export_manager.do_metric_export_for_configs(
+                {"EXPORT": view_export_configs}, state_code_filter=None
+            )
 
     @mock.patch(
         "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"

@@ -27,11 +27,10 @@ import attr
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
-    ExistsBigQueryViewExportValidator,
 )
 from recidiviz.big_query.export.big_query_view_exporter import (
     BigQueryViewExporter,
-    CSVBigQueryViewExporter,
+    HeaderlessCSVBigQueryViewExporter,
 )
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
@@ -58,9 +57,9 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
     def __init__(
         self,
         bq_client: BigQueryClient,
-        validator: BigQueryViewExportValidator,
+        validators: Sequence[BigQueryViewExportValidator],
     ):
-        super().__init__(bq_client, validator)
+        super().__init__(bq_client, validators)
 
     def export(
         self,
@@ -72,13 +71,17 @@ class WithMetadataQueryBigQueryViewExporter(BigQueryViewExporter):
         csv_configs = [
             attr.evolve(
                 c,
-                export_output_formats=[ExportOutputFormatType.HEADERLESS_CSV],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.HEADERLESS_CSV: c.export_output_formats_and_validations[
+                        ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA
+                    ]
+                },
             )
             for c in export_configs
         ]
         gcsfs_client = GcsfsFactory.build()
-        csv_exporter = CSVBigQueryViewExporter(
-            self.bq_client, ExistsBigQueryViewExportValidator(gcsfs_client)
+        csv_exporter = HeaderlessCSVBigQueryViewExporter(
+            self.bq_client, self.validators
         )
         configs_and_destinations = csv_exporter.export(csv_configs)
 

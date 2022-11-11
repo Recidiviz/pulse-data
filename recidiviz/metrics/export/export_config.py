@@ -25,6 +25,7 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+    ExportValidationType,
 )
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as JUSTICE_COUNTS_VIEW_BUILDERS,
@@ -346,10 +347,10 @@ class ExportViewCollectionConfig:
     # The name of the export config, used to filter to exports with specific names
     export_name: str = attr.ib()
 
-    # List of output formats for these configs
-    export_output_formats: Optional[List[ExportOutputFormatType]] = attr.ib(
-        default=None
-    )
+    # Map of output formats for these configs to any validations to perform on the export.
+    export_output_formats_and_validations: Optional[
+        Dict[ExportOutputFormatType, List[ExportValidationType]]
+    ] = attr.ib(default=None)
 
     # If set to True then empty files are considered valid. If False then some
     # validators may choose to mark empty files as invalid.
@@ -384,8 +385,10 @@ class ExportViewCollectionConfig:
         for vb in self.view_builders_to_export:
             view = vb.build(address_overrides=address_overrides)
             optional_args = {}
-            if self.export_output_formats is not None:
-                optional_args["export_output_formats"] = self.export_output_formats
+            if self.export_output_formats_and_validations is not None:
+                optional_args[
+                    "export_output_formats_and_validations"
+                ] = self.export_output_formats_and_validations
             configs.append(
                 ExportBigQueryViewConfig(
                     view=view,
@@ -439,6 +442,8 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER],
         output_directory_uri_template=OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI,
         export_name="OVERDUE_DISCHARGE",
+        # This view has no entries for US_ID in staging (as of 2022-11-03)
+        allow_empty=True,
     ),
     # COVID Dashboard views
     ExportViewCollectionConfig(
@@ -451,13 +456,20 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
         output_directory_uri_template=CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="CASE_TRIAGE",
-        export_output_formats=[ExportOutputFormatType.HEADERLESS_CSV],
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
+        },
     ),
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
         view_builders_to_export=INGEST_METADATA_BUILDERS,
         output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
         export_name="INGEST_METADATA",
+        # This collection has empty files for state employment period views in staging (as of 2022-11-09)
+        allow_empty=True,
     ),
     # Validation metadata views for admin panel
     ExportViewCollectionConfig(
@@ -503,9 +515,9 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER],
         output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
         export_name="DASHBOARD_USER_RESTRICTIONS",
-        export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV,
-        ],
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
+        },
     ),
     # All modules for the Pathways product
     ExportViewCollectionConfig(
@@ -545,9 +557,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_EVENT_LEVEL",
-        export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
-        ],
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
+        },
+        # TODO(#15981): Remove this
+        allow_empty=True,
     ),
     # Pathways and projections event level. This is a separate export type because our export
     # infrastructure assumes an export type can only belong to one product.
@@ -555,9 +572,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_AND_PROJECTIONS_EVENT_LEVEL",
-        export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
-        ],
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
+        },
+        # TODO(#15981): Remove this
+        allow_empty=True,
     ),
     # Pathways prison event level. This is a separate export type because our export
     # infrastructure assumes an export type can only belong to one product.
@@ -565,15 +587,22 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[*PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS],
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON_EVENT_LEVEL",
-        export_output_formats=[
-            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
-        ],
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
+        },
+        # TODO(#15981): Remove this
+        allow_empty=True,
     ),
     # Workflows Firestore ETL views
     ExportViewCollectionConfig(
         view_builders_to_export=FIRESTORE_VIEW_BUILDERS,
         output_directory_uri_template=WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="WORKFLOWS_FIRESTORE",
+        # We export all opportunities for all states, so we expect some files to be empty.
+        allow_empty=True,
     ),
 ]
 

@@ -21,12 +21,16 @@ total number of data points is greater than 0."""
 from recidiviz.big_query.export.big_query_view_export_validator import (
     BigQueryViewExportValidator,
 )
+from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class OptimizedMetricBigQueryViewExportValidator(BigQueryViewExportValidator):
     """View exporter which checks the metadata for the object at the given path and ensures that there is a
     total_data_points key with an integer value greater than 0."""
+
+    def supports_output_type(self, output_type: ExportOutputFormatType) -> bool:
+        return output_type == ExportOutputFormatType.METRIC
 
     def validate(self, path: GcsfsFilePath, allow_empty: bool) -> bool:
         metadata = self.fs.get_metadata(path)

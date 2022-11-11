@@ -29,6 +29,7 @@ from recidiviz.big_query.export.big_query_view_export_validator import (
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+    ExportValidationType,
 )
 from recidiviz.big_query.with_metadata_query_big_query_view import (
     WithMetadataQueryBigQueryViewBuilder,
@@ -87,9 +88,11 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                        ExportValidationType.EXISTS
+                    ],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=second_view,
@@ -98,9 +101,11 @@ class WithMetadataQueryBigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: [
+                        ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+                    ],
+                },
             ),
         ]
         self.output_dirs = [

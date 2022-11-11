@@ -37,12 +37,12 @@ import attr
 from google.cloud import bigquery, storage
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.export.big_query_view_export_validator import (
+    BigQueryViewExportValidator,
+)
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
-    OptimizedMetricBigQueryViewExportValidator,
-)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 from recidiviz.utils import structured_logging
 
@@ -79,10 +79,10 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     def __init__(
         self,
         bq_client: BigQueryClient,
-        validator: OptimizedMetricBigQueryViewExportValidator,
+        validators: Sequence[BigQueryViewExportValidator],
         should_compress: bool = False,
     ):
-        super().__init__(bq_client, validator)
+        super().__init__(bq_client, validators)
         self.should_compress = should_compress
 
     def export(

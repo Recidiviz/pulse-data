@@ -124,7 +124,9 @@ class FakeGCSFileSystem(GCSFileSystem):
             return path.abs_path() in self.files
 
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
-        raise ValueError("Must be implemented for use in tests.")
+        if not self.exists(path):
+            return None
+        return os.path.getsize(self.real_absolute_path_for_path(path))
 
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         path_key = path.abs_path()

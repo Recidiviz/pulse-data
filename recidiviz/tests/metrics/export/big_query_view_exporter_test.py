@@ -26,11 +26,13 @@ from recidiviz.big_query.export.big_query_view_export_validator import (
 )
 from recidiviz.big_query.export.big_query_view_exporter import (
     CSVBigQueryViewExporter,
+    HeaderlessCSVBigQueryViewExporter,
     JsonLinesBigQueryViewExporter,
 )
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+    ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 
@@ -68,10 +70,12 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.HEADERLESS_CSV,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.HEADERLESS_CSV: [
+                        ExportValidationType.NON_EMPTY_COLUMNS
+                    ],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=self.second_view_builder.build(),
@@ -80,10 +84,15 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.CSV,
-                ],
+                export_output_formats_and_validations={
+                    # Note that the use of `ExportViewCollectionConfig` ensures that
+                    # export_output_formats_and_validations is the same in each view for a group of
+                    # views being exported together.
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.HEADERLESS_CSV: [
+                        ExportValidationType.NON_EMPTY_COLUMNS
+                    ],
+                },
             ),
         ]
 
@@ -92,9 +101,42 @@ class BigQueryViewExporterTest(unittest.TestCase):
 
     def test_csv_export_format(self) -> None:
         exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
-        export_config_and_paths = exporter.export(self.view_export_configs)
+        view_export_configs = [
+            ExportBigQueryViewConfig(
+                view=self.view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
+                ),
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.CSV: [
+                        ExportValidationType.NON_EMPTY_COLUMNS
+                    ],
+                },
+            ),
+            ExportBigQueryViewConfig(
+                view=self.second_view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
+                ),
+                export_output_formats_and_validations={
+                    # Note that the use of `ExportViewCollectionConfig` ensures that
+                    # export_output_formats_and_validations is the same in each view for a group of
+                    # views being exported together.
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.CSV: [
+                        ExportValidationType.NON_EMPTY_COLUMNS
+                    ],
+                },
+            ),
+        ]
+        export_config_and_paths = exporter.export(view_export_configs)
 
-        self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
+        self.assertEqual(len(export_config_and_paths), len(view_export_configs))
 
         for _export_config, gcs_path in export_config_and_paths:
             self.assertTrue(
@@ -112,10 +154,10 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.HEADERLESS_CSV,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.HEADERLESS_CSV: [],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=self.second_view_builder.build(),
@@ -124,7 +166,56 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS]
+                },
+            ),
+        ]
+
+        with self.assertRaises(ValueError):
+            exporter.export(view_export_configs)
+
+    def test_headerless_csv_export_format(self) -> None:
+        exporter = HeaderlessCSVBigQueryViewExporter(
+            self.mock_bq_client, self.mock_validator
+        )
+        export_config_and_paths = exporter.export(self.view_export_configs)
+
+        self.assertEqual(len(export_config_and_paths), len(self.view_export_configs))
+
+        for _export_config, gcs_path in export_config_and_paths:
+            self.assertTrue(
+                gcs_path.file_name.endswith(".csv"),
+                msg=f"GCS output file {gcs_path.abs_path()} is not a CSV as expected.",
+            )
+
+    def test_headerless_csv_throws(self) -> None:
+        exporter = HeaderlessCSVBigQueryViewExporter(
+            self.mock_bq_client, self.mock_validator
+        )
+        view_export_configs = [
+            ExportBigQueryViewConfig(
+                view=self.view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
+                ),
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.CSV: [],
+                },
+            ),
+            ExportBigQueryViewConfig(
+                view=self.second_view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
+                ),
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS]
+                },
             ),
         ]
 
@@ -157,10 +248,10 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.HEADERLESS_CSV,
-                ],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                    ExportOutputFormatType.HEADERLESS_CSV: [],
+                },
             ),
             ExportBigQueryViewConfig(
                 view=self.second_view_builder.build(),
@@ -169,7 +260,9 @@ class BigQueryViewExporterTest(unittest.TestCase):
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     f"gs://{self.mock_project_id}-dataset-location/subdirectory/US_XX"
                 ),
-                export_output_formats=[ExportOutputFormatType.METRIC],
+                export_output_formats_and_validations={
+                    ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED]
+                },
             ),
         ]
 

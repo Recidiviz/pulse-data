@@ -18,7 +18,7 @@
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
 import os
 from enum import Enum
-from typing import Generic, List, Optional, TypeVar
+from typing import Dict, Generic, List, Optional, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -38,6 +38,13 @@ class ExportOutputFormatType(Enum):
     # TODO(#14474): Allow other types to be exported with metadata, ideally by delegating the output
     # format type instead of hardcoding all the "_with_metadata" format types.
     HEADERLESS_CSV_WITH_METADATA = "headerless_csv_with_metadata"
+
+
+class ExportValidationType(Enum):
+    EXISTS = "exists"
+    NON_EMPTY_COLUMNS = "non_empty_columns"
+    NON_EMPTY_COLUMNS_HEADERLESS = "non_empty_columns_headerless"
+    OPTIMIZED = "optimized"
 
 
 @attr.s(frozen=True)
@@ -98,8 +105,10 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # The desired path to the output directory.
     output_directory: GcsfsDirectoryPath = attr.ib()
 
-    # The output format types that are preferred for this view
-    export_output_formats: List[ExportOutputFormatType] = attr.ib()
+    # Map of output format types for this view to any validations to perform on the export.
+    export_output_formats_and_validations: Dict[
+        ExportOutputFormatType, List[ExportValidationType]
+    ] = attr.ib()
 
     # The filter clause that should be used to filter the view
     view_filter_clause: Optional[str] = attr.ib(default=None)
@@ -108,11 +117,16 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # validators may choose to mark empty files as invalid.
     allow_empty: bool = attr.ib(default=False)
 
-    @export_output_formats.default
-    def _default_export_output_formats(self) -> List[ExportOutputFormatType]:
+    @export_output_formats_and_validations.default
+    def _default_export_output_formats_and_validations(
+        self,
+    ) -> Dict[ExportOutputFormatType, List[ExportValidationType]]:
         if isinstance(self.view, MetricBigQueryView):
-            return [ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC]
-        return [ExportOutputFormatType.JSON]
+            return {
+                ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
+                ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
+            }
+        return {ExportOutputFormatType.JSON: [ExportValidationType.EXISTS]}
 
     def output_path(self, extension: str) -> GcsfsFilePath:
         file_name = f"{self.view.view_id}.{extension}"
