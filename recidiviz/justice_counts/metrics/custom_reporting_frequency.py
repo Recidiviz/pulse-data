@@ -44,15 +44,17 @@ class CustomReportingFrequency:
         self.starting_month = starting_month
 
     def __eq__(self, other: Any) -> bool:
-        return (
-            self.frequency == other.frequency
-            and self.starting_month == other.starting_month
-        )
+        if isinstance(other, CustomReportingFrequency):
+            return (
+                self.frequency == other.frequency
+                and self.starting_month == other.starting_month
+            )
+        return False
 
     def to_json_str(self) -> str:
         return JSON.dumps(
             {
-                "frequency": self.frequency.value
+                "custom_frequency": self.frequency.value
                 if self.frequency is not None
                 else None,
                 "starting_month": self.starting_month,

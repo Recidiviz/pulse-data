@@ -64,7 +64,7 @@ class MetricInterface:
     value: Optional[float] = attr.field(default=None)
 
     # Weather or not the metric is enabled for an agency.
-    is_metric_enabled: bool = attr.field(default=True)
+    is_metric_enabled: Optional[bool] = attr.field(default=None)
 
     # Additional context that the agency reported on this metric
     contexts: List[MetricContextData] = attr.field(factory=list)
@@ -160,7 +160,9 @@ class MetricInterface:
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.value,
             "label": self.metric_definition.display_name,
-            "enabled": self.is_metric_enabled,
+            "enabled": self.is_metric_enabled
+            if self.is_metric_enabled is not None
+            else True,
             "frequency": frequency,
             "custom_frequency": self.custom_reporting_frequency.frequency.value
             if self.custom_reporting_frequency.frequency is not None
@@ -259,7 +261,7 @@ class MetricInterface:
             contexts=metric_context_data,
             aggregated_dimensions=disaggregations,
             includes_excludes_member_to_setting=includes_excludes_member_to_setting,
-            is_metric_enabled=json.get("enabled", True),
+            is_metric_enabled=json.get("enabled"),
             custom_reporting_frequency=CustomReportingFrequency.from_json(json),
         )
 

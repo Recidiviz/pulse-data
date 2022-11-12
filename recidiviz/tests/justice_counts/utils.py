@@ -47,12 +47,16 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     VacantPrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricContextData,
     MetricInterface,
 )
+from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -609,6 +613,16 @@ class JusticeCountsSchemaTestObjects:
             enabled=False,
             source_id=agency_id,
         )
+        custom_reporting_frequency = schema.Datapoint(
+            metric_definition_key=prisons.annual_budget.key,
+            source_id=agency_id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=(
+                CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                ).to_json_str()
+            ),
+        )
         excluded_metric_settings_datapoints = [
             schema.Datapoint(
                 metric_definition_key=prisons.total_staff.key,
@@ -703,6 +717,7 @@ class JusticeCountsSchemaTestObjects:
         return (
             [
                 disabled_metric,
+                custom_reporting_frequency,
                 prefilled_context_datapoint,
             ]
             + disaggregation_datapoints
