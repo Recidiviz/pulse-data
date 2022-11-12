@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,17 @@
 
 """The queries below can be used to generate the raw data tables of Missouri Department
 of Corrections data that we export to BQ for pre-processing.
+
+These queries are listed in a specific table in the MDOC data warehouse, where MDOC
+automation retrieves them, executes each in turn, and exports their result sets to
+CSV files that they upload to an SFTP server for our retrieval.
+
+To see the list of queries that are currently listed in the MDOC data warehouse:
+
+    select * from LBAKRDTA.RECIDIVIZ_SCHEDULED_QUERIES;
+
+These queries need to be manually updated every week to advance their timestamps by 7 days,
+something we have not yet been able to automate.
 """
 import os
 from typing import List, Optional, Tuple
@@ -58,7 +69,7 @@ FOCTEST_ORAS_ASSESSMENTS_WEEKLY = """
         FOCTEST.ORAS_ASSESSMENTS_WEEKLY;
     """
 
-ORAS_WEEKLY_SUMMARY_UPDATE = """
+ORAS_WEEKLY_SUMMARY_UPDATE = f"""
     SELECT 
         OFFENDER_NAME,
         AGENCY_NAME,
@@ -79,9 +90,9 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
         BIRTH_DATE,
         CREATED_DATE
     FROM
-        FOCTEST.ORAS_WEEKLY_SUMMARY_UPDATE
+        ORAS.WEEKLY_SUMMARY_UPDATE
     WHERE 
-    COALESCE(CREATED_DATE, '1900-01-01') >= {iso_format_lower_bound_update_date};
+    COALESCE(CREATED_DATE, '1900-01-01') >= '{iso_format_lower_bound_update_date}';
     """
 
 LANTERN_DA_RA_LIST = """
@@ -665,7 +676,7 @@ LBAKRDTA_TAK090 = f"""
         DD$TCR,
         DD$UIU,
         DD$DLU,
-        DD$TLU,
+        DD$TLU
     FROM
         LBAKRDTA.TAK090
     WHERE
