@@ -206,6 +206,73 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+@cloud_sql_to_bq_blueprint.route("/acquire_lock/<schema_arg>", methods=["GET", "POST"])
+@requires_gae_auth
+def acquire_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """
+    Creates a refresh lock for a given schema type. Must provide lock_id in request.
+    """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsuppported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    lock_id = get_value_from_request("lock_id")
+    if not lock_id:
+        raise ValueError("Need to provide lock_id in request.")
+    logging.info("Request lock id: %s", lock_id)
+
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
+
+    return "", HTTPStatus.OK
+
+
+@cloud_sql_to_bq_blueprint.route(
+    "/check_can_refresh_proceed/<schema_arg>", methods=["GET", "POST"]
+)
+@requires_gae_auth
+def check_can_refresh_proceed(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """
+    Checks if all other processes that talk to the Postgres DB have stopped so the refresh can proceed. The refresh lock must already have been grabbed via /acquire_lock.
+    """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsupported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    lock_manager = CloudSqlToBQLockManager()
+
+    try:
+        can_proceed = lock_manager.can_proceed(schema_type)
+    except GCSPseudoLockDoesNotExist as e:
+        logging.exception(e)
+        # Since this endpoint is being called in the context of an Airflow DAG,
+        # the DAG should have already acquired a lock before invoking this endpoint.
+        return (
+            f"Expected lock for [{schema_arg}] BQ refresh to already exist.",
+            HTTPStatus.EXPECTATION_FAILED,
+        )
+
+    return str(can_proceed), HTTPStatus.OK
+
+
 @cloud_sql_to_bq_blueprint.route(
     "/refresh_bq_dataset/<schema_arg>", methods=["GET", "POST"]
 )

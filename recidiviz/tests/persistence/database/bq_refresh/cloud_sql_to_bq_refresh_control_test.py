@@ -750,6 +750,98 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
     )
+    def test_acquire_lock_state(
+        self,
+    ) -> None:
+        # Act
+
+        response = self.mock_flask_client.get(
+            "/acquire_lock/state",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=json.dumps({"lock_id": "test-lock-id"}),
+        )
+
+        # Assert
+        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_acquire_lock_state_ingest_locked(
+        self,
+    ) -> None:
+        # Arrange
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        # Act
+        with lock_manager.using_region_lock(expiration_in_seconds=10):
+            response = self.mock_flask_client.get(
+                "/acquire_lock/state",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+                data=json.dumps({"lock_id": "test-lock-id"}),
+            )
+
+        # Assert
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+
+    def test_check_can_refresh_proceed_state_ingest_locked(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /acquire_lock... endpoint does
+        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+
+        # Arrange
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        # Act
+        with lock_manager.using_region_lock(expiration_in_seconds=10):
+            response = self.mock_flask_client.get(
+                "/check_can_refresh_proceed/state",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            )
+
+        # Assert
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.get_data(as_text=True), "False")
+
+    def test_check_can_refresh_proceed_state_can_proceed(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /acquire_lock... endpoint does
+        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+
+        # Arrange
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        # Act
+        with lock_manager.using_region_lock(expiration_in_seconds=0):
+            response = self.mock_flask_client.get(
+                "/check_can_refresh_proceed/state",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            )
+
+        # Assert
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.get_data(as_text=True), "True")
+
+    @mock.patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
     def test_create_refresh_bq_schema_task_state_incremental_default(
         self,
     ) -> None:
