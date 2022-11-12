@@ -19,7 +19,7 @@ import datetime
 import os
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from unittest import mock
 
 import pandas as pd
@@ -198,9 +198,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def shared_test_agency_metrics(self, metrics: List[Dict[str, Any]]) -> None:
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
         self.assertEqual(len(metrics), 8)
-        # Annual Budget metric is turned off
+        # Annual Budget metric is turned off and has a fiscal year starting in February
         self.assertEqual(metrics[0]["key"], prisons.annual_budget.key)
         self.assertEqual(metrics[0]["enabled"], False)
+        self.assertEqual(metrics[0]["custom_frequency"], "ANNUAL")
+        self.assertEqual(metrics[0]["starting_month"], 2)
         # Total Staff metric has two includes/excludes settings that
         # are different from the default.
         self.assertEqual(metrics[1]["key"], prisons.total_staff.key)
@@ -563,6 +565,27 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"], None
         )
 
+    def check_agency_metric_datapoint(
+        self,
+        datapoint: schema.Datapoint,
+        value: float,
+        report_id: int,
+        dimension_display_name: Optional[str] = None,
+        disaggregation_display_name: Optional[str] = None,
+    ) -> None:
+        self.assertEqual(datapoint["dimension_display_name"], dimension_display_name)
+        self.assertEqual(
+            datapoint["disaggregation_display_name"], disaggregation_display_name
+        )
+        self.assertEqual(datapoint["end_date"], "Mon, 01 Aug 2022 00:00:00 GMT")
+        self.assertEqual(datapoint["is_published"], True)
+        self.assertEqual(datapoint["metric_definition_key"], "PRISONS_ADMISSIONS")
+        self.assertEqual(datapoint["metric_display_name"], "Admissions")
+        self.assertEqual(datapoint["old_value"], None)
+        self.assertEqual(datapoint["report_id"], report_id)
+        self.assertEqual(datapoint["start_date"], "Fri, 01 Jul 2022 00:00:00 GMT")
+        self.assertEqual(datapoint["value"], value)
+
     def test_get_agency_published_data(self) -> None:
         self.session.add_all(
             [
@@ -615,39 +638,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(metrics[0]["datapoints"], None)
         self.assertEqual(metrics[1]["datapoints"], None)
-        self.assertEqual(
-            metrics[2]["datapoints"],
-            [
-                {
-                    "dimension_display_name": None,
-                    "disaggregation_display_name": None,
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 13,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 1000.0,
-                },
-                {
-                    "dimension_display_name": None,
-                    "disaggregation_display_name": None,
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 20,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 1000.0,
-                },
-            ],
-        )
+        for datapoint in metrics[2]["datapoints"]:
+            self.check_agency_metric_datapoint(
+                datapoint=datapoint, value=1000.0, report_id=report_published.id
+            )
+
         self.assertEqual(metrics[3]["datapoints"], None)
         self.assertEqual(metrics[4]["datapoints"], None)
         self.assertEqual(metrics[5]["datapoints"], None)
@@ -661,124 +656,59 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             PrisonsOffenseType.dimension_identifier(),
         )
         self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
-
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][0]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Person",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 14,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 3.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][0]["datapoints"][
+                0
             ],
+            value=3.0,
+            report_id=report_published.id,
+            dimension_display_name="Person",
+            disaggregation_display_name="Prisons Offense Type",
         )
-
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][1]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Property",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 15,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 4.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][1]["datapoints"][
+                0
             ],
+            value=4.0,
+            report_id=report_published.id,
+            dimension_display_name="Property",
+            disaggregation_display_name="Prisons Offense Type",
         )
-
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][2]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Drug",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 16,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 1.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][2]["datapoints"][
+                0
             ],
+            value=1.0,
+            report_id=report_published.id,
+            dimension_display_name="Drug",
+            disaggregation_display_name="Prisons Offense Type",
         )
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][3]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Public Order",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 17,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 5.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][3]["datapoints"][
+                0
             ],
+            value=5.0,
+            report_id=report_published.id,
+            dimension_display_name="Public Order",
+            disaggregation_display_name="Prisons Offense Type",
         )
-
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][4]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Other",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 18,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 2.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][4]["datapoints"][
+                0
             ],
+            value=2.0,
+            report_id=report_published.id,
+            dimension_display_name="Other",
+            disaggregation_display_name="Prisons Offense Type",
         )
-
-        self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"],
-            [
-                {
-                    "dimension_display_name": "Unknown",
-                    "disaggregation_display_name": "Prisons Offense Type",
-                    "end_date": "Mon, 01 Aug 2022 00:00:00 GMT",
-                    "frequency": "MONTHLY",
-                    "id": 19,
-                    "is_published": True,
-                    "metric_definition_key": "PRISONS_ADMISSIONS",
-                    "metric_display_name": "Admissions",
-                    "old_value": None,
-                    "report_id": report_published.id,
-                    "start_date": "Fri, 01 Jul 2022 00:00:00 GMT",
-                    "value": 6.0,
-                }
+        self.check_agency_metric_datapoint(
+            datapoint=metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"][
+                0
             ],
+            value=6.0,
+            report_id=report_published.id,
+            dimension_display_name="Unknown",
+            disaggregation_display_name="Prisons Offense Type",
         )
 
     def test_create_report_invalid_permissions(self) -> None:

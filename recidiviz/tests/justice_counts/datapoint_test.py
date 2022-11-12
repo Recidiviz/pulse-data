@@ -27,6 +27,9 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonBudgetIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
@@ -263,7 +266,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             datapoints = session.query(Datapoint).all()
             # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes) + 1)
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(len(datapoint_histories), 0)
             agency_metric = MetricInterface(
@@ -281,7 +284,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             datapoints = session.query(Datapoint).all()
             # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes) + 1)
+            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(
                 len(datapoint_histories), len(PrisonBudgetIncludesExcludes)
@@ -289,6 +292,31 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             for datapoint in datapoint_histories:
                 self.assertEqual(datapoint.old_value, "N/A")
                 self.assertEqual(datapoint.new_value, "Yes")
+
+    def test_save_custom_reporting_frequency(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            agency_metric = MetricInterface(
+                key=law_enforcement.annual_budget.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=ReportingFrequency.ANNUAL, starting_month=3
+                ),
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 1)
+            # Annual frequency starting in March
+            self.assertEqual(
+                datapoints[0].value,
+                '{"custom_frequency": "ANNUAL", "starting_month": 3}',
+            )
 
     def test_save_invalid_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

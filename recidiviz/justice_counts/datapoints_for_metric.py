@@ -25,6 +25,9 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     IncludesExcludesSet,
@@ -48,8 +51,10 @@ class DatapointsForMetric:
     them as MetricInterfaces (which we then convert to JSON).
     """
 
-    is_metric_enabled: bool = attr.field(default=True)
+    is_metric_enabled: Optional[bool] = attr.field(default=None)
     aggregated_value: Optional[int] = None
+
+    custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()
 
     context_key_to_agency_datapoint: Dict[str, schema.Datapoint] = attr.field(
         factory=dict[str, schema.Datapoint]

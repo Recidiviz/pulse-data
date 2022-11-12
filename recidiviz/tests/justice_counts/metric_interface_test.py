@@ -1158,7 +1158,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                         dimension_to_value=None,
                     )
                 ],
-                is_metric_enabled=True,
             ),
         )
 
@@ -1183,7 +1182,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                 ],
                 value=None,
                 aggregated_dimensions=[],
-                is_metric_enabled=True,
             ),
         )
 
@@ -1209,7 +1207,6 @@ class TestJusticeCountsMetricInterface(TestCase):
                         dimension_to_value=None,
                     )
                 ],
-                is_metric_enabled=True,
             ),
         )
 

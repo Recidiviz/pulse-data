@@ -19,6 +19,7 @@ import datetime
 import enum
 import json
 import logging
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
@@ -30,10 +31,14 @@ from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
 from recidiviz.justice_counts.utils.persistence_utils import (
     expunge_existing,
@@ -144,13 +149,10 @@ class DatapointInterface:
         In the first case, the datapoints input will include agency and report datapoints, and in
         the second case, it will just include agency datapoints.
         """
-        metric_key_to_data_points = {}
+        metric_key_to_data_points: Dict[str, DatapointsForMetric] = defaultdict(
+            DatapointsForMetric
+        )
         for datapoint in datapoints:
-            # if no DatapointsForMetric exists for the metric definition, create one.
-            if datapoint.metric_definition_key not in metric_key_to_data_points:
-                metric_key_to_data_points[
-                    datapoint.metric_definition_key
-                ] = DatapointsForMetric()
             metric_datapoints = metric_key_to_data_points[
                 datapoint.metric_definition_key
             ]
@@ -162,8 +164,14 @@ class DatapointInterface:
                 if datapoint.source is not None:
                     # If a datapoint represents a context, add it into a dictionary
                     # formatted as {context_key: datapoint}
-                    metric_datapoints.context_key_to_agency_datapoint[key] = datapoint
-
+                    if datapoint.context_key == REPORTING_FREQUENCY_CONTEXT_KEY:
+                        metric_datapoints.custom_reporting_frequency = (
+                            CustomReportingFrequency.from_datapoint(datapoint=datapoint)
+                        )
+                    else:
+                        metric_datapoints.context_key_to_agency_datapoint[
+                            key
+                        ] = datapoint
             # INCLUDES / EXCLUDES
             elif datapoint.includes_excludes_key is not None:
                 if datapoint.dimension_identifier_to_member is not None:
@@ -416,6 +424,7 @@ class DatapointInterface:
                         # convert dimension datapoints to MetricAggregatedDimensionData
                         metric_definition=metric_definition
                     ),
+                    custom_reporting_frequency=datapoints.custom_reporting_frequency,
                 )
             )
         return agency_metrics
@@ -450,15 +459,16 @@ class DatapointInterface:
         """
 
         # 1. Enable / disable top level metric
-        update_existing_or_create(
-            ingested_entity=schema.Datapoint(
-                metric_definition_key=agency_metric.key,
-                source=agency,
-                enabled=agency_metric.is_metric_enabled,
-                dimension_identifier_to_member=None,
-            ),
-            session=session,
-        )
+        if agency_metric.is_metric_enabled is not None:
+            update_existing_or_create(
+                ingested_entity=schema.Datapoint(
+                    metric_definition_key=agency_metric.key,
+                    source=agency,
+                    enabled=agency_metric.is_metric_enabled,
+                    dimension_identifier_to_member=None,
+                ),
+                session=session,
+            )
 
         # 2. Set default contexts
         for context in agency_metric.contexts:
@@ -492,6 +502,18 @@ class DatapointInterface:
                     user_account=user_account,
                     agency_metric=agency_metric,
                 )
+
+        # 4. Add datapoint for custom reporting frequency
+        if agency_metric.custom_reporting_frequency.frequency is not None:
+            update_existing_or_create(
+                schema.Datapoint(
+                    metric_definition_key=agency_metric.key,
+                    source=agency,
+                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                    value=agency_metric.custom_reporting_frequency.to_json_str(),
+                ),
+                session,
+            )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
             for (
