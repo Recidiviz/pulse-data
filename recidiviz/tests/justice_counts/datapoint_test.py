@@ -49,7 +49,7 @@ from recidiviz.tests.justice_counts.utils import (
 
 
 class TestDatapointInterface(JusticeCountsDatabaseTestCase):
-    """Implements tests for the UserAccountInterface."""
+    """Implements tests for the DatapointInterface."""
 
     def setUp(self) -> None:
         super().setUp()

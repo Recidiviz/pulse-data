@@ -34,8 +34,8 @@ from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
 from ...justice_counts.metricfiles.metricfile_registry import SYSTEM_TO_METRICFILES
 
 
-class TestReportInterface(JusticeCountsDatabaseTestCase):
-    """Implements tests for the UserAccountInterface."""
+class TestFeedInterface(JusticeCountsDatabaseTestCase):
+    """Implements tests for the FeedInterface."""
 
     def setUp(self) -> None:
         super().setUp()

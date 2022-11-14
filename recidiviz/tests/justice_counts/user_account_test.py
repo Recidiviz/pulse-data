@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implements tests for the Justice Counts UserInterface."""
+"""This class implements tests for the Justice Counts UserAccountInterface."""
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -25,7 +25,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 
 
-class TestUserInterface(JusticeCountsDatabaseTestCase):
+class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
     """Implements tests for the UserAccountInterface."""
 
     def setUp(self) -> None:

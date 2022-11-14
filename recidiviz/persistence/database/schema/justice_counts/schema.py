@@ -729,6 +729,38 @@ class DatapointHistory(JusticeCountsBase):
     datapoint = relationship(Datapoint, back_populates="datapoint_histories")
 
 
+class AgencySetting(JusticeCountsBase):
+    """A custom setting for an Agency."""
+
+    __tablename__ = "agency_setting"
+
+    id = Column(Integer, autoincrement=True)
+
+    source_id = Column(Integer, nullable=False)
+
+    # Describes what type of setting it is
+    setting_type = Column(String, nullable=False)
+
+    # Value of the setting
+    value = Column(JSONB, nullable=True)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(
+                source_id,
+                setting_type,
+                name="unique_agency_setting",
+            ),
+            ForeignKeyConstraint(
+                [source_id], [Source.id], name="source_foreign_key_constraint"
+            ),
+        ]
+    )
+
+    source = relationship(Source)
+
+
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
 # concrete class.
 JusticeCountsDatabaseEntity = TypeVar(

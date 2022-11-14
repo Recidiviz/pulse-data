@@ -25,8 +25,8 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
 
 
-class TestJusticeCountsQuerier(JusticeCountsDatabaseTestCase):
-    """Implements tests for the JusticeCountsQuerier."""
+class TestAgencyInterface(JusticeCountsDatabaseTestCase):
+    """Implements tests for the AgencyInterface."""
 
     def setUp(self) -> None:
         super().setUp()
