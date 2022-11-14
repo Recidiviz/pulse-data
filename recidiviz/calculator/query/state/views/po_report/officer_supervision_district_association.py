@@ -37,7 +37,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
                 state_code, year, month, SPLIT(district, '|')[OFFSET(0)] as district_name,
                 COUNT(DISTINCT person_id) AS person_count,
                 officer_external_id
-              FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations`
+              FROM `{project_id}.{shared_metric_views_dataset}.event_based_supervision_populations_materialized`
               WHERE district != 'ALL'
                 -- Only the following supervision types should be included in the PO report --
                 AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
