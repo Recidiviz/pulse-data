@@ -2,7 +2,7 @@
 """new supervision subsystems
 
 Revision ID: 544bf51ef345
-Revises: c10b5e6ed94d
+Revises: 807ad876bc7e
 Create Date: 2022-11-11 11:38:32.044260
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "544bf51ef345"
-down_revision = "c10b5e6ed94d"
+down_revision = "807ad876bc7e"
 branch_labels = None
 depends_on = None
 
