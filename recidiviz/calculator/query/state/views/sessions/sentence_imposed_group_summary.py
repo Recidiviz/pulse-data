@@ -185,7 +185,8 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
     SELECT
         ROW_NUMBER() OVER (
             PARTITION BY person_id, state_code
-            ORDER BY date_imposed
+            ORDER BY date_imposed, consecutive_sentence_group_date_imposed,
+                effective_date, projected_completion_date_max
         ) AS sentence_imposed_group_id,
         *
     FROM sentence_group_cte
