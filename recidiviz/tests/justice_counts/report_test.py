@@ -43,7 +43,7 @@ from recidiviz.utils.types import assert_type
 
 
 class TestReportInterface(JusticeCountsDatabaseTestCase):
-    """Implements tests for the UserAccountInterface."""
+    """Implements tests for the ReportInterface."""
 
     def setUp(self) -> None:
         super().setUp()

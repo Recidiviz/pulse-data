@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implements tests for Justice Counts Dimension classes."""
+"""This class implements tests for Justice Counts MetricDefinition class."""
 
 from unittest import TestCase
 
@@ -28,7 +28,7 @@ from recidiviz.justice_counts.metrics.metric_registry import METRICS
 from recidiviz.utils.types import assert_type
 
 
-class TestJusticeCountsMetricDefinition(TestCase):
+class TestMetricDefinition(TestCase):
     """Implements tests for the Justice Counts MetricDefinition class."""
 
     def test_metric_keys_are_unique(self) -> None:

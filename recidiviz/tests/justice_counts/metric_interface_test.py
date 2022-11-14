@@ -54,7 +54,7 @@ from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
 from recidiviz.utils.types import assert_type
 
 
-class TestJusticeCountsMetricInterface(TestCase):
+class TestMetricInterface(TestCase):
     """Implements tests for the Justice Counts MetricInterface class."""
 
     def setUp(self) -> None:

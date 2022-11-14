@@ -129,6 +129,7 @@ class TestSchemaUtils(unittest.TestCase):
             "datapoint",
             "datapoint_history",
             "spreadsheet",
+            "agency_setting",
         ]
         pathways_table_names = [
             "metric_metadata",
