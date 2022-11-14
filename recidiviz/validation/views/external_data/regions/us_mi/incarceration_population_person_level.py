@@ -170,6 +170,7 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2022, 10, 19),
     date(2022, 10, 26),
     date(2022, 11, 2),
+    date(2022, 11, 9),
 ]
 
 
