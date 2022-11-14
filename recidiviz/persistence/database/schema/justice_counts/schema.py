@@ -29,7 +29,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 import enum
 import re
-from typing import Any, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
 from sqlalchemy import BOOLEAN
 from sqlalchemy.dialects.postgresql import JSONB
@@ -171,6 +171,9 @@ class System(enum.Enum):
     PAROLE = "PAROLE"
     PROBATION = "PROBATION"
     POST_RELEASE = "POST_RELEASE"
+    DUAL_SUPERVISION = "DUAL_SUPERVISION"
+    PRETRIAL_SUPERVISION = "PRETRIAL_SUPERVISION"
+    OTHER_SUPERVISION = "OTHER_SUPERVISION"
 
     # Used by state scan
     CORRECTIONS = "CORRECTIONS"
@@ -187,6 +190,16 @@ class System(enum.Enum):
         # in that order)
         all_systems_ordered: List["System"] = list(cls)
         return sorted(list(systems), key=all_systems_ordered.index)
+
+    @classmethod
+    def supervision_subsystems(cls) -> Set["System"]:
+        return {
+            cls.PAROLE,
+            cls.PROBATION,
+            cls.DUAL_SUPERVISION,
+            cls.PRETRIAL_SUPERVISION,
+            cls.OTHER_SUPERVISION,
+        }
 
 
 class Project(enum.Enum):

@@ -18,6 +18,8 @@
 
 import itertools
 
+import attr
+
 from recidiviz.justice_counts.metricfiles.courts import COURTS_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.defense import DEFENSE_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.jails import JAILS_METRIC_FILES
@@ -26,12 +28,8 @@ from recidiviz.justice_counts.metricfiles.law_enforcement import (
 )
 from recidiviz.justice_counts.metricfiles.prisons import PRISON_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.prosecution import PROSECUTION_METRIC_FILES
-from recidiviz.justice_counts.metricfiles.supervision import (
-    PAROLE_METRIC_FILES,
-    POST_RELEASE_METRIC_FILES,
-    PROBATION_METRIC_FILES,
-    SUPERVISION_METRIC_FILES,
-)
+from recidiviz.justice_counts.metricfiles.supervision import SUPERVISION_METRIC_FILES
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 SYSTEM_TO_METRICFILES = {
@@ -42,10 +40,23 @@ SYSTEM_TO_METRICFILES = {
     schema.System.JAILS: JAILS_METRIC_FILES,
     schema.System.PRISONS: PRISON_METRIC_FILES,
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
-    schema.System.PAROLE: PAROLE_METRIC_FILES,
-    schema.System.PROBATION: PROBATION_METRIC_FILES,
-    schema.System.POST_RELEASE: POST_RELEASE_METRIC_FILES,
 }
+
+
+# For each Supervision subsystem, add a copy of the Supervision metricfiles
+for supervision_subsystem in schema.System.supervision_subsystems():
+    SYSTEM_TO_METRICFILES[supervision_subsystem] = [
+        attr.evolve(
+            metricfile,
+            definition=METRIC_KEY_TO_METRIC[
+                # change the key from e.g. SUPERVISION_TOTAL_STAFF to PROBATION_TOTAL_STAFF
+                metricfile.definition.key.replace(
+                    "SUPERVISION", supervision_subsystem.value, 1
+                )
+            ],
+        )
+        for metricfile in SYSTEM_TO_METRICFILES[schema.System.SUPERVISION]
+    ]
 
 # The `test_metricfile_list` unit test ensures that this dictionary
 # includes all metrics registered for each system.
