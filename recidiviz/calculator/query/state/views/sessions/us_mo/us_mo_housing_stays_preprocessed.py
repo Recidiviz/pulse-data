@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -75,7 +75,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
         ) AS confinement_type,
         h.BN_LRU AS confinement_type_raw_text
     FROM {project_id}.{raw_dataset}.LBAKRDTA_TAK017_latest h
-    LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` p
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
     ON
         h.BN_DOC = p.external_id
         AND p.state_code = "US_MO"
@@ -89,7 +89,7 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
 US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_NAME,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     description=US_MO_HOUSING_STAYS_PREPROCESSED_VIEW_DESCRIPTION,
     view_query_template=US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE,
     should_materialize=False,

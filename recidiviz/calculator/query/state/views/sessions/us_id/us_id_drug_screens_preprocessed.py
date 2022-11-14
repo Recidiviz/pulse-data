@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -57,7 +57,7 @@ US_ID_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
             `{project_id}.{raw_dataset}.sbstnc_rslt_latest` r
         USING (tst_id)
         LEFT JOIN 
-            `{project_id}.{base_dataset}.state_person_external_id` p
+            `{project_id}.{normalized_state_dataset}.state_person_external_id` p
         ON 
             t.ofndr_num = p.external_id
             AND p.state_code = "US_ID"
@@ -95,7 +95,7 @@ US_ID_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
 US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_NAME,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     description=US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_DESCRIPTION,
     view_query_template=US_ID_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE,
     should_materialize=False,

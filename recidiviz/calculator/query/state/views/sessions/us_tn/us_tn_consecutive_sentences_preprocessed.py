@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -42,7 +42,7 @@ US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'INCARCERATION' AS sentence_type,
         external_id,
         JSON_EXTRACT_SCALAR(sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence`
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
     WHERE state_code = 'US_TN'
     
     UNION ALL 
@@ -54,7 +54,7 @@ US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'SUPERVISION' AS sentence_type,
         external_id,
         JSON_EXTRACT_SCALAR(sentence_metadata, '$.CONSECUTIVE_SENTENCE_ID') AS consecutive_sentence_external_id,
-    FROM `{project_id}.{state_base_dataset}.state_supervision_sentence`
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
     WHERE state_code = 'US_TN'
     )
     SELECT
@@ -75,7 +75,7 @@ US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_id=US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )

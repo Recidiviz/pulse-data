@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -52,7 +52,7 @@ US_CO_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     FROM `{project_id}.{raw_dataset}.eomis_commitmentsummary_latest` commitment
     INNER JOIN `{project_id}.{raw_dataset}.eomis_sentencecomponent_latest` component
         USING (OFFENDERID, COMMITMENTPREFIX)
-    INNER JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON commitment.OFFENDERID = pei.external_id
         AND pei.id_type = "US_CO_PID"
     )
@@ -78,8 +78,8 @@ US_CO_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.max_length_days,
         sis.county_code,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
     LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
@@ -102,7 +102,7 @@ US_CO_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuil
         state_code=StateCode.US_CO, instance=DirectIngestInstance.PRIMARY
     ),
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
 )
 

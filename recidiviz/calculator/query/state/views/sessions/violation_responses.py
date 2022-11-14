@@ -153,7 +153,7 @@ VIOLATION_RESPONSES_QUERY_TEMPLATE = """
         FROM
             `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_contacts_latest`
         LEFT JOIN
-            `{project_id}.{state_dataset}.state_person_external_id`
+            `{project_id}.{normalized_state_dataset}.state_person_external_id`
             ON
             SID = external_id
             AND state_code = "US_ND"
@@ -217,7 +217,7 @@ VIOLATION_RESPONSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=VIOLATION_RESPONSES_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

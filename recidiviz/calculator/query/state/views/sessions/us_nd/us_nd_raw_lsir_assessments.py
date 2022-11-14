@@ -17,8 +17,8 @@
 """Individual questions and subscale components of the LSI-R assessment in ND, derived from raw tables"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.calculator.query.state.views.sessions.assessment_lsir_scoring_key import (
     ASSESSMENT_LSIR_PROTECTIVE_QUESTION_LIST,
@@ -56,7 +56,7 @@ US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
         -- Sum all responses indicating protective factors
         {lsir_protective_question_sum} as protective_factors_score_total,
     FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_lsi_chronology_latest` a
-    LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` p
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
         ON a.SID = p.external_id
         AND p.state_code = 'US_ND'
         AND p.id_type = 'US_ND_SID'
@@ -67,7 +67,7 @@ US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ND_RAW_LSIR_ASSESSMENTS_VIEW_NAME,
     view_query_template=US_ND_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE,
     description=US_ND_RAW_LSIR_ASSESSMENTS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),

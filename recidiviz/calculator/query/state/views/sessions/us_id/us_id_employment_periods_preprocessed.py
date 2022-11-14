@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -67,7 +67,7 @@ US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_QUERY_TEMPLATE = """
     ON 
         employment.codeemploymentreasonleftid = leftreason.id
     LEFT JOIN 
-        `{project_id}.{state_base_dataset}.state_person_external_id` person
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` person
     ON 
         person_external.offendernumber = person.external_id 
         AND person.state_code = "US_ID"
@@ -78,7 +78,7 @@ US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_NAME,
     description=US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_VIEW_DESCRIPTION,
     view_query_template=US_ID_EMPLOYMENT_PERIODS_PREPROCESSED_QUERY_TEMPLATE,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=False,
     raw_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
