@@ -98,6 +98,7 @@ output:
                 - "FAX"
                 - "MAIL"
                 - "TELEPHONE"
+                - "VIRTUAL"
           contact_type:
             $enum_mapping:
               $raw_text: contact_type
