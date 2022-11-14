@@ -16,8 +16,6 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Supervision."""
 
-import enum
-
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -45,13 +43,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
     System,
 )
-
-
-class SupervisionSystems(enum.Enum):
-    PAROLE = "PAROLE"
-    PROBATION = "PROBATION"
-    OTHER = "OTHER"
-
 
 residents = MetricDefinition(
     system=System.SUPERVISION,

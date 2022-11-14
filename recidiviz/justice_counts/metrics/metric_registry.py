@@ -18,18 +18,18 @@
 
 import itertools
 
+import attr
+
 from recidiviz.justice_counts.metrics import (
     courts,
     defense,
     jails,
     law_enforcement,
-    parole,
-    post_release,
     prisons,
-    probation,
     prosecution,
     supervision,
 )
+from recidiviz.persistence.database.schema.justice_counts import schema
 
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
 # should be "checked in" here
@@ -92,27 +92,6 @@ METRICS = [
     supervision.reconviction_while_on_supervision,
     supervision.supervision_terminations,
     supervision.supervision_violations,
-    parole.annual_budget,
-    parole.total_staff,
-    parole.individuals_under_supervision,
-    parole.new_supervision_cases,
-    parole.reconviction_while_on_supervision,
-    parole.supervision_terminations,
-    parole.supervision_violations,
-    probation.annual_budget,
-    probation.total_staff,
-    probation.individuals_under_supervision,
-    probation.new_supervision_cases,
-    probation.reconviction_while_on_supervision,
-    probation.supervision_terminations,
-    probation.supervision_violations,
-    post_release.annual_budget,
-    post_release.total_staff,
-    post_release.individuals_under_supervision,
-    post_release.new_supervision_cases,
-    post_release.reconviction_while_on_supervision,
-    post_release.supervision_terminations,
-    post_release.supervision_violations,
 ]
 
 METRICS_BY_SYSTEM = {}
@@ -120,6 +99,18 @@ for k, g in itertools.groupby(
     sorted(METRICS, key=lambda x: x.system.value), lambda x: x.system.value
 ):
     METRICS_BY_SYSTEM[k] = list(g)
+
+# For each Supervision subsystem, add a copy of the Supervision MetricDefinitions
+for supervision_subsystem in schema.System.supervision_subsystems():
+    METRICS_BY_SYSTEM[supervision_subsystem.value] = [
+        attr.evolve(
+            metric,
+            # the display name will look like "Supervision Violations (PAROLE)"
+            display_name=f"{metric.display_name} ({supervision_subsystem})",
+            system=supervision_subsystem,
+        )
+        for metric in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
+    ]
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key
 # is unique across all metrics
