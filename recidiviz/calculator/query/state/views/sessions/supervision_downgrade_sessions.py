@@ -22,9 +22,9 @@ from operator import itemgetter
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
     PO_REPORT_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
@@ -64,7 +64,7 @@ day_zero_reports AS (
     FROM
         `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_reports
     INNER JOIN
-        `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+        `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON
         day_zero_reports.state_code = pei.state_code
         AND day_zero_reports.person_external_id = pei.external_id
@@ -273,7 +273,7 @@ SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     po_report_dataset=PO_REPORT_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
 )
 

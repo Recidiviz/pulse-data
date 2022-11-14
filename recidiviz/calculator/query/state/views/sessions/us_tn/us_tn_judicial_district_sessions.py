@@ -20,8 +20,8 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -51,7 +51,7 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE = f"""
         FROM `{{project_id}}.{{raw_dataset}}.Sentence_latest` s
         JOIN `{{project_id}}.{{raw_dataset}}.JOIdentification_latest` jd
             USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber) 
-        JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` ex
+        JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ex
             ON ex.external_id = s.OffenderID
             AND ex.state_code = 'US_TN'
         --This needs to be unique on person id and sentence effective date in order to work properly. It is very
@@ -107,7 +107,7 @@ US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_JUDICIAL_DISTRICT_SESSIONS_QUERY_TEMPLATE,
     description=US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_DESCRIPTION,
     raw_dataset=US_TN_RAW_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )

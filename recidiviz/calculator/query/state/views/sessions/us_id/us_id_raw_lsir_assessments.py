@@ -17,8 +17,8 @@
 """Individual questions and calculated subscale components of the LSI-R assessment in ID, derived from raw tables"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -51,7 +51,7 @@ US_ID_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE = """
             USING (qstn_choice_num, assess_qstn_num, assess_tst_id)
         INNER JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.ofndr_tst_latest` ofndr_tst
             USING (ofndr_tst_id, assess_tst_id)
-        INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` person
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` person
             ON person.external_id = ofndr_num
         INNER JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` sessions
             USING (person_id)
@@ -107,7 +107,7 @@ US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_RAW_LSIR_ASSESSMENTS_VIEW_NAME,
     view_query_template=US_ID_RAW_LSIR_ASSESSMENTS_QUERY_TEMPLATE,
     description=US_ID_RAW_LSIR_ASSESSMENTS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     lsir_question_array=",".join([str(x) for x in range(1, 55)]),
     should_materialize=False,

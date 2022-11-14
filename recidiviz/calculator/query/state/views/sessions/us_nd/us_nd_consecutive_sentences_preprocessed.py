@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -65,7 +65,7 @@ US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         r.booking_num,
         r.seq_num,
         r.consec_seq_num
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` s
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` s
     LEFT JOIN sentences_raw_cte AS r
         ON SPLIT(s.external_id,'-')[SAFE_OFFSET(0)] = r.booking_num
         AND SPLIT(s.external_id,'-')[SAFE_OFFSET(1)] = r.seq_num
@@ -93,7 +93,7 @@ US_ND_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilde
     raw_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )

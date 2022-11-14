@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -38,7 +38,7 @@ WITH race_or_ethnicity_cte AS  (
         person_id,
         race as race_or_ethnicity,
     FROM
-        `{project_id}.{base_dataset}.state_person_race`
+        `{project_id}.{normalized_state_dataset}.state_person_race`
     UNION ALL
     SELECT 
         state_code,
@@ -46,7 +46,7 @@ WITH race_or_ethnicity_cte AS  (
         -- If a person only has "NOT_HISPANIC" ethnicity and no race then remap to "EXTERNAL_UNKNOWN"
         IF(ethnicity = "NOT_HISPANIC", "EXTERNAL_UNKNOWN", ethnicity) as race_or_ethnicity,
     FROM
-        `{project_id}.{base_dataset}.state_person_ethnicity`
+        `{project_id}.{normalized_state_dataset}.state_person_ethnicity`
 )
     
 ,  prioritized_race_ethnicity_cte AS (
@@ -71,7 +71,7 @@ SELECT
     gender,
     COALESCE(prioritized_race_or_ethnicity, "EXTERNAL_UNKNOWN") AS prioritized_race_or_ethnicity,
 FROM
-    `{project_id}.{base_dataset}.state_person`
+    `{project_id}.{normalized_state_dataset}.state_person`
 FULL OUTER JOIN 
     prioritized_race_ethnicity_cte
 USING
@@ -86,7 +86,7 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=PERSON_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=PERSON_DEMOGRAPHICS_QUERY_TEMPLATE,
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     clustering_fields=["state_code"],
     should_materialize=True,

@@ -20,7 +20,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -46,7 +45,7 @@ US_MO_CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
             -- Replace the default "999" district value with "EXTERNAL_UNKNOWN"
             IF(BS_CRC = "999", "EXTERNAL_UNKNOWN", BS_CRC) AS judicial_district,
         FROM `{project_id}.{raw_dataset}.LBAKRDTA_TAK022_latest` raw
-        INNER JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON pei.external_id = raw.BS_DOC
             AND pei.id_type = "US_MO_DOC"
     )
@@ -68,7 +67,6 @@ US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     raw_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
     ),
-    state_base_dataset=STATE_BASE_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=False,
 )
