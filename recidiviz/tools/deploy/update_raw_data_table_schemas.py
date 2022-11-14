@@ -25,20 +25,15 @@ from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import raw_data_table_schema_utils
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
-)
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.deploy.logging import get_deploy_logs_dir
@@ -47,54 +42,18 @@ from recidiviz.utils.future_executor import map_fn_with_progress_bar
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def update_raw_data_table_schema(state_code: str, raw_file_tag: str) -> None:
-    """Update the raw data tables for a given state by obtaining the raw file configs
-    for a state and updating the schema based on the columns defined in the YAMLs. In
-    addition, adds the necessary file_id and update_datetime columns to the schema."""
-    bq_client = BigQueryClientImpl()
-
-    # TODO(#16565): Update to thread through instance in function.
-    raw_data_dataset_id = raw_tables_dataset_for_region(
-        state_code=StateCode(state_code.upper()), instance=DirectIngestInstance.PRIMARY
-    )
-    region_config = get_region_raw_file_config(state_code)
-    raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
-
-    raw_data_config = region_config.raw_file_configs[raw_file_tag]
-
-    columns = [column.name for column in raw_data_config.columns] + [
-        FILE_ID_COL_NAME,
-        UPDATE_DATETIME_COL_NAME,
-    ]
-    schema = DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-        columns
-    )
-
-    try:
-        if bq_client.table_exists(raw_data_dataset_ref, raw_file_tag):
-            bq_client.update_schema(
-                raw_data_dataset_id, raw_file_tag, schema, allow_field_deletions=False
-            )
-        else:
-            bq_client.create_table_with_schema(
-                raw_data_dataset_id, raw_file_tag, schema
-            )
-    except Exception as e:
-        logging.exception(
-            "Failed to update schema for `%s.%s`", raw_data_dataset_id, raw_file_tag
-        )
-        raise ValueError(
-            f"Failed to update schema for `{raw_data_dataset_id}.{raw_file_tag}`."
-        ) from e
-
-
 def update_raw_data_table_schemas() -> None:
     """Update the raw data tables for all states that have support for direct ingest."""
     state_codes = get_direct_ingest_states_existing_in_env()
 
-    logging.info("Getting raw file configs...")
     file_kwargs = [
-        {"state_code": state_code.value, "raw_file_tag": raw_file_tag}
+        # We only want to update `PRIMARY` raw data schemas within a deploy tool. `SECONDARY` raw data schemas are
+        # only updated when reruns are kicked off.
+        {
+            "state_code": state_code,
+            "raw_file_tag": raw_file_tag,
+            "instance": DirectIngestInstance.PRIMARY,
+        }
         for state_code in state_codes
         for raw_file_tag in get_region_raw_file_config(
             state_code.value
@@ -104,7 +63,6 @@ def update_raw_data_table_schemas() -> None:
     logging.info("Creating raw data datasets (if necessary)...")
     bq_client = BigQueryClientImpl()
     for state_code in state_codes:
-        # TODO(#16565): Update to thread through instance in function.
         raw_data_dataset_id = raw_tables_dataset_for_region(
             state_code=state_code, instance=DirectIngestInstance.PRIMARY
         )
@@ -115,7 +73,7 @@ def update_raw_data_table_schemas() -> None:
     logging.info("Writing logs to %s", log_path)
 
     map_fn_with_progress_bar(
-        fn=update_raw_data_table_schema,
+        fn=raw_data_table_schema_utils.update_raw_data_table_schema,
         kwargs_list=file_kwargs,
         progress_bar_message="Updating raw table schemas...",
         max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2),
