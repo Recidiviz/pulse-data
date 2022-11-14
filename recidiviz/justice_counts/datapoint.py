@@ -460,6 +460,8 @@ class DatapointInterface:
 
         # 1. Enable / disable top level metric
         if agency_metric.is_metric_enabled is not None:
+            # Only enable/disable metric if the frontend explicitly specifies an
+            # enable/disabled status.
             update_existing_or_create(
                 ingested_entity=schema.Datapoint(
                     metric_definition_key=agency_metric.key,
@@ -505,6 +507,8 @@ class DatapointInterface:
 
         # 4. Add datapoint for custom reporting frequency
         if agency_metric.custom_reporting_frequency.frequency is not None:
+            # Only enable/disable if the frontend explicitly specifies an
+            # enable/disabled status.
             update_existing_or_create(
                 schema.Datapoint(
                     metric_definition_key=agency_metric.key,
@@ -528,15 +532,16 @@ class DatapointInterface:
                 }
 
                 # 1b. Enable / disable metric dimensions
-                update_existing_or_create(
-                    ingested_entity=schema.Datapoint(
-                        metric_definition_key=agency_metric.key,
-                        source=agency,
-                        dimension_identifier_to_member=dimension_identifier_to_member,
-                        enabled=is_dimension_enabled,
-                    ),
-                    session=session,
-                )
+                if is_dimension_enabled is not None:
+                    update_existing_or_create(
+                        ingested_entity=schema.Datapoint(
+                            metric_definition_key=agency_metric.key,
+                            source=agency,
+                            dimension_identifier_to_member=dimension_identifier_to_member,
+                            enabled=is_dimension_enabled,
+                        ),
+                        session=session,
+                    )
 
                 # 3b. Set disaggregation-level includes/excludes
                 for (member, setting,) in (

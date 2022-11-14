@@ -145,6 +145,38 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 {CallType.dimension_identifier(): "UNKNOWN"},
             )
 
+            # Turn off EMERGENCY dimension as well
+            updated_metric = self.test_schema_objects.get_agency_metric_interface(
+                use_partially_disabled_disaggregation=False, include_disaggregation=True
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=updated_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 4)
+            # top level metric
+            self.assertEqual(datapoints[0].enabled, True)
+            # dimensions
+            self.assertEqual(datapoints[1].enabled, False)
+            self.assertEqual(
+                datapoints[1].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "NON_EMERGENCY"},
+            )
+            self.assertEqual(datapoints[2].enabled, False)
+            self.assertEqual(
+                datapoints[2].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "UNKNOWN"},
+            )
+
+            self.assertEqual(datapoints[3].enabled, False)
+            self.assertEqual(
+                datapoints[3].dimension_identifier_to_member,
+                {CallType.dimension_identifier(): "EMERGENCY"},
+            )
+
     def test_save_agency_datapoints_reenable_breakdown(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A

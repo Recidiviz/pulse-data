@@ -279,7 +279,7 @@ class DatapointsForMetric:
                     curr_dimension_dict[dimension_enum_member] = (
                         datapoint.get_value()
                         if create_dimension_to_value_dict
-                        else datapoint.enabled
+                        else datapoint.enabled is not False
                     )
                     # update curr_dimension_to_values to add new dimension datapoint.
                     # example: curr_dimension_to_values = {GenderRestricted.FEMALE: 10, GenderRestricted.MALE: 20, GenderRestricted.NON_BINARY: None...}
