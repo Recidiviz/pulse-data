@@ -32,15 +32,20 @@ EVENT_BASED_SUPERVISION_DESCRIPTION = """
 
 EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
     SELECT
-      state_code,
-      person_id,
+      pop.state_code,
+      pop.person_id,
       year, month, date_of_supervision,
       supervision_type,
       district,
       supervising_officer_external_id AS officer_external_id,
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender, {age_bucket}, assessment_score_bucket, judicial_district_code
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` pop
+    LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
+    ON a.state_code = pop.state_code AND
+    a.person_id = pop.person_id AND
+    pop.date_of_supervision BETWEEN a.assessment_date AND {end_date}
+    ,
     {district_dimension},
     {supervision_type_dimension}
     WHERE district IS NOT NULL
@@ -53,10 +58,13 @@ EVENT_BASED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_SUPERVISION_QUERY_TEMPLATE,
     description=EVENT_BASED_SUPERVISION_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     age_bucket=bq_utils.age_bucket_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
+    end_date=bq_utils.nonnull_end_date_exclusive_clause("a.score_end_date_exclusive"),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
