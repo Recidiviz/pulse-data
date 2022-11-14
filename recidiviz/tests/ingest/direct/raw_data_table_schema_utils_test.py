@@ -1,20 +1,20 @@
-# Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+#  Recidiviz - a data platform for criminal justice reform
+#  Copyright (C) 2022 Recidiviz, Inc.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
-"""Unit tests for direct_ingest_raw_data_table_manager.py"""
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#  =============================================================================
+"""Unit tests the functionality of raw_data_table_schema_utils.py"""
 
 import unittest
 from typing import List
@@ -22,23 +22,27 @@ from unittest.mock import patch
 
 from google.cloud import bigquery
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnInfo,
 )
-from recidiviz.tools.deploy import update_raw_data_table_schemas
+from recidiviz.ingest.direct.raw_data_table_schema_utils import (
+    update_raw_data_table_schema,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-class UpdateRawDataTableSchemasTest(unittest.TestCase):
-    """Unit tests for update_raw_data_tables_schemas"""
+class RawTableSchemaUtilsTest(unittest.TestCase):
+    """Unit tests for raw_data_table_schema_utils.py"""
 
     def setUp(self) -> None:
         self.project_id = "fake-recidiviz-project"
-        self.fake_state = "us_xx"
+        self.fake_state = StateCode.US_XX
         self.region_config = DirectIngestRegionRawFileConfig(
-            region_code=self.fake_state,
+            region_code=self.fake_state.value.lower(),
             raw_file_configs={
                 "raw_data_table": DirectIngestRawFileConfig(
                     file_tag="raw_data_table",
@@ -111,12 +115,12 @@ class UpdateRawDataTableSchemasTest(unittest.TestCase):
         self.project_number_patcher.start().return_value = "123456789"
 
         self.bq_client_patcher = patch(
-            "recidiviz.tools.deploy.update_raw_data_table_schemas.BigQueryClientImpl"
+            "recidiviz.ingest.direct.raw_data_table_schema_utils.BigQueryClientImpl"
         )
         self.mock_client = self.bq_client_patcher.start().return_value
 
         self.region_config_patcher = patch(
-            "recidiviz.tools.deploy.update_raw_data_table_schemas.get_region_raw_file_config"
+            "recidiviz.ingest.direct.raw_data_table_schema_utils.get_region_raw_file_config"
         )
         self.region_config_patcher.start().return_value = self.region_config
 
@@ -129,8 +133,10 @@ class UpdateRawDataTableSchemasTest(unittest.TestCase):
     def test_update_raw_data_tables_schemas_create_table(self) -> None:
         self.mock_client.table_exists.return_value = False
 
-        update_raw_data_table_schemas.update_raw_data_table_schema(
-            self.fake_state, "raw_data_table"
+        update_raw_data_table_schema(
+            state_code=self.fake_state,
+            raw_file_tag="raw_data_table",
+            instance=DirectIngestInstance.PRIMARY,
         )
 
         self.mock_client.create_table_with_schema.assert_called()
@@ -142,8 +148,10 @@ class UpdateRawDataTableSchemasTest(unittest.TestCase):
     def test_update_raw_data_tables_schemas_update_table(self) -> None:
         self.mock_client.table_exists.return_value = True
 
-        update_raw_data_table_schemas.update_raw_data_table_schema(
-            self.fake_state, "raw_data_table"
+        update_raw_data_table_schema(
+            state_code=self.fake_state,
+            raw_file_tag="raw_data_table",
+            instance=DirectIngestInstance.PRIMARY,
         )
 
         self.mock_client.update_schema.assert_called()
