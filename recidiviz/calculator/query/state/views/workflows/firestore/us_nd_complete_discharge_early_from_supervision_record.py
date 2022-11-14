@@ -19,11 +19,11 @@ for individuals that are currently eligible
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     NORMALIZED_STATE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -66,7 +66,6 @@ dataflow_metrics AS (
   SELECT
   state_code,
   person_id,
-  judicial_district_code, 
   supervising_officer_external_id,
   full_name
   FROM `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_span_metrics_materialized` dataflow
@@ -77,7 +76,7 @@ dataflow_metrics AS (
   --choose only one judicial district per individual since individuals with overlapping supervision sentences
   --will have multiple rows in dataflow
   QUALIFY ROW_NUMBER() 
-    OVER (PARTITION BY person_id ORDER BY judicial_district_code DESC, supervising_officer_external_id DESC)=1
+    OVER (PARTITION BY person_id ORDER BY supervising_officer_external_id DESC)=1
 ),
 
 individual_sentence_charges AS (
@@ -98,6 +97,13 @@ individual_sentence_charges AS (
   charge.external_id AS charge_external_id,
   charge.classification_type AS crime_classification,
   charge.classification_subtype AS crime_subclassification,
+  TRIM(
+    COALESCE(
+      charge.judicial_district_code,
+      scc.judicial_district_code
+    )
+  ) as judicial_district_code,
+  INITCAP(JSON_VALUE(PARSE_JSON(charge.judge_full_name), '$.full_name')) AS judge,
   CONCAT(
       COALESCE(ncic.description, charge.description, "<to fill>"), 
       IFNULL(CONCAT(" a Class (", charge.classification_subtype, ") "), " a Class (<to fill>) "),
@@ -120,6 +126,9 @@ individual_sentence_charges AS (
     AND offense.RecID = charge.external_id
   LEFT JOIN `{project_id}.{static_reference_tables_dataset}.ncic_codes`ncic
     ON COALESCE(offense.common_statute_ncic_code, offense.code) = ncic.ncic_code
+  LEFT JOIN `{project_id}.{static_reference_tables_dataset}.state_county_codes` scc
+    ON charge.state_code = scc.state_code
+    AND charge.county_code = scc.county_code
   WHERE sent.state_code = "US_ND"
   ),
 individual_sentence AS (
@@ -138,6 +147,8 @@ individual_sentence AS (
   supervision_sentence_id,
   supervision_external_id,
   supervision_type,
+  judicial_district_code,
+  judge,
   --create a ranking for supervision type to enable sentence deduplication
   IF(supervision_type = "IC PROBATION", 2, 1) AS supervision_type_rank,
   --order crime names and classifcations by severity 
@@ -147,7 +158,7 @@ individual_sentence AS (
                     ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_classifications,
   ARRAY_AGG(crime_name ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_names,
   FROM individual_sentence_charges
-  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
 ),
 eligible_population AS (
    -- Pull the individuals that are currently eligible for early discharge
@@ -183,9 +194,9 @@ individual_sentence_ranks AS (
         || " " 
         || INITCAP(JSON_VALUE(PARSE_JSON(info.full_name), '$.surname')) AS client_name,
     inds.conviction_county,
-    dm.judicial_district_code,
+    inds.judicial_district_code,
     inds.criminal_number,
-    doc.judge,
+    inds.judge,
     inds.prior_court_date,
     inds.sentence_years,
     inds.crime_names,
@@ -215,9 +226,6 @@ individual_sentence_ranks AS (
   LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person` info
     ON inds.state_code = info.state_code
     AND inds.person_id = info.person_id
-  LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` doc
-    ON doc.sid = inds.person_external_id
-    AND doc.case_number = inds.supervision_external_id
   --only individuals on a supervision_type that is eligible for early discharge
   WHERE supervision_type NOT IN ("IC PAROLE", "PAROLE")
 )
@@ -252,7 +260,7 @@ ORDER BY person_external_id
 """
 
 US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    dataset_id=WORKFLOWS_VIEWS_DATASET,
     view_id=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_NAME,
     view_query_template=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_QUERY_TEMPLATE,
     description=US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_DESCRIPTION,
