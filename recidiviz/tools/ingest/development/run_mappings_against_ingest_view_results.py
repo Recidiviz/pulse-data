@@ -63,6 +63,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import print_entity_tree
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import get_closest_string
@@ -122,6 +123,7 @@ def parse_results(
     region: direct_ingest_regions.DirectIngestRegion,
     ingest_view_name: str,
     contents_handle: BigQueryResultsContentsHandle,
+    write_results: bool,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
     ingest_view_file_parser = IngestViewResultsParser(
@@ -133,12 +135,18 @@ def parse_results(
         )
     )
 
-    log_path = os.path.join(tempfile.gettempdir(), "mappings_results.txt")
+    log_path = os.path.join(tempfile.gettempdir(), "mappings_errors.txt")
+    results_path = os.path.join(tempfile.gettempdir(), "mappings_results.txt")
     logging.info("Parsing results...")
     logging.info("  logs at %s", log_path)
+    if write_results:
+        logging.info("  results at %s", results_path)
+
     progress = tqdm(total=contents_handle.query_job.result().total_rows)
 
-    with open(log_path, "w", encoding="utf-8") as logfile:
+    with open(log_path, "w", encoding="utf-8") as logfile, open(
+        results_path, "w", encoding="utf-8"
+    ) as results_file:
         num_errors = 0
 
         def result_processor(
@@ -158,6 +166,8 @@ def parse_results(
                     tb=result.__traceback__,
                     file=logfile,
                 )
+            elif isinstance(result, Entity) and write_results:
+                print_entity_tree(result, file=results_file)
             progress.update()
 
         ingest_view_file_parser.parse(
@@ -177,11 +187,13 @@ def parse_results(
             logging.info("Parsed successfully.")
 
 
-def main(state_code: states.StateCode, ingest_view_name: str) -> None:
+def main(
+    state_code: states.StateCode, ingest_view_name: str, write_results: bool
+) -> None:
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
 
     contents_handle = query_ingest_view(region, ingest_view_name)
-    parse_results(region, ingest_view_name, contents_handle)
+    parse_results(region, ingest_view_name, contents_handle, write_results)
 
 
 if __name__ == "__main__":
@@ -212,10 +224,26 @@ if __name__ == "__main__":
         help="The ingest view to run.",
     )
 
+    parser.add_argument(
+        "--write-results",
+        nargs="?",
+        const=True,
+        default=False,
+        help="Writes parsed results to a file. This can be used to understand the "
+        "results that an existing mapping will produce or edge cases to test when "
+        "developing a new mapping. Note: This slows down the tool significantly.",
+    )
+
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     with local_project_id_override(args.project_id):
+        if args.write_results:
+            logging.warning(
+                "Warning: the script will run significantly slower when "
+                "--write-results is set due to the significant I/O load."
+            )
         main(
             state_code=args.state_code,
             ingest_view_name=args.ingest_view_name,
+            write_results=args.write_results,
         )
