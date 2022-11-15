@@ -38,6 +38,23 @@ class UsMiController(BaseDirectIngestController):
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
+
+        # BL QUESTION: do we need the second condition? saw it in the docs but not sure why
+        if (
+            self.ingest_instance
+            == DirectIngestInstance.SECONDARY
+            # and not environment.in_gcp_production()
+        ):
+            return [
+                "person_external_ids",
+                "state_persons_v2",
+                "incarceration_periods_v2",
+                "supervision_periods_v2",
+                "sentences_v2",
+                "state_charge_v2",
+                "assessments_v2",
+            ]
+
         return [
             "state_persons",
             "incarceration_periods",
