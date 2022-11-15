@@ -16,18 +16,10 @@
 # =============================================================================
 """Contains logic for US_PA specific entity matching overrides."""
 
-from typing import List, Optional
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity_matching import entity_matching_utils
-from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
-)
-from recidiviz.persistence.entity_matching.state.state_matching_utils import (
-    nonnull_fields_entity_match,
 )
 
 
@@ -35,25 +27,4 @@ class UsPaMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_PA."""
 
     def __init__(self, ingest_metadata: IngestMetadata):
-        super().__init__(
-            StateCode.US_PA.value.lower(),
-            ingest_metadata,
-        )
-
-    def get_non_external_id_match(
-        self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
-    ) -> Optional[EntityTree]:
-        """PA specific logic to match the |ingested_entity_tree| to one of the
-        |db_entity_trees| that does not rely solely on matching by external_id.
-        If such a match is found, it is returned.
-        """
-        if isinstance(
-            ingested_entity_tree.entity, (schema.StateAssessment, schema.StateCharge)
-        ):
-            return entity_matching_utils.get_only_match(
-                ingested_entity_tree,
-                db_entity_trees,
-                field_index=self.field_index,
-                matcher=nonnull_fields_entity_match,
-            )
-        return None
+        super().__init__(StateCode.US_PA.value.lower(), ingest_metadata)

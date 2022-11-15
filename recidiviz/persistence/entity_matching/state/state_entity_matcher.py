@@ -449,8 +449,6 @@ class StateEntityMatcher(BaseEntityMatcher):
         logging.info("[Entity matching] Merge multi-parent entities")
         self.merge_multiparent_entities(matched_persons)
 
-        self.state_matching_delegate.perform_match_postprocessing(matched_persons)
-
         # TODO(#2894): Create long term strategy for dealing with/rolling back partially updated DB entities.
         # Make sure person ids are added to all entities in the matched persons and also to all read DB people. We
         # populate back edges on DB people as a precaution in case entity matching failed for any of these people
