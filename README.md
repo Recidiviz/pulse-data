@@ -68,15 +68,8 @@ fi
 
 Then run:
 
-Note: The patch may no longer be necessary. Try without it and if it succeeds, please
-remove it from the docs!
-
 ```
 pyenv install 3.9.12
-if [[ $(arch) = "arm64" ]]; then
-  # See https://github.com/pyenv/pyenv/issues/1768
-  pyenv install --patch 3.9.12 <<(curl -sSL https://raw.githubusercontent.com/Homebrew/formula-patches/master/python/3.8.7.patch)
-fi
 pyenv global 3.9.12
 ```
 
