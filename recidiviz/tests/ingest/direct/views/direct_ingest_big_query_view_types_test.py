@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawDataClassification,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
     RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
@@ -69,6 +70,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_raw_latest_view(self) -> None:
         view = DirectIngestRawDataTableLatestView(
             region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
@@ -128,6 +130,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_raw_latest_historical_file_view(self) -> None:
         view = DirectIngestRawDataTableLatestView(
             region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
@@ -186,6 +189,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_raw_up_to_date_view(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
             include_undocumented_columns=True,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
@@ -280,6 +284,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_raw_up_to_date_historical_file_view(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
                 file_path="path/to/file.yaml",

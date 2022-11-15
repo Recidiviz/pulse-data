@@ -46,6 +46,7 @@ def update_raw_data_table_schemas() -> None:
     """Update the raw data tables for all states that have support for direct ingest."""
     state_codes = get_direct_ingest_states_existing_in_env()
 
+    logging.info("Getting raw file configs...")
     file_kwargs = [
         # We only want to update `PRIMARY` raw data schemas within a deploy tool. `SECONDARY` raw data schemas are
         # only updated when reruns are kicked off.

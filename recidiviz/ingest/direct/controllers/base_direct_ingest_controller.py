@@ -180,16 +180,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             ingest_view_rank_list=self.get_ingest_view_rank_list(),
         )
 
-        self.ingest_view_materializer = IngestViewMaterializerImpl(
-            region=self.region,
-            ingest_instance=self.ingest_instance,
-            ingest_view_contents=self.ingest_view_contents,
-            metadata_manager=self.view_materialization_metadata_manager,
-            big_query_client=self.big_query_client,
-            view_collector=self.view_collector,
-            launched_ingest_views=self.get_ingest_view_rank_list(),
-        )
-
         # We cannot set these objects until we know the raw data source instance, which
         # may not be set at instantiation time (i.e. if there is no rerun in progress
         # for this instance).
@@ -201,6 +191,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         self._ingest_view_materialization_args_generator: Optional[
             IngestViewMaterializationArgsGenerator
         ] = None
+        self._ingest_view_materializer: Optional[IngestViewMaterializerImpl] = None
 
         self.on_raw_data_source_instance_change(
             self.ingest_instance_status_manager.get_raw_data_source_instance()
@@ -229,6 +220,14 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
                 "on_raw_data_source_instance_change() been called?"
             )
         return self._raw_file_import_manager
+
+    def ingest_view_materializer(self) -> IngestViewMaterializerImpl:
+        if not self._ingest_view_materializer:
+            raise ValueError(
+                "Expected nonnull ingest view materializer - has "
+                "on_raw_data_source_instance_change() been called?"
+            )
+        return self._ingest_view_materializer
 
     @property
     def ingest_view_materialization_args_generator(
@@ -275,6 +274,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self._raw_file_metadata_manager = None
             self._raw_file_import_manager = None
             self._ingest_view_materialization_args_generator = None
+            self._ingest_view_materializer = None
             return
 
         if (
@@ -302,6 +302,18 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             csv_reader=self.csv_reader,
             instance=self._raw_data_source_instance,
         )
+
+        self._ingest_view_materializer = IngestViewMaterializerImpl(
+            region=self.region,
+            ingest_instance=self.ingest_instance,
+            raw_data_source_instance=self.raw_data_source_instance,
+            ingest_view_contents=self.ingest_view_contents,
+            metadata_manager=self.view_materialization_metadata_manager,
+            big_query_client=self.big_query_client,
+            view_collector=self.view_collector,
+            launched_ingest_views=self.get_ingest_view_rank_list(),
+        )
+
         self._ingest_view_materialization_args_generator = (
             IngestViewMaterializationArgsGenerator(
                 region=self.region,
@@ -1012,7 +1024,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
             return
 
-        did_materialize = self.ingest_view_materializer.materialize_view_for_args(
+        did_materialize = self.ingest_view_materializer().materialize_view_for_args(
             ingest_view_materialization_args
         )
 

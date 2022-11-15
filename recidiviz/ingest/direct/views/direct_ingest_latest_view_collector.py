@@ -45,18 +45,19 @@ class DirectIngestRawDataTableLatestViewBuilder(
         *,
         project_id: Optional[str] = None,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]] = None,
     ):
         self.project_id = project_id
         self.region_code = region_code
         self.raw_file_config = raw_file_config
+        self.raw_data_source_instance = raw_data_source_instance
         self.should_deploy_predicate = should_deploy_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
         self.dataset_id = raw_latest_views_dataset_for_region(
             state_code=StateCode(self.region_code.upper()),
-            # TODO(#16565): Update to thread through instance in class.
-            instance=DirectIngestInstance.PRIMARY,
+            instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
         self.projects_to_deploy = None
@@ -68,6 +69,7 @@ class DirectIngestRawDataTableLatestViewBuilder(
         return DirectIngestRawDataTableLatestView(
             project_id=self.project_id,
             region_code=self.region_code,
+            raw_data_source_instance=self.raw_data_source_instance,
             raw_file_config=self.raw_file_config,
             address_overrides=address_overrides,
             should_deploy_predicate=self.should_deploy_predicate,
@@ -77,16 +79,19 @@ class DirectIngestRawDataTableLatestViewBuilder(
 class DirectIngestRawDataTableLatestViewCollector(
     BigQueryViewCollector[DirectIngestRawDataTableLatestViewBuilder]
 ):
-    """Collects all raw data `*_latest` views for a given region."""
+    """Collects all raw data `*_latest` views for a given region and ingest instance."""
 
     def __init__(
-        self, region_code: str, src_raw_tables_sandbox_dataset_prefix: Optional[str]
+        self,
+        region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
+        src_raw_tables_sandbox_dataset_prefix: Optional[str],
     ):
         self.region_code = region_code
+        self.raw_data_source_instance = raw_data_source_instance
         self.src_raw_tables_dataset = raw_tables_dataset_for_region(
             state_code=StateCode(self.region_code.upper()),
-            # TODO(#16565): Update to thread through instance in class.
-            instance=DirectIngestInstance.PRIMARY,
+            instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=src_raw_tables_sandbox_dataset_prefix,
         )
 
@@ -107,5 +112,6 @@ class DirectIngestRawDataTableLatestViewCollector(
         return DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code,
             raw_file_config=config,
+            raw_data_source_instance=self.raw_data_source_instance,
             should_deploy_predicate=should_deploy_predicate,
         )

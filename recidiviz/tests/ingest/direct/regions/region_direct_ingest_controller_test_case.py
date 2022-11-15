@@ -271,7 +271,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         # Make batch size large so all fixture data is processed in one batch
         ingest_view_contents.batch_size = 10000
 
-        self.controller.ingest_view_materializer.materialize_view_for_args(
+        self.controller.ingest_view_materializer().materialize_view_for_args(
             materialization_job_args
         )
 
@@ -391,7 +391,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         )
         ingest_view_contents.test_clear_data()
         ingest_view_materializer = assert_type(
-            self.controller.ingest_view_materializer, FakeIngestViewMaterializer
+            self.controller.ingest_view_materializer(), FakeIngestViewMaterializer
         )
         ingest_view_materializer.processed_args.clear()
         for file_tag in file_tags:

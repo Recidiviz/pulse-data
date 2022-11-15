@@ -296,7 +296,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         materialize_raw_data_table_views: bool = False,
     ) -> IngestViewMaterializerImpl:
         self.ingest_instance = DirectIngestInstance.SECONDARY
-
+        self.raw_data_source_instance = DirectIngestInstance.PRIMARY
         date_ts = datetime.datetime.utcnow().strftime("%Y%m%d")
         self.mock_ingest_view_contents.temp_results_dataset = (
             f"mock_us_xx_{self.ingest_instance.value.lower()}_temp_{date_ts}"
@@ -306,6 +306,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         return IngestViewMaterializerImpl(
             region=region,
             ingest_instance=self.ingest_instance,
+            raw_data_source_instance=self.raw_data_source_instance,
             metadata_manager=DirectIngestViewMaterializationMetadataManager(
                 region_code=region.region_code, ingest_instance=self.ingest_instance
             ),
@@ -810,7 +811,9 @@ ORDER BY colA, colC;"""
         ingest_view_materializer = self.create_materializer(region)
         with freeze_time(_DATE_5.isoformat()):
             debug_query = IngestViewMaterializerImpl.debug_query_for_args(
-                ingest_view_materializer.ingest_views_by_name, export_args
+                ingest_view_materializer.ingest_views_by_name,
+                DirectIngestInstance.PRIMARY,
+                export_args,
             )
 
         expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
@@ -969,7 +972,9 @@ ORDER BY colA, colC;"""
         )
         with freeze_time(_DATE_5.isoformat()):
             debug_query = IngestViewMaterializerImpl.debug_query_for_args(
-                ingest_view_materializer.ingest_views_by_name, export_args
+                ingest_view_materializer.ingest_views_by_name,
+                DirectIngestInstance.PRIMARY,
+                export_args,
             )
 
         expected_debug_query = """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (

@@ -213,6 +213,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
         view_query = str(
             IngestViewMaterializerImpl.debug_query_for_args(
                 ingest_views_by_name={view_builder.ingest_view_name: view},
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 ingest_view_materialization_args=IngestViewMaterializationArgs(
                     ingest_view_name=view_builder.ingest_view_name,
                     lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,
