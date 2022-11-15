@@ -17,6 +17,8 @@
 """Implements common interface used to support external requests from Workflows."""
 import base64
 import json
+import logging
+import time
 from http import HTTPStatus
 from typing import Any, Dict
 
@@ -68,12 +70,18 @@ class WorkflowsExternalRequestInterface:
 
             timeout_secs = data.get("timeoutSecs", 5)
             tomis_request_body = json.dumps(tomis_request_fixture)
+            start_time = time.perf_counter()
             try:
+                logging.info("Sending request to TOMIS")
                 tomis_response = requests.put(
                     tomis_url,
                     headers=headers,
                     data=tomis_request_body,
                     timeout=timeout_secs,
+                )
+                logging.info(
+                    "Request to TOMIS completed in %s seconds",
+                    round(time.perf_counter() - start_time, 2),
                 )
                 return make_response(
                     jsonify(
@@ -83,6 +91,10 @@ class WorkflowsExternalRequestInterface:
                     HTTPStatus.OK,
                 )
             except Exception as e:
+                logging.info(
+                    "Request to TOMIS failed in %s seconds",
+                    round(time.perf_counter() - start_time, 2),
+                )
                 return make_response(
                     jsonify(
                         message=f"An error occurred while calling TOMIS: {e}",
