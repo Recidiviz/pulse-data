@@ -30,15 +30,27 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 
 ## Running locally
 
-1. Build the Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 5, which will take precendence over the frontend that is bundled in the docker image.)
+1. First, build the Docker base image (which is shared between all Recidiviz images) if you have not already done so:
 
 ```bash
-pipenv run docker-build-jc \
+docker build . -f Dockerfile.recidiviz-base -t us.gcr.io/recidiviz-staging/recidiviz-base:latest
+```
+
+2. Next, build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precendence over the frontend that is bundled in the docker image.)
+
+```bash
+pipenv run docker-build-jc-publisher \
   --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
   --build-arg FRONTEND_APP=publisher
 ```
 
-2. Run `docker-compose`:
+3. Now run the Justice Counts Docker image using `docker-compose`:
+
+```bash
+pipenv run docker-build
+```
+
+4. Run `docker-compose`:
 
 ```bash
 pipenv run docker-jc
@@ -50,17 +62,23 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-3. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
+5. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
 ```
 
-4. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
+If this errors with "No such container", try:
 
-5. Run `yarn install` and `yarn run dev`.
+```bash
+docker exec <name of your Docker container> pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
+```
 
-6. You should see the application running on `localhost:3000`!
+6. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
+
+7. Run `yarn install`, `cp .env.example .env`, and `yarn run dev`.
+
+8. You should see the application running on `localhost:3000`!
 
 ## Connect to the local Postgres database
 
