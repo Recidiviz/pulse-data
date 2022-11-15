@@ -58,7 +58,15 @@ US_PA_SID = "US_PA_SID"
 
 US_TN_DOC = "US_TN_DOC"
 US_ME_DOC = "US_ME_DOC"
+
+# MI Offender Number
 US_MI_DOC = "US_MI_DOC"
+
+# MI Offender ID
+US_MI_DOC_ID = "US_MI_DOC_ID"
+
+# MI Offender Booking
+US_MI_DOC_BOOK = "US_MI_DOC_BOOK"
 
 # OZ ID types
 US_OZ_VFDS = "US_OZ_VFDS"
