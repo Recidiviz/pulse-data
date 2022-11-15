@@ -204,7 +204,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -296,7 +295,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -335,7 +333,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers=headers,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
         mock_federated_refresh.assert_not_called()
@@ -387,7 +384,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
         self.mock_refresh_bq_datase_success_persister.record_success_in_bq.assert_called_with(
@@ -475,7 +471,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.CASE_TRIAGE))
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -837,6 +832,27 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.get_data(as_text=True), "True")
+
+    @mock.patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    def test_release_lock_state(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /create_tasks... endpoint does
+        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+
+        # Act
+        response = self.mock_flask_client.get(
+            "/release_lock/state",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment",

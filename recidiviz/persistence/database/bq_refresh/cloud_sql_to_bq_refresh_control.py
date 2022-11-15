@@ -273,6 +273,32 @@ def check_can_refresh_proceed(schema_arg: str) -> Tuple[str, HTTPStatus]:
     return str(can_proceed), HTTPStatus.OK
 
 
+@cloud_sql_to_bq_blueprint.route("/release_lock/<schema_arg>", methods=["GET", "POST"])
+@requires_gae_auth
+def release_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """
+    Releases refresh lock for a given schema type.
+    """
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return (
+            f"Unexpected value for schema_arg: [{schema_arg}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        return (
+            f"Unsuppported schema type: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    # Unlock export lock when all BQ exports complete
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.release_lock(schema_type)
+
+    return "", HTTPStatus.OK
+
+
 @cloud_sql_to_bq_blueprint.route(
     "/refresh_bq_dataset/<schema_arg>", methods=["GET", "POST"]
 )
@@ -326,9 +352,6 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
     else:
         federated_bq_schema_refresh(schema_type=schema_type)
 
-    # Unlock export lock when all BQ exports complete
-    lock_manager = CloudSqlToBQLockManager()
-    lock_manager.release_lock(schema_type)
     logging.info(
         "Done running refresh for [%s], unlocking Postgres to BigQuery export",
         schema_type.value,
