@@ -31,9 +31,9 @@ resource "google_composer_environment" "default_v2" {
       # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
       # for consistency with the existing dag for now.
       airflow_config_overrides = {
-        "api-auth_backend"                     = "airflow.composer.api.backend.composer_auth"
+        "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
         "api-composer_auth_user_registration_role" = "Op"
-        "webserver-web_server_name"            = "orchestration-v2"
+        "webserver-web_server_name"                = "orchestration-v2"
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
@@ -45,6 +45,9 @@ resource "google_composer_environment" "default_v2" {
       # Ensure that access to the public endpoint of the GKE cluster is denied
       enable_private_endpoint = true
     }
+
+    environment_size = "ENVIRONMENT_SIZE_MEDIUM"
+
   }
 
 }
