@@ -82,6 +82,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         self,
         *,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         ingest_instance: DirectIngestInstance,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
@@ -96,6 +97,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         self.metadata_manager = metadata_manager
         self.ingest_view_contents = ingest_view_contents
         self.ingest_instance = ingest_instance
+        self.raw_data_source_instance = raw_data_source_instance
         self.big_query_client = big_query_client
         self.ingest_views_by_name = {
             builder.ingest_view_name: builder.build()
@@ -123,6 +125,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         """
         query, query_params = self._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
+            raw_data_source_instance=self.raw_data_source_instance,
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
             destination_dataset_id=self.ingest_view_contents.temp_results_dataset,
             destination_table_id=table_name,
@@ -373,6 +376,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def debug_query_for_args(
         cls,
         ingest_views_by_name: Dict[str, DirectIngestPreProcessedIngestView],
+        raw_data_source_instance: DirectIngestInstance,
         ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> str:
         """Returns a version of the materialization query for the provided args that can
@@ -380,6 +384,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         """
         query, query_params = cls._debug_generate_unified_query(
             ingest_views_by_name[ingest_view_materialization_args.ingest_view_name],
+            raw_data_source_instance,
             ingest_view_materialization_args,
         )
 
@@ -396,6 +401,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _debug_generate_unified_query(
         cls,
         ingest_view: DirectIngestPreProcessedIngestView,
+        raw_data_source_instance: DirectIngestInstance,
         ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a single query that is date bounded such that it represents the data that has changed for this view
@@ -415,6 +421,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         )
         query, query_params = cls._generate_ingest_view_query_and_params_for_date(
             ingest_view=ingest_view,
+            raw_data_source_instance=raw_data_source_instance,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_dataset_id=None,
             destination_table_id=upper_bound_table_id,
@@ -434,6 +441,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 lower_bound_query_params,
             ) = cls._generate_ingest_view_query_and_params_for_date(
                 ingest_view=ingest_view,
+                raw_data_source_instance=raw_data_source_instance,
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_dataset_id=None,
                 destination_table_id=lower_bound_table_id,
@@ -462,6 +470,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _generate_ingest_view_query_and_params_for_date(
         *,
         ingest_view: DirectIngestPreProcessedIngestView,
+        raw_data_source_instance: DirectIngestInstance,
         update_timestamp: datetime.datetime,
         destination_table_type: DestinationTableType,
         destination_dataset_id: Optional[str],
@@ -479,6 +488,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         query = ingest_view.expanded_view_query(
             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
                 raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                raw_data_source_instance=raw_data_source_instance,
                 param_name_override=param_name,
                 destination_table_type=destination_table_type,
                 destination_dataset_id=destination_dataset_id,
@@ -511,6 +521,7 @@ if __name__ == "__main__":
     ingest_view_name_: str = "tak001_offender_identification"
     lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2020, 10, 15)
     upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(2020, 12, 18)
+    raw_data_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY
 
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = direct_ingest_regions.get_direct_ingest_region(region_code_)
@@ -521,8 +532,9 @@ if __name__ == "__main__":
         }
 
         debug_query = IngestViewMaterializerImpl.debug_query_for_args(
-            views_by_name_,
-            IngestViewMaterializationArgs(
+            ingest_views_by_name=views_by_name_,
+            raw_data_source_instance=raw_data_instance,
+            ingest_view_materialization_args=IngestViewMaterializationArgs(
                 ingest_view_name=ingest_view_name_,
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_,

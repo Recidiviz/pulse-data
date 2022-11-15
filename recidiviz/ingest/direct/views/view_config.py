@@ -22,6 +22,7 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewCollector,
 )
@@ -37,6 +38,9 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
             # table in all regions
             DirectIngestRawDataTableLatestViewCollector(
                 region_code=state_code.value.lower(),
+                # We only automatically deploy direct ingest *latest view builders for PRIMARY. The `*latest` views
+                # for SECONDARY will be created when a rerun is started.
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 src_raw_tables_sandbox_dataset_prefix=None,
             ).collect_view_builders()
             for state_code in get_direct_ingest_states_existing_in_env()

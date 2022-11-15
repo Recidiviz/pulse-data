@@ -291,6 +291,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         self,
         *,
         region: DirectIngestRegion,
+        raw_data_source_instance: DirectIngestInstance,
         ingest_instance: DirectIngestInstance,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
@@ -307,6 +308,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         self.processed_args: List[IngestViewMaterializationArgs] = []
 
         self.ingest_instance = ingest_instance
+        self.raw_data_source_instance = raw_data_source_instance
         self.view_collector = view_collector
         self.launched_ingest_views = launched_ingest_views
 

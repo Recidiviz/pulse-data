@@ -99,6 +99,7 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
     # reflect data received up until this date.
     upper_bound_datetime_inclusive: datetime.datetime = attr.ib()
 
+    # The instance the ingest view is being generated in.
     ingest_instance: DirectIngestInstance = attr.ib()
 
     def task_id_tag(self) -> str:

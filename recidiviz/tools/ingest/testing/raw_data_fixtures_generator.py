@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestRawDataTableUnnormalizedLatestRowsView,
 )
@@ -187,6 +188,8 @@ class RawDataFixturesGenerator:
         raw_table_view = DirectIngestRawDataTableUnnormalizedLatestRowsView(
             project_id=self.project_id,
             region_code=self.region_code,
+            # Only look at primary instance to find the view
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
             raw_file_config=raw_table_config,
             # We shouldn't need to deploy this view
             should_deploy_predicate=(lambda: False),

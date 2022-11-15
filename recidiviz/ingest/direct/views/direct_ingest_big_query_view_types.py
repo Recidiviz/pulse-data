@@ -218,6 +218,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         view_id: str,
         description: str,
         view_query_template: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides] = None,
@@ -225,14 +226,12 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
     ):
         view_dataset_id = raw_latest_views_dataset_for_region(
             state_code=StateCode(region_code.upper()),
-            # TODO(#16565): Update to thread through instance in class.
-            instance=DirectIngestInstance.PRIMARY,
+            instance=raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
         self.raw_table_dataset_id = raw_tables_dataset_for_region(
             state_code=StateCode(region_code.upper()),
-            # TODO(#16565): Update to thread through instance in class.
-            instance=DirectIngestInstance.PRIMARY,
+            instance=raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
         columns_clause = self._columns_clause_for_config(raw_file_config)
@@ -345,6 +344,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         *,
         project_id: Optional[str] = None,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides] = None,
@@ -359,6 +359,7 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
         super().__init__(
             project_id=project_id,
             region_code=region_code,
+            raw_data_source_instance=raw_data_source_instance,
             view_id=view_id,
             description=description,
             view_query_template=view_query_template,
@@ -386,6 +387,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
         *,
         project_id: Optional[str] = None,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         include_undocumented_columns: bool = False,
     ):
@@ -402,6 +404,7 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
             view_id=view_id,
             description=description,
             view_query_template=view_query_template,
+            raw_data_source_instance=raw_data_source_instance,
             raw_file_config=raw_file_config,
             should_deploy_predicate=None,
             normalized_columns=self.normalized_columns_for_config(
@@ -421,6 +424,7 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
         *,
         project_id: Optional[str] = None,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
     ) -> None:
@@ -434,6 +438,7 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
         super().__init__(
             project_id=project_id,
             region_code=region_code,
+            raw_data_source_instance=raw_data_source_instance,
             view_id=view_id,
             description=description,
             view_query_template=view_query_template,
@@ -484,6 +489,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         # max update date parameter. If it is not set, the parameter name will be the default
         # UPDATE_DATETIME_PARAM_NAME.
         param_name_override: Optional[str] = attr.ib(default=None)
+
+        # The source of the raw data for the query
+        raw_data_source_instance: DirectIngestInstance = attr.ib(default=None)
 
         # Specifies whether the query should be structured to write results to a destination table and the type of that
         # table.
@@ -603,7 +611,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             order_by_cols=order_by_cols,
             materialize_raw_data_table_views=materialize_raw_data_table_views,
             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                raw_table_view_type=RawTableViewType.LATEST
+                raw_table_view_type=RawTableViewType.LATEST,
+                # THIS IS NEVER USED so we can use PRIMARY
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
             ),
         )
 
@@ -719,6 +729,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         cls,
         *,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         parameterize_query: bool,
         raw_table_subquery_name_prefix: Optional[str],
@@ -732,6 +743,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             table_subquery_strs.append(
                 cls._get_table_subquery_str(
                     region_code,
+                    raw_data_source_instance,
                     raw_table_config,
                     parameterize_query,
                     raw_table_subquery_name_prefix,
@@ -768,6 +780,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             region_code=region_code,
             raw_table_dependency_configs=raw_table_dependency_configs,
             parameterize_query=config.parameterize_raw_data_table_views,
+            raw_data_source_instance=config.raw_data_source_instance,
             raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
             materialize_raw_data_table_views=materialize_raw_data_table_views,
         )
@@ -793,6 +806,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         else:
             raw_table_subquery_clause = cls._raw_table_subquery_clause(
                 region_code=region_code,
+                raw_data_source_instance=config.raw_data_source_instance,
                 raw_table_dependency_configs=raw_table_dependency_configs,
                 parameterize_query=config.parameterize_raw_data_table_views,
                 raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
@@ -913,6 +927,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def _get_table_subquery_str(
         cls,
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_table_config: DirectIngestRawFileConfig,
         parameterize_query: bool,
         raw_table_subquery_name_prefix: Optional[str],
@@ -920,6 +935,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """Returns an expanded subquery on this raw table in the form 'subquery_name AS (...)'."""
         date_bounded_query = cls._date_bounded_query_for_raw_table(
             region_code=region_code,
+            raw_data_source_instance=raw_data_source_instance,
             raw_table_config=raw_table_config,
             parameterize_query=parameterize_query,
         )
@@ -978,15 +994,19 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     @staticmethod
     def _date_bounded_query_for_raw_table(
         region_code: str,
+        raw_data_source_instance: DirectIngestInstance,
         raw_table_config: DirectIngestRawFileConfig,
         parameterize_query: bool,
     ) -> str:
         if parameterize_query:
             return DirectIngestRawDataTableUpToDateView(
-                region_code=region_code, raw_file_config=raw_table_config
+                region_code=region_code,
+                raw_data_source_instance=raw_data_source_instance,
+                raw_file_config=raw_table_config,
             ).view_query
         return DirectIngestRawDataTableLatestView(
             region_code=region_code,
+            raw_data_source_instance=raw_data_source_instance,
             raw_file_config=raw_table_config,
             address_overrides=None,
             should_deploy_predicate=None,
@@ -1099,7 +1119,10 @@ class DirectIngestPreProcessedIngestViewBuilder(
             materialize_raw_data_table_views=self.materialize_raw_data_table_views,
         )
 
-    def build_and_print(self) -> None:
+    def build_and_print(
+        self,
+        raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
+    ) -> None:
         """For local testing, prints out the parameterized and latest versions of the view's query."""
         view = self.build()
         print(
@@ -1109,6 +1132,7 @@ class DirectIngestPreProcessedIngestViewBuilder(
             view.expanded_view_query(
                 config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                    raw_data_source_instance=raw_data_source_instance,
                 )
             )
         )
@@ -1119,6 +1143,7 @@ class DirectIngestPreProcessedIngestViewBuilder(
             view.expanded_view_query(
                 config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
+                    raw_data_source_instance=raw_data_source_instance,
                 )
             )
         )
