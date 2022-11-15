@@ -18,7 +18,6 @@
 from typing import List, Optional
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 
@@ -39,15 +38,11 @@ class BaseStateMatchingDelegate:
         """Returns the region code for this object."""
         return self.region_code
 
-    def perform_match_postprocessing(
-        self, matched_persons: List[schema.StatePerson]
-    ) -> None:
-        """This can be overridden by child classes to perform state-specific postprocessing on the |matched_persons|
-        that will occur immediately after the |matched_persons| are matched with their database counterparts.
-        """
-
     def get_non_external_id_match(
-        self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
+        # pylint: disable=unused-argument
+        self,
+        ingested_entity_tree: EntityTree,
+        db_entity_trees: List[EntityTree],
     ) -> Optional[EntityTree]:
         """This method can be overridden by child classes to allow for state specific matching logic that does not rely
         solely on matching by external_id.
@@ -55,3 +50,4 @@ class BaseStateMatchingDelegate:
         If a match is found for the provided |ingested_entity_tree| within the |db_entity_trees| in this manner, it
         should be returned.
         """
+        return None
