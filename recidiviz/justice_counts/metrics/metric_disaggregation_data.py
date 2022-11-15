@@ -17,7 +17,7 @@
 """Base class for the reported value(s) for a Justice Counts metric dimension."""
 
 import enum
-from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
 
 import attr
 
@@ -25,6 +25,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
+from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -258,7 +259,15 @@ class MetricAggregatedDimensionData:
                     # if there is a non-null dimension_to_value dictionary, add dimension
                     # values into the json
                     json["value"] = self.dimension_to_value.get(dimension)
-
+                if (
+                    dimension.dimension_identifier()
+                    == RaceAndEthnicity.dimension_identifier()
+                ):
+                    # Add race and ethnicity key/value if the dimension is a race dimension
+                    json["race"] = cast(Type[RaceAndEthnicity], dimension).race
+                    json["ethnicity"] = cast(
+                        Type[RaceAndEthnicity], dimension
+                    ).ethnicity
                 elif (
                     self.dimension_to_value is None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
