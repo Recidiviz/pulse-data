@@ -23,7 +23,10 @@ from unittest import TestCase
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsReleaseType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
-from recidiviz.justice_counts.dimensions.person import GenderRestricted
+from recidiviz.justice_counts.dimensions.person import (
+    GenderRestricted,
+    RaceAndEthnicity,
+)
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesIncludesExcludes,
     PrisonReleasesDeathIncludesExcludes,
@@ -1641,4 +1644,40 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
             ),
             metric_interface,
+        )
+
+    def test_race_and_ethnicity_json(self) -> None:
+        aggregated_dimension = MetricAggregatedDimensionData(
+            dimension_to_value={dim: 10 for dim in RaceAndEthnicity},
+            dimension_to_enabled_status={dim: True for dim in RaceAndEthnicity},
+        )
+
+        disaggregation_json = {
+            "key": "global/race_and_ethnicity",
+            "display_name": "Race / Ethnicities",
+            "required": True,
+            "should_sum_to_total": False,
+            "helper_text": None,
+            "enabled": True,
+            "dimensions": [
+                {
+                    "datapoints": None,
+                    "enabled": True,
+                    "ethnicity": dim.ethnicity,
+                    "key": dim.value,
+                    "label": dim.value,
+                    "race": dim.race,
+                    "value": 10,
+                }
+                for dim in RaceAndEthnicity
+            ],
+        }
+        self.assertEqual(
+            aggregated_dimension.to_json(
+                entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+                dimension_definition=AggregatedDimension(
+                    dimension=RaceAndEthnicity, required=True
+                ),
+            ),
+            disaggregation_json,
         )

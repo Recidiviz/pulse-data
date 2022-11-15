@@ -194,9 +194,9 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
             return "Native Hawaiian / Pacific Islander"
         if "OTHER" in self.name:
             return "Other"
-        if "UNKNOWN" in self.name:
-            return "Unknown"
-        return "White"
+        if "WHITE" in self.name:
+            return "White"
+        return "Unknown"
 
     @property
     def ethnicity(self) -> str:
