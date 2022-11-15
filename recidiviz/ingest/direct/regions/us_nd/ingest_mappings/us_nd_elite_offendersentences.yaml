@@ -1,24 +1,61 @@
-key_mappings:
-  START_DATE: state_incarceration_sentence.start_date
-  PROBABLE_RELEASE_DATE: state_incarceration_sentence.projected_min_release_date
-  SENTENCE_EXPIRY_DATE: state_incarceration_sentence.projected_max_release_date
-
-ancestor_keys:
-  OFFENDER_BOOK_ID: state_person.state_person_id
-
-# There is a primary key override in us_nd_controller for this file
-
-keys_to_ignore:
-  - SENTENCE_STATUS # Not useful: has the same value for nearly all rows
-  - COMMENT_TEXT # No apparent use for these at the moment
-  - EFFECTIVE_DATE # No longer in use by source
-  - EIGHTYFIVE_PERCENT_DATE # Unused
-  - GOOD_TIME # Unused
-  - SENTENCE_CALC_TYPE # Handled manually within us_nd_scraper
-  - CHARGE_SEQ # Handled manually within us_nd_scraper
-  - CONSEC_TO_SENTENCE_SEQ # Handled manually within us_nd_scraper
-  - CONSECUTIVE_COUNT_FLAG # Handled manually within us_nd_scraper
-  - COUNTS # Handled manually within us_nd_scraper
-  - SENTENCE_SEQ # Handled manually within us_nd_scraper
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - START_DATE
+  - PROBABLE_RELEASE_DATE
+  - SENTENCE_EXPIRY_DATE
+  - OFFENDER_BOOK_ID
+  - SENTENCE_STATUS
+  - COMMENT_TEXT
+  - EFFECTIVE_DATE
+  - EIGHTYFIVE_PERCENT_DATE
+  - GOOD_TIME
+  - SENTENCE_CALC_TYPE
+  - CHARGE_SEQ
+  - CONSEC_TO_SENTENCE_SEQ
+  - CONSECUTIVE_COUNT_FLAG
+  - COUNTS
+  - SENTENCE_SEQ
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+unused_columns:
+  - SENTENCE_STATUS
+  - COMMENT_TEXT
+  - EFFECTIVE_DATE
+  - EIGHTYFIVE_PERCENT_DATE
+  - GOOD_TIME
+  - CHARGE_SEQ
+  - CONSEC_TO_SENTENCE_SEQ
+  - CONSECUTIVE_COUNT_FLAG
+  - COUNTS
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+variables:
+  - book_id_int:
+      $custom:
+        $function: us_nd_custom_parsers.decimal_str_as_int_str
+        $args:
+          dec_str: OFFENDER_BOOK_ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: $variable(book_id_int)
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $separator: "-"
+              $values:
+                - $variable(book_id_int)
+                - SENTENCE_SEQ
+          status: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+          incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          start_date: START_DATE
+          is_life:
+            $equal:
+              - SENTENCE_CALC_TYPE
+              - $literal("LIFE")
+          projected_min_release_date: PROBABLE_RELEASE_DATE
+          projected_max_release_date: SENTENCE_EXPIRY_DATE
