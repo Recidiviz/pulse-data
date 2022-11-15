@@ -22,6 +22,7 @@ import logging
 from collections import defaultdict
 from enum import Enum, auto
 from functools import lru_cache
+from io import TextIOWrapper
 from types import ModuleType
 from typing import (
     Any,
@@ -611,8 +612,8 @@ def get_flat_fields_json_str(entity: CoreEntity, field_index: CoreEntityFieldInd
     return json.dumps(flat_fields_dict, sort_keys=True)
 
 
-def _print_indented(s: str, indent: int):
-    print(f'{" " * indent}{s}')
+def _print_indented(s: str, indent: int, file: Optional[TextIOWrapper] = None) -> None:
+    print(f'{" " * indent}{s}', file=file)
 
 
 def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
@@ -666,6 +667,7 @@ def print_entity_tree(
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+    file: Optional[TextIOWrapper] = None,
 ):
     """Recursively prints out all objects in the tree below the given entity. Each time we encounter a new object, we
     assign a new fake id (an auto-incrementing count) and print that with the object.
@@ -680,7 +682,7 @@ def print_entity_tree(
         python_id_to_fake_id = {}
         _sort_based_on_flat_fields([entity], field_index)
 
-    _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent)
+    _print_indented(_obj_id_str(entity, python_id_to_fake_id), indent, file)
 
     indent = indent + 2
     for field in field_index.get_fields_with_non_empty_values(
@@ -688,7 +690,7 @@ def print_entity_tree(
     ):
         if field == "external_id" or not print_tree_structure_only:
             val = entity.get_field(field)
-            _print_indented(f"{field}: {str(val)}", indent)
+            _print_indented(f"{field}: {str(val)}", indent, file)
 
     for child_field in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.FORWARD_EDGE
@@ -698,9 +700,9 @@ def print_entity_tree(
         if child is not None:
             if isinstance(child, list):
                 if not child:
-                    _print_indented(f"{child_field}: []", indent)
+                    _print_indented(f"{child_field}: []", indent, file)
                 else:
-                    _print_indented(f"{child_field}: [", indent)
+                    _print_indented(f"{child_field}: [", indent, file)
                     for c in child:
                         print_entity_tree(
                             c,
@@ -708,20 +710,22 @@ def print_entity_tree(
                             indent + 2,
                             python_id_to_fake_id,
                             field_index=field_index,
+                            file=file,
                         )
-                    _print_indented("]", indent)
+                    _print_indented("]", indent, file)
 
             else:
-                _print_indented(f"{child_field}:", indent)
+                _print_indented(f"{child_field}:", indent, file)
                 print_entity_tree(
                     child,
                     print_tree_structure_only,
                     indent + 2,
                     python_id_to_fake_id,
                     field_index=field_index,
+                    file=file,
                 )
         else:
-            _print_indented(f"{child_field}: None", indent)
+            _print_indented(f"{child_field}: None", indent, file)
 
     for child_field in field_index.get_fields_with_non_empty_values(
         entity, EntityFieldType.BACK_EDGE
@@ -744,10 +748,11 @@ def print_entity_tree(
             _print_indented(
                 f"{child_field} ({len_str}): [{id_str}{ellipsis_str}] - backedge",
                 indent,
+                file,
             )
         else:
             id_str = _obj_id_str(child, python_id_to_fake_id)
-            _print_indented(f"{child_field}: {id_str} - backedge", indent)
+            _print_indented(f"{child_field}: {id_str} - backedge", indent, file)
 
 
 def get_all_db_objs_from_trees(
