@@ -453,7 +453,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         if (
             admission_date
             and admission_reason
-            and admission_reason != StateIncarcerationPeriodAdmissionReason.TRANSFER
+            and incarceration_delegate.should_include_in_state_admissions(
+                admission_reason
+            )
         ):
             if is_commitment_from_supervision(admission_reason):
                 return self._commitment_from_supervision_event_for_period(

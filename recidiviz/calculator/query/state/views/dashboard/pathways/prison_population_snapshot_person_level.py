@@ -51,20 +51,35 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
             pop.state_code,
             get_last_updated.last_updated,
             pop.gender,
-            admission_reason AS legal_status,
+            adm.admission_reason AS legal_status,
             IFNULL(aggregating_location_id, pop.facility) AS facility,
             {add_age_groups}
             pop.age,
-            person_external_id AS state_id,
+            pop.person_external_id AS state_id,
             {formatted_name} AS full_name,
-            prioritized_race_or_ethnicity as race,
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_incarceration_population_metrics_included_in_state_population_materialized` pop
+            pop.prioritized_race_or_ethnicity as race,
+        FROM (
+            SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
+            WHERE included_in_state_population AND end_date_exclusive IS NULL
+        ) pop
         LEFT JOIN get_last_updated USING (state_code)
         LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
                 ON pop.state_code = name_map.state_code
                 AND pop.facility = name_map.location_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess
+                ON CURRENT_DATE('US/Eastern') BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+                AND pop.person_id = sess.person_id
+        LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized` adm
+                ON adm.admission_date BETWEEN sess.start_date AND COALESCE(sess.end_date, CURRENT_DATE('US/Eastern'))
+                AND adm.person_id = sess.person_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.admission_start_reason_dedup_priority` pri
+                ON adm.admission_reason = pri.start_reason
         {filter_to_enabled_states}
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY state_code, state_id
+            ORDER BY pri.priority
+        ) = 1
     )
     SELECT
         {dimensions_clause},
@@ -93,7 +108,8 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER = PathwaysMetricBigQueryVie
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    add_age_groups=add_age_groups(),
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
+    add_age_groups=add_age_groups("pop.age"),
     get_pathways_incarceration_last_updated_date=get_pathways_incarceration_last_updated_date(),
     filter_to_enabled_states=filter_to_enabled_states(
         state_code_column="pop.state_code", enabled_states=get_pathways_enabled_states()

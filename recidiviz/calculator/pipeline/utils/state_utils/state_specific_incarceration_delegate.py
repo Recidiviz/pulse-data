@@ -22,6 +22,9 @@ import abc
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -41,3 +44,13 @@ class StateSpecificIncarcerationDelegate(abc.ABC, StateSpecificDelegate):
             incarceration_period.custodial_authority
             != StateCustodialAuthority.SUPERVISION_AUTHORITY
         )
+
+    def should_include_in_state_admissions(
+        self, admission_reason: StateIncarcerationPeriodAdmissionReason
+    ) -> bool:
+        """Determines whether the given incarceation period counts towards the state's
+        incarceration admissions metrics.
+
+        Default behavior is that it is not included if the period's admission_reason is
+        TRANSFER."""
+        return admission_reason != StateIncarcerationPeriodAdmissionReason.TRANSFER

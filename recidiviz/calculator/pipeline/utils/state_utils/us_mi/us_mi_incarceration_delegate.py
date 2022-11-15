@@ -19,6 +19,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
     StateSpecificIncarcerationDelegate,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -40,3 +41,10 @@ class UsMiIncarcerationDelegate(StateSpecificIncarcerationDelegate):
             incarceration_period.specialized_purpose_for_incarceration
             != StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
+
+    def should_include_in_state_admissions(
+        self, admission_reason: StateIncarcerationPeriodAdmissionReason
+    ) -> bool:
+        """In Michigan, we should include all admissions in the admission metrics, because
+        Michigan has a high number of transfers and status changes."""
+        return True
