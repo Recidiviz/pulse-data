@@ -57,6 +57,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
+    US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
@@ -77,6 +80,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
+    US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_TN_REIDENTIFIED_USERS_VIEW_BUILDER,
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
