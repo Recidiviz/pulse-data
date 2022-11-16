@@ -59,3 +59,6 @@ num_allowed_rows_overrides:
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 4000
     override_reason: Needs investigation.  Current failing level as of 11/2 is 2,868 rows #TODO(#16437)
+  - validation_name: sessions_persons_in_incarceration_or_supervision
+    hard_num_allowed_rows_override: 190000
+    override_reason: Currently have different logic between sessions and incarceration/supervision period views to filter out certain types of periods. #TODO(#15790) - Investigate best fix for longterm parity betweeen sessions and periods
