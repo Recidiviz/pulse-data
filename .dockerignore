@@ -113,6 +113,9 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# R
+.Rhistory
+
 # pyenv
 .python-version
 
