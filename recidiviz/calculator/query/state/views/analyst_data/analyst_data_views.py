@@ -18,6 +18,9 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_preprocessed import (
+    AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
 )
@@ -44,6 +47,9 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 )
 from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarceration import (
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.specialized_agents_preprocessed import (
+    SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_aggregated_metrics import (
     SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS,
@@ -126,11 +132,17 @@ from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_overd
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_agent_supervisor_preprocessed import (
+    US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatment_classification_codes import (
     US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_specialized_agents_preprocessed import (
+    US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_c4_isc_eligiblility_sessions import (
     US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
@@ -242,6 +254,10 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_BUILDER,
         US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER,
         US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
+        US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
+        SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
+        US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
+        AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
