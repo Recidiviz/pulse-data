@@ -40,14 +40,20 @@ import {
   transferIngestViewMetadataToNewInstance,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
-import { deleteContentsInSecondaryIngestViewDataset } from "../AdminPanelAPI/IngestOperations";
+import {
+  deleteContentsInSecondaryIngestViewDataset,
+  getRawDataSourceInstance,
+} from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
   QueueState,
   StateCodeInfo,
 } from "./IngestOperationsView/constants";
 import NewTabLink from "./NewTabLink";
-import { fetchCurrentIngestInstanceStatus } from "./Utilities/IngestInstanceUtilities";
+import {
+  fetchCurrentIngestInstanceStatus,
+  fetchCurrentRawDataSourceInstance,
+} from "./Utilities/IngestInstanceUtilities";
 import StateSelector from "./Utilities/StateSelector";
 
 interface StyledStepProps extends StepProps {
@@ -96,6 +102,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   ] = React.useState<string | null>(null);
   const [proceedWithFlash, setProceedWithFlash] =
     React.useState<boolean | null>(null);
+  const [
+    currentSecondaryRawDataSourceInstance,
+    setSecondaryRawDataSourceInstance,
+  ] = React.useState<DirectIngestInstance | null>(null);
   const [modalVisible, setModalVisible] = React.useState(true);
   const history = useHistory();
   const isFlashInProgress =
@@ -116,18 +126,24 @@ const FlashDatabaseChecklist = (): JSX.Element => {
 
   const getData = React.useCallback(async () => {
     if (stateInfo) {
-      const [primaryStatus, secondaryStatus] = await Promise.all([
-        fetchCurrentIngestInstanceStatus(
-          stateInfo.code,
-          DirectIngestInstance.PRIMARY
-        ),
-        fetchCurrentIngestInstanceStatus(
-          stateInfo.code,
-          DirectIngestInstance.SECONDARY
-        ),
-      ]);
+      const [primaryStatus, secondaryStatus, secondaryRawDataSourceInstance] =
+        await Promise.all([
+          fetchCurrentIngestInstanceStatus(
+            stateInfo.code,
+            DirectIngestInstance.PRIMARY
+          ),
+          fetchCurrentIngestInstanceStatus(
+            stateInfo.code,
+            DirectIngestInstance.SECONDARY
+          ),
+          fetchCurrentRawDataSourceInstance(
+            stateInfo.code,
+            DirectIngestInstance.SECONDARY
+          ),
+        ]);
       setPrimaryIngestInstanceStatus(primaryStatus);
       setSecondaryIngestInstanceStatus(secondaryStatus);
+      setSecondaryRawDataSourceInstance(secondaryRawDataSourceInstance);
     }
   }, [stateInfo]);
 
@@ -272,6 +288,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     return (
       <div>
         <h3>Canceling Flash of Rerun Results from SECONDARY to PRIMARY </h3>
+        <h3 style={{ color: "green" }}>
+          Raw data source:{" "}
+          {currentSecondaryRawDataSourceInstance === null
+            ? "None"
+            : currentSecondaryRawDataSourceInstance}
+        </h3>
         <Steps progressDot current={currentStep} direction="vertical">
           <StyledStep
             title="Pause Queues"
@@ -452,6 +474,12 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       <div>
         <h3>
           Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY
+        </h3>
+        <h3 style={{ color: "green" }}>
+          Raw data source:{" "}
+          {currentSecondaryRawDataSourceInstance === null
+            ? "None"
+            : currentSecondaryRawDataSourceInstance}
         </h3>
         <Steps progressDot current={currentStep} direction="vertical">
           <StyledStep
@@ -853,18 +881,28 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           showIcon
         />
         <br />
-        <h3 style={{ color: "green" }}>
-          Regardless of ingest instance status, you may proceed with cleaning up
-          the secondary instance and canceling the flash:{" "}
-          <Button
-            type="primary"
-            onClick={async () => {
-              setProceedWithFlash(false);
-            }}
-          >
-            CLEAN UP SECONDARY + CANCEL FLASH
-          </Button>
-        </h3>
+        {currentSecondaryRawDataSourceInstance === null ? (
+          <h3>
+            <b style={{ color: "red" }}>
+              Could not locate the raw data source instance of the rerun in
+              secondary.
+            </b>{" "}
+            Are you sure there is a rerun in progress in secondary?
+          </h3>
+        ) : (
+          <h3 style={{ color: "green" }}>
+            Regardless of ingest instance status, you may proceed with cleaning
+            up the secondary instance and canceling the flash:{" "}
+            <Button
+              type="primary"
+              onClick={async () => {
+                setProceedWithFlash(false);
+              }}
+            >
+              CLEAN UP SECONDARY + CANCEL FLASH
+            </Button>
+          </h3>
+        )}
       </div>
     );
   } else if (proceedWithFlash === null && isReadyToFlash) {
@@ -902,8 +940,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             fetchStateList={fetchIngestStateCodes}
             onChange={(state) => {
               setNewState(state);
-              /* Reset whether to proceed with flash */
+              /* Reset when new state is set */
               setProceedWithFlash(null);
+              setSecondaryRawDataSourceInstance(null);
             }}
             initialValue={null}
           />

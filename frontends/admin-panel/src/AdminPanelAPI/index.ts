@@ -96,6 +96,7 @@ export {
   fetchIngestStateCodes,
   getAllIngestInstanceStatuses,
   getCurrentIngestInstanceStatus,
+  getRawDataSourceInstance,
   getCurrentIngestInstanceStatusInformation,
   getIngestInstanceSummary,
   getIngestRawFileProcessingStatus,
