@@ -20,6 +20,10 @@ from typing import List, Optional
 class NodeNG:
     parent: Optional["NodeNG"]
 
+class Keyword(NodeNG):
+    arg: Optional[str]
+    value: Optional[NodeNG]
+
 class Attribute(NodeNG):
     attrname: Optional[str]
     expr: Optional[NodeNG]
@@ -31,6 +35,10 @@ class BinOp(NodeNG):
 
 class Call(NodeNG):
     func: Optional[NodeNG]
+    keywords: List[Keyword]
+
+class ClassDef(NodeNG):
+    name: Optional[str]
 
 class Const(NodeNG):
     def pytype(self) -> str: ...

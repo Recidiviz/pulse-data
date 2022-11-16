@@ -47,10 +47,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Finds TODOs in our codebase.")
     parser.add_argument(
         "--closed",
-        type=bool,
-        nargs="?",
-        const=True,
-        default=False,
+        action="store_true",
         help="Only include references to closed issues.",
     )
     parser.add_argument(
@@ -67,18 +64,12 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--fail-if-found",
-        type=bool,
-        nargs="?",
-        const=True,
-        default=False,
+        action="store_true",
         help="Return a non-zero error code if any references exist.",
     )
     parser.add_argument(
         "--minimal-output",
-        type=bool,
-        nargs="?",
-        const=True,
-        default=False,
+        action="store_true",
         help="Only outputs the issues, for use in automation.",
     )
     return parser

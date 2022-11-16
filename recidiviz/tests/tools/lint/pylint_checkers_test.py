@@ -28,12 +28,16 @@ class PylintCheckerTestCaseWrapper(testutils.CheckerTestCase):
     CHECKER_CLASS = pylint_checkers.RecidivizChecker
 
 
-class RecidivizCheckerTest(unittest.TestCase):
+class RecidivizCheckerTestCase(unittest.TestCase):
     """Tests our custom pylint checker"""
 
     def setUp(self) -> None:
         self.case_wrapper = PylintCheckerTestCaseWrapper()
         self.case_wrapper.setup_method()
+
+
+class StrictStringFormatCheckerTest(RecidivizCheckerTestCase):
+    """Tests the strict-string-format message"""
 
     def test_plain_format_is_error(self) -> None:
         call_node = cast(
@@ -94,3 +98,95 @@ class RecidivizCheckerTest(unittest.TestCase):
             cast(
                 pylint_checkers.RecidivizChecker, self.case_wrapper.checker
             ).visit_const(str_node)
+
+
+class ArgparseNoBoolTypeTest(RecidivizCheckerTestCase):
+    """Tests the argparse-no-bool-type message"""
+
+    def test_bool_type(self) -> None:
+        # The "#@" instructs the parser to only extract that statement into a node
+        call_node = cast(
+            nodes.Call,
+            builder.extract_node(
+                """
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument( #@
+    "--arg_name",
+    type=bool,
+)
+"""
+            ),
+        )
+
+        with self.case_wrapper.assertAddsMessages(
+            testutils.MessageTest(
+                msg_id="argparse-no-bool-type",
+                node=call_node,
+                line=4,
+                col_offset=0,
+                end_line=7,
+                end_col_offset=1,
+            ),
+        ):
+            cast(
+                pylint_checkers.RecidivizChecker, self.case_wrapper.checker
+            ).visit_call(call_node)
+
+    def test_no_type(self) -> None:
+        # The "#@" instructs the parser to only extract that statement into a node
+        call_node = cast(
+            nodes.Call,
+            builder.extract_node(
+                """
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--arg_name") #@
+"""
+            ),
+        )
+
+        with self.case_wrapper.assertNoMessages():
+            cast(
+                pylint_checkers.RecidivizChecker, self.case_wrapper.checker
+            ).visit_call(call_node)
+
+    def test_other_type(self) -> None:
+        # The "#@" instructs the parser to only extract that statement into a node
+        call_node = cast(
+            nodes.Call,
+            builder.extract_node(
+                """
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument( #@
+    "--arg_name",
+    type=str,
+)
+"""
+            ),
+        )
+
+        with self.case_wrapper.assertNoMessages():
+            cast(
+                pylint_checkers.RecidivizChecker, self.case_wrapper.checker
+            ).visit_call(call_node)
+
+    def test_other_function_with_type_arg(self) -> None:
+        # The "#@" instructs the parser to only extract that statement into a node
+        call_node = cast(
+            nodes.Call,
+            builder.extract_node(
+                """
+def fn(type: type) -> None:
+    pass
+
+fn(type=bool) #@
+"""
+            ),
+        )
+
+        with self.case_wrapper.assertNoMessages():
+            cast(
+                pylint_checkers.RecidivizChecker, self.case_wrapper.checker
+            ).visit_call(call_node)

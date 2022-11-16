@@ -437,8 +437,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         dest="load_sandbox_views",
         help="If True, first runs the recidiviz.tools.load_views_to_sandbox script to load the views"
         " into the sandbox datasets before doing the comparison.",
-        type=bool,
-        default=False,
+        action="store_true",
         required=False,
     )
 
@@ -447,8 +446,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         dest="check_determinism",
         help="If True, compares the output of the sandbox views to themselves to ensure the output "
         "of the views are deterministic.",
-        type=bool,
-        default=False,
+        action="store_true",
         required=False,
     )
 
@@ -457,8 +455,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         dest="allow_schema_changes",
         help="If True, only compares columns that are shared between the deployed and sandbox views."
         "If False, will throw an error if the view schemas do not match.",
-        type=bool,
-        default=False,
+        action="store_true",
         required=False,
     )
 
