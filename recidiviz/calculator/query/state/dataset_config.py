@@ -92,6 +92,9 @@ SENDGRID_EMAIL_DATA_DATASET: str = "sendgrid_email_data"
 # Where US_TN raw data lives
 US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
 
+# Where US_PA raw data lives
+US_PA_RAW_DATASET: str = "us_pa_raw_data_up_to_date_views"
+
 # Views that power the workflows part of the state dashboard
 WORKFLOWS_VIEWS_DATASET: str = "workflows_views"
 
