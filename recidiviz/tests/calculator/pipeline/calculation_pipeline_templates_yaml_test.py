@@ -16,13 +16,18 @@
 # =============================================================================
 """Tests for the calculation_pipeline_templates.yaml file."""
 import unittest
-from typing import Set
+from collections import defaultdict
+from typing import Dict, List, Set
+from unittest.mock import Mock, patch
 
 from recidiviz.calculator import dataflow_config
 from recidiviz.calculator.dataflow_orchestration_utils import (
     get_metric_pipeline_enabled_states,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_launched_in_env,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -53,3 +58,39 @@ class TestConfiguredPipelines(unittest.TestCase):
                     "Add a pipeline for this state to the normalization_pipelines in "
                     f"{dataflow_config.PIPELINE_CONFIG_YAML_PATH}."
                 )
+
+    @patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    def test_production_pipeline_parity(self) -> None:
+        states_launched_in_production = get_direct_ingest_states_launched_in_env()
+
+        pipeline_templates_yaml = YAMLDict.from_path(
+            dataflow_config.PIPELINE_CONFIG_YAML_PATH
+        )
+
+        incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+            "incremental_metric_pipelines"
+        )
+        historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
+            "historical_metric_pipelines"
+        )
+        production_pipelines_by_state: Dict[StateCode, List[str]] = defaultdict(list)
+        for pipeline in incremental_metric_pipelines + historical_metric_pipelines:
+            state_code = StateCode(pipeline.peek("state_code", str))
+            if (
+                state_code not in states_launched_in_production
+                and not pipeline.peek_optional("staging_only", bool)
+            ):
+                production_pipelines_by_state[state_code].append(
+                    pipeline.peek("job_name", str)
+                )
+
+        self.assertDictEqual(
+            production_pipelines_by_state,
+            {},
+            "A pipeline is configured that will run in production for a state that "
+            "does not have `environment: production` set in the `manifest.yaml`. "
+            "Either set it to production or set `staging_only: True` on the pipeline.",
+        )

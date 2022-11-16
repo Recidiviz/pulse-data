@@ -29,7 +29,7 @@ import yaml
 
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
 from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 # Cache of the `DirectIngestRegion` objects.
 REGIONS: Dict[str, "DirectIngestRegion"] = {}
@@ -94,13 +94,6 @@ class DirectIngestRegion:
         return (
             not environment.in_gcp_production()
             or self.environment == environment.get_gcp_environment()
-        )
-
-    def is_ingest_launched_in_production(self) -> bool:
-        """Returns true if ingest can be launched for this region in production."""
-        return (
-            self.environment is not None
-            and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
         )
 
 
