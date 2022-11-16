@@ -20,8 +20,15 @@ import unittest
 from typing import Set
 from unittest.mock import MagicMock, patch
 
+from parameterized import parameterized
+
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.view_update_manager import build_views_to_update
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
@@ -77,3 +84,95 @@ class DeployedViewsTest(unittest.TestCase):
         # Building all our views should take less than 5s (as of 4/11/2022 it takes
         # about .28 seconds).
         self.assertLessEqual(total_seconds, 5)
+
+
+class ViewDagInvariantTests(unittest.TestCase):
+    """Tests that certain views have the correct descendants."""
+
+    dag_walker: BigQueryViewDagWalker
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-456"):
+            view_builders = deployed_view_builders(metadata.project_id())
+            views = build_views_to_update(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                candidate_view_builders=view_builders,
+                address_overrides=None,
+            )
+            cls.dag_walker = BigQueryViewDagWalker(views)
+            cls.dag_walker.populate_node_view_builders(view_builders)
+
+    @parameterized.expand(
+        [
+            (
+                "supervision_population_in_state",
+                "most_recent_supervision_population_metrics",
+                "most_recent_single_day_supervision_population_metrics",
+            ),
+            (
+                "supervision_population_out_of_state",
+                "most_recent_supervision_out_of_state_population_metrics",
+                "most_recent_single_day_supervision_out_of_state_population_metrics",
+            ),
+            (
+                "incarceration_population_in_state",
+                "most_recent_incarceration_population_metrics_included_in_state_population",
+                "most_recent_single_day_incarceration_population_metrics_included_in_state_population",
+            ),
+            (
+                "incarceration_population_out_of_state",
+                "most_recent_incarceration_population_metrics_not_included_in_state_population",
+                "most_recent_single_day_incarceration_population_metrics_not_included_in_state_population",
+            ),
+        ]
+    )
+    def test_only_lantern_usages_of_legacy_population_metrics(
+        self,
+        _name: str,
+        original_table_id: str,
+        descendent_table_id: str,
+    ) -> None:
+        """Tests that the legacy population_metrics tables are only referenced by Lantern
+        views so that it is safe to turn pipelines off for all non-Lantern states."""
+        original_address = BigQueryAddress(
+            dataset_id="dataflow_metrics_materialized", table_id=original_table_id
+        )
+
+        lantern_view_addresses = {
+            vb.address
+            for vb in VIEW_COLLECTION_EXPORT_INDEX["LANTERN"].view_builders_to_export
+        }
+        other_valid_descendants = {
+            BigQueryAddress(
+                dataset_id="dataflow_metrics_materialized",
+                table_id=descendent_table_id,
+            ),
+            BigQueryAddress(
+                dataset_id="shared_metric_views",
+                table_id="supervision_matrix_by_person",
+            ),
+        }
+        valid_descendants = {
+            *lantern_view_addresses,
+            *other_valid_descendants,
+        }
+
+        view = self.dag_walker.view_for_key(DagKey(view_address=original_address))
+        sub_dag = self.dag_walker.get_descendants_sub_dag([view])
+
+        descendant_addresses: Set[BigQueryAddress] = {
+            v.address for v in sub_dag.views
+        } - {original_address}
+
+        invalid_descendants = {
+            # We do not care if validation views point to data in the legacy pipeline
+            a
+            for a in descendant_addresses
+            if a.dataset_id != "validation_views"
+        } - valid_descendants
+
+        if invalid_descendants:
+            self.fail(
+                f"Found invalid descendants: {invalid_descendants}",
+            )

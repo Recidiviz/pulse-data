@@ -237,7 +237,7 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
 
 
 def execute_calculations(
-    use_historical: bool, should_trigger_exports: bool, should_update_all_views: bool
+    should_trigger_exports: bool, should_update_all_views: bool
 ) -> None:
     """This represents the overall execution of our calculation pipelines.
 
@@ -297,9 +297,7 @@ def execute_calculations(
     # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
     #  calculation month counts
     metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "historical_metric_pipelines"
-        if use_historical
-        else "incremental_metric_pipelines"
+        "incremental_metric_pipelines"
     )
 
     metric_pipelines_by_state: Dict[
@@ -417,9 +415,7 @@ def execute_calculations(
 def incremental_dag() -> None:
     """This executes the calculations for all of the incremental pipelines."""
 
-    execute_calculations(
-        use_historical=False, should_trigger_exports=True, should_update_all_views=False
-    )
+    execute_calculations(should_trigger_exports=True, should_update_all_views=False)
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -436,9 +432,7 @@ def incremental_dag() -> None:
 def historical_dag() -> None:
     """This executes the calculations for all of the historical pipelines."""
 
-    execute_calculations(
-        use_historical=True, should_trigger_exports=False, should_update_all_views=True
-    )
+    execute_calculations(should_trigger_exports=False, should_update_all_views=True)
 
 
 incremental_dag = incremental_dag()
