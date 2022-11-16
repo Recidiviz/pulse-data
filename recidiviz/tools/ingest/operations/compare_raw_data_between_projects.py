@@ -183,10 +183,7 @@ def main() -> None:
     parser.add_argument("--region", type=str, required=True, help="E.g. 'us_nd'")
     parser.add_argument(
         "--exact",
-        type=bool,
-        nargs="?",
-        const=True,
-        default=False,
+        action="store_true",
         help="If set, also performs the converse comparison, ensuring that all data in "
         "production also exists in staging.",
     )

@@ -16,15 +16,13 @@
 # =============================================================================
 """Pylint plugin to enable custom checkers."""
 
-from astroid import nodes
-from pylint import interfaces, lint
+from astroid import bases, nodes
+from pylint import lint
 from pylint.checkers import base_checker, utils
 
 
 class RecidivizChecker(base_checker.BaseChecker):
-    """This checker identifies legacy calls to str.format or % and marks them as errors."""
-
-    __implements__ = (interfaces.IAstroidChecker,)
+    """This checker contains various checks for the recidiiz codebase."""
 
     name = "recidiviz"
     msgs = {
@@ -45,9 +43,18 @@ class RecidivizChecker(base_checker.BaseChecker):
             "defined) or significantly less readable, StrictStringFormatter can "
             "be used instead.",
         ),
+        "W5002": (
+            "argparse add_argument() should not have type=bool. Instead, use "
+            "`action=argparse.BooleanOptionalAction`, `action='store_true'`, or `type=str_to_bool`. ",
+            "argparse-no-bool-type",
+            "Emitted when a call to add_argument() sets 'type' to 'bool'. This does not behave as "
+            "expected, and arguments may unexpectedly be set to True. Instead, use "
+            "`action=argparse.BooleanOptionalAction`, `action='store_true'`, or `type=str_to_bool`. "
+            "See https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse.",
+        ),
     }
 
-    @utils.check_messages("strict-string-format")
+    @utils.only_required_for_messages("strict-string-format")
     def visit_const(self, node: nodes.Const) -> None:
         if (
             # If this is not a string constant, skip it.
@@ -70,6 +77,24 @@ class RecidivizChecker(base_checker.BaseChecker):
                 "strict-string-format",
                 node=node,
             )
+
+    @utils.only_required_for_messages("argparse-no-bool-type")
+    def visit_call(self, node: nodes.Call) -> None:
+        if (
+            node.func
+            and (func := utils.safe_infer(node.func))
+            and isinstance(func, bases.Proxy)
+            and func.qname() == "argparse._ActionsContainer.add_argument"
+        ):
+            for keyword in node.keywords:
+                if (
+                    keyword.arg == "type"
+                    and keyword.value
+                    and (inferred_value := utils.safe_infer(keyword.value))
+                    and isinstance(inferred_value, nodes.ClassDef)
+                    and inferred_value.name == "bool"
+                ):
+                    self.add_message("argparse-no-bool-type", node=node)
 
 
 def register(linter: lint.PyLinter) -> None:

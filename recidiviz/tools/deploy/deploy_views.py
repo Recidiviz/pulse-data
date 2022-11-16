@@ -67,10 +67,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 
     parser.add_argument(
         "--test-schema-only",
-        type=bool,
-        nargs="?",
-        const=True,
-        default=False,
+        action="store_true",
         help="If set, copies the schemas of the source tables to a sandbox and deploys "
         "all views on top of those to test for query compilation errors without "
         "materializing all of the views.",
