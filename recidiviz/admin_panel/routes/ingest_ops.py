@@ -714,6 +714,43 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
+    @bp.route("/api/ingest_operations/get_raw_data_source_instance", methods=["POST"])
+    @requires_gae_auth
+    def _get_raw_data_source_instance() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
+
+        status_manager = PostgresDirectIngestInstanceStatusManager(
+            state_code.value, ingest_instance
+        )
+        try:
+            raw_data_source_instance: Optional[
+                DirectIngestInstance
+            ] = status_manager.get_raw_data_source_instance()
+        except ValueError:
+            error_message = (
+                f"Could not locate a valid start of a rerun for region=[{state_code.value}], "
+                f"instance=[{ingest_instance.value}]",
+            )
+            return (jsonify(error_message), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return (
+            jsonify(
+                {
+                    "instance": raw_data_source_instance.value
+                    if raw_data_source_instance is not None
+                    else None
+                }
+            ),
+            HTTPStatus.OK,
+        )
+
     @bp.route(
         "/api/ingest_operations/get_current_ingest_instance_status_information",
         methods=["POST"],

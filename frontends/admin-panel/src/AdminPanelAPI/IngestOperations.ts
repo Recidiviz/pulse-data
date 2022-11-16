@@ -296,6 +296,20 @@ export const getCurrentIngestInstanceStatus = async (
   );
 };
 
+// Gets the raw data source instance of the most recent rerun (if present)
+export const getRawDataSourceInstance = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/get_raw_data_source_instance",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
 // Get current ingest instance status and associated information
 export const getCurrentIngestInstanceStatusInformation = async (
   stateCode: string,

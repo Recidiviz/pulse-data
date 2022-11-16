@@ -15,7 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { getCurrentIngestInstanceStatus } from "../../AdminPanelAPI";
+import { message } from "antd";
+import {
+  getCurrentIngestInstanceStatus,
+  getRawDataSourceInstance,
+} from "../../AdminPanelAPI";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
@@ -24,4 +28,28 @@ export const fetchCurrentIngestInstanceStatus = async (
 ): Promise<string> => {
   const response = await getCurrentIngestInstanceStatus(stateCode, instance);
   return response.text();
+};
+
+export const fetchCurrentRawDataSourceInstance = async (
+  stateCode: string,
+  instance: DirectIngestInstance
+): Promise<DirectIngestInstance | null> => {
+  try {
+    const response = await getRawDataSourceInstance(stateCode, instance);
+    const json = await response.json();
+    if (response.status === 500) {
+      message.error(
+        `An error occurred when attempting to retrieve raw data source instance of secondary rerun: ${json}`,
+        8
+      );
+      return null;
+    }
+    return json.instance;
+  } catch (err) {
+    message.error(
+      `An error occurred when attempting to retrieve raw data source instance of secondary rerun: ${err}`,
+      8
+    );
+    return null;
+  }
 };
