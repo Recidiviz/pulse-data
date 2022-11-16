@@ -205,9 +205,7 @@ class DownloadFilesFromSftpController:
         ) and not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
             normalized_upload_path
         ):
-            logging.info(
-                "Downloading %s into %s", normalized_sftp_path, self.download_dir
-            )
+            logging.info("Downloading %s into %s", file_path, self.download_dir)
             try:
                 path = GcsfsFilePath.from_directory_and_file_name(
                     dir_path=GcsfsDirectoryPath.from_dir_and_subdir(
@@ -242,7 +240,7 @@ class DownloadFilesFromSftpController:
             except IOError as e:
                 logging.info(
                     "Could not download %s into %s: %s",
-                    normalized_sftp_path,
+                    file_path,
                     self.download_dir,
                     e.args,
                 )
@@ -250,7 +248,7 @@ class DownloadFilesFromSftpController:
         else:
             logging.info(
                 "Skipping downloading %s because it has already been previously downloaded for ingest.",
-                normalized_sftp_path,
+                file_path,
             )
             self.skipped_files.append(file_path)
 
@@ -289,7 +287,9 @@ class DownloadFilesFromSftpController:
             file_timestamp = paths_post_timestamp[path]
             file_mode = file_modes_of_paths[path]
             if file_mode and stat.S_ISREG(file_mode):
-                files_to_download_with_timestamps.append((path, file_timestamp))
+                files_to_download_with_timestamps.append(
+                    (os.path.join(root, path), file_timestamp)
+                )
             else:
                 inner_paths = deque(
                     [
