@@ -45,9 +45,6 @@ from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import 
 from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarceration import (
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.state_charge_with_labels import (
-    STATE_CHARGE_WITH_LABELS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_aggregated_metrics import (
     SUPERVISION_AGGREGATED_METRICS_VIEW_BUILDERS,
 )
@@ -201,7 +198,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         PROJECTED_DISCHARGES_VIEW_BUILDER,
         PSA_RISK_SCORES_VIEW_BUILDER,
         SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
-        STATE_CHARGE_WITH_LABELS_VIEW_BUILDER,
         SUPERVISION_OFFICER_PRIMARY_OFFICE_VIEW_BUILDER,
         SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
         SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
