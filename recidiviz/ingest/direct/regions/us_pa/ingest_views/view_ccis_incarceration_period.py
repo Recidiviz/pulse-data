@@ -108,7 +108,7 @@ WITH inmate_number_with_control_numbers AS (
   SELECT
     *
   FROM movements_base,
-  UNNEST(['ADM', 'REL']) AS movement_type
+  UNNEST(ARRAY['ADM', 'REL']) AS movement_type
   -- Transfer statuses --
   WHERE movement_status_code IN (
     -- Program Change: Transfer between programs
@@ -176,7 +176,7 @@ WITH inmate_number_with_control_numbers AS (
       LAG(movement_type) {MOVEMENT_PARTITION_CLAUSE} AS preceding_movement_type
     FROM 
         all_movements
-   )
+   ) a
   -- Filtering out duplicate admissions and releases
   WHERE 
         -- Admission must follow a release or be the first movement for the inmate_number
@@ -221,7 +221,7 @@ WITH inmate_number_with_control_numbers AS (
   USING (movement_id)
 ), valid_periods AS (
   SELECT
-    * EXCEPT(movement_type, movement_sequence),
+    control_number, inmate_number, start_movement_id, start_status_code, start_date, location, program_id, end_status_code, end_date,
     -- We need to know the previous program_id to determine if a new admission to an ACT 122 program occurred
     LAG(program_id) {PERIOD_PARTITION_CLAUSE} AS previous_program_id,
     -- We need to know the previous end_date to determine if a transfer occurred, since they don't reliably use
@@ -231,7 +231,7 @@ WITH inmate_number_with_control_numbers AS (
   WHERE movement_type = 'ADM'
 ), periods AS (
   SELECT 
-    * EXCEPT (previous_program_id, previous_end_date), 
+    control_number, inmate_number, start_movement_id, start_status_code, start_date, location, program_id, end_status_code, end_date,
     -- This is a new admission to an ACT 122 program
     ((previous_end_date IS NULL OR start_date != previous_end_date) OR
       -- The end_date on the preceding period matches the start_date, so this is a transfer between CCIS facilities

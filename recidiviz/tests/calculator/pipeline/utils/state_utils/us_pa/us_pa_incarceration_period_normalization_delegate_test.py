@@ -159,7 +159,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             ],
         )
 
-    # TODO(#8961): remove this test when the ingest mappings are updated and logic that is being tested is removed
+    # TODO(#16703): remove this test when the ingest mappings are updated and logic that is being tested is removed
+
     def test_normalized_incarceration_periods_ccc_period_not_included_in_state(
         self,
     ) -> None:
@@ -222,8 +223,9 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([incarceration_period], validated_incarceration_periods)
 
-    # TODO(#8961): Remove this test when the ingest mappings are updated to always
+    # TODO(#16703): Remove this test when the ingest mappings are updated to always
     #  set admission reason to INTERNAL_UNKNOWN.
+
     def test_normalized_incarceration_periods_ccc_period_transfer_admission_reason(
         self,
     ) -> None:
