@@ -322,6 +322,7 @@ def get_api_blueprint(
                     year=year,
                     frequency=frequency,
                 )
+                current_session.commit()
             except IntegrityError as e:
                 if isinstance(e.orig, UniqueViolation):
                     raise JusticeCountsServerError(
@@ -333,7 +334,6 @@ def get_api_blueprint(
                 session=current_session, report=report
             )
 
-            current_session.commit()
             return jsonify(report_response)
         except Exception as e:
             raise _get_error(error=e) from e
