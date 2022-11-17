@@ -40,8 +40,8 @@ from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRI
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.justice_counts.utils.datapoint_utils import (
+    filter_deprecated_datapoints,
     get_dimension,
-    is_datapoint_deprecated,
 )
 from recidiviz.justice_counts.utils.persistence_utils import (
     expunge_existing,
@@ -85,7 +85,7 @@ class DatapointInterface:
             .order_by(schema.Datapoint.start_date.asc())
             .all()
         )
-        return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
+        return filter_deprecated_datapoints(datapoints=datapoints)
 
     @staticmethod
     def get_agency_datapoints(
@@ -101,7 +101,7 @@ class DatapointInterface:
             .filter(schema.Datapoint.source_id == agency_id)
             .all()
         )
-        return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
+        return filter_deprecated_datapoints(datapoints=datapoints)
 
     ### Export to the FE ###
 

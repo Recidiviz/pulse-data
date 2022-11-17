@@ -17,7 +17,7 @@
 """Utilities for working with the Datapoint model."""
 
 import logging
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
@@ -85,3 +85,10 @@ def is_datapoint_deprecated(datapoint: schema.Datapoint) -> bool:
     """
     _, success = get_dimension(datapoint)
     return not success
+
+
+def filter_deprecated_datapoints(
+    datapoints: List[schema.Datapoint],
+) -> List[schema.Datapoint]:
+    "Filter out deprecated datapoints from the given list."
+    return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
