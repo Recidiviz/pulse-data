@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK235
 file_description: |-
-  Violations data information PART 3. ALTERNATE RULE SEQUENCE REFERENCE TABLE. Column prefix: IT.
+  Violations data information (CDV) - Alternate Rules. Column prefix: IT.
 data_classification: source
 primary_key_cols:
   - IT_DOC
