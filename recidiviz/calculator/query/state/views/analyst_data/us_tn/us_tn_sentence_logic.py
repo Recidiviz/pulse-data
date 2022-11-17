@@ -148,7 +148,7 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             union_start_dates.sentence_start_date,
             union_start_dates.has_active_sentence,
             judicial_district_code AS judicial_district,
-            conviction_county,
+            conviction_counties,
             /* If any of these flags are 1, a person isn't eligible at all */ 
             CASE 
                 WHEN GREATEST(domestic_flag, sex_offense_flag, assaultive_offense_flag, young_victim_flag, dui_flag, dui_last_5_years_flag, homicide_flag_ever, COALESCE(homicide_flag_prior,0)) = 1 THEN 0
@@ -217,10 +217,10 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
     LEFT JOIN (
         SELECT 
             person_id,
-            STRING_AGG(
+            ARRAY_AGG(DISTINCT
                 CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode) 
-                 ELSE conviction_county END, ', '
-                  ) AS conviction_county,
+                    ELSE conviction_county END
+                ) AS conviction_counties,
         FROM `{project_id}.{analyst_dataset}.us_tn_cr_raw_sentence_preprocessing_materialized`
         LEFT JOIN (
             SELECT *

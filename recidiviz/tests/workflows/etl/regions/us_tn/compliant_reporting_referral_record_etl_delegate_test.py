@@ -63,6 +63,9 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "tdocId": "200",
                     "physicalAddress": "123 fake st., Metropolis, TN 59545",
                     "convictionCounty": "123ABC",
+                    "convictionCounties": ["123ABC"],
+                    "allDockets": "[45367,87521]",
+                    "docketNumbers": ["45367", "87521"],
                     "currentOffenses": ["BURGLARY", "AGGRAVATED BURGLARY"],
                     "finesFeesEligible": "regular_payments",
                     "drugScreensPastYear": [
