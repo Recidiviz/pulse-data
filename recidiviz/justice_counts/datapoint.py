@@ -39,7 +39,10 @@ from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
-from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
+from recidiviz.justice_counts.utils.datapoint_utils import (
+    get_dimension,
+    is_datapoint_deprecated,
+)
 from recidiviz.justice_counts.utils.persistence_utils import (
     expunge_existing,
     update_existing_or_create,
@@ -68,18 +71,21 @@ class DatapointInterface:
     def get_datapoints_by_report_ids(
         session: Session, report_ids: List[int], include_contexts: bool = True
     ) -> List[schema.Datapoint]:
-        """Given a list of report ids, get all datapoints belonging to those reports."""
+        """Given a list of report ids, get all datapoints belonging to those reports.
+        Filter out datapoints with a deprecated dimension identifier or value.
+        """
         q = session.query(schema.Datapoint)
 
         # when fetching datapoints for data viz, no need to fetch context datapoints
         if include_contexts is False:
             q = q.filter(schema.Datapoint.context_key.is_(None))
 
-        return (
+        datapoints = (
             q.filter(schema.Datapoint.report_id.in_(report_ids))
             .order_by(schema.Datapoint.start_date.asc())
             .all()
         )
+        return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
 
     @staticmethod
     def get_agency_datapoints(
@@ -88,12 +94,14 @@ class DatapointInterface:
     ) -> List[schema.Datapoint]:
         """Given an agency id, get all "Agency Datapoints" -- i.e. datapoints
         that provide configuration information, rather than report data.
+        Filter out datapoints with a deprecated dimension identifier or value.
         """
-        return (
+        datapoints = (
             session.query(schema.Datapoint)
             .filter(schema.Datapoint.source_id == agency_id)
             .all()
         )
+        return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
 
     ### Export to the FE ###
 
@@ -110,7 +118,11 @@ class DatapointInterface:
 
         disaggregation_display_name = None
         dimension_display_name = None
-        dimension = get_dimension(datapoint)
+        dimension, success = get_dimension(datapoint)
+        if not success:
+            # These datapoints should have already been filtered out, so we should
+            # never see this error.
+            raise ValueError("Datapoint has deprecated dimension identifier or value.")
 
         if dimension is not None:
             disaggregation_display_name = dimension.human_readable_name()

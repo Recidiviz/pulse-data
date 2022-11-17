@@ -266,7 +266,13 @@ class DatapointsForMetric:
         for dimension_id, dimension_datapoints in dimension_id_to_datapoint.items():
             for datapoint in dimension_datapoints:
 
-                dimension_enum_member = get_dimension(datapoint=datapoint)
+                dimension_enum_member, success = get_dimension(datapoint=datapoint)
+                if not success:
+                    # These datapoints should have already been filtered out, so we should
+                    # never see this error.
+                    raise ValueError(
+                        "Datapoint has deprecated dimension identifier or value."
+                    )
 
                 curr_dimension_dict = dimension_id_to_dimension_dicts.get(
                     dimension_id
