@@ -454,6 +454,53 @@ _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS: Dict[
 }
 
 
+@unique
+class StateIncarcerationPeriodHousingUnitType(StateEntityEnum):
+    """Housing unit types for incarceration periods"""
+
+    TEMPORARY_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_temporary_solitary_confinement
+    )
+    PERMANENT_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary_confinement
+    )
+    GENERAL = state_enum_strings.state_incarceration_period_housing_unit_type_general
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @staticmethod
+    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodHousingUnitType"]:
+        return _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_MAP
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The level of supervision and security employed for a person held in custody."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_MAP = {
+    "TEMPORARY SOLITARY CONFINEMENT": StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT,
+    "PERMANENT SOLITARY CONFINEMENT": StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT,
+    "GENERAL": StateIncarcerationPeriodHousingUnitType.GENERAL,
+    "INTERNAL UNKNOWN": StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN,
+    "EXTERNAL UNKNOWN": StateIncarcerationPeriodHousingUnitType.EXTERNAL_UNKNOWN,
+}
+
+_STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "This person is in a solitary confinement "
+    "unit for a temporary stay and likely has another bed saved for them elsewhere in the facility. ",
+    StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT: "This person has been permanently "
+    "assigned to a solitary confinement unit for an indeterminate amount of time.",
+    StateIncarcerationPeriodHousingUnitType.GENERAL: "This person is in a non-specialty housing unit. Incarceration "
+    "periods will generally be assigned this value by default.",
+}
+
+
 def is_commitment_from_supervision(
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
     allow_ingest_only_enum_values: bool = False,

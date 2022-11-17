@@ -62,6 +62,7 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitType,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
@@ -749,7 +750,13 @@ class StateIncarcerationPeriod(
     housing_unit: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
-
+    housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateIncarcerationPeriodHousingUnitType),
+    )
+    housing_unit_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     #   - What
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
         default=None,

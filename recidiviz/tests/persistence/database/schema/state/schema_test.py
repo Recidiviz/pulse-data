@@ -120,6 +120,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_incarceration_period_admission_reason": state_incarceration_period.StateIncarcerationPeriodAdmissionReason,
             "state_incarceration_period_release_reason": state_incarceration_period.StateIncarcerationPeriodReleaseReason,
             "state_incarceration_period_custody_level": state_incarceration_period.StateIncarcerationPeriodCustodyLevel,
+            "state_incarceration_period_housing_unit_type": state_incarceration_period.StateIncarcerationPeriodHousingUnitType,
             "state_gender": state_person.StateGender,
             "state_race": state_person.StateRace,
             "state_ethnicity": state_person.StateEthnicity,

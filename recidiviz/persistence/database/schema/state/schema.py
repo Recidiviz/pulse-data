@@ -315,6 +315,15 @@ state_incarceration_period_custody_level = Enum(
     name="state_incarceration_period_custody_level",
 )
 
+state_incarceration_period_housing_unit_type = Enum(
+    state_enum_strings.state_incarceration_period_housing_unit_type_temporary_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_general,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_incarceration_period_housing_unit_type",
+)
+
 state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_commuted,
     state_enum_strings.state_incarceration_period_release_reason_compassionate,
@@ -1622,6 +1631,15 @@ class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     housing_unit = Column(
         String(255),
         comment="The housing unit within the facility in which the person currently resides.",
+    )
+    housing_unit_type = Column(
+        state_incarceration_period_housing_unit_type,
+        comment="Where the person is currently being housed regardless of technical assignment/custody level - "
+        "i.e. whether this person is housed in solitary confinement",
+    )
+    housing_unit_type_raw_text = Column(
+        String(255),
+        comment="The raw text value of the incarceration period housing unit type.",
     )
     admission_reason = Column(
         state_incarceration_period_admission_reason,
