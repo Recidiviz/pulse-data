@@ -111,9 +111,10 @@ class UsPaIncarcerationNormalizationDelegate(
             incarceration_period_list_index
         ]
 
-        # TODO(#8961): update the ingest mappings to be conditional on the program id value
+        # TODO(#16703): update the ingest mappings to be conditional on the program id value
         #  so that all non-transfers are cast as INTERNAL_UNKNOWN for ccis periods with program IDs not in 26,46,51
         #  so that this logic will no longer be needed
+
         if (
             incarceration_period.custodial_authority
             == StateCustodialAuthority.SUPERVISION_AUTHORITY
@@ -161,9 +162,10 @@ def _us_pa_get_pfi_info_for_incarceration_period(
 
     pfi = incarceration_period.specialized_purpose_for_incarceration
 
-    # TODO(#8961): Remove the PFI check once we have updated the ingest mappings to be conditional
+    # TODO(#16703): Remove the PFI check once we have updated the ingest mappings to be conditional
     #  on the program id value so that all non-transfers are cast as INTERNAL_UNKNOWN
     #  for ccis periods with program IDs not in 26,46,51
+
     if (
         not is_commitment_from_supervision(
             incarceration_period.admission_reason, allow_ingest_only_enum_values=True
