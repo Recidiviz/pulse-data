@@ -179,6 +179,15 @@ state_incarceration_period_custody_level_close = "CLOSE"
 state_incarceration_period_custody_level_maximum = "MAXIMUM"
 state_incarceration_period_custody_level_solitary_confinement = "SOLITARY_CONFINEMENT"
 
+
+state_incarceration_period_housing_unit_type_temporary_solitary_confinement = (
+    "TEMPORARY_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_permanent_solitary_confinement = (
+    "PERMANENT_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_general = "GENERAL"
+
 state_incarceration_period_release_reason_commuted = "COMMUTED"
 state_incarceration_period_release_reason_compassionate = "COMPASSIONATE"
 state_incarceration_period_release_reason_conditional_release = "CONDITIONAL_RELEASE"
