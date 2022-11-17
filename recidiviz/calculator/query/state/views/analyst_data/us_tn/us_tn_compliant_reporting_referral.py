@@ -55,7 +55,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
                     offender_id, 
                     sum(TotalRestitution) AS total_restitution, 
                     sum(MonthlyRestitution) AS monthly_restitution, 
-                    TO_JSON_STRING(ARRAY_AGG(DISTINCT VictimName IGNORE NULLS)) AS restitution_monthly_payment_to,
+                    ARRAY_AGG(DISTINCT VictimName IGNORE NULLS) AS restitution_monthly_payment_to,
             FROM sentences
             GROUP BY 1,2
         ),
@@ -98,7 +98,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
                 conviction_county,
                 'Circuit Court' AS court_name,
                 TO_JSON_STRING(docket_numbers) AS all_dockets,
-                TO_JSON_STRING(current_offenses) AS current_offenses,
+                current_offenses,
                 past_offenses,
                 lifetime_offenses_expired,
                 judicial_district,
@@ -123,7 +123,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
                 current_balance AS supervision_fee_assessed,
                 CASE WHEN current_balance > 0 THEN 1 ELSE 0 END AS supervision_fee_arrearaged,
                 current_balance AS supervision_fee_arrearaged_amount,
-                TO_JSON_STRING(current_exemption_type) AS supervision_fee_exemption_type,
+                current_exemption_type AS supervision_fee_exemption_type,
                 null AS supervision_fee_exemption_expir_date,
                 exemption_notes AS supervision_fee_waived,
                 SPE_note_due AS next_special_conditions_check,
