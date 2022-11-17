@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: LBAKRDTA_TAK234
 file_description: |-
-  Violations data information part 2. Column prefix: IR.
+  Violations data information (CDV) - Parties Involved. Column prefix: IR.
 data_classification: source
 primary_key_cols:
   - IR_DOC
