@@ -22,7 +22,7 @@ This can be run on-demand locally with the following command:
 """
 import csv
 import logging
-from typing import Dict, List, Set, TypedDict
+from typing import Dict, List, Set
 
 import attr
 import msal  # type: ignore
@@ -50,15 +50,35 @@ ROSTER_FIELD_NAMES = [
 
 DISTRICT_NAME_MAP: Dict[str, str] = {
     "DIST1": "DISTRICT OFFICE 1, COEUR D'ALENE",
+    "DIST 1": "DISTRICT OFFICE 1, COEUR D'ALENE",
+    "DIST_1": "DISTRICT OFFICE 1, COEUR D'ALENE",
     "DIST2": "DISTRICT OFFICE 2, LEWISTON",
+    "DIST 2": "DISTRICT OFFICE 2, LEWISTON",
+    "DIST_2": "DISTRICT OFFICE 2, LEWISTON",
     "DIST3": "DISTRICT OFFICE 3, CALDWELL",
+    "DIST 3": "DISTRICT OFFICE 3, CALDWELL",
+    "DIST_3": "DISTRICT OFFICE 3, CALDWELL",
     "DIST4": "DISTRICT OFFICE 4, BOISE",
+    "DIST 4": "DISTRICT OFFICE 4, BOISE",
+    "DIST_4": "DISTRICT OFFICE 4, BOISE",
     "DIST4W": "DISTRICT OFFICE 4, BOISE",
+    "DIST 4W": "DISTRICT OFFICE 4, BOISE",
+    "DIST_4W": "DISTRICT OFFICE 4, BOISE",
     "DIST4E": "DISTRICT OFFICE 4, BOISE",
+    "DIST 4E": "DISTRICT OFFICE 4, BOISE",
+    "DIST_4E": "DISTRICT OFFICE 4, BOISE",
     "DIST4R": "DISTRICT OFFICE 4, BOISE",
+    "DIST 4R": "DISTRICT OFFICE 4, BOISE",
+    "DIST_4R": "DISTRICT OFFICE 4, BOISE",
     "DIST5": "DISTRICT OFFICE 5, TWIN FALLS",
+    "DIST 5": "DISTRICT OFFICE 5, TWIN FALLS",
+    "DIST_5": "DISTRICT OFFICE 5, TWIN FALLS",
     "DIST6": "DISTRICT OFFICE 6, POCATELLO",
+    "DIST 6": "DISTRICT OFFICE 6, POCATELLO",
+    "DIST_6": "DISTRICT OFFICE 6, POCATELLO",
     "DIST7": "DISTRICT OFFICE 7, IDAHO FALLS",
+    "DIST 7": "DISTRICT OFFICE 7, IDAHO FALLS",
+    "DIST_7": "DISTRICT OFFICE 7, IDAHO FALLS",
 }
 
 ALLOWED_JOB_TITLE_KEYWORDS: Set[str] = {
@@ -134,6 +154,10 @@ def is_eligible_employee(entry: Dict[str, str]) -> bool:
 
 
 def parse_entry(entry: Dict[str, str]) -> Dict[str, str]:
+    if "/" in entry["officeLocation"]:
+        entry["officeLocation"] = entry["officeLocation"][
+            : entry["officeLocation"].find("/")
+        ]
     district_name = DISTRICT_NAME_MAP.get(
         entry["officeLocation"].upper(), entry["officeLocation"]
     )
@@ -178,6 +202,7 @@ def get_access_token(config: AzureConfig) -> str:
 
 
 def scrape_azure_active_directory() -> None:
+    """Call the AD endpoint and iterate through all linked results."""
     config = get_config()
 
     access_token = get_access_token(config)
@@ -187,7 +212,7 @@ def scrape_azure_active_directory() -> None:
     total_entries = 0
     filename = f"id_roster_{today_in_iso()}.csv"
 
-    with open(filename, "w", newline="") as roster_file:
+    with open(filename, "w", newline="", encoding="utf-8") as roster_file:
         writer = csv.DictWriter(roster_file, ROSTER_FIELD_NAMES)
 
         writer.writeheader()
@@ -198,6 +223,7 @@ def scrape_azure_active_directory() -> None:
             graph_data = requests.get(  # Use token to call downstream service
                 next_link,
                 headers={"Authorization": "Bearer " + access_token},
+                timeout=15,
             ).json()
             entries = graph_data["value"]
             next_link = graph_data.get("@odata.nextLink")
