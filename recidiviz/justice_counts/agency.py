@@ -17,7 +17,7 @@
 """Interface for working with the Agency model."""
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Set
 
 from sqlalchemy.orm import Session
 
@@ -93,3 +93,20 @@ class AgencyInterface:
     @staticmethod
     def get_agencies(session: Session) -> List[schema.Agency]:
         return session.query(schema.Agency).all()
+
+    @staticmethod
+    def update_agency_systems(
+        session: Session, agency_id: int, systems: Set[schema.System]
+    ) -> None:
+        agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
+
+        if (
+            schema.System.supervision_subsystems().intersection(set(systems))
+            and schema.System.SUPERVISION not in systems
+        ):
+            # If the list of systems includes a Supervision subsystem,
+            # make sure the agency also belongs to the Supervision system too
+            systems.add(schema.System.SUPERVISION)
+
+        agency.systems = [s.value for s in systems]
+        session.add(agency)

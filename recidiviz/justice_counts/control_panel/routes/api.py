@@ -72,6 +72,31 @@ def get_api_blueprint(
 
         return jsonify({"csrf": generate_csrf(secret_key)})
 
+    ### Agencies ###
+
+    @api_blueprint.route("/agencies/<agency_id>", methods=["PATCH"])
+    @auth_decorator
+    @raise_if_user_is_unauthorized
+    def update_agency(agency_id: int) -> Response:
+        """
+        This endpoint updates an Agency record.
+        Currently, the only supported update is changing the
+        set of systems associated with the agency.
+        """
+        try:
+            request_json = assert_type(request.json, dict)
+            systems = request_json.get("systems")
+            if systems is not None:
+                AgencyInterface.update_agency_systems(
+                    session=current_session,
+                    agency_id=agency_id,
+                    systems={schema.System[s] for s in systems},
+                )
+            current_session.commit()
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     ### Users ###
 
     @api_blueprint.route("/users", methods=["PATCH"])
