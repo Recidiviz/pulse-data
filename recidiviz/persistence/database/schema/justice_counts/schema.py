@@ -196,6 +196,7 @@ class System(enum.Enum):
         return {
             cls.PAROLE,
             cls.PROBATION,
+            cls.POST_RELEASE,
             cls.DUAL_SUPERVISION,
             cls.PRETRIAL_SUPERVISION,
             cls.OTHER_SUPERVISION,

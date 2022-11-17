@@ -17,7 +17,7 @@
 """Utilities for working with the Datapoint model."""
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
@@ -26,7 +26,7 @@ from recidiviz.justice_counts.dimensions.dimension_registry import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
-def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
+def get_dimension(datapoint: schema.Datapoint) -> Tuple[Optional[DimensionBase], bool]:
     """Each datapoint in the DB has a JSON `dimension_identifier_to_member`
     dictionary that looks like `{"metric/prisons/staff/type": "SECURITY"}`.
     This dictionary tells us that the datapoint is filtered on the dimension
@@ -34,9 +34,16 @@ def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
     and that the value of that filter is PrisonsStaffType.SECURITY. This
     method parses the JSON blob to ultimately return this enum member --
     -- e.g. in this case the return value is PrisonsStaffType.SECURITY.
+
+    This method turns a tuple of (Optional[enum member], success). If
+    `dimension_identifier_to_member` is None, then the datapoint is an
+    aggregate value, in which case we return (None, True). If
+    `dimension_identifier_to_member` references a deprecated dimension
+    identifier or enum member, we fail to parse, and we return (None, False).
+    Else, we return (enum member, True).
     """
     if datapoint.dimension_identifier_to_member is None:
-        return None
+        return None, True
     if len(datapoint.dimension_identifier_to_member) != 1:
         raise ValueError(
             f"datapoint with id: {datapoint.id} has more than one disaggregation, which is currently not supported"
@@ -53,6 +60,7 @@ def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
         ]  # example: dimension_class = GenderRestricted
     except KeyError:
         logging.warning("Dimension identifier %s not found.", dimension_id)
+        return None, False
 
     dimension_enum_member = None
     if dimension_class is not None:
@@ -65,4 +73,15 @@ def get_dimension(datapoint: schema.Datapoint) -> Optional[DimensionBase]:
                 dimension_member,
                 dimension_class,
             )
-    return dimension_enum_member
+            return None, False
+
+    return dimension_enum_member, True
+
+
+def is_datapoint_deprecated(datapoint: schema.Datapoint) -> bool:
+    """Return True if `dimension_identifier_to_member` references a deprecated dimension
+    identifier or enum member. These datapoints will be filtered out after fetching
+    from the database.
+    """
+    _, success = get_dimension(datapoint)
+    return not success
