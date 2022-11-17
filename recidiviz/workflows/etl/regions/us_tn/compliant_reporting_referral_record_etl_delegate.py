@@ -45,12 +45,6 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
         for key, value in data.items():
             if key == "compliant_reporting_eligible":
                 new_document["eligibilityCategory"] = value
-            elif key in [
-                "current_offenses",
-                "supervision_fee_exemption_type",
-                "restitution_monthly_payment_to",
-            ]:
-                new_document[key] = json.loads(value)
             elif key == "physical_address":
                 # Addresses arrive in the form: "123 Fake st., Metropolis, Tn 59545
                 # This fixes the misformatted state code
