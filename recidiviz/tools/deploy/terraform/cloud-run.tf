@@ -373,7 +373,9 @@ module "unified-product-load-balancer" {
           group = google_compute_region_network_endpoint_group.serverless_neg.id
         }
       ]
-      enable_cdn      = true
+      enable_cdn = true
+      # TODO(https://github.com/Recidiviz/zenhub-tasks/issues/646) -> use this line once the WAF is deployed to route staging traffic through the WAF
+      #security_policy = local.is_production? null : google_compute_security_policy.recidiviz-waf-policy.id
       security_policy = null
       custom_request_headers = [
         "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
