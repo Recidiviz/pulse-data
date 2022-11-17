@@ -34,6 +34,7 @@ from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
@@ -1957,3 +1958,30 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             f"/feed/{agency_id}", query_string={"metric": "arrests"}
         )
         self.assertEqual(feed_response_with_metric.status_code, 200)
+
+    def test_update_agency_systems(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_C
+        self.session.add_all([user, agency])
+        self.session.commit()
+        self.session.refresh(agency)
+        agency_id = agency.id
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id, agency_ids=[agency_id]
+            )
+            response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={"systems": [schema.System.PAROLE.value]},
+            )
+
+        self.assertEqual(response.status_code, 200)
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertEqual(
+            set(agency.systems),
+            {schema.System.PAROLE.value, schema.System.SUPERVISION.value},
+        )
