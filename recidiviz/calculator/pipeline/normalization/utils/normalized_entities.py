@@ -380,7 +380,7 @@ class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
     # Uniform Crime Classification Standard code. First digit is the broad code (violent,
     # property, etc.), first three digits are a unique uccs_category, and all four digits
     # are a unique uccs_description
-    uccs_code_uniform: Optional[int] = attr.ib(default=None)
+    uccs_code_uniform: Optional[str] = attr.ib(default=None)
 
     # Uniform Crime Classification Standard description associated with a uccs_code
     uccs_description_uniform: Optional[str] = attr.ib(default=None)
