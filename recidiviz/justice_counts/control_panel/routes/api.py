@@ -547,7 +547,7 @@ def get_api_blueprint(
                     key=lambda d: d.metric_definition_key,
                 )
             }
-            metric_definitions = MetricInterface.get_metric_definitions(
+            metric_definitions = MetricInterface.get_metric_definitions_for_systems(
                 systems={
                     schema.System[system]
                     for system in agency.systems or []
@@ -705,7 +705,7 @@ def get_api_blueprint(
             session=current_session, agency_id=int(agency_id)
         )
 
-        metric_definitions = MetricInterface.get_metric_definitions(
+        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
             systems={schema.System[system] for system in agency.systems or []}
         )
         dimension_names_by_metric_and_disaggregation = {}

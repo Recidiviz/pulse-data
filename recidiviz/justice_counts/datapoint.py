@@ -405,7 +405,7 @@ class DatapointInterface:
             session=session, agency_id=agency.id
         )
 
-        metric_definitions = MetricInterface.get_metric_definitions(
+        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
             systems={schema.System[system] for system in agency.systems or []}
         )
 

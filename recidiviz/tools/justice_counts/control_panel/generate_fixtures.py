@@ -23,14 +23,17 @@ import itertools
 import random
 from typing import Any, Iterable, List, cast
 
+from sqlalchemy.orm import Session
+
 from recidiviz.common.constants.justice_counts import ValueType
+from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     MetricDefinition,
 )
-from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -49,7 +52,7 @@ def _create_aggregate_datapoint(
     report: schema.Report, metric_definition: MetricDefinition
 ) -> schema.Datapoint:
     return schema.Datapoint(
-        value=random.randint(10000, 100000),
+        value=str(random.randint(10000, 100000)),
         metric_definition_key=metric_definition.key,
         value_type=ValueType.NUMBER,
         start_date=report.date_range_start,
@@ -107,11 +110,19 @@ def _create_context_datapoint(
 
 
 def _get_datapoints_for_report(
-    report: schema.Report, system: schema.System
+    report: schema.Report, system: schema.System, session: Session
 ) -> List[schema.Datapoint]:
-    metric_definitions = MetricInterface.get_metric_definitions(
-        report_type=report.type,
+    agency_datapoints = DatapointInterface.get_agency_datapoints(
+        session=session, agency_id=report.source_id
+    )
+    metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
+        datapoints=report.datapoints + agency_datapoints
+    )
+    metric_definitions = DatapointsForMetric.get_metric_definitions_for_report(
+        report_frequency=report.type,
         systems={system},
+        starting_month=report.date_range_start.month,
+        metric_key_to_datapoints=metric_key_to_datapoints,
     )
     return list(
         itertools.chain(
@@ -149,7 +160,7 @@ def _get_datapoints_for_report(
     )
 
 
-def generate_fixtures() -> List[schema.JusticeCountsBase]:
+def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
     """Generate fake data for testing. This data can be loaded into a development
     Postgres database via the `load_fixtures` script, or loaded into a unit test
     that extends from JusticeCountsDatabaseTestCase via self.load_fixtures().
@@ -228,8 +239,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
             annual_report_datapoints = []
             for system in agency_systems:
                 annual_report_datapoints += _get_datapoints_for_report(
-                    report=annual_report,
-                    system=system,
+                    report=annual_report, system=system, session=session
                 )
             annual_report.datapoints = annual_report_datapoints
             reports.append(annual_report)
@@ -246,8 +256,7 @@ def generate_fixtures() -> List[schema.JusticeCountsBase]:
                 monthly_report_datapoints = []
                 for system in agency_systems:
                     monthly_report_datapoints += _get_datapoints_for_report(
-                        report=monthly_report,
-                        system=system,
+                        report=monthly_report, system=system, session=session
                     )
                 monthly_report.datapoints = monthly_report_datapoints
                 reports.append(monthly_report)

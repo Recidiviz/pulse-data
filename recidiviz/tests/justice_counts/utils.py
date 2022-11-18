@@ -293,6 +293,15 @@ class JusticeCountsSchemaTestObjects:
             ],
         )
 
+        self.calls_for_service_custom_reporting_frequency = schema.Datapoint(
+            metric_definition_key=law_enforcement.calls_for_service.key,
+            source=self.test_agency_A,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=CustomReportingFrequency(
+                frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+            ).to_json_str(),
+        )
+
     # Spreadsheets
     @staticmethod
     def get_test_spreadsheet(
@@ -321,15 +330,21 @@ class JusticeCountsSchemaTestObjects:
 
     @staticmethod
     def get_report_for_agency(
-        agency: schema.Agency, frequency: str = "MONTHLY"
+        agency: schema.Agency,
+        frequency: Optional[str] = "MONTHLY",
+        starting_month_str: Optional[str] = "01",
     ) -> schema.Report:
         return schema.Report(
             source=agency,
             type=frequency,
-            instance="generated_instance_id",
+            instance=f"generated_instance_id_{starting_month_str}",
             status=schema.ReportStatus.NOT_STARTED,
-            date_range_start=datetime.date.fromisoformat("2022-06-01"),
-            date_range_end=datetime.date.fromisoformat("2022-07-01"),
+            date_range_start=datetime.date.fromisoformat("2022-06-01")
+            if frequency == "MONTHLY"
+            else datetime.date.fromisoformat(f"2022-{starting_month_str}-01"),
+            date_range_end=datetime.date.fromisoformat("2022-07-01")
+            if frequency == "MONTHLY"
+            else datetime.date.fromisoformat(f"2023-{starting_month_str}-01"),
             project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             created_at=datetime.date.fromisoformat("2022-05-30"),
@@ -780,6 +795,38 @@ class JusticeCountsSchemaTestObjects:
             ]
             if include_disaggregations is True
             else [],
+        )
+
+    @staticmethod
+    def get_reported_crime_metric() -> MetricInterface:
+        return MetricInterface(
+            key=law_enforcement.reported_crime.key,
+            is_metric_enabled=True,
+            value=230,
+            contexts=[
+                MetricContextData(
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value="this is a test for additional context",
+                ),
+            ],
+            aggregated_dimensions=[
+                MetricAggregatedDimensionData(
+                    dimension_to_value={
+                        OffenseType.DRUG: None,
+                        OffenseType.PERSON: None,
+                        OffenseType.PROPERTY: None,
+                        OffenseType.UNKNOWN: None,
+                        OffenseType.OTHER: None,
+                    },
+                    dimension_to_enabled_status={
+                        OffenseType.DRUG: True,
+                        OffenseType.PERSON: True,
+                        OffenseType.PROPERTY: True,
+                        OffenseType.UNKNOWN: True,
+                        OffenseType.OTHER: True,
+                    },
+                )
+            ],
         )
 
     @staticmethod

@@ -76,7 +76,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.LAW_ENFORCEMENT}
                 ),
             )
@@ -180,7 +180,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.LAW_ENFORCEMENT}
                 ),
             )
@@ -231,7 +231,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.LAW_ENFORCEMENT}
                 ),
             )
@@ -276,7 +276,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.PROSECUTION}
                 ),
             )
@@ -338,7 +338,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.LAW_ENFORCEMENT}
                 ),
             )
@@ -383,7 +383,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions(
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
                     systems={schema.System.LAW_ENFORCEMENT}
                 ),
             )

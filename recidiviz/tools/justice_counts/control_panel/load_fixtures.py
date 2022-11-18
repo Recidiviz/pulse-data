@@ -69,7 +69,7 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
     # in order, via session.add_all() + session.commit(). Objects that
     # depend on another object already being present in the db should
     # be added in a subsequent object group.
-    object_groups = generate_fixtures()
+    object_groups = generate_fixtures(session=session)
     for object_group in object_groups:
         logger.info(
             "Adding a group of %d objects to the db",

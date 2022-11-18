@@ -236,14 +236,6 @@ class ReportInterface:
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
-        # We determine which metrics to include on this report based on:
-        #   - Agency system (e.g. only law enforcement)
-        #   - Report frequency (e.g. only annual metrics)
-        metric_definitions = MetricInterface.get_metric_definitions(
-            report_type=report.type,
-            systems={schema.System[system] for system in report.source.systems or []},
-        )
-
         agency_datapoints = DatapointInterface.get_agency_datapoints(
             session=session, agency_id=report.source.id
         )
@@ -252,8 +244,18 @@ class ReportInterface:
         # then `report.datapoints` will be non-empty. We also send build the
         # DatapointsForMetric class with agency datapoints to see
         # what metrics are enabled and disabled.
-        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
+        metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
             datapoints=report.datapoints + agency_datapoints
+        )
+
+        # We determine which metrics to include on this report based on:
+        #   - Agency system (e.g. only law enforcement)
+        #   - Report frequency (e.g. only annual metrics)
+        metric_definitions = DatapointsForMetric.get_metric_definitions_for_report(
+            report_frequency=report.type,
+            systems={schema.System[system] for system in report.source.systems or []},
+            starting_month=report.date_range_start.month,
+            metric_key_to_datapoints=metric_key_to_datapoints,
         )
 
         report_metrics = []
@@ -261,7 +263,7 @@ class ReportInterface:
         # construct a MetricInterface object
 
         for metric_definition in metric_definitions:
-            reported_datapoints = metric_key_to_data_points.get(
+            reported_datapoints = metric_key_to_datapoints.get(
                 metric_definition.key,
                 DatapointsForMetric(),
             )
