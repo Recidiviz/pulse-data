@@ -52,7 +52,10 @@ from recidiviz.tools.migrations.migration_helpers import (
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -129,9 +132,7 @@ def main(
     This checks for user validations that the database and branches are correct and then runs existing pending
     migrations.
     """
-    is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
-
-    if is_prod:
+    if metadata.running_against(GCP_PROJECT_PRODUCTION):
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
     if not skip_db_name_check:

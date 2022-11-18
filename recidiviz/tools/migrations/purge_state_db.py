@@ -46,7 +46,10 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -95,7 +98,7 @@ def main(
     This checks for user validations that the database and branches are correct and then
     sshs into `prod-data-client` to run the downgrade migration.
     """
-    is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
+    is_prod = metadata.running_against(GCP_PROJECT_PRODUCTION)
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 

@@ -204,3 +204,16 @@ class CloudRunMetadata:
                 "serviceAccountName"
             ],
         )
+
+
+def running_against(project: str, *, log_hint: Optional[bool] = True) -> bool:
+    try:
+        return project_id() == project
+    except RuntimeError as e:
+        if log_hint:
+            logging.warning(
+                "An error occurred when checking which environment we are running against: %s",
+                e,
+            )
+
+        return False

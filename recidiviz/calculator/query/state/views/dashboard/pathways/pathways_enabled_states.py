@@ -22,7 +22,8 @@ import yaml
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import in_gcp_production
+from recidiviz.utils import metadata
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, in_gcp_production
 
 yaml_path = os.path.join(
     os.path.dirname(recidiviz.__file__),
@@ -49,7 +50,15 @@ def get_pathways_enabled_states() -> List[str]:
         if StateCode.is_state_code(state_code)
     ]
 
-    if not in_gcp_production():
+    # TODO(#15073): This checks both the RECIDIVIZ_ENV environment variable
+    # and the project id because the environment variable won't be set in
+    # local scripts, like when we are running migrations. We should consider
+    # getting rid of the environment variable entirely and just always
+    # using project id throughout the codebase.
+    # Hints are not logged as this is called at import-time
+    if not in_gcp_production() and not metadata.running_against(
+        GCP_PROJECT_PRODUCTION, log_hint=False
+    ):
         # Add demo state for demo and offline modes
         _pathways_enabled_states += [PATHWAYS_OFFLINE_DEMO_STATE.value]
 
