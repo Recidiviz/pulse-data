@@ -78,7 +78,7 @@ class DirectIngestRegion:
                 # getting rid of the environment variable entirely and just always
                 # using project id throughout the codebase.
                 environment.in_gcp_production()
-                or metadata.project_id() == GCP_PROJECT_PRODUCTION
+                or metadata.running_against(GCP_PROJECT_PRODUCTION)
             )
             or not self.playground
         )

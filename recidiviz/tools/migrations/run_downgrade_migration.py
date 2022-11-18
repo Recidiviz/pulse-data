@@ -41,7 +41,10 @@ from recidiviz.tools.migrations.migration_helpers import (
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -91,8 +94,7 @@ def main(schema_type: SchemaType, repo_root: str, target_revision: str) -> None:
     confirm_correct_git_branch(repo_root)
 
     with cloudsql_proxy_control.connection(schema_type=schema_type):
-        is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
-        if is_prod:
+        if metadata.running_against(GCP_PROJECT_PRODUCTION):
             logging.info("RUNNING AGAINST PRODUCTION\n")
 
         for database_key, _ in EngineIteratorDelegate.iterate_and_connect_to_engines(
