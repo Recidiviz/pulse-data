@@ -22,7 +22,6 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     tn_supervision_level_downgrade_eligibility AS (
         SELECT 
             external_id AS person_external_id,
-            TRUE AS supervision_level_downgrade_eligible,
             ["supervisionLevelDowngrade"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_tn_supervision_level_downgrade_record_materialized`
     ),
@@ -52,12 +51,6 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             special_conditions_on_current_sentences AS special_conditions,
             board_conditions,
             district,
-            compliant_reporting_eligible,
-            FALSE AS early_termination_eligible,
-            FALSE AS earned_discharge_eligible,
-            FALSE AS limited_supervision_eligible,
-            FALSE AS past_FTRD_eligible,
-            IFNULL(supervision_level_downgrade_eligible, FALSE) AS supervision_level_downgrade_eligible,
             {array_concat_with_null(["tn_supervision_level_downgrade_eligibility.eligible_opportunities",
                                      "tn_compliant_reporting_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
         FROM tn_compliant_reporting_eligibility

@@ -98,28 +98,6 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         if "district" in data:
             new_document["district"] = data["district"]
 
-        if "compliant_reporting_eligible" in data:
-            new_document["compliantReportingEligible"] = True
-
-        if "early_termination_eligible" in data:
-            new_document["earlyTerminationEligible"] = data[
-                "early_termination_eligible"
-            ]
-
-        if "earned_discharge_eligible" in data:
-            new_document["earnedDischargeEligible"] = data["earned_discharge_eligible"]
-
-        if "limited_supervision_eligible" in data:
-            new_document["LSUEligible"] = data["limited_supervision_eligible"]
-
-        if "past_FTRD_eligible" in data:
-            new_document["pastFTRDEligible"] = data["past_FTRD_eligible"]
-
-        if "supervision_level_downgrade_eligible" in data:
-            new_document["supervisionLevelDowngradeEligible"] = data[
-                "supervision_level_downgrade_eligible"
-            ]
-
         if "all_eligible_opportunities" in data:
             new_document["allEligibleOpportunities"] = data[
                 "all_eligible_opportunities"
