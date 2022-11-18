@@ -22,17 +22,15 @@ import datetime
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.dimensions.dimension_registry import (
-    DIMENSION_IDENTIFIER_TO_DIMENSION,
-)
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.metric_interface import (
-    MetricAggregatedDimensionData,
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import (
@@ -778,13 +776,17 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
             session.add_all(
                 [
-                    self.test_schema_objects.test_report_monthly,
+                    agency,
                     self.test_schema_objects.test_user_A,
+                    self.test_schema_objects.test_report_monthly,
+                    self.test_schema_objects.calls_for_service_custom_reporting_frequency,
                 ]
             )
             session.flush()
+            session.refresh(agency)
             metrics = sorted(
                 ReportInterface.get_metrics_by_report(
                     report=self.test_schema_objects.test_report_monthly,
@@ -792,9 +794,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
+            # Only the arrests and reported_crime metrics will be included b/c
+            # the reporting frequency for the calls_for_service was changed to
+            # ANNUAL
+            self.assertEqual(len(metrics), 2)
+
             total_arrests = metrics[0]
 
             # Arrests metric should be blank
+            self.assertEqual(total_arrests.key, law_enforcement.total_arrests.key)
             self.assertEqual(total_arrests.value, None)
             self.assertEqual(
                 assert_type(total_arrests.aggregated_dimensions, list)[
@@ -803,16 +811,74 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 {d: None for d in OffenseType},
             )
 
+            reported_crime = metrics[1]
+
+            # Reported crime metric should be blank
+            self.assertEqual(reported_crime.key, law_enforcement.reported_crime.key)
+            self.assertEqual(reported_crime.value, None)
+            self.assertEqual(
+                assert_type(reported_crime.aggregated_dimensions, list)[
+                    0
+                ].dimension_to_value,
+                {d: None for d in OffenseType},
+            )
+
+        annual_report_jan = self.test_schema_objects.get_report_for_agency(
+            agency=agency,
+            frequency="ANNUAL",
+        )
+        annual_report_feb = self.test_schema_objects.get_report_for_agency(
+            agency=agency, frequency="ANNUAL", starting_month_str="02"
+        )
+        session.add_all([annual_report_jan, annual_report_feb])
+        session.flush()
+        session.refresh(annual_report_jan)
+        session.refresh(annual_report_feb)
+
+        metrics = sorted(
+            ReportInterface.get_metrics_by_report(
+                report=annual_report_jan,
+                session=session,
+            ),
+            key=lambda x: x.key,
+        )
+        # There should only be three metrics because the annual report is from
+        # Jan - Dec and the calls_for_service metric has been changed to only be
+        # reported annually starting in February
+        self.assertEqual(len(metrics), 4)
+
+        self.assertEqual(metrics[0].key, law_enforcement.annual_budget.key)
+        self.assertEqual(
+            metrics[1].key, law_enforcement.civilian_complaints_sustained.key
+        )
+        self.assertEqual(metrics[2].key, law_enforcement.police_officers.key)
+        self.assertEqual(
+            metrics[3].key, law_enforcement.officer_use_of_force_incidents.key
+        )
+
+        metrics = sorted(
+            ReportInterface.get_metrics_by_report(
+                report=annual_report_feb,
+                session=session,
+            ),
+            key=lambda x: x.key,
+        )
+        # There should only be one metric for the February report, calls_for_service
+        self.assertEqual(len(metrics), 1)
+        self.assertEqual(metrics[0].key, law_enforcement.calls_for_service.key)
+
     def test_get_metrics_for_nonempty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
             session.add_all(
                 [
                     self.test_schema_objects.test_report_monthly,
                     self.test_schema_objects.test_user_A,
-                    self.test_schema_objects.test_agency_A,
+                    agency,
                 ]
             )
             session.flush()
+            session.refresh(agency)
             report_id = self.test_schema_objects.test_report_monthly.id
 
             report = ReportInterface.get_report_by_id(
@@ -842,29 +908,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
 
             self.assertIsNotNone(calls_for_service)
             self.assertIsNotNone(arrests)
-
-            # Population metric should be blank
             self.assertEqual(arrests.value, None)
-            expected_arrest_dimensions = [
-                MetricAggregatedDimensionData(
-                    dimension_to_value={
-                        d: None
-                        for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                            a.dimension.dimension_identifier()
-                        ]  # type: ignore[attr-defined]
-                    },
-                    dimension_to_enabled_status={
-                        d: True
-                        for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
-                            a.dimension.dimension_identifier()
-                        ]  # type: ignore[attr-defined]
-                    },
-                    dimension_to_includes_excludes_member_to_setting={},
-                )
-                for a in law_enforcement.total_arrests.aggregated_dimensions or []
-            ]
 
-            self.assertEqual(arrests.aggregated_dimensions, expected_arrest_dimensions)
             # Calls for service metric should be populated
             self.assertEqual(
                 calls_for_service.value,
@@ -874,6 +919,62 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 calls_for_service.aggregated_dimensions,
                 self.test_schema_objects.reported_calls_for_service_metric.aggregated_dimensions,
             )
+
+            # Add custom reporting frequency
+            session.add(
+                schema.Datapoint(
+                    metric_definition_key=law_enforcement.calls_for_service.key,
+                    source=agency,
+                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                    value=CustomReportingFrequency(
+                        frequency=schema.ReportingFrequency.ANNUAL
+                    ).to_json_str(),
+                ),
+            )
+
+            # Calls for service reporting frequency should still appear in the
+            # report because the report was created and edited before the change.
+            metrics = ReportInterface.get_metrics_by_report(
+                report=report, session=session
+            )
+            self.assertEqual(len(metrics), 3)
+            calls_for_service = [
+                metric
+                for metric in metrics
+                if metric.key == law_enforcement.calls_for_service.key
+            ].pop()
+
+            self.assertIsNotNone(calls_for_service)
+            self.assertEqual(
+                calls_for_service.value,
+                self.test_schema_objects.reported_calls_for_service_metric.value,
+            )
+
+            # Add a custom reporting frequency so that now civilian complaints sustained is
+            # reported monthly.
+            session.add(
+                schema.Datapoint(
+                    metric_definition_key=law_enforcement.civilian_complaints_sustained.key,
+                    source=agency,
+                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                    value=CustomReportingFrequency(
+                        frequency=schema.ReportingFrequency.MONTHLY
+                    ).to_json_str(),
+                ),
+            )
+
+            # Civilians complaints should still appear in the report
+            metrics = ReportInterface.get_metrics_by_report(
+                report=report, session=session
+            )
+            self.assertEqual(len(metrics), 4)
+            civilian_complaints_sustained = [
+                metric
+                for metric in metrics
+                if metric.key == law_enforcement.civilian_complaints_sustained.key
+            ].pop()
+
+            self.assertIsNotNone(civilian_complaints_sustained)
 
     def test_datapoint_histories(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

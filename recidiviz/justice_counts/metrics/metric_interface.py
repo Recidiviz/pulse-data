@@ -268,9 +268,8 @@ class MetricInterface:
     ### Helpers ###
 
     @staticmethod
-    def get_metric_definitions(
+    def get_metric_definitions_for_systems(
         systems: Set[schema.System],
-        report_type: Optional[schema.ReportingFrequency] = None,
     ) -> List[MetricDefinition]:
         """Given a list of systems and report frequency, return all
         MetricDefinitions that belong to one of the systems and have
@@ -310,15 +309,9 @@ class MetricInterface:
                 )
             ]
 
-        metric_definitions = []
-        for metric in metrics:
-            if report_type is not None and report_type not in {
-                freq.value for freq in metric.reporting_frequencies
-            }:
-                continue
-            if metric.disabled:
-                continue
-            metric_definitions.append(metric)
+        metric_definitions = [
+            metric for metric in metrics if metric.disabled is not True
+        ]
 
         if len(metric_definitions) == 0:
             raise JusticeCountsServerError(
