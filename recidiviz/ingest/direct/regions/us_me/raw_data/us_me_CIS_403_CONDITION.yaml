@@ -13,6 +13,12 @@ columns:
   - name: Cis_408_Condition_Hdr_Id
     description: The foreign key that associates this table and CIS_408_CONDITION_HDR and CIS_409_CRT_ORDER_CNDTION_HDR. This allows us to join the Client Id.
   - name: Completed_Ind
+    description: Has the process been completed?
+    known_values:
+      - value: 1
+        description: Yes (Y)
+      - value: 2
+        description: No (N)
   - name: Condition_Id
     description: The primary key for this table.
   - name: Created_By_Tx
