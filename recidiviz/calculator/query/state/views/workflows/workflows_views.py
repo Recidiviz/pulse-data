@@ -24,6 +24,12 @@ from recidiviz.calculator.query.state.views.workflows.client_record_archive impo
 from recidiviz.calculator.query.state.views.workflows.clients_latest_referral_status import (
     CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_latest_referral_status_extended import (
+    CLIENTS_LATEST_REFERRAL_STATUS_EXTENDED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_opportunity_previewed import (
+    CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_referral_completed import (
     CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
 )
@@ -45,6 +51,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 from recidiviz.calculator.query.state.views.workflows.person_id_to_external_id import (
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_users import (
+    REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
+)
 
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
@@ -52,8 +61,11 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,
+    CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
     CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER,
+    CLIENTS_LATEST_REFERRAL_STATUS_EXTENDED_VIEW_BUILDER,
     CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
     CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
+    REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
 ]

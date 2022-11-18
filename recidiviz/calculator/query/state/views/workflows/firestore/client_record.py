@@ -70,12 +70,14 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENT_RECORD_QUERY_TEMPLATE,
     description=CLIENT_RECORD_DESCRIPTION,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_nd_raw_data="us_nd_raw_data_up_to_date_views",
     us_id_raw_data="us_id_raw_data_up_to_date_views",
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
