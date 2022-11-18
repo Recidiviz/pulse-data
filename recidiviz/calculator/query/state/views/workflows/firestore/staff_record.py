@@ -84,6 +84,7 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

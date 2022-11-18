@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View of client form viewed events logged from UI
+"""View of client opportunity previewed events logged from UI
 
-python -m recidiviz.calculator.query.state.views.workflows.clients_referral_form_viewed
+python -m recidiviz.calculator.query.state.views.workflows.clients_opportunity_previewed
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -27,27 +27,27 @@ from recidiviz.calculator.query.state.views.workflows.user_event_template import
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-CLIENTS_REFERRAL_FORM_VIEWED_VIEW_NAME = "clients_referral_form_viewed"
+CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_NAME = "clients_opportunity_previewed"
 
-CLIENTS_REFERRAL_FORM_VIEWED_DESCRIPTION = """
-    View of client form viewed events logged from UI
+CLIENTS_OPPORTUNITY_PREVIEWED_DESCRIPTION = """
+    View of client opportunity previewed events logged from UI
     """
 
-CLIENTS_REFERRAL_FORM_VIEWED_QUERY_TEMPLATE = f"""
+CLIENTS_OPPORTUNITY_PREVIEWED_QUERY_TEMPLATE = f"""
     {user_event_template(
-        "frontend_referral_form_viewed", add_columns=["opportunity_type"]
+        "frontend_opportunity_previewed", add_columns=["opportunity_type"]
     )}
 """
 
-CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=CLIENTS_REFERRAL_FORM_VIEWED_VIEW_NAME,
-    view_query_template=CLIENTS_REFERRAL_FORM_VIEWED_QUERY_TEMPLATE,
-    description=CLIENTS_REFERRAL_FORM_VIEWED_DESCRIPTION,
+    view_id=CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_NAME,
+    view_query_template=CLIENTS_OPPORTUNITY_PREVIEWED_QUERY_TEMPLATE,
+    description=CLIENTS_OPPORTUNITY_PREVIEWED_DESCRIPTION,
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     segment_dataset=dataset_config.PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER.build_and_print()
+        CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER.build_and_print()

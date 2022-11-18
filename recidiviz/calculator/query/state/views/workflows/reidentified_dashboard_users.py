@@ -14,44 +14,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View of re-identified dashboard users"""
+"""View of re-identified dashboard users, linking segment users to the officer ids"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     REFERENCE_VIEWS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-    US_TN_RAW_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_REIDENTIFIED_USERS_VIEW_NAME = "us_tn_reidentified_users"
+REIDENTIFIED_DASHBOARD_USERS_VIEW_NAME = "reidentified_dashboard_users"
 
-US_TN_REIDENTIFIED_USERS_VIEW_DESCRIPTION = """View of re-identified dashboard users"""
+REIDENTIFIED_DASHBOARD_USERS_VIEW_DESCRIPTION = (
+    """View of re-identified dashboard users"""
+)
 
-US_TN_REIDENTIFIED_USERS_QUERY_TEMPLATE = """
-    SELECT
-        user_hash AS user_id,
-        StaffId as user_external_id,
-        state_code,
-    FROM `{project_id}.{reference_views_dataset}.dashboard_user_restrictions` users
-    LEFT JOIN `{project_id}.{static_reference_dataset}.us_tn_roster` tn_roster
-        ON LOWER(users.restricted_user_email) = LOWER(tn_roster.email_address)
-    LEFT JOIN `{project_id}.{us_tn_raw_dataset}.Staff_latest` staff
-        ON tn_roster.external_id = staff.UserID
-    WHERE state_code = "US_TN"  
+REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE = """
+SELECT
+    user_hash AS user_id,
+    rosters.id AS user_external_id,
+    users.state_code,
+FROM `{project_id}.{reference_views_dataset}.dashboard_user_restrictions` users
+INNER JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` rosters
+    ON users.state_code = rosters.state_code
+    AND LOWER(users.restricted_user_email) = LOWER(rosters.email)
 """
 
-US_TN_REIDENTIFIED_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=REFERENCE_VIEWS_DATASET,
-    view_id=US_TN_REIDENTIFIED_USERS_VIEW_NAME,
-    description=US_TN_REIDENTIFIED_USERS_VIEW_DESCRIPTION,
-    view_query_template=US_TN_REIDENTIFIED_USERS_QUERY_TEMPLATE,
+REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=WORKFLOWS_VIEWS_DATASET,
+    view_id=REIDENTIFIED_DASHBOARD_USERS_VIEW_NAME,
+    description=REIDENTIFIED_DASHBOARD_USERS_VIEW_DESCRIPTION,
+    view_query_template=REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    us_tn_raw_dataset=US_TN_RAW_DATASET,
+    workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_REIDENTIFIED_USERS_VIEW_BUILDER.build_and_print()
+        REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER.build_and_print()

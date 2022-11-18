@@ -30,6 +30,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           person_external_id,
           compartment_level_2 AS supervision_type,
           supervising_officer_external_id AS officer_id,
+          level_2_supervision_location_external_id AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
@@ -88,6 +89,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           CAST(ph.phone_number AS INT64) AS phone_number,
           supervision_type,
           sc.officer_id,
+          sc.district,
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
@@ -126,7 +128,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS DATE) AS last_payment_date,
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
-            CAST(NULL AS STRING) AS district,
+            district,
             {array_concat_with_null(["nd_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
         FROM join_nd_clients
         LEFT JOIN nd_eligibility USING(person_external_id)

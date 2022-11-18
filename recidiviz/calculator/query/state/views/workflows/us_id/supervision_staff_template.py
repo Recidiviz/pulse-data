@@ -22,7 +22,7 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             officer_id AS id,
             state_code,
-        FROM `{project_id}.{workflows_dataset}.client_record`
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
         WHERE state_code = "US_ID"
     )
     , caseload_staff AS (

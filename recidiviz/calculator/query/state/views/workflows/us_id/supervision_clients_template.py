@@ -34,6 +34,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           person_external_id,
           dataflow.supervision_type,
           supervising_officer_external_id AS officer_id,
+          level_2_supervision_location_name AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
@@ -47,6 +48,13 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             AND CURRENT_DATE("US/Eastern")
                 BETWEEN projected_end.start_date
                     AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
+        LEFT JOIN (
+            SELECT DISTINCT
+                level_2_supervision_location_external_id,
+                level_2_supervision_location_name
+            FROM `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names`
+            WHERE state_code = "US_ID"
+        ) USING (level_2_supervision_location_external_id)
         WHERE dataflow.state_code = 'US_ID' AND dataflow.included_in_state_population
           AND dataflow.end_date_exclusive IS NULL
           AND supervising_officer_external_id IS NOT NULL
@@ -94,6 +102,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
           CAST(ph.phonenumber AS INT64) AS phone_number,
           sc.supervision_type,
           sc.officer_id,
+          sc.district,
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
@@ -154,7 +163,7 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS DATE) AS last_payment_date,
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
-            CAST(NULL AS STRING) AS district,
+            district,
             {array_concat_with_null([
                 "id_earned_discharge_eligibility.eligible_opportunities",
                 "id_lsu_eligibility.eligible_opportunities",

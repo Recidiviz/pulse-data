@@ -45,9 +45,7 @@ def user_event_template(
         user_external_id,
         {','.join([f"events.{c}" for c in add_columns])},
     FROM (
-        SELECT 
-            -- dedupes events loaded more than once
-            ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) AS __row_number, 
+        SELECT
             -- default columns for all views
             client_id,
             timestamp,
@@ -58,10 +56,11 @@ def user_event_template(
         FROM `{{project_id}}.{{segment_dataset}}.{table_name}`
         -- events from prod deployment only
         WHERE context_page_url LIKE '%://dashboard.recidiviz.org/%'
+        -- dedupes events loaded more than once
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
     ) events
     -- inner join to filter out recidiviz users and others unidentified (if any)
-    INNER JOIN `{{project_id}}.{{reference_views_dataset}}.us_tn_reidentified_users` users 
+    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users`
         USING (user_id)
     LEFT JOIN clients USING (client_id)
-    WHERE __row_number = 1
     """

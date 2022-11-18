@@ -45,7 +45,6 @@ CLIENTS_SURFACED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENTS_SURFACED_QUERY_TEMPLATE,
     description=CLIENTS_SURFACED_DESCRIPTION,
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     segment_dataset=dataset_config.PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 

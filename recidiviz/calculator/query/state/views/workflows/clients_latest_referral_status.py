@@ -42,30 +42,25 @@ CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
         )}
     )
     SELECT
-        * EXCEPT (rn),
+        *
     FROM (
         SELECT
-            *,
-            ROW_NUMBER() OVER (
-                PARTITION BY person_id, opportunity_type
-                ORDER BY timestamp DESC
-            ) AS rn,
-        FROM (
-            SELECT
             person_id,
-                state_code,
-                person_external_id,
-                timestamp,
-                status,
-                -- this field was initially left out of the tracking calls by mistake;
-                -- if it's missing we can infer that it was supposed to be "compliantReporting"
-                -- because that was the only possible value at the time
-                IFNULL(opportunity_type, "compliantReporting") AS opportunity_type,
-            FROM status_updates
-        )
+            state_code,
+            person_external_id,
+            timestamp,
+            status,
+            -- this field was initially left out of the tracking calls by mistake;
+            -- if it's missing we can infer that it was supposed to be "compliantReporting"
+            -- because that was the only possible value at the time
+            IFNULL(opportunity_type, "compliantReporting") AS opportunity_type,
+        FROM status_updates
     )
     -- use most recent status update to eliminate completions that were later undone
-    WHERE rn = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY person_id, opportunity_type
+        ORDER BY timestamp DESC
+    ) = 1
 """
 
 CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -74,7 +69,6 @@ CLIENTS_LATEST_REFERRAL_STATUS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE,
     description=CLIENTS_LATEST_REFERRAL_STATUS_DESCRIPTION,
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     segment_dataset=dataset_config.PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 

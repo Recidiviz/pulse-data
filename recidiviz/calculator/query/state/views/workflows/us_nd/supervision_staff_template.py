@@ -24,7 +24,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             state_code,
             CAST(officers.status AS STRING) = "(1)" AS is_active,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-        FROM `{project_id}.{workflows_dataset}.client_record`
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
         LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest` officers
             ON officer_id = officers.OFFICER
         WHERE state_code = "US_ND"
