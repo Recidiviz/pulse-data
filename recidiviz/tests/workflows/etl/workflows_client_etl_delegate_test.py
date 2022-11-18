@@ -67,7 +67,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
             self.assertEqual(
                 {
                     "address": "123 Fake st., Faketown, TN 12345",
-                    "compliantReportingEligible": True,
+                    "allEligibleOpportunities": ["compliantReporting"],
                     "currentBalance": 45.1,
                     "expirationDate": "2022-02-28",
                     "lastPaymentAmount": 10.25,
@@ -165,7 +165,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     ],
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
-                    "supervisionLevelDowngradeEligible": True,
+                    "allEligibleOpportunities": ["supervisionLevelDowngrade"],
                 },
                 row,
             )
@@ -193,7 +193,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionStartDate": "2021-03-04",
-                    "earlyTerminationEligible": True,
+                    "allEligibleOpportunities": ["earlyTermination"],
                 },
                 row,
             )
@@ -221,9 +221,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionLevel": "MEDIUM",
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionStartDate": "2021-03-04",
-                    "earnedDischargeEligible": True,
-                    "LSUEligible": False,
-                    "pastFTRDEligible": False,
+                    "allEligibleOpportunities": ["earnedDischarge"],
                 },
                 row,
             )

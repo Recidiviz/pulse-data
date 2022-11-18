@@ -120,21 +120,18 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     id_lsu_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            TRUE AS limited_supervision_eligible,
             ["LSU"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_transfer_to_limited_supervision_form_record_materialized`
     ),
     id_earned_discharge_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            TRUE AS earned_discharge_eligible,
             ["earnedDischarge"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
     ),
     id_past_FTRD_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            TRUE AS past_FTRD_eligible,
             ["pastFTRD"] AS eligible_opportunities,
         FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_full_term_discharge_from_supervision_request_record_materialized`
     ),
@@ -158,12 +155,6 @@ US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             CAST(NULL AS STRING) AS district,
-            CAST(NULL AS STRING) AS compliant_reporting_eligible,
-            FALSE AS early_termination_eligible,
-            IFNULL(earned_discharge_eligible, FALSE) AS earned_discharge_eligible,
-            IFNULL(limited_supervision_eligible, FALSE) AS limited_supervision_eligible,
-            IFNULL(past_FTRD_eligible, FALSE) AS past_FTRD_eligible,
-            FALSE AS supervision_level_downgrade_eligible,
             {array_concat_with_null([
                 "id_earned_discharge_eligibility.eligible_opportunities",
                 "id_lsu_eligibility.eligible_opportunities",
