@@ -29,8 +29,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 METRIC_DATE_COLUMNS_BY_SINGLE_DAY_METRICS_TABLES_TO_MATERIALIZE: Dict[str, str] = {
-    "supervision_population_metrics": "date_of_supervision",
-    "incarceration_population_metrics": "date_of_stay",
     "program_participation_metrics": "date_of_participation",
 }
 
