@@ -22,10 +22,12 @@ Local Usage: docker exec pulse-data_control_panel_backend_1 pipenv run python -m
 Remote Usage: Execute the `justice-counts-recurring-reports` Cloud Run Job
 """
 
+import datetime
 import logging
 
 from sqlalchemy.engine import Engine
 
+from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -38,18 +40,66 @@ logger = logging.getLogger(__name__)
 
 
 def main(engine: Engine) -> None:
+    """For each agency, this function checks if a monthly report exists for the current
+    month and year. If the monthly report already exists, nothing is done. If the
+    monthly report does not exist, one is created.
+
+    Additionally, for each agency, this function checks if an annual report exists for
+    the current month and year. If the annual report already exists, nothing is done. If
+    the annual report does not exists AND it is January, an annual report is created."""
+
     session = Session(bind=engine)
+    current_dt = datetime.datetime.now(tz=datetime.timezone.utc)
+    current_month = current_dt.month
+    current_year = current_dt.year
 
     logger.info("Generating new Reports in database %s", engine.url)
     for agency in session.query(schema.Agency).all():
         logger.info("Generating Reports for Agency %s", agency.name)
-        # TODO(#15416) Implement the following:
-        # 1. Determine the current month
-        # 2. Determine if a monthly Report already exists for this agency and this month
-        # 3. If not, create one
-        # 4. If the month is January, determine the current year
-        # 5. Determine if an annual Report already exists for the agency and this year
-        # 6. If not, create one
+
+        monthly_report, yearly_report = ReportInterface.create_new_reports(
+            session=session,
+            agency_id=agency.id,
+            user_account_id=None,
+            current_month=current_month,
+            current_year=current_year,
+        )
+        if monthly_report:
+            logger.info(
+                "Generated Monthly Report for Agency %s, Month %s, Year %s",
+                agency.name,
+                current_month,
+                current_year,
+            )
+        else:
+            logger.info(
+                "Monthly Report for Agency %s, Month %s, Year %s already exists.",
+                agency.name,
+                current_month,
+                current_year,
+            )
+
+        if yearly_report:
+            logger.info(
+                "Generated Annual Report for Agency %s, Month %s, Year %s",
+                agency.name,
+                current_month,
+                current_year,
+            )
+        elif current_month == 1:
+            logger.info(
+                "Annual Report for Agency %s, Month %s, Year %s already exists.",
+                agency.name,
+                current_month,
+                current_year,
+            )
+        else:
+            logger.info(
+                "Annual Report for Agency %s, Month %s, Year %s not created (it is not January).",
+                agency.name,
+                current_month,
+                current_year,
+            )
 
 
 if __name__ == "__main__":

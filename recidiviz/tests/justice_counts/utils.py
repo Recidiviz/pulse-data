@@ -194,7 +194,7 @@ class JusticeCountsSchemaTestObjects:
         self.test_report_monthly = schema.Report(
             source=self.test_agency_A,
             type="MONTHLY",
-            instance="generated_instance_id",
+            instance="06 2022 Metrics",
             status=schema.ReportStatus.NOT_STARTED,
             date_range_start=datetime.date.fromisoformat("2022-06-01"),
             date_range_end=datetime.date.fromisoformat("2022-07-01"),
@@ -205,7 +205,7 @@ class JusticeCountsSchemaTestObjects:
         self.test_report_annual = schema.Report(
             source=self.test_agency_B,
             type="ANNUAL",
-            instance="generated_instance_id",
+            instance="2022 Annual Metrics",
             status=schema.ReportStatus.DRAFT,
             date_range_start=datetime.date.fromisoformat("2022-01-01"),
             date_range_end=datetime.date.fromisoformat("2023-01-01"),
@@ -214,6 +214,17 @@ class JusticeCountsSchemaTestObjects:
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             last_modified_at=datetime.datetime.fromisoformat("2022-07-05T08:00:00"),
             created_at=datetime.date.fromisoformat("2021-12-30"),
+        )
+        self.test_report_monthly_C = schema.Report(
+            source=self.test_agency_C,
+            type="MONTHLY",
+            instance="01 2022 Metrics",
+            status=schema.ReportStatus.NOT_STARTED,
+            date_range_start=datetime.date.fromisoformat("2022-01-01"),
+            date_range_end=datetime.date.fromisoformat("2022-02-01"),
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            created_at=datetime.date.fromisoformat("2021-12-31"),
         )
         self.test_report_supervision = self.get_report_for_agency(
             agency=self.test_agency_C
