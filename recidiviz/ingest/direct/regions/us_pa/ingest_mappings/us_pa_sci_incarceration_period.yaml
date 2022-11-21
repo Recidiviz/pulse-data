@@ -1,14 +1,12 @@
-key_mappings:
-  start_movement_date: state_incarceration_period.admission_date
-  end_movement_date: state_incarceration_period.release_date
-  location: state_incarceration_period.facility # TODO(#10054): Normalize facility name.
-
-# Primary key override for Incarceration Period id defined in controller in format of [inmate_number]-[sequence_number]
-
-ancestor_keys:
-  control_number: state_person.state_person_id
-
-keys_to_ignore:
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sci_incarceration_period` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - start_movement_date
+  - end_movement_date
+  - location
+  - control_number
   - sequence_number # Move sequence number - handled manually in the controller
   - start_sentence_status_code # Sentence status code at start edge - handled manually in the controller
   - end_sentence_status_code # Sentence status code at end edge - handled manually in the controller
@@ -20,5 +18,58 @@ keys_to_ignore:
   - start_is_admin_edge # Indicates if period is starting due to an administrative update  - handled manually in the controller
   - end_is_admin_edge # Indicates if period is ending due to an administrative update  - handled manually in the controller
   - sentence_type # Sentence type (general vs treatment) - handled manually in the controller
-  - inmate_number # Unused - another external ID for the person
-
+  - inmate_number
+unused_columns:
+  - start_sentence_status_code # gone from controller??
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: control_number
+          id_type: $literal("US_PA_CONT")
+      - StatePersonExternalId:
+          external_id: inmate_number
+          id_type: $literal("US_PA_INMATE")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - inmate_number
+                - sequence_number
+          admission_date: start_movement_date
+          release_date: end_movement_date
+          admission_reason:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - start_parole_status_code
+                    - start_is_new_revocation
+                    - start_movement_code
+                    - start_is_admin_edge
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.incarceration_period_admission_reason_mapper
+          release_reason:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - end_sentence_status_code
+                    - end_parole_status_code
+                    - end_movement_code
+                    - end_is_admin_edge
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.incarceration_period_release_reason_mapper
+          facility: location
+          incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          specialized_purpose_for_incarceration:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - sentence_type
+                    - start_movement_code
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.incarceration_period_purpose_mapper
+          custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
