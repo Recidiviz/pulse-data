@@ -115,6 +115,9 @@ class SupervisionPopulationEvent(
     # Information related to whether the supervision case is meeting compliance standards
     case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
 
+    # Whether the supervision happened out of state
+    supervision_out_of_state: bool = attr.ib(default=False)
+
     @property
     def date_of_supervision(self) -> date:
         return self.event_date
@@ -196,14 +199,6 @@ class SupervisionPopulationEvent(
         if not self.case_compliance:
             return None
         return self.case_compliance.recommended_supervision_downgrade_level
-
-    @property
-    def is_out_of_state_custodial_authority(self) -> bool:
-        return self.custodial_authority is not None and self.custodial_authority in (
-            StateCustodialAuthority.FEDERAL,
-            StateCustodialAuthority.OTHER_COUNTRY,
-            StateCustodialAuthority.OTHER_STATE,
-        )
 
 
 @attr.s(frozen=True)

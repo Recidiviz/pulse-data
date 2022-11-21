@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
 )
+from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
+    is_supervision_out_of_state,
+)
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
@@ -462,37 +465,43 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_sentences=supervision_sentences,
                 )
 
-                supervision_population_events.append(
-                    SupervisionPopulationEvent(
-                        state_code=supervision_period.state_code,
-                        year=event_date.year,
-                        month=event_date.month,
-                        event_date=event_date,
-                        supervision_type=supervision_type,
-                        case_type=case_type,
-                        assessment_score=assessment_score,
-                        assessment_level=assessment_level,
-                        assessment_type=assessment_type,
-                        assessment_score_bucket=assessment_score_bucket,
-                        most_severe_violation_type=violation_history.most_severe_violation_type,
-                        most_severe_violation_type_raw_text=violation_history.most_severe_violation_type_raw_text,
-                        most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                        most_severe_response_decision=violation_history.most_severe_response_decision,
-                        response_count=violation_history.response_count,
-                        supervising_officer_external_id=supervising_officer_external_id,
-                        supervising_district_external_id=deprecated_supervising_district_external_id,
-                        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
-                        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-                        supervision_level=supervision_period.supervision_level,
-                        supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                        case_compliance=case_compliance,
-                        judicial_district_code=judicial_district_code,
-                        custodial_authority=supervision_period.custodial_authority,
-                        supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
-                        previous_supervision_level=previous_supervision_level,
-                        projected_end_date=projected_end_date,
-                    )
+                supervision_out_of_state = is_supervision_out_of_state(
+                    supervision_period.custodial_authority,
+                    deprecated_supervising_district_external_id,
+                    supervision_delegate,
                 )
+                event = SupervisionPopulationEvent(
+                    state_code=supervision_period.state_code,
+                    year=event_date.year,
+                    month=event_date.month,
+                    event_date=event_date,
+                    supervision_type=supervision_type,
+                    case_type=case_type,
+                    assessment_score=assessment_score,
+                    assessment_level=assessment_level,
+                    assessment_type=assessment_type,
+                    assessment_score_bucket=assessment_score_bucket,
+                    most_severe_violation_type=violation_history.most_severe_violation_type,
+                    most_severe_violation_type_raw_text=violation_history.most_severe_violation_type_raw_text,
+                    most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
+                    most_severe_response_decision=violation_history.most_severe_response_decision,
+                    response_count=violation_history.response_count,
+                    supervising_officer_external_id=supervising_officer_external_id,
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id=level_2_supervision_location_external_id,
+                    supervision_level=supervision_period.supervision_level,
+                    supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                    case_compliance=case_compliance,
+                    judicial_district_code=judicial_district_code,
+                    custodial_authority=supervision_period.custodial_authority,
+                    supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
+                    previous_supervision_level=previous_supervision_level,
+                    projected_end_date=projected_end_date,
+                    supervision_out_of_state=supervision_out_of_state,
+                )
+
+                supervision_population_events.append(event)
 
             event_date = event_date + relativedelta(days=1)
 

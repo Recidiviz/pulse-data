@@ -36,10 +36,10 @@ from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    _get_state_specific_supervision_delegate,
     get_required_state_specific_delegates,
     get_required_state_specific_metrics_producer_delegates,
     get_state_specific_case_compliance_manager,
-    get_state_specific_supervision_delegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -193,7 +193,7 @@ def test_get_required_state_specific_delegates() -> None:
             supervision_delegate=None,
         )
 
-        get_state_specific_supervision_delegate(
+        _get_state_specific_supervision_delegate(
             state.value,
             entity_kwargs={
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,

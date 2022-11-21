@@ -20,14 +20,8 @@ supervision."""
 # pylint: disable=unused-argument
 import abc
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
-from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
-    SupervisionPopulationSpan,
-)
-from recidiviz.calculator.pipeline.metrics.supervision.events import (
-    SupervisionPopulationEvent,
-)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
@@ -127,12 +121,11 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
 
     def is_supervision_location_out_of_state(
         self,
-        supervision_population_event: Union[
-            SupervisionPopulationEvent, SupervisionPopulationSpan
-        ],
+        deprecated_supervising_district_external_id: Optional[str],
     ) -> bool:
-        """Returns whether the location on the supervision_population_event indicates supervision
-        served out-of-state."""
+        """Returns whether the person's supervision location indicates supervision
+        served out-of-state. By default, we assume the location indicates in-state
+        supervision."""
         return False
 
     def supervision_period_in_supervision_population_in_non_excluded_date_range(

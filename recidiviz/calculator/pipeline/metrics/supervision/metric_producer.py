@@ -51,23 +51,11 @@ from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     include_in_output,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_supervision_delegate,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_metrics_producer_delegate import (
     StateSpecificMetricsProducerDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    supervision_period_is_out_of_state,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 
@@ -232,13 +220,6 @@ class SupervisionMetricProducer(
         metric_type: SupervisionMetricType,
     ) -> bool:
         """Returns whether the given event should contribute to metrics of the given metric_type."""
-        supervision_delegate = get_state_specific_supervision_delegate(
-            event.state_code,
-            {
-                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME: [],
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME: [],
-            },
-        )
         if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return (
                 isinstance(
@@ -256,15 +237,21 @@ class SupervisionMetricProducer(
                 and event.supervision_level_downgrade_occurred
             )
         if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
-            return isinstance(
-                event,
-                (SupervisionPopulationEvent,),
-            ) and supervision_period_is_out_of_state(event, supervision_delegate)
+            return (
+                isinstance(
+                    event,
+                    SupervisionPopulationEvent,
+                )
+                and event.supervision_out_of_state
+            )
         if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
-            return isinstance(
-                event,
-                (SupervisionPopulationEvent,),
-            ) and not supervision_period_is_out_of_state(event, supervision_delegate)
+            return (
+                isinstance(
+                    event,
+                    SupervisionPopulationEvent,
+                )
+                and not event.supervision_out_of_state
+            )
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESS,

@@ -77,9 +77,7 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
     def test_supervision_period_is_out_of_state_with_identifier(self) -> None:
         self.assertTrue(
             self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(
-                    "INTERSTATE PROBATION - remainder of identifier", None
-                )
+                "INTERSTATE PROBATION - remainder of identifier"
             )
         )
 
@@ -88,9 +86,7 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
     ) -> None:
         self.assertFalse(
             self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(
-                    "Incorrect - remainder of identifier", None
-                )
+                "Incorrect - remainder of identifier"
             )
         )
 
@@ -98,9 +94,7 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
         self,
     ) -> None:
         self.assertFalse(
-            self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(None, None)
-            )
+            self.supervision_delegate.is_supervision_location_out_of_state(None)
         )
 
     def test_supervision_period_is_out_of_state_with_identifier_interstate(
@@ -108,35 +102,27 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
     ) -> None:
         self.assertTrue(
             self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(
-                    "INTERSTATE PROBATION - remainder of identifier", None
-                )
+                "INTERSTATE PROBATION - remainder of identifier"
             )
         )
 
     def test_supervision_period_is_out_of_state_with_identifier_parole(self) -> None:
         self.assertTrue(
             self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(
-                    "PAROLE COMMISSION OFFICE - remainder of identifier", None
-                )
+                "PAROLE COMMISSION OFFICE - remainder of identifier"
             )
         )
 
     def test_supervision_period_is_out_of_state_with_partial_identifier(self) -> None:
         self.assertFalse(
             self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event(
-                    "INTERSTATE - remainder of identifier", None
-                )
+                "INTERSTATE - remainder of identifier"
             )
         )
 
     def test_supervision_period_is_out_of_state_with_invalid_identifier(self) -> None:
         self.assertFalse(
-            self.supervision_delegate.is_supervision_location_out_of_state(
-                self.create_population_event("Invalid", None)
-            )
+            self.supervision_delegate.is_supervision_location_out_of_state("Invalid")
         )
 
     @staticmethod

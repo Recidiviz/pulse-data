@@ -675,7 +675,7 @@ def get_required_state_specific_delegates(
         elif required_delegate is StateSpecificSupervisionDelegate:
             required_state_specific_delegates[
                 required_delegate.__name__
-            ] = get_state_specific_supervision_delegate(state_code, entity_kwargs)
+            ] = _get_state_specific_supervision_delegate(state_code, entity_kwargs)
         else:
             raise ValueError(
                 f"Unexpected required delegate {required_delegate} for pipeline."
@@ -1125,7 +1125,7 @@ def _get_state_specific_incarceration_delegate(
 
 # TODO(#10891): Make this a private method once it's no longer being called from
 #  outside of this file
-def get_state_specific_supervision_delegate(
+def _get_state_specific_supervision_delegate(
     state_code: str,
     entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> StateSpecificSupervisionDelegate:

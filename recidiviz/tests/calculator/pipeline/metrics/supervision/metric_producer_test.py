@@ -18,14 +18,10 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Optional, Union
-from unittest import mock
+from typing import Dict, List, Optional
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
-    SupervisionPopulationSpan,
-)
 from recidiviz.calculator.pipeline.metrics.supervision import (
     identifier,
     metric_producer,
@@ -57,6 +53,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_super
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_metrics_producer_delegate import (
     UsXxSupervisionMetricsProducerDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
+    UsIdSupervisionDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentLevel,
@@ -98,18 +97,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.pipeline_config = (
             pipeline.SupervisionMetricsPipelineRunDelegate.pipeline_config()
         )
-        self.supervision_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.supervision"
-            ".metric_producer.get_state_specific_supervision_delegate"
-        )
-        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([], [])
-
-    def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.supervision_delegate_patcher.stop()
 
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
@@ -1604,7 +1591,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
-        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1624,16 +1610,21 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
+        event = SupervisionPopulationEvent(
+            state_code="US_ID",
+            year=2010,
+            month=1,
+            event_date=date(2010, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_district_external_id="INTERSTATE PROBATION - 123",
+            projected_end_date=None,
+            supervision_out_of_state=UsIdSupervisionDelegate(
+                [], []
+            ).is_supervision_location_out_of_state("INTERSTATE PROBATION - 123"),
+        )
+
         supervision_events: List[SupervisionEvent] = [
-            SupervisionPopulationEvent(
-                state_code="US_ID",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                supervising_district_external_id="INTERSTATE PROBATION - 123",
-                projected_end_date=None,
-            ),
+            event,
         ]
 
         inclusions_dict = {
@@ -1672,7 +1663,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
-        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1692,16 +1682,19 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
+        event = SupervisionPopulationEvent(
+            state_code="US_ID",
+            year=2010,
+            month=1,
+            event_date=date(2010, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            custodial_authority=StateCustodialAuthority.FEDERAL,
+            projected_end_date=None,
+            supervision_out_of_state=True,
+        )
+
         supervision_events: List[SupervisionEvent] = [
-            SupervisionPopulationEvent(
-                state_code="US_ID",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                custodial_authority=StateCustodialAuthority.FEDERAL,
-                projected_end_date=None,
-            ),
+            event,
         ]
 
         inclusions_dict = {
@@ -1740,7 +1733,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
-        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1799,7 +1791,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:
-        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1926,19 +1917,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
     """Tests the include_event_in_metric function."""
 
     def setUp(self) -> None:
-        self.supervision_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.supervision"
-            ".metric_producer.get_state_specific_supervision_delegate"
-        )
-        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([], [])
         self.metric_producer = metric_producer.SupervisionMetricProducer()
-
-    def tearDown(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-
-    def _stop_state_specific_delegate_patchers(self) -> None:
-        self.supervision_delegate_patcher.stop()
 
     def test_include_event_in_metric_compliance_no_compliance(self) -> None:
         event = SupervisionPopulationEvent(
@@ -2045,14 +2024,13 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
     class OutOfStateDelegate(UsXxSupervisionDelegate):
         def is_supervision_location_out_of_state(
-            self, _: Union[SupervisionPopulationEvent, SupervisionPopulationSpan]
+            self,
+            deprecated_supervising_district_external_id: Optional[str],
         ) -> bool:
             return True
 
     def test_include_event_in_metric_out_of_state(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-        mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        mock_supervision_delegate.return_value = self.OutOfStateDelegate([], [])
+        supervision_delegate = self.OutOfStateDelegate([], [])
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -2065,8 +2043,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
             supervision_level_raw_text="HIGH",
             supervision_level_downgrade_occurred=True,
             projected_end_date=None,
+            supervision_out_of_state=supervision_delegate.is_supervision_location_out_of_state(
+                "some_district"
+            ),
         )
-
         self.assertTrue(
             self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
@@ -2074,9 +2054,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
     def test_include_event_in_metric_not_in_state(self) -> None:
-        self._stop_state_specific_delegate_patchers()
-        mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        mock_supervision_delegate.return_value = self.OutOfStateDelegate([], [])
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -2088,6 +2065,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
             projected_end_date=None,
+            supervision_out_of_state=True,
         )
 
         self.assertFalse(
