@@ -474,7 +474,6 @@ def incarceration_period_purpose_mapper(
         #  for how to represent community centers
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
 
-    # Handle incarceration period purpose codes from SCI tables
     start_parole_status_code, sentence_type = raw_text.split("-")
 
     # TODO(#10502): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
