@@ -20,6 +20,7 @@ PROJECT_ID='recidiviz-staging'
 BACKEND_VERSION=''
 FRONTEND_VERSION=''
 FRONTEND_APP=''
+CLOUD_RUN_SERVICE=''
 
 function print_usage {
     echo_error "usage: $0 -b BACKEND_VERSION -f FRONTEND_VERSION -a FRONTEND_APP"
@@ -69,7 +70,12 @@ if [[ ! ${FRONTEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
-if [[ ${FRONTEND_APP} != 'publisher' && ${FRONTEND_APP} != 'agency-dashboard' ]]; then
+
+if [[ ${FRONTEND_APP} == 'publisher' ]]; then
+    CLOUD_RUN_SERVICE="justice-counts-web"
+elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
+    CLOUD_RUN_SERVICE="justice-counts-agency-dashboard-web"
+else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
 fi
@@ -118,9 +124,8 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
     --skip-db-name-check \
     --using-proxy
 
-# TODO(#16325): If FRONTEND_APP is agency-dashboard, deploy to a different Cloud Run service
 echo "Deploying new Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
-run_cmd gcloud -q run deploy justice-counts-web \
+run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
     --project "${PROJECT_ID}" \
     --image "${LATEST_DOCKER_TAG}" \
     --region "us-central1" \
@@ -129,7 +134,7 @@ run_cmd gcloud -q run deploy justice-counts-web \
 # (which we might do during playtesting deploys), in which case subsequent deploys
 # won't start sending traffic until traffic is manually updated via `update-traffic`.
 echo "Directing 100% of traffic to new revision..."
-run_cmd gcloud -q run services update-traffic justice-counts-web \
+run_cmd gcloud -q run services update-traffic "${CLOUD_RUN_SERVICE}" \
     --to-latest \
     --region "us-central1"
 

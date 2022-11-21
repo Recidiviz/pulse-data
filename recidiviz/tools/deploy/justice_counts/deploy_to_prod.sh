@@ -18,6 +18,7 @@ PROJECT_ID='recidiviz-123'
 BACKEND_VERSION=''
 FRONTEND_VERSION=''
 FRONTEND_APP=''
+CLOUD_RUN_SERVICE=''
 
 function print_usage {
     echo_error "usage: $0 -b BACKEND_VERSION -f FRONTEND_VERSION -a FRONTEND_APP"
@@ -65,7 +66,12 @@ if [[ ! ${FRONTEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
-if [[ ${FRONTEND_APP} != 'publisher' && ${FRONTEND_APP} != 'agency-dashboard' ]]; then
+
+if [[ ${FRONTEND_APP} == 'publisher' ]]; then
+    CLOUD_RUN_SERVICE="justice-counts-web"
+elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
+    CLOUD_RUN_SERVICE="justice-counts-agency-dashboard-web"
+else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
 fi
@@ -113,9 +119,8 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 # This will deploy and also allocate traffic to the latest revision. 
 # Unlike in the deploy_to_staging script, we don't have to allocate traffic separately, 
 # because we currently never use the --no-traffic arg when deploying to prod.
-# TODO(#16325): If FRONTEND_APP is agency-dashboard, deploy to a different Cloud Run service
 echo "Deploying new Cloud Run revision with image ${PROD_IMAGE_URL}..."
-run_cmd gcloud -q run deploy justice-counts-web \
+run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
     --project "${PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
