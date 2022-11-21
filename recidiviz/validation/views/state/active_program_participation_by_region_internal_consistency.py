@@ -18,9 +18,8 @@
 active_program_participation_by_region view.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation.us_nd.active_program_participation_by_region import (
-    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME,
+    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -47,13 +46,17 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f""
                             calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}
 """
 
+_VALIDATED_TABLE_ADDRESS = (
+    ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER.table_for_query
+)
+
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_NAME,
     view_query_template=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_DESCRIPTION,
-    validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    validated_table_id=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME,
+    validated_table_dataset_id=_VALIDATED_TABLE_ADDRESS.dataset_id,
+    validated_table_id=_VALIDATED_TABLE_ADDRESS.table_id,
     should_materialize=True,
 )
 

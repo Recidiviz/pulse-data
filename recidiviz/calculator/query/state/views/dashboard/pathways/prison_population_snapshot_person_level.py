@@ -64,7 +64,7 @@ PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         ) pop
         LEFT JOIN get_last_updated USING (state_code)
         LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` name_map
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized` name_map
                 ON pop.state_code = name_map.state_code
                 AND pop.facility = name_map.location_id
         LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess

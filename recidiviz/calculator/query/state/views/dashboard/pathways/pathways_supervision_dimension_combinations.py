@@ -124,7 +124,7 @@ PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
         SELECT
             state_code,
             location_name AS district,
-        FROM `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map`
+        FROM `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map_materialized`
         
         UNION ALL
 

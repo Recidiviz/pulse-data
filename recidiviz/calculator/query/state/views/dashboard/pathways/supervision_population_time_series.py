@@ -53,7 +53,7 @@ SUPERVISION_POPULATION_TIME_SERIES_VIEW_QUERY_TEMPLATE = """
             supervision_level,
             race,
             person_id
-        FROM  `{project_id}.{dashboard_views_dataset}.pathways_deduped_supervision_sessions`
+        FROM  `{project_id}.{dashboard_views_dataset}.pathways_deduped_supervision_sessions_materialized`
         WHERE {state_specific_district_filter}
     )
     , full_time_series as (

@@ -18,7 +18,6 @@
 sums for the revocations_matrix_distribution_by_gender view in the Revocation Analysis Matrix tool."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_gender import (
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER,
 )
@@ -53,8 +52,8 @@ REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER = SimpleBigQuer
     view_id=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_NAME,
     view_query_template=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_QUERY_TEMPLATE,
     description=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_DESCRIPTION,
-    view_dataset=state_dataset_config.DASHBOARD_VIEWS_DATASET,
-    view=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER.view_id,
+    view_dataset=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER.table_for_query.dataset_id,
+    view=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER.table_for_query.table_id,
     should_materialize=True,
 )
 

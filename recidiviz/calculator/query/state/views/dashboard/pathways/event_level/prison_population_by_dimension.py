@@ -79,7 +79,7 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_QUERY_TEMPLATE = """
             WHERE included_in_state_population AND end_date_exclusive IS NULL
         ) metrics
         LEFT JOIN length_of_stay_bins USING (person_id)
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_incarceration_location_name_map` name_map
+        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_incarceration_location_name_map_materialized` name_map
             ON metrics.state_code = name_map.state_code
             AND metrics.facility = name_map.location_id
         LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess

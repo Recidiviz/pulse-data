@@ -20,9 +20,8 @@ incarceration_releases_by_type_by_period view.
 
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_releases_by_type_by_period import (
-    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME,
+    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -55,13 +54,17 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE = f
 {internal_consistency_query(partition_columns=PARTITION_COLUMNS, mutually_exclusive_breakdown_columns=MUTUALLY_EXCLUSIVE_BREAKDOWN_COLUMNS, calculated_columns_to_validate=CALCULATED_COLUMNS_TO_VALIDATE)}
 """
 
+_VALIDATED_TABLE_ADDRESS = (
+    INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER.table_for_query
+)
+
 INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
     view_id=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_QUERY_TEMPLATE,
     description=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION,
-    validated_table_dataset_id=state_dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
-    validated_table_id=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME,
+    validated_table_dataset_id=_VALIDATED_TABLE_ADDRESS.dataset_id,
+    validated_table_id=_VALIDATED_TABLE_ADDRESS.table_id,
     should_materialize=True,
 )
 

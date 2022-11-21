@@ -46,7 +46,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     get_last_updated AS ({get_pathways_supervision_last_updated_date})
     , cte AS ( 
         SELECT *
-        FROM `{project_id}.{dashboards_dataset}.pathways_deduped_supervision_sessions`
+        FROM `{project_id}.{dashboards_dataset}.pathways_deduped_supervision_sessions_materialized`
         WHERE end_date IS NULL
     )
     , filtered_rows AS (

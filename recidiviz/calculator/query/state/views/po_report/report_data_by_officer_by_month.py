@@ -133,7 +133,6 @@ REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_QUERY_TEMPLATE = """
 REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_VIEW_NAME,
-    should_materialize=True,
     view_query_template=REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_QUERY_TEMPLATE,
     dimensions=("state_code", "review_month", "officer_external_id", "district"),
     description=REPORT_DATA_BY_OFFICER_BY_MONTH_DATA_DESCRIPTION,

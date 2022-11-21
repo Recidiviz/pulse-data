@@ -66,7 +66,7 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
         FROM (
             SELECT * FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_to_single_day_metrics_materialized` 
             WHERE included_in_state_population) pop
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_incarceration_location_name_map` name_map
+        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_incarceration_location_name_map_materialized` name_map
             ON pop.state_code = name_map.state_code
             AND pop.facility = name_map.location_id
         LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sess

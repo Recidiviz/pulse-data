@@ -34,22 +34,22 @@ Revocation matrix comparison of summed supervision population counts """
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
     WITH by_district as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
-      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_district`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_district_materialized`
       GROUP BY state_code
     ),
     by_risk_level as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
-      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_risk_level`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_risk_level_materialized`
       GROUP BY state_code
     ),
     by_gender as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
-      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_gender`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_gender_materialized`
       GROUP BY state_code
     ),
     by_race as (
       SELECT state_code as region_code, SUM(supervision_population_count) as total_supervision
-      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_race`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_race_materialized`
       GROUP BY state_code
     )
     SELECT bd.region_code,

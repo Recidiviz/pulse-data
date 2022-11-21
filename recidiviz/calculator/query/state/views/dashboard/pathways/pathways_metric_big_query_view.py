@@ -40,7 +40,6 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
         description: str,
         view_query_template: str,
         dimensions: Tuple[str, ...],
-        should_materialize: bool = False,
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,
         # All keyword args must have string values
@@ -52,7 +51,6 @@ class PathwaysMetricBigQueryViewBuilder(MetricBigQueryViewBuilder):
             description=description,
             view_query_template=view_query_template,
             dimensions=dimensions,
-            should_materialize=should_materialize,
             materialized_address_override=materialized_address_override,
             clustering_fields=clustering_fields,
             dimensions_clause=self.replace_unknowns(dimensions),

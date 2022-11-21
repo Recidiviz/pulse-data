@@ -369,9 +369,11 @@ The following views have less restrictive projects_to_deploy than their parents:
         walker = BigQueryViewDagWalker(self.all_views)
 
         def process_check_using_materialized(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, None]
-        ) -> None:
+            view: BigQueryView,
+            _parent_results: Dict[BigQueryView, Set[BigQueryAddress]],
+        ) -> Set[BigQueryAddress]:
             node = walker.node_for_view(view)
+            should_be_materialized_addresses = set()
             for parent_table_address in node.parent_tables:
                 if parent_table_address in walker.materialized_addresss:
                     # We are using materialized version of a table
@@ -381,15 +383,23 @@ The following views have less restrictive projects_to_deploy than their parents:
                     # We assume this is a source data table (checked in other tests)
                     continue
                 parent_view: BigQueryView = walker.view_for_key(parent_key)
-                self.assertIsNone(
-                    parent_view.materialized_address,
-                    f"Found view [{node.dag_key}] referencing un-materialized version "
-                    f"of view [{parent_key}] when materialized table "
-                    f"[{parent_view.materialized_address}] exists.",
-                )
+                if parent_view.materialized_address is not None:
+                    should_be_materialized_addresses.add(
+                        parent_view.materialized_address
+                    )
+            return should_be_materialized_addresses
 
-        result = walker.process_dag(process_check_using_materialized)
-        self.assertEqual(len(self.all_views), len(result.view_results))
+        result = walker.process_dag(process_check_using_materialized).view_results
+        self.assertEqual(len(self.all_views), len(result))
+
+        views_with_issues = {
+            view.address: addresses for view, addresses in result.items() if addresses
+        }
+        if views_with_issues:
+            raise ValueError(
+                f"Found views referencing un-materialized versions of a view when a "
+                f"materialized version exists: {views_with_issues}"
+            )
 
     def test_dag_with_cycle_at_root(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(

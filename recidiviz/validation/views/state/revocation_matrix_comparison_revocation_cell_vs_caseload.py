@@ -37,7 +37,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
         state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
         charge_category, supervision_type, supervision_level, admission_type,
         SUM(total_revocations) AS total_revocations
-      FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_cells_materialized`
       -- Only including dimensional combinations that can be compared between the matrix and the caseload --
       WHERE 
           (level_1_supervision_location != 'ALL'
@@ -71,7 +71,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
         -- This should always be equal to the total_revocations since a single state_id should never be included
         -- more than once in a given dimensional breakdown
         COUNT(*) AS total_rows
-      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload_materialized`
       -- Only including dimensional combinations that can be compared between the matrix and the caseload --
       WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
           AND 
@@ -107,7 +107,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """
         -- This should always be equal to the total_revocations since a single state_id should never be included
         -- more than once in a given dimensional breakdown
         COUNT(*) AS total_rows
-      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload_materialized`
       WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
                charge_category, supervision_type, supervision_level, admission_type
