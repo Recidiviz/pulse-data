@@ -20,6 +20,8 @@ import itertools
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
+from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query, Session, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
@@ -114,10 +116,74 @@ class ReportInterface:
     ### Insert into DB ###
 
     @staticmethod
+    def create_report_if_not_exists(
+        session: Session,
+        agency_id: int,
+        user_account_id: Optional[int],
+        year: int,
+        month: int,
+        frequency: str,
+    ) -> Optional[schema.Report]:
+        """Creates a new report for the agency if a report for the given year, month,
+        and frequency does not already exist. If report exists, return None."""
+        try:
+            report = ReportInterface.create_report(
+                session=session,
+                agency_id=agency_id,
+                user_account_id=user_account_id,
+                month=month,
+                year=year,
+                frequency=frequency,
+            )
+            session.add(report)
+            session.commit()
+            return report
+        except IntegrityError as e:
+            session.rollback()
+            if isinstance(e.orig, UniqueViolation):
+                return None
+            raise e
+
+    @staticmethod
+    def create_new_reports(
+        session: Session,
+        agency_id: int,
+        user_account_id: Optional[int],
+        current_month: int,
+        current_year: int,
+    ) -> Tuple[Optional[schema.Report], Optional[schema.Report]]:
+        """Creates a new monthly report (for the current month/year) and annual report
+        (for the current month/year) for the agency if those reports do not already
+        exist."""
+        monthly_report = None
+        yearly_report = None
+
+        # Create monthly report if does not exist
+        monthly_report = ReportInterface.create_report_if_not_exists(
+            session,
+            agency_id,
+            user_account_id,
+            current_year,
+            current_month,
+            ReportingFrequency.MONTHLY.value,
+        )
+        # Create yearly report if it is January and report does not exist
+        if current_month == 1:
+            yearly_report = ReportInterface.create_report_if_not_exists(
+                session,
+                agency_id,
+                user_account_id,
+                current_year,
+                current_month,
+                ReportingFrequency.ANNUAL.value,
+            )
+        return monthly_report, yearly_report
+
+    @staticmethod
     def create_report(
         session: Session,
         agency_id: int,
-        user_account_id: int,
+        user_account_id: Optional[int],
         year: int,
         month: int,
         frequency: str,
@@ -140,7 +206,7 @@ class ReportInterface:
     @staticmethod
     def create_report_object(
         agency_id: int,
-        user_account_id: int,
+        user_account_id: Optional[int],
         year: int,
         month: int,
         frequency: str,
@@ -170,7 +236,7 @@ class ReportInterface:
             date_range_end=date_range_end,
             last_modified_at=last_modified_at
             or datetime.datetime.now(tz=datetime.timezone.utc),
-            modified_by=[user_account_id],
+            modified_by=[user_account_id] if user_account_id is not None else [],
             is_recurring=is_recurring,
             recurring_report=recurring_report,
         )
