@@ -34,10 +34,8 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
 )
 from recidiviz.calculator.pipeline.metrics.supervision import identifier, pipeline
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
-    ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
     SupervisionPopulationEvent,
-    SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionMetric,
@@ -77,7 +75,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_super
     UsXxSupervisionMetricsProducerDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -123,6 +120,10 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.metrics.supervision import identifier_test
+from recidiviz.tests.calculator.pipeline.metrics.supervision.identifier_test import (
+    create_projected_completion_event_from_period,
+    create_termination_event_from_period,
+)
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     default_data_dict_for_run_delegate,
     run_test_pipeline,
@@ -165,8 +166,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
         self.metric_producer_supervision_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.supervision"
-            ".metric_producer.get_state_specific_supervision_delegate"
+            "recidiviz.calculator.pipeline.utils.state_utils"
+            ".state_calculation_config_manager._get_state_specific_supervision_delegate"
         )
         self.mock_metric_producer_supervision_delegate = (
             self.metric_producer_supervision_delegate_patcher.start()
@@ -1235,18 +1236,13 @@ class TestClassifyEvents(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         expected_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code=supervision_period.state_code,
-                year=2015,
-                month=5,
+            create_projected_completion_event_from_period(
+                supervision_period,
                 event_date=date(2015, 5, 31),
                 supervision_type=supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
-                supervision_level=supervision_period.supervision_level,
-                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 successful_completion=True,
                 incarcerated_during_sentence=True,
                 judicial_district_code=judicial_district_code,
@@ -1271,20 +1267,13 @@ class TestClassifyEvents(unittest.TestCase):
         )
 
         expected_events.append(
-            SupervisionTerminationEvent(
-                state_code=supervision_period.state_code,
-                year=supervision_period_termination_date.year,
-                month=supervision_period_termination_date.month,
-                event_date=supervision_period_termination_date,
+            create_termination_event_from_period(
+                supervision_period,
                 supervision_type=supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
                 judicial_district_code=judicial_district_code,
-                supervision_level=supervision_period.supervision_level,
-                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 in_supervision_population_on_date=True,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
@@ -1330,8 +1319,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         }
 
         self.supervision_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.metrics.supervision"
-            ".metric_producer.get_state_specific_supervision_delegate"
+            "recidiviz.calculator.pipeline.utils.state_utils"
+            ".state_calculation_config_manager._get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
         self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([], [])

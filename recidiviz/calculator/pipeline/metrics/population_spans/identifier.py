@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import (
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
+    is_supervision_out_of_state,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -51,7 +52,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
-    supervision_period_is_out_of_state,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -299,6 +299,10 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             for sp_duration, overlaps_with_ip in sub_supervision_period_durations:
                 included_in_state_population = (
                     not overlaps_with_ip and sp_in_state_population_based_on_metadata
+                ) and not is_supervision_out_of_state(
+                    supervision_period.custodial_authority,
+                    deprecated_supervising_district_external_id,
+                    supervision_delegate,
                 )
                 end_date_exclusive = (
                     sp_duration.upper_bound_exclusive_date
@@ -320,15 +324,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     level_1_supervision_location_external_id=level_1_supervision_location,
                     level_2_supervision_location_external_id=level_2_supervision_location,
                     included_in_state_population=included_in_state_population,
-                )
-                span = attr.evolve(
-                    span,
-                    included_in_state_population=(
-                        span.included_in_state_population
-                        and not supervision_period_is_out_of_state(
-                            span, supervision_delegate
-                        )
-                    ),
                 )
                 supervision_spans.append(span)
 

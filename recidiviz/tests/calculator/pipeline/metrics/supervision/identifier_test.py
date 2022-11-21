@@ -3463,23 +3463,49 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
+        default_delegate = UsXxSupervisionDelegate(
+            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+        )
+
+        (
+            _,
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            default_delegate,
+        )
+
+        deprecated_supervising_district_external_id = (
+            default_delegate.get_deprecated_supervising_district_external_id(
+                level_1_supervision_location_external_id,
+                level_2_supervision_location_external_id,
+            )
+        )
+
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
         )
 
+        event = SupervisionPopulationEvent(
+            state_code=supervision_period.state_code,
+            year=2001,
+            month=6,
+            event_date=date(2001, 6, 30),
+            supervision_type=supervision_type,
+            supervision_level=supervision_period.supervision_level,
+            case_type=StateSupervisionCaseType.GENERAL,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
+                deprecated_supervising_district_external_id
+            ),
+        )
+
         self.assertEqual(
             expected_events[-1],
-            SupervisionPopulationEvent(
-                state_code=supervision_period.state_code,
-                year=2001,
-                month=6,
-                event_date=date(2001, 6, 30),
-                supervision_type=supervision_type,
-                supervision_level=supervision_period.supervision_level,
-                case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            ),
+            event,
         )
 
         supervision_events = (
@@ -3542,23 +3568,49 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
+        default_delegate = UsXxSupervisionDelegate(
+            DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+        )
+
+        (
+            _,
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            default_delegate,
+        )
+
+        deprecated_supervising_district_external_id = (
+            default_delegate.get_deprecated_supervising_district_external_id(
+                level_1_supervision_location_external_id,
+                level_2_supervision_location_external_id,
+            )
+        )
+
         expected_events = expected_population_events(
             supervision_period,
             supervision_type,
         )
 
+        event = SupervisionPopulationEvent(
+            state_code=supervision_period.state_code,
+            year=2001,
+            month=6,
+            event_date=date(2001, 6, 29),
+            supervision_type=supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=supervision_period.supervision_level,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
+                deprecated_supervising_district_external_id
+            ),
+        )
+
         self.assertEqual(
             expected_events[-1],
-            SupervisionPopulationEvent(
-                state_code=supervision_period.state_code,
-                year=2001,
-                month=6,
-                event_date=date(2001, 6, 29),
-                supervision_type=supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=supervision_period.supervision_level,
-                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            ),
+            event,
         )
 
         supervision_events = (
@@ -6508,6 +6560,18 @@ def expected_population_events(
             )
             previous_level = previous_supervision_level if downgrade_occurred else None
 
+            default_delegate = UsXxSupervisionDelegate(
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            )
+
+            deprecated_supervising_district_external_id = (
+                default_delegate.get_deprecated_supervising_district_external_id(
+                    level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id,
+                )
+            )
+
             event = SupervisionPopulationEvent(
                 state_code=supervision_period.state_code,
                 year=day_on_supervision.year,
@@ -6538,6 +6602,9 @@ def expected_population_events(
                 supervision_level_downgrade_occurred=downgrade_occurred,
                 previous_supervision_level=previous_level,
                 projected_end_date=projected_supervision_completion_date,
+                supervision_out_of_state=default_delegate.is_supervision_location_out_of_state(
+                    deprecated_supervising_district_external_id
+                ),
             )
 
             expected_events.append(event)
