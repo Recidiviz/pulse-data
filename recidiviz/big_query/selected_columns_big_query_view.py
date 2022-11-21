@@ -83,7 +83,9 @@ class SelectedColumnsBigQueryViewBuilder(
         view_query_template: str,
         columns: List[str],
         description: Optional[str] = None,
-        should_materialize: bool = False,
+        # Default to True since these views are often exported multiple times so we
+        # materialize to limit export costs.
+        should_materialize: bool = True,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,

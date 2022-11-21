@@ -35,7 +35,7 @@ SELECT
     user_hash AS user_id,
     rosters.id AS user_external_id,
     users.state_code,
-FROM `{project_id}.{reference_views_dataset}.dashboard_user_restrictions` users
+FROM `{project_id}.{reference_views_dataset}.dashboard_user_restrictions_materialized` users
 INNER JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` rosters
     ON users.state_code = rosters.state_code
     AND LOWER(users.restricted_user_email) = LOWER(rosters.email)

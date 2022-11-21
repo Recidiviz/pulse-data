@@ -52,7 +52,7 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
                 END
             ELSE INITCAP(level_1_supervision_location_name)
         END AS location_name,
-    FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names`
+    FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized`
     WHERE state_code IN ({enabled_states})
 """
 

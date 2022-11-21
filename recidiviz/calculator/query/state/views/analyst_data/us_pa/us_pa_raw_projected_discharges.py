@@ -70,7 +70,7 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         FROM us_pa_caseload caseload
         LEFT JOIN sentences
             USING(person_id)
-        LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names` ref
+        LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names_materialized` ref
           ON caseload.supervising_district_external_id = ref.level_2_supervision_location_external_id
           AND caseload.state_code = ref.state_code
         WHERE COALESCE(is_life, false) = false 

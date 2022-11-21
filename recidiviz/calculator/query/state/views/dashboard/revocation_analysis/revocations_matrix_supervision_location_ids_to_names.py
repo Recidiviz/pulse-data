@@ -42,7 +42,7 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                level_1_supervision_location_name
            )
       END AS level_1_supervision_location_name
-    FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` names
+    FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized` names
     JOIN (
       SELECT 
         DISTINCT state_code, level_1_supervision_location, level_2_supervision_location
@@ -69,6 +69,7 @@ REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQue
     description=REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

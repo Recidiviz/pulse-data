@@ -47,7 +47,7 @@ LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             race,
             time_period,
             prior_length_of_incarceration
-        FROM `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions`
+        FROM `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions_materialized`
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),
     get_last_updated AS ({get_pathways_incarceration_last_updated_date})

@@ -194,6 +194,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
     ),
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

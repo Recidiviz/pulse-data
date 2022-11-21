@@ -273,6 +273,28 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                     f"Export configured with validation not matching its export type: {e}"
                 )
 
+    def test_metric_export_all_state_specific_export_views_materialized(self) -> None:
+        product_configs = ProductConfigs.from_file()
+        for config_collection in _VIEW_COLLECTION_EXPORT_CONFIGS:
+            configs = product_configs.get_export_configs_for_job_filter(
+                config_collection.export_name
+            )
+            if len(configs) <= 1:
+                # If we only do one export for this product, we don't care if the views
+                # are materialized from a cost-optimization perspective
+                continue
+            unmaterialized_views = {
+                vb.address
+                for vb in config_collection.view_builders_to_export
+                if not vb.materialized_address
+            }
+            if unmaterialized_views:
+                raise ValueError(
+                    f"Exported views must be materialized for performance "
+                    f"reasons. Found views in export [{config_collection.export_name}] which are not "
+                    f"materialized: {unmaterialized_views}"
+                )
+
     def test_metric_export_state_agnostic(self) -> None:
         """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-agnostic."""

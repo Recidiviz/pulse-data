@@ -56,7 +56,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             transitions.supervision_level,
             "ALL" AS most_severe_violation,
             "ALL" AS number_of_violations,
-        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions_materialized` transitions
     ),
     filtered_rows AS (
         SELECT * FROM transitions
