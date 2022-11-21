@@ -8,7 +8,7 @@ normalization_pipelines:
     state_code: US_XX
     region: us-west1
 
-incremental_metric_pipelines:
+metric_pipelines:
   # Full US_XX calculations with no time limit
   - pipeline: pipeline_no_limit
     job_name: full-us-xx-pipeline_no_limit-calculations
@@ -40,14 +40,6 @@ incremental_metric_pipelines:
     metric_types: METRIC_3
     region: us-east1
     staging_only: True
-
-historical_metric_pipelines:
-  - pipeline: pipeline_with_limit
-    job_name: us-yy-historical-pipeline_with_limit-calculations-240
-    state_code: US_YY
-    calculation_month_count: 240
-    metric_types: METRIC_2
-    region: us-west1
 
 supplemental_dataset_pipelines:
   - pipeline: pipeline_to_run

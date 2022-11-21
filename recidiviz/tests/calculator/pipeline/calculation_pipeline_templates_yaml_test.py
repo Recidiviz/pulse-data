@@ -70,14 +70,9 @@ class TestConfiguredPipelines(unittest.TestCase):
             dataflow_config.PIPELINE_CONFIG_YAML_PATH
         )
 
-        incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-            "incremental_metric_pipelines"
-        )
-        historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-            "historical_metric_pipelines"
-        )
+        metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
         production_pipelines_by_state: Dict[StateCode, List[str]] = defaultdict(list)
-        for pipeline in incremental_metric_pipelines + historical_metric_pipelines:
+        for pipeline in metric_pipelines:
             state_code = StateCode(pipeline.peek("state_code", str))
             if (
                 state_code not in states_launched_in_production

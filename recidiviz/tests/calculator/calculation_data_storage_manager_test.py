@@ -376,10 +376,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     def test_get_month_range_for_metric_and_state(self) -> None:
         expected_month_range_map = {
-            "fake_pipeline_with_limit_metric_2_table": {
-                "US_XX": 36,
-                "US_YY": 240,
-            },
+            "fake_pipeline_with_limit_metric_2_table": {"US_XX": 36, "US_YY": 24},
             "fake_pipeline_with_limit_metric_3_table": {
                 "US_XX": 36,
                 "US_YY": 36,
