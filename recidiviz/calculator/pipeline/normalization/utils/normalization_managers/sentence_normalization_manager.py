@@ -38,6 +38,10 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_type_for_field_name,
+)
 from recidiviz.common.ncic import get_description
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -251,7 +255,12 @@ class SentenceNormalizationManager(EntityNormalizationManager):
 
         # Fields for the charge
         uniform_values = {
-            field: offense_labels_for_charge.get(field.replace("_uniform", ""), None)
+            field: offense_labels_for_charge.get(
+                field.replace("_uniform", ""), "EXTERNAL_UNKNOWN"
+            )
+            if attr_field_type_for_field_name(NormalizedStateCharge, field)
+            == BuildableAttrFieldType.STRING
+            else offense_labels_for_charge.get(field.replace("_uniform", ""), None)
             for field in uniform_fields
         }
 
