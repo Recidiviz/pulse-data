@@ -16,7 +16,10 @@
 #  =============================================================================
 """View to prepare client records for Workflows for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import (
+    dataset_config,
+    state_specific_query_strings,
+)
 from recidiviz.calculator.query.state.views.workflows.us_id.supervision_clients_template import (
     US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
@@ -73,11 +76,13 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     us_nd_raw_data="us_nd_raw_data_up_to_date_views",
     us_id_raw_data="us_id_raw_data_up_to_date_views",
     should_materialize=True,
+    state_id_type=state_specific_query_strings.state_specific_external_id_type(
+        "sessions"
+    ),
 )
 
 if __name__ == "__main__":
