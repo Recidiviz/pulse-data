@@ -40,7 +40,7 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_DESCRIPTION = """Supervision population co
 
 SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT {columns}
-    FROM `{project_id}.{dashboards_dataset}.supervision_population`
+    FROM `{project_id}.{dashboards_dataset}.supervision_population_materialized`
     WHERE time_period IS NOT NULL
     ORDER BY state_code, person_id, date_in_population
 """

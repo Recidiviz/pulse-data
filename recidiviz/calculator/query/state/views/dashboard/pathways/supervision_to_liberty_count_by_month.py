@@ -55,7 +55,7 @@ aggregate_query = """
             race,
             # TODO(#13552): Change to supervision_district once the FE can support it
             supervision_district AS district,
-        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_liberty_transitions` transitions
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_liberty_transitions_materialized` transitions
     ),
     filtered_rows AS (
         SELECT * FROM transitions

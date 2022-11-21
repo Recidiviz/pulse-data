@@ -40,7 +40,7 @@ aggregate_query = """
         {dimensions_clause},
         COUNT(1) as event_count
     FROM
-        `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions` transitions,
+        `{project_id}.{dashboard_views_dataset}.liberty_to_prison_transitions_materialized` transitions,
         UNNEST ([gender, 'ALL']) AS gender,
         UNNEST ([age_group, 'ALL']) AS age_group,
         UNNEST ([race, "ALL"]) AS race,

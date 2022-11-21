@@ -66,7 +66,7 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
                 GREATEST(COALESCE(parole_max_completion_date,probation_max_completion_date), COALESCE(probation_max_completion_date,parole_max_completion_date)) as projected_end_date,
                 NULL AS active_revocation,
             FROM us_mo_max_dates max_dates 
-            LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names` ref
+            LEFT JOIN `{project_id}.{reference_dataset}.supervision_location_ids_to_names_materialized` ref
                 ON max_dates.supervising_district_external_id = ref.level_1_supervision_location_external_id
                 AND max_dates.state_code = ref.state_code
             LEFT JOIN us_mo_lifetime_sentences ls

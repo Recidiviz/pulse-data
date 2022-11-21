@@ -57,7 +57,7 @@ def client_record_supervision_cte(state_code: str) -> str:
                 state_code,
                 level_2_supervision_location_external_id,
                 level_2_supervision_location_name
-            FROM `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names`
+            FROM `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized`
         ) locations
             ON locations.state_code = sessions.state_code
             AND locations.level_2_supervision_location_external_id = SPLIT(sessions.compartment_location_end, "|")[OFFSET(1)]

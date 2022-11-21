@@ -62,7 +62,7 @@ SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
             SELECT
                 *,
                 DATE_DIFF(transition_date, supervision_start_date, MONTH) AS length_of_stay_months,
-            FROM `{project_id}.{dashboards_dataset}.supervision_to_liberty_transitions`
+            FROM `{project_id}.{dashboards_dataset}.supervision_to_liberty_transitions_materialized`
         )
         WHERE transition_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 60 MONTH)
     ),

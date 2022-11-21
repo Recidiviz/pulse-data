@@ -56,7 +56,7 @@ aggregate_query = """
             "ALL" AS most_severe_violation,
             "ALL" AS number_of_violations,
 
-        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions` transitions
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions_materialized` transitions
     ),
     filtered_rows AS (
         SELECT * FROM base_data

@@ -42,7 +42,7 @@ PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_QUERY_TEMPLATE = """
         last_updated,
         age,
         full_name,
-    FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions` transitions
+    FROM `{project_id}.{dashboard_views_dataset}.prison_to_supervision_transitions_materialized` transitions
     LEFT JOIN data_freshness USING (state_code)
     WHERE time_period IS NOT NULL
         

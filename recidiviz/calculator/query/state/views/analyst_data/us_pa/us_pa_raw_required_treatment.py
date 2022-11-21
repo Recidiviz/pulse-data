@@ -215,7 +215,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
               level_1_supervision_location_name,
               level_2_supervision_location_external_id,
               level_2_supervision_location_name
-              FROM `{project_id}.{reference_dataset}.supervision_location_ids_to_names` 
+              FROM `{project_id}.{reference_dataset}.supervision_location_ids_to_names_materialized` 
               ) ref 
         ON df_and_board_actions.level_1_supervision_location_external_id = ref.level_1_supervision_location_external_id
       AND df_and_board_actions.level_2_supervision_location_external_id = ref.level_2_supervision_location_external_id

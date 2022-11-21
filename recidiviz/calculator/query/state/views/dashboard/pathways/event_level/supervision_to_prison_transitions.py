@@ -51,7 +51,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             supervision_start_date,
             time_period,
             {dimensions_clause}
-        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions_raw`
+        FROM `{project_id}.{dashboard_views_dataset}.supervision_to_prison_transitions_raw_materialized`
     )
     SELECT {columns} FROM transitions_without_unknowns
 """

@@ -166,6 +166,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE,
     description=COMPLIANT_REPORTING_REFERRAL_RECORD_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
    LEFT JOIN us_id_roster 
       ON sup_pop.state_code = us_id_roster.state_code
       AND sup_pop.supervising_officer_external_id = us_id_roster.supervising_officer_external_id 
-   LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names` locations
+   LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized` locations
         ON sup_pop.state_code = locations.state_code
         AND {{vitals_state_specific_join_with_supervision_location_ids}}
    
