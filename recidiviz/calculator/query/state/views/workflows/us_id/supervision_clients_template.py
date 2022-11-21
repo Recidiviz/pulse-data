@@ -15,9 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ID Workflows supervision clients."""
-from recidiviz.calculator.query.bq_utils import (
-    array_concat_with_null,
-    nonnull_end_date_exclusive_clause,
+from recidiviz.calculator.query.bq_utils import array_concat_with_null
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
+    client_record_supervision_cte,
 )
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
@@ -26,39 +26,7 @@ from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
 )
 
 US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
-    us_id_supervision_cases AS (
-        # This CTE returns a row for each person and supervision sentence, so will return multiple rows if someone
-        # is on dual supervision (parole and probation)
-        SELECT
-          dataflow.person_id,
-          person_external_id,
-          dataflow.supervision_type,
-          supervising_officer_external_id AS officer_id,
-          level_2_supervision_location_name AS district,
-          projected_end.projected_completion_date_max AS expiration_date
-        FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
-        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
-          ON dataflow.state_code = sessions.state_code
-          AND dataflow.person_id = sessions.person_id
-          AND sessions.compartment_level_1 = "SUPERVISION"
-          AND sessions.end_date IS NULL
-        INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
-            ON dataflow.state_code = projected_end.state_code
-            AND dataflow.person_id = projected_end.person_id
-            AND CURRENT_DATE("US/Eastern")
-                BETWEEN projected_end.start_date
-                    AND {nonnull_end_date_exclusive_clause('projected_end.end_date')}
-        LEFT JOIN (
-            SELECT DISTINCT
-                level_2_supervision_location_external_id,
-                level_2_supervision_location_name
-            FROM `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names`
-            WHERE state_code = "US_ID"
-        ) USING (level_2_supervision_location_external_id)
-        WHERE dataflow.state_code = 'US_ID' AND dataflow.included_in_state_population
-          AND dataflow.end_date_exclusive IS NULL
-          AND supervising_officer_external_id IS NOT NULL
-    ),
+    {client_record_supervision_cte("US_ID")}
     us_id_supervision_level_start AS (
     # This CTE selects the most recent supervision level for each person with an active supervision period,
     # prioritizing the highest level in cases where one person is currently assigned to multiple levels
