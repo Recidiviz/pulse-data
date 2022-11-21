@@ -12,12 +12,10 @@ columns:
   - name: StartDate
     description: |-
       Starting date of the employment period.
-    is_datetime: True
   - name: EndDate
     description: |-
       Ending date of the employment period. Includes some zeroes, which may indicate 
       an open period or missing data.
-    is_datetime: True
   - name: MonthlySalary
     description: |-
       Monthly salary over the period of employment. Data is currently missing (null in

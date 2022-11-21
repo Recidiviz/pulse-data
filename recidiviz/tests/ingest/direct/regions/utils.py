@@ -27,6 +27,10 @@ from recidiviz.common.constants.state.state_drug_screen import (
     StateDrugScreenResult,
     StateDrugScreenSampleType,
 )
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+    StateEmploymentPeriodEndReason,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -476,3 +480,37 @@ def add_drug_screen_to_person(
     )
 
     person.drug_screens.append(drug_screen)
+
+
+def add_employment_period_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    employment_status: Optional[StateEmploymentPeriodEmploymentStatus] = None,
+    employment_status_raw_text: Optional[str] = None,
+    start_date: Optional[datetime.date] = None,
+    end_date: Optional[datetime.date] = None,
+    last_verified_date: Optional[datetime.date] = None,
+    employer_name: Optional[str] = None,
+    job_title: Optional[str] = None,
+    end_reason: Optional[StateEmploymentPeriodEndReason] = None,
+    end_reason_raw_text: Optional[str] = None,
+) -> None:
+    """Append a drug screen to the person (updates the person entity in place)."""
+
+    employment_period = entities.StateEmploymentPeriod.new_with_defaults(
+        external_id=external_id,
+        state_code=state_code,
+        employment_status=employment_status,
+        employment_status_raw_text=employment_status_raw_text,
+        start_date=start_date,
+        end_date=end_date,
+        last_verified_date=last_verified_date,
+        employer_name=employer_name,
+        job_title=job_title,
+        end_reason=end_reason,
+        end_reason_raw_text=end_reason_raw_text,
+        person=person,
+    )
+
+    person.employment_periods.append(employment_period)
