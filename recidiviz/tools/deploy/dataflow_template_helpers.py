@@ -34,16 +34,14 @@ class PipelineConfig(TypedDict):
 @attr.s(auto_attribs=True)
 class PipelineYaml:
     normalization_pipelines: List[PipelineConfig]
-    incremental_metric_pipelines: List[PipelineConfig]
-    historical_metric_pipelines: List[PipelineConfig]
+    metric_pipelines: List[PipelineConfig]
     supplemental_dataset_pipelines: List[PipelineConfig]
 
     @property
     def all_pipelines(self) -> List[PipelineConfig]:
         return (
             self.normalization_pipelines
-            + self.incremental_metric_pipelines
-            + self.historical_metric_pipelines
+            + self.metric_pipelines
             + self.supplemental_dataset_pipelines
         )
 

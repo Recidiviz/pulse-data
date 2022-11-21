@@ -35,11 +35,11 @@ def main(trigger_historical_dag: int) -> None:
     historical DAG on completion."""
     if trigger_historical_dag:
         message = TRIGGER_HISTORICAL_DAG_FLAG
-        logging.info("CloudSQL to BigQuery refresh will trigger historical pipelines.")
+        logging.info("CloudSQL to BigQuery refresh will trigger the historical DAG.")
     else:
         message = NO_HISTORICAL_DAG_FLAG
         logging.info(
-            "Historical pipelines will not be triggered - no relevant code changes."
+            "The historical DAG will not be triggered - no relevant code changes."
         )
 
     pubsub_helper.publish_message_to_topic(

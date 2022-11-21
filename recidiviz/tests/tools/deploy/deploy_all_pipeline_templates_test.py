@@ -69,11 +69,6 @@ class TestDeployAllPipelineTemplates(unittest.TestCase):
                     source_distribution=mock_source_distribution(),
                     job_name="us-yy-pipeline_with_limit-calculations-24",
                 ),
-                mock.call(
-                    project_id=GCP_PROJECT_PRODUCTION,
-                    source_distribution=mock_source_distribution(),
-                    job_name="us-yy-historical-pipeline_with_limit-calculations-240",
-                ),
             ]
         )
 
@@ -122,11 +117,6 @@ class TestDeployAllPipelineTemplates(unittest.TestCase):
                     project_id=GCP_PROJECT_STAGING,
                     source_distribution=mock_source_distribution(),
                     job_name="us-yy-pipeline_staging_only-calculations-36",
-                ),
-                mock.call(
-                    project_id=GCP_PROJECT_STAGING,
-                    source_distribution=mock_source_distribution(),
-                    job_name="us-yy-historical-pipeline_with_limit-calculations-240",
                 ),
             ]
         )

@@ -52,7 +52,7 @@ normalization_pipelines:
     state_code: US_MI
     region: us-central1
 
-incremental_metric_pipelines:
+metric_pipelines:
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
     job_name: full-us-nd-recidivism-metrics
@@ -287,8 +287,6 @@ incremental_metric_pipelines:
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-east1
     staging_only: True
-
-historical_metric_pipelines: []
 
 supplemental_dataset_pipelines:
   - pipeline: us_id_case_note_extracted_entities_supplemental

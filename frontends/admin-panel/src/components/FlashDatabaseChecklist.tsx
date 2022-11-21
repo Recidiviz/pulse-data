@@ -1092,7 +1092,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             description={
               <>
                 <p>
-                  Trigger a BigQuery refresh and run all historical pipelines by
+                  Trigger a BigQuery refresh and run the historical DAG by
                   running this script locally inside a pipenv shell:
                 </p>
                 <p>
@@ -1115,10 +1115,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   >
                     go/airflow-{isProduction ? "prod" : "staging"}
                   </a>{" "}
-                  and wait for the historical pipelines to finish before
-                  continuing. Note that the historical pipelines may not start
-                  for ~10 minutes while the BigQuery refresh is still in
-                  progress.
+                  and wait for the historical DAG to finish before continuing.
+                  Note that the historical DAG may not start for ~10 minutes
+                  while the BigQuery refresh is still in progress.
                 </p>
               </>
             }
@@ -1128,7 +1127,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             title="Trigger Incremental Pipelines"
             description={
               <p>
-                Run all incremental pipelines by visiting{" "}
+                Run the incremental DAG by visiting{" "}
                 <a
                   href={`http://go/airflow-${
                     isProduction ? "prod" : "staging"

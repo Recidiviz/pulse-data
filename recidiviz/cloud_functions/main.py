@@ -98,7 +98,7 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event to begin the refresh of BigQuery
     data for a given schema, pulling data from the appropriate CloudSQL Postgres
-    instance, and to trigger the historical pipelines once the refresh is complete.
+    instance, and to trigger the historical DAG once the refresh is complete.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:

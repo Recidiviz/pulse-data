@@ -94,12 +94,9 @@ def _pipeline_regions_by_job_name() -> Dict[str, str]:
     normalization_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
         "normalization_pipelines"
     )
-    incremental_metric_pipelines = YAMLDict.from_path(
-        PIPELINE_CONFIG_YAML_PATH
-    ).pop_dicts("incremental_metric_pipelines")
-    historical_metric_pipelines = YAMLDict.from_path(
-        PIPELINE_CONFIG_YAML_PATH
-    ).pop_dicts("historical_metric_pipelines")
+    metric_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
+        "metric_pipelines"
+    )
     supplemental_dataset_pipelines = YAMLDict.from_path(
         PIPELINE_CONFIG_YAML_PATH
     ).pop_dicts("supplemental_dataset_pipelines")
@@ -108,8 +105,7 @@ def _pipeline_regions_by_job_name() -> Dict[str, str]:
         pipeline.pop("job_name", str): pipeline.pop("region", str)
         for pipeline_group in [
             normalization_pipelines,
-            incremental_metric_pipelines,
-            historical_metric_pipelines,
+            metric_pipelines,
             supplemental_dataset_pipelines,
         ]
         for pipeline in pipeline_group

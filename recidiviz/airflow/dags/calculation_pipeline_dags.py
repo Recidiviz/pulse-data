@@ -296,9 +296,7 @@ def execute_calculations(
 
     # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
     #  calculation month counts
-    metric_pipelines = YAMLDict.from_path(config_file).pop_dicts(
-        "incremental_metric_pipelines"
-    )
+    metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
 
     metric_pipelines_by_state: Dict[
         str, List[RecidivizDataflowTemplateOperator]
@@ -413,7 +411,7 @@ def execute_calculations(
     max_active_runs=1,
 )
 def incremental_dag() -> None:
-    """This executes the calculations for all of the incremental pipelines."""
+    """This executes the calculations for all of the pipelines on a daily basis."""
 
     execute_calculations(should_trigger_exports=True, should_update_all_views=False)
 
@@ -430,7 +428,8 @@ def incremental_dag() -> None:
     max_active_runs=1,
 )
 def historical_dag() -> None:
-    """This executes the calculations for all of the historical pipelines."""
+    """This executes the calculations for all of the pipelines after a calc code change
+    gets deployed."""
 
     execute_calculations(should_trigger_exports=False, should_update_all_views=True)
 

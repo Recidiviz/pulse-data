@@ -40,14 +40,9 @@ def get_metric_pipeline_enabled_states() -> Set[StateCode]:
 
     pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
-    incremental_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-        "incremental_metric_pipelines"
-    )
-    historical_metric_pipelines = pipeline_templates_yaml.pop_dicts(
-        "historical_metric_pipelines"
-    )
+    metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
 
-    for pipeline in incremental_metric_pipelines + historical_metric_pipelines:
+    for pipeline in metric_pipelines:
         pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
 
     return pipeline_states

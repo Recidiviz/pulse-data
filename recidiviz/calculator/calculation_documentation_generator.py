@@ -216,21 +216,11 @@ class CalculationDocumentationGenerator:
         )
         self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
-        self.incremental_metric_pipelines = self.prod_templates_yaml.pop_dicts(
-            "incremental_metric_pipelines"
-        )
-        self.historical_metric_pipelines = self.prod_templates_yaml.pop_dicts(
-            "historical_metric_pipelines"
-        )
+        self.metric_pipelines = self.prod_templates_yaml.pop_dicts("metric_pipelines")
 
         self.metric_calculations_by_state = self._get_state_metric_calculations(
-            self.incremental_metric_pipelines, "daily"
+            self.metric_pipelines, "daily"
         )
-        # combine with the historical pipelines
-        for name, metric_info_list in self._get_state_metric_calculations(
-            self.historical_metric_pipelines, "triggered by code changes"
-        ).items():
-            self.metric_calculations_by_state[name].extend(metric_info_list)
 
         # Reverse the metric_calculations_by_state dictionary
         self.state_metric_calculations_by_metric: Dict[
@@ -315,13 +305,8 @@ class CalculationDocumentationGenerator:
         """Returns the set of StateCodes for all states present in our calculation_pipeline_templates.yaml."""
         states = {
             pipeline.peek("state_code", str).upper()
-            for pipeline in self.incremental_metric_pipelines
-        }.union(
-            {
-                pipeline.peek("state_code", str).upper()
-                for pipeline in self.historical_metric_pipelines
-            }
-        )
+            for pipeline in self.metric_pipelines
+        }
 
         for state_code in states:
             if not StateCode.is_state_code(state_code):
