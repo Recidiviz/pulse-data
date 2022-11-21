@@ -101,7 +101,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_QUERY_TEMPLATE = """
             {transition_time_period} AS time_period,
             {length_of_stay_months_grouped} AS length_of_stay,
         FROM base_data
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map` location
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_supervision_location_name_map_materialized` location
             ON base_data.state_code = location.state_code
             AND base_data.district_id = location.location_id
     )

@@ -44,33 +44,33 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
         probation_count as current_probation_sentence_count,
         dual_sentence_count as current_dual_sentence_count,
         total_population_count as current_total_sentenced_count
-      FROM `{project_id}.{public_dashboard_dataset}.sentence_type_by_district_by_demographics` 
+      FROM `{project_id}.{public_dashboard_dataset}.sentence_type_by_district_by_demographics_materialized` 
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND district = 'ALL'
     ), incarcerated_population AS (
       SELECT state_code, race_or_ethnicity, population_count as total_incarcerated_population_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_prioritized_race_and_ethnicity_by_period` 
+      FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_prioritized_race_and_ethnicity_by_period_materialized`
       WHERE metric_period_months = 36
     ), parole_population AS (
       SELECT state_code, race_or_ethnicity, total_supervision_population as total_parole_population_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period`   
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period_materialized`
       WHERE metric_period_months = 36
       AND supervision_type = 'PAROLE'
     ), probation_population AS (
       SELECT state_code, race_or_ethnicity, total_supervision_population as total_probation_population_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period`   
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period_materialized`
       WHERE metric_period_months = 36
       AND supervision_type = 'PROBATION'
     ), supervision_population AS (
       SELECT state_code, race_or_ethnicity, total_supervision_population as total_supervision_population_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period`   
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_prioritized_race_and_ethnicity_by_period_materialized`
       WHERE metric_period_months = 36
       AND supervision_type = 'ALL'
     ), parole_revocations AS (
       SELECT state_code, race_or_ethnicity, new_crime_count AS parole_new_crime_count_36_mo,
         technical_count AS parole_technical_count_36_mo, absconsion_count as parole_absconsion_count_36_mo,
         unknown_count AS parole_unknown_count_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics_materialized`
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND supervision_type = 'PAROLE'
       AND metric_period_months = 36
@@ -78,7 +78,7 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
       SELECT state_code, race_or_ethnicity, new_crime_count AS probation_new_crime_count_36_mo,
         technical_count AS probation_technical_count_36_mo, absconsion_count as probation_absconsion_count_36_mo,
         unknown_count AS probation_unknown_count_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics_materialized`
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND supervision_type = 'PROBATION'
       AND metric_period_months = 36
@@ -86,23 +86,23 @@ RACIAL_DISPARITIES_VIEW_QUERY_TEMPLATE = """
       SELECT state_code, race_or_ethnicity, new_crime_count AS supervision_new_crime_count_36_mo,
         technical_count AS supervision_technical_count_36_mo, absconsion_count as supervision_absconsion_count_36_mo,
         unknown_count AS supervision_unknown_count_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics` 
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_revocations_by_period_by_type_by_demographics_materialized`
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND supervision_type = 'ALL'
       AND metric_period_months = 36
     ), parole_releases AS (
       SELECT state_code, race_or_ethnicity, parole_count as parole_release_count_36_mo
-      FROM `{project_id}.{public_dashboard_dataset}.incarceration_releases_by_type_by_period` 
+      FROM `{project_id}.{public_dashboard_dataset}.incarceration_releases_by_type_by_period_materialized` 
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND metric_period_months = 36
     ), ftr_participants AS (
       SELECT state_code, race_or_ethnicity, participation_count as current_ftr_participation_count
-      FROM `{project_id}.{public_dashboard_dataset}.active_program_participation_by_region`
+      FROM `{project_id}.{public_dashboard_dataset}.active_program_participation_by_region_materialized`
       WHERE region_id = 'ALL'
       AND supervision_type = 'ALL'
     ), current_supervision_population AS (
       SELECT state_code, race_or_ethnicity, total_supervision_count as current_supervision_population
-      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_district_by_demographics`
+      FROM `{project_id}.{public_dashboard_dataset}.supervision_population_by_district_by_demographics_materialized`
       WHERE (race_or_ethnicity != 'ALL' OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL'))
       AND district = 'ALL'
       AND supervision_type = 'ALL'

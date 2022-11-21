@@ -67,7 +67,7 @@ FACILITY_METADATA_VIEW_QUERY_TEMPLATE = """
       population_year_updated,
       population
     FROM
-      `{project_id}.{covid_dashboard_dataset}.facility_case_data`
+      `{project_id}.{covid_dashboard_dataset}.facility_case_data_materialized`
     LEFT JOIN
       primary_alias
     USING (facility_id)

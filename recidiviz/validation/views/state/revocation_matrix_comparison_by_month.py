@@ -39,7 +39,7 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """
     ),
     month_counts AS (
       SELECT state_code as region_code, year, month, total_revocations
-      FROM `{project_id}.{view_dataset}.revocations_matrix_events_by_month`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_events_by_month_materialized`
       WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH),
                                                       INTERVAL 35 MONTH)
         AND admission_type = 'ALL' AND violation_type = 'ALL' AND reported_violations = 'ALL' 

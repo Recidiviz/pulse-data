@@ -53,7 +53,7 @@ SUPERVISION_OFFICER_CASELOAD_QUERY_TEMPLATE = """
             IFNULL(name_map.location_name,session_attributes.supervision_office) AS district,
         FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` s,
         UNNEST (session_attributes) session_attributes
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
+        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map_materialized` name_map
             ON s.state_code = name_map.state_code
             AND session_attributes.supervision_office = name_map.location_id
         WHERE session_attributes.compartment_level_1 = 'SUPERVISION' 

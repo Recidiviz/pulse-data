@@ -233,7 +233,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
 PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=PO_MONTHLY_REPORT_DATA_VIEW_NAME,
-    should_materialize=True,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
     dimensions=("state_code", "review_month", "officer_external_id", "district"),
     district_dimension=bq_utils.unnest_district(district_column="district"),

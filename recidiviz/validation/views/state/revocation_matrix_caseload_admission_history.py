@@ -46,7 +46,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """
             THEN CAST(admission_history_description AS INT64)
         ELSE ARRAY_LENGTH(SPLIT(admission_history_description, ';'))
         END AS total_admissions
-        FROM `{project_id}.{dashboard_dataset}.revocations_matrix_filtered_caseload`
+        FROM `{project_id}.{dashboard_dataset}.revocations_matrix_filtered_caseload_materialized`
         WHERE metric_period_months = 36
     )
     SELECT

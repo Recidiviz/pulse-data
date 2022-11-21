@@ -64,7 +64,7 @@ PATHWAYS_PRISON_DIMENSION_COMBINATIONS_QUERY_TEMPLATE = """
         SELECT
             state_code,
             aggregating_location_id AS facility,
-        FROM `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map`
+        FROM `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized`
 
         UNION ALL
 

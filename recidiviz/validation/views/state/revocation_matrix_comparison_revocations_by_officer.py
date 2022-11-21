@@ -36,7 +36,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
       SELECT
         state_code as region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
         officer, SUM(revocation_count) as total_revocations
-      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_officer`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_officer_materialized`
       WHERE supervision_level = 'ALL'
         AND supervision_type = 'ALL'
         AND charge_category = 'ALL'
@@ -49,7 +49,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """
         state_code as region_code, metric_period_months,
         level_1_supervision_location, level_2_supervision_location, officer,
         COUNT(DISTINCT state_id) as total_revocations
-      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload_materialized`
       GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer
     )
     

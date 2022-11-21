@@ -36,13 +36,13 @@ incarceration_population_by_admission_reason AS (
   SELECT 
     state_code, date_of_stay, race_or_ethnicity, gender, age_bucket,
     SUM(total_population) AS population_by_admission_reason_total_population
-  FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_admission_reason`
+  FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_admission_reason_materialized`
   GROUP BY state_code, date_of_stay, race_or_ethnicity, gender, age_bucket
 ),
 incarceration_population_by_facility_by_demographics AS (
   SELECT state_code, date_of_stay, race_or_ethnicity, gender, age_bucket,
   SUM(total_population) AS population_by_facility_by_demographics_total_population
-  FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_facility_by_demographics`
+  FROM `{project_id}.{public_dashboard_dataset}.incarceration_population_by_facility_by_demographics_materialized`
   WHERE facility = 'ALL'
   GROUP BY state_code, date_of_stay, race_or_ethnicity, gender, age_bucket
 )

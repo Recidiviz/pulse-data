@@ -89,7 +89,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
                 ORDER BY pei.external_id
             ) as rn,
         FROM sessions_data
-        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map` location
+        LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized` location
             ON sessions_data.state_code = location.state_code 
             AND level_1_location_external_id = location_id
         LEFT JOIN `{project_id}.{state_dataset}.state_person` person

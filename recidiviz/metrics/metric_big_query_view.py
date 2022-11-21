@@ -22,6 +22,7 @@ from typing import List, Optional, Tuple
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.utils.types import assert_type
 
 PROJECT_ID_KEY = "project_id"
 
@@ -37,7 +38,7 @@ class MetricBigQueryView(BigQueryView):
         description: str,
         view_query_template: str,
         dimensions: Tuple[str, ...],
-        materialized_address: Optional[BigQueryAddress],
+        materialized_address: BigQueryAddress,
         address_overrides: Optional[BigQueryAddressOverrides],
         clustering_fields: Optional[List[str]] = None,
         **query_format_kwargs: str,
@@ -77,7 +78,6 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         description: str,
         view_query_template: str,
         dimensions: Tuple[str, ...],
-        should_materialize: bool = False,
         materialized_address_override: Optional[BigQueryAddress] = None,
         clustering_fields: Optional[List[str]] = None,
         # All keyword args must have string values
@@ -89,11 +89,15 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.description = description
         self.view_query_template = view_query_template
         self.dimensions = dimensions
-        self.materialized_address = self._build_materialized_address(
-            dataset_id=dataset_id,
-            view_id=view_id,
-            materialized_address_override=materialized_address_override,
-            should_materialize=should_materialize,
+        self.materialized_address: BigQueryAddress = assert_type(
+            self._build_materialized_address(
+                dataset_id=dataset_id,
+                view_id=view_id,
+                materialized_address_override=materialized_address_override,
+                # We materialize all MetricBigQueryViewBuilder
+                should_materialize=True,
+            ),
+            BigQueryAddress,
         )
         self.clustering_fields = clustering_fields
         self.query_format_kwargs = query_format_kwargs

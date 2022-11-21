@@ -75,7 +75,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
             AND sessions.person_id = compartment_sessions.person_id
             AND sessions.dataflow_session_id <= compartment_sessions.dataflow_session_id_end
             AND sessions.dataflow_session_id >= compartment_sessions.dataflow_session_id_start
-        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map` name_map
+        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map_materialized` name_map
             ON sessions.state_code = name_map.state_code
             AND session_attributes.supervision_office = name_map.location_id
         WHERE session_attributes.compartment_level_1 = 'SUPERVISION' 
