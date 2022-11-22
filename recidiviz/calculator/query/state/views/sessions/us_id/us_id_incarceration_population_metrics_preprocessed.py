@@ -59,7 +59,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             judicial_district_code,
         FROM
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
-        WHERE state_code = 'US_ID'
+        WHERE state_code IN ('US_ID', 'US_IX')
     )
     SELECT
         pop.person_id,
@@ -83,7 +83,8 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.judicial_district_code,
     FROM incarceration_population_cte pop
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` facilities
-        ON pop.compartment_location = facilities.facility
+        ON pop.state_code = facilities.state_code
+        AND pop.compartment_location = facilities.facility
         AND pop.compartment_level_1 = 'INCARCERATION'
 """
 
