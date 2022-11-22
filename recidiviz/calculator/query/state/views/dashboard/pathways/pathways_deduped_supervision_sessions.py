@@ -49,10 +49,7 @@ PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_QUERY_TEMPLATE = """
             EXTRACT(YEAR FROM date_of_supervision) AS year,
             EXTRACT(MONTH FROM date_of_supervision) AS month,
             COALESCE(name_map.location_name,session_attributes.supervision_office, 'EXTERNAL_UNKNOWN') AS district,
-            CASE
-                WHEN s.state_code="US_ND" THEN NULL
-                ELSE {state_specific_supervision_level}
-            END AS supervision_level,
+            {state_specific_supervision_level} AS supervision_level,
         FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` s,
         UNNEST(GENERATE_DATE_ARRAY(DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH), 
             CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)) as date_of_supervision,
