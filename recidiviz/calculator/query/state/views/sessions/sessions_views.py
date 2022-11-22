@@ -93,6 +93,9 @@ from recidiviz.calculator.query.state.views.sessions.incarceration_super_session
 from recidiviz.calculator.query.state.views.sessions.location_sessions import (
     LOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.person_age_sessions import (
+    PERSON_AGE_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
@@ -257,6 +260,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     DISTRICT_SESSIONS_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     LOCATION_SESSIONS_VIEW_BUILDER,
+    PERSON_AGE_SESSIONS_VIEW_BUILDER,
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
     REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER,
