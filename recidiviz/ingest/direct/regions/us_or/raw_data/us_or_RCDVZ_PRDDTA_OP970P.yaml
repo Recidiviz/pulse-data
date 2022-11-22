@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP970P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: DATE_LAST_UPDATED
+  - name: TIME_LAST_UPDATED
+  - name: CUSTODY_NUMBER
+  - name: ADMISSION_NUMBER
+  - name: TRANSFER_NUMBER
+  - name: CURRENT_STATUS
+  - name: RESPONSIBLE_LOCATION
+  - name: ID_NUMBER
+  - name: RESPONSIBLE_DIVISION
+  - name: FIRST_NAME
+  - name: LAST_NAME
+  - name: MIDDLE_NAME
+  - name: BIRTHDATE
+  - name: CELL_NUMBER
+  - name: ADMISSION_DATE
+  - name: ADMISSION_REASON
+  - name: OUTCOUNT_REASON
+  - name: OUTCOUNT_LOCATION
+  - name: ORS_NUMBER
+  - name: ORS_PARAGRAPH
+  - name: CRIME_ABBREVIATION
+  - name: CRIME_CLASS
+  - name: OFF_SEVERITY
+  - name: CRIME_CATEGORY
+  - name: CASELOAD
+  - name: INSTITUTION_RISK
+  - name: COMMUNITY_SUPER_LVL
+  - name: HISTORY_RISK
+  - name: DANG_OFFENDER
+  - name: SXDANG_OFFENDER
+  - name: PROJECTED_RELEASE_DATE
+  - name: GT_PROJ_RELE_DATE
+  - name: ET_PROJ_RELE_DATE
+  - name: CURRENT_CUSTODY_DATE
+  - name: PAROLE_RELEASE_DATE
+  - name: MAXIMUM_DATE
+  - name: SENT_GUIDELINES_APP
+  - name: MAX_INCAR_DATE
+  - name: SG_EARNED_TIME_DATE
+  - name: PVP_FLAG
+  - name: PVP_CYCLE
+  - name: FLAG_137635
+  - name: NEXT_EXPI_DATE
+  - name: MINIMUM_DATE
+  - name: LIFE_OR_DEATH
+  - name: PROGRAM_ASSIGNMENT_NAME
+  - name: PRGSTRDT
+  - name: SEX
+  - name: RACE
+  - name: HEIGHT
+  - name: WEIGHT
+  - name: HAIR
+  - name: EYES
+  - name: SMOKER
+  - name: SEXUAL_PREFERENCE
+  - name: MARITAL_STATUS
+  - name: LOCATION_CODE
+  - name: UNIT_NUMBER
+  - name: CUSTODY_STATUS
+  - name: FILLER
+  - name: DEPENDENTS
+  - name: RELIGIOUS_PREFERENCE
+  - name: EMPLOYMENT_STATUS
+  - name: PRIMARY_OCCUPATION
+  - name: GANG_CODE

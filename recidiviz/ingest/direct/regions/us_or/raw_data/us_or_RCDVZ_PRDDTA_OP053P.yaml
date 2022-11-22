@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP053P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: NEXT_NUMBER
+  - name: RECORD_KEY
+  - name: CUSTODY_NUMBER
+  - name: ADMISSION_NUMBER
+  - name: OFFENSE_NUMBER
+  - name: LAST_UPDATED_WHEN
+  - name: ARREST_DATE
+  - name: COUNTY
+  - name: COURT_CASE_NUMBER
+  - name: COURT_CASE_COUNT
+  - name: CRIME_COMMITTED_DATE
+  - name: DISTRICT_ATTORNEY
+  - name: DEFENSE_COUNSEL
+  - name: JUDGE
+  - name: CONVICTED_DATE
+  - name: DA_CASE_NUMBER
+  - name: ORS_NUMBER
+  - name: ORS_PARAGRAPH
+  - name: INCHOATE
+  - name: INCHOATE_ORS_NUMBER
+  - name: INCHOATE_ORS_PARAGRAPH
+  - name: FELONY_IS_MISDEMEANOR
+  - name: CRIME_ABBREVIATION
+  - name: CRIME_CLASS
+  - name: CRIME_CATEGORY
+  - name: OFF_SEVERITY
+  - name: OOS_FED_CRIME_IND
+  - name: MATRIX_RANGE_FROM
+  - name: MATRIX_RANGE_TO
+  - name: BAF_NO
+  - name: BAF_GROUP_NO
+  - name: BOARD_OVRRIDE
+  - name: PSI_PSR_NO
+  - name: SENT_GUIDELINES_APP

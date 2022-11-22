@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP007P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: SEX
+  - name: RACE
+  - name: HEIGHT
+  - name: WEIGHT
+  - name: HAIR
+  - name: EYES
+  - name: HANDICAP
+  - name: IMPAIRMENT_SIGHT
+  - name: IMPAIRMENT_HEARING
+  - name: IMPAIRMENT_SPEECH
+  - name: IMPAIRMENT_MOVEMENT
+  - name: IMPAIRMENT_INTELL
+  - name: IMPAIRMENT_EMOTIONAL
+  - name: IMPAIRMENT_OTHER
+  - name: IMPAIRMENT_COMMENT
+  - name: CITIZEN
+  - name: BIRTHPLACE
+  - name: SMOKER
+  - name: SEXUAL_PREFERENCE
+  - name: MARITAL_STATUS
+  - name: DEPENDENTS
+  - name: EMPLOYMENT_STATUS
+  - name: PRIMARY_OCCUPATION
+  - name: MILITARY_BRANCH
+  - name: MILITARY_RELEASE_DATE
+  - name: MILITARY_RELEASE_TYPE
+  - name: MILITARY_RELEASE_TYPE2
+  - name: GANG_CODE
+  - name: ASSAULTIVE_BEHAVIOR
+  - name: MEDICAL_CODE
+  - name: JOB_CODE
+  - name: COUNTY
+  - name: END_TRAIN_DATE

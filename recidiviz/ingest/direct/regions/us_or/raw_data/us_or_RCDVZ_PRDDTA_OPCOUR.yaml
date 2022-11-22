@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OPCOUR
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: COURT_CASE_NUMBER
+  - name: COUNTY
+  - name: STRUCTURED_SANCTION_STATUS
+  - name: SG_HISTORY_SCALE
+  - name: CURRENT_STATUS
+  - name: SENTENCE_GUIDELINES_APP
+  - name: CUSTODY_NUMBER
+  - name: ADMISSION_NUMBER
+  - name: JUDGE
+  - name: DISTRICT_ATTORNEY
+  - name: DA_CASE_NUMBER
+  - name: DEFENSE_COUNSEL
+  - name: TERMINATION_CODE
+  - name: TERMINATION_DATE
+  - name: SANCTION_SUPV_CODE
+  - name: STRUCTURED_SANC_SUPV_DATE
+  - name: SENTENCE_BEGIN_DATE
+  - name: CRIME_CATEGORY
