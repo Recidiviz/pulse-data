@@ -634,8 +634,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LAG(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS inflow_from_level_2,
         LEAD(s.compartment_level_1) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_1,
         LEAD(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_2,
-        CAST(FLOOR(DATE_DIFF(s.start_date, demographics.birthdate, DAY) / 365.25) AS INT64) AS age_start,
-        CAST(FLOOR(DATE_DIFF(COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), first.last_day_of_data), demographics.birthdate, DAY) / 365.25) AS INT64) AS age_end,     
+        age_start.age AS age_start,
+        age_end.age AS age_end,
         demographics.gender,
         demographics.prioritized_race_or_ethnicity,
         assessment_end.assessment_score AS assessment_score_end,
@@ -653,6 +653,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ON COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
         AND s.person_id = assessment_end.person_id
         AND s.state_code = assessment_end.state_code
+    LEFT JOIN `{project_id}.{sessions_dataset}.person_age_sessions` age_start
+        ON s.person_id = age_start.person_id
+        AND s.state_code = age_start.state_code
+        AND s.start_date BETWEEN age_start.start_date AND DATE_SUB(age_start.end_date_exclusive, INTERVAL 1 DAY)
+    LEFT JOIN `{project_id}.{sessions_dataset}.person_age_sessions` age_end
+        ON s.person_id = age_end.person_id
+        AND s.state_code = age_end.state_code
+        AND DATE_SUB(COALESCE(s.end_date_exclusive, s.last_day_of_data), INTERVAL 1 DAY) 
+            BETWEEN age_end.start_date AND DATE_SUB(age_end.end_date_exclusive, INTERVAL 1 DAY) 
     ),
     sessions_with_assessment_score_start AS
     /*
