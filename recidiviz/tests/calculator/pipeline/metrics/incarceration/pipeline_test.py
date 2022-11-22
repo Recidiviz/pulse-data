@@ -36,13 +36,11 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
-    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationMetric,
     IncarcerationMetricType,
-    IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
@@ -118,14 +116,12 @@ _STATE_CODE = "US_XX"
 ALL_METRICS_INCLUSIONS_DICT = {
     IncarcerationMetricType.INCARCERATION_ADMISSION: True,
     IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: True,
-    IncarcerationMetricType.INCARCERATION_POPULATION: True,
     IncarcerationMetricType.INCARCERATION_RELEASE: True,
 }
 
 ALL_METRIC_TYPES_SET = {
     IncarcerationMetricType.INCARCERATION_ADMISSION,
     IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
-    IncarcerationMetricType.INCARCERATION_POPULATION,
     IncarcerationMetricType.INCARCERATION_RELEASE,
 }
 
@@ -699,16 +695,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 ).days,
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
-            IncarcerationStayEvent(
-                admission_reason=incarceration_period.admission_reason,
-                admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-                state_code=incarceration_period.state_code,
-                event_date=incarceration_period.admission_date,
-                facility=incarceration_period.facility,
-                county_of_residence=_COUNTY_OF_RESIDENCE,
-                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            ),
         ]
 
         correct_output = [(fake_person_id, (fake_person, incarceration_events))]
@@ -1029,10 +1015,6 @@ class AssertMatchers:
                 if isinstance(metric, IncarcerationAdmissionMetric):
                     observed_metric_types.add(
                         IncarcerationMetricType.INCARCERATION_ADMISSION
-                    )
-                elif isinstance(metric, IncarcerationPopulationMetric):
-                    observed_metric_types.add(
-                        IncarcerationMetricType.INCARCERATION_POPULATION
                     )
                 elif isinstance(metric, IncarcerationReleaseMetric):
                     observed_metric_types.add(

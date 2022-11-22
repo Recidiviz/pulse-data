@@ -22,7 +22,6 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetricType,
-    IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
@@ -97,7 +96,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     # IncarcerationMetrics
     IncarcerationAdmissionMetric: "incarceration_admission_metrics",
     IncarcerationCommitmentFromSupervisionMetric: "incarceration_commitment_from_supervision_metrics",
-    IncarcerationPopulationMetric: "incarceration_population_metrics",
     IncarcerationReleaseMetric: "incarceration_release_metrics",
     # PopulationSpanMetrics
     IncarcerationPopulationSpanMetric: "incarceration_population_span_metrics",
@@ -125,7 +123,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     # IncarcerationMetrics
     "incarceration_admission_metrics": IncarcerationMetricType.INCARCERATION_ADMISSION,
     "incarceration_commitment_from_supervision_metrics": IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION,
-    "incarceration_population_metrics": IncarcerationMetricType.INCARCERATION_POPULATION,
     "incarceration_release_metrics": IncarcerationMetricType.INCARCERATION_RELEASE,
     # PopulationSpanMetrics
     "incarceration_population_span_metrics": PopulationSpanMetricType.INCARCERATION_POPULATION_SPAN,

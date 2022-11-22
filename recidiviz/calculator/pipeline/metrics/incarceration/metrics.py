@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
@@ -55,7 +54,6 @@ class IncarcerationMetricType(RecidivizMetricType):
     INCARCERATION_COMMITMENT_FROM_SUPERVISION = (
         "INCARCERATION_COMMITMENT_FROM_SUPERVISION"
     )
-    INCARCERATION_POPULATION = "INCARCERATION_POPULATION"
     INCARCERATION_RELEASE = "INCARCERATION_RELEASE"
 
 
@@ -94,63 +92,6 @@ class IncarcerationMetric(
     @abc.abstractmethod
     def get_description(cls) -> str:
         """Should be implemented by metric subclasses to return a description of the metric."""
-
-
-@attr.s
-class IncarcerationPopulationMetric(IncarcerationMetric):
-    """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
-
-    @classmethod
-    def get_description(cls) -> str:
-        return """
-The `IncarcerationPopulationMetric` stores information about a single day that an individual spent incarcerated. This metric tracks each day on which an individual was counted in the state’s incarcerated population, and includes information related to the stay in a facility.
-
-With this metric, we can answer questions like:
-
-- How has the population of a DOC facility changed over time?
-- How many people are being held in a state prison for a parole board hold today?
-- What proportion of individuals incarcerated in a state in 2010 were women?
-
-This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. All population metrics are end date exclusive, meaning a person is not counted in a facility’s population on the day that they are released from that facility. The population metrics are start date inclusive, meaning that a person is counted in a facility’s population on the date that they are admitted to the facility.
-"""
-
-    # Required characteristics
-
-    # The type of IncarcerationMetric
-    metric_type: IncarcerationMetricType = attr.ib(
-        init=False, default=IncarcerationMetricType.INCARCERATION_POPULATION
-    )
-
-    # Date of the incarceration population count
-    date_of_stay: date = attr.ib(default=None)
-
-    # Optional characteristics
-
-    # The most recent "official" admission reason for this time of incarceration
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
-        default=None
-    )
-
-    # Raw text value of the most recent "official" admission reason for this time of incarceration
-    admission_reason_raw_text: Optional[str] = attr.ib(default=None)
-
-    # Supervision type at the time of commitment from supervision to incarceration if the most recent "official"
-    # admission reason for this time of incarceration was a commitment from supervision.
-    commitment_from_supervision_supervision_type: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
-
-    # Area of jurisdictional coverage of the court that sentenced the person to this incarceration
-    judicial_district_code: Optional[str] = attr.ib(default=None)
-
-    # TODO(#3275): Rename to purpose_for_incarceration
-    # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[
-        StateSpecializedPurposeForIncarceration
-    ] = attr.ib(default=None)
-
-    # Custodial authority
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
 
 @attr.s

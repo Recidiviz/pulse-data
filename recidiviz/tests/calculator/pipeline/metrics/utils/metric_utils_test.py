@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetric,
     IncarcerationMetricType,
-    IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.metrics.program.metrics import (
@@ -167,7 +166,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
         ] = {
             IncarcerationMetricType.INCARCERATION_ADMISSION: IncarcerationAdmissionMetric,
             IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION: IncarcerationCommitmentFromSupervisionMetric,
-            IncarcerationMetricType.INCARCERATION_POPULATION: IncarcerationPopulationMetric,
             IncarcerationMetricType.INCARCERATION_RELEASE: IncarcerationReleaseMetric,
         }
 

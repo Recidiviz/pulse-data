@@ -33,7 +33,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
@@ -56,44 +55,6 @@ class IncarcerationEvent(Event, IncludedInStateMixin):
 
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
-
-
-@attr.s(frozen=True)
-class IncarcerationStayEvent(IncarcerationEvent):
-    """Models an IncarcerationEvent where a person spent time incarcerated during the
-    given day."""
-
-    # The most recent "official" admission reason for this time of incarceration
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
-        default=None
-    )
-
-    # Raw text value of the most recent "official" admission reason for this time of
-    # incarceration
-    admission_reason_raw_text: Optional[str] = attr.ib(default=None)
-
-    # Supervision type at the time of commitment from supervision to incarceration if the most recent "official"
-    # admission reason for this time of incarceration was a commitment from supervision.
-    commitment_from_supervision_supervision_type: Optional[
-        StateSupervisionPeriodSupervisionType
-    ] = attr.ib(default=None)
-
-    # Area of jurisdictional coverage of the court that sentenced the person to this
-    # incarceration
-    judicial_district_code: Optional[str] = attr.ib(default=None)
-
-    # TODO(#3275): Rename to purpose_for_incarceration
-    # Specialized purpose for incarceration
-    specialized_purpose_for_incarceration: Optional[
-        StateSpecializedPurposeForIncarceration
-    ] = attr.ib(default=None)
-
-    # Custodial authority
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
-
-    @property
-    def date_of_stay(self) -> date:
-        return self.event_date
 
 
 @attr.s(frozen=True)

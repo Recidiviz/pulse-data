@@ -31,7 +31,6 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationEvent,
     IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
-    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
@@ -62,7 +61,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervi
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
-    list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -83,9 +81,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
     responses_on_most_recent_response_date,
     violation_responses_in_window,
-)
-from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
@@ -137,9 +132,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             violation_responses=identifier_context[
                 NormalizedStateSupervisionViolationResponse.base_class_name()
             ],
-            incarceration_period_judicial_district_association=identifier_context[
-                INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
-            ],
             persons_to_recent_county_of_residence=identifier_context[
                 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
             ],
@@ -155,7 +147,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         supervision_periods: List[NormalizedStateSupervisionPeriod],
         assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        incarceration_period_judicial_district_association: List[Dict[str, Any]],
         persons_to_recent_county_of_residence: List[Dict[str, Any]],
     ) -> List[IncarcerationEvent]:
         """Finds instances of various events related to incarceration.
@@ -176,13 +167,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         # Convert the list of dictionaries into one dictionary where the keys are the
         # incarceration_period_id values
-        incarceration_period_to_judicial_district: Dict[
-            int, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            incarceration_period_judicial_district_association,
-            key=NormalizedStateIncarcerationPeriod.get_class_id_name(),
-        )
-
         normalized_violation_responses = sort_normalized_entities_by_sequence_num(
             violation_responses
         )
@@ -196,10 +180,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             sorted_supervision_periods=supervision_periods
         )
 
-        (
-            release_events,
-            commitments_from_supervision,
-        ) = self._find_all_admission_release_events(
+        admission_and_release_events = self._find_all_admission_release_events(
             incarceration_delegate=incarceration_delegate,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
             violation_delegate=violation_delegate,
@@ -211,16 +192,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             county_of_residence=county_of_residence,
         )
 
-        incarceration_events.extend(release_events)
-        incarceration_events.extend(
-            self._find_all_stay_events(
-                ip_index=ip_index,
-                incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
-                incarceration_delegate=incarceration_delegate,
-                county_of_residence=county_of_residence,
-                commitments_from_supervision=commitments_from_supervision,
-            )
-        )
+        incarceration_events.extend(admission_and_release_events)
 
         return incarceration_events
 
@@ -235,10 +207,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         assessments: List[NormalizedStateAssessment],
         sorted_violation_responses: List[NormalizedStateSupervisionViolationResponse],
         county_of_residence: Optional[str],
-    ) -> Tuple[
-        List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]],
-        Dict[date, IncarcerationCommitmentFromSupervisionAdmissionEvent],
-    ]:
+    ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
         """Given the |original_incarceration_periods| generates and returns all IncarcerationAdmissionEvents and
         IncarcerationReleaseEvents.
         """
@@ -288,124 +257,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             if release_event:
                 incarceration_events.append(release_event)
 
-        return incarceration_events, commitments_from_supervision
-
-    def _find_all_stay_events(
-        self,
-        ip_index: NormalizedIncarcerationPeriodIndex,
-        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        commitments_from_supervision: Dict[
-            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
-        ],
-        county_of_residence: Optional[str],
-    ) -> List[IncarcerationStayEvent]:
-        """Generates and returns all IncarcerationStayEvents for the
-        normalized incarceration periods provided by the
-        |ip_normalization_manager|.
-        """
-        incarceration_stay_events: List[IncarcerationStayEvent] = []
-
-        for incarceration_period in ip_index.sorted_incarceration_periods:
-            period_stay_events: List[
-                IncarcerationStayEvent
-            ] = self._find_incarceration_stays(
-                incarceration_period,
-                ip_index,
-                incarceration_period_to_judicial_district,
-                incarceration_delegate,
-                commitments_from_supervision,
-                county_of_residence,
-            )
-
-            if period_stay_events:
-                incarceration_stay_events.extend(period_stay_events)
-
-        return incarceration_stay_events
-
-    def _find_incarceration_stays(
-        self,
-        incarceration_period: NormalizedStateIncarcerationPeriod,
-        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
-        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
-        incarceration_delegate: StateSpecificIncarcerationDelegate,
-        commitments_from_supervision: Dict[
-            date, IncarcerationCommitmentFromSupervisionAdmissionEvent
-        ],
-        county_of_residence: Optional[str],
-    ) -> List[IncarcerationStayEvent]:
-        """Finds all days for which this person was incarcerated."""
-        incarceration_stay_events: List[IncarcerationStayEvent] = []
-
-        admission_date: Optional[date] = incarceration_period.admission_date
-        release_date: Optional[date] = incarceration_period.release_date
-
-        if release_date is None:
-            # This person is in custody for this period. Set the release date for
-            # tomorrow.
-            release_date = date.today() + relativedelta(days=1)
-
-        if admission_date is None:
-            return incarceration_stay_events
-
-        judicial_district_code: Optional[str] = self._get_judicial_district_code(
-            incarceration_period, incarceration_period_to_judicial_district
-        )
-
-        stay_date: date = admission_date
-
-        incarceration_period_id: Optional[
-            int
-        ] = incarceration_period.incarceration_period_id
-
-        if not incarceration_period_id:
-            raise ValueError(
-                "Unexpected incarceration period without an incarceration_period_id."
-            )
-
-        original_admission_reasons_by_period_id: Dict[
-            int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], date]
-        ] = incarceration_period_index.original_admission_reasons_by_period_id
-
-        (
-            original_admission_reason,
-            original_admission_reason_raw_text,
-            original_admission_date,
-        ) = original_admission_reasons_by_period_id[incarceration_period_id]
-
-        commitment_from_supervision_supervision_type: Optional[
-            StateSupervisionPeriodSupervisionType
-        ] = None
-        if is_commitment_from_supervision(original_admission_reason):
-            event: Optional[
-                IncarcerationCommitmentFromSupervisionAdmissionEvent
-            ] = commitments_from_supervision.get(original_admission_date)
-
-            if event:
-                commitment_from_supervision_supervision_type = event.supervision_type
-
-        while stay_date < release_date:
-            incarceration_stay_events.append(
-                IncarcerationStayEvent(
-                    state_code=incarceration_period.state_code,
-                    included_in_state_population=incarceration_delegate.is_period_included_in_state_population(
-                        incarceration_period
-                    ),
-                    event_date=stay_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=county_of_residence,
-                    admission_reason=original_admission_reason,
-                    admission_reason_raw_text=original_admission_reason_raw_text,
-                    judicial_district_code=judicial_district_code,
-                    specialized_purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
-                    commitment_from_supervision_supervision_type=commitment_from_supervision_supervision_type,
-                    custodial_authority=incarceration_period.custodial_authority,
-                )
-            )
-
-            stay_date = stay_date + relativedelta(days=1)
-
-        return incarceration_stay_events
+        return incarceration_events
 
     def _get_judicial_district_code(
         self,

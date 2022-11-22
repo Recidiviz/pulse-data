@@ -259,12 +259,6 @@ metric_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION
     region: us-west3
-  - pipeline: incarceration_metrics
-    job_name: us-mo-incarceration-metrics-36
-    state_code: US_MO
-    calculation_month_count: 36
-    metric_types: INCARCERATION_POPULATION
-    region: us-east1
 
   # Daily US_PA calculations
   - pipeline: supervision_metrics
@@ -273,12 +267,6 @@ metric_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west1
-  - pipeline: incarceration_metrics
-    job_name: us-pa-incarceration-metrics-36
-    state_code: US_PA
-    calculation_month_count: 36
-    metric_types: INCARCERATION_POPULATION
-    region: us-east1
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
