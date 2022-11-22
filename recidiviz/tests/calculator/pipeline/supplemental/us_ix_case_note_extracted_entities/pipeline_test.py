@@ -14,19 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the us_id case notes entity extraction supplemental dataset pipeline."""
-import datetime
+"""Tests the us_ix case notes entity extraction supplemental dataset pipeline."""
 import unittest
 from typing import Any, Dict, List, Optional, Set
 
-from recidiviz.calculator.pipeline.supplemental.us_id_case_note_extracted_entities import (
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities import (
     pipeline,
 )
-from recidiviz.calculator.pipeline.supplemental.us_id_case_note_extracted_entities.us_id_text_analysis_configuration import (
-    UsIdTextEntity,
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_text_analysis_configuration import (
+    UsIxNoteTitleTextEntity,
 )
-from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
-    US_ID_CASE_UPDATE_INFO_VIEW_NAME,
+from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
+    US_IX_CASE_UPDATE_INFO_VIEW_NAME,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQueryFactory,
@@ -38,9 +37,10 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
 )
 
 
-# TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
-class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
-    """Tests the us_id case notes entity extraction supplemental dataset pipeline."""
+# TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
+# new ATLAS pipeline to run for US_ID
+class TestUsIxCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
+    """Tests the us_ix case notes entity extraction supplemental dataset pipeline."""
 
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
@@ -48,38 +48,44 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
             FakeWriteExactOutputToBigQuery
         )
         self.run_delegate_class = (
-            pipeline.UsIdCaseNoteExtractedEntitiesPipelineRunDelegate
+            pipeline.UsIxCaseNoteExtractedEntitiesPipelineRunDelegate
         )
 
         self.test_person_id = 123
         self.test_person_external_id = "111"
-        self.test_agnt_case_updt_id = "1"
-        self.test_create_dt = datetime.date(2022, 1, 1)
-        self.test_create_by_usr_id = "agent"
+        self.test_note_id = "1"
+        self.test_note_date = "2022-01-01 00:00:00"
+        self.test_staff_id = "agent"
 
         self.initial_fields: Dict[str, Any] = {
             "person_id": self.test_person_id,
             "person_external_id": self.test_person_external_id,
-            "state_code": "US_ID",
-            "agnt_case_updt_id": self.test_agnt_case_updt_id,
-            "create_dt": self.test_create_dt,
-            "create_by_usr_id": self.test_create_by_usr_id,
+            "state_code": "US_IX",
+            "OffenderNoteId": self.test_note_id,
+            "NoteDate": self.test_note_date,
+            "StaffId": self.test_staff_id,
         }
 
-        self.revocation = {**self.initial_fields, "agnt_note_title": "RX"}
+        self.revocation = {
+            **self.initial_fields,
+            "Details": "{note_title: RX} {note: note}",
+        }
         self.treatment_completion = {
             **self.initial_fields,
-            "agnt_note_title": "TREATMENT COMPLETE",
+            "Details": "{note_title: TREATMENT COMPLETE} {note: note}",
         }
         self.not_a_revocation = {
             **self.initial_fields,
-            "agnt_note_title": "REVOKE INTERNET",
+            "Details": "{note_title: REVOKE INTERNET} {note: note}",
         }
         self.not_treatment_completion = {
             **self.initial_fields,
-            "agnt_note_title": "EVAL COMPLETE",
+            "Details": "{note_title: EVAL COMPLETE} {note: note}",
         }
-        self.sanction = {**self.initial_fields, "agnt_note_title": "SANCTION"}
+        self.sanction = {
+            **self.initial_fields,
+            "Details": "{note_title: SANCTION} {note: note}",
+        }
 
         self.initial_data = [
             self.revocation,
@@ -91,8 +97,8 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
 
         self.default_mappings = {
             entity.name.lower(): False
-            for entity in UsIdTextEntity
-            if entity != UsIdTextEntity.REVOCATION_INCLUDE
+            for entity in UsIxNoteTitleTextEntity
+            if entity != UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
         }
 
         self.final_data: List[Dict[str, Any]] = [
@@ -109,7 +115,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         ]
 
         for final_data_point in self.final_data:
-            final_data_point["create_dt"] = "2022-01-01"
+            final_data_point["NoteDate"] = "2022-01-01"
 
     def run_test_pipeline(
         self,
@@ -133,8 +139,8 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            run_delegate=pipeline.UsIdCaseNoteExtractedEntitiesPipelineRunDelegate,
-            state_code="US_ID",
+            run_delegate=pipeline.UsIxCaseNoteExtractedEntitiesPipelineRunDelegate,
+            state_code="US_IX",
             project_id=project,
             dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
@@ -142,6 +148,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
             unifying_id_field_filter_set=unifying_id_field_filter_set,
         )
 
-    def testUsIdCaseNoteExtractedEntities(self) -> None:
-        data_dict = {US_ID_CASE_UPDATE_INFO_VIEW_NAME: self.initial_data}
+    def testUsIxCaseNoteExtractedEntities(self) -> None:
+        data_dict = {US_IX_CASE_UPDATE_INFO_VIEW_NAME: self.initial_data}
+        self.maxDiff = None
         self.run_test_pipeline(data_dict=data_dict)

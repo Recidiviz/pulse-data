@@ -289,7 +289,15 @@ metric_pipelines:
     staging_only: True
 
 supplemental_dataset_pipelines:
+  # TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
   - pipeline: us_id_case_note_extracted_entities_supplemental
     job_name: us-id-case-note-extracted-entities
     state_code: US_ID
+    region: us-central1
+
+  # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
+  # new ATLAS pipeline to run for US_ID
+  - pipeline: us_ix_case_note_extracted_entities_supplemental
+    job_name: us-ix-case-note-extracted-entities
+    state_code: US_IX
     region: us-central1

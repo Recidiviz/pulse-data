@@ -117,19 +117,25 @@ def run_test_pipeline(
                         write_to_bq_constructor,
                     ):
                         with patch(
-                            "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
-                            pipeline_constructor,
+                            "recidiviz.calculator.pipeline.supplemental"
+                            ".us_ix_case_note_extracted_entities.pipeline"
+                            ".WriteToBigQuery",
+                            write_to_bq_constructor,
                         ):
                             with patch(
-                                "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
-                                get_job_id,
+                                "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                                pipeline_constructor,
                             ):
-                                pipeline = BasePipeline(
-                                    pipeline_run_delegate=run_delegate.build_from_args(
-                                        pipeline_args
+                                with patch(
+                                    "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
+                                    get_job_id,
+                                ):
+                                    pipeline = BasePipeline(
+                                        pipeline_run_delegate=run_delegate.build_from_args(
+                                            pipeline_args
+                                        )
                                     )
-                                )
-                                pipeline.run()
+                                    pipeline.run()
 
 
 def default_data_dict_for_root_schema_classes(
