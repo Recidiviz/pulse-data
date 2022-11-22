@@ -21,7 +21,6 @@ from typing import List, Type
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
-    IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
@@ -31,7 +30,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
     _metrics_with_enum_field_of_type,
-    _validate_metric_has_all_fields,
     validation_query_for_metric,
     validation_query_for_metric_views_with_invalid_enums,
 )
@@ -51,7 +49,6 @@ class TestDataflowMetricValidationUtils(unittest.TestCase):
         expected_metrics = [
             IncarcerationAdmissionMetric,
             IncarcerationCommitmentFromSupervisionMetric,
-            IncarcerationPopulationMetric,
             IncarcerationReleaseMetric,
         ]
 
@@ -68,20 +65,6 @@ class TestDataflowMetricValidationUtils(unittest.TestCase):
         expected_metrics: List[Type[RecidivizMetric]] = []
 
         self.assertEqual(expected_metrics, metrics)
-
-    def test_validate_metric_has_all_fields(self) -> None:
-        metric = IncarcerationPopulationMetric
-        fields = ["date_of_stay", "facility"]
-
-        # Assert no error
-        _validate_metric_has_all_fields(metric=metric, fields_to_validate=fields)
-
-    def test_validate_metric_has_all_fields_invalid(self) -> None:
-        metric = IncarcerationPopulationMetric
-        fields = ["date_of_stay", "XXXXX"]
-
-        with self.assertRaises(ValueError):
-            _validate_metric_has_all_fields(metric=metric, fields_to_validate=fields)
 
     def test_validation_query_for_metric_views_with_invalid_enums(self) -> None:
         enum_field_name = "release_reason"

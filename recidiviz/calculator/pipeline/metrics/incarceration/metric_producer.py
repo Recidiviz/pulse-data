@@ -29,14 +29,12 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationEvent,
     IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
-    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
     IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetric,
     IncarcerationMetricType,
-    IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
@@ -60,7 +58,6 @@ class IncarcerationMetricProducer(
                 IncarcerationAdmissionMetric,
                 IncarcerationCommitmentFromSupervisionMetric,
             ],
-            IncarcerationStayEvent: [IncarcerationPopulationMetric],
             IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
         }
         self.metrics_producer_delegate_classes = {

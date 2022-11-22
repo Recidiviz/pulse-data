@@ -115,16 +115,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                 "most_recent_supervision_out_of_state_population_metrics",
                 "most_recent_single_day_supervision_out_of_state_population_metrics",
             ),
-            (
-                "incarceration_population_in_state",
-                "most_recent_incarceration_population_metrics_included_in_state_population",
-                "most_recent_single_day_incarceration_population_metrics_included_in_state_population",
-            ),
-            (
-                "incarceration_population_out_of_state",
-                "most_recent_incarceration_population_metrics_not_included_in_state_population",
-                "most_recent_single_day_incarceration_population_metrics_not_included_in_state_population",
-            ),
         ]
     )
     def test_only_lantern_usages_of_legacy_population_metrics(
