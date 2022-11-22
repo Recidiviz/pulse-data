@@ -29,8 +29,14 @@ SUPERVISION_METRICS_PIPELINE_NAME = "SUPERVISION_METRICS"
 VIOLATION_METRICS_PIPELINE_NAME = "VIOLATION_METRICS"
 
 # Supplemental dataset pipelines
+# TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
 US_ID_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME = (
     "US_ID_CASE_NOTE_EXTRACTED_ENTITIES_SUPPLEMENTAL"
+)
+# TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
+# new ATLAS pipeline to run for US_ID
+US_IX_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME = (
+    "US_IX_CASE_NOTE_EXTRACTED_ENTITIES_SUPPLEMENTAL"
 )
 
 

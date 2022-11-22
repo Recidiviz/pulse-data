@@ -247,7 +247,10 @@ def main() -> int:
                     "recidiviz.datasets.static_data.config",
                 }
             )
-        if "us_id_case_note" in pipeline.__name__:
+        if (
+            "us_id_case_note" in pipeline.__name__
+            or "us_ix_case_note" in pipeline.__name__
+        ):
             valid_prefixes = valid_prefixes.union(
                 {
                     "recidiviz.ingest.direct.types.direct_ingest_instance",

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calc-level text matching utilities for US_ID"""
+"""Calc-level text matching utilities for US_IX"""
+from enum import auto
+
 from thefuzz import fuzz
 
 from recidiviz.common.text_analysis import (
@@ -26,9 +28,10 @@ from recidiviz.common.text_analysis import (
 )
 
 
-# TODO(#16661) Delete this file / code once products are no longer reading from legacy US_ID infrastructure
-class UsIdTextEntity(TextEntity):
-    """Flags for indicators based on free text matching for US_ID."""
+# TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
+# new ATLAS pipeline to run for US_ID
+class UsIxNoteTitleTextEntity(TextEntity):
+    """Flags for indicators based on free note title matching for US_IX."""
 
     VIOLATION = [
         RegexFuzzyMatcher(search_regex=".*violat.*"),
@@ -268,3 +271,37 @@ class UsIdTextEntity(TextEntity):
     UA = [
         ScoringFuzzyMatcher(search_term="ua"),
     ]
+
+
+class UsIxNoteContentTextEntity(TextEntity):
+    """Flags for indicators based on free note content matching for US_IX."""
+
+    VIOLATION = auto()
+    SANCTION = auto()
+    EXTEND = auto()
+    ABSCONSION = auto()
+    IN_CUSTODY = auto()
+    AGENTS_WARNING = auto()
+    REVOCATION = auto()
+    REVOCATION_INCLUDE = auto()
+    OTHER = auto()
+    NEW_INVESTIGATION = auto()
+    PSI = auto()
+    NEW_CRIME = auto()
+    ANY_TREATMENT = auto()
+    TREATMENT_COMPLETE = auto()
+    INTERLOCK = auto()
+    CASE_PLAN = auto()
+    NCIC_ILETS_NCO_CHECK = auto()
+    COMMUNITY_SERVICE = auto()
+    NOT_CS = auto()
+    TRANSFER_CHRONO = auto()
+    LSU = auto()
+    DUI = auto()
+    NOT_M_DUI = auto()
+    SPECIALTY_COURT = auto()
+    COURT = auto()
+    SSDI_SSI = auto()
+    PENDING = auto()
+    WAIVER = auto()
+    UA = auto()

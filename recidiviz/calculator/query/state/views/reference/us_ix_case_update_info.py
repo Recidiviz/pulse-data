@@ -25,6 +25,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
+# new ATLAS pipeline to run for US_ID
 US_IX_CASE_UPDATE_INFO_VIEW_NAME = "us_ix_case_update_info"
 
 US_IX_CASE_UPDATE_INFO_DESCRIPTION = """Provides agent case update notes for people on supervision in US_IX
