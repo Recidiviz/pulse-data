@@ -142,7 +142,10 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.mock_client.create_table_with_schema.assert_called()
         self.mock_client.update_schema.assert_not_called()
         self.mock_client.create_table_with_schema.assert_called_with(
-            "us_xx_raw_data", "raw_data_table", self.schema
+            "us_xx_raw_data",
+            "raw_data_table",
+            self.schema,
+            clustering_fields=["file_id"],
         )
 
     def test_update_raw_data_tables_schemas_update_table(self) -> None:
