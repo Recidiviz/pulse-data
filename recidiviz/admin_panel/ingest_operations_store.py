@@ -18,7 +18,7 @@
 import logging
 from collections import Counter
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from google.cloud import tasks_v2
 
@@ -73,6 +73,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestInstanceError,
 )
+from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import metadata
 
 BucketSummaryType = Dict[str, Union[str, int]]
@@ -522,20 +523,13 @@ class IngestOperationsStore(AdminPanelStore):
 
     def get_all_current_ingest_instance_statuses(
         self,
-    ) -> Dict[
-        StateCode,
-        Dict[
-            DirectIngestInstance,
-            Tuple[DirectIngestStatus, datetime],
-        ],
-    ]:
+    ) -> Dict[StateCode, Dict[DirectIngestInstance, DirectIngestInstanceStatus]]:
         """Returns the current status of each ingest instance for states in the given project."""
 
         ingest_statuses = {}
         for state_code in get_direct_ingest_states_launched_in_env():
             instance_to_status_dict: Dict[
-                DirectIngestInstance,
-                Tuple[DirectIngestStatus, datetime],
+                DirectIngestInstance, DirectIngestInstanceStatus
             ] = {}
             for i_instance in DirectIngestInstance:  # new direct ingest instance
                 status_manager = PostgresDirectIngestInstanceStatusManager(
@@ -543,10 +537,7 @@ class IngestOperationsStore(AdminPanelStore):
                 )
 
                 curr_status_info = status_manager.get_current_status_info()
-                instance_to_status_dict[i_instance] = (
-                    curr_status_info.status,
-                    curr_status_info.timestamp,
-                )
+                instance_to_status_dict[i_instance] = curr_status_info
 
             ingest_statuses[state_code] = instance_to_status_dict
 

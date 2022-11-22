@@ -21,9 +21,10 @@ objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
 import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 import attr
+import pytz
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -126,3 +127,16 @@ class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
 
     # The status of a particular instance doing ingest.
     status: DirectIngestStatus = attr.ib()
+
+    def for_api(self) -> Dict[str, str]:
+        """Serializes the instance status as a dictionary that can be passed to the
+        frontend.
+        """
+        return {
+            "regionCode": self.region_code,
+            "instance": self.instance.value,
+            "status": self.status.value,
+            # All timestamps are stored as timezone unaware dates in the database, but
+            # convert to a timezone aware timestamp for ease of use in the frontend.
+            "timestamp": self.timestamp.replace(tzinfo=pytz.UTC).isoformat(),
+        }

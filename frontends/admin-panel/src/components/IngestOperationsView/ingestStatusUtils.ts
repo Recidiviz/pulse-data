@@ -125,11 +125,7 @@ export const getStatusBoxColor = (status: string): string => {
 
 export const getStatusMessage = (status: string, timestamp: string): string => {
   const dt = new Date(timestamp);
-  const timeAgo = moment([
-    dt.getFullYear(),
-    dt.getMonth(),
-    dt.getDate(),
-  ]).fromNow();
+  const timeAgo = moment(dt).fromNow();
   return `${statusFormattingInfo[status].message} (${timeAgo})`;
 };
 

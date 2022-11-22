@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines admin panel routes for ingest operations."""
-import datetime
 import logging
 from http import HTTPStatus
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from flask import Blueprint, Response, jsonify, request
 from google.cloud import storage
@@ -675,21 +674,18 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             get_ingest_operations_store().get_all_current_ingest_instance_statuses()
         )
 
-        all_instance_statuses_strings: Dict[
-            str, Dict[str, Dict[str, Union[str, datetime.datetime]]]
-        ] = {}
-
-        for instance_state_code, instances in all_instance_statuses.items():
-
-            all_instance_statuses_strings[instance_state_code.value] = {
-                instance.value.lower(): {
-                    "status": curr_status_info[0].value,
-                    "timestamp": curr_status_info[1].isoformat(),
+        return (
+            jsonify(
+                {
+                    instance_state_code.value: {
+                        instance.value.lower(): curr_status_info.for_api()
+                        for instance, curr_status_info in instances.items()
+                    }
+                    for instance_state_code, instances in all_instance_statuses.items()
                 }
-                for instance, curr_status_info in instances.items()
-            }
-
-        return jsonify(all_instance_statuses_strings), HTTPStatus.OK
+            ),
+            HTTPStatus.OK,
+        )
 
     @bp.route(
         "/api/ingest_operations/get_current_ingest_instance_status", methods=["POST"]
@@ -773,12 +769,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
         current_status = status_manager.get_current_status_info()
         return (
-            jsonify(
-                {
-                    "status": current_status.status.value,
-                    "timestamp": current_status.timestamp.isoformat(),
-                }
-            ),
+            jsonify(current_status.for_api()),
             HTTPStatus.OK,
         )
 

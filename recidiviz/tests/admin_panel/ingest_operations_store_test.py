@@ -49,6 +49,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
@@ -169,23 +170,31 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
 
         expected = {
             StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp,
+                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_XX.value,
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.STANDARD_RERUN_STARTED,
+                    timestamp=timestamp,
                 ),
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.UP_TO_DATE,
-                    timestamp,
+                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_XX.value,
+                    instance=DirectIngestInstance.SECONDARY,
+                    status=DirectIngestStatus.UP_TO_DATE,
+                    timestamp=timestamp,
                 ),
             },
             StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp,
+                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
+                    timestamp=timestamp,
                 ),
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.FLASH_COMPLETED,
-                    timestamp,
+                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    instance=DirectIngestInstance.SECONDARY,
+                    status=DirectIngestStatus.FLASH_COMPLETED,
+                    timestamp=timestamp,
                 ),
             },
         }
