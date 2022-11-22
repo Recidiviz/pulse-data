@@ -57,7 +57,10 @@ def _update_raw_data_table_schema_to_new_schema(
             )
         else:
             bq_client.create_table_with_schema(
-                raw_data_dataset_id, raw_file_tag, schema
+                raw_data_dataset_id,
+                raw_file_tag,
+                schema,
+                clustering_fields=[FILE_ID_COL_NAME],
             )
     except Exception as e:
         logging.exception(
