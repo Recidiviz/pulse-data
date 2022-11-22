@@ -31,6 +31,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 
 
 @mock.patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
@@ -80,27 +81,34 @@ class IngestOpsEndpointTests(TestCase):
 
         self.mock_current_ingest_statuses.return_value = {
             StateCode.US_XX: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.READY_TO_FLASH,
-                    timestamp,
+                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_XX.value,
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.READY_TO_FLASH,
+                    timestamp=timestamp,
                 ),
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.UP_TO_DATE,
-                    timestamp,
+                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_XX.value,
+                    instance=DirectIngestInstance.SECONDARY,
+                    status=DirectIngestStatus.UP_TO_DATE,
+                    timestamp=timestamp,
                 ),
             },
             StateCode.US_YY: {
-                DirectIngestInstance.PRIMARY: (
-                    DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp,
+                DirectIngestInstance.PRIMARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.STANDARD_RERUN_STARTED,
+                    timestamp=timestamp,
                 ),
-                DirectIngestInstance.SECONDARY: (
-                    DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp,
+                DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    instance=DirectIngestInstance.SECONDARY,
+                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
+                    timestamp=timestamp,
                 ),
             },
         }
-
         # Act
 
         response = self.client.get(
@@ -114,22 +122,30 @@ class IngestOpsEndpointTests(TestCase):
             {
                 "US_XX": {
                     "primary": {
+                        "instance": "PRIMARY",
+                        "regionCode": "US_XX",
                         "status": "READY_TO_FLASH",
-                        "timestamp": timestamp.isoformat(),
+                        "timestamp": "2022-08-29T00:00:00+00:00",
                     },
                     "secondary": {
+                        "instance": "SECONDARY",
+                        "regionCode": "US_XX",
                         "status": "UP_TO_DATE",
-                        "timestamp": timestamp.isoformat(),
+                        "timestamp": "2022-08-29T00:00:00+00:00",
                     },
                 },
                 "US_YY": {
                     "primary": {
+                        "instance": "PRIMARY",
+                        "regionCode": "US_YY",
                         "status": "STANDARD_RERUN_STARTED",
-                        "timestamp": timestamp.isoformat(),
+                        "timestamp": "2022-08-29T00:00:00+00:00",
                     },
                     "secondary": {
+                        "instance": "SECONDARY",
+                        "regionCode": "US_YY",
                         "status": "FLASH_IN_PROGRESS",
-                        "timestamp": timestamp.isoformat(),
+                        "timestamp": "2022-08-29T00:00:00+00:00",
                     },
                 },
             },
