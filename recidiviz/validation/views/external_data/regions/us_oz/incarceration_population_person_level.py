@@ -31,6 +31,7 @@ VIEW_QUERY_TEMPLATE = """
     CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', Date) AS DATE) as date_of_stay,
     CASE
       WHEN data_system = 'vfds' THEN 'US_OZ_VFDS'
+      WHEN data_system = 'eg' THEN 'US_OZ_EG'
     END AS external_id_type,
     person_id AS person_external_id, 
     CAST(NULL AS STRING) AS facility,

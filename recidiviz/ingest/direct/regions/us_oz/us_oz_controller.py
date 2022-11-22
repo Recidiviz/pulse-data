@@ -49,4 +49,6 @@ class UsOzController(BaseDirectIngestController):
             "nd_periods",
             "gloFS_person",
             "gloFS_periods",
+            "eg_person",
+            "eg_movements",
         ]
