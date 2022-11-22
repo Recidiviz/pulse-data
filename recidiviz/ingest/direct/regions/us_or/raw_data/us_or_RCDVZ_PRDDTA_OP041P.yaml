@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP041P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: SUBFILE_KEY
+  - name: UPDATE_JOB_NAME
+  - name: UPDATE_USERID
+  - name: GOOD_TIME_WITHHELD
+  - name: REASON
+  - name: NOTES
+  - name: WARRANT_DATE
+  - name: RETURN_TO_CUSTODY_DATE
+  - name: LAST_UPDATED_WHEN

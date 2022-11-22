@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_DOCDTA_TBLOCA
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: LOCATION_CODE
+  - name: LOCATION_TYPE
+  - name: SUPERVISING_LOCATION
+  - name: LOCATION_NAME
+  - name: FIELD_SERVICE_REGION
+  - name: ADDRESS_LINE_ONE
+  - name: ADDRESS_LINE_TWO
+  - name: CITY
+  - name: STATE
+  - name: ZIP
+  - name: ZIP_CODE_EXTENSION
+  - name: COUNTY
+  - name: PHONE_NUMBER
+  - name: DISCONTINUED_DATE

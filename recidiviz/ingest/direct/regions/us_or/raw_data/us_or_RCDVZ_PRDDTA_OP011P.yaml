@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP011P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: CUSTODY_NUMBER
+  - name: ADMISSION_NUMBER
+  - name: TRANSFER_NUMBER
+  - name: FACILITY
+  - name: CELL_NUMBER
+  - name: OUTCOUNT_REASON
+  - name: OUTCOUNT_LOCATION
+  - name: MOVE_IN_DATE
+  - name: PREV_FACILITY
+  - name: PREV_CELL_NUMBER
+  - name: PREV_OUTCOUNT_REAS
+  - name: PREV_OUTCOUNT_LOCA
+  - name: MOVE_OUT_DATE
+  - name: ENTRY_DATE
+  - name: LAST_UPDATED_WHEN
+  - name: CASELOAD

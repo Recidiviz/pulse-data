@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP005P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: SUBFILE_KEY
+  - name: MARK_SCAR_OR_TATTOO
+  - name: LAST_UPDATED_WHEN
+  - name: DESC1

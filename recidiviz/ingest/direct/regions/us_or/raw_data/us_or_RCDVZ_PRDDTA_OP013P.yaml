@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PRDDTA_OP013P
+file_description: |-
+  TODO(#16741): Fill in the file description
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: LAST_UPDATED_WHEN
+  - name: UPDATE_JOB_NAME
+  - name: UPDATE_USER_ID
+  - name: CUSTODY_NUMBER
+  - name: ADMISSION_NUMBER
+  - name: TRANSFER_NUMBER
+  - name: CURRENT_STATUS
+  - name: RESPONSIBLE_LOCATION
+  - name: ID_NUMBER
+  - name: RESPONSIBLE_DIVISION
+  - name: SUPERVISING_AUTHORITY
+  - name: FIRST_NAME
+  - name: LAST_NAME
+  - name: MIDDLE_NAME
+  - name: NAME_KEY
+  - name: BIRTHDATE
+  - name: CELL_NUMBER
+  - name: ADMISSION_DATE
+  - name: ADMISSION_REASON
+  - name: OUTCOUNT_REASON
+  - name: OUTCOUNT_LOCATION
+  - name: BAF_NO
+  - name: BAF_GROUP_NO
+  - name: ORS_NUMBER
+  - name: ORS_PARAGRAPH
+  - name: CRIME_ABBREVIATION
+  - name: CRIME_CLASS
+  - name: OFF_SEVERITY
+  - name: CRIME_CATEGORY
+  - name: CASELOAD
+  - name: INSTITUTION_RISK
+  - name: COMMUNITY_SUPER_LVL
+  - name: HISTORY_RISK
+  - name: DANG_OFFENDER
+  - name: SXDANG_OFFENDER
+  - name: PROJECTED_RELEASE_DATE
+  - name: EXTRA_GOOD_TIME
+  - name: GT_PROJ_RELE_DATE
+  - name: ET_PROJ_RELE_DATE
+  - name: CURRENT_CUSTODY_DATE
+  - name: PAROLE_RELEASE_DATE
+  - name: MAXIMUM_DATE
+  - name: PROGRAM_ASSIGNMENT_NAME
+  - name: SEX_ASSESSMENT
+  - name: ASSESSMENT_SCORE
+  - name: MAX_INCAR_DATE
+  - name: ASSESSMENT_DATE
+  - name: MINIMUM_DATE
+  - name: LIFE_OR_DEATH
