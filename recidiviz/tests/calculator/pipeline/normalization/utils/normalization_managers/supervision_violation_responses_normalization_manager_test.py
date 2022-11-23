@@ -210,7 +210,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violation_id=123,
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=self.state_code, condition="LAW"
+                    state_code=self.state_code,
+                    condition="LAW",
+                    condition_raw_text="LAW",
                 ),
             ],
         )

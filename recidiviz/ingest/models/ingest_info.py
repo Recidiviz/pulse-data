@@ -1111,12 +1111,14 @@ class StateSupervisionViolatedConditionEntry(IngestObject):
         self,
         state_supervision_violated_condition_entry_id=None,
         condition=None,
+        condition_raw_text=None,
         state_code=None,
     ):
         self.state_supervision_violated_condition_entry_id: Optional[
             str
         ] = state_supervision_violated_condition_entry_id
         self.condition: Optional[str] = condition
+        self.condition_raw_text: Optional[str] = condition_raw_text
         self.state_code: Optional[str] = state_code
 
     def __setattr__(self, name, value):

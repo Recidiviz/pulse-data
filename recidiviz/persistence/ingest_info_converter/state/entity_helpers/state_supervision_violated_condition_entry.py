@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# pylint: skip-file
 """Converts an ingest_info proto StateSupervisionViolatedConditionEntry to a
 persistence entity."""
 
@@ -40,6 +41,7 @@ def convert(
 
     # 1-to-1 mappings
     new.condition = getattr(proto, "condition")
+    new.condition_raw_text = getattr(proto, "condition_raw_text")
     new.state_code = metadata.region
 
     return new.build(StateSupervisionViolatedConditionEntryFactory.deserialize)

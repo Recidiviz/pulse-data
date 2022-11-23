@@ -1132,6 +1132,11 @@ class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableA
     # A string code corresponding to the condition - region specific.
     condition: str = attr.ib(validator=attr_validators.is_str)  # non-nullable
 
+    # The most granular information from the state about the specific supervision condition that was violated
+    condition_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violated_condition_entry_id: Optional[int] = attr.ib(

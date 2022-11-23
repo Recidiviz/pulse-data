@@ -142,6 +142,7 @@ def generate_test_supervision_violation(
                 supervision_violated_condition_entry_id=765,
                 state_code="US_XX",
                 condition="CURFEW",
+                condition_raw_text="CURFEW",
                 person_id=person_id,
                 supervision_violation_id=supervision_violation_id,
             )

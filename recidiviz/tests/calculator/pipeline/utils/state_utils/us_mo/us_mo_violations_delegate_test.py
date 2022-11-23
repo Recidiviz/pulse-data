@@ -278,7 +278,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="DRG"
+                    state_code=_STATE_CODE, condition="DRG", condition_raw_text="DRG"
                 )
             ],
         )
@@ -306,7 +306,9 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="LAW_CITATION"
+                    state_code=_STATE_CODE,
+                    condition="LAW_CITATION",
+                    condition_raw_text="LAW_CITATION",
                 )
             ],
         )
@@ -334,7 +336,9 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="EMP"
+                    state_code=_STATE_CODE,
+                    condition="EMP",
+                    condition_raw_text="EMP",
                 )
             ],
         )

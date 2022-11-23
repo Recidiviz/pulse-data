@@ -760,11 +760,14 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
                 condition="law_citation",
+                condition_raw_text="law_citation",
             )
         )
         violation_condition_sub = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code=state_code, condition="substance_abuse"
+                state_code=state_code,
+                condition="substance_abuse",
+                condition_raw_text="substance_abuse",
             )
         )
         violation_decision = (
@@ -919,11 +922,14 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
                 condition="UNK",
+                condition_raw_text="UNK",
             )
         )
         violation_condition_sub = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                state_code=state_code, condition="substance_abuse"
+                state_code=state_code,
+                condition="substance_abuse",
+                condition_raw_text="substance_abuse",
             )
         )
         violation_decision = (
