@@ -9,7 +9,7 @@ jobs:
   analyze:
     if: github.repository == 'Recidiviz/pulse-data'
     name: CodeQL Build and Analyze
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     permissions:
       actions: read
       contents: read
