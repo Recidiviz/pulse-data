@@ -1103,7 +1103,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     }
                   >
                     python -m recidiviz.tools.deploy.trigger_post_deploy_tasks
-                    --project-id {projectId} --trigger-historical-dag 1
+                    --project-id {projectId}
                   </CodeBlock>
                 </p>
                 <p>

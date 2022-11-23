@@ -76,8 +76,6 @@ if [[ -n ${PROMOTE} && -n ${DEBUG_BUILD_NAME} ]]; then
     run_cmd exit 1
 fi
 
-CALC_CHANGES_SINCE_LAST_DEPLOY=$(calculation_pipeline_changes_since_last_deploy "$PROJECT_ID")
-
 echo "Performing pre-deploy verification"
 verify_hash "$COMMIT_HASH"
 run_cmd verify_can_deploy "$PROJECT_ID"
@@ -176,7 +174,7 @@ fi
 if [[ -n ${PROMOTE} ]]; then
     echo "Deploy succeeded - triggering post-deploy jobs."
     verify_hash "$COMMIT_HASH"
-    post_deploy_triggers "$PROJECT_ID" "$CALC_CHANGES_SINCE_LAST_DEPLOY"
+    post_deploy_triggers "$PROJECT_ID"
 else
     echo "Deploy succeeded - skipping post deploy triggers for no promote build."
 fi

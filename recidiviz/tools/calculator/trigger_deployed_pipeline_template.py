@@ -91,15 +91,12 @@ def _trigger_dataflow_job_from_template(
 def _pipeline_regions_by_job_name() -> Dict[str, str]:
     """Parses the calculation_pipeline_templates.yaml config file to determine which region a pipeline should be
     run in."""
-    normalization_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
-        "normalization_pipelines"
+    full_config = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
+    normalization_pipelines = full_config.pop_dicts("normalization_pipelines")
+    metric_pipelines = full_config.pop_dicts("metric_pipelines")
+    supplemental_dataset_pipelines = full_config.pop_dicts(
+        "supplemental_dataset_pipelines"
     )
-    metric_pipelines = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts(
-        "metric_pipelines"
-    )
-    supplemental_dataset_pipelines = YAMLDict.from_path(
-        PIPELINE_CONFIG_YAML_PATH
-    ).pop_dicts("supplemental_dataset_pipelines")
 
     pipeline_regions = {
         pipeline.pop("job_name", str): pipeline.pop("region", str)

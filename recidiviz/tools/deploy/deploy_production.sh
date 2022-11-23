@@ -75,8 +75,6 @@ pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_C
 STAGING_IMAGE_URL="us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 PROD_IMAGE_URL="us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
 
-CALC_CHANGES_SINCE_LAST_DEPLOY=$(calculation_pipeline_changes_since_last_deploy 'recidiviz-123')
-
 echo "Starting deploy of main app - default"
 {
     run_cmd_no_exiting gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
@@ -97,7 +95,7 @@ GAE_VERSION=$(echo "${GIT_VERSION_TAG}" | tr '.' '-') || exit_on_fail
 run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${PROD_IMAGE_URL}"
 
 echo "Deploy succeeded - triggering post-deploy jobs."
-post_deploy_triggers 'recidiviz-123' "$CALC_CHANGES_SINCE_LAST_DEPLOY"
+post_deploy_triggers 'recidiviz-123'
 
 update_deployment_status "${DEPLOYMENT_STATUS_SUCCEEDED}" "${PROJECT}" "${COMMIT_HASH:0:7}" "${GIT_VERSION_TAG}"
 

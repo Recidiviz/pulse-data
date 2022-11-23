@@ -17,10 +17,6 @@
 """Utils for the cloud function that triggers that CloudSQL to BQ refresh."""
 
 PIPELINE_RUN_TYPE_REQUEST_ARG = "pipeline_run_type"
-PIPELINE_RUN_TYPE_NONE_VALUE = "no_pipelines"
 # This value must be the same as the MetricPipelineRunType.HISTORICAL value,
 # but lowercase
 PIPELINE_RUN_TYPE_HISTORICAL_VALUE = "historical"
-
-TRIGGER_HISTORICAL_DAG_FLAG = "TRIGGER_HISTORICAL_DAG"
-NO_HISTORICAL_DAG_FLAG = "NO_HISTORICAL_DAG"

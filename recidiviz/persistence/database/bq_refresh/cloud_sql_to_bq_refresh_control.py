@@ -32,7 +32,6 @@ from recidiviz.big_query.rematerialization_success_persister import (
 )
 from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
 from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
-    PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
 )
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
@@ -90,7 +89,7 @@ def wait_for_ingest_to_create_tasks(
         # to the incremental run type
         pipeline_run_type_arg = MetricPipelineRunType.INCREMENTAL.value
 
-    if pipeline_run_type_arg and pipeline_run_type_arg != PIPELINE_RUN_TYPE_NONE_VALUE:
+    if pipeline_run_type_arg:
         try:
             _ = MetricPipelineRunType(pipeline_run_type_arg.upper())
         except ValueError:
@@ -180,10 +179,7 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
 
         pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
 
-        if (
-            pipeline_run_type_arg
-            and pipeline_run_type_arg != PIPELINE_RUN_TYPE_NONE_VALUE
-        ):
+        if pipeline_run_type_arg:
             logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
 
             pubsub_helper.publish_message_to_topic(
