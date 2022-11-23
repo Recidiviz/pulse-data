@@ -128,11 +128,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         cls.project_id_patcher.start().return_value = "recidiviz-456"
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_has_column:
             mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
 
             cls.all_views = [
                 view_builder.build() for view_builder in all_deployed_view_builders()

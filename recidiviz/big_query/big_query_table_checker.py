@@ -53,15 +53,3 @@ class BigQueryTableChecker:
             return self._table_has_column(col)
 
         return has_column
-
-    def _table_exists(self) -> bool:
-        bq_client = BigQueryClientImpl()
-        return bq_client.table_exists(
-            bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
-        )
-
-    def get_table_exists_predicate(self) -> Callable[[], bool]:
-        def table_exists() -> bool:
-            return self._table_exists()
-
-        return table_exists
