@@ -656,11 +656,8 @@ class ViewManagerTest(unittest.TestCase):
     def test_no_duplicate_views_in_update_list(self) -> None:
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_has_column:
             mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
             all_views = [
                 view_builder.build() for view_builder in all_deployed_view_builders()
             ]
@@ -686,11 +683,8 @@ class ViewManagerTest(unittest.TestCase):
 
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_has_column:
             mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
 
             for view_builder in all_deployed_view_builders():
                 view_query = view_builder.build().view_query
@@ -899,11 +893,8 @@ class ViewManagerTest(unittest.TestCase):
     def test_all_deployed_datasets_registered_as_managed(self) -> None:
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_has_column:
             mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
             all_views = [
                 view_builder.build() for view_builder in all_deployed_view_builders()
             ]
@@ -968,11 +959,8 @@ class ViewManagerTest(unittest.TestCase):
         """
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
-        ) as mock_table_has_column, patch.object(
-            BigQueryTableChecker, "_table_exists"
-        ) as mock_table_exists:
+        ) as mock_table_has_column:
             mock_table_has_column.return_value = True
-            mock_table_exists.return_value = True
             all_views = [
                 view_builder.build() for view_builder in all_deployed_view_builders()
             ]
