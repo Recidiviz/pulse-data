@@ -28,6 +28,8 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import (
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
+)
+from recidiviz.calculator.pipeline.metrics.utils.supervision_utils import (
     is_supervision_out_of_state,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (

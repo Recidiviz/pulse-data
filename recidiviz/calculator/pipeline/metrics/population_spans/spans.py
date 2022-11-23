@@ -24,9 +24,6 @@ from recidiviz.calculator.pipeline.utils.identifier_models import (
     Span,
     SupervisionLocationMixin,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
-)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
@@ -77,28 +74,3 @@ class SupervisionPopulationSpan(Span, SupervisionLocationMixin, IncludedInStateM
     # Area of jurisdictional coverage of the court that sentenced the person to this
     # period of supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
-
-
-# TODO(#16738): Move is_supervision_out_of_state method to a utils directory
-def is_supervision_out_of_state(
-    custodial_authority: Optional[StateCustodialAuthority],
-    deprecated_supervising_district_external_id: Optional[str],
-    supervision_delegate: StateSpecificSupervisionDelegate,
-) -> bool:
-    """Helper for determining whether someone counts towards the out of state supervision
-    population.
-    """
-    if custodial_authority is not None and custodial_authority in (
-        StateCustodialAuthority.FEDERAL,
-        StateCustodialAuthority.OTHER_COUNTRY,
-        StateCustodialAuthority.OTHER_STATE,
-    ):
-        # If the custodial authority is out of state, the person is always in the
-        # out of state population
-        return True
-
-    # Otherwise, for some states we can use the supervision location to determine
-    # if they are out of state.
-    return supervision_delegate.is_supervision_location_out_of_state(
-        deprecated_supervising_district_external_id
-    )

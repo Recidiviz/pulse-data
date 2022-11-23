@@ -28,9 +28,6 @@ from recidiviz.calculator.pipeline.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
 )
-from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
-    is_supervision_out_of_state,
-)
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
     SupervisionEvent,
@@ -43,6 +40,9 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
 )
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.metrics.utils.supervision_utils import (
+    is_supervision_out_of_state,
 )
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
