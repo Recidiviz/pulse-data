@@ -54,7 +54,8 @@ US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_BUILDER = SimpleBigQuer
     description=US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_QUERY_TEMPLATE,
     raw_dataset=US_TN_RAW_DATASET,
-    should_materialize=True,
+    # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
+    should_materialize=False,
 )
 
 if __name__ == "__main__":

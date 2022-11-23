@@ -287,7 +287,8 @@ US_TN_COMPLIANT_REPORTING_FEES_ELIGIBILITY_SESSIONS_VIEW_BUILDER = SimpleBigQuer
     state_base_dataset=STATE_BASE_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    should_materialize=True,
+    # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
+    should_materialize=False,
 )
 
 if __name__ == "__main__":
