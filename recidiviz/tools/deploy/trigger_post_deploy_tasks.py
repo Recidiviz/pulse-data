@@ -20,31 +20,19 @@ import logging
 import sys
 from typing import List, Tuple
 
-from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
-    NO_HISTORICAL_DAG_FLAG,
-    TRIGGER_HISTORICAL_DAG_FLAG,
-)
 from recidiviz.utils import pubsub_helper
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def main(trigger_historical_dag: int) -> None:
+def main() -> None:
     """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
-    refresh, with an arg indicating whether the refresh should trigger the
-    historical DAG on completion."""
-    if trigger_historical_dag:
-        message = TRIGGER_HISTORICAL_DAG_FLAG
-        logging.info("CloudSQL to BigQuery refresh will trigger the historical DAG.")
-    else:
-        message = NO_HISTORICAL_DAG_FLAG
-        logging.info(
-            "The historical DAG will not be triggered - no relevant code changes."
-        )
+    refresh, which then will trigger the historical DAG on completion."""
 
+    logging.info("CloudSQL to BigQuery refresh will trigger the historical DAG.")
     pubsub_helper.publish_message_to_topic(
         topic="v1.trigger_post_deploy_cloudsql_to_bq_refresh_state",
-        message=message,
+        message="Trigger",
     )
 
 
@@ -59,12 +47,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         required=True,
     )
 
-    parser.add_argument(
-        "--trigger-historical-dag",
-        type=int,
-        required=True,
-    )
-
     return parser.parse_known_args(argv)
 
 
@@ -73,4 +55,4 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        main(known_args.trigger_historical_dag)
+        main()

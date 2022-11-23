@@ -51,6 +51,8 @@ def clear_publisher() -> None:
 
 def publish_message_to_topic(message: str, topic: str) -> None:
     logging.info("Publishing message: '%s' to topic: %s", message, topic)
+    if not message:
+        raise ValueError("Message cannot be empty.")
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
     future = publisher.publish(topic_path, data=message.encode("utf-8"))

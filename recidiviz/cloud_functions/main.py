@@ -17,7 +17,6 @@
 """This file contains all of the relevant cloud functions"""
 import json
 import os
-from base64 import b64decode
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Tuple, TypeVar
 from urllib.parse import urlencode
@@ -36,9 +35,7 @@ from cloud_function_utils import (  # type: ignore[import]
 )
 from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
     PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
-    PIPELINE_RUN_TYPE_NONE_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
-    TRIGGER_HISTORICAL_DAG_FLAG,
 )
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
@@ -94,7 +91,7 @@ def trigger_calculation_pipeline_dag(
 
 
 def trigger_post_deploy_cloudsql_to_bq_refresh(
-    event: Dict[str, Any], _context: ContextType
+    _event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event to begin the refresh of BigQuery
     data for a given schema, pulling data from the appropriate CloudSQL Postgres
@@ -118,28 +115,14 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
         params=None,
     )
 
-    trigger_historical_dag: bool = False
-
-    if "data" in event:
-        if b64decode(event["data"]).decode("utf-8") == TRIGGER_HISTORICAL_DAG_FLAG:
-            trigger_historical_dag = True
-
     data = {}
 
     if schema.upper() == "STATE":
         cloud_functions_log(
             severity="INFO",
-            message="Managed views will be deployed after refresh.",
+            message="Historical DAG will be triggered after refresh.",
         )
-
-        if trigger_historical_dag:
-            cloud_functions_log(
-                severity="INFO",
-                message="Historical DAG will be triggered after refresh.",
-            )
-            data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_HISTORICAL_VALUE
-        else:
-            data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_NONE_VALUE
+        data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_HISTORICAL_VALUE
 
     cloud_functions_log(
         severity="INFO",

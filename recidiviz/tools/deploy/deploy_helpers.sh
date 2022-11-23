@@ -142,38 +142,6 @@ function migration_changes_since_last_deploy {
     echo $MIGRATION_CHANGES_SINCE_LAST_DEPLOY
 }
 
-# If there have been changes since the last deploy that indicate pipeline results may
-# have changed, returns 1. Otherwise, if there have been no changes impacting
-# pipelines, returns 0.
-function calculation_pipeline_changes_since_last_deploy {
-    PROJECT=$1
-
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        LAST_VERSION_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
-    elif [[ ${PROJECT} == 'recidiviz-123' ]]; then
-        LAST_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
-    else
-        echo_error "Unexpected project for last version ${PROJECT}"
-        exit 1
-    fi
-
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy "$PROJECT")
-
-    if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        echo "$MIGRATION_CHANGES_SINCE_LAST_DEPLOY"
-    else
-        CALCULATOR_CHANGES=$(git diff "tags/${LAST_VERSION_TAG}" -- "${BASH_SOURCE_DIR}/../../../recidiviz/calculator") || exit_on_fail
-
-        if [[ -n $CALCULATOR_CHANGES ]]; then
-          CALC_CHANGES_SINCE_LAST_DEPLOY=1
-        else
-          CALC_CHANGES_SINCE_LAST_DEPLOY=0
-        fi
-
-        echo $CALC_CHANGES_SINCE_LAST_DEPLOY
-    fi
-}
-
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {
@@ -519,11 +487,10 @@ function deploy_migrations {
 
 function post_deploy_triggers {
     PROJECT=$1
-    CALC_CHANGES_SINCE_LAST_DEPLOY=$2
 
     echo "Triggering post-deploy tasks"
 
-    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}" --trigger-historical-dag "${CALC_CHANGES_SINCE_LAST_DEPLOY}"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.trigger_post_deploy_tasks --project-id "${PROJECT}"
 }
 
 
