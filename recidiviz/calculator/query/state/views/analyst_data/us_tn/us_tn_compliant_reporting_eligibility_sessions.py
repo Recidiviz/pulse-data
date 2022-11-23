@@ -87,29 +87,29 @@ US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
         CASE WHEN drug_screen.drug_screen_eligible = 1 THEN TRUE
             ELSE FALSE END AS drug_screen_eligible,
     FROM cte
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_sanction_ineligible_materialized` sanction
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_sanction_ineligible` sanction
         ON sanction.person_id = cte.person_id
         AND cte.supervision_date BETWEEN sanction.start_date AND COALESCE(sanction.end_date, '9999-01-01')
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_supervision_level_eligible_materialized` sl
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_supervision_level_eligible` sl
         ON sl.person_id = cte.person_id
         AND cte.supervision_date BETWEEN sl.start_date AND COALESCE(sl.end_date, '9999-01-01') 
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_judicial_order_ineligible_materialized` jo
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_judicial_order_ineligible` jo
         ON jo.person_id = cte.person_id
         AND cte.supervision_date BETWEEN jo.start_date AND COALESCE(jo.end_date, '9999-01-01')
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_offense_eligible_materialized` offense
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_offense_eligible` offense
         ON offense.person_id = cte.person_id
         AND cte.supervision_date BETWEEN offense.start_date AND COALESCE(offense.end_date, '9999-01-01')
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_fees_eligibility_sessions_materialized` fees
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_fees_eligibility_sessions` fees
         ON fees.person_id = cte.person_id
         AND cte.supervision_date BETWEEN COALESCE(fees.start_date, '1901-01-01')
             AND COALESCE(fees.end_date, '9999-01-01')
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_c4_isc_eligibility_sessions_materialized` c4
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_c4_isc_eligibility_sessions` c4
         ON c4.person_id = cte.person_id
         AND cte.supervision_date BETWEEN CAST(c4.start_date AS DATE) AND COALESCE(CAST(c4.end_date AS DATE), '9999-01-01')
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_cr_rejection_ineligible_materialized` cr_rejection
+    LEFT JOIN `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_cr_rejection_ineligible` cr_rejection
         ON cr_rejection.person_id = cte.person_id
         AND cte.supervision_date BETWEEN cr_rejection.start_date AND COALESCE(cr_rejection.end_date, '9999-01-01')
-    LEFT JOIN  `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_drug_screen_eligible_materialized` drug_screen
+    LEFT JOIN  `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_drug_screen_eligible` drug_screen
         ON drug_screen.person_id = cte.person_id
         AND cte.supervision_date BETWEEN drug_screen.start_date AND COALESCE(drug_screen.end_date, '9999-01-01')
     LEFT JOIN 
@@ -208,7 +208,8 @@ US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_BUILDER = SimpleBigQueryView
     view_id=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE,
-    should_materialize=True,
+    # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
+    should_materialize=False,
 )
 
 if __name__ == "__main__":

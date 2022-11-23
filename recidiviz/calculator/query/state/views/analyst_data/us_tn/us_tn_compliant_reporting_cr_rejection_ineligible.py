@@ -94,7 +94,8 @@ US_TN_COMPLIANT_REPORTING_CR_REJECTION_INELIGIBLE_VIEW_BUILDER = SimpleBigQueryV
     view_query_template=US_TN_COMPLIANT_REPORTING_CR_REJECTION_INELIGIBLE_QUERY_TEMPLATE,
     state_base_dataset=STATE_BASE_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
-    should_materialize=True,
+    # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
+    should_materialize=False,
 )
 
 if __name__ == "__main__":

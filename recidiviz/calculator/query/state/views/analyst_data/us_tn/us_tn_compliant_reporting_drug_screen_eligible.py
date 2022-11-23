@@ -178,7 +178,8 @@ US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryView
     view_id=US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_DRUG_SCREEN_ELIGIBLE_QUERY_TEMPLATE,
-    should_materialize=True,
+    # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
+    should_materialize=False,
 )
 
 if __name__ == "__main__":
