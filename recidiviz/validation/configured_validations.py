@@ -36,9 +36,6 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
-from recidiviz.validation.views.analyst_data.supervision_unnested_metrics_population_internal_consistency import (
-    SUPERVISION_UNNESTED_METRICS_POPULATION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
 from recidiviz.validation.views.case_triage.assessment_freshness_validation import (
     ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
 )
@@ -943,18 +940,6 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "distinct_id_count",
             ],
             validation_category=ValidationCategory.INVARIANT,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=SUPERVISION_UNNESTED_METRICS_POPULATION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-            comparison_columns=[
-                "daily_population",
-                "daily_population_case_type_sum",
-                # TODO(#16326): Add risk level sums to validation once metric is fixed
-                # "daily_population_risk_level_sum",
-                "daily_population_supervision_type_sum",
-            ],
-            validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
         ),
     ]
