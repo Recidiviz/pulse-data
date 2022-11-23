@@ -138,12 +138,15 @@ output:
                   - Administrative
                   - Administrative Transfer
                   - Assigned To Jail
+                  - Civil Commitment Pending
                   - Court Action
                   - Initial Facility Intake
+                  - Mental Health Treatment
                   - Other Unspecified Release
                   - Pending Custody Intake
                   - Release Court Order
                   - Return From Bond
+                  - Return Other Jurisdictions
                   - Substance Abuse And Therapeutic Program Assignment
                   - Temporary Remand To Custody
                   - Wellness Hold
