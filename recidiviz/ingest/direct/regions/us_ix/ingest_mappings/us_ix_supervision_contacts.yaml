@@ -53,6 +53,7 @@ output:
                 StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT:
                   - "ALTERNATE WORK SITE"
                 StateSupervisionContactLocation.COURT:
+                  - "14" # Court Action
                   - "COURT"
                   - "DRUG COURT"
                 StateSupervisionContactLocation.FIELD:
@@ -60,7 +61,10 @@ output:
                   - "964" # Field Contact
                   - "FIELD"
                 StateSupervisionContactLocation.INTERNAL_UNKNOWN:
+                  - "524" # WBOR System
+                  - "553" # Community Service
                   - "568" # LSU Review (Semi-Annual)
+                  - "908" # Conversion
                   - "ASSOCIATE"
                   - "COMMUNITY SERVICE SITE"
                   - "COMPACT STATE"
@@ -79,15 +83,18 @@ output:
                   - "PAROLE COMMISSION"
                 StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
                   - "16" # Employment Site Check
+                  - "962" # Change in Employment
                   - "EMPLOYER"
                 StateSupervisionContactLocation.RESIDENCE:
                   - "21" # Home Contact
-                  - "471" #Personal Home Contact
-                  - "966" # Resident Verification
+                  - "33" # Personal Home Contact
+                  - "966" # Residence Verification
                   - "RESIDENCE"
                   - "OTHER RESIDENCE"
                 StateSupervisionContactLocation.SUPERVISION_OFFICE:
                   - "28" # Office Contact
+                  - "107" # Interstate Compact
+                  - "471" # Interstate
                   - "592" # Office
                   - "OFFICE"
                   - "INTERSTATE OFFICE"
@@ -104,6 +111,9 @@ output:
               $raw_text: contact_type
               $mappings:
                 StateSupervisionContactType.COLLATERAL:
+                  - "429" # Collateral
+                  - "475" # Mental Health Collateral
+                  - "581" # Support System Collateral
                   - "Collateral"
                   - "Mental Health Collateral"
                   - "Attorney (LSU)"
@@ -113,11 +123,16 @@ output:
                   - "Prosecutor (LSU)"
                   - "Victim"
                 StateSupervisionContactType.DIRECT:
-                  - "42" # Telephone
                   - "35" # Personal Telephone Contact
+                  - "42" # Telephone
                   - "447" # Face To Face
                   - "474" # Law Enforcement
+                  - "484" # Negative Contact
                   - "486" # Parole Commission
+                  - "526" # Written Correspondence
+                  - "591" # Mail
+                  - "905" # Virtual
+                  - "907" # APP Smart Phone
                   - "72 Hour Initial Contact"
                   - "APP Smart Phone"
                   - "Face To Face"
@@ -184,9 +199,15 @@ output:
                   - "585" # 72 Hour Initial Contact
                 StateSupervisionContactReason.EMERGENCY_CONTACT:
                   - "CRITICAL"
+                  - "873" # Monthly Report: Critical
+                  - "915" # Critical Incident Case Review
                 StateSupervisionContactReason.GENERAL_CONTACT:
                   - "GENERAL"
+                  - "874" # Monthly Report: General
                 StateSupervisionContactReason.INTERNAL_UNKNOWN:
+                  - "221" # EPICS Reinforcement
+                  - "222" # EPICS Disapproval
+                  - "908" # Conversion
                   - "CONVERSION"
                   - "GENERAL REINFORCEMENT"
                   - "GENERAL DISAPPROVAL"
@@ -199,6 +220,10 @@ output:
                   - "PROGRESS REVIEW"
                   - "FACE TO FACE"
                   - "ARREST"
+                  - "447" # Face to Face
+                  - "534" # GPS/EM Successful Completion
+                  - "539" # 60/60 Completion - Successful
+                  - "543" # End GPS Pilot Successful (D1 D4 D6)
                 StateSupervisionContactStatus.ATTEMPTED:
                   - "ATTEMPTED"
                   - "INQUIRY"
@@ -206,7 +231,12 @@ output:
                   - "1" # Attempted Employment Verification
                   - "2" # Attempted Home Contact
                   - "4" # Attempted Telephone Contact
-                  - "5" #Attempted Urine Screen
+                  - "5" # Attempted Urine Screen
+                  - "535" # GPS/EM Unsuccessful Completion
+                  - "540" # 60/60 Completion - Unsuccessful
+                  - "544" # End GPS Pilot Unsuccessful (D1 D4 D6)
+                StateSupervisionContactStatus.INTERNAL_UNKNOWN:
+                  - "910" # ISI Dosage Progress Review
           resulted_in_arrest:
             $equal:
               - resulted_in_arrest
