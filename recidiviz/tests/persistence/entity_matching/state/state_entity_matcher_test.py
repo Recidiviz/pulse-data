@@ -1286,7 +1286,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         db_supervision_violated_condition = (
             generate_supervision_violated_condition_entry(
-                person=db_person, condition="COND"
+                person=db_person,
+                condition="COND",
+                condition_raw_text="COND",
             )
         )
         entity_supervision_violated_condition = self.to_entity(

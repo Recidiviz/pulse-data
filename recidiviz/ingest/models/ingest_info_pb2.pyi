@@ -1715,9 +1715,11 @@ class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
     STATE_SUPERVISION_VIOLATED_CONDITION_ENTRY_ID_FIELD_NUMBER: builtins.int
     CONDITION_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
+    CONDITION_RAW_TEXT_FIELD_NUMBER: builtins.int
     state_supervision_violated_condition_entry_id: typing.Text = ...
     condition: typing.Text = ...
     state_code: typing.Text = ...
+    condition_raw_text: typing.Text = ...
     def __init__(
         self,
         *,
@@ -1726,12 +1728,15 @@ class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
         ] = ...,
         condition: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
+        condition_raw_text: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
         self,
         field_name: typing_extensions.Literal[
             "condition",
             b"condition",
+            "condition_raw_text",
+            b"condition_raw_text",
             "state_code",
             b"state_code",
             "state_supervision_violated_condition_entry_id",
@@ -1743,6 +1748,8 @@ class StateSupervisionViolatedConditionEntry(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "condition",
             b"condition",
+            "condition_raw_text",
+            b"condition_raw_text",
             "state_code",
             b"state_code",
             "state_supervision_violated_condition_entry_id",

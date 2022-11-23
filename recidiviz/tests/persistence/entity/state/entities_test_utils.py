@@ -315,6 +315,7 @@ def generate_full_graph_state_person(
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code="US_XX",
                 condition="MISSED CURFEW",
+                condition_raw_text="MISSED CURFEW",
             )
         ],
     )

@@ -262,6 +262,7 @@ message StateSupervisionViolatedConditionEntry {
     optional string state_supervision_violated_condition_entry_id = 1;
     optional string condition = 2;
     optional string state_code = 3;
+    optional string condition_raw_text = 4;
 }
 
 message StateSupervisionViolationTypeEntry {

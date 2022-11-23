@@ -162,7 +162,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition="DRG"
+                        state_code="US_XX", condition="DRG", condition_raw_text="DRG"
                     )
                 ],
             )
@@ -191,7 +191,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition="DRG"
+                        state_code="US_XX", condition="DRG", condition_raw_text="DRG"
                     )
                 ],
             )
@@ -249,7 +249,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition="WEA"
+                        state_code="US_XX", condition="WEA", condition_raw_text="WEA"
                     )
                 ],
             ),
@@ -267,10 +267,10 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition="DRG"
+                        state_code="US_XX", condition="DRG", condition_raw_text="DRG"
                     ),
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition="EMP"
+                        state_code="US_XX", condition="EMP", condition_raw_text="EMP"
                     ),
                 ],
             ),
@@ -480,10 +480,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition="DRG"
+                    state_code="US_MO", condition="DRG", condition_raw_text="DRG"
                 ),
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition="OTHER"
+                    state_code="US_MO", condition="OTHER", condition_raw_text="OTHER"
                 ),
             ],
         )
@@ -897,7 +897,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition="LAW"
+                    state_code="US_MO", condition="LAW", condition_raw_text="LAW"
                 ),
             ],
         )

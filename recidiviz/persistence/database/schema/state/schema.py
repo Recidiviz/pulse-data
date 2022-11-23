@@ -2121,6 +2121,10 @@ class StateSupervisionViolatedConditionEntry(
         nullable=False,
         comment="The specific condition of supervision which was violated.",
     )
+    condition_raw_text = Column(
+        String(255),
+        comment="The raw text value of the condition.",
+    )
 
     @declared_attr
     def supervision_violation_id(self) -> Column:
