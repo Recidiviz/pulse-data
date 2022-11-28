@@ -1,0 +1,262 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_period`
+# to corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - start_date
+  - end_date
+  - Start_TransferReasonDesc
+  - End_TransferReasonDesc
+  - DOCLocationToName
+  - DOCLocationToTypeName
+  - LegalStatusDesc
+  - StaffId
+  - EmployeeTypeName
+  - RequestedSupervisionAssignmentLevel
+  - PhysicalLocationTypeDesc
+  - LocationName
+  - period_id
+unused_columns:
+  - EmployeeTypeName
+  - LocationName
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - period_id
+          start_date: start_date
+          termination_date: end_date
+          # TODO(#16848): Update to account for absconsions
+          supervision_site: DOCLocationToName
+          supervising_officer:
+            $conditional:
+              - $if:
+                  $not_null: StaffId
+                $then:
+                  StateAgent:
+                    external_id: StaffId
+                    # TODO(#16848): Add mappings based on `EmployeeTypeName`
+                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          supervision_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - PhysicalLocationTypeDesc
+                    - $literal("Absconded")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              - $else_if:
+                  $not_null: LegalStatusDesc
+                $then:
+                  $enum_mapping:
+                    $raw_text: LegalStatusDesc
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
+                        - Parole Violator
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        - Non Idaho Commitment
+                      StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                        - Investigation
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - Parole
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - Probation
+              - $else: $literal_enum(StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
+          admission_reason:
+            $conditional:
+              - $if:
+                  $not_null: Start_TransferReasonDesc
+                $then:
+                  $enum_mapping:
+                    $raw_text: Start_TransferReasonDesc
+                    $mappings:
+                      StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                        - Escape
+                      StateSupervisionPeriodAdmissionReason.COURT_SENTENCE:
+                        - Court Action
+                      StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        - Administrative
+                        - Administrative Transfer # TODO(#16848): probably wrong (I think right based on incarceration periods and the infrequency)
+                        - Assigned
+                        - Assigned To Work Release
+                        - Authorized Temporary Release
+                        - Other Unspecified Release
+                        - Out On Bond
+                        - Reinstate Parole
+                        - Temporary Remand to Community
+                      StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                        - Release Clemency/Pardon
+                        - Release Court Order
+                        - Release to Parole
+                        - Release to Supervision
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                        - Contract In
+                        - Federal Custody
+                        - Interstate Compact Community In
+                        - Return Other Jurisdictions
+                        - Serving Other Jurisdiction
+                        - Serving Out of State Sentence
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                        - Emergency Transfer
+                        - Offender Moves Location
+                        - Transfer To Hospital
+              - $else_if:
+                  $equal:
+                    - LegalStatusDesc
+                    - $literal("Investigation")
+                $then: $literal_enum(StateSupervisionPeriodAdmissionReason.INVESTIGATION)
+              - $else: $literal_enum(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE)
+          termination_reason:
+            $conditional:
+              - $if:
+                  $not_null: End_TransferReasonDesc
+                $then:
+                  $enum_mapping:
+                    $raw_text: End_TransferReasonDesc
+                    $mappings:
+                      # TODO(#16848): Suspension? Revocation? Depends on what transfer follows maybe.
+                      StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                        - Civil Commitment
+                        - Civil Commitment Pending
+                        # TODO(#16848): Is it possible someone isn't admitted to incarceration after this?
+                        - Pending Custody Intake
+                        - Return From Parole
+                        - Return From Temporary Release
+                        - Returned To Jail
+                        - Temporary Remand To Custody
+                      StateSupervisionPeriodTerminationReason.DEATH:
+                        - Death - Natural
+                        - Death - Unnatural
+                      StateSupervisionPeriodTerminationReason.DISCHARGE:
+                        - Discharged from DOC
+                        - Release Court Order
+                      StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                        - Administrative
+                        - Administrative Transfer
+                        - Assigned
+                        - Assigned To Jail
+                        - Authorized Temporary Release # TODO(#16848): temp. release from supervision?
+                        - Court Action # TODO(#16848): potentially admitted into incarceration - we have as new admission in IP
+                        - Out To Court # TODO(#16848): transfer?
+                        - Release Clemency/Pardon
+                        - Release to Parole
+                        - Release to Supervision
+                      StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - Contract Out
+                        - Deported
+                        - Federal Custody
+                        - Interstate Compact Community Out
+                        - Interstate Compact Facility Out
+                        - Serving Local Jail Sentence
+                      StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                        - Offender Moves Location
+              - $else: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+          custodial_authority:
+            $conditional:
+              - $if:
+                  # "Interstate Compact" and "Parole Commission" are lumped into the
+                  # "District Office" DOCLocationToTypeName, so we need to check them
+                  # separately.
+                  #
+                  # According to old mappings, these values mean some non-ID entity is
+                  # supervising the person.
+                  $in:
+                    $value: DOCLocationToName
+                    $options:
+                      - $literal("Interstate Compact")
+                      - $literal("Parole Commission")
+                $then:
+                  $enum_mapping:
+                    $raw_text: DOCLocationToName
+                    $mappings:
+                      StateCustodialAuthority.OTHER_STATE:
+                        - Interstate Compact
+                        - Parole Commission
+              - $else:
+                  $enum_mapping:
+                    $raw_text: DOCLocationToTypeName
+                    $mappings:
+                      StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                        - Adult Facility/Institution
+                        - District Office
+                        - Jail
+                        - Juvenile Facility
+                      StateCustodialAuthority.FEDERAL:
+                        - Federal Facility
+                      StateCustodialAuthority.OTHER_STATE:
+                        - State
+          supervision_level:
+            $enum_mapping:
+              $raw_text: RequestedSupervisionAssignmentLevel
+              $mappings:
+                # TODO(#16848): We should review all of these
+                StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - Dosage Eligible
+                  - Drug Court
+                  - Sex Offense
+                  - Mental Health Court
+                  - Close Comm Supervision
+                  - Special Needs
+                  - Deported
+                  - Veterans Court
+                  - Electronic Monitor
+                  - Gold Seal Pending
+                  - Substance Abuse
+                  - Dosage
+                  - Family Court
+                  - DUI Override Level 2
+                  - Transition
+                  - Expanded CRC
+                  - Parole Violator
+                  - Bench Warrant
+                  - Probation Violator
+                  - DUI Court
+                  - Out ST Custody
+                StateSupervisionLevel.ABSCONSION: # TODO(#16848): This should probably actually come from physical location or somewhere else
+                  - Absconder
+                StateSupervisionLevel.DIVERSION:
+                  - Drug Court Div
+                  - Veterans Court Div
+                  - Mental Hlth Crt Div
+                StateSupervisionLevel.EXTERNAL_UNKNOWN:
+                  - Unclassified
+                StateSupervisionLevel.UNSUPERVISED:
+                  - Unsupv/Court Prob
+                StateSupervisionLevel.IN_CUSTODY:
+                  - ICE Detainer
+                  - Federal Custody
+                StateSupervisionLevel.LIMITED:
+                  - Limited Supervision
+                  - Administrative
+                StateSupervisionLevel.MINIMUM:
+                  - Level 1
+                  - Low
+                  - SO Low
+                  - SO To General Low
+                  - Minimum
+                StateSupervisionLevel.MEDIUM:
+                  - O/R Moderate
+                  - Moderate
+                  - Level 2
+                  - Level 3
+                  - Medium
+                  - SO Moderate
+                  - Moderate-Old
+                  - SO To General Mod
+                StateSupervisionLevel.MAXIMUM:
+                  - Maximum
+                  - Level 4
+                  - High
+                  - SO High
+                  - SO To General High
+                  - O/R High
+                StateSupervisionLevel.INTERSTATE_COMPACT:
+                  - Interstate

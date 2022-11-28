@@ -22,6 +22,7 @@ BED_ASSIGNMENT_PERIODS_CTE = r"""
 -- This cte returns one row per bed assignment period for an incarcerated individual
 -- It includes information on the bed type and bed security level, as well as the ID
 -- of the FacilityLevel (housing unit) in which the bed is located.
+-- Open periods indicated with ToDate = '9999-12-31'
 bed_assignment_periods_cte AS (
     SELECT
         OffenderId,
@@ -109,6 +110,7 @@ location_details_cte AS (
 
 SUPERVISING_OFFICER_ASSIGNMENTS_CTE = r"""
 -- Returns one row per supervising officer assignment
+-- COALESCE NULL EndDate to '9999-12-31'
 supervising_officer_assignments_cte AS (
     SELECT
         OffenderId,
@@ -116,7 +118,7 @@ supervising_officer_assignments_cte AS (
         SupervisionAssignmentTypeId,
         SupervisionAssignmentTypeDesc,
         CAST(sa.StartDate AS DATETIME) AS StartDate,
-        CAST(sa.EndDate AS DATETIME) AS EndDate,
+        CAST(IFNULL(sa.EndDate, '9999-12-31') AS DATETIME) AS EndDate,
         EmployeeId,
         StaffId,
         EmployeeTypeName,
@@ -133,15 +135,16 @@ supervising_officer_assignments_cte AS (
 
 SUPERVISION_LEVEL_CHANGES_CTE = r"""
 -- Returns one row per supervision level assignment event
+-- COALESCE NULL EndDate to '9999-12-31'
 supervision_level_changes_cte AS (
     SELECT
         OffenderId,
         SupervisionLevelChangeRequestId,
         CAST(DecisionDate AS DATETIME) AS DecisionDate,
-        CAST(LEAD(DecisionDate) OVER (
+        CAST(IFNULL(LEAD(DecisionDate) OVER (
             PARTITION BY OffenderId
             ORDER BY CAST(DecisionDate AS DATETIME)
-        ) AS DATETIME) AS NextDecisionDate,
+        ), '9999-12-31') AS DATETIME) AS NextDecisionDate,
         p.SupervisionAssignmentLevelDesc AS PreviousSupervisionAssignmentLevelDesc,
         r.SupervisionAssignmentLevelDesc AS RequestedSupervisionAssignmentLevel,
     FROM {sup_SupervisionLevelChangeRequest}
@@ -340,34 +343,46 @@ INVESTIGATION_DETAILS_CTE = r"""
 -- investigations, but may eventually be expanded to include additional investigation
 -- types, if they are found to be utilized in Atlas.
 investigation_details_cte AS (
+    -- Legacy/Converted Records
     SELECT
         OffenderId,
         InvestigationId,
-        -- Confirm this is the best date
-        RequestDate,
-        InvestigationStatusDesc,
-        -- Investigate uses of other types of investigations, like LSU transfer: '254'
-        InvestigationTypeDesc,
+        CAST(TRIM(SPLIT(REGEXP_EXTRACT(RequestNotes, r'start_dt: [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), ':')[OFFSET(1)]) AS DATETIME) AS AssignedDate,
+        CAST(
+            IFNULL(TRIM(SPLIT(REGEXP_EXTRACT(RequestNotes, r'release_dt: [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), ':')[OFFSET(1)]), '9999-12-31') AS DATETIME
+        ) AS CompletionDate,
         LocationName,
         LocationTypeName,
         LocationSubTypeName,
     FROM {com_Investigation}
-    LEFT JOIN {com_InvestigationType}
-        USING (InvestigationTypeId)
-    LEFT JOIN {com_InvestigationStatus}
-        USING (InvestigationStatusId)
     LEFT JOIN location_details_cte
         ON ReceivingDOCLocationId = LocationId
-    WHERE InvestigationTypeId IN (
-        '31', -- Conversion investigation records
-        '10'  -- New PSI investigations
-    )
+    WHERE InvestigationTypeId = '31' -- Conversion investigation records
+        AND InvestigationStatusId = '3' -- Accepted
+
+    UNION ALL
+
+    -- Atlas Records
+    SELECT
+        OffenderId,
+        InvestigationId,
+        CAST(AssignedDate AS DATETIME) AS AssignedDate,
+        CAST(CompletionDate AS DATETIME) AS CompletionDate,
+        LocationName,
+        LocationTypeName,
+        LocationSubTypeName,
+    FROM {com_Investigation}
+    LEFT JOIN location_details_cte
+        ON ReceivingDOCLocationId = LocationId
+    WHERE InvestigationTypeId = '10'  -- New PSI investigations
+        AND InvestigationStatusId = '3' -- Accepted
 )"""
 
 # requires LOCATION_DETAILS_CTE
 OFFENDER_LOCATION_HISTORY_CTE = r"""
 -- Returns one row per period of an individuals assigned location. Lines up with transfers,
 -- so no need to add this to a query already utilizing the transfers table.
+-- Open periods indicated with CurrentToDate = '9999-12-31'
 offender_location_history_cte AS (
     SELECT
         OffenderId,
@@ -385,11 +400,12 @@ offender_location_history_cte AS (
 PHYSICAL_LOCATION_PERIODS_CTE = r"""
 -- Returns one row per "physical location" period. This table is used to track
 -- when a person has absconded or is on interstate compact.
+-- COALESCE NULL LocationChangeEndDate to '9999-12-31'
 physical_location_periods_cte AS (
     SELECT
         OffenderId,
         CAST(LocationChangeStartDate AS DATETIME) AS LocationChangeStartDate,
-        CAST(LocationChangeEndDate AS DATETIME) AS LocationChangeEndDate,
+        CAST(IFNULL(LocationChangeEndDate, '9999-12-31') AS DATETIME) AS LocationChangeEndDate,
         PhysicalLocationTypeDesc,
         LocationName,
         LocationTypeName,
@@ -442,6 +458,7 @@ transfer_details_cte AS (
 TRANSFER_PERIODS_CTE = r"""
 -- Converts the ledger-style of the transfer_details_cte into a period-style result set
 -- with start and end dates.
+-- COALESCE NULL End_TransferDate to '9999-12-31'
 transfer_periods_cte AS (
     SELECT
         OffenderId,
@@ -450,16 +467,13 @@ transfer_periods_cte AS (
         TransferTypeDesc AS Start_TransferTypeDesc,
         LEAD(TransferTypeDesc) OVER transfer_window AS End_TransferTypeDesc,
         TransferDate AS Start_TransferDate,
-        LEAD(TransferDate) OVER transfer_window AS End_TransferDate,
+        IFNULL(LEAD(TransferDate) OVER transfer_window, CAST('9999-12-31' AS DATETIME)) AS End_TransferDate,
         DOCLocationToName,
         DOCLocationToTypeName,
         DOCLocationToSubTypeName,
     FROM transfer_details_cte
     WINDOW transfer_window AS (
-        -- Include TermId since a "term" in Idaho describes a period of time during
-        -- which a person is under the jurisdiction of the DOC, from initial court
-        -- action to final discharge.
-        PARTITION BY OffenderId, TermId
+        PARTITION BY OffenderId
         ORDER BY TransferDate
     )
 )"""
@@ -499,10 +513,13 @@ TRANSFER_PERIODS_SUPERVISION_CTE = r"""
 transfer_periods_supervision_cte AS (
     SELECT *
     FROM transfer_periods_cte
-    WHERE Start_TransferTypeDesc = 'Out from DOC' -- don't exclude these yet
-        OR DOCLocationToTypeName IN (
+    WHERE DOCLocationToTypeName IN (
         'District Office'
     )
+        -- Exclude periods of escape from facilities
+        AND DOCLocationToSubTypeName NOT IN (
+            'Fugitive Unit'
+        )
 )"""
 
 # Filter clauses
@@ -536,6 +553,7 @@ TRANSFER_PERIODS_SUPERVISION_FILTER = r"""
 LEGAL_STATUS_PERIODS_INCARCERATION_FILTER = r"""
 (
     LegalStatusDesc IN (
+        'Investigation',
         'Non Idaho Commitment', -- unsure, maybe drop
         'Parole Violator', -- can be used during parole board hold OR absconscions
         'Rider',
@@ -546,6 +564,7 @@ LEGAL_STATUS_PERIODS_INCARCERATION_FILTER = r"""
 LEGAL_STATUS_PERIODS_SUPERVISION_FILTER = r"""
 (
     LegalStatusDesc IN (
+        'Investigation',
         'Non Idaho Commitment', -- unsure, maybe drop
         'Parole',
         'Parole Violator', -- can be used during parole board hold OR absconscions
