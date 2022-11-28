@@ -24,13 +24,15 @@ MATCH_PROBABILITY_CUTOFF = "0.5"
 
 
 def hydrate_by_probability(column: str) -> str:
+    cleaned_column = column if "." not in column else column.partition(".")[2]
     return f"""CASE WHEN probability IS NULL THEN "EXTERNAL_UNKNONWN"
     WHEN probability < {MATCH_PROBABILITY_CUTOFF} THEN "INTERNAL_UNKNOWN"
-    ELSE {column} END"""
+    ELSE {column} END AS {cleaned_column}"""
 
 
 def null_if_low_probability(column: str) -> str:
-    return f"IF(probability < {MATCH_PROBABILITY_CUTOFF}, NULL, {column})"
+    cleaned_column = column if "." not in column else column.partition(".")[2]
+    return f"IF(probability < {MATCH_PROBABILITY_CUTOFF}, NULL, {column}) AS {cleaned_column}"
 
 
 STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME = (
