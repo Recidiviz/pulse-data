@@ -156,7 +156,7 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
                 includes_technical_violation = True
 
         for condition_entry in violation.supervision_violated_conditions:
-            condition = condition_entry.condition
+            condition = condition_entry.condition_raw_text
             if condition:
                 if condition.upper() == _SUBSTANCE_ABUSE_CONDITION_STR:
                     violation_subtypes_map[_SUBSTANCE_ABUSE_SUBTYPE_STR].append(

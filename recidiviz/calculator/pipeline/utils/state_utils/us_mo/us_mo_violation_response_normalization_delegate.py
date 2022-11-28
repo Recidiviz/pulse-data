@@ -94,7 +94,7 @@ class UsMoViolationResponseNormalizationDelegate(
         if response.supervision_violation:
             if (
                 response.response_type == StateSupervisionViolationResponseType.CITATION
-                and condition_entry.condition == _LAW_CONDITION_STR
+                and condition_entry.condition_raw_text == _LAW_CONDITION_STR
             ):
-                condition_entry.condition = LAW_CITATION_SUBTYPE_STR
+                condition_entry.condition_raw_text = LAW_CITATION_SUBTYPE_STR
         return condition_entry
