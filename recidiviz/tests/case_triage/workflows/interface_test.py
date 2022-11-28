@@ -20,7 +20,8 @@ from typing import Generator
 from unittest import TestCase
 
 import pytest
-from flask import Flask, jsonify
+import responses
+from flask import Flask
 from mock import MagicMock, patch
 
 from recidiviz.case_triage.workflows.interface import WorkflowsExternalRequestInterface
@@ -38,6 +39,9 @@ def app_context() -> Generator[None, None, None]:
 class TestWorkflowsInterface(TestCase):
     """Test class for making external requests in Workflows"""
 
+    def setUp(self) -> None:
+        self.fake_url = "http://fake-url.com"
+
     @patch("requests.put")
     def test_insert_contact_note_missing_params(self, mock_put: MagicMock) -> None:
         data = {"blah": ""}
@@ -45,32 +49,30 @@ class TestWorkflowsInterface(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         mock_put.assert_not_called()
 
-    @patch("requests.put")
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
     def test_insert_contact_note_is_test_success(
-        self, mock_get_secret: MagicMock, mock_put: MagicMock
+        self, mock_get_secret: MagicMock
     ) -> None:
         data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
-        mock_put.return_value = jsonify({"status": "OK"})
-        mock_get_secret.return_value = "fake_secret"
-        response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-        response_obj = assert_type(response.json, dict)
-        mock_put.assert_called_once()
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(response_obj.get("message"), "Called TOMIS")
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, json={"status": "OK"})
 
-    @patch("requests.put")
+            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
+            response_obj = assert_type(response.json, dict)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertEqual(response_obj.get("message"), "Called TOMIS")
+
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
     def test_insert_contact_note_is_test_exception_raised(
-        self, mock_get_secret: MagicMock, mock_put: MagicMock
+        self, mock_get_secret: MagicMock
     ) -> None:
         data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
-        mock_get_secret.return_value = "fake_secret"
-        mock_put.side_effect = ConnectionRefusedError
-        response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-
-        mock_put.assert_called_once()
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        mock_get_secret.return_value = self.fake_url
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
+            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
+            self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch("requests.put")
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
