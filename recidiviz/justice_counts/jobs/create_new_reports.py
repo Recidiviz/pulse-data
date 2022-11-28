@@ -27,6 +27,7 @@ import logging
 
 from sqlalchemy.engine import Engine
 
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -46,7 +47,8 @@ def main(engine: Engine) -> None:
 
     Additionally, for each agency, this function checks if an annual report exists for
     the current month and year. If the annual report already exists, nothing is done. If
-    the annual report does not exists AND it is January, an annual report is created."""
+    the annual report does not exists AND it is specified month to create an annual report,
+    an annual report is created."""
 
     session = Session(bind=engine)
     current_dt = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -57,45 +59,67 @@ def main(engine: Engine) -> None:
     for agency in session.query(schema.Agency).all():
         logger.info("Generating Reports for Agency %s", agency.name)
 
-        monthly_report, yearly_report = ReportInterface.create_new_reports(
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=session, agency_id=agency.id
+        )
+        metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
+            agency_datapoints
+        )
+
+        (
+            monthly_report,
+            yearly_report,
+            monthly_metric_defs,
+            annual_metric_defs,
+        ) = ReportInterface.create_new_reports(
             session=session,
             agency_id=agency.id,
             user_account_id=None,
             current_month=current_month,
             current_year=current_year,
+            systems={schema.System[sys] for sys in agency.systems},
+            metric_key_to_datapoints=metric_key_to_datapoints,
         )
-        if monthly_report:
+
+        if monthly_report is not None:
             logger.info(
                 "Generated Monthly Report for Agency %s, Month %s, Year %s",
                 agency.name,
                 current_month,
                 current_year,
             )
-        else:
+        elif monthly_report is None and monthly_metric_defs is not None:
             logger.info(
                 "Monthly Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
                 current_month,
                 current_year,
             )
+        elif monthly_report is None and monthly_metric_defs is None:
+            logger.info(
+                "No metrics are included in Monthly Report for Agency %s, Month %s, Year %s.",
+                agency.name,
+                current_month,
+                current_year,
+            )
 
-        if yearly_report:
+        if yearly_report is not None:
             logger.info(
                 "Generated Annual Report for Agency %s, Month %s, Year %s",
                 agency.name,
                 current_month,
                 current_year,
             )
-        elif current_month == 1:
+        elif yearly_report is None and annual_metric_defs is not None:
             logger.info(
                 "Annual Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
                 current_month,
                 current_year,
             )
-        else:
+        elif yearly_report is None and annual_metric_defs is None:
             logger.info(
-                "Annual Report for Agency %s, Month %s, Year %s not created (it is not January).",
+                "No metrics are included in Annual Report for Agency %s, Month %s, Year %s.",
                 agency.name,
                 current_month,
                 current_year,

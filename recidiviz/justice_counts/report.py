@@ -18,7 +18,7 @@
 import datetime
 import itertools
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
@@ -30,7 +30,11 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.metrics.metric_definition import ReportingFrequency
+from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_definition import (
+    MetricDefinition,
+    ReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
@@ -38,6 +42,8 @@ from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.datetime_utils import convert_date_range_to_year_month
+
+DatapointsForMetricT = TypeVar("DatapointsForMetricT", bound="DatapointsForMetric")
 
 
 class ReportInterface:
@@ -151,24 +157,55 @@ class ReportInterface:
         user_account_id: Optional[int],
         current_month: int,
         current_year: int,
-    ) -> Tuple[Optional[schema.Report], Optional[schema.Report]]:
+        systems: Set[schema.System],
+        metric_key_to_datapoints: Dict[str, DatapointsForMetricT],
+    ) -> Tuple[
+        Optional[schema.Report],
+        Optional[schema.Report],
+        Optional[List[MetricDefinition]],
+        Optional[List[MetricDefinition]],
+    ]:
         """Creates a new monthly report (for the current month/year) and annual report
         (for the current month/year) for the agency if those reports do not already
-        exist."""
+        exist and reports have metrics available for the current month."""
         monthly_report = None
         yearly_report = None
 
+        # Check that the agency required monthly metrics for this month
+        try:
+            monthly_metric_defs = DatapointsForMetric.get_metric_definitions_for_report(
+                systems=systems,
+                metric_key_to_datapoints=metric_key_to_datapoints,
+                report_frequency=ReportingFrequency.MONTHLY.value,
+                starting_month=current_month,
+            )
+        except JusticeCountsServerError:
+            monthly_metric_defs = None
+
         # Create monthly report if does not exist
-        monthly_report = ReportInterface.create_report_if_not_exists(
-            session,
-            agency_id,
-            user_account_id,
-            current_year,
-            current_month,
-            ReportingFrequency.MONTHLY.value,
-        )
-        # Create yearly report if it is January and report does not exist
-        if current_month == 1:
+        if monthly_metric_defs is not None:
+            monthly_report = ReportInterface.create_report_if_not_exists(
+                session,
+                agency_id,
+                user_account_id,
+                current_year,
+                current_month,
+                ReportingFrequency.MONTHLY.value,
+            )
+
+        # Check that the agency required annual metrics for this month
+        try:
+            annual_metric_defs = DatapointsForMetric.get_metric_definitions_for_report(
+                systems=systems,
+                metric_key_to_datapoints=metric_key_to_datapoints,
+                report_frequency=ReportingFrequency.ANNUAL.value,
+                starting_month=current_month,
+            )
+        except JusticeCountsServerError:
+            annual_metric_defs = None
+
+        # Create yearly report if report does not exist
+        if annual_metric_defs is not None:
             yearly_report = ReportInterface.create_report_if_not_exists(
                 session,
                 agency_id,
@@ -177,7 +214,8 @@ class ReportInterface:
                 current_month,
                 ReportingFrequency.ANNUAL.value,
             )
-        return monthly_report, yearly_report
+
+        return monthly_report, yearly_report, monthly_metric_defs, annual_metric_defs
 
     @staticmethod
     def create_report(
