@@ -156,7 +156,14 @@ class BulkUploader:
             logging.info("Uploading %s", sheet_name)
             df = sheet_name_to_df[sheet_name]
             # Drop any rows that contain any NaN values
-            df = df.dropna(axis=0, how="any", subset="value")
+            try:
+                df = df.dropna(axis=0, how="any", subset=["value"])
+            except TypeError:
+                # We will be in this case if the value column is missing,
+                # and it's safe to ignore the error because we'll raise
+                # an error about the missing value column later on in
+                # _get_column_value.
+                pass
             # Convert dataframe to a list of dictionaries
             rows = df.to_dict("records")
             metric_key_to_datapoint_jsons, metric_key_to_errors = self._upload_rows(
