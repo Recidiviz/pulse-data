@@ -86,7 +86,7 @@ class WorkflowsExternalRequestInterface:
                 return make_response(
                     jsonify(
                         message="Called TOMIS",
-                        data=tomis_response.json,
+                        data=tomis_response.json(),
                     ),
                     HTTPStatus.OK,
                 )
