@@ -22,6 +22,7 @@ import datetime
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
@@ -193,12 +194,19 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             (
                 new_monthly_report_A,
                 new_yearly_report_A,
+                monthly_metric_defs_A,
+                annual_metric_defs_A,
             ) = ReportInterface.create_new_reports(
                 session=session,
                 agency_id=agency_id_A,
                 user_account_id=None,
                 current_month=1,
                 current_year=2022,
+                systems={
+                    schema.System[sys]
+                    for sys in self.test_schema_objects.test_agency_A.systems
+                },
+                metric_key_to_datapoints={},
             )
             self.assertIsNotNone(new_monthly_report_A)
             if new_monthly_report_A:
@@ -206,6 +214,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertIsNotNone(new_yearly_report_A)
             if new_yearly_report_A:
                 self.assertEqual(new_yearly_report_A.modified_by, [])
+            self.assertIsNotNone(monthly_metric_defs_A)
+            self.assertIsNotNone(annual_metric_defs_A)
 
     def test_create_new_reports(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -213,54 +223,38 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 [
                     self.test_schema_objects.test_agency_A,
                     self.test_schema_objects.test_user_A,
-                    self.test_schema_objects.test_agency_B,
-                    self.test_schema_objects.test_user_B,
-                    self.test_schema_objects.test_report_annual,
-                    self.test_schema_objects.test_agency_C,
-                    self.test_schema_objects.test_user_C,
-                    self.test_schema_objects.test_report_monthly_C,
                 ]
             )
 
             session.flush()
             session.refresh(self.test_schema_objects.test_agency_A)
             session.refresh(self.test_schema_objects.test_user_A)
-            session.refresh(self.test_schema_objects.test_agency_B)
-            session.refresh(self.test_schema_objects.test_user_B)
-            session.refresh(self.test_schema_objects.test_report_annual)
-            session.refresh(self.test_schema_objects.test_agency_C)
-            session.refresh(self.test_schema_objects.test_user_C)
-            session.refresh(self.test_schema_objects.test_report_monthly_C)
 
-            user_id_A = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session,
-                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-            ).id
+            user_id_A = self.test_schema_objects.test_user_A.id
             agency_id_A = self.test_schema_objects.test_agency_A.id
-            user_id_B = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session,
-                auth0_user_id=self.test_schema_objects.test_user_B.auth0_user_id,
-            ).id
-            agency_id_B = self.test_schema_objects.test_agency_B.id
-            user_id_C = UserAccountInterface.get_user_by_auth0_user_id(
-                session=session,
-                auth0_user_id=self.test_schema_objects.test_user_C.auth0_user_id,
-            ).id
-            agency_id_C = self.test_schema_objects.test_agency_C.id
 
-            # Case 1 (Monthly report created, yearly report created)
+            # Case 1 (Both Monthly and Annual reports created)
             (
                 new_monthly_report_A,
                 new_yearly_report_A,
+                monthly_metric_defs_A,
+                annual_metric_defs_A,
             ) = ReportInterface.create_new_reports(
                 session=session,
                 agency_id=agency_id_A,
                 user_account_id=user_id_A,
                 current_month=1,
                 current_year=2022,
+                systems={
+                    schema.System[sys]
+                    for sys in self.test_schema_objects.test_agency_A.systems
+                },
+                metric_key_to_datapoints={},
             )
             self.assertIsNotNone(new_monthly_report_A)
             self.assertIsNotNone(new_yearly_report_A)
+            self.assertIsNotNone(monthly_metric_defs_A)
+            self.assertIsNotNone(annual_metric_defs_A)
             if new_monthly_report_A:
                 self.assertEqual(new_monthly_report_A.source_id, agency_id_A)
                 self.assertEqual(
@@ -288,73 +282,73 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     datetime.date(2023, 1, 1),
                 )
 
-            # Case 2 (Monthly report created, no yearly report created)
-            (
-                new_monthly_report_B,
-                new_yearly_report_B,
-            ) = ReportInterface.create_new_reports(
-                session=session,
-                agency_id=agency_id_B,
-                user_account_id=user_id_B,
-                current_month=1,
-                current_year=2022,
-            )
-            self.assertIsNotNone(new_monthly_report_B)
-            self.assertEqual(new_yearly_report_B, None)
-            if new_monthly_report_B:
-                self.assertEqual(new_monthly_report_B.source_id, agency_id_B)
-                self.assertEqual(
-                    new_monthly_report_B.type, schema.ReportingFrequency.MONTHLY.value
-                )
-                self.assertEqual(
-                    new_monthly_report_B.date_range_start,
-                    datetime.date(2022, 1, 1),
-                )
-                self.assertEqual(
-                    new_monthly_report_B.date_range_end,
-                    datetime.date(2022, 2, 1),
-                )
-
-            # Case 3 (No monthly report created, yearly report created)
-            (
-                new_monthly_report_C,
-                new_yearly_report_C,
-            ) = ReportInterface.create_new_reports(
-                session=session,
-                agency_id=agency_id_C,
-                user_account_id=user_id_C,
-                current_month=1,
-                current_year=2022,
-            )
-            self.assertEqual(new_monthly_report_C, None)
-            self.assertIsNotNone(new_yearly_report_C)
-            if new_yearly_report_C:
-                self.assertEqual(new_yearly_report_C.source_id, agency_id_C)
-                self.assertEqual(
-                    new_yearly_report_C.type, schema.ReportingFrequency.ANNUAL.value
-                )
-                self.assertEqual(
-                    new_yearly_report_C.date_range_start,
-                    datetime.date(2022, 1, 1),
-                )
-                self.assertEqual(
-                    new_yearly_report_C.date_range_end,
-                    datetime.date(2023, 1, 1),
-                )
-
-            # Case 4 (No monthly report created, no yearly report created)
+            # Case 2 (Neither Monthly nor Annual report created (already exist))
             (
                 new_monthly_report_A,
                 new_yearly_report_A,
+                monthly_metric_defs_A,
+                annual_metric_defs_A,
             ) = ReportInterface.create_new_reports(
                 session=session,
                 agency_id=agency_id_A,
                 user_account_id=user_id_A,
                 current_month=1,
                 current_year=2022,
+                systems={
+                    schema.System[sys]
+                    for sys in self.test_schema_objects.test_agency_A.systems
+                },
+                metric_key_to_datapoints={},
             )
             self.assertEqual(new_monthly_report_A, None)
             self.assertEqual(new_yearly_report_A, None)
+            self.assertIsNotNone(monthly_metric_defs_A)
+            self.assertIsNotNone(annual_metric_defs_A)
+
+            # Change all metrics for Agency A to annual starting in February
+            february_fiscal_frequency = CustomReportingFrequency(
+                starting_month=2, frequency=schema.ReportingFrequency.ANNUAL
+            )
+            metric_interfaces = DatapointInterface.get_metric_settings_by_agency(
+                agency=self.test_schema_objects.test_agency_A, session=session
+            )
+            datapoints = []
+            for metric in metric_interfaces:
+                datapoint = schema.Datapoint(
+                    metric_definition_key=metric.key,
+                    source_id=agency_id_A,
+                    context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                    value=february_fiscal_frequency.to_json_str(),
+                )
+                datapoints.append(datapoint)
+                session.add(datapoint)
+                session.commit()
+            metric_key_to_agency_datapoints = (
+                DatapointInterface.build_metric_key_to_datapoints(datapoints)
+            )
+
+            # Case 3 (Neither Monthly nor Annual report created (no metrics available))
+            (
+                new_monthly_report_A,
+                new_yearly_report_A,
+                monthly_metric_defs_A,
+                annual_metric_defs_A,
+            ) = ReportInterface.create_new_reports(
+                session=session,
+                agency_id=agency_id_A,
+                user_account_id=user_id_A,
+                current_month=1,
+                current_year=2022,
+                systems={
+                    schema.System[sys]
+                    for sys in self.test_schema_objects.test_agency_A.systems
+                },
+                metric_key_to_datapoints=metric_key_to_agency_datapoints,
+            )
+            self.assertEqual(new_monthly_report_A, None)
+            self.assertEqual(new_yearly_report_A, None)
+            self.assertEqual(monthly_metric_defs_A, None)
+            self.assertEqual(annual_metric_defs_A, None)
 
     def test_report_dates(self) -> None:
         # November, Monthly
