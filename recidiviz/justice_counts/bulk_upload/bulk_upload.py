@@ -494,6 +494,7 @@ class BulkUploader:
                     reports_by_time_range=reports_by_time_range,
                     existing_datapoints_dict=existing_datapoints_dict,
                     metric_key_to_errors=metric_key_to_errors,
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
             except Exception as e:
                 datapoint_json_list = []
@@ -602,6 +603,7 @@ class BulkUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -625,7 +627,11 @@ class BulkUploader:
         corresponds to one of the MetricFile objects in bulk_upload_helpers.py.
         """
         metric_definition = metricfile.definition
-        reporting_frequency = metric_definition.reporting_frequency
+        reporting_frequency = metric_definition.get_reporting_frequency_to_use(
+            agency_datapoints=metric_key_to_agency_datapoints.get(
+                metric_definition.key, []
+            ),
+        )
         # Step 1: Warn if there are unexpected columns in the file
         self._maybe_raise_invalid_breakdown_error(rows=rows, metricfile=metricfile)
         # TODO(#13731): Add warnings for other unexpected columns

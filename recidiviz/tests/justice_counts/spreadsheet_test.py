@@ -23,9 +23,13 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
+from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import (
@@ -429,3 +433,51 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(json_response["non_metric_errors"]), 0)
             spreadsheet = session.query(schema.Spreadsheet).one()
             self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+
+            # Add agency datapoint that changes the reporting frequency for the
+            # Annual Budget metric from annual -> monthly.
+
+            agency_datapoint = schema.Datapoint(
+                context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                source_id=agency.id,
+                metric_definition_key=law_enforcement.annual_budget.key,
+                value=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.MONTHLY
+                ).to_json_str(),
+            )
+
+            file = (
+                self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
+            ).open("rb")
+            (
+                metric_key_to_datapoint_jsons,
+                metric_key_to_errors,
+            ) = SpreadsheetInterface.ingest_spreadsheet(
+                session=session,
+                xls=pd.ExcelFile(file),
+                spreadsheet=spreadsheet,
+                auth0_user_id=user.auth0_user_id,
+                agency_id=agency.id,
+                metric_key_to_agency_datapoints={
+                    law_enforcement.annual_budget.key: [agency_datapoint]
+                },
+            )
+            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+                    systems={schema.System.LAW_ENFORCEMENT}
+                ),
+            )
+            self.assertEqual(len(json_response["metrics"]), 7)
+            for metric in json_response["metrics"]:
+                if metric["key"] == law_enforcement.annual_budget.key:
+                    # No error for wrong reporting frequency
+                    self.assertEqual(len(metric["metric_errors"]), 0)
+                elif metric["key"] == law_enforcement.calls_for_service.key:
+                    # Calls for service error still there
+                    self.assertEqual(len(metric["metric_errors"]), 1)
+                else:
+                    metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+                    # Missing Metric error still there
+                    self.assertEqual(len(metric["metric_errors"]), 1)
