@@ -17,15 +17,15 @@ normalization_pipelines:
   - pipeline: comprehensive_normalization
     job_name: us-id-normalization
     state_code: US_ID
-    region: us-west1
+    region: us-central1
   - pipeline: comprehensive_normalization
     job_name: us-ix-normalization
     state_code: US_IX
-    region: us-west1
+    region: us-west3
   - pipeline: comprehensive_normalization
     job_name: us-me-normalization
     state_code: US_ME
-    region: us-west1
+    region: us-east1
   - pipeline: comprehensive_normalization
     job_name: us-mo-normalization
     state_code: US_MO
@@ -37,7 +37,7 @@ normalization_pipelines:
   - pipeline: comprehensive_normalization
     job_name: us-oz-normalization
     state_code: US_OZ
-    region: us-east1
+    region: us-west3
     staging_only: True
   - pipeline: comprehensive_normalization
     job_name: us-pa-normalization
@@ -68,7 +68,7 @@ metric_pipelines:
     job_name: full-us-nd-supervision-metrics
     state_code: US_ND
     metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
-    region: us-east1
+    region: us-central1
   - pipeline: incarceration_metrics
     job_name: full-us-nd-incarceration-metrics
     state_code: US_ND
@@ -166,12 +166,12 @@ metric_pipelines:
     job_name: full-us-ix-violation-metrics
     state_code: US_IX
     metric_types: VIOLATION
-    region: us-east1
+    region: us-west3
   - pipeline: program_metrics
     job_name: full-us-ix-program-metrics
     state_code: US_IX
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
-    region: us-west1
+    region: us-west3
 
   # Full US_PA calculations with no time limit
   - pipeline: population_span_metrics
@@ -273,7 +273,7 @@ metric_pipelines:
     job_name: full-us-oz-population-span-metrics
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-east1
+    region: us-west3
     staging_only: True
 
 supplemental_dataset_pipelines:
