@@ -40,6 +40,7 @@ output:
                 $result:
                   StateSupervisionViolatedConditionEntry:
                     condition: $iter_item
+                    condition_raw_text: $iter_item
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:

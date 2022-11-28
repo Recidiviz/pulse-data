@@ -226,7 +226,8 @@ class EntityTreeManifestFactory:
         """Returns a single, recursively hydrated entity tree manifest, which can be
         used to translate a single input row into an entity tree.
         """
-
+        # TODO(#16813): remove exclude list after condition_raw_text field has been fully migrated
+        exclude_list: Set[str] = {"condition_raw_text"}
         field_manifests: Dict[str, ManifestNode] = {}
         for field_name in raw_fields_manifest.keys():
             field_type = attr_field_type_for_field_name(entity_cls, field_name)
@@ -317,7 +318,10 @@ class EntityTreeManifestFactory:
                 BuildableAttrFieldType.STRING,
                 BuildableAttrFieldType.INTEGER,
             ):
-                if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
+                if (
+                    field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX)
+                    and field_name not in exclude_list
+                ):
                     raise ValueError(
                         f"Enum raw text fields should not be mapped independently "
                         f"of their corresponding enum fields. Found direct mapping "
