@@ -96,7 +96,7 @@ incarceration_periods AS (
         SELECT
             OffenderId,
             Start_TransferDate,
-            End_TransferDate,
+            IF(End_TransferDate = '9999-12-31', NULL, End_TransferDate) AS End_TransferDate,
             Start_TransferReasonDesc,
             End_TransferReasonDesc,
             DOCLocationToName,

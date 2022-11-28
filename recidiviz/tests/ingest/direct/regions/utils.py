@@ -228,7 +228,7 @@ def add_supervision_period_to_person(
     state_code: str,
     external_id: str,
     supervision_type: StateSupervisionPeriodSupervisionType,
-    supervision_type_raw_text: str,
+    supervision_type_raw_text: Optional[str],
     start_date: datetime.date,
     termination_date: Optional[datetime.date],
     supervision_site: str,
