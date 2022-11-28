@@ -39,27 +39,36 @@ US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_DESCRIPTION = """
     Query for relevant metadata needed to support supervision level downgrade opportunity in Tennessee 
     """
 US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
-SELECT 
-   pei.external_id, 
-   tes.state_code,
-   ANY_VALUE(tes.reasons) AS reasons,
-   ARRAY_AGG(STRUCT(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS violation_date, ContactNoteType AS violation_code)) AS metadata_violations
-FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized`  tes
-LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-  USING(person_id)
-/*
-In TN, we may see supervision levels higher than assessment levels for valid reasons. While these reasons are not captured
-in the data, having certain contact codes indicating a violation or recent arrest since the most recent assessment date
-may suggest a valid override, so we want to surface that information
-*/
-LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest` contact
-    ON pei.external_id = contact.OffenderID
-    AND CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= CAST(JSON_VALUE(reasons[0].reason.latest_assessment_date) AS DATE)
-    AND ContactNoteType IN ('PWAR','VWAR','VRPT','ARRP')
-WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-    AND tes.is_eligible
-    AND tes.state_code = 'US_TN'
-GROUP BY 1,2
+WITH base_query AS (
+    SELECT 
+       pei.external_id, 
+       tes.state_code,
+       ANY_VALUE(tes.reasons) AS reasons,
+       ARRAY_AGG(STRUCT(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS violation_date, ContactNoteType AS violation_code)) AS metadata_violations
+    FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized`  tes
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      USING(person_id)
+    /*
+    In TN, we may see supervision levels higher than assessment levels for valid reasons. While these reasons are not captured
+    in the data, having certain contact codes indicating a violation or recent arrest since the most recent assessment date
+    may suggest a valid override, so we want to surface that information
+    */
+    LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest` contact
+        ON pei.external_id = contact.OffenderID
+        AND CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= CAST(JSON_VALUE(reasons[0].reason.latest_assessment_date) AS DATE)
+        AND ContactNoteType IN ('PWAR','VWAR','VRPT','ARRP')
+    WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
+        AND tes.is_eligible
+        AND tes.state_code = 'US_TN'
+    GROUP BY 1,2
+)
+
+SELECT
+    external_id,
+    state_code,
+    reasons,
+    IF(metadata_violations[offset(0)].violation_date IS NULL, [], metadata_violations) AS metadata_violations
+    FROM base_query
 """
 
 US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
