@@ -80,13 +80,26 @@ class WorkflowsExternalRequestInterface:
                     timeout=timeout_secs,
                 )
                 logging.info(
+                    "Request to TOMIS completed with status code %s",
+                    tomis_response.status_code,
+                )
+                if tomis_response.status_code != requests.codes.ok:
+                    tomis_response.raise_for_status()
+                logging.info(
                     "Request to TOMIS completed in %s seconds",
                     round(time.perf_counter() - start_time, 2),
                 )
+                text_data = tomis_response.text
+                json_data = ""
+                try:
+                    json_data = tomis_response.json()
+                except Exception as e:
+                    logging.info("Error parsing response JSON, ignoring: %s", e)
                 return make_response(
                     jsonify(
-                        message="Called TOMIS",
-                        data=tomis_response.json(),
+                        message="Successfully called TOMIS",
+                        text=text_data,
+                        json=json_data,
                     ),
                     HTTPStatus.OK,
                 )
