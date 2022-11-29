@@ -54,14 +54,32 @@ class TestWorkflowsInterface(TestCase):
         self, mock_get_secret: MagicMock
     ) -> None:
         data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
+        response_json = {"status": "OK"}
         mock_get_secret.return_value = self.fake_url
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, json={"status": "OK"})
+            rsps.add(responses.PUT, self.fake_url, json=response_json)
 
             response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-            response_obj = assert_type(response.json, dict)
             self.assertEqual(response.status_code, HTTPStatus.OK)
-            self.assertEqual(response_obj.get("message"), "Called TOMIS")
+            response_obj = assert_type(response.json, dict)
+            self.assertEqual(response_obj.get("message"), "Successfully called TOMIS")
+            self.assertEqual(response_obj.get("json"), response_json)
+
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    def test_insert_contact_note_is_test_success_text_only(
+        self, mock_get_secret: MagicMock
+    ) -> None:
+        data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
+        mock_get_secret.return_value = self.fake_url
+        response_text = "response"
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, body=response_text)
+
+            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+            response_obj = assert_type(response.json, dict)
+            self.assertEqual(response_obj.get("message"), "Successfully called TOMIS")
+            self.assertEqual(response_obj.get("text"), response_text)
 
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
     def test_insert_contact_note_is_test_exception_raised(
