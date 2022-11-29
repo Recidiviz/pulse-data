@@ -131,7 +131,7 @@ from (
   (select * from STATIC_STABLE)
 ) unioned
 left join {ADH_OFFENDER} off on unioned.offendernumber = off.offender_number
-inner join {ADH_OFFENDER_BOOKING} book on off.offender_id = book.offender_id
+inner join (select distinct offender_id from {ADH_OFFENDER_BOOKING}) book on off.offender_id = book.offender_id
 
 """
 
