@@ -13,6 +13,7 @@ columns:
   - name: OffenderNoteInfoId
     description: |-
       ID of the record in the table `ind_OffenderNoteInfo` that contains metadata about this note.
+      Any notes from the same contact will share the same metadata.
   - name: Details
     description: |-
       The narrative content of the note.

@@ -22,7 +22,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH legacy_contacts AS (
+WITH contact_modes AS (
+    SELECT
+        OffenderNoteInfoId,
+        ARRAY_AGG(ContactModeId ORDER BY ContactModeId) as ContactModeIds
+    FROM {ind_OffenderNoteInfo_ContactMode}
+    GROUP BY 1
+), legacy_contacts AS (
     SELECT
         OffenderId, -- external_id
         OffenderNoteInfoId, -- external_id
@@ -37,12 +43,15 @@ WITH legacy_contacts AS (
     FROM {ind_OffenderNote}
     LEFT JOIN {ind_OffenderNoteInfo} oni
         USING (OffenderNoteInfoId)
-    LEFT JOIN {ind_OffenderNoteInfo_ContactMode}
+    LEFT JOIN contact_modes cms
         USING (OffenderNoteInfoId)
     LEFT JOIN {ind_OffenderNoteStatus}
         USING (OffenderNoteStatusId)
-    LEFT JOIN {ind_ContactMode}
-        USING (ContactModeId)
+    LEFT JOIN {ind_ContactMode} cm
+        -- Rarely (2 instances so far), there are multiple contact modes listed for a
+        -- single legacy contact. Instead of aggregating like we do for Atlas contacts,
+        -- we just pick one.
+        ON cms.ContactModeIds[ORDINAL(1)] = cm.ContactModeId
     LEFT JOIN {ref_Employee} e
         ON oni.StaffId = e.EmployeeId
     WHERE NoteTypeId = '3' -- Filter for only Id = 3 to get "Supervision Notes"
@@ -55,29 +64,20 @@ atlas_group_contact_modes AS (
     -- for other ContactModeIds or change logic to match how date is actively coming in.
     SELECT
         OffenderId, -- external_id
-        -- Note: For one "contact", there may be 1 to many NoteIds with the same NoteInfoId that show N different "methods"
-        -- that occurred during the same "contact session". For this reason, we keep OffenderNoteInfoId in the external_id
-        -- and string_agg across that to get all modes aggregated to parse for various contact fields.
-        OffenderNoteInfoId,
+        OffenderNoteInfoId, -- external_id
         NoteDate,
         NoteTypeId, -- filter for only Id = 3 to get "Supervision Notes"
         e.StaffId,  -- contact_agent_id
-        ARRAY_AGG(ContactModeId) AS ContactModes -- contact_type
-    FROM {ind_OffenderNote}
-    LEFT JOIN {ind_OffenderNoteInfo} oni
-        USING (OffenderNoteInfoId)
-    LEFT JOIN {ind_OffenderNoteInfo_ContactMode}
+        ContactModeIds -- contact_type
+    FROM {ind_OffenderNoteInfo} oni
+    LEFT JOIN contact_modes
         USING (OffenderNoteInfoId)
     LEFT JOIN {ind_OffenderNoteStatus}
         USING (OffenderNoteStatusId)
-    LEFT JOIN {ind_ContactMode}
-        USING (ContactModeId)
     LEFT JOIN {ref_Employee} e
         ON oni.StaffId = e.EmployeeId
     WHERE NoteTypeId = '3'  -- Filter for only Id = 3 to get "Supervision Notes"
-    AND Details NOT LIKE 'Contact Location%' -- Filters for only non-legacy Atlas contacts
     AND CAST(NoteDate AS DATETIME) >= '2022-11-14' -- We don't want any Atlas data before it is being used live which happens on this date
-    GROUP BY 1, 2, 3, 4, 5
 ),
 atlas_contacts AS (
     SELECT
@@ -85,7 +85,7 @@ atlas_contacts AS (
         OffenderNoteInfoId, -- external_id
         NoteDate,
         (SELECT mode
-         FROM UNNEST(ContactModes) AS mode
+         FROM UNNEST(ContactModeIds) AS mode
          WHERE mode IN (
             '35',  -- Personal Telephone Contact
             '42',  -- Telephone
@@ -100,10 +100,10 @@ atlas_contacts AS (
             '591', -- Mail
             '905', -- Virtual
             '907'  -- APP Smart Phone
-         ) LIMIT 1
+         ) ORDER BY mode LIMIT 1
         ) AS contact_type,
         (SELECT mode
-         FROM UNNEST(ContactModes) AS mode
+         FROM UNNEST(ContactModeIds) AS mode
          WHERE mode IN (
             '221', -- EPICS Reinforcement
             '222', -- EPICS Disapproval
@@ -113,10 +113,10 @@ atlas_contacts AS (
             '874', -- Monthly Report: General
             '908', -- Conversion
             '915'  -- Critical Incident Case Review
-         ) LIMIT 1
+         ) ORDER BY mode LIMIT 1
         ) AS contact_title, -- reason_raw_text
         (SELECT mode
-         FROM UNNEST(ContactModes) AS mode
+         FROM UNNEST(ContactModeIds) AS mode
          WHERE mode IN (
             '14',  -- Court Action
             '16',  -- Employment Site Check
@@ -135,10 +135,10 @@ atlas_contacts AS (
             '962', -- Change in Employment
             '964', -- Field Contact
             '966'  -- Residence Verification
-         ) LIMIT 1
+         ) ORDER BY mode LIMIT 1
         ) AS contact_location, -- location_raw_text and concat for method
         (SELECT mode
-         FROM UNNEST(ContactModes) AS mode
+         FROM UNNEST(ContactModeIds) AS mode
          WHERE mode IN (
             '1',   -- Attempted Employment Verification
             '2',   -- Attempted Home Contact
@@ -152,13 +152,13 @@ atlas_contacts AS (
             '543', -- End GPS Pilot Successful (D1 D4 D6)
             '544', -- End GPS Pilot Unsuccessful (D1 D4 D6)
             '910'  -- ISI Dosage Progress Review
-         ) LIMIT 1
+         ) ORDER BY mode LIMIT 1
         ) AS contact_result,
         (SELECT mode
-         FROM UNNEST(ContactModes) AS mode
+         FROM UNNEST(ContactModeIds) AS mode
          WHERE mode IN (
             '17'
-         ) LIMIT 1
+         ) ORDER BY mode LIMIT 1
         ) AS verified_employment,
         '0' AS resulted_in_arrest, -- Currently, no way in new Atlas data to identify this in ContactModes  - Will update after discussion with ID about if there is a way to ID it and how
         StaffId -- contact_agent_id
