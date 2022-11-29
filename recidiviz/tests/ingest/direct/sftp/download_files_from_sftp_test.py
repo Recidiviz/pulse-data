@@ -21,7 +21,7 @@ import os
 import stat
 import unittest
 from base64 import decodebytes
-from typing import List
+from typing import Dict, List, Optional
 
 import pytz
 from mock import MagicMock, Mock, patch
@@ -147,11 +147,12 @@ class BrokenGCSFSFakeSystem(FakeGCSFileSystem):
         contents_handle: FileContentsHandle,
         content_type: str,
         timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> None:
         if "file1" in path.abs_path():
             raise IOError
         super().upload_from_contents_handle_stream(
-            path, contents_handle, content_type, timeout
+            path, contents_handle, content_type, timeout, metadata
         )
 
     def delete(self, path: GcsfsFilePath) -> None:

@@ -203,6 +203,7 @@ class FakeGCSFileSystem(GCSFileSystem):
         contents_handle: FileContentsHandle,
         content_type: str,
         timeout: int = 60,
+        metadata: Optional[Dict[str, str]] = None,
     ) -> None:
         temp_path = generate_random_temp_path()
         if isinstance(contents_handle, FlaskFileStorageContentsHandle):
@@ -219,6 +220,8 @@ class FakeGCSFileSystem(GCSFileSystem):
             shutil.copyfile(contents_path, temp_path)
         self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))
         self.uploaded_paths.add(path)
+        if metadata:
+            self.metadata_store[path.abs_path()] = metadata
 
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         if isinstance(dst_path, GcsfsFilePath):
