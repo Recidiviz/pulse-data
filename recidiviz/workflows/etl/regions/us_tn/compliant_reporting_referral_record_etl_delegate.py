@@ -20,7 +20,7 @@ import logging
 from typing import Any, Optional, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
-from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.common.str_field_utils import parse_int, snake_to_camel
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import (
@@ -73,6 +73,8 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
                 # The keys for almost eligible don't line up with what the data is transformed to,
                 # so handle them separately.
                 continue
+            elif key == "remaining_criteria_needed":
+                new_document[key] = parse_int(data["remaining_criteria_needed"])
             else:
                 new_document[key] = value
 
