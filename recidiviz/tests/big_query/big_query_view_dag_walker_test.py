@@ -23,7 +23,7 @@ import threading
 import time
 import unittest
 from typing import Any, Dict, List, Set, Tuple
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
@@ -36,6 +36,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
     DagKey,
+    ProcessDagPerfConfig,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -1345,6 +1346,87 @@ The following views have less restrictive projects_to_deploy than their parents:
             all_views_dag_walker.populate_node_view_builders(
                 DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0:-1]
             )
+
+    def test_dag_perf_config(self) -> None:
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        def process_simple(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, None]
+        ) -> None:
+            if view.view_id == "table_6":
+                time.sleep(0.1)
+            else:
+                time.sleep(0.01)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Processing for \[BigQueryAddress\(dataset_id='dataset_6', "
+            r"table_id='table_6'\)\] took \[0.1[0-9]?\] seconds. Expected node to "
+            r"process in less than \[0.05\] seconds.",
+        ):
+            _ = walker.process_dag(
+                process_simple,
+                perf_config=ProcessDagPerfConfig(
+                    node_max_processing_time_seconds=0.05,
+                    node_allowed_process_time_overrides={},
+                ),
+            )
+
+        # Now add an exemption for the slow view and see it processes
+        result = walker.process_dag(
+            process_simple,
+            perf_config=ProcessDagPerfConfig(
+                node_max_processing_time_seconds=0.05,
+                node_allowed_process_time_overrides={
+                    BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): 0.2
+                },
+            ),
+        )
+
+        self.assertEqual(set(walker.views), set(result.view_results))
+
+    @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
+    def test_dag_perf_config_in_gcp_no_crash(self) -> None:
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        def process_simple(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, None]
+        ) -> None:
+            if view.view_id == "table_6":
+                time.sleep(0.1)
+            else:
+                time.sleep(0.01)
+
+        with patch("logging.Logger.error") as mock_logger:
+            result = walker.process_dag(
+                process_simple,
+                perf_config=ProcessDagPerfConfig(
+                    node_max_processing_time_seconds=0.05,
+                    node_allowed_process_time_overrides={},
+                ),
+            )
+            # Don't crash in GCP but do still emit an error log
+            mock_logger.assert_called_once_with(
+                "[BigQueryViewDagWalker Node Failure] Processing for "
+                "[BigQueryAddress(dataset_id='dataset_6', table_id='table_6')] took "
+                "[0.1] seconds. Expected node to process in less than [0.05] seconds."
+            )
+        self.assertEqual(set(walker.views), set(result.view_results))
+
+        with patch("logging.Logger.error") as mock_logger:
+            # Now add an exemption for the slow view and see it processes
+            result = walker.process_dag(
+                process_simple,
+                perf_config=ProcessDagPerfConfig(
+                    node_max_processing_time_seconds=0.05,
+                    node_allowed_process_time_overrides={
+                        BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): 0.2
+                    },
+                ),
+            )
+            mock_logger.assert_not_called()
+
+        self.assertEqual(set(walker.views), set(result.view_results))
 
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         """Fails the test if a view that has no parents is an expected view with no

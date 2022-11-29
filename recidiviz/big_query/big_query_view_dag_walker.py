@@ -38,7 +38,7 @@ import attr
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.utils import structured_logging, trace
+from recidiviz.utils import environment, structured_logging, trace
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -79,6 +79,30 @@ class ViewProcessingMetadata:
     node_processing_runtime_seconds: float
     total_time_in_queue_seconds: float
     graph_depth: int
+
+
+@attr.s(auto_attribs=True, kw_only=True)
+class ProcessDagPerfConfig:
+    # The max allowed amount of time to process any given node in the DAG.
+    node_max_processing_time_seconds: float
+
+    # A mapping of BigQueryAddress to allowed processing runtime for nodes associated
+    # with this address. If a value exists for a view in this mapping, it will take
+    # precedence over the global |node_max_processing_time_seconds| value.
+    node_allowed_process_time_overrides: Dict[BigQueryAddress, float]
+
+    def allowed_processing_time(self, address: BigQueryAddress) -> float:
+        return (
+            self.node_allowed_process_time_overrides.get(address)
+            or self.node_max_processing_time_seconds
+        )
+
+
+DEFAULT_PROCESS_DAG_PERF_CONFIG = ProcessDagPerfConfig(
+    # By default, we expect DAG processing to take less than 3 minutes per node.
+    node_max_processing_time_seconds=(3 * 60),
+    node_allowed_process_time_overrides={},
+)
 
 
 @attr.s(auto_attribs=True, kw_only=True)
@@ -319,10 +343,15 @@ class BigQueryViewDagWalker:
         return self.nodes_by_key[DagKey.for_view(view)]
 
     def process_dag(
-        self, view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
+        self,
+        view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
+        perf_config: ProcessDagPerfConfig = DEFAULT_PROCESS_DAG_PERF_CONFIG,
     ) -> ProcessDagResult[ViewResultT]:
-        """This method provides a level-by-level "breadth-first" traversal of a DAG and executes
-        view_process_fn on every node in level order."""
+        """This method provides a level-by-level "breadth-first" traversal of a DAG and
+        executes |view_process_fn| on every node in level order.
+
+        Will throw if a node execution time exceeds |max_node_process_time_sec|.
+        """
         processed: Set[DagKey] = set()
         queue: Set[BigQueryViewDagNode] = set(self.roots)
         view_results: Dict[BigQueryView, ViewResultT] = {}
@@ -367,6 +396,26 @@ class BigQueryViewDagWalker:
                             node.dag_key,
                         )
                         raise e
+
+                    allowed_processing_time = perf_config.allowed_processing_time(
+                        node.view.address
+                    )
+                    if execution_sec > allowed_processing_time:
+                        error_msg = (
+                            f"[BigQueryViewDagWalker Node Failure] Processing for "
+                            f"[{node.view.address}] took [{round(execution_sec, 2)}] "
+                            f"seconds. Expected node to process in less than "
+                            f"[{allowed_processing_time}] seconds."
+                        )
+                        if environment.in_gcp():
+                            # Runtimes can be more unreliable in GCP due to resource
+                            # contention with other running processes, so we do not
+                            # throw in GCP. We instead emit an error log which can be
+                            # used to fire an alert.
+                            logging.error(error_msg)
+                        else:
+                            raise ValueError(error_msg)
+
                     graph_depth = (
                         0
                         if not parent_results
