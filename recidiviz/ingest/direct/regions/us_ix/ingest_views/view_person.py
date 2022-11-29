@@ -77,6 +77,26 @@ VIEW_QUERY_TEMPLATE = """
         SELECT *
         FROM alias_records
         WHERE AliasNameTypeId = '0'
+    ),
+    -- confirmed that all phone numbers are of length 10
+    -- using the below ranking system, there will only ever be one phone number per person
+    -- ranking system: take most recently updated primary phone, otherwise take most recently updated phone overall
+    --                 if there are still ties, break tie randomly using Offender_PhoneId
+    current_phone_numbers as (
+        SELECT     
+            OffenderId,
+            PhoneNumber,
+        FROM (
+            SELECT
+            OffenderId,
+            PrimaryPhone,
+            off_phone.UpdateDate,
+            PhoneNumber,
+            RANK() OVER(PARTITION BY OffenderId ORDER BY PrimaryPhone desc, CAST(off_phone.UpdateDate as DATETIME) desc, Offender_PhoneId desc) as rnk
+            FROM {ind_Offender_Phone} off_phone 
+                LEFT JOIN {ref_Phone} phone on off_phone.PhoneId = phone.PhoneId
+        ) sub1
+        WHERE rnk = 1
     )
 
     SELECT
@@ -94,6 +114,8 @@ VIEW_QUERY_TEMPLATE = """
         g.GenderDesc,
         r.RaceDesc,
         e.EthnicOriginDesc,
+        p.PhoneNumber,
+        o.EmailAddress
     FROM {ind_Offender} o
     LEFT JOIN {ind_Race} r
         ON o.RaceId = r.RaceId
@@ -105,6 +127,8 @@ VIEW_QUERY_TEMPLATE = """
         ON o.GenderId = g.GenderId
     LEFT JOIN {ind_EthnicOrigin} e
         ON o.EthnicOriginId = e.EthnicOriginId
+    LEFT JOIN current_phone_numbers p
+        ON o.OffenderId = p.OffenderId
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
