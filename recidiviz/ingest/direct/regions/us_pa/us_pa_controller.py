@@ -136,7 +136,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._unpack_supervision_period_conditions,
             self._set_supervising_officer,
             self._set_supervision_site,
-            self._set_supervision_period_custodial_authority,
         ]
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
@@ -754,28 +753,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(obj, StateSupervisionPeriod):
                 if district_office:
                     obj.supervision_site = f"{district_office}|{district_sub_office_id}|{supervision_location_org_code}"
-
-    @staticmethod
-    def _set_supervision_period_custodial_authority(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets the custodial_authority on the supervision period."""
-        # TODO(#8972): This row post hook should not be necessary once the supervision
-        #  periods view is migrated to v2 ingest mappings.
-        supervision_types = row["supervision_types"]
-
-        # For dual supervision types, the custodial authority will always be the supervision authority, so we
-        # just arbitrarily pick raw text to map to an enum.
-        custodial_authority = (
-            supervision_types.split(",")[0] if supervision_types else supervision_types
-        )
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                obj.custodial_authority = custodial_authority
 
     @staticmethod
     def _set_sci_incarceration_period_custodial_authority(
