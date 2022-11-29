@@ -1223,9 +1223,7 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
 
         # Assert
         with freeze_time("2015-01-02T03:06:06"):
-            same_instance = (
-                r"Destination instance should not have any valid metadata rows."
-            )
+            same_instance = r"Destination instance should not have any valid ingest view metadata rows."
             with self.assertRaisesRegex(ValueError, same_instance):
                 self.metadata_manager_secondary.transfer_metadata_to_new_instance(
                     self.metadata_manager

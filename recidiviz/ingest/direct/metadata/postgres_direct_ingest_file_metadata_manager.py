@@ -21,6 +21,7 @@ import datetime
 from typing import List, Optional
 
 import pytz
+from sqlalchemy import and_
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -301,6 +302,74 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 self._raw_file_schema_metadata_as_entity(metadata)
                 for metadata in results
             ]
+
+    def mark_instance_data_invalidated(self) -> None:
+        """Sets the is_invalidated on all rows for the state/instance"""
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+            table_cls = schema.DirectIngestRawFileMetadata
+            update_query = (
+                table_cls.__table__.update()
+                .where(
+                    and_(
+                        table_cls.region_code == self.region_code.upper(),
+                        table_cls.raw_data_instance == self.raw_data_instance.value,
+                    )
+                )
+                .values(is_invalidated=True)
+            )
+            session.execute(update_query)
+
+    def transfer_metadata_to_new_instance(
+        self,
+        new_instance_manager: "PostgresDirectIngestRawFileMetadataManager",
+    ) -> None:
+        """Take all rows where `is_invalidated=False` and transfer to the instance associated with
+        the new_instance_manager
+        """
+        if (
+            new_instance_manager.raw_data_instance == self.raw_data_instance
+            or new_instance_manager.region_code != self.region_code
+        ):
+            raise ValueError(
+                "Either state codes are not the same or new instance is same as origin."
+            )
+
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+            table_cls = schema.DirectIngestRawFileMetadata
+            # check destination instance does not have any valid metadata rows
+            check_query = (
+                session.query(schema.DirectIngestRawFileMetadata)
+                .filter_by(
+                    region_code=self.region_code.upper(),
+                    raw_data_instance=new_instance_manager.raw_data_instance.value,
+                    is_invalidated=False,
+                )
+                .all()
+            )
+            if check_query:
+                raise ValueError(
+                    "Destination instance should not have any valid raw file metadata rows."
+                )
+
+            update_query = (
+                table_cls.__table__.update()
+                .where(
+                    and_(
+                        table_cls.region_code == self.region_code.upper(),
+                        table_cls.raw_data_instance == self.raw_data_instance.value,
+                        # pylint: disable=singleton-comparison
+                        table_cls.is_invalidated == False,
+                    )
+                )
+                .values(
+                    raw_data_instance=new_instance_manager.raw_data_instance.value,
+                )
+            )
+            session.execute(update_query)
 
     @environment.test_only
     def mark_file_as_invalidated(self, path: GcsfsFilePath) -> None:

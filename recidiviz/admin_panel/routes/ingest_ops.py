@@ -57,6 +57,9 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
 )
@@ -65,8 +68,12 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
+    delete_contents_in_latest_view_dataset,
+    delete_contents_in_raw_data_dataset,
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
+    move_raw_data_between_instances,
+    move_raw_data_to_backup,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -803,3 +810,198 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             )
 
         return "", HTTPStatus.OK
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/move_raw_data_to_backup",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _move_raw_data_to_backup() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            move_raw_data_to_backup(state_code, ingest_instance, BigQueryClientImpl())
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/move_raw_data_between_instances",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _move_raw_data_between_instances() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance_source = DirectIngestInstance(
+                request_json["srcIngestInstance"].upper()
+            )
+            ingest_instance_destination = DirectIngestInstance(
+                request_json["destIngestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            move_raw_data_between_instances(
+                state_code=state_code,
+                ingest_instance_source=ingest_instance_source,
+                ingest_instance_destination=ingest_instance_destination,
+                big_query_client=BigQueryClientImpl(),
+            )
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/delete_contents_in_raw_data_dataset",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _delete_contents_in_raw_data_dataset() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            delete_contents_in_raw_data_dataset(
+                state_code=state_code,
+                ingest_instance=ingest_instance,
+                big_query_client=BigQueryClientImpl(),
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/delete_contents_in_latest_view_dataset",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _delete_contents_in_latest_view_dataset() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            delete_contents_in_latest_view_dataset(
+                state_code=state_code,
+                ingest_instance=ingest_instance,
+                big_query_client=BigQueryClientImpl(),
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _mark_instance_raw_data_invalidated() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(
+                request_json["ingestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code=state_code.value,
+                raw_data_instance=ingest_instance,
+            )
+            raw_file_metadata_manager.mark_instance_data_invalidated()
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _transfer_raw_data_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            src_ingest_instance = DirectIngestInstance(
+                request_json["srcIngestInstance"].upper()
+            )
+            dest_ingest_instance = DirectIngestInstance(
+                request_json["destIngestInstance"].upper()
+            )
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code=state_code.value,
+                raw_data_instance=src_ingest_instance,
+            )
+
+            new_instance_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code=state_code.value,
+                raw_data_instance=dest_ingest_instance,
+            )
+
+            raw_data_manager.transfer_metadata_to_new_instance(
+                new_instance_manager=new_instance_manager
+            )
+
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR

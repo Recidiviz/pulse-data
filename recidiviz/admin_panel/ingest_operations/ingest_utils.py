@@ -203,6 +203,8 @@ def import_raw_files_to_bq_sandbox(
                     discovery_time=datetime.now(),
                     normalized_file_name=file_path.file_name,
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
+                    # Sandbox instance can be primary
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 ),
             )
 
