@@ -36,7 +36,11 @@ VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS: str = (
 )
 
 # The states in the vitals reports that will be grouping by level 2 supervision locations.
-VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES: List[str] = ['"US_MO"', '"US_ID"']
+VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES: List[str] = [
+    '"US_MO"',
+    '"US_ID"',
+    '"US_IX"',
+]
 VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
     f"({', '.join(VITALS_LEVEL_2_SUPERVISION_LOCATION_STATES)})"
 )
@@ -44,6 +48,7 @@ VITALS_LEVEL_2_SUPERVISION_LOCATION_OPTIONS: str = (
 # The states in the Pathways views that will be grouping by level 2 incarceration locations.
 PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = [
     '"US_ID"',
+    '"US_IX"',
     '"US_TN"',
     '"US_CO"',
 ]
@@ -61,6 +66,7 @@ STATE_CODE_TO_PATHWAYS_INCARCERATION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode, str
 ] = {
     StateCode.US_ID: "movement",
+    StateCode.US_IX: "com_Transfer",
     StateCode.US_ME: "CIS_309_MOVEMENT",
     StateCode.US_ND: "elite_externalmovements",
     StateCode.US_TN: "OffenderMovement",
@@ -73,6 +79,7 @@ STATE_CODE_TO_PATHWAYS_SUPERVISION_LAST_UPDATED_DATE_SOURCE_TABLE: Dict[
     StateCode, str
 ] = {
     StateCode.US_ID: "movement",
+    StateCode.US_IX: "com_Transfer",
     StateCode.US_ND: "docstars_offendercasestable",
     StateCode.US_TN: "SupervisionPlan",
     StateCode.US_ME: "CIS_124_SUPERVISION_HISTORY",
@@ -113,7 +120,7 @@ def state_specific_race_or_ethnicity_groupings(
     return f"""CASE {override_when_block}
               WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
-              WHEN state_code = 'US_ID' AND {race_or_ethnicity_column} = 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER'
+              WHEN state_code in ('US_ID', 'US_IX') AND {race_or_ethnicity_column} = 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER'
                 THEN 'ASIAN'
               WHEN {race_or_ethnicity_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
@@ -207,6 +214,8 @@ def state_specific_external_id_type(state_code_table_prefix: str) -> str:
         CASE 
           WHEN {state_code_table_prefix}.state_code = 'US_ID'
           THEN 'US_ID_DOC'
+          WHEN {state_code_table_prefix}.state_code = 'US_IX'
+          THEN 'US_IX_DOC'
           WHEN {state_code_table_prefix}.state_code = 'US_PA'
           THEN 'US_PA_PBPP'
           WHEN {state_code_table_prefix}.state_code = 'US_MO'
@@ -260,9 +269,9 @@ def state_specific_supervision_type_groupings(
 ) -> str:
     """State-specific logic for grouping multiple supervision types together."""
     prefix = f"{optional_prefix}." if optional_prefix else ""
-    return f"""-- US_ID counts DUAL under PAROLE
+    return f"""-- US_ID/US_IX counts DUAL under PAROLE
         CASE
-            WHEN {prefix}state_code = 'US_ID' AND {prefix}supervision_type = 'DUAL' THEN 'PAROLE'
+            WHEN {prefix}state_code in ('US_ID', 'US_IX') AND {prefix}supervision_type = 'DUAL' THEN 'PAROLE'
             ELSE {prefix}supervision_type
         END AS supervision_type"""
 
@@ -315,8 +324,8 @@ def vitals_state_specific_district_name(table: str) -> str:
     return f"""CASE
             WHEN {table}.state_code IN {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}
                 THEN locations.level_1_supervision_location_name
-            WHEN {table}.state_code = "US_ID"
-                # We want the district name for US_ID to be the district id.
+            WHEN {table}.state_code in ("US_ID", "US_IX")
+                # We want the district name for US_ID/US_IX to be the district id.
                 THEN {table}.level_2_supervision_location_external_id
             WHEN {table}.state_code = "US_MO"
                 THEN locations.level_2_supervision_location_name
@@ -350,13 +359,13 @@ def vitals_state_specific_district_display_name(
 ) -> str:
     """State-specific logic to normalize district names into displayable versions."""
     return f"""
-        CASE {state_code}
-          WHEN 'US_ND'
+        CASE
+          WHEN {state_code} = 'US_ND'
             THEN IF(
               INSTR(UPPER({district_name}), 'OFFICE') != 0,
               {district_name},
               CONCAT({district_name}, ' OFFICE'))
-          WHEN 'US_ID'
+          WHEN {state_code} in ('US_ID', 'US_IX')
             THEN REPLACE({district_name}, ' - ', ', ')
           ELSE {district_name}
         END
@@ -468,7 +477,7 @@ def spotlight_state_specific_facility() -> str:
                     -- includes out-of-state placements and misc others
                     ELSE 'OTHER'
                 END)
-            WHEN state_code = 'US_ID' THEN
+            WHEN state_code in ('US_ID', 'US_IX') THEN
                 CASE
                     WHEN facility = "KOOTENAI COUNTY SHERIFF DEPARTMENT" THEN "County Jail"
                     WHEN facility = "JEFFERSON COUNTY SHERIFF DEPARTMENT" THEN "County Jail"
@@ -704,7 +713,7 @@ def pathways_state_specific_supervision_level(
     """State-specific logic to normalize supervision level for Pathways."""
     return f"""
         CASE 
-            WHEN {state_code_query}='US_ID' THEN
+            WHEN {state_code_query} in ('US_ID', 'US_IX') THEN
                 (CASE
                     WHEN COALESCE({supervision_level_query}, "INTERNAL_UNKNOWN") = "INTERNAL_UNKNOWN"
                         THEN "OTHER"
