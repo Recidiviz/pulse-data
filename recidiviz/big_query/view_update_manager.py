@@ -42,6 +42,9 @@ from recidiviz.big_query.rematerialization_success_persister import (
     AllViewsUpdateSuccessPersister,
     RematerializationSuccessPersister,
 )
+from recidiviz.big_query.view_update_config import (
+    VIEW_DAG_REMATERIALIZATION_PERF_CONFIG,
+)
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -194,7 +197,9 @@ def _rematerialize_all_deployed_views(
                     f"Failed to materialize view [{v.address}]"
                 ) from e_inner
 
-        results = full_dag_walker.process_dag(_materialize_view)
+        results = full_dag_walker.process_dag(
+            _materialize_view, perf_config=VIEW_DAG_REMATERIALIZATION_PERF_CONFIG
+        )
         results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
     except Exception as e:
         with monitoring.measurements() as measurements:
@@ -458,7 +463,9 @@ def _create_managed_dataset_and_deploy_views(
         except Exception as e:
             raise ValueError(f"Error creating or updating view [{v.address}]") from e
 
-    results = dag_walker.process_dag(process_fn)
+    results = dag_walker.process_dag(
+        process_fn, perf_config=VIEW_DAG_REMATERIALIZATION_PERF_CONFIG
+    )
     results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 
 
