@@ -170,7 +170,7 @@ export const releaseBQExportLock = async (
   });
 };
 
-// Import raw files to BiqQuery Sandbox
+// Import raw files to BigQuery Sandbox
 export const importRawDataToSandbox = async (
   stateCode: string,
   sandboxDatasetPrefix: string,
@@ -261,7 +261,7 @@ export const markInstanceIngestViewDataInvalidated = async (
   );
 };
 
-// Transer ingest view metadata to new instance
+// Transfer ingest view metadata to new instance
 export const transferIngestViewMetadataToNewInstance = async (
   stateCode: string,
   srcIngestInstance: DirectIngestInstance,
@@ -336,6 +336,94 @@ export const changeIngestInstanceStatus = async (
       stateCode,
       ingestInstance,
       ingestInstanceStatus,
+    }
+  );
+};
+
+// Move raw data to backup dataset
+export const moveRawDataToBackup = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/move_raw_data_to_backup",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Move raw data between instances
+export const moveRawDataBetweenInstances = async (
+  stateCode: string,
+  srcIngestInstance: DirectIngestInstance,
+  destIngestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/move_raw_data_between_instances",
+    {
+      stateCode,
+      srcIngestInstance,
+      destIngestInstance,
+    }
+  );
+};
+
+// Delete contents in raw data dataset
+export const deleteContentsInRawDataDataset = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/delete_contents_in_raw_data_dataset",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Delete contents in latest view data dataset
+export const deleteContentsInLatestViewDataset = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/delete_contents_in_latest_view_dataset",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Mark instance raw data as invalidated
+export const markInstanceRawDataInvalidated = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};
+
+// Transfer raw data metadata to new instance
+export const transferRawDataMetadataToNewInstance = async (
+  stateCode: string,
+  srcIngestInstance: DirectIngestInstance,
+  destIngestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
+    {
+      stateCode,
+      srcIngestInstance,
+      destIngestInstance,
     }
   );
 };

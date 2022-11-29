@@ -277,7 +277,7 @@ class DirectIngestViewMaterializationMetadataManager:
         self,
         new_instance_manager: "DirectIngestViewMaterializationMetadataManager",
     ) -> None:
-        """Take all rows where `is_invalidated=False` and transfer to the instance assocaited with
+        """Take all rows where `is_invalidated=False` and transfer to the instance associated with
         the new_instance_manager
         """
         if (
@@ -304,7 +304,7 @@ class DirectIngestViewMaterializationMetadataManager:
             )
             if check_query:
                 raise ValueError(
-                    "Destination instance should not have any valid metadata rows."
+                    "Destination instance should not have any valid ingest view metadata rows."
                 )
 
             update_query = (

@@ -28,8 +28,12 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
+    delete_contents_in_latest_view_dataset,
+    delete_contents_in_raw_data_dataset,
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
+    move_raw_data_between_instances,
+    move_raw_data_to_backup,
 )
 
 
@@ -183,6 +187,113 @@ class FlashDatabaseToolsTest(unittest.TestCase):
                 ),
                 call.delete_dataset(
                     dataset_ref=DatasetReference(self.mock_project_id, source_id),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_move_raw_data_between_instances_secondary_to_primary(
+        self,
+    ) -> None:
+        move_to_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+        raw_source_id = "us_xx_raw_data_secondary"
+
+        raw_destination_id = "us_xx_raw_data"
+
+        self.mock_bq_client.add_timestamp_suffix_to_dataset_id.return_value = (
+            raw_destination_id
+        )
+
+        with freeze_time(move_to_date):
+            move_raw_data_between_instances(
+                state_code=self.region_code,
+                ingest_instance_source=DirectIngestInstance.SECONDARY,
+                ingest_instance_destination=DirectIngestInstance.PRIMARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.create_dataset_if_necessary(
+                    dataset_ref=DatasetReference(
+                        self.mock_project_id, raw_destination_id
+                    ),
+                ),
+                call.copy_dataset_tables(
+                    source_dataset_id=raw_source_id,
+                    destination_dataset_id=raw_destination_id,
+                    overwrite_destination_tables=True,
+                ),
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(self.mock_project_id, raw_source_id),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_delete_contents_in_raw_data_dataset(self) -> None:
+        deletion_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+        raw_source_id = "us_xx_raw_data_secondary"
+
+        with freeze_time(deletion_date):
+            delete_contents_in_raw_data_dataset(
+                state_code=self.region_code,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(self.mock_project_id, raw_source_id),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_delete_contents_in_latest_view_dataset(self) -> None:
+        deletion_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+
+        latest_view_source_id = "us_xx_raw_data_up_to_date_views_secondary"
+
+        with freeze_time(deletion_date):
+            delete_contents_in_latest_view_dataset(
+                state_code=self.region_code,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(
+                        self.mock_project_id, latest_view_source_id
+                    ),
+                    delete_contents=True,
+                ),
+            ]
+        )
+
+    def test_move_raw_data_to_backup_secondary(self) -> None:
+        move_to_date = datetime.datetime(2022, 2, 1, 0, 0, 0)
+        with freeze_time(move_to_date):
+            raw_source_id = "us_xx_raw_data_secondary"
+
+            move_raw_data_to_backup(
+                state_code=self.region_code,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                big_query_client=self.mock_bq_client,
+            )
+
+        self.mock_bq_client.assert_has_calls(
+            [
+                call.backup_dataset_tables_if_dataset_exists(
+                    dataset_id=raw_source_id,
+                ),
+                call.delete_dataset(
+                    dataset_ref=DatasetReference(self.mock_project_id, raw_source_id),
                     delete_contents=True,
                 ),
             ]

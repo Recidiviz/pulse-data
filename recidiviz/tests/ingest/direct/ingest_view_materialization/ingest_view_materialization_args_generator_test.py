@@ -147,6 +147,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_2,
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
         )
@@ -193,6 +194,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
         )
@@ -232,6 +234,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
         )
@@ -262,6 +265,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 ),
                 DirectIngestRawFileMetadata(
                     file_id=2,
@@ -271,6 +275,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_2,
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
                 ),
             ]
         )

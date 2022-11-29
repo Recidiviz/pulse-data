@@ -20,6 +20,7 @@ import unittest
 from typing import Type
 
 import pytz
+import sqlalchemy
 from freezegun import freeze_time
 from mock import patch
 
@@ -37,7 +38,12 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
+from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
+    convert_schema_object_to_entity,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import (
@@ -138,6 +144,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             datetimes_contained_upper_bound_inclusive=datetime.datetime(
                 2015, 1, 2, 3, 3, 3, 3
             ),
+            raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
@@ -167,6 +174,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             datetimes_contained_upper_bound_inclusive=datetime.datetime(
                 2015, 1, 2, 3, 3, 3, 3
             ),
+            raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
         self.assertIsInstance(metadata, DirectIngestRawFileMetadata)
@@ -331,6 +339,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 5, 5
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
@@ -340,6 +349,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 7, 7
                 ),
+                raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
         ]
 
@@ -461,6 +471,208 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Assert
         with self.assertRaises(DirectIngestInstanceError):
             self.raw_metadata_manager_secondary.get_unprocessed_raw_files()
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager_secondary.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
+            file_id=1,
+            region_code="US_XX",
+            file_tag="file_tag",
+            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
+            processed_time=None,
+            datetimes_contained_upper_bound_inclusive=datetime.datetime(
+                2015, 1, 2, 3, 4, 6
+            ),
+            raw_data_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        # Act
+        self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+            self.raw_metadata_manager
+        )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestRawFileMetadata)
+                .filter_by(
+                    region_code=self.raw_metadata_manager.region_code.upper(),
+                    raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all instances are marked primary
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            no_row_found_regex = r"No row was found when one was required"
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.NoResultFound, no_row_found_regex
+            ):
+                _ = (
+                    session.query(schema.DirectIngestRawFileMetadata)
+                    .filter_by(
+                        region_code=self.raw_metadata_manager_secondary.region_code.upper(),
+                        raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
+                    )
+                    .one()
+                )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_primary_to_secondary(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+        expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
+            file_id=1,
+            region_code="US_XX",
+            file_tag="file_tag",
+            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
+            processed_time=None,
+            datetimes_contained_upper_bound_inclusive=datetime.datetime(
+                2015, 1, 2, 3, 4, 6
+            ),
+            raw_data_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Act
+        self.raw_metadata_manager.transfer_metadata_to_new_instance(
+            self.raw_metadata_manager_secondary
+        )
+
+        # Assert
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            metadata = (
+                session.query(schema.DirectIngestRawFileMetadata)
+                .filter_by(
+                    region_code=self.raw_metadata_manager_secondary.region_code.upper(),
+                    raw_data_instance=self.raw_metadata_manager_secondary.raw_data_instance.value,
+                )
+                .one()
+            )
+            # Check here that found_metadata has expected items and all instances are marked primary
+            self.assertEqual(
+                expected_metadata, convert_schema_object_to_entity(metadata)
+            )
+
+            # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
+            no_row_found_regex = r"No row was found when one was required"
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.NoResultFound, no_row_found_regex
+            ):
+                _ = (
+                    session.query(schema.DirectIngestRawFileMetadata)
+                    .filter_by(
+                        region_code=self.raw_metadata_manager.region_code.upper(),
+                        raw_data_instance=self.raw_metadata_manager.raw_data_instance.value,
+                    )
+                    .one()
+                )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_primary_to_primary(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+        same_instance = (
+            r"Either state codes are not the same or new instance is same as origin"
+        )
+        with self.assertRaisesRegex(ValueError, same_instance):
+            self.raw_metadata_manager.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager
+            )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_secondary_to_secondary(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager_secondary.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        same_instance = (
+            r"Either state codes are not the same or new instance is same as origin"
+        )
+        with self.assertRaisesRegex(ValueError, same_instance):
+            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager_secondary
+            )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_different_states(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager_secondary.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        self.raw_metadata_manager_dif_state = (
+            PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_yy",
+                raw_data_instance=DirectIngestInstance.SECONDARY,
+            )
+        )
+
+        dif_state = (
+            r"Either state codes are not the same or new instance is same as origin"
+        )
+        with self.assertRaisesRegex(ValueError, dif_state):
+            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager_dif_state
+            )
+
+    @freeze_time("2015-01-02T03:04:06")
+    def test_transfer_metadata_to_new_instance_existing_raw_data(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+        dif_state = (
+            r"Destination instance should not have any valid raw file metadata rows."
+        )
+        with self.assertRaisesRegex(ValueError, dif_state):
+            self.raw_metadata_manager_secondary.transfer_metadata_to_new_instance(
+                self.raw_metadata_manager
+            )
+
+    def test_mark_instance_as_invalidated(self) -> None:
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+            dt=datetime.datetime.now(tz=pytz.UTC),
+        )
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+        self.assertEqual(1, len(self.raw_metadata_manager.get_non_invalidated_files()))
+
+        self.raw_metadata_manager.mark_instance_data_invalidated()
+        self.assertEqual(0, len(self.raw_metadata_manager.get_non_invalidated_files()))
 
 
 class PostgresDirectIngestSftpFileMetadataManagerTest(unittest.TestCase):

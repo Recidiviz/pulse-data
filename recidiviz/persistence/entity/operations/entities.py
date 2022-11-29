@@ -54,6 +54,9 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
 
     file_id: int = attr.ib()
     region_code: str = attr.ib()
+
+    # The instance that this raw data was imported to.
+    raw_data_instance: DirectIngestInstance = attr.ib()
     # Shortened name for the raw file that corresponds to its YAML schema definition
     file_tag: str = attr.ib()
     # Unprocessed normalized file name for this file, set at time of file discovery.
