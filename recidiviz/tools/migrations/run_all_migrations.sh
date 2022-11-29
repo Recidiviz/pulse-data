@@ -10,15 +10,16 @@ echo 'Running migrations against all databases.'
 MIGRATIONS_HASH=$1
 PROJECT_ID=$2
 
-# Note: Migrations for the Justice Counts database are run as part of a separate deploy process
 if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database STATE --project-id recidiviz-123 --ssl-cert-path ~/prod_state_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database OPERATIONS --project-id recidiviz-123 --ssl-cert-path ~/prod_operations_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
+    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database JUSTICE_COUNTS --project-id recidiviz-123 --ssl-cert-path ~/dev_justice_counts_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database CASE_TRIAGE --project-id recidiviz-123 --ssl-cert-path ~/prod_case_triage_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database PATHWAYS --project-id recidiviz-123 --ssl-cert-path ~/prod_pathways_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
 elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database STATE --project-id recidiviz-staging --ssl-cert-path ~/dev_state_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database OPERATIONS --project-id recidiviz-staging --ssl-cert-path ~/dev_operations_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
+    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database JUSTICE_COUNTS --project-id recidiviz-staging --ssl-cert-path ~/dev_justice_counts_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database CASE_TRIAGE --project-id recidiviz-staging --ssl-cert-path ~/dev_case_triage_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
     run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database PATHWAYS --project-id recidiviz-staging --ssl-cert-path ~/dev_pathways_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
 else
