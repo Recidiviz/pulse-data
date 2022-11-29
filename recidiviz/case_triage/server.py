@@ -19,6 +19,7 @@ import json
 import logging
 import os
 
+import google.cloud.logging
 import sentry_sdk
 from flask import Flask, Response, g, send_from_directory, session
 from flask_limiter import Limiter
@@ -158,10 +159,15 @@ store_refresh = RepeatedTimer(
 if not in_test():
     store_refresh.start()
 
+# Logging setup
+if in_gcp():
+    logging_client = google.cloud.logging.Client()
+    logging_client.setup_logging()
+else:
+    # Python logs at the warning level by default
+    logging.basicConfig(level=logging.INFO)
+
 if in_offline_mode():
-    # Python logs at the warning level by default, but in offline mode we'll want to know that it's
-    # made progress loading the data in at server start and other info steps.
-    logging.basicConfig(level=logging.DEBUG)
 
     def initialize_pathways_db_from_fixtures() -> None:
         state_code = PATHWAYS_OFFLINE_DEMO_STATE.value.lower()
