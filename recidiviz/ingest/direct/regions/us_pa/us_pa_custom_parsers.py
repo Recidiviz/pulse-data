@@ -107,3 +107,27 @@ def max_and_min_lengths_days_from_court_sentence_duration(
     if result == 0:
         return None
     return str(result)
+
+
+def first_name_parser(full_name: str) -> str:
+    """Returns the cleaned first name"""
+    if full_name != "":
+        if " " in full_name:
+            name_list = full_name.split(" ")
+            first_name = name_list[1]
+        else:
+            first_name = ""
+        return first_name
+    return ""
+
+
+def last_name_parser(full_name: str) -> str:
+    """Returns the cleaned last name"""
+    if full_name != "":
+        if " " in full_name:
+            name_list = full_name.split(" ")
+            last_name = name_list[0].strip(",")
+        else:
+            last_name = full_name
+        return last_name
+    return ""
