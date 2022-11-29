@@ -126,6 +126,7 @@ random_value_columns = {
 # Calculate time periods based on the first day of the last month of available data so we don't end
 # up with an empty month at the left side of a chart.
 NOW_DATE = date(2021, 12, 1)
+LAST_UPDATED_BEGIN_DATE = date(2022, 1, 1)
 
 
 def get_time_period(relative_date: date) -> str:
@@ -244,7 +245,7 @@ def generate_demo_data(
 
 
 def generate_demo_metric_metadata(tables: List[SQLAlchemyModelType]) -> List:
-    last_updated_date = date(2022, 1, 1)
+    last_updated_date = LAST_UPDATED_BEGIN_DATE
     rows = []
     for table in tables:
         if table.get_entity_name() == "metric_metadata":
@@ -277,6 +278,7 @@ def main(
             if not table.get_entity_name().endswith("projection")
         ]
     )
+    metric_metadata = generate_demo_metric_metadata(tables)
 
     for state_code in state_codes:
         for table in tables:
@@ -289,12 +291,20 @@ def main(
             columns = [column.name for column in inspect(table).c]
             primary_keys = [column.name for column in inspect(table).primary_key]
             rows = (
-                generate_demo_metric_metadata(tables)
+                metric_metadata
                 if table == MetricMetadata
                 else generate_demo_data(state_code, table_name, columns, primary_keys)
             )
             if bucket:
                 gcsfs = GcsfsFactory.build()
+                metadata = next(
+                    (
+                        {"last_updated": str(m["last_updated"])}
+                        for m in metric_metadata
+                        if m["metric"] == table.__name__
+                    ),
+                    None,
+                )
                 with tempfile.NamedTemporaryFile(mode="r+") as f:
                     logging.info("Writing output to temporary file %s", f.name)
                     writer = csv.DictWriter(f, columns)
@@ -313,6 +323,7 @@ def main(
                         ),
                         content_type="text/csv",
                         timeout=300,
+                        metadata=metadata,
                     )
             else:
                 filename = (

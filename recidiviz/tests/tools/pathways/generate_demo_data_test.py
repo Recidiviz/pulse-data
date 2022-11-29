@@ -24,6 +24,7 @@ from unittest.mock import MagicMock, patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.pathways.generate_demo_data import (
+    LAST_UPDATED_BEGIN_DATE,
     generate_row,
     generate_rows,
     main,
@@ -240,3 +241,7 @@ class TestGenerateDemoData(TestCase):
         )
 
         self.assertCountEqual(expected_rows, rows)
+        self.assertEqual(
+            {"last_updated": str(LAST_UPDATED_BEGIN_DATE)},
+            self.fake_gcs.get_metadata(expected_file_path),
+        )
