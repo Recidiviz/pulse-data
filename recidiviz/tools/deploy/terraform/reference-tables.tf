@@ -483,3 +483,43 @@ module "us_co_incarceration_facility_map_table" {
 ]
 EOF
 }
+
+module "state_resident_populations_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "state_resident_populations"
+  schema     = <<EOF
+[
+  {
+    "name": "state",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "age_group",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "race",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "gender",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "population",
+    "type": "INTEGER",
+    "mode": "NULLABLE"
+  }
+]
+EOF
+}

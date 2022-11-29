@@ -17,8 +17,6 @@
 """Fetches resident population data from census.gov and writes it locally"""
 
 import io
-import os
-from typing import IO, AnyStr, Union
 
 import pandas as pd
 import requests
@@ -26,7 +24,7 @@ from us import states
 
 from recidiviz.common import fips
 from recidiviz.common.constants.states import StateCode
-from recidiviz.datasets import static_data
+from recidiviz.tools.datasets.static_data_utils import make_output_path
 
 COUNTY_POPULATIONS_2010_2019 = "https://www2.census.gov/programs-surveys/popest/tables/2010-2019/counties/totals/co-est2019-annres.xlsx"
 
@@ -105,7 +103,7 @@ CDC_COUNTY_CODE_COL = "County Code"
 CDC_POPULATION_COL = "Population"
 
 
-def fetch_adult_population_csv() -> pd.DataFrame:
+def fetch_adult_population_csv() -> io.StringIO:
     """Fetchs a csv continaing populations of adults (15 to 64) per county"""
     response = requests.post(
         "https://wonder.cdc.gov/controller/datarequest/D163",
@@ -175,12 +173,10 @@ def fetch_adult_population_csv() -> pd.DataFrame:
     return io.StringIO(response.text)
 
 
-def transform_adult_population_df(
-    filepath_or_buffer: Union[str, IO[AnyStr]]
-) -> pd.DataFrame:
+def transform_adult_population_df(csv_content: io.TextIOWrapper) -> pd.DataFrame:
     """Transforms the csv into a dataframe in the population format"""
     df = pd.read_csv(
-        filepath_or_buffer,
+        csv_content,
         sep="\t",
         # Read all as str to avoid N/A issues
         dtype={
@@ -212,10 +208,6 @@ def transform_adult_population_df(
     )
 
     return df
-
-
-def make_output_path(name: str) -> str:
-    return os.path.join(os.path.dirname(static_data.__file__), name)
 
 
 def main() -> None:

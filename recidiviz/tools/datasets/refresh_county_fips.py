@@ -26,6 +26,7 @@ from us import states
 
 from recidiviz.common import data_sets, fips
 from recidiviz.datasets import static_data
+from recidiviz.tools.datasets.static_data_utils import make_output_path
 
 FIPS_2018_URL = "https://www2.census.gov/programs-surveys/popest/geographies/2018/all-geocodes-v2018.xlsx"
 
