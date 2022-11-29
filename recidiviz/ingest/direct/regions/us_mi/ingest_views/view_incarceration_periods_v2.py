@@ -24,7 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 PARTITION_STATEMENT = "OVER(PARTITION BY offender_id ORDER BY movement_date, offender_lock_id, offender_external_movement_id, status)"
 
-OFFENDER_BOOKING_IDS_TO_KEEP = "{ADH_OFFENDER_BOOKING}"
+OFFENDER_IDS_TO_KEEP = "(select distinct offender_id from {ADH_OFFENDER_BOOKING})"
 
 LOCK_RECORDS_CTE = """
 -- Find lock records that indicate that a person is in a certain unit in a facility
@@ -68,6 +68,17 @@ deduped_lock_records AS (
         date_in,
         date_out
 ),
+deduped_deduped_lock_records AS (
+    -- After the above deduplication, there are then cases where two deduped lock records now have the same date out and the same unit_lock_id but different date ins
+    -- In these cases take the one with the earliest date in
+    select *
+    from (
+        select  *,
+            ROW_NUMBER() OVER(PARTITION BY offender_id, location_id, unit_lock_id, date_out ORDER BY date_in ASC) as n
+        from deduped_lock_records 
+    )
+    where n=1
+),
 final_lock_records AS (
     -- Join the deduped records back to the full set in order to obtain the offender_lock_id
     -- which is the primary key.
@@ -79,11 +90,12 @@ final_lock_records AS (
         DATETIME(o.date_in) AS date_in,
         DATETIME(o.date_out) AS date_out
     FROM {ADH_OFFENDER_LOCK} o
-    JOIN deduped_lock_records
-    ON deduped_lock_records.offender_id = o.offender_id
-    AND deduped_lock_records.location_id = o.location_id
-    AND deduped_lock_records.unit_lock_id = CAST(o.unit_lock_id AS INT64)
-    AND COALESCE(deduped_lock_records.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
+    JOIN deduped_deduped_lock_records d
+    ON d.offender_id = o.offender_id
+    AND d.location_id = o.location_id
+    AND d.unit_lock_id = CAST(o.unit_lock_id AS INT64)
+    AND d.date_in = o.date_in
+    AND COALESCE(d.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
     WHERE o.permanent_temporary_flag = '1'
 ),
 internal_movements AS (
@@ -103,6 +115,8 @@ internal_movements AS (
         o.date_in,
         o.date_out
     FROM final_lock_records o
+	JOIN {ADH_OFFENDER} o1	
+    ON o.offender_id = o1.offender_id
     JOIN {ADH_LOCATION} l
     ON o.location_id = l.location_id
     JOIN {ADH_REFERENCE_CODE} r1
@@ -172,7 +186,7 @@ final_movements AS (
     FROM final_movement_records e
     JOIN {ADH_OFFENDER_EXTERNAL_MOVEMENT} m
     ON e.offender_external_movement_id = m.offender_external_movement_id
-    INNER JOIN {ADH_OFFENDER_BOOKING} b
+    JOIN {ADH_OFFENDER_BOOKING} b
     ON e.offender_booking_id = b.offender_booking_id
     JOIN {ADH_OFFENDER} o
     ON b.offender_id = o.offender_id
@@ -234,7 +248,10 @@ external_movements_in AS (
     WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id 
-        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC, 
+        -- adding in date_out and offender_lock_id to break ties and choose the "first" internal movement
+                 i.date_out ASC,
+                 i.offender_lock_id ASC) = 1
 ),
 external_movements_out AS (
     -- By joining internal movements (lock spans) with movements of the day,
@@ -272,10 +289,13 @@ external_movements_out AS (
     ON i.offender_id = e.offender_id
     AND i.date_out IS NOT NULL
     AND i.location_id = e.source_location_id
-    WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
+    WHERE ABS(DATETIME_DIFF(i.date_out, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id
-        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC, 
+        -- adding in date_in and offender_lock_id to break ties and choose the "last" internal movement
+                 i.date_in desc,
+                 i.offender_lock_id desc) = 1
 ),
 internal_movements_without_external_movements_in AS (
     -- A person may transfer units within facilities, therefore, these movements would
@@ -449,7 +469,7 @@ SELECT
   next_movement_date,
   next_movement_reason_id
 FROM periods p
-    inner join {OFFENDER_BOOKING_IDS_TO_KEEP} book on p.offender_id = book.offender_id
+    inner join {OFFENDER_IDS_TO_KEEP} book on p.offender_id = book.offender_id
 WHERE status = 'IN' AND (next_status = 'OUT' OR next_status IS NULL)
 """
 

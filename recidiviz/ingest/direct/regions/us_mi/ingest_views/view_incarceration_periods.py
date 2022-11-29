@@ -66,6 +66,17 @@ deduped_lock_records AS (
         date_in,
         date_out
 ),
+deduped_deduped_lock_records AS (
+    -- After the above deduplication, there are then cases where two deduped lock records now have the same date out and the same unit_lock_id but different date ins
+    -- In these cases take the one with the earliest date in
+    select *
+    from (
+        select  *,
+            ROW_NUMBER() OVER(PARTITION BY offender_id, location_id, unit_lock_id, date_out ORDER BY date_in ASC) as n
+        from deduped_lock_records 
+    )
+    where n=1
+),
 final_lock_records AS (
     -- Join the deduped records back to the full set in order to obtain the offender_lock_id
     -- which is the primary key.
@@ -77,11 +88,12 @@ final_lock_records AS (
         DATETIME(o.date_in) AS date_in,
         DATETIME(o.date_out) AS date_out
     FROM {ADH_OFFENDER_LOCK} o
-    JOIN deduped_lock_records
-    ON deduped_lock_records.offender_id = o.offender_id
-    AND deduped_lock_records.location_id = o.location_id
-    AND deduped_lock_records.unit_lock_id = CAST(o.unit_lock_id AS INT64)
-    AND COALESCE(deduped_lock_records.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
+    JOIN deduped_deduped_lock_records d
+    ON d.offender_id = o.offender_id
+    AND d.location_id = o.location_id
+    AND d.unit_lock_id = CAST(o.unit_lock_id AS INT64)
+    AND d.date_in = o.date_in
+    AND COALESCE(d.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
     WHERE o.permanent_temporary_flag = '1'
 ),
 internal_movements AS (
@@ -243,7 +255,10 @@ external_movements_in AS (
     WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id 
-        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC, 
+        -- adding in date_out and offender_lock_id to break ties and choose the "first" internal movement
+                 i.date_out ASC,
+                 i.offender_lock_id ASC) = 1
 ),
 external_movements_out AS (
     -- By joining internal movements (lock spans) with movements of the day,
@@ -282,10 +297,13 @@ external_movements_out AS (
     ON i.offender_id = e.offender_id
     AND i.date_out IS NOT NULL
     AND i.location_id = e.source_location_id
-    WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
+    WHERE ABS(DATETIME_DIFF(i.date_out, e.movement_date, HOUR)) < 24
     QUALIFY ROW_NUMBER() OVER (PARTITION BY 
         i.offender_id, e.offender_external_movement_id, i.location_id
-        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC) = 1
+        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC, 
+        -- adding in date_in and offender_lock_id to break ties and choose the "last" internal movement
+                 i.date_in desc,
+                 i.offender_lock_id desc) = 1
 ),
 internal_movements_without_external_movements_in AS (
     -- A person may transfer units within facilities, therefore, these movements would
