@@ -27,6 +27,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 
 class AgencySettingType(enum.Enum):
     TEST = "TEST"
+    PURPOSE_AND_FUNCTIONS = "PURPOSE_AND_FUNCTIONS"
 
 
 class AgencySettingInterface:
