@@ -2,7 +2,9 @@
 file_tag: ind_OffenderNoteInfo
 file_description: |-
   This table contains metadata for notes written by supervision officers and other agents
-  about their interactions or observations of individuals on supervision.
+  about their interactions or observations of individuals on supervision. This table can
+  also be used to group notes into contacts, since any notes from the same contact will
+  share the same OffenderNoteInfoId.
 data_classification: source
 primary_key_cols:
   - OffenderNoteInfoId
