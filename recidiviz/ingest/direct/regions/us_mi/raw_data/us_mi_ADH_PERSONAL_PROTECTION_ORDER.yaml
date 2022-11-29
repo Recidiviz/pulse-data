@@ -25,7 +25,7 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issuing_location_id
-    description: Reference code for the issuing location
+    description: Reference code for the issuing location. Codes reference ADH_LOCATION table.
   - name: protected_person_last_name
     is_pii: True
   - name: protected_person_first_name

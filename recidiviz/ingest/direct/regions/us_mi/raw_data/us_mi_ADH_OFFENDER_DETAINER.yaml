@@ -20,11 +20,54 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: detainer_type_id
     description: Reference code for the detainer type
+    known_values:
+      - value: 5014
+        description: Outside Detainer
+      - value: 5018
+        description: Department Detainer
+      - value: 5019
+        description: Deputy Director Prisoner Placement
+      - value: 901
+        description: Probation Violator
+      - value: 5013
+        description: Hold for Charges
+      - value: 5015
+        description: Notification Detainer
+      - value: 5017
+        description: Institutional Escapee
+      - value: 5016
+        description: Felony Suspect
+      - value: 7631
+        description: Parolee on LEIN
+      - value: 7632
+        description: Parolee in Custody, not on LEIN
+      - value: 9940
+        description: Pending Immigration
+      - value: 16737
+        description: Outside Detainer - COF Records
+      - value: 16738
+        description: Outside Detainer - Federal Prison
+      - value: 16739
+        description: Outside Detainer - Immigration
+      - value: 16740
+        description: Outside Detainer- Interstate Agreement on Detainers
+      - value: 16741
+        description: Outside Detainer - Jail
+      - value: 16742
+        description: Outside Detainer - Out of State tried
+      - value: 16743
+        description: Outside Detainer - Out of State untried
+      - value: 16744
+        description: Outside Detainer - US Marshal
+      - value: 16745
+        description: Writ Hold - Non Prosecutorial
+      - value: 7630
+        description: CRP Escapee
   - name: offender_id
     description: The OMNI-database generated ID for a justice-impacted individual
     is_pii: True
   - name: originating_agency
-    # description: TODO(#15325)
+    description: The agency from which the detainer originates
   - name: notify_date
     description: Date of notification of the detainer
     is_datetime: True
@@ -54,7 +97,7 @@ columns:
   - name: contact_phone
     is_pii: True
   - name: reason
-    # description: TODO(#15325)
+    description: Reason for the detainer
   - name: complaint_number
   - name: written_verification_date
     is_datetime: True
@@ -80,11 +123,24 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
   - name: detainer_source_id
-    # description: TODO(#15325)
+    description: Reference code for the detainer source
+    known_values:
+      - value: 16751
+        description: Probation Violation Report
+      - value: 16746
+        description: Agency
+      - value: 16748
+        description: Other Criminal Record
+      - value: 16747
+        description: Case Reports
+      - value: 16750
+        description: Pre-Sentence Investigation Report
+      - value: 16749
+        description: Parole Violation Report
   - name: dist_court_no
-    # description: TODO(#15325)
+    description: District court case number
   - name: circuit_court_no
-    # description: TODO(#15325)
+    description: Circuit court case number
   - name: contact_phone_ext
     is_pii: True
   - name: contact_email
@@ -102,6 +158,7 @@ columns:
   - name: deportation_final_order_flg
   - name: assurance_from_ice_flg
   - name: notes
+    is_pii: True
   - name: active_flag
   - name: expiration_date
     is_datetime: True
