@@ -427,7 +427,13 @@ class Report(JusticeCountsBase):
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
-            UniqueConstraint(source_id, type, instance),
+            UniqueConstraint(
+                source_id,
+                type,
+                date_range_start,
+                date_range_end,
+                name="unique_report",
+            ),
             ForeignKeyConstraint([source_id], [Source.id]),
             ForeignKeyConstraint([recurring_report_id], ["report.id"]),
         ]
