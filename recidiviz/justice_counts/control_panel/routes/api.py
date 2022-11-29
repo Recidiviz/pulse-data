@@ -31,6 +31,10 @@ from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_setting import (
+    AgencySettingInterface,
+    AgencySettingType,
+)
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
     get_agency_ids_from_session,
@@ -79,9 +83,9 @@ def get_api_blueprint(
     @raise_if_user_is_unauthorized
     def update_agency(agency_id: int) -> Response:
         """
-        This endpoint updates an Agency record.
-        Currently, the only supported update is changing the
-        set of systems associated with the agency.
+        Currently, the supported updates are:
+            - Changing the set of systems associated with the agency
+            - Adding a description of the agency's purpose and functions
         """
         try:
             request_json = assert_type(request.json, dict)
@@ -92,8 +96,47 @@ def get_api_blueprint(
                     agency_id=agency_id,
                     systems={schema.System[s] for s in systems},
                 )
+
+            settings = request_json.get("settings")
+            if settings is not None:
+                for setting in settings:
+                    setting_type = setting["setting_type"]
+                    setting_value = setting["value"]
+                    AgencySettingInterface.create_agency_setting(
+                        session=current_session,
+                        agency_id=agency_id,
+                        setting_type=AgencySettingType(setting_type),
+                        value=setting_value,
+                    )
+
             current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/agencies/<agency_id>", methods=["GET"])
+    @auth_decorator
+    @raise_if_user_is_unauthorized
+    def get_agency_settings(agency_id: int) -> Response:
+        """
+        This endpoint gets the settings for a Agency record.
+        """
+
+        try:
+            agency_settings = AgencySettingInterface.get_agency_settings(
+                session=current_session,
+                agency_id=agency_id,
+            )
+            # Need to add this line in order to avoid jsonify error
+            agency_settings_unpacked = [
+                {
+                    "setting_type": setting.setting_type,
+                    "value": setting.value,
+                    "source_id": setting.source_id,
+                }
+                for setting in agency_settings
+            ]
+            return jsonify({"settings": agency_settings_unpacked})
         except Exception as e:
             raise _get_error(error=e) from e
 
