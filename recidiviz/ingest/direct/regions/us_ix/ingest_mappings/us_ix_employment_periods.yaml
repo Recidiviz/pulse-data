@@ -25,11 +25,24 @@ output:
               $raw_text: EmploymentStatusDesc
               $mappings:
                 StateEmploymentPeriodEmploymentStatus.EMPLOYED:
-                  - "Employed"
+                  - Employed
+                  - Self Employed
                 StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME:
-                  - "Full Time"
+                  - Full Time
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
+                  - Irregular
+                  - Part Time
+                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
+                  - Homemaker
+                  - Retired
+                  - Seasonal
+                  - Volunteer
+                StateEmploymentPeriodEmploymentStatus.STUDENT:
+                  - Student
                 StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
-                  - "Disabled"
+                  - Disabled
+                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                  - Unemployed
           start_date: StartDate
           end_date: EndDate
           employer_name: EmployerDesc
