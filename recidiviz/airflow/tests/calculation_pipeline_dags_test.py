@@ -48,6 +48,11 @@ _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "trigger_update_all_managed_views_ta
 _WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "wait_for_view_update_all_success"
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
 _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = r"wait_for_(us_[a-z]{2})_validations_completion"
+_ACQUIRE_LOCK_TASK_ID = "acquire_lock_STATE"
+_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = "wait_for_acquire_lock_success_STATE"
+_TRIGGER_REFRESH_BQ_DATASET_TASK_ID = "trigger_refresh_bq_dataset_task_STATE"
+_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = "wait_for_refresh_bq_dataset_success_STATE"
+_POST_REFRESH_SHORT_CIRCUIT_TASK_ID = "post_refresh_short_circuit_STATE"
 
 
 @patch(
@@ -286,6 +291,109 @@ class TestCalculationPipelineDags(unittest.TestCase):
             wait_task.upstream_task_ids,
         )
 
+    def test_trigger_refresh_bq_dataset_task_upstream_of_wait(self) -> None:
+        """Tests that trigger_refresh_bq_dataset_task trigger happens directly before we wait
+        for the refresh dataset endpoint to finish.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID, wait_task.task_id)
+        self.assertEqual(
+            {_TRIGGER_REFRESH_BQ_DATASET_TASK_ID},
+            wait_task.upstream_task_ids,
+        )
+
+    def test_acquire_lock_task_upstream_of_wait_for_acquire_lock_success(self) -> None:
+        """Tests that acquire_lock happens directly before we call wait_for_acquire_lock_success."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_ACQUIRE_LOCK_TASK_ID},
+            wait_task.upstream_task_ids,
+        )
+
+    def test_wait_for_acquire_lock_success_task_upstream_of_trigger_refresh_bq_dataset(
+        self,
+    ) -> None:
+        """Tests that wait_for_acquire_lock_success happens directly before we call trigger_refresh_bq_dataset."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_TRIGGER_REFRESH_BQ_DATASET_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_TRIGGER_REFRESH_BQ_DATASET_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID},
+            wait_task.upstream_task_ids,
+        )
+
+    def test_wait_for_refresh_bq_dataset_task_upstream_of_state_bq_refresh_completion(
+        self,
+    ) -> None:
+        """Tests that wait_for_refresh_bq_dataset happens directly before we call state_bq_refresh_completion."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_POST_REFRESH_SHORT_CIRCUIT_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_POST_REFRESH_SHORT_CIRCUIT_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID},
+            wait_task.upstream_task_ids,
+        )
+
+    def test_state_bq_refresh_completion_task_upstream_of_update_all_managed_views(
+        self,
+    ) -> None:
+        """Tests that state_bq_refresh_completion happens directly before we call update_all_managed_views."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_POST_REFRESH_SHORT_CIRCUIT_TASK_ID},
+            wait_task.upstream_task_ids,
+        )
+
     def test_rematerialization_endpoint(self) -> None:
         """Tests that rematerialization triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
@@ -325,6 +433,25 @@ class TestCalculationPipelineDags(unittest.TestCase):
         self.assertEqual(
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
             "/view_update/update_all_managed_views",
+        )
+
+    def test_trigger_refresh_bq_dataset_task_endpoint(self) -> None:
+        """Tests that trigger_refresh_bq_dataset_task triggers the proper endpoint."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        trigger_cloud_task_task = dag.get_task(_TRIGGER_REFRESH_BQ_DATASET_TASK_ID)
+
+        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+            raise ValueError(
+                f"Expected type CloudTasksTaskCreateOperator, found "
+                f"[{type(trigger_cloud_task_task)}]."
+            )
+
+        self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
+
+        self.assertEqual(
+            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+            "/cloud_sql_to_bq/refresh_bq_dataset/STATE?dry_run=True",
         )
 
     def test_update_all_managed_views_only_called_in_historic_dag(self) -> None:

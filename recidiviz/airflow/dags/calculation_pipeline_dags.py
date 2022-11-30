@@ -26,11 +26,14 @@ from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from airflow.decorators import dag
+from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
+from airflow.utils.state import State
 from airflow.utils.trigger_rule import TriggerRule
 from google.cloud import tasks_v2
 from google.cloud.tasks_v2 import CloudTasksClient
+from requests import Response
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
 # Cloud Composer environment at the top-level. However, for unit tests, we still need to
@@ -43,6 +46,7 @@ try:
     from operators.iap_httprequest_operator import (  # type: ignore
         IAPHTTPRequestOperator,
     )
+    from operators.iap_httprequest_sensor import IAPHTTPRequestSensor  # type: ignore
     from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
@@ -66,6 +70,9 @@ except ImportError:
     )
     from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
         RecidivizDataflowTemplateOperator,
+    )
+    from recidiviz.airflow.dags.operators.iap_httprequest_sensor import (
+        IAPHTTPRequestSensor,
     )
 
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -208,6 +215,34 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
     )
 
 
+# TODO(#15929): Update endpoint to remove dry_run
+def trigger_refresh_bq_dataset_operator(
+    schema_type: str,
+) -> CloudTasksTaskCreateOperator:
+    queue_location = "us-east1"
+    queue_name = "bq-view-update"
+    task_path = CloudTasksClient.task_path(
+        project_id,
+        location=queue_location,
+        queue=queue_name,
+        task=uuid.uuid4().hex,
+    )
+    task = tasks_v2.types.Task(
+        name=task_path,
+        app_engine_http_request={
+            "http_method": "POST",
+            "relative_uri": f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}?dry_run=True",
+            "body": json.dumps({}).encode(),
+        },
+    )
+    return CloudTasksTaskCreateOperator(
+        task_id=f"trigger_refresh_bq_dataset_task_{schema_type}",
+        location=queue_location,
+        queue_name=queue_name,
+        task=task,
+    )
+
+
 def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "validations"
@@ -236,6 +271,72 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
     )
 
 
+def response_can_refresh_proceed_check(response: Response) -> bool:
+    """Checks whether the refresh lock can proceed is true."""
+    data = response.text
+    return data.lower() == "true"
+
+
+def create_bq_refresh_nodes(schema_type: str) -> ShortCircuitOperator:
+    """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
+    acquire_lock = IAPHTTPRequestOperator(
+        task_id=f"acquire_lock_{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock/{schema_type}",
+        url_method="POST",
+        data=json.dumps({"lock_id": str(uuid.uuid4())}).encode(),
+    )
+
+    wait_for_can_refresh_proceed = IAPHTTPRequestSensor(
+        task_id=f"wait_for_acquire_lock_success_{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/check_can_refresh_proceed/{schema_type}",
+        response_check=response_can_refresh_proceed_check,
+    )
+
+    trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(schema_type)
+
+    wait_for_refresh_bq_dataset = BQResultSensor(
+        task_id=f"wait_for_refresh_bq_dataset_success_{schema_type}",
+        query_generator=FinishedCloudTaskQueryGenerator(
+            project_id=project_id,
+            cloud_task_create_operator_task_id=trigger_refresh_bq_dataset.task_id,
+            tracker_dataset_id="view_update_metadata",
+            tracker_table_id="refresh_bq_dataset_tracker",
+        ),
+        timeout=(60 * 60 * 4),
+    )
+
+    release_lock = IAPHTTPRequestOperator(
+        task_id=f"release_lock_{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/release_lock/{schema_type}",
+        trigger_rule=TriggerRule.ALL_DONE,
+        retries=1,
+    )
+
+    (
+        acquire_lock
+        >> wait_for_can_refresh_proceed
+        >> trigger_refresh_bq_dataset
+        >> wait_for_refresh_bq_dataset
+        >> release_lock
+    )
+
+    def check_if_state_bq_refresh_completion_success(**context: Any) -> bool:
+        """Checks whether the state bq refresh was successful and returns bool."""
+        wait_for_refresh_task_instance = context["dag_run"].get_task_instance(
+            wait_for_refresh_bq_dataset.task_id
+        )
+        return wait_for_refresh_task_instance.state != State.FAILED
+
+    state_bq_refresh_completion = ShortCircuitOperator(
+        task_id=f"post_refresh_short_circuit_{schema_type}",
+        python_callable=check_if_state_bq_refresh_completion_success,
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    wait_for_refresh_bq_dataset >> state_bq_refresh_completion
+    return state_bq_refresh_completion
+
+
 def execute_calculations(
     should_trigger_exports: bool, should_update_all_views: bool
 ) -> None:
@@ -248,6 +349,8 @@ def execute_calculations(
 
     if config_file is None:
         raise Exception("Configuration file not specified")
+
+    state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
@@ -287,7 +390,8 @@ def execute_calculations(
         )
 
         (
-            trigger_update_all_views
+            state_bq_refresh_completion
+            >> trigger_update_all_views
             >> wait_for_update_all_views
             >> trigger_view_rematerialize
         )
@@ -330,8 +434,13 @@ def execute_calculations(
                 pipeline_config_args, normalization_pipeline
             )
 
-            # Normalization pipelines should complete before normalized_state dataset is refreshed
-            normalization_calculation_pipeline >> update_normalized_state
+            # Normalization pipelines should run after the BQ refresh is complete, but
+            # complete before normalized_state dataset is refreshed.
+            (
+                state_bq_refresh_completion
+                >> normalization_calculation_pipeline
+                >> update_normalized_state
+            )
 
             for metric_pipeline in metric_pipelines_by_state[
                 pipeline_config_args.state_code
