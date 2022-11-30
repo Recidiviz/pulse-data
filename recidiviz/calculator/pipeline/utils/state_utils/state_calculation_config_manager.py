@@ -241,7 +241,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_assessment_norm
 )
 
 # TODO(#10703): Remove this state_code after merging US_IX into US_ID
-from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_commitment_from_supervision_delegate import (
     UsIxCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_incarceration_delegate import (
@@ -261,6 +261,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_recidivism_metr
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_sentence_normalization_delegate import (
     UsIxSentenceNormalizationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_supervision_compliance import (
+    UsIxSupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_supervision_delegate import (
     UsIxSupervisionDelegate,
@@ -735,6 +738,19 @@ def get_state_specific_case_compliance_manager(
             incarceration_period_index,
             supervision_delegate,
         )
+    if state_code == StateCode.US_IX.value:
+        return UsIxSupervisionCaseCompliance(
+            person,
+            supervision_period,
+            case_type,
+            start_of_supervision,
+            assessments,
+            supervision_contacts,
+            violation_responses,
+            incarceration_sentences,
+            incarceration_period_index,
+            supervision_delegate,
+        )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
             person,
@@ -806,7 +822,11 @@ def _get_state_specific_assessment_normalization_delegate(
         return UsOzAssessmentNormalizationDelegate()
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
     if state_code == StateCode.US_IX.value:
-        return UsIxAssessmentNormalizationDelegate()
+        if persons is None:
+            raise ValueError(
+                "Missing StatePerson entity for UsIxAssessmentNormalizationDelegate"
+            )
+        return UsIxAssessmentNormalizationDelegate(persons=persons)
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 

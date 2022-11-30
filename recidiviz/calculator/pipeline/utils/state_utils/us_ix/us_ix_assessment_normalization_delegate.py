@@ -14,11 +14,49 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains US_XX implementation of the StateSpecificAssessmentNormalizationDelegate."""
+"""Contains US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
+import datetime
+from typing import List, Optional
+
+from more_itertools import one
+
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     StateSpecificAssessmentNormalizationDelegate,
 )
+from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 
 
 class UsIxAssessmentNormalizationDelegate(StateSpecificAssessmentNormalizationDelegate):
     """US_IX implementation of the StateSpecificAssessmentNormalizationDelegate."""
+
+    def __init__(self, persons: List[StatePerson]) -> None:
+        self.gender = one(persons).gender
+
+    def set_lsir_assessment_score_bucket(
+        self, assessment: StateAssessment
+    ) -> Optional[str]:
+        assessment_date = assessment.assessment_date
+        assessment_score = assessment.assessment_score
+        if assessment_date and assessment_score:
+            if assessment_date < datetime.date(2020, 7, 21):
+                if assessment_score <= 15:
+                    return "LEVEL_1"
+                if assessment_score <= 23:
+                    return "LEVEL_2"
+                if assessment_score <= 30:
+                    return "LEVEL_3"
+                return "LEVEL_4"
+            if self.gender in {StateGender.MALE, StateGender.TRANS_MALE}:
+                if assessment_score <= 20:
+                    return "LOW"
+                if assessment_score <= 28:
+                    return "MODERATE"
+                return "HIGH"
+            if self.gender in {StateGender.FEMALE, StateGender.TRANS_FEMALE}:
+                if assessment_score <= 22:
+                    return "LOW"
+                if assessment_score <= 30:
+                    return "MODERATE"
+                return "HIGH"
+        return None

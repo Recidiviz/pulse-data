@@ -20,6 +20,7 @@ from typing import Optional
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_recidivism_metrics_producer_delegate import (
     StateSpecificRecidivismMetricsProducerDelegate,
 )
+from recidiviz.common.constants.state.external_id_types import US_IX_DOC
 
 
 class UsIxRecidivismMetricsProducerDelegate(
@@ -28,4 +29,4 @@ class UsIxRecidivismMetricsProducerDelegate(
     """US_IX implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_IX_DOC"
+        return US_IX_DOC
