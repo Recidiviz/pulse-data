@@ -24,7 +24,7 @@ from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
-    PrisonBudgetIncludesExcludes,
+    PrisonFundingIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -284,10 +284,10 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             user = self.test_schema_objects.test_user_A
             session.add_all([user, agency])
             agency_metric = MetricInterface(
-                key=prisons.annual_budget.key,
+                key=prisons.funding.key,
                 includes_excludes_member_to_setting={
                     member: IncludesExcludesSetting.NOT_AVAILABLE
-                    for member in PrisonBudgetIncludesExcludes
+                    for member in PrisonFundingIncludesExcludes
                 },
             )
             DatapointInterface.add_or_update_agency_datapoints(
@@ -297,15 +297,15 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            # New includes/excludes datapoint for each member of PrisonFundingIncludesExcludes
+            self.assertEqual(len(datapoints), len(PrisonFundingIncludesExcludes))
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(len(datapoint_histories), 0)
             agency_metric = MetricInterface(
-                key=prisons.annual_budget.key,
+                key=prisons.funding.key,
                 includes_excludes_member_to_setting={
                     member: IncludesExcludesSetting.YES
-                    for member in PrisonBudgetIncludesExcludes
+                    for member in PrisonFundingIncludesExcludes
                 },
             )
             DatapointInterface.add_or_update_agency_datapoints(
@@ -315,11 +315,11 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            # New includes/excludes datapoint for each member of PrisonBudgetIncludesExcludes
-            self.assertEqual(len(datapoints), len(PrisonBudgetIncludesExcludes))
+            # New includes/excludes datapoint for each member of PrisonFundingIncludesExcludes
+            self.assertEqual(len(datapoints), len(PrisonFundingIncludesExcludes))
             datapoint_histories = session.query(DatapointHistory).all()
             self.assertEqual(
-                len(datapoint_histories), len(PrisonBudgetIncludesExcludes)
+                len(datapoint_histories), len(PrisonFundingIncludesExcludes)
             )
             for datapoint in datapoint_histories:
                 self.assertEqual(datapoint.old_value, "N/A")

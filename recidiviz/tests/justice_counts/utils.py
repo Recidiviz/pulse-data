@@ -489,7 +489,7 @@ class JusticeCountsSchemaTestObjects:
             "agency_id": agency_id,
             "metrics": [
                 {
-                    "key": prisons.annual_budget.key,
+                    "key": prisons.funding.key,
                     "enabled": False,
                 },
                 {
@@ -607,12 +607,12 @@ class JusticeCountsSchemaTestObjects:
     ) -> List[schema.Datapoint]:
         """Returns agency datapoints that can be used during testing."""
         disabled_metric = schema.Datapoint(
-            metric_definition_key=prisons.annual_budget.key,
+            metric_definition_key=prisons.funding.key,
             enabled=False,
             source_id=agency_id,
         )
         custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=prisons.annual_budget.key,
+            metric_definition_key=prisons.funding.key,
             source_id=agency_id,
             context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
             value=(

@@ -19,6 +19,7 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     PrisonsExpenseType,
+    PrisonsFundingType,
     PrisonsOffenseType,
     PrisonsReadmissionType,
     PrisonsReleaseType,
@@ -32,7 +33,6 @@ from recidiviz.justice_counts.includes_excludes.person import GenderIncludesExcl
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonAdmissionsIncludesExcludes,
     PrisonAverageDailyPopulationIncludesExcludes,
-    PrisonBudgetIncludesExcludes,
     PrisonClinicalStaffIncludesExcludes,
     PrisonDrugOffenseIncludesExcludes,
     PrisonExpensesContractBedsIncludesExcludes,
@@ -41,6 +41,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonExpensesIncludesExcludes,
     PrisonExpensesPersonnelIncludesExcludes,
     PrisonExpensesTrainingIncludesExcludes,
+    PrisonFundingIncludesExcludes,
     PrisonGrievancesIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonPersonOffenseIncludesExcludes,
@@ -57,6 +58,10 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToParoleIncludesExcludes,
     PrisonReleasesToProbationIncludesExcludes,
     PrisonSecurityStaffIncludesExcludes,
+    PrisonsFundingCommissaryAndFeesIncludesExcludes,
+    PrisonsFundingContractBedsIncludesExcludes,
+    PrisonsFundingGrantsIncludesExcludes,
+    PrisonsFundingStateAppropriationIncludesExcludes,
     PrisonStaffIncludesExcludes,
     PrisonUseOfForceIncludesExcludes,
     VacantPrisonStaffIncludesExcludes,
@@ -92,31 +97,49 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.PRISONS,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of your state correctional institutions.",
+    display_name="Funding",
+    description="The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     includes_excludes=IncludesExcludesSet(
-        members=PrisonBudgetIncludesExcludes,
+        members=PrisonFundingIncludesExcludes,
         excluded_set={
-            PrisonBudgetIncludesExcludes.BIENNIUM_FUNDING,
-            PrisonBudgetIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
-            PrisonBudgetIncludesExcludes.JAILS,
-            PrisonBudgetIncludesExcludes.COMMUNITY_SUPERVISION,
-            PrisonBudgetIncludesExcludes.JUVENILE_CORRECTIONAL_FACILITIES,
+            PrisonFundingIncludesExcludes.BIENNIUM_FUNDING,
+            PrisonFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
+            PrisonFundingIncludesExcludes.JAIL_OPERATIONS,
+            PrisonFundingIncludesExcludes.NON_PRISON_ACTIVITIES,
+            PrisonFundingIncludesExcludes.JUVENILE_JAILS,
+            PrisonFundingIncludesExcludes.LAW_ENFORCEMENT,
         },
     ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="DOCs should only report on their correctional institution budget.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe your primary budget source.",
+    specified_contexts=[],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=PrisonsFundingType,
             required=False,
+            dimension_to_includes_excludes={
+                PrisonsFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=PrisonsFundingStateAppropriationIncludesExcludes,
+                    excluded_set={
+                        PrisonsFundingStateAppropriationIncludesExcludes.PROPOSED,
+                        PrisonsFundingStateAppropriationIncludesExcludes.PRELIMINARY,
+                        PrisonsFundingStateAppropriationIncludesExcludes.GRANTS,
+                    },
+                ),
+                PrisonsFundingType.GRANTS: IncludesExcludesSet(
+                    members=PrisonsFundingGrantsIncludesExcludes,
+                ),
+                PrisonsFundingType.COMMISSARY_AND_FEES: IncludesExcludesSet(
+                    members=PrisonsFundingCommissaryAndFeesIncludesExcludes,
+                ),
+                PrisonsFundingType.CONTRACT_BEDS: IncludesExcludesSet(
+                    members=PrisonsFundingContractBedsIncludesExcludes,
+                ),
+            },
         )
     ],
 )
