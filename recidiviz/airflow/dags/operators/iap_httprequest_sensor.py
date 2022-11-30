@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-A subclass of PythonOperator to call the IAP request while managing the return response
+A subclass of PythonSensor which repeatedly makes an IAP request to an endpoint and succeeds when the response meets the provided criteria
 """
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Callable
 
-from airflow.operators.python_operator import PythonOperator
+import requests
+from airflow.sensors.python import PythonSensor
 from airflow.utils.decorators import apply_defaults
 
 from recidiviz.cloud_functions.cloud_function_utils import (
@@ -29,42 +30,30 @@ from recidiviz.cloud_functions.cloud_function_utils import (
 )
 
 
-def _make_iap_request(
-    url: str, url_method: str, data: Optional[bytes]
-) -> Dict[str, Any]:
+def request_and_check_condition(
+    url: str, response_check: Callable[[requests.Response], bool]
+) -> bool:
     client_id = IAP_CLIENT_ID[os.environ["GCP_PROJECT"]]
-
     # make_iap_request raises an exception if the returned status code is not 200
-    response = make_iap_request(
-        url=url,
-        client_id=client_id,
-        method=url_method,
-        data=data,
-    )
+    response = make_iap_request(url, client_id)
 
-    # When operators return a value in airflow, the result is put into xcom for other operators to access it.
-    # However, the result must be a built in Python data type otherwise the operator will not return successfully.
-    return {"status_code": response.status_code, "text": response.text}
+    return response_check(response)
 
 
-class IAPHTTPRequestOperator(PythonOperator):
-    """Operator that runs an HTTP request. If the request fails, this node fails."""
-
+class IAPHTTPRequestSensor(PythonSensor):
     @apply_defaults
     def __init__(
         self,
         task_id: str,
         url: str,
+        response_check: Callable[[requests.Response], bool],
         *args: Any,
-        url_method: str = "GET",
-        data: Optional[bytes] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> None:
         super().__init__(
             task_id=task_id,
-            python_callable=_make_iap_request,
-            op_kwargs={"url": url, "url_method": url_method, "data": data},
-            provide_context=True,
+            python_callable=request_and_check_condition,
+            op_kwargs={"url": url, "response_check": response_check},
             *args,
-            **kwargs,
+            **kwargs
         )

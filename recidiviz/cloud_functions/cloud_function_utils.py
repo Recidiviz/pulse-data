@@ -56,7 +56,10 @@ _OAUTH_TOKEN_URI = "https://www.googleapis.com/oauth2/v4/token"
 
 
 def make_iap_request(
-    url: str, client_id: str, method: str = "GET", **kwargs: Any
+    url: str,
+    client_id: str,
+    method: str = "GET",
+    **kwargs: Any,
 ) -> requests.Response:
     """Makes a request to an application protected by Identity-Aware Proxy.
 

@@ -193,7 +193,7 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
         success_row = {
             CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
-            SCHEMA_TYPE_COL: schema_type,
+            SCHEMA_TYPE_COL: schema_type.value,
             REFRESH_BQ_DATASET_RUNTIME_SEC_COL: runtime_sec,
         }
 
