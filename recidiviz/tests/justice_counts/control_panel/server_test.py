@@ -199,17 +199,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
     def shared_test_agency_metrics(self, metrics: List[Dict[str, Any]]) -> None:
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
-        self.assertEqual(len(metrics), 8)
+        self.assertEqual(len(metrics), 9)
         # Annual Budget metric is turned off and has a fiscal year starting in February
         self.assertEqual(metrics[0]["key"], prisons.annual_budget.key)
         self.assertEqual(metrics[0]["enabled"], False)
         self.assertEqual(metrics[0]["custom_frequency"], "ANNUAL")
         self.assertEqual(metrics[0]["starting_month"], 2)
+        # Expenses metric has no changes two includes/excludes settings that
+        # are different from the default.
+        self.assertEqual(metrics[1]["key"], prisons.expenses.key)
         # Total Staff metric has two includes/excludes settings that
         # are different from the default.
-        self.assertEqual(metrics[1]["key"], prisons.total_staff.key)
+        self.assertEqual(metrics[2]["key"], prisons.total_staff.key)
         self.assertEqual(
-            metrics[1]["settings"],
+            metrics[2]["settings"],
             [
                 {
                     "key": "AVAILABLE",
@@ -278,27 +281,27 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         dimension_to_includes_excludes = assert_type(
             prisons.admissions.aggregated_dimensions, list
         )[0].dimension_to_includes_excludes
-        self.assertEqual(metrics[2]["key"], prisons.admissions.key)
-        self.assertEqual(metrics[2]["enabled"], True)
+        self.assertEqual(metrics[3]["key"], prisons.admissions.key)
+        self.assertEqual(metrics[3]["enabled"], True)
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["key"],
+            metrics[3]["disaggregations"][0]["key"],
             PrisonsOffenseType.dimension_identifier(),
         )
-        self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
+        self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][0]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][0]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][0]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][0]["label"],
             PrisonsOffenseType.PERSON.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][0]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][0]["key"],
             PrisonsOffenseType.PERSON.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][0]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][0]["settings"],
             [
                 {
                     "key": member.name,
@@ -313,18 +316,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][1]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][1]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][1]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][1]["label"],
             PrisonsOffenseType.PROPERTY.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][1]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][1]["key"],
             PrisonsOffenseType.PROPERTY.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][1]["settings"],
             [
                 {
                     "key": member.name,
@@ -339,18 +342,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][2]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][2]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][2]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][2]["label"],
             PrisonsOffenseType.DRUG.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][2]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][2]["key"],
             PrisonsOffenseType.DRUG.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][2]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][2]["settings"],
             [
                 {
                     "key": member.name,
@@ -365,18 +368,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][3]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][3]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][3]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][3]["label"],
             PrisonsOffenseType.PUBLIC_ORDER.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][3]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][3]["key"],
             PrisonsOffenseType.PUBLIC_ORDER.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][3]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][3]["settings"],
             [
                 {
                     "key": member.name,
@@ -391,42 +394,42 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][4]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][4]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][4]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][4]["label"],
             PrisonsOffenseType.OTHER.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][4]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][4]["key"],
             PrisonsOffenseType.OTHER.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][4]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][4]["settings"],
             [],
         )
 
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][5]["enabled"], False
+            metrics[3]["disaggregations"][0]["dimensions"][5]["enabled"], False
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][5]["label"],
+            metrics[3]["disaggregations"][0]["dimensions"][5]["label"],
             PrisonsOffenseType.UNKNOWN.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][5]["key"],
+            metrics[3]["disaggregations"][0]["dimensions"][5]["key"],
             PrisonsOffenseType.UNKNOWN.value,
         )
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["dimensions"][5]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][5]["settings"],
             [],
         )
 
-        self.assertEqual(metrics[3]["key"], prisons.average_daily_population.key)
+        self.assertEqual(metrics[4]["key"], prisons.average_daily_population.key)
         # Readmissions metric has a prefilled context.
-        self.assertEqual(metrics[4]["key"], prisons.readmissions.key)
+        self.assertEqual(metrics[5]["key"], prisons.readmissions.key)
         self.assertEqual(
-            metrics[4]["contexts"],
+            metrics[5]["contexts"],
             [
                 {
                     "display_name": "Please provide additional context.",
@@ -441,9 +444,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         # For the release metric, two settings are excluded from the parole to supervision
         # disaggregation.
-        self.assertEqual(metrics[5]["key"], prisons.releases.key)
+        self.assertEqual(metrics[6]["key"], prisons.releases.key)
         self.assertEqual(
-            metrics[5]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[6]["disaggregations"][0]["dimensions"][1]["settings"],
             [
                 {
                     "key": "AUTOMATIC_OR_PRESUMPTIVE",
@@ -489,17 +492,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             ],
         )
-        self.assertEqual(metrics[6]["key"], prisons.staff_use_of_force_incidents.key)
-        self.assertEqual(metrics[7]["key"], prisons.grievances_upheld.key)
+        self.assertEqual(metrics[7]["key"], prisons.staff_use_of_force_incidents.key)
+        self.assertEqual(metrics[8]["key"], prisons.grievances_upheld.key)
 
         # test filenames
         self.assertEqual(metrics[0]["filenames"], ["annual_budget"])
         self.assertEqual(
-            metrics[1]["filenames"], ["total_staff", "total_staff_by_type"]
+            metrics[2]["filenames"], ["total_staff", "total_staff_by_type"]
         )
-        self.assertEqual(metrics[2]["filenames"], ["admissions", "admissions_by_type"])
+        self.assertEqual(metrics[3]["filenames"], ["admissions", "admissions_by_type"])
         self.assertEqual(
-            metrics[3]["filenames"],
+            metrics[4]["filenames"],
             [
                 "population",
                 "population_by_type",
@@ -508,13 +511,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
         )
         self.assertEqual(
-            metrics[4]["filenames"], ["readmissions", "readmissions_by_type"]
+            metrics[5]["filenames"], ["readmissions", "readmissions_by_type"]
         )
-        self.assertEqual(metrics[5]["filenames"], ["releases", "releases_by_type"])
+        self.assertEqual(metrics[6]["filenames"], ["releases", "releases_by_type"])
         self.assertEqual(
-            metrics[6]["filenames"], ["use_of_force", "use_of_force_by_type"]
+            metrics[7]["filenames"], ["use_of_force", "use_of_force_by_type"]
         )
-        self.assertEqual(metrics[7]["filenames"], ["grievances_upheld"])
+        self.assertEqual(metrics[8]["filenames"], ["grievances_upheld"])
 
     def test_get_agency_metrics(self) -> None:
         self.session.add_all(
@@ -640,26 +643,27 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(metrics[0]["datapoints"], None)
         self.assertEqual(metrics[1]["datapoints"], None)
-        for datapoint in metrics[2]["datapoints"]:
+        self.assertEqual(metrics[2]["datapoints"], None)
+        for datapoint in metrics[3]["datapoints"]:
             self.check_agency_metric_datapoint(
                 datapoint=datapoint, value=1000.0, report_id=report_published.id
             )
 
-        self.assertEqual(metrics[3]["datapoints"], None)
         self.assertEqual(metrics[4]["datapoints"], None)
         self.assertEqual(metrics[5]["datapoints"], None)
         self.assertEqual(metrics[6]["datapoints"], None)
         self.assertEqual(metrics[7]["datapoints"], None)
+        self.assertEqual(metrics[8]["datapoints"], None)
 
-        self.assertEqual(metrics[2]["key"], prisons.admissions.key)
-        self.assertEqual(metrics[2]["enabled"], True)
+        self.assertEqual(metrics[3]["key"], prisons.admissions.key)
+        self.assertEqual(metrics[3]["enabled"], True)
         self.assertEqual(
-            metrics[2]["disaggregations"][0]["key"],
+            metrics[3]["disaggregations"][0]["key"],
             PrisonsOffenseType.dimension_identifier(),
         )
-        self.assertEqual(metrics[2]["disaggregations"][0]["enabled"], False)
+        self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][0]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][0]["datapoints"][
                 0
             ],
             value=3.0,
@@ -668,7 +672,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][1]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][1]["datapoints"][
                 0
             ],
             value=4.0,
@@ -677,7 +681,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][2]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][2]["datapoints"][
                 0
             ],
             value=1.0,
@@ -686,7 +690,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][3]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][3]["datapoints"][
                 0
             ],
             value=5.0,
@@ -695,7 +699,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][4]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][4]["datapoints"][
                 0
             ],
             value=2.0,
@@ -704,7 +708,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
-            datapoint=metrics[2]["disaggregations"][0]["dimensions"][5]["datapoints"][
+            datapoint=metrics[3]["disaggregations"][0]["dimensions"][5]["datapoints"][
                 0
             ],
             value=6.0,

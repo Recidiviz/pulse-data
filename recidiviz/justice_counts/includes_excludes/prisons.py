@@ -40,6 +40,75 @@ class PrisonBudgetIncludesExcludes(Enum):
     JUVENILE_CORRECTIONAL_FACILITIES = "Funding for juvenile correctional facilities"
 
 
+# Expenses
+class PrisonExpensesIncludesExcludes(Enum):
+    SINGLE_YEAR = "Expenses for single fiscal year"
+    BIENNNIUM_EXPENSES = "Biennium expenses"
+    MULTI_YEAR = "Multi-year expenses that will not be fully spent this fiscal year"
+    PRISON_FACILITY = "Expenses for prison facility operations and maintenance"
+    OPERATIONS_AND_MAINTENANCE = "Expenses for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
+    CONSTRUCTION = "Expenses for construction or rental of new prison facilities"
+    TREATMENT = "Expenses for agency-run or contracted treatment and programming"
+    HEALTH_CARE = "Expenses for health care for people in prison facilities"
+    FACILITY_STAFF = "Expenses for prison facility staff"
+    ADMINISTRATION_STAFF = "Expenses for central administrative and support staff"
+    OPERATION = (
+        "Expenses for the operation of private prison beds contracted by the agency"
+    )
+    JAIL_FACILITY = "Expenses for jail facility operations and maintenance"
+    JUVENILE_JAIL = "Expenses for juvenile jail facilities"
+    NON_PRISON_ACTIVITIES = "Expenses for non-prison activities such as pre- or post-adjudication community supervision"
+    LAW_ENFORCEMENT = "Expenses for law enforcement functions"
+
+
+class PrisonExpensesPersonnelIncludesExcludes(Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    CONTRACTORS = "Costs for individuals contracted to work for the prison agency"
+    COMPANIES_AND_SERVICES = "Costs for companies or service providers contracted to support work with prison agencies"
+
+
+class PrisonExpensesTrainingIncludesExcludes(Enum):
+    ANNUAL_TRAINING = "Annual training"
+    CONTINUING_EDUCATION = "Continuing education"
+    TRAINING_ACADEMY = "Training academy"
+    EXTERNAL_TRAINING = "External training or professional development opportunities (e.g., conferences, classes, etc.)"
+    FREE_PROGRAMS = (
+        "Courses or programs offered at no cost to individuals or the department"
+    )
+
+
+class PrisonExpensesFacilitiesAndEquipmentIncludesExcludes(Enum):
+    OPERATIONS = "Prison facility operations"
+    MAINTENANCE = "Prison facility maintenance"
+    RENOVATION = "Prison facility renovation"
+    CONSTRUCTION = "Prison facility construction"
+    EQUIPMENT = "Equipment (e.g., computers, communication, and information technology infrastructure"
+
+
+class PrisonExpensesHealthCareIncludesExcludes(Enum):
+    OPERATIONS = (
+        "Expenses related to the operation of prison facility infirmaries and hospitals"
+    )
+    SALARIES = (
+        "Salaries and benefits for medical providers employed by the prison agency"
+    )
+    CONTRACTS = "Contracts with providers of medical care"
+    PHYSICAL_MEDICAL_CARE = "Expenses related to physical medical care"
+    MENTAL_HEALTH_CARE = "Expenses related to mental health care"
+    TRANSPORTATION = "Costs related to transporting people who are incarcerated to and from hospitals or other health care facilities"
+
+
+class PrisonExpensesContractBedsIncludesExcludes(Enum):
+    JAILS = "Expenses for beds contracted to county jail agencies"
+    OUT_OF_STATE_PRISONS = (
+        "Expenses for beds contracted to other states’ prisons agencies"
+    )
+    FEDERAL_AGENCIES = "Expenses for beds contracted by federal agencies"
+    PRIVATE_PRISONS = "Expenses for beds contracted by private prison companies"
+
+
 # Total staff
 class PrisonStaffIncludesExcludes(Enum):
     AVAILABLE = "Staff available to work"
