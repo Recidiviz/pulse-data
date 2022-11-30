@@ -49,6 +49,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(s.TotalDrugAlcoholCredits AS INT64) total_drug_alcohol_credits,
         CAST(s.TotalEducationAttendanceCredits AS INT64) total_education_attendance_credits,
         CAST(s.TotalTreatmentCredits AS INT64) total_treatment_credits,
+        CAST(s.RangePercent AS FLOAT64) release_eligibility_range_percent,
     FROM `{project_id}.{raw_dataset}.JOSentence_latest` js
     JOIN `{project_id}.{raw_dataset}.Sentence_latest` s
         USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -179,6 +180,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         dedup.parole_eligibility_date,
         dedup.projected_completion_date_min,
         dedup.projected_completion_date_max,
+        raw.release_eligibility_range_percent,
         sen.initial_time_served_days,
         sen.life_sentence,
         raw.min_sentence_length_days_calculated,
