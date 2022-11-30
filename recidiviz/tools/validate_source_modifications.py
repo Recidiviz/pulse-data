@@ -257,7 +257,15 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                     "recidiviz/ingest/direct/regions/us_ix/raw_data/us_ix_current_day_daily_summary.yaml",
                 }
             )
-        )
+        ),
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {"recidiviz/calculator/pipeline/utils/state_utils/us_id/"}
+            ),
+            then_modified_files=frozenset(
+                {"recidiviz/calculator/pipeline/utils/state_utils/us_ix/"}
+            ),
+        ),
     ],
 }
 
