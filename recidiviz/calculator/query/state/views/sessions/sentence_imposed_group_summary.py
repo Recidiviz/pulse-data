@@ -98,6 +98,7 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         MAX(projected_completion_date_max) AS projected_completion_date_max,
         SUM(IF(is_longest_in_level, min_sentence_length_days_calculated, NULL)) AS min_sentence_imposed_group_length_days,
         SUM(IF(is_longest_in_level, max_sentence_length_days_calculated, NULL)) AS max_sentence_imposed_group_length_days,
+        MAX(release_eligibility_range_percent) AS release_eligibility_range_percent,
         
         /*
         The following "ANY_VALUE" aggregations all leverage either the `is_longest_in_imposed_group` or the 

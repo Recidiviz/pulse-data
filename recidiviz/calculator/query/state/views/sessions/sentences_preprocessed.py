@@ -178,6 +178,13 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.parole_eligibility_date,
             sen.projected_completion_date_min,
             sen.projected_completion_date_max,
+            -- Compute the release eligibility range percent from the min & max sentence length
+            -- limited to values between 0-100%, NULL otherwise
+            IF(
+                min_length_days <= max_length_days AND max_length_days > 0,
+                100 * min_length_days / max_length_days,
+                CAST(NULL AS FLOAT64)
+            ) AS release_eligibility_range_percent,
             sen.initial_time_served_days,
             sen.life_sentence,
             sen.min_length_days AS min_sentence_length_days_calculated,
