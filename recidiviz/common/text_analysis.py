@@ -124,7 +124,7 @@ class TextEntity(Enum, metaclass=EnumMeta):
             tokens = normalized_text.split(" ")
             normalized_text_chunks = []
             for i in range(len(tokens)):
-                if i + self.chunk_size >= len(tokens) - 1:
+                if i + self.chunk_size > len(tokens) - 1:
                     normalized_text_chunks.append(" ".join(tokens[i:]))
                     break
                 normalized_text_chunks.append(" ".join(tokens[i : i + self.chunk_size]))
