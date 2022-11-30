@@ -422,7 +422,7 @@ class PrisonUseOfForceIncludesExcludes(Enum):
     PLANNED_INCIDENTS = (
         "Incidents that are planned (e.g., controlling a person for search or safety)"
     )
-    OTHER = "Other incidents not captured by the listed categories"
+    ROUTINE = "Use of restraints during routine operations and movement of people in the agency’s jurisdiction that follows jurisdiction policy and standard operating procedures"
 
 
 # Grievances upheld

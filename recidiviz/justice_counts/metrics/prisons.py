@@ -18,7 +18,6 @@
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    CorrectionalFacilityForceType,
     PrisonsExpenseType,
     PrisonsOffenseType,
     PrisonsReadmissionType,
@@ -493,8 +492,8 @@ staff_use_of_force_incidents = MetricDefinition(
     system=System.PRISONS,
     metric_type=MetricType.USE_OF_FORCE_INCIDENTS,
     category=MetricCategory.PUBLIC_SAFETY,
-    display_name="Staff Use of Force Incidents",
-    description="Measures the number of staff use of force incidents.",
+    display_name="Use of Force Incidents",
+    description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="Select the most serious type of force used per incident.",
@@ -504,7 +503,10 @@ staff_use_of_force_incidents = MetricDefinition(
             definition="An event in which an officer uses force towards or in the vicinity of an individual incarcerated. The AJA focuses on uses of force resulting in injury or a discharge of a weapon.  Count all uses of force occurring during the same event as one incident.",
         )
     ],
-    includes_excludes=IncludesExcludesSet(members=PrisonUseOfForceIncludesExcludes),
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonUseOfForceIncludesExcludes,
+        excluded_set={PrisonUseOfForceIncludesExcludes.ROUTINE},
+    ),
     specified_contexts=[
         Context(
             key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
@@ -512,9 +514,6 @@ staff_use_of_force_incidents = MetricDefinition(
             label='Please provide your agency\'s definition of "use of force".',
             required=True,
         ),
-    ],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=CorrectionalFacilityForceType, required=False)
     ],
 )
 
