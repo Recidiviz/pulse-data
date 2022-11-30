@@ -215,14 +215,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[2]["settings"],
             [
                 {
-                    "key": "AVAILABLE",
-                    "label": PrisonStaffIncludesExcludes.AVAILABLE.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": "ON_LEAVE",
-                    "label": PrisonStaffIncludesExcludes.ON_LEAVE.value,
+                    "key": "FILLED",
+                    "label": PrisonStaffIncludesExcludes.FILLED.value,
                     "included": "Yes",
                     "default": "Yes",
                 },
@@ -253,12 +247,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": "TEMPORARY",
                     "label": PrisonStaffIncludesExcludes.TEMPORARY.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": "OTHER",
-                    "label": PrisonStaffIncludesExcludes.OTHER.value,
                     "included": "Yes",
                     "default": "Yes",
                 },
@@ -1119,12 +1107,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 0)
             agency_datapoints = self.session.query(Datapoint).all()
 
-            # 24 total datapoints:
-            # 3 enabled/disabled metric datapoints (one for each metric)
-            # 7 enabled/disabled dimension datapoints (one for each dimension)
-            # 13 includes/excludes datapoints (2 at the metric level, 11 at the disaggregation level)
-            # 1 context datapoint
-            self.assertEqual(len(agency_datapoints), 24)
+            # 19 total datapoints:
+            #  3 enabled/disabled metric datapoints (one for each metric): PRISONS_BUDGET, PRISONS_TOTAL_STAFF, PRISONS_GRIEVANCES_UPHELD
+            #  7 enabled/disabled dimension datapoints (one for each dimension)
+            #  8 includes/excludes datapoints (2 at the metric level, 6 at the disaggregation level)
+            #  1 context datapoint
+            self.assertEqual(len(agency_datapoints), 19)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
@@ -1194,7 +1182,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 2)
             agency_datapoints = self.session.query(Datapoint).all()
             # Amount of agency_datapoints won't change. Only two datapoints were updated.
-            self.assertEqual(len(agency_datapoints), 24)
+            self.assertEqual(len(agency_datapoints), 19)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,

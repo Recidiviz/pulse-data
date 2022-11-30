@@ -111,71 +111,55 @@ class PrisonExpensesContractBedsIncludesExcludes(Enum):
 
 # Total staff
 class PrisonStaffIncludesExcludes(Enum):
-    AVAILABLE = "Staff available to work"
-    ON_LEAVE = "Staff on leave (PTO, family, medical)"
-    VACANT = "Staff authorized/budgeted but currently vacant"
+    FILLED = "Filled positions"
+    VACANT = "Staff positions budgeted but currently vacant"
     FULL_TIME = "Full-time positions"
     PART_TIME = "Part-time positions"
     CONTRACTED = "Contracted positions"
     TEMPORARY = "Temporary positions"
-    OTHER = "Other staff positions not covered by the listed categories"
     VOLUNTEER = "Volunteer positions"
     INTERN = "Intern positions"
 
 
 class PrisonSecurityStaffIncludesExcludes(Enum):
-    AVAILABLE = "Staff available to work"
-    ON_LEAVE = "Staff on leave (PTO, family, medical)"
     CORRECTIONAL_OFFICERS = "Correctional officers (all ranks)"
-    SUPERVISORS = "Supervisors"
-    OTHER = "Other security staff not covered by the listed categories"
-    VACANT = "Security staff authorized/budgeted but currently vacant"
+    SUPERVISORS = "Correctional officer supervisors"
+    VACANT = "Security staff positions budgeted but currently vacant"
 
 
-class PrisonNonSecurityStaffIncludesExcludes(Enum):
-    AVAILABLE = "Non-Security staff available to work"
-    ON_LEAVE = "Non-Security staff on leave (PTO, family, medical)"
-    MANAGEMENT = "Management"
-    CLERICAL_OR_ADMIN = "Clerical or administrative staff"
+class PrisonManagementAndOperationsStaffIncludesExcludes(Enum):
+    MANAGEMENT = "Prison management (i.e., executive level staff such as the warden, chiefs, superintendents, etc.)"
+    CLERICAL_OR_ADMIN = "Clerical and administrative staff"
     RESEARCH = "Research staff"
     MAINTENANCE = "Maintenance staff"
-    OTHER = "Other non-security staff not covered by the listed categories"
-    VACANT = "Non-security staff authorized/budgeted but currently vacant"
+    VACANT = "Management and operations staff positions budgeted but currently vacant"
 
 
 class PrisonClinicalStaffIncludesExcludes(Enum):
-    DOCTORS = "Doctors"
+    DOCTORS = "Medical doctors"
     NURSES = "Nurses"
     DENTISTS = "Dentists"
-    CLINICIANS = "Clinicians"
-    THERAPISTS = "Therapists"
-    PSYCHOLOGISTS = "Psychologists"
-    OTHER = "Other clinical or medical staff not captured by the listed categories"
+    CLINICIANS = "Clinicians (e.g., substance use treatment specialists)"
+    THERAPISTS = "Therapists (e.g., mental health counselors)"
+    PSYCHIATRISTS = "Psychiatrists"
     VACANT = "Clinical or medical staff positions budgeted but currently vacant"
 
 
 class PrisonProgrammaticStaffIncludesExcludes(Enum):
-    VOCATIONAL = "Vocational training staff"
-    EDUCATION = "Education staff"
+    VOCATIONAL = "Vocational staff"
+    EDUCATION = "Educational staff"
     THERAPEUTIC = "Therapeutic and support program staff"
-    RELIGIOUS = "Religious and/or cultural program staff"
-    THERAPISTS = "Therapists"
-    OTHER = "Other programmatic staff not captured by the listed categories"
+    RELIGIOUS = "Religious or cultural program staff"
+    RESTORATIVE_JUSTICE = "Restorative Justice staff"
     VACANT = "Programmatic staff positions budgeted but currently vacant"
-
-
-class OtherPrisonStaffIncludesExcludes(Enum):
-    OTHER = "Other types of staff"
-    VACANT = "All positions that are budgeted but vacant"
-
-
-class UnknownPrisonStaffIncludesExcludes(Enum):
-    UNKNOWN = "Unknown types of staff"
-    VACANT = "All positions that are budgeted but vacant"
+    VOLUNTEER = "Programmatic staff volunteer positions"
 
 
 class VacantPrisonStaffIncludesExcludes(Enum):
-    BUDGETED = "Positions budgeted to hire but that are not filled"
+    SUPERVISION = "Vacant supervision staff positions"
+    NON_SUPERVISION = "Vacant non-supervision administrative staff positions"
+    CLINICAL_OR_MEDICAL = "Vacant clinical or medical staff positions"
+    PROGRAMMATIC = "Vacant programmatic staff positions"
     FILLED = "Filled positions"
 
 

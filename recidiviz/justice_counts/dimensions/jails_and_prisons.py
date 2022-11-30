@@ -123,13 +123,13 @@ class PrisonsOffenseType(DimensionBase, enum.Enum):
 
 
 class PrisonsStaffType(DimensionBase, enum.Enum):
-    SECURITY = "Security"
-    NON_SECURITY = "Non-Security"
+    SECURITY = "Security Staff"
+    MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
     CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
     PROGRAMMATIC = "Programmatic Staff"
-    VACANT = "Vacant Positions"
-    OTHER = "Other Expenses"
-    UNKNOWN = "Unknown Expenses"
+    VACANT = "Vacant Positions (Any Staff Type)"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Staff"
 
     @classmethod
     def dimension_identifier(cls) -> str:

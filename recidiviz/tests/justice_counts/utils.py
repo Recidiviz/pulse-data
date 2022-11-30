@@ -37,13 +37,11 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.includes_excludes.prisons import (
-    OtherPrisonStaffIncludesExcludes,
     PrisonClinicalStaffIncludesExcludes,
-    PrisonNonSecurityStaffIncludesExcludes,
+    PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
     PrisonSecurityStaffIncludesExcludes,
     PrisonStaffIncludesExcludes,
-    UnknownPrisonStaffIncludesExcludes,
     VacantPrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
@@ -517,10 +515,6 @@ class JusticeCountsSchemaTestObjects:
                                     "enabled": False,
                                     "settings": [
                                         {
-                                            "key": PrisonSecurityStaffIncludesExcludes.OTHER.name,
-                                            "included": "Yes",
-                                        },
-                                        {
                                             "key": PrisonSecurityStaffIncludesExcludes.VACANT.name,
                                             "included": "Yes",
                                         },
@@ -529,15 +523,11 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.NON_SECURITY.value,
+                                    "key": PrisonsStaffType.MANAGEMENT_AND_OPERATIONS.value,
                                     "enabled": False,
                                     "settings": [
                                         {
-                                            "key": PrisonNonSecurityStaffIncludesExcludes.OTHER.name,
-                                            "included": "Yes",
-                                        },
-                                        {
-                                            "key": PrisonNonSecurityStaffIncludesExcludes.VACANT.name,
+                                            "key": PrisonManagementAndOperationsStaffIncludesExcludes.VACANT.name,
                                             "included": "Yes",
                                         },
                                     ]
@@ -548,10 +538,6 @@ class JusticeCountsSchemaTestObjects:
                                     "key": PrisonsStaffType.CLINICAL_OR_MEDICAL.value,
                                     "enabled": True,
                                     "settings": [
-                                        {
-                                            "key": PrisonClinicalStaffIncludesExcludes.OTHER.name,
-                                            "included": "Yes",
-                                        },
                                         {
                                             "key": PrisonClinicalStaffIncludesExcludes.VACANT.name,
                                             "included": "Yes",
@@ -565,11 +551,11 @@ class JusticeCountsSchemaTestObjects:
                                     "enabled": True,
                                     "settings": [
                                         {
-                                            "key": PrisonProgrammaticStaffIncludesExcludes.OTHER.name,
+                                            "key": PrisonProgrammaticStaffIncludesExcludes.VACANT.name,
                                             "included": "Yes",
                                         },
                                         {
-                                            "key": PrisonProgrammaticStaffIncludesExcludes.VACANT.name,
+                                            "key": PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER.name,
                                             "included": "Yes",
                                         },
                                     ]
@@ -579,26 +565,12 @@ class JusticeCountsSchemaTestObjects:
                                 {
                                     "key": PrisonsStaffType.OTHER.value,
                                     "enabled": True,
-                                    "settings": [
-                                        {
-                                            "key": OtherPrisonStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        }
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": [],
                                 },
                                 {
                                     "key": PrisonsStaffType.UNKNOWN.value,
                                     "enabled": True,
-                                    "settings": [
-                                        {
-                                            "key": UnknownPrisonStaffIncludesExcludes.VACANT.name,
-                                            "included": "Yes",
-                                        }
-                                    ]
-                                    if reset_to_default is False
-                                    else [],
+                                    "settings": [],
                                 },
                                 {
                                     "key": PrisonsStaffType.VACANT.value,

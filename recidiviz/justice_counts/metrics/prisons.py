@@ -31,7 +31,6 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.includes_excludes.person import GenderIncludesExcludes
 from recidiviz.justice_counts.includes_excludes.prisons import (
-    OtherPrisonStaffIncludesExcludes,
     PrisonAdmissionsIncludesExcludes,
     PrisonAverageDailyPopulationIncludesExcludes,
     PrisonBudgetIncludesExcludes,
@@ -44,7 +43,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonExpensesPersonnelIncludesExcludes,
     PrisonExpensesTrainingIncludesExcludes,
     PrisonGrievancesIncludesExcludes,
-    PrisonNonSecurityStaffIncludesExcludes,
+    PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonPersonOffenseIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
     PrisonPropertyOffenseIncludesExcludes,
@@ -61,7 +60,6 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonSecurityStaffIncludesExcludes,
     PrisonStaffIncludesExcludes,
     PrisonUseOfForceIncludesExcludes,
-    UnknownPrisonStaffIncludesExcludes,
     VacantPrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -128,8 +126,8 @@ total_staff = MetricDefinition(
     system=System.PRISONS,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    description="Measures the number of full-time staff employed by your agency.",
+    display_name="Staff",
+    description="The number of full-time equivalent positions budgeted for the agency for the operation and maintenance of the prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     definitions=[
         Definition(
             term="Full-time staff",
@@ -170,41 +168,26 @@ total_staff = MetricDefinition(
                 PrisonsStaffType.SECURITY: IncludesExcludesSet(
                     members=PrisonSecurityStaffIncludesExcludes,
                     excluded_set={
-                        PrisonSecurityStaffIncludesExcludes.OTHER,
                         PrisonSecurityStaffIncludesExcludes.VACANT,
                     },
                 ),
-                PrisonsStaffType.NON_SECURITY: IncludesExcludesSet(
-                    members=PrisonNonSecurityStaffIncludesExcludes,
+                PrisonsStaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
+                    members=PrisonManagementAndOperationsStaffIncludesExcludes,
                     excluded_set={
-                        PrisonNonSecurityStaffIncludesExcludes.OTHER,
-                        PrisonNonSecurityStaffIncludesExcludes.VACANT,
+                        PrisonManagementAndOperationsStaffIncludesExcludes.VACANT,
                     },
                 ),
                 PrisonsStaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
                     members=PrisonClinicalStaffIncludesExcludes,
                     excluded_set={
-                        PrisonClinicalStaffIncludesExcludes.OTHER,
                         PrisonClinicalStaffIncludesExcludes.VACANT,
                     },
                 ),
                 PrisonsStaffType.PROGRAMMATIC: IncludesExcludesSet(
                     members=PrisonProgrammaticStaffIncludesExcludes,
                     excluded_set={
-                        PrisonProgrammaticStaffIncludesExcludes.OTHER,
                         PrisonProgrammaticStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                PrisonsStaffType.OTHER: IncludesExcludesSet(
-                    members=OtherPrisonStaffIncludesExcludes,
-                    excluded_set={
-                        OtherPrisonStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                PrisonsStaffType.UNKNOWN: IncludesExcludesSet(
-                    members=UnknownPrisonStaffIncludesExcludes,
-                    excluded_set={
-                        UnknownPrisonStaffIncludesExcludes.VACANT,
+                        PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER,
                     },
                 ),
                 PrisonsStaffType.VACANT: IncludesExcludesSet(
