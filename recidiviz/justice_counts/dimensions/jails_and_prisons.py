@@ -33,6 +33,20 @@ class PrisonsReadmissionType(DimensionBase, enum.Enum):
         return "metric/prisons/readmissions/type"
 
 
+class PrisonsExpenseType(DimensionBase, enum.Enum):
+    PERSONNEL = "Personnel"
+    TRAINING = "Training"
+    FACILITIES_AND_EQUIPMENT = "Facilities and Equipment"
+    HEALTH_CARE = "Health Care for People Who Are Incarcerated"
+    CONTRACT_BEDS = "Contract Beds"
+    UNKNOWN = "Unknown Expenses"
+    OTHER = "Other Expenses"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/prisons/expenses/type"
+
+
 class JailsReadmissionType(DimensionBase, enum.Enum):
     NEW_ADMISSION = "New Admission"
     VIOLATION_OF_CONDITIONS = "Violation of Conditions"
@@ -114,8 +128,8 @@ class PrisonsStaffType(DimensionBase, enum.Enum):
     CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
     PROGRAMMATIC = "Programmatic Staff"
     VACANT = "Vacant Positions"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    OTHER = "Other Expenses"
+    UNKNOWN = "Unknown Expenses"
 
     @classmethod
     def dimension_identifier(cls) -> str:

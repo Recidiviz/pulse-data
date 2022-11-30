@@ -19,6 +19,7 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
+    PrisonsExpenseType,
     PrisonsOffenseType,
     PrisonsReadmissionType,
     PrisonsReleaseType,
@@ -36,6 +37,12 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonBudgetIncludesExcludes,
     PrisonClinicalStaffIncludesExcludes,
     PrisonDrugOffenseIncludesExcludes,
+    PrisonExpensesContractBedsIncludesExcludes,
+    PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
+    PrisonExpensesHealthCareIncludesExcludes,
+    PrisonExpensesIncludesExcludes,
+    PrisonExpensesPersonnelIncludesExcludes,
+    PrisonExpensesTrainingIncludesExcludes,
     PrisonGrievancesIncludesExcludes,
     PrisonNonSecurityStaffIncludesExcludes,
     PrisonPersonOffenseIncludesExcludes,
@@ -211,6 +218,55 @@ total_staff = MetricDefinition(
     ],
 )
 
+expenses = MetricDefinition(
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    system=System.PRISONS,
+    description="The amount spent by the agency for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    metric_type=MetricType.EXPENSES,
+    display_name="Expenses",
+    specified_contexts=[],
+    measurement_type=MeasurementType.DELTA,
+    category=MetricCategory.OPERATIONS_AND_DYNAMICS,
+    includes_excludes=IncludesExcludesSet(
+        members=PrisonExpensesIncludesExcludes,
+        excluded_set={
+            PrisonExpensesIncludesExcludes.BIENNNIUM_EXPENSES,
+            PrisonExpensesIncludesExcludes.MULTI_YEAR,
+            PrisonExpensesIncludesExcludes.JAIL_FACILITY,
+            PrisonExpensesIncludesExcludes.JUVENILE_JAIL,
+            PrisonExpensesIncludesExcludes.LAW_ENFORCEMENT,
+            PrisonExpensesIncludesExcludes.NON_PRISON_ACTIVITIES,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=PrisonsExpenseType,
+            required=False,
+            dimension_to_includes_excludes={
+                PrisonsExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=PrisonExpensesPersonnelIncludesExcludes,
+                    excluded_set={PrisonExpensesPersonnelIncludesExcludes.CONTRACTORS},
+                ),
+                PrisonsExpenseType.TRAINING: IncludesExcludesSet(
+                    members=PrisonExpensesTrainingIncludesExcludes,
+                    excluded_set={PrisonExpensesTrainingIncludesExcludes.FREE_PROGRAMS},
+                ),
+                PrisonsExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                    members=PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
+                ),
+                PrisonsExpenseType.HEALTH_CARE: IncludesExcludesSet(
+                    members=PrisonExpensesHealthCareIncludesExcludes,
+                    excluded_set={
+                        PrisonExpensesHealthCareIncludesExcludes.TRANSPORTATION
+                    },
+                ),
+                PrisonsExpenseType.CONTRACT_BEDS: IncludesExcludesSet(
+                    members=PrisonExpensesContractBedsIncludesExcludes,
+                ),
+            },
+        )
+    ],
+)
 
 readmissions = MetricDefinition(
     system=System.PRISONS,

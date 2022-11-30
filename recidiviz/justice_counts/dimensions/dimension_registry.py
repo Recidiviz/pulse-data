@@ -62,6 +62,7 @@ DIMENSIONS = [
     jails_and_prisons.PrisonsOffenseType,
     jails_and_prisons.PrisonsReleaseType,
     jails_and_prisons.GrievancesUpheldType,
+    jails_and_prisons.PrisonsExpenseType,
     prosecution.CaseSeverityType,
     prosecution.DispositionType,
     prosecution.ProsecutionAndDefenseStaffType,
