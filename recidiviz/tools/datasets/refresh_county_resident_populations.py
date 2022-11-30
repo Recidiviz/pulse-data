@@ -17,6 +17,7 @@
 """Fetches resident population data from census.gov and writes it locally"""
 
 import io
+from typing import Union
 
 import pandas as pd
 import requests
@@ -173,10 +174,12 @@ def fetch_adult_population_csv() -> io.StringIO:
     return io.StringIO(response.text)
 
 
-def transform_adult_population_df(csv_content: io.TextIOWrapper) -> pd.DataFrame:
+def transform_adult_population_df(
+    filepath_or_contents: Union[str, io.TextIOWrapper]
+) -> pd.DataFrame:
     """Transforms the csv into a dataframe in the population format"""
     df = pd.read_csv(
-        csv_content,
+        filepath_or_contents,
         sep="\t",
         # Read all as str to avoid N/A issues
         dtype={

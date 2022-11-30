@@ -18,14 +18,12 @@
 
 Usage: `python -m recidiviz.tools.datasets.refresh_county_fips`
 """
-import os
 from typing import List
 
 import pandas as pd
 from us import states
 
-from recidiviz.common import data_sets, fips
-from recidiviz.datasets import static_data
+from recidiviz.common import fips
 from recidiviz.tools.datasets.static_data_utils import make_output_path
 
 FIPS_2018_URL = "https://www2.census.gov/programs-surveys/popest/geographies/2018/all-geocodes-v2018.xlsx"
@@ -188,12 +186,12 @@ def write_bigquery_csv(fips_df: pd.DataFrame) -> None:
     # Select relevant columns in preferred order.
     fips_df = fips_df[[FIPS_COL, STATE_CODE_COL, COUNTY_CODE_COL, COUNTY_NAME_COL]]
 
-    output_path = os.path.join(os.path.dirname(static_data.__file__), "county_fips.csv")
+    output_path = make_output_path("county_fips.csv")
     fips_df.to_csv(output_path, index=False)
 
 
 def write_common_csv(fips_df: pd.DataFrame) -> None:
-    output_path = os.path.join(os.path.dirname(data_sets.__file__), "fips.csv")
+    output_path = make_output_path("fips.csv")
     fips_df.to_csv(output_path, index=False)
 
 
