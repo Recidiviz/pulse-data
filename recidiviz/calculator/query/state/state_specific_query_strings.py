@@ -739,3 +739,18 @@ def get_all_primary_supervision_external_id_types() -> Tuple[str, ...]:
         ):
             supervision_id_types.append(external_id)
     return tuple(sorted(supervision_id_types))
+
+
+def workflows_state_specific_supervision_level() -> str:
+    return """
+        CASE
+            WHEN sl.state_code IN ('US_ID', 'US_IX') THEN
+                (CASE 
+                    -- US_ID expressed preference for the raw text for DIVERSION cases
+                    WHEN sl.most_recent_active_supervision_level = 'DIVERSION'
+                    THEN session_attributes.correctional_level_raw_text
+                    ELSE sl.most_recent_active_supervision_level 
+                END)
+            ELSE most_recent_active_supervision_level
+        END
+    """

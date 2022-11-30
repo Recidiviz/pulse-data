@@ -18,32 +18,15 @@
 from recidiviz.calculator.query.bq_utils import array_concat_with_null
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
     client_record_supervision_cte,
+    client_record_supervision_level_cte,
+    client_record_supervision_super_sessions_cte,
 )
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     {client_record_supervision_cte("US_ND")}
-    nd_supervision_level_start AS (
-    # This CTE selects the most recent supervision level for each person with an active supervision period,
-    # prioritizing the highest level in cases where one person is currently assigned to multiple levels
-        SELECT
-          person_id,
-          most_recent_active_supervision_level AS supervision_level,
-          start_date as supervision_level_start,  
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
-        WHERE state_code = "US_ND"
-        AND end_date IS NULL
-    ),
-    nd_supervision_super_sessions AS (
-      # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
-      # the earliest start date for dual supervision periods.
-      SELECT
-        person_id,
-        start_date
-      FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
-      WHERE state_code = "US_ND"
-      AND end_date IS NULL
-    ),
+    {client_record_supervision_level_cte("US_ND")}
+    {client_record_supervision_super_sessions_cte("US_ND")}
     nd_phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT 
@@ -73,8 +56,8 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             ORDER BY sc.expiration_date DESC
           ) AS expiration_date,
         FROM us_nd_supervision_cases sc 
-        INNER JOIN nd_supervision_level_start sl USING(person_id)
-        INNER JOIN nd_supervision_super_sessions ss USING(person_id)
+        INNER JOIN us_nd_supervision_level_start sl USING(person_id)
+        INNER JOIN us_nd_supervision_super_sessions ss USING(person_id)
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
         LEFT JOIN nd_phone_numbers ph USING(person_external_id)
     ),

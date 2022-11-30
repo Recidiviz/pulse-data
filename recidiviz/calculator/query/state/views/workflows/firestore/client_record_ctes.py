@@ -16,6 +16,9 @@
 # =============================================================================
 """CTEs used across multiple states' client record queries."""
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    workflows_state_specific_supervision_level,
+)
 
 
 def client_record_supervision_cte(state_code: str) -> str:
@@ -69,5 +72,40 @@ def client_record_supervision_cte(state_code: str) -> str:
             PARTITION BY person_id
             ORDER BY person_external_id
         ) = 1
+    ),
+    """
+
+
+def client_record_supervision_level_cte(state_code: str) -> str:
+    return f"""
+    {state_code.lower()}_supervision_level_start AS (
+        # This CTE selects the most recent supervision level for each person with an active supervision period,
+        # prioritizing the highest level in cases where one person is currently assigned to multiple levels
+        SELECT
+            sl.person_id,
+            sl.start_date as supervision_level_start,  
+            {workflows_state_specific_supervision_level()} AS supervision_level,
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` sl
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized` dataflow
+            ON dataflow.person_id = sl.person_id
+            AND dataflow.dataflow_session_id = sl.dataflow_session_id_start,
+            UNNEST(session_attributes) as session_attributes
+        WHERE sl.state_code = "{state_code}"
+        AND sl.end_date IS NULL
+    ),
+    """
+
+
+def client_record_supervision_super_sessions_cte(state_code: str) -> str:
+    return f"""
+    {state_code.lower()}_supervision_super_sessions AS (
+        # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
+        # the earliest start date for dual supervision periods.
+        SELECT
+            person_id,
+            start_date
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
+        WHERE state_code = "{state_code}"
+        AND end_date IS NULL
     ),
     """
