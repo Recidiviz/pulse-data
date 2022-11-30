@@ -27,7 +27,7 @@ SELECT
   Person_ID,
   FirstName,
   LastName, 
-  CAST(PARSE_TIMESTAMP('%Y-%m-%d', DOB) AS DATE) AS DOB
+  CAST(CAST(DOB AS DATETIME) AS DATE) AS DOB
 FROM {eg_person};
 """
 

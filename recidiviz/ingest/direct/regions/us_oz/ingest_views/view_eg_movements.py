@@ -27,8 +27,8 @@ SELECT
   ROW_NUMBER() OVER (PARTITION BY PersonID ORDER BY Date) as ID,
   PersonID,
   Location,
-  CAST(PARSE_TIMESTAMP('%Y-%m-%d', Date) AS DATE) AS StartDate,
-  LEAD(CAST(PARSE_TIMESTAMP('%Y-%m-%d', Date) AS DATE)) OVER (PARTITION BY PersonID ORDER BY Date) AS EndDate
+  CAST(CAST(Date AS DATETIME) AS DATE) AS StartDate,
+  LEAD(CAST(CAST(Date AS DATETIME) AS DATE)) OVER (PARTITION BY PersonID ORDER BY Date) AS EndDate
 FROM {eg_movements};
 """
 
