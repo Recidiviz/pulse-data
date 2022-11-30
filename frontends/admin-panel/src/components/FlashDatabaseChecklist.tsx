@@ -60,8 +60,8 @@ interface StyledStepProps extends StepProps {
   // Action that will be performed when the action button is clicked.
   onActionButtonClick?: () => Promise<Response>;
 
-  // Action that will be performed when the mark done button is clicked.
-  onMarkDoneClick?: () => Promise<void>;
+  // Section to move to if this step succeeds.
+  nextSection?: number;
 
   // Whether the action button on a step should be enabled. The Mark Done button
   // is always enabled.
@@ -287,7 +287,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const StyledStep = ({
     actionButtonTitle,
     onActionButtonClick,
-    onMarkDoneClick,
+    nextSection,
     description,
     actionButtonEnabled,
     ...rest
@@ -307,6 +307,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               if (succeeded) {
                 await getData();
                 await incrementCurrentStep();
+                if (nextSection !== undefined) {
+                  await moveToNextChecklistSection(nextSection);
+                }
               }
               setLoading(false);
             }}
@@ -328,8 +331,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             await getData();
             await incrementCurrentStep();
             setLoading(false);
-            if (onMarkDoneClick) {
-              onMarkDoneClick();
+            if (nextSection !== undefined) {
+              await moveToNextChecklistSection(nextSection);
             }
           }}
           loading={loading}
@@ -426,11 +429,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                CancelFlashChecklistStepSection.START_CANCELLATION
-              )
-            }
+            nextSection={CancelFlashChecklistStepSection.START_CANCELLATION}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -457,10 +456,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 "FLASH_CANCELLATION_IN_PROGRESS"
               )
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
-              )
+            nextSection={
+              CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
             }
           />
         </ChecklistSection>
@@ -535,11 +532,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               deleteContentsInSecondaryIngestViewDataset(stateCode)
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                CancelFlashChecklistStepSection.FINALIZE_CANCELLATION
-              )
-            }
+            nextSection={CancelFlashChecklistStepSection.FINALIZE_CANCELLATION}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -583,11 +576,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 "NO_RERUN_IN_PROGRESS"
               )
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                CancelFlashChecklistStepSection.RESUME_OPERATIONS
-              )
-            }
+            nextSection={CancelFlashChecklistStepSection.RESUME_OPERATIONS}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -622,9 +611,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(CancelFlashChecklistStepSection.DONE)
-            }
+            nextSection={CancelFlashChecklistStepSection.DONE}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -708,9 +695,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(FlashChecklistStepSection.START_FLASH)
-            }
+            nextSection={FlashChecklistStepSection.START_FLASH}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -733,10 +718,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
-              )
+            nextSection={
+              FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
             }
           />
         </ChecklistSection>
@@ -816,11 +799,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 DirectIngestInstance.PRIMARY
               )
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
-              )
-            }
+            nextSection={FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -934,10 +913,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 DirectIngestInstance.PRIMARY
               )
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
-              )
+            nextSection={
+              FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
             }
           />
         </ChecklistSection>
@@ -977,11 +954,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </p>
               </>
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.FINALIZE_FLASH
-              )
-            }
+            nextSection={FlashChecklistStepSection.FINALIZE_FLASH}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -1022,11 +995,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 "NO_RERUN_IN_PROGRESS"
               )
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.RESUME_OPERATIONS
-              )
-            }
+            nextSection={FlashChecklistStepSection.RESUME_OPERATIONS}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -1074,11 +1043,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(
-                FlashChecklistStepSection.TRIGGER_PIPELINES
-              )
-            }
+            nextSection={FlashChecklistStepSection.TRIGGER_PIPELINES}
           />
         </ChecklistSection>
         <ChecklistSection
@@ -1141,9 +1106,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 under the &quot;Links&quot; section.
               </p>
             }
-            onMarkDoneClick={async () =>
-              moveToNextChecklistSection(FlashChecklistStepSection.DONE)
-            }
+            nextSection={FlashChecklistStepSection.DONE}
           />
         </ChecklistSection>
         <ChecklistSection
