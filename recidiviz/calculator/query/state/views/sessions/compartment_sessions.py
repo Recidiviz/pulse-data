@@ -660,7 +660,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{sessions_dataset}.person_age_sessions` age_end
         ON s.person_id = age_end.person_id
         AND s.state_code = age_end.state_code
-        AND DATE_SUB(COALESCE(s.end_date_exclusive, s.last_day_of_data), INTERVAL 1 DAY) 
+        AND COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), s.last_day_of_data)
             BETWEEN age_end.start_date AND DATE_SUB(age_end.end_date_exclusive, INTERVAL 1 DAY) 
     ),
     sessions_with_assessment_score_start AS
