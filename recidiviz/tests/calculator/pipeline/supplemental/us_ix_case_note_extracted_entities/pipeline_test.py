@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities import (
     pipeline,
 )
-from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_text_analysis_configuration import (
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
     UsIxNoteTitleTextEntity,
 )
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (

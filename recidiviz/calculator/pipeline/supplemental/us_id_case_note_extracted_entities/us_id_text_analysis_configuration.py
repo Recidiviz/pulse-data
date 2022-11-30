@@ -22,7 +22,9 @@ from recidiviz.common.text_analysis import (
     TEXT_NORMALIZERS,
     RegexFuzzyMatcher,
     ScoringFuzzyMatcher,
+    TextAnalyzer,
     TextEntity,
+    TextMatchingConfiguration,
 )
 
 
@@ -268,3 +270,13 @@ class UsIdTextEntity(TextEntity):
     UA = [
         ScoringFuzzyMatcher(search_term="ua"),
     ]
+
+
+DEFAULT_TEXT_ANALYZER = TextAnalyzer(
+    TextMatchingConfiguration(
+        stop_words_to_remove={"in", "out"}, text_entities=list(UsIdTextEntity)
+    )
+)
+
+if __name__ == "__main__":
+    DEFAULT_TEXT_ANALYZER.run_and_print()

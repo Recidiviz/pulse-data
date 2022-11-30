@@ -17,8 +17,10 @@
 """Tests the us_ix_text_analysis_configuration.py"""
 import unittest
 
-from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_text_analysis_configuration import (
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
     UsIxNoteContentTextEntity,
+)
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
     UsIxNoteTitleTextEntity,
 )
 
