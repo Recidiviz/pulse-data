@@ -18,6 +18,8 @@
 from recidiviz.calculator.query.bq_utils import array_concat_with_null
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
     client_record_supervision_cte,
+    client_record_supervision_level_cte,
+    client_record_supervision_super_sessions_cte,
 )
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
@@ -27,36 +29,8 @@ from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
 
 US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     {client_record_supervision_cte("US_ID")}
-    us_id_supervision_level_start AS (
-    # This CTE selects the most recent supervision level for each person with an active supervision period,
-    # prioritizing the highest level in cases where one person is currently assigned to multiple levels
-        SELECT
-          sl.person_id,
-          sl.start_date as supervision_level_start,  
-          CASE 
-              -- US_ID expressed preference for the raw text for DIVERSION cases
-              WHEN sl.most_recent_active_supervision_level = 'DIVERSION'
-              THEN session_attributes.correctional_level_raw_text
-              ELSE sl.most_recent_active_supervision_level 
-          END AS supervision_level,
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` sl
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized` dataflow
-              ON dataflow.person_id = sl.person_id
-              AND dataflow.dataflow_session_id = sl.dataflow_session_id_start,
-              UNNEST(session_attributes) as session_attributes
-        WHERE sl.state_code = "US_ID"
-        AND sl.end_date IS NULL
-    ),
-    us_id_supervision_super_sessions AS (
-      # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
-      # the earliest start date for dual supervision periods.
-      SELECT
-        person_id,
-        start_date
-      FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
-      WHERE state_code = "US_ID"
-      AND end_date IS NULL
-    ),
+    {client_record_supervision_level_cte("US_ID")}
+    {client_record_supervision_super_sessions_cte("US_ID")}
     us_id_phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         {us_id_latest_phone_number()}
