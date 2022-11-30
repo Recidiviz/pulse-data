@@ -374,7 +374,7 @@ module "unified-product-load-balancer" {
         }
       ]
       enable_cdn = true
-      security_policy = local.is_production? null : google_compute_security_policy.recidiviz-waf-policy.id
+      security_policy = google_compute_security_policy.recidiviz-waf-policy.id
       custom_request_headers = [
         "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
         "TLS_VERSION: {tls_version}",
