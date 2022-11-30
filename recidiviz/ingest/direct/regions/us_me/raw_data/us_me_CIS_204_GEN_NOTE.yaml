@@ -34,8 +34,10 @@ columns:
   - name: Note_Id
     description: This is the primary key for the table.
   - name: Note_Tx
+    description: Free text note
     is_pii: True
   - name: Running_Rpt_Ind
   - name: Short_Note_Tx
+    description: Short free text note
     is_pii: True
   - name: Violation_Ind
