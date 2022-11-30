@@ -36,6 +36,7 @@ from recidiviz.common.data_sets import nltk_data
 Normalizer = Tuple[str, str]
 
 DEFAULT_MATCHING_SCORE_CUTOFF = 90
+DEFAULT_CHUNK_SIZE = 10
 
 REMOVE_HYPHENS: Normalizer = ("-", " ")
 REMOVE_WORDS_WITH_DIGITS_WEBSITES_ENCODINGS: Normalizer = (
@@ -108,17 +109,29 @@ class TextEntity(Enum, metaclass=EnumMeta):
         self,
         fuzzy_matchers: List[FuzzyMatcher],
         normalizers: Optional[List[Normalizer]] = None,
+        chunk_size: Optional[int] = None,
     ) -> None:
         self.fuzzy_matchers = fuzzy_matchers
         self.normalizers = normalizers
+        self.chunk_size = chunk_size
 
     def matches(self, normalized_text: str) -> bool:
         """Indicates that a text flag matches the normalized text by looping through all
         of the fuzzy matchers. As soon as the first fuzzy matcher matches the text, we
         say that the flag matches and break before continuing to the rest of the matchers."""
+        normalized_text_chunks = [normalized_text]
+        if self.chunk_size:
+            tokens = normalized_text.split(" ")
+            normalized_text_chunks = []
+            for i in range(len(tokens)):
+                if i + self.chunk_size >= len(tokens) - 1:
+                    normalized_text_chunks.append(" ".join(tokens[i:]))
+                    break
+                normalized_text_chunks.append(" ".join(tokens[i : i + self.chunk_size]))
         for fuzzy_matcher in self.fuzzy_matchers:
-            if fuzzy_matcher.matches(normalized_text):
-                return True
+            for chunk in normalized_text_chunks:
+                if fuzzy_matcher.matches(chunk):
+                    return True
         return False
 
 
@@ -175,7 +188,7 @@ class TextAnalyzer:
     ) -> str:
         """Normalizes a text string, by lowercasing, removing punctuation,
         irregular white space, and stop words. Optionally stems the tokens."""
-        tokens = sorted(self._tokenize(self._clean_text(text, normalizers)))
+        tokens = list(self._tokenize(self._clean_text(text, normalizers)))
         if stem_tokens:
             tokens = [self._stem(token) for token in tokens]
         return " ".join(tokens)

@@ -50,6 +50,11 @@ class FakeTextEntity(TextEntity):
             REMOVE_MULTIPLE_WHITESPACES,
         ],
     )
+    CHUNKER = (
+        [ScoringFuzzyMatcher(search_term="community service")],
+        [REMOVE_MULTIPLE_WHITESPACES],
+        2,
+    )
 
 
 class TestTextAnalyzer(unittest.TestCase):
@@ -62,6 +67,7 @@ class TestTextAnalyzer(unittest.TestCase):
                 FakeTextEntity.HELLO,
                 FakeTextEntity.GOODBYE,
                 FakeTextEntity.SOMETHING_WITH_PUNCTUATION,
+                FakeTextEntity.CHUNKER,
             ],
         )
         self.text_analyzer = TextAnalyzer(self.text_matching_delegate)
@@ -124,13 +130,6 @@ class TestTextAnalyzer(unittest.TestCase):
         self.assertEqual(
             self.text_analyzer.normalize_text(
                 "h.i. h.i.",
-                normalizers=FakeTextEntity.SOMETHING_WITH_PUNCTUATION.normalizers,
-            ),
-            ". h.i h.i.",
-        )
-        self.assertEqual(
-            self.text_analyzer.normalize_text(
-                "h.i. h.i.",
                 normalizers=FakeTextEntity.HELLO.normalizers,
             ),
             "h",
@@ -138,4 +137,13 @@ class TestTextAnalyzer(unittest.TestCase):
         self.assertSetEqual(
             self.text_analyzer.extract_entities(text="h.i. h.i."),
             {FakeTextEntity.SOMETHING_WITH_PUNCTUATION},
+        )
+
+    def test_fuzzy_matching_with_chunk_size(self) -> None:
+        """Tests the optional `chunk_size` term for a TextEntity works as expected."""
+        self.assertIn(
+            FakeTextEntity.CHUNKER,
+            self.text_analyzer.extract_entities(
+                "sufficient community service acquired"
+            ),
         )
