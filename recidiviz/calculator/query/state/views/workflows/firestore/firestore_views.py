@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 from recidiviz.calculator.query.state.views.workflows.firestore.compliant_reporting_referral_record import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.resident_record import (
+    RESIDENT_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.staff_record import (
     STAFF_RECORD_VIEW_BUILDER,
 )
@@ -45,6 +48,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervisio
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
+    RESIDENT_RECORD_VIEW_BUILDER,
     STAFF_RECORD_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
     US_ID_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
