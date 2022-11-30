@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeli
     SupplementalDatasetPipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.supplemental.us_id_case_note_extracted_entities.us_id_text_analysis_configuration import (
+    DEFAULT_TEXT_ANALYZER,
     UsIdTextEntity,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
@@ -42,7 +43,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_NAME,
 )
-from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.common.text_analysis import TextAnalyzer
 
 
 # TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
@@ -74,11 +75,7 @@ class UsIdCaseNoteExtractedEntitiesPipelineRunDelegate(
 
     @property
     def text_analyzer(self) -> TextAnalyzer:
-        return TextAnalyzer(
-            TextMatchingConfiguration(
-                stop_words_to_remove={"in", "out"}, text_entities=list(UsIdTextEntity)
-            )
-        )
+        return DEFAULT_TEXT_ANALYZER
 
     def extract_text_entities(
         self,

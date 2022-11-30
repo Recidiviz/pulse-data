@@ -32,8 +32,11 @@ from recidiviz.calculator.pipeline.pipeline_type import (
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_text_analysis_configuration import (
-    UsIxNoteContentTextEntity,
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
+    NOTE_CONTENT_TEXT_ANALYZER,
+)
+from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
+    NOTE_TITLE_TEXT_ANALYZER,
     UsIxNoteTitleTextEntity,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
@@ -44,7 +47,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import TableRow
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
     US_IX_CASE_UPDATE_INFO_VIEW_NAME,
 )
-from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.common.text_analysis import TextAnalyzer
 
 
 # TODO(#16661) Rename US_IX -> US_ID in this file/code when we are ready to migrate the
@@ -77,18 +80,11 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
 
     @property
     def note_title_text_analyzer(self) -> TextAnalyzer:
-        return TextAnalyzer(
-            TextMatchingConfiguration(
-                stop_words_to_remove={"in", "out"},
-                text_entities=list(UsIxNoteTitleTextEntity),
-            )
-        )
+        return NOTE_TITLE_TEXT_ANALYZER
 
     @property
     def note_content_text_analyzer(self) -> TextAnalyzer:
-        return TextAnalyzer(
-            TextMatchingConfiguration(text_entities=list(UsIxNoteContentTextEntity))
-        )
+        return NOTE_CONTENT_TEXT_ANALYZER
 
     def extract_text_entities(
         self,

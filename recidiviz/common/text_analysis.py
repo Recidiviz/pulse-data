@@ -193,9 +193,15 @@ class TextAnalyzer:
             tokens = [self._stem(token) for token in tokens]
         return " ".join(tokens)
 
-    def extract_entities(self, text: str) -> Set[TextEntity]:
+    def extract_entities(
+        self, text: str, enable_logging: bool = False
+    ) -> Set[TextEntity]:
         """Returns the set of TextEntity that apply to the input text."""
         standard_normalized_text = self.normalize_text(text)
+        if enable_logging:
+            print(
+                f"Standard normalized text based on default normalizers: {standard_normalized_text}"
+            )
         matched_entities = set()
         for text_entity in self.configuration.text_entities:
             normalized_text = (
@@ -203,7 +209,23 @@ class TextAnalyzer:
                 if text_entity.normalizers
                 else standard_normalized_text
             )
+            if enable_logging:
+                print(
+                    f"Normalized text for text entity {text_entity.name}: {normalized_text}"
+                )
             if text_entity.matches(normalized_text):
                 matched_entities.add(text_entity)
 
         return matched_entities
+
+    def run_and_print(self) -> None:
+        while True:
+            inp = input(
+                "Type a phrase to check its extracted entities and press enter. Empty input exits. "
+            )
+            if not inp:
+                break
+            matched_entities = self.extract_entities(inp, enable_logging=True)
+            print("Matched entities: ")
+            for matched_entity in matched_entities:
+                print(matched_entity.name)

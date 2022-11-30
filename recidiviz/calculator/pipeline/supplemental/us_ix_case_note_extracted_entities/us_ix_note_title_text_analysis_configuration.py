@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calc-level text matching utilities for US_IX"""
-from enum import auto
-
+"""Calc-level text matching utilities for US_IX for note titles"""
 from thefuzz import fuzz
 
 from recidiviz.common.text_analysis import (
@@ -24,7 +22,9 @@ from recidiviz.common.text_analysis import (
     TEXT_NORMALIZERS,
     RegexFuzzyMatcher,
     ScoringFuzzyMatcher,
+    TextAnalyzer,
     TextEntity,
+    TextMatchingConfiguration,
 )
 
 
@@ -273,35 +273,12 @@ class UsIxNoteTitleTextEntity(TextEntity):
     ]
 
 
-class UsIxNoteContentTextEntity(TextEntity):
-    """Flags for indicators based on free note content matching for US_IX."""
+NOTE_TITLE_TEXT_ANALYZER = TextAnalyzer(
+    TextMatchingConfiguration(
+        stop_words_to_remove={"in", "out"},
+        text_entities=list(UsIxNoteTitleTextEntity),
+    )
+)
 
-    VIOLATION = auto()
-    SANCTION = auto()
-    EXTEND = auto()
-    ABSCONSION = auto()
-    IN_CUSTODY = auto()
-    AGENTS_WARNING = auto()
-    REVOCATION = auto()
-    REVOCATION_INCLUDE = auto()
-    OTHER = auto()
-    NEW_INVESTIGATION = auto()
-    PSI = auto()
-    NEW_CRIME = auto()
-    ANY_TREATMENT = auto()
-    TREATMENT_COMPLETE = auto()
-    INTERLOCK = auto()
-    CASE_PLAN = auto()
-    NCIC_ILETS_NCO_CHECK = auto()
-    COMMUNITY_SERVICE = auto()
-    NOT_CS = auto()
-    TRANSFER_CHRONO = auto()
-    LSU = auto()
-    DUI = auto()
-    NOT_M_DUI = auto()
-    SPECIALTY_COURT = auto()
-    COURT = auto()
-    SSDI_SSI = auto()
-    PENDING = auto()
-    WAIVER = auto()
-    UA = auto()
+if __name__ == "__main__":
+    NOTE_TITLE_TEXT_ANALYZER.run_and_print()
