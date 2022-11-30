@@ -2,7 +2,7 @@
 """add expenses and funding metric type
 
 Revision ID: 2e47d6ab30d0
-Revises: 919ba25c05af
+Revises: 544bf51ef345
 Create Date: 2022-11-29 15:43:35.546962
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "2e47d6ab30d0"
-down_revision = "919ba25c05af"
+down_revision = "544bf51ef345"
 branch_labels = None
 depends_on = None
 
