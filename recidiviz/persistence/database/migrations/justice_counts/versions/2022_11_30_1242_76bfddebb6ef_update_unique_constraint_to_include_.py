@@ -1,17 +1,17 @@
 # pylint: skip-file
-"""include source_id, date_range_start, and date_range_end in report unique constraint
+"""update unique constraint to include date range start and end
 
-Revision ID: 919ba25c05af
-Revises: 544bf51ef345
-Create Date: 2022-11-22 16:38:45.945231
+Revision ID: 76bfddebb6ef
+Revises: 2e47d6ab30d0
+Create Date: 2022-11-30 12:42:17.297775
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "919ba25c05af"
-down_revision = "544bf51ef345"
+revision = "76bfddebb6ef"
+down_revision = "2e47d6ab30d0"
 branch_labels = None
 depends_on = None
 
@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_unique_constraint(
         "unique_report",
         "report",
-        ["source_id", "type", "date_range_start", "date_range_end"],
+        ["source_id", "type", "instance", "date_range_start", "date_range_end"],
     )
     # ### end Alembic commands ###
 

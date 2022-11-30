@@ -432,6 +432,7 @@ class Report(JusticeCountsBase):
             UniqueConstraint(
                 source_id,
                 type,
+                instance,
                 date_range_start,
                 date_range_end,
                 name="unique_report",
