@@ -19,25 +19,53 @@
 from enum import Enum
 
 
-# Budget
-class PrisonBudgetIncludesExcludes(Enum):
-    FISCAL_YEAR = "Funding for single or fiscal year"
-    FACILITY_MAINTENANCE = "Funding for prison facility operations and maintenance"
-    FACILITY_CONSTRUCTION = "Funding for construction of new prison facilities"
-    TREATMENTS_IN_FACILITIES = "Funding for agency run or contracted treatment and programming within facilities"
-    HEALTH_CARE = "Funding for health care for people in prison facilities"
-    FACILITY_STAFF = "Funding for facility staff"
-    ADMIN_AND_SUPPORT_STAFF = "Funding for central administrative and support staff"
-    CONTRACTED_BEDS = "Funding for beds contracted to other jurisdiction"
-    PRIVATE_PRISONS = "Funding for the operation of private prison facilities"
-    OTHER = "Other funding not captured by the listed categories"
+# Funding
+class PrisonFundingIncludesExcludes(Enum):
+    FISCAL_YEAR = "Funding for single fiscal year"
+    BIENNIUM_FUNDING = "Biennium funding"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that will not be fully spent this fiscal year"
     )
-    BIENNIUM_FUNDING = "Biennium funding"
-    JAILS = "Funding for jails"
-    COMMUNITY_SUPERVISION = "Funding for community supervision"
-    JUVENILE_CORRECTIONAL_FACILITIES = "Funding for juvenile correctional facilities"
+    FACILITY_MAINTENANCE = "Funding for prison facility operations and maintenance"
+    OPERATIONS = "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
+    FACILITY_CONSTRUCTION = "Funding for construction of new prison facilities"
+    TREATMENTS_IN_FACILITIES = "Funding for agency run or contracted treatment and programming within facilities"
+    HEALTH_CARE = "Funding for health care for people in prison facilities"
+    FACILITY_STAFF = "Funding for prison facility staff"
+    ADMIN_AND_SUPPORT_STAFF = "Funding for central administrative and support staff"
+    CONTRACTED_BEDS = (
+        "Funding for the operation of private prison beds contracted by the agency"
+    )
+    JAIL_OPERATIONS = "Funding for jail facility operations and maintenance"
+    JUVENILE_JAILS = "Funding for juvenile jail facilities"
+    NON_PRISON_ACTIVITIES = "Funding for non-prison activities such as pre- or post-adjudication community supervision"
+    LAW_ENFORCEMENT = "Funding for law enforcement functions"
+
+
+class PrisonsFundingStateAppropriationIncludesExcludes(Enum):
+    FINALIZED = "Finalized state appropriations"
+    PROPOSED = "Proposed state appropriations"
+    PRELIMINARY = "Preliminary state appropriations"
+    GRANTS = "Grants from state sources that are not budget appropriations approved by the legislature/governor"
+
+
+class PrisonsFundingGrantsIncludesExcludes(Enum):
+    LOCAL = "Local grants"
+    STATE = "State grants"
+    FEDERAL = "Federal grants"
+    PRIVATE = "Private or foundation grants"
+
+
+class PrisonsFundingCommissaryAndFeesIncludesExcludes(Enum):
+    SALES = "Sales in prison commissaries"
+    CHARGES_INCARCERATED = "Fees charged to people who are incarcerated"
+    CHARGES_VISITORS = "Fees charged to visitors of people who are incarcerated"
+
+
+class PrisonsFundingContractBedsIncludesExcludes(Enum):
+    COUNTY = "Funding collected from beds contracted by county agencies"
+    STATE = "Funding collected from beds contracted by state agencies"
+    FEDERAL = "Funding collected from beds contracted by federal agencies"
 
 
 # Expenses

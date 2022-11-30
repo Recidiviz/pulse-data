@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
     PrisonsExpenseType,
+    PrisonsFundingType,
     PrisonsOffenseType,
     PrisonsReadmissionType,
     PrisonsReleaseType,
@@ -33,8 +34,14 @@ from recidiviz.justice_counts.metrics import prisons
 
 PRISON_METRIC_FILES = [
     MetricFile(
-        canonical_filename="annual_budget",
-        definition=prisons.annual_budget,
+        canonical_filename="funding",
+        definition=prisons.funding,
+        disaggregation=PrisonsFundingType,
+        disaggregation_column_name="funding_type",
+    ),
+    MetricFile(
+        canonical_filename="funding_by_type",
+        definition=prisons.funding,
     ),
     MetricFile(
         canonical_filename="expenses",

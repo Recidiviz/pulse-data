@@ -201,7 +201,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
         self.assertEqual(len(metrics), 9)
         # Annual Budget metric is turned off and has a fiscal year starting in February
-        self.assertEqual(metrics[0]["key"], prisons.annual_budget.key)
+        self.assertEqual(metrics[0]["key"], prisons.funding.key)
         self.assertEqual(metrics[0]["enabled"], False)
         self.assertEqual(metrics[0]["custom_frequency"], "ANNUAL")
         self.assertEqual(metrics[0]["starting_month"], 2)
@@ -484,7 +484,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[8]["key"], prisons.grievances_upheld.key)
 
         # test filenames
-        self.assertEqual(metrics[0]["filenames"], ["annual_budget"])
+        self.assertEqual(metrics[0]["filenames"], ["funding", "funding_by_type"])
         self.assertEqual(
             metrics[2]["filenames"], ["total_staff", "total_staff_by_type"]
         )

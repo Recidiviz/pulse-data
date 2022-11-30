@@ -122,6 +122,19 @@ class PrisonsOffenseType(DimensionBase, enum.Enum):
         return "metric/prisons/offense/type"
 
 
+class PrisonsFundingType(DimensionBase, enum.Enum):
+    STATE_APPROPRIATION = "State Appropriation"
+    GRANTS = "Grants"
+    COMMISSARY_AND_FEES = "Commissary and Fees"
+    CONTRACT_BEDS = "Contract Beds"
+    OTHER = "Other Funding"
+    UNKNOWN = "Unknown Funding"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/prisons/funding/type"
+
+
 class PrisonsStaffType(DimensionBase, enum.Enum):
     SECURITY = "Security Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
