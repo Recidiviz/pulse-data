@@ -91,11 +91,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.mock_task_manager_fn = self.task_manager_patcher.start()
         self.mock_task_manager_fn.return_value = self.mock_task_manager
 
-        self.pubsub_helper_patcher = mock.patch(
-            f"{REFRESH_CONTROL_PACKAGE_NAME}.pubsub_helper"
-        )
-        self.mock_pubsub_helper = self.pubsub_helper_patcher.start()
-
         self.refresh_bq_datase_success_persister_patcher = mock.patch(
             f"{REFRESH_CONTROL_PACKAGE_NAME}.RefreshBQDatasetSuccessPersister"
         )
@@ -111,7 +106,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.mock_project_number_patcher.stop()
         self.fs_patcher.stop()
         self.task_manager_patcher.stop()
-        self.pubsub_helper_patcher.stop()
         self.refresh_bq_datase_success_persister_patcher.stop()
 
     def assertIsOnlySchemaLocked(self, schema_type: SchemaType) -> None:
@@ -123,27 +117,29 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
-    def test_refresh_bq_schema_state_incremental(
+    def test_refresh_bq_schema_incremental(
         self,
         mock_federated_refresh: mock.MagicMock,
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id", schema_type=SchemaType.OPERATIONS
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.OPERATIONS))
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+            self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.STATE.value
+        module = SchemaType.OPERATIONS.value
         route = f"/refresh_bq_schema/{module}"
         data = json.dumps(
             {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value}
@@ -156,11 +152,8 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
-        self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
-            message=mock.ANY, topic="v1.calculator.trigger_incremental_pipelines"
-        )
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        mock_federated_refresh.assert_called_with(schema_type=SchemaType.OPERATIONS)
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.OPERATIONS))
         mock_kick_all_schedulers.assert_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -209,27 +202,29 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.kick_all_schedulers")
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
-    def test_refresh_bq_schema_state_historical(
+    def test_refresh_bq_schema_historical(
         self,
         mock_federated_refresh: mock.MagicMock,
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id", schema_type=SchemaType.OPERATIONS
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.OPERATIONS))
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+            self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.STATE.value
+        module = SchemaType.OPERATIONS.value
         route = f"/refresh_bq_schema/{module}"
         data = json.dumps(
             {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
@@ -242,11 +237,8 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
-        self.mock_pubsub_helper.publish_message_to_topic.assert_called_with(
-            message=mock.ANY, topic="v1.calculator.trigger_historical_pipelines"
-        )
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        mock_federated_refresh.assert_called_with(schema_type=SchemaType.OPERATIONS)
+        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.OPERATIONS))
         mock_kick_all_schedulers.assert_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -427,7 +419,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
-        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.CASE_TRIAGE))
         mock_kick_all_schedulers.assert_not_called()
 
@@ -494,7 +485,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             response.data.decode(), "Unexpected value for schema_arg: [GARBAGE_SCHEMA]"
         )
         mock_federated_refresh.assert_not_called()
-        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -546,7 +536,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             "Unsupported schema type: [SchemaType.JUSTICE_COUNTS]",
         )
         mock_federated_refresh.assert_not_called()
-        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -588,7 +577,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Do not grab lock
         # self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.OPERATIONS)
 
-        route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
+        route = f"/refresh_bq_schema/{SchemaType.OPERATIONS.value}"
 
         response = self.mock_flask_client.post(
             route,
@@ -599,10 +588,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.EXPECTATION_FAILED)
         self.assertEqual(
             response.data.decode(),
-            "Expected lock for [STATE] BQ refresh to already exist.",
+            "Expected lock for [OPERATIONS] BQ refresh to already exist.",
         )
         mock_federated_refresh.assert_not_called()
-        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -654,10 +642,10 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         with ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
             # Grab lock, just like the /create_tasks... endpoint does
             self.mock_lock_manager.acquire_lock(
-                "any_lock_id", schema_type=SchemaType.STATE
+                "any_lock_id", schema_type=SchemaType.OPERATIONS
             )
 
-            route = f"/refresh_bq_schema/{SchemaType.STATE.value}"
+            route = f"/refresh_bq_schema/{SchemaType.OPERATIONS.value}"
 
             response = self.mock_flask_client.post(
                 route,
@@ -668,10 +656,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.EXPECTATION_FAILED)
         self.assertEqual(
             response.data.decode(),
-            "Expected to be able to proceed with refresh before this endpoint was called for [STATE].",
+            "Expected to be able to proceed with refresh before this endpoint was called for [OPERATIONS].",
         )
         mock_federated_refresh.assert_not_called()
-        self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
         mock_kick_all_schedulers.assert_not_called()
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
@@ -720,7 +707,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
     )
-    def test_create_refresh_bq_schema_task_state_incremental(
+    def test_create_refresh_bq_schema_task_incremental(
         self,
     ) -> None:
         # Act
@@ -728,17 +715,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
-            "/create_refresh_bq_schema_task/state",
+            "/create_refresh_bq_schema_task/OPERATIONS",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             data=data,
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE, MetricPipelineRunType.INCREMENTAL.value
+            SchemaType.OPERATIONS, MetricPipelineRunType.INCREMENTAL.value
         )
 
     @mock.patch(
@@ -858,28 +845,34 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
     )
-    def test_create_refresh_bq_schema_task_state_incremental_default(
+    def test_create_refresh_bq_schema_task_incremental_default(
         self,
     ) -> None:
+
+        data = json.dumps(
+            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value}
+        )
+
         # Act
         response = self.mock_flask_client.get(
-            "/create_refresh_bq_schema_task/state",
+            "/create_refresh_bq_schema_task/OPERATIONS",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=data,
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE, MetricPipelineRunType.INCREMENTAL.value
+            SchemaType.OPERATIONS, MetricPipelineRunType.INCREMENTAL.value
         )
 
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
     )
-    def test_create_refresh_bq_schema_task_state_historical(
+    def test_create_refresh_bq_schema_task_historical(
         self,
     ) -> None:
         # Act
@@ -887,24 +880,24 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
-            "/create_refresh_bq_schema_task/state",
+            "/create_refresh_bq_schema_task/OPERATIONS",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             data=data,
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.mock_task_manager.create_refresh_bq_schema_task.assert_called_with(
-            SchemaType.STATE, MetricPipelineRunType.HISTORICAL.value
+            SchemaType.OPERATIONS, MetricPipelineRunType.HISTORICAL.value
         )
 
     @mock.patch(
         "recidiviz.utils.environment.get_gcp_environment",
         Mock(return_value="production"),
     )
-    def test_create_refresh_bq_schema_task_state_garbage_run_type(
+    def test_create_refresh_bq_schema_task_garbage_run_type(
         self,
     ) -> None:
         # Act
@@ -912,7 +905,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         data = json.dumps(body)
 
         response = self.mock_flask_client.get(
-            "/create_refresh_bq_schema_task/state",
+            "/create_refresh_bq_schema_task/OPERATIONS",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             data=data,
         )
@@ -922,7 +915,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.mock_task_manager.create_reattempt_create_refresh_tasks_task.assert_not_called()
         self.mock_task_manager.create_refresh_bq_schema_task.assert_not_called()
 
-    def test_create_wait_to_refresh_bq_tasks_state_ingest_locked(
+    def test_create_wait_to_refresh_bq_tasks_ingest_locked(
         self,
     ) -> None:
         # Arrange
@@ -935,28 +928,28 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Act
         with lock_manager.using_region_lock(expiration_in_seconds=10):
             response = self.mock_flask_client.get(
-                "/create_refresh_bq_schema_task/state",
+                "/create_refresh_bq_schema_task/OPERATIONS",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             )
 
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.OPERATIONS)
         self.mock_task_manager.create_reattempt_create_refresh_tasks_task.assert_called_once()
         self.mock_task_manager.create_refresh_bq_schema_task.assert_not_called()
 
-    def test_create_wait_to_refresh_bq_tasks_state_export_locked(
+    def test_create_wait_to_refresh_bq_tasks_export_locked(
         self,
     ) -> None:
         # Arrange
         self.mock_lock_manager.acquire_lock(
-            lock_id="any_lock_id", schema_type=SchemaType.STATE
+            lock_id="any_lock_id", schema_type=SchemaType.OPERATIONS
         )
 
         # Act
         with self.assertRaises(GCSPseudoLockAlreadyExists):
             self.mock_flask_client.get(
-                "/create_refresh_bq_schema_task/state",
+                "/create_refresh_bq_schema_task/OPERATIONS",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             )
 

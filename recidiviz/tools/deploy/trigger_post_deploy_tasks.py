@@ -29,9 +29,9 @@ def main() -> None:
     """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
     refresh, which then will trigger the historical DAG on completion."""
 
-    logging.info("CloudSQL to BigQuery refresh will trigger the historical DAG.")
+    logging.info("Triggering the historical DAG.")
     pubsub_helper.publish_message_to_topic(
-        topic="v1.trigger_post_deploy_cloudsql_to_bq_refresh_state",
+        topic="v1.trigger_historical_pipelines",
         message="Trigger",
     )
 

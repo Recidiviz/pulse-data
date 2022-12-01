@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -70,29 +70,6 @@ resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeli
     "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
     "GCP_PROJECT"       = var.project_id
     "PIPELINE_DAG_TYPE" = "historical"
-  }
-
-  source_repository {
-    url = local.repo_url
-  }
-}
-
-resource "google_cloudfunctions_function" "trigger_post_deploy_cloudsql_to_bq_refresh_state" {
-  name    = "trigger_post_deploy_cloudsql_to_bq_refresh_state"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.trigger_post_deploy_cloudsql_to_bq_refresh_state"
-  }
-
-  entry_point = "trigger_post_deploy_cloudsql_to_bq_refresh"
-  environment_variables = {
-    "GCP_PROJECT" = var.project_id
-    "SCHEMA"      = "state"
   }
 
   source_repository {
