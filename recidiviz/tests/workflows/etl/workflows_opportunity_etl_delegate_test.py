@@ -16,6 +16,7 @@
 #  =============================================================================
 """Tests for the Workflows ETL delegate."""
 import json
+from copy import deepcopy
 from unittest import TestCase
 
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
@@ -46,6 +47,10 @@ TEST_DATA = {
             "criteria_name": "US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS",
             "reason": {"revocation_date": None},
         },
+    ],
+    "ineligible_criteria": [
+        "SUPERVISION_EARLY_DISCHARGE_DATE_WITHIN_30_DAYS",
+        "US_ND_NOT_IN_ACTIVE_REVOCATION_STATUS",
     ],
     "case_notes": [
         {
@@ -83,6 +88,16 @@ EXPECTED_DOCUMENT = {
         "usNdImpliedValidEarlyTerminationSupervisionLevel": {
             "supervisionLevel": "MEDIUM"
         },
+        "usNdNotInActiveRevocationStatus": {"revocationDate": None},
+    },
+    "eligibleCriteria": {
+        "usNdImpliedValidEarlyTerminationSentenceType": {"supervisionType": "DEFERRED"},
+        "usNdImpliedValidEarlyTerminationSupervisionLevel": {
+            "supervisionLevel": "MEDIUM"
+        },
+    },
+    "ineligibleCriteria": {
+        "supervisionEarlyDischargeDateWithin30Days": {"eligibleDate": "2022-11-11"},
         "usNdNotInActiveRevocationStatus": {"revocationDate": None},
     },
     "metadata": {
@@ -139,6 +154,34 @@ class TestWorkflowsETLDelegate(TestCase):
         new_document = delegate.build_document(TEST_DATA)
         self.assertEqual(
             EXPECTED_DOCUMENT,
+            new_document,
+        )
+
+    def test_transform_with_empty_ineligible_criteria_field(self) -> None:
+        """Tests that the delegate correctly processes the document when `ineligible_criteria` is set to `[]`."""
+        delegate = WorkflowsOpportunityETLDelegate()
+        data = deepcopy(TEST_DATA)
+        data["ineligible_criteria"] = []
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["ineligibleCriteria"] = {}  # type: ignore
+        expected["eligibleCriteria"] = expected["criteria"]  # type: ignore
+        new_document = delegate.build_document(data)
+        self.assertEqual(
+            expected,
+            new_document,
+        )
+
+    def test_transform_without_ineligible_criteria_field(self) -> None:
+        """Tests that the delegate can process a document without the `ineligible_criteria` field."""
+        delegate = WorkflowsOpportunityETLDelegate()
+        data = deepcopy(TEST_DATA)
+        del data["ineligible_criteria"]
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["ineligibleCriteria"] = {}  # type: ignore
+        expected["eligibleCriteria"] = expected["criteria"]  # type: ignore
+        new_document = delegate.build_document(data)
+        self.assertEqual(
+            expected,
             new_document,
         )
 

@@ -17,7 +17,7 @@
 """Delegate class to ETL opportunity referral records for workflows into Firestore."""
 import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 
@@ -93,8 +93,13 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             "formInformation": {},
             "metadata": {},
             "criteria": {},
+            "eligibleCriteria": {},
+            "ineligibleCriteria": {},
             "caseNotes": {},
         }
+
+        ineligible_criteria: Optional[Set[str]] = None
+
         for key, value in row.items():
             # Rename form_information and metadata fields
             if key.startswith("form_information_"):
@@ -124,8 +129,26 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                             "eventDate": note["event_date"],
                         }
                     )
+            elif key == "ineligible_criteria":
+                ineligible_criteria = {v.lower() for v in value}
             else:
                 new_document[key] = value
+
+        # if the ineligible_criteria field is set, split the criteria into eligible and ineligible version
+        # if not set, just copy criteria into eligible_criteria
+        if ineligible_criteria is not None:
+            new_document["eligibleCriteria"] = {
+                criteria: reason
+                for (criteria, reason) in new_document["criteria"].items()
+                if criteria not in ineligible_criteria
+            }
+            new_document["ineligibleCriteria"] = {
+                criteria: reason
+                for (criteria, reason) in new_document["criteria"].items()
+                if criteria in ineligible_criteria
+            }
+        else:
+            new_document["eligibleCriteria"] = new_document["criteria"]
 
         # Convert all keys to camelcase
         new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
