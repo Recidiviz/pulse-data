@@ -20,8 +20,6 @@ from typing import Set
 
 from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
 from recidiviz.utils.string import StrictStringFormatter
-
-# TODO(#10054): Remove facility normalization once handled in ingest.
 from recidiviz.validation.views.utils.state_specific_query_strings import (
     state_specific_dataflow_facility_name_transformation,
 )

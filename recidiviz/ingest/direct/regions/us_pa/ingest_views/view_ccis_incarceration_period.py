@@ -58,7 +58,7 @@ WITH inmate_number_with_control_numbers AS (
     CAST(Mvmt_SeqNum AS INT64) AS movement_sequence,
     Status_Cd as movement_status_code,
     Status_Dt AS movement_date,
-    REPLACE(desc_line, '/', ': ') AS location,
+    computer_code AS location,
   FROM movements_with_single_control_number
   LEFT JOIN
     {{dbo_tblCCISStatus}}
