@@ -58,9 +58,10 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReadmissionsNewConvictionIncludesExcludes,
     PrisonReadmissionsParoleIncludesExcludes,
     PrisonReadmissionsProbationIncludesExcludes,
+    PrisonReleasesCommunitySupervisionIncludesExcludes,
     PrisonReleasesDeathIncludesExcludes,
     PrisonReleasesIncludesExcludes,
-    PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+    PrisonReleasesNoControlIncludesExcludes,
     PrisonReleasesToParoleIncludesExcludes,
     PrisonReleasesToProbationIncludesExcludes,
     PrisonSecurityStaffIncludesExcludes,
@@ -460,48 +461,33 @@ releases = MetricDefinition(
     metric_type=MetricType.RELEASES,
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
-    description="Measures the number of releases from your state corrections system.",
+    description="The number of release events from the agency’s prison jurisdiction to the community following a period of incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Exclude temporary release (work release, appointment, court hearing, etc.).",
+    reporting_note="Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from prison three times in a time period, it would count as three releases.",
     includes_excludes=IncludesExcludesSet(
         members=PrisonReleasesIncludesExcludes,
-        excluded_set={
-            PrisonReleasesIncludesExcludes.TEMP_EXIT,
-            PrisonReleasesIncludesExcludes.TEMP_TRANSFER,
-            PrisonReleasesIncludesExcludes.TRANSFERRED_IN,
-        },
     ),
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_SUPERVISION,
-            value_type=ValueType.TEXT,
-            label="Please provide your agency's definition of supervision (i.e. probation, parole, or both).",
-            required=True,
-        ),
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=PrisonsReleaseType,
             required=False,
             dimension_to_includes_excludes={
-                PrisonsReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
-                    members=PrisonReleasesToParoleIncludesExcludes,
-                    excluded_set={PrisonReleasesToParoleIncludesExcludes.OTHER},
-                ),
                 PrisonsReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesToProbationIncludesExcludes,
-                    excluded_set={PrisonReleasesToProbationIncludesExcludes.OTHER},
                 ),
-                PrisonsReleaseType.SENTENCE_COMPLETION: IncludesExcludesSet(
-                    members=PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
-                    excluded_set={
-                        PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER
-                    },
+                PrisonsReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
+                    members=PrisonReleasesToParoleIncludesExcludes,
+                ),
+                PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: IncludesExcludesSet(
+                    members=PrisonReleasesCommunitySupervisionIncludesExcludes,
+                ),
+                PrisonsReleaseType.NO_CONTROL: IncludesExcludesSet(
+                    members=PrisonReleasesNoControlIncludesExcludes,
                 ),
                 PrisonsReleaseType.DEATH: IncludesExcludesSet(
                     members=PrisonReleasesDeathIncludesExcludes,
-                    excluded_set={PrisonReleasesDeathIncludesExcludes.OTHER},
                 ),
             },
         )
