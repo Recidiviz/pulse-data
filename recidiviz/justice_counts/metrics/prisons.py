@@ -172,23 +172,7 @@ total_staff = MetricDefinition(
     ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="DOCs should only report on their correctional institution staff.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does your count include programmatic staff?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-        Context(
-            key=ContextKey.INCLUDES_MEDICAL_STAFF,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does your count include medical staff?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=PrisonsStaffType,
@@ -502,7 +486,8 @@ staff_use_of_force_incidents = MetricDefinition(
     description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Select the most serious type of force used per incident.",
+    reporting_note="Incidents represent unique events where force was used, not the number of people or staff involved in those events.",
+    specified_contexts=[],
     definitions=[
         Definition(
             term="Use of force incident",
@@ -513,14 +498,6 @@ staff_use_of_force_incidents = MetricDefinition(
         members=PrisonUseOfForceIncludesExcludes,
         excluded_set={PrisonUseOfForceIncludesExcludes.ROUTINE},
     ),
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
-            value_type=ValueType.TEXT,
-            label='Please provide your agency\'s definition of "use of force".',
-            required=True,
-        ),
-    ],
 )
 
 grievances_upheld = MetricDefinition(
@@ -531,6 +508,8 @@ grievances_upheld = MetricDefinition(
     description="The number of complaints from people who are incarcerated under the agency’s prison jurisdiction received via the process described in the institution’s grievance policy, which were resolved in a way that affirmed the complaint.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="Count grievances in the time period in which they were resolved, not when they were received or occurred. For instance, if a complaint was received on November 8, 2021, and resolved on January 14, 2022, that grievance would be counted in 2022.",
+    specified_contexts=[],
     definitions=[
         Definition(
             term="Grievance",
