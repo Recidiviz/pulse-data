@@ -1,0 +1,128 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2022 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+
+"""
+Defines a criteria view that shows spans of time for
+which clients have served 1/2 of their sentence if their term of imprisonment is
+less or equal to 5 years or 2/3 if their term of imprisonment is more than 5 years.
+"""
+
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
+)
+from recidiviz.task_eligibility.utils.raw_table_import import cis_319_term_cte
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+_CRITERIA_NAME = "US_ME_SERVED_X_PORTION_OF_SENTENCE"
+
+_DESCRIPTION = """Defines a criteria view that shows spans of time for
+which clients have served 1/2 of their sentence if their term of imprisonment is
+less or equal to 5 years or 2/3 if their term of imprisonment is more than 5 years.
+"""
+
+_QUERY_TEMPLATE = f"""
+WITH {cis_319_term_cte()},
+
+term_wdur_cte AS (
+-- Calculate duration of term
+    SELECT 
+        *, 
+        DATE_DIFF(end_date, start_date, DAY) AS term_duration_days,
+    FROM (SELECT         
+            * EXCEPT (start_date),
+            -- if we don't have intake_date, we assume the end_date of previous term
+            COALESCE(
+                start_date,
+                LAG(end_date) OVER (PARTITION BY person_id ORDER BY end_date)
+                ) AS start_date,
+            FROM term_cte)
+    ),
+term_crit_date AS (
+-- Calculate critical date
+    SELECT
+        * EXCEPT(term_duration_days),
+        CASE 
+            WHEN term_duration_days/365 > 5 
+                THEN DATE_ADD(
+                    start_date, 
+                    INTERVAL SAFE_CAST(ROUND(term_duration_days*2/3) AS INT64) DAY)
+            ELSE DATE_ADD(
+                start_date, 
+                INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)
+        END critical_date
+    FROM term_wdur_cte
+),
+{create_sub_sessions_with_attributes('term_crit_date')},
+critical_date_spans AS (
+-- Drop duplicate sessions
+    SELECT 
+        * EXCEPT(start_date, end_date),
+        start_date AS start_datetime,
+        end_date AS end_datetime,
+    FROM sub_sessions_with_attributes
+    QUALIFY ROW_NUMBER() 
+            OVER(PARTITION BY state_code, person_id, start_date, end_date 
+            ORDER BY critical_date DESC) = 1
+),
+
+{critical_date_has_passed_spans_cte()}
+
+SELECT
+    state_code,
+    person_id,
+    start_date,                                 
+    -- if the most recent subsession is True, then end_date should be NULL instead of 
+    -- term end_date                             
+    IF((ROW_NUMBER() OVER (PARTITION BY person_id, state_code
+                           ORDER BY start_date DESC) =  1) 
+            AND (critical_date_has_passed), 
+        NULL, 
+        end_date) AS end_date,                       
+    critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+FROM critical_date_has_passed_spans
+"""
+
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=_CRITERIA_NAME,
+        description=_DESCRIPTION,
+        state_code=StateCode.US_ME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    )
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()
