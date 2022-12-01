@@ -19,8 +19,6 @@ import unittest
 from datetime import date
 from typing import Optional
 
-from parameterized import parameterized
-
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
     SupervisionPopulationEvent,
 )
@@ -38,41 +36,6 @@ class TestUsIxSupervisionDelegate(unittest.TestCase):
 
     def setUp(self) -> None:
         self.supervision_delegate = UsIxSupervisionDelegate([], [])
-
-    @parameterized.expand(
-        [
-            (
-                "DISTRICT OFFICE 6, POCATELLO|UNKNOWN",
-                "UNKNOWN",
-                "DISTRICT OFFICE 6, POCATELLO",
-            ),
-            (
-                "PAROLE COMMISSION OFFICE|DEPORTED",
-                "DEPORTED",
-                "PAROLE COMMISSION OFFICE",
-            ),
-            ("DISTRICT OFFICE 4, BOISE|", None, "DISTRICT OFFICE 4, BOISE"),
-            (None, None, None),
-        ]
-    )
-    def test_supervision_location_from_supervision_site(
-        self,
-        supervision_site: Optional[str],
-        expected_level_1_supervision_location: Optional[str],
-        expected_level_2_supervision_location: Optional[str],
-    ) -> None:
-        (
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self.supervision_delegate.supervision_location_from_supervision_site(
-            supervision_site
-        )
-        self.assertEqual(
-            level_1_supervision_location, expected_level_1_supervision_location
-        )
-        self.assertEqual(
-            level_2_supervision_location, expected_level_2_supervision_location
-        )
 
     def test_supervision_period_is_out_of_state_with_identifier(self) -> None:
         self.assertTrue(
