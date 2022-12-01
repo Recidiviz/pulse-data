@@ -52,7 +52,10 @@ _ACQUIRE_LOCK_TASK_ID = "acquire_lock_STATE"
 _WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = "wait_for_acquire_lock_success_STATE"
 _TRIGGER_REFRESH_BQ_DATASET_TASK_ID = "trigger_refresh_bq_dataset_task_STATE"
 _WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = "wait_for_refresh_bq_dataset_success_STATE"
-_POST_REFRESH_SHORT_CIRCUIT_TASK_ID = "post_refresh_short_circuit_STATE"
+
+
+def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
+    return f"post_refresh_short_circuit_{schema_type.upper()}"
 
 
 @patch(
@@ -361,13 +364,15 @@ class TestCalculationPipelineDags(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
-            task_ids_or_regex=_POST_REFRESH_SHORT_CIRCUIT_TASK_ID,
+            task_ids_or_regex=get_post_refresh_short_circuit_task_id("STATE"),
             include_downstream=False,
             include_upstream=True,
         )
         wait_task = one(wait_subdag.leaves)
 
-        self.assertEqual(_POST_REFRESH_SHORT_CIRCUIT_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            get_post_refresh_short_circuit_task_id("STATE"), wait_task.task_id
+        )
         self.assertEqual(
             {_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID},
             wait_task.upstream_task_ids,
@@ -390,7 +395,10 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
         self.assertEqual(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
         self.assertEqual(
-            {_POST_REFRESH_SHORT_CIRCUIT_TASK_ID},
+            {
+                get_post_refresh_short_circuit_task_id("STATE"),
+                get_post_refresh_short_circuit_task_id("OPERATIONS"),
+            },
             wait_task.upstream_task_ids,
         )
 

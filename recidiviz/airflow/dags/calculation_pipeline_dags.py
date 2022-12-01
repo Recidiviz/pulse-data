@@ -217,9 +217,11 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
 
 def trigger_refresh_bq_dataset_operator(
     schema_type: str,
+    dry_run: bool,
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
+    endpoint = f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}{'?dry_run=True' if dry_run else ''}"
     task_path = CloudTasksClient.task_path(
         project_id,
         location=queue_location,
@@ -230,7 +232,7 @@ def trigger_refresh_bq_dataset_operator(
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            "relative_uri": f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}",
+            "relative_uri": endpoint,
             "body": json.dumps({}).encode(),
         },
     )
@@ -276,7 +278,9 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
     return data.lower() == "true"
 
 
-def create_bq_refresh_nodes(schema_type: str) -> ShortCircuitOperator:
+def create_bq_refresh_nodes(
+    schema_type: str, dry_run: bool = False
+) -> ShortCircuitOperator:
     """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
     acquire_lock = IAPHTTPRequestOperator(
         task_id=f"acquire_lock_{schema_type}",
@@ -291,7 +295,9 @@ def create_bq_refresh_nodes(schema_type: str) -> ShortCircuitOperator:
         response_check=response_can_refresh_proceed_check,
     )
 
-    trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(schema_type)
+    trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(
+        schema_type, dry_run
+    )
 
     wait_for_refresh_bq_dataset = BQResultSensor(
         task_id=f"wait_for_refresh_bq_dataset_success_{schema_type}",
@@ -319,21 +325,21 @@ def create_bq_refresh_nodes(schema_type: str) -> ShortCircuitOperator:
         >> release_lock
     )
 
-    def check_if_state_bq_refresh_completion_success(**context: Any) -> bool:
+    def check_if_bq_refresh_completion_success(**context: Any) -> bool:
         """Checks whether the state bq refresh was successful and returns bool."""
         wait_for_refresh_task_instance = context["dag_run"].get_task_instance(
             wait_for_refresh_bq_dataset.task_id
         )
         return wait_for_refresh_task_instance.state != State.FAILED
 
-    state_bq_refresh_completion = ShortCircuitOperator(
+    bq_refresh_completion = ShortCircuitOperator(
         task_id=f"post_refresh_short_circuit_{schema_type}",
-        python_callable=check_if_state_bq_refresh_completion_success,
+        python_callable=check_if_bq_refresh_completion_success,
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    wait_for_refresh_bq_dataset >> state_bq_refresh_completion
-    return state_bq_refresh_completion
+    wait_for_refresh_bq_dataset >> bq_refresh_completion
+    return bq_refresh_completion
 
 
 def execute_calculations(
@@ -350,6 +356,10 @@ def execute_calculations(
         raise Exception("Configuration file not specified")
 
     state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
+    # TODO(#15931): Remove dry run once tested
+    operations_bq_refresh_completion = create_bq_refresh_nodes(
+        "OPERATIONS", dry_run=True
+    )
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
@@ -389,7 +399,7 @@ def execute_calculations(
         )
 
         (
-            state_bq_refresh_completion
+            [state_bq_refresh_completion, operations_bq_refresh_completion]
             >> trigger_update_all_views
             >> wait_for_update_all_views
             >> trigger_view_rematerialize
@@ -436,7 +446,7 @@ def execute_calculations(
             # Normalization pipelines should run after the BQ refresh is complete, but
             # complete before normalized_state dataset is refreshed.
             (
-                state_bq_refresh_completion
+                [state_bq_refresh_completion, operations_bq_refresh_completion]
                 >> normalization_calculation_pipeline
                 >> update_normalized_state
             )
