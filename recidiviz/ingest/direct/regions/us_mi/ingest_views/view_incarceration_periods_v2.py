@@ -113,7 +113,9 @@ internal_movements AS (
         r1.unique_code,
         r3.description AS county,
         o.date_in,
-        o.date_out
+        o.date_out,
+        u.cell_type_id,
+        u.security_level_id
     FROM final_lock_records o
 	JOIN {ADH_OFFENDER} o1	
     ON o.offender_id = o1.offender_id
@@ -208,10 +210,28 @@ final_movements AS (
     WHERE m.movement_reason_id NOT IN ('16', '158', '2', '131', '18', '106', '105')
 ),"""
 
+# In MI, individuals are designated into different types of segregation based on a committee's decision.
+# We'll pull in each person's designation to use as part of determining housing unit type.
+AD_SEG_CTE = """
+ad_seg_designation as (
+    select 
+        offender_designation_id, 
+        offender_id,
+        offender_designation_code_id,
+        date(start_date) as start_date, 
+        date(end_date) as end_date,
+        last_update_date,
+        LEAD(date(start_date)) OVER(partition by offender_id ORDER BY DATE(start_date), DATE(end_date)) as next_start_date,
+    from {ADH_OFFENDER_DESIGNATION}
+    where offender_designation_code_id in ('11672', '11670', '11389') -- segregation designations
+),
+"""
+
 VIEW_QUERY_TEMPLATE = f"""
 WITH
 {LOCK_RECORDS_CTE}
 {MOVEMENTS_CTE}
+{AD_SEG_CTE}
 external_movements_in AS (
     -- By joining internal movements (lock spans) with movements of the day,
     -- where the destination is the same as the lock span's location, we proxy
@@ -240,7 +260,9 @@ external_movements_in AS (
         e.destination_location_type_id,
         e.destination_location_unique_code,
         e.destination_location_county,
-        'IN' AS status
+        'IN' AS status,
+        i.cell_type_id,
+        i.security_level_id
     FROM internal_movements i
     JOIN final_movements e
     ON i.offender_id = e.offender_id
@@ -283,7 +305,9 @@ external_movements_out AS (
         e.destination_location_type_id,
         e.destination_location_unique_code,
         e.destination_location_county,
-        'OUT' AS status
+        'OUT' AS status,
+        i.cell_type_id,
+        i.security_level_id
     FROM internal_movements i
     JOIN final_movements e
     ON i.offender_id = e.offender_id
@@ -323,7 +347,9 @@ internal_movements_without_external_movements_in AS (
         e1.destination_location_type_id,
         e1.destination_location_unique_code,
         e1.destination_location_county,
-        'IN' AS status
+        'IN' AS status,
+        i.cell_type_id,
+        i.security_level_id
     FROM internal_movements i
     LEFT JOIN external_movements_in e1
     ON i.offender_lock_id = e1.offender_lock_id
@@ -356,7 +382,9 @@ internal_movements_without_external_movements_out AS (
         e2.destination_location_type_id,
         e2.destination_location_unique_code,
         e2.destination_location_county,
-        'OUT' AS status
+        'OUT' AS status,
+        i.cell_type_id,
+        i.security_level_id
     FROM internal_movements i
     LEFT JOIN external_movements_out e2
     ON i.offender_lock_id = e2.offender_lock_id
@@ -391,7 +419,9 @@ external_movements_without_internal_movements_out AS (
         e.destination_location_type_id,
         e.destination_location_unique_code,
         e.destination_location_county,
-        'OUT' AS status
+        'OUT' AS status,
+        i.cell_type_id,
+        i.security_level_id
     FROM final_movements e
     LEFT JOIN external_movements_out i
     ON i.offender_external_movement_id = e.offender_external_movement_id
@@ -433,6 +463,8 @@ periods AS (
         destination_location_type_id,
         destination_location_unique_code,
         destination_location_county,
+        cell_type_id,
+        security_level_id,
         LEAD(offender_lock_id) {PARTITION_STATEMENT} as next_offender_lock_id,
         LEAD(offender_external_movement_id) {PARTITION_STATEMENT} AS next_offender_external_movement_id,
         LEAD(status) {PARTITION_STATEMENT} AS next_status,
@@ -454,23 +486,81 @@ periods AS (
         LEAD(destination_location_unique_code) {PARTITION_STATEMENT} AS next_destination_location_unique_code,
         LEAD(destination_location_county) {PARTITION_STATEMENT} AS next_destination_location_county
     FROM edges
+),
+final_periods as (
+    SELECT distinct
+    p.offender_id,
+    offender_lock_id,
+    offender_external_movement_id,
+    movement_date,
+    unit_lock_id,
+    reporting_station_name,
+    location_code,
+    location_type_id,
+    county,
+    movement_reason_id,
+    next_movement_date,
+    next_movement_reason_id,
+    cell_type_id,
+    security_level_id
+    FROM periods p
+        inner join {OFFENDER_IDS_TO_KEEP} book on p.offender_id = book.offender_id
+    WHERE status = 'IN' AND (next_status = 'OUT' OR next_status IS NULL)
+),
+-- Designations don't align very well with incarceration periods themselves, so here to each period we'll apply the most recently recorded
+-- designation that was active in that period.  And because designations don't align particularly well, we'll rely also
+-- on cell type to determine housing unit type in the mappings since I assume for this field we're mostly concerned with when people were actually residing 
+-- in a segregation cell rather than when they were supposed assigned to be in one.  For segregation analyses, designation might become more relevant,
+-- so we might not want to rely solely on housing unit type for such analyses.  
+periods_with_designation as (
+    select p.*,
+        offender_designation_code_id,
+        -- if multiple designations overlap with incarcarceration period, take the most updated one in the period
+        RANK() OVER (PARTITION BY p.offender_id, offender_lock_id, offender_external_movement_id ORDER BY d.last_update_date desc, d.offender_designation_id NULLS LAST) as rnk
+    from final_periods p
+    left join ad_seg_designation d 
+        on ( p.offender_id = d.offender_id
+            and (
+                # designation begins before period AND (designation ends after period begins OR designation is ongoing)
+                (d.start_date <= p.movement_date and 
+                    (
+                    (d.end_date is not null and d.end_date > p.movement_date)
+                    or 
+                    d.end_date is null
+                    )
+                )
+                or
+                # designation begins after period starts AND (designation starts before period ends OR period is ongoing)
+                (d.start_date > p.movement_date and 
+                    (
+                    (p.next_movement_date is not null and d.start_date < p.next_movement_date)
+                    or
+                    p.next_movement_date is null
+                    )
+                )
+            )
+        )
 )
-SELECT
-  p.offender_id,
-  offender_lock_id,
-  offender_external_movement_id,
-  movement_date,
-  unit_lock_id,
-  reporting_station_name,
-  location_code,
-  location_type_id,
-  county,
-  movement_reason_id,
-  next_movement_date,
-  next_movement_reason_id
-FROM periods p
-    inner join {OFFENDER_IDS_TO_KEEP} book on p.offender_id = book.offender_id
-WHERE status = 'IN' AND (next_status = 'OUT' OR next_status IS NULL)
+
+select
+    offender_id,
+    offender_lock_id,
+    offender_external_movement_id,
+    movement_date,
+    unit_lock_id,
+    reporting_station_name,
+    location_code,
+    location_type_id,
+    county,
+    movement_reason_id,
+    next_movement_date,
+    next_movement_reason_id,
+    cell_type_id,
+    security_level_id,
+    offender_designation_code_id
+from periods_with_designation
+where rnk=1
+
 """
 
 # TODO(#13970) Add ingest view tests.
