@@ -15,6 +15,9 @@ input_columns:
   - movement_reason_id
   - next_movement_date
   - next_movement_reason_id
+  - security_level_id
+  - cell_type_id
+  - offender_designation_code_id
 unused_columns: []
 output:
   StatePerson:
@@ -254,3 +257,124 @@ output:
                         - $literal("PRF")
                 $then: $literal_enum(StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)
+          custody_level:
+            $enum_mapping:
+              $raw_text: security_level_id
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.MINIMUM:
+                  - "11539" # Security level I
+                StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM:
+                  - "11538" # Security level II
+                StateIncarcerationPeriodCustodyLevel.MEDIUM:
+                  - "11537" # Security level III (seldom used)
+                StateIncarcerationPeriodCustodyLevel.CLOSE:
+                  - "11536" # Security level IV
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM:
+                  - "11535" # Security level V
+                  - "11540" # Security level VI (no longer used)
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN:
+                  - "12551" # Security level IS
+          housing_unit_type:
+            # In MI, someone is placed in segregation either temporarily for a variety of reasons
+            # or permanently as designated by a committee.  In our data, we have information on
+            # their cell type and their official designation.
+            #
+            # If they're in a segregation cell and we have information on their designation,
+            # then we'll determine permanent vs temporary segregation based on their designation
+            $conditional:
+              - $if:
+                  $and:
+                    - $in:
+                        $value: cell_type_id
+                        $options:
+                          - $literal("7856") # TS - Temporary Segregation
+                          - $literal("7842") # PC - Protective Custody (Protective Segregation)
+                          - $literal("7827") # DS - Detention (Punitive Segregation)
+                          - $literal("7823") # AS - Administrative Segregation
+                    - $not_null: offender_designation_code_id
+                $then:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - offender_designation_code_id
+                          - $literal("11389") # Temporary Segregation
+                      $then:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $values:
+                                - offender_designation_code_id
+                                - cell_type_id
+                              $include_nulls: True
+                              $separator: "##"
+                          $mappings:
+                            StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                              - "11389##7856" # 7856: TS - Temporary Segregation
+                              - "11389##7842" # 7842: PC - Protective Custody (Protective Segregation)
+                              - "11389##7827" # 7827: DS - Detention (Punitive Segregation)
+                              - "11389##7823" # 7823: AS - Administrative Segregation
+                    - $else_if:
+                        $in:
+                          $value: offender_designation_code_id
+                          $options:
+                            - $literal("11672") # Administrative Segregation
+                            - $literal("11670") # Graded in Segregation
+                      $then:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $values:
+                                - offender_designation_code_id
+                                - cell_type_id
+                              $include_nulls: True
+                              $separator: "##"
+                          $mappings:
+                            StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
+                              - "11672##7856" # 7856: TS - Temporary Segregation
+                              - "11672##7842" # 7842: PC - Protective Custody (Protective Segregation)
+                              - "11672##7827" # 7856: DS - Detention (Punitive Segregation)
+                              - "11672##7823" # 7827: AS - Administrative Segregation
+                              - "11670##7856" # 7856: TS - Temporary Segregation
+                              - "11670##7842" # 7842: PC - Protective Custody (Protective Segregation)
+                              - "11670##7827" # 7827: DS - Detention (Punitive Segregation)
+                              - "11670##7823" # 7823: AS - Administrative Segregation
+              # If we don't have information on their designation,
+              # then we'll determine permanent vs temporary segregation based on cell type
+              - $else:
+                  $enum_mapping:
+                    $raw_text: cell_type_id
+                    $mappings:
+                      StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
+                        - "7823" # 7827: AS - Administrative Segregation
+                      StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
+                        - "7856" # 7856: TS - Temporary Segregation
+                        - "7842" # 7842: PC - Protective Custody (Protective Segregation)
+                        - "7827" # 7856: DS - Detention (Punitive Segregation)
+                      StateIncarcerationPeriodHousingUnitType.GENERAL:
+                        - "7830" # G2 - General Population - Level 2
+                        - "11319" # Regular
+                        - "12550" # G1S - General Population - Level 1 Secure
+                        - "12820" # QU - Quarantine
+                        - "13005" # H1 - Observation
+                        - "13006" # H2 - Seclusion
+                        - "13007" # H3 - Secure Status Residential Treatment Program
+                        - "13008" # H4 - Residential Treatment Services
+                        - "13010" # H6 - Infirmary
+                        - "13357" # 1S - SSOTP Phase I
+                        - "14440" # PH - Protective Housing
+                        - "14443" # AR - ASRP
+                        - "14444" # OB - Overnight Beds
+                        - "16010" # IC - Interm. Care Program
+                        - "7822" # AC - Acute Care Unit
+                        - "7825" # CS - Crisis Stabilization Unit
+                        - "7826" # DF - Default
+                        - "7829" # G1 - General Population - Level 1
+                        - "7830" # G2 - General Population - Level 2
+                        - "7831" # G3 - General Population - Level 3
+                        - "7832" # G4 - General Population - Level 4
+                        - "7833" # G5 - General Population - Level 5
+                        - "7834" # HO - Hospital (Temporary - ON or OFF site)
+                        - "7835" # IC - Intermediate Care Program
+                        - "7836" # IH - Intake Housing
+                        - "7844" # RT - Residential Treatment Program
+                        - "7850" # SM - SMPU (Self Mutilation Prevention Unit)

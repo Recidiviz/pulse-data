@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitType,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
@@ -194,6 +195,8 @@ def add_incarceration_period_to_person(
     specialized_purpose_for_incarceration_raw_text: Optional[str] = None,
     custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = None,
     custody_level_raw_text: Optional[str] = None,
+    housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = None,
+    housing_unit_type_raw_text: Optional[str] = None,
 ) -> None:
     """Append an incarceration period to the person (updates the person entity in place)."""
 
@@ -218,6 +221,8 @@ def add_incarceration_period_to_person(
         specialized_purpose_for_incarceration_raw_text=specialized_purpose_for_incarceration_raw_text,
         custody_level=custody_level,
         custody_level_raw_text=custody_level_raw_text,
+        housing_unit_type=housing_unit_type,
+        housing_unit_type_raw_text=housing_unit_type_raw_text,
     )
 
     person.incarceration_periods.append(incarceration_period)
