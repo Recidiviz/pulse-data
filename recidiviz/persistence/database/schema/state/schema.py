@@ -2116,11 +2116,6 @@ class StateSupervisionViolatedConditionEntry(
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    condition = Column(
-        String(255),
-        nullable=False,
-        comment="The specific condition of supervision which was violated.",
-    )
     condition_raw_text = Column(
         String(255),
         comment="The raw text value of the condition.",

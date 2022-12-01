@@ -91,7 +91,6 @@ class TestBQSchemaForNormalizedStateEntity(unittest.TestCase):
                 bigquery.enums.SqlTypeNames.INTEGER.value,
             ),
             SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("condition", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("condition_raw_text", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("person_id", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField(
@@ -430,7 +429,6 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             (
                 StateSupervisionViolatedConditionEntry.__name__,
                 {
-                    "condition": "MISSED CURFEW",
                     "condition_raw_text": "MISSED CURFEW",
                     "person_id": 123,
                     "state_code": "US_XX",

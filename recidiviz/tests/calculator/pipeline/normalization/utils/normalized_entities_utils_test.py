@@ -283,7 +283,6 @@ def get_violation_tree(
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 supervision_violated_condition_entry_id=starting_id_value + 2,
                 state_code="US_XX",
-                condition="MISSED CURFEW",
                 condition_raw_text="MISSED CURFEW",
             )
         ],
@@ -362,7 +361,6 @@ def get_normalized_violation_tree(
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 supervision_violated_condition_entry_id=starting_id_value + 2,
                 state_code="US_XX",
-                condition="MISSED CURFEW",
                 condition_raw_text="MISSED CURFEW",
             )
         ],

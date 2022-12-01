@@ -97,7 +97,6 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
-                    condition="LAW_CITATION",
                     condition_raw_text="LAW_CITATION",
                 ),
             ],
@@ -127,7 +126,6 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
                         state_code=self.state_code,
-                        condition=LAW_CITATION_SUBTYPE_STR,
                         condition_raw_text=LAW_CITATION_SUBTYPE_STR,
                     ),
                 ],
@@ -193,7 +191,6 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
-                    condition="LAW",
                     condition_raw_text="LAW",
                 ),
             ],
