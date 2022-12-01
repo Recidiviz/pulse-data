@@ -50,7 +50,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils import pubsub_helper
 from recidiviz.utils.auth.gae import requires_gae_auth
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
@@ -81,13 +80,13 @@ def wait_for_ingest_to_create_tasks(
             f"Unsuppported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
+    if schema_type == SchemaType.STATE:
+        return (
+            f"Schema type should only be refreshed through DAG: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
-
-    if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
-        # If no pipeline_run_type_arg is specified for the STATE schema, then we default
-        # to the incremental run type
-        pipeline_run_type_arg = MetricPipelineRunType.INCREMENTAL.value
 
     if pipeline_run_type_arg:
         try:
@@ -127,7 +126,7 @@ def wait_for_ingest_to_create_tasks(
     return "", HTTPStatus.OK
 
 
-# TODO(#15929): This function will be deleted once the new refresh_bq_dataset endpoint is setup added to the DAG
+# TODO(#15930): This function will be deleted once the all dependencies on this endpoint are moved to the DAG
 @cloud_sql_to_bq_blueprint.route(
     "/refresh_bq_schema/<schema_arg>", methods=["GET", "POST"]
 )
@@ -151,6 +150,11 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
             f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
+    if schema_type == SchemaType.STATE:
+        return (
+            f"Schema type should only be refreshed through DAG: [{schema_type}]",
+            HTTPStatus.BAD_REQUEST,
+        )
 
     lock_manager = CloudSqlToBQLockManager()
 
@@ -171,21 +175,6 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
         )
 
     federated_bq_schema_refresh(schema_type=schema_type)
-
-    if schema_type is SchemaType.STATE:
-
-        json_data_text = request.get_data(as_text=True)
-        logging.info("Request data: %s", json_data_text)
-
-        pipeline_run_type_arg = get_value_from_request(PIPELINE_RUN_TYPE_REQUEST_ARG)
-
-        if pipeline_run_type_arg:
-            logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
-
-            pubsub_helper.publish_message_to_topic(
-                message="State export to BQ complete",
-                topic=f"v1.calculator.trigger_{pipeline_run_type_arg.lower()}_pipelines",
-            )
 
     # Unlock export lock when all BQ exports complete
     lock_manager = CloudSqlToBQLockManager()

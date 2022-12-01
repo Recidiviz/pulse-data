@@ -451,7 +451,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
         self.assertEqual(
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-            "/cloud_sql_to_bq/refresh_bq_dataset/STATE?dry_run=True",
+            "/cloud_sql_to_bq/refresh_bq_dataset/STATE",
         )
 
     def test_update_all_managed_views_only_called_in_historic_dag(self) -> None:

@@ -215,7 +215,6 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
     )
 
 
-# TODO(#15929): Update endpoint to remove dry_run
 def trigger_refresh_bq_dataset_operator(
     schema_type: str,
 ) -> CloudTasksTaskCreateOperator:
@@ -231,7 +230,7 @@ def trigger_refresh_bq_dataset_operator(
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            "relative_uri": f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}?dry_run=True",
+            "relative_uri": f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}",
             "body": json.dumps({}).encode(),
         },
     )

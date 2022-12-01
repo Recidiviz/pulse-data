@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This file contains all of the relevant cloud functions"""
-import json
 import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Tuple, TypeVar
@@ -26,6 +25,7 @@ from urllib.parse import urlencode
 # the cloud functions package itself. In general, we should avoid shipping complex
 # code in cloud functions. The function itself should call an API endpoint that can
 # live in an external package with proper import resolution.
+# pylint: disable=unused-import
 from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
     IAP_CLIENT_ID,
@@ -88,56 +88,3 @@ def trigger_calculation_pipeline_dag(
         message=f"The monitoring Airflow response is {monitor_response}",
     )
     return "", HTTPStatus(monitor_response.status_code)
-
-
-def trigger_post_deploy_cloudsql_to_bq_refresh(
-    _event: Dict[str, Any], _context: ContextType
-) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event to begin the refresh of BigQuery
-    data for a given schema, pulling data from the appropriate CloudSQL Postgres
-    instance, and to trigger the historical DAG once the refresh is complete.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = "No project id set for call to refresh BigQuery data, returning."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    schema = os.environ.get("SCHEMA")
-    if not schema:
-        error_str = "The schema variable 'SCHEMA' is not set."
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    url = _build_url(
-        project_id,
-        f"/cloud_sql_to_bq/create_refresh_bq_schema_task/{schema}",
-        params=None,
-    )
-
-    data = {}
-
-    if schema.upper() == "STATE":
-        cloud_functions_log(
-            severity="INFO",
-            message="Historical DAG will be triggered after refresh.",
-        )
-        data[PIPELINE_RUN_TYPE_REQUEST_ARG] = PIPELINE_RUN_TYPE_HISTORICAL_VALUE
-
-    cloud_functions_log(
-        severity="INFO",
-        message=f"Data sent to request: {data}.",
-    )
-
-    cloud_functions_log(severity="INFO", message=f"project_id: {project_id}")
-    cloud_functions_log(severity="INFO", message=f"Calling URL: {url}")
-
-    # Hit the cloud function backend, which starts the post-deploy refresh of the
-    # given schema
-    response = make_iap_request(
-        url, IAP_CLIENT_ID[project_id], method="POST", data=json.dumps(data).encode()
-    )
-    cloud_functions_log(
-        severity="INFO", message=f"The response status is {response.status_code}"
-    )
-    return "", HTTPStatus(response.status_code)
