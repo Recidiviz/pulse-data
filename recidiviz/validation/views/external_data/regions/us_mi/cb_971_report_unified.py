@@ -81,6 +81,8 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2022, 8, 19),
     date(2022, 9, 16),
     date(2022, 10, 14),
+    date(2022, 10, 21),
+    date(2022, 11, 18),
 ]
 
 
