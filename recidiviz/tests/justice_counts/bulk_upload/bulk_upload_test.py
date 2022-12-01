@@ -189,7 +189,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 filter(lambda m: m.key == prisons.admissions.key, metrics)
             )[0]
 
-            self.assertEqual(len(metrics), 4)
+            self.assertEqual(len(metrics), 3)
             self.assertEqual(admissions_metric.value, 294)
             self.assertEqual(
                 admissions_metric.aggregated_dimensions[  # type: ignore[index]
