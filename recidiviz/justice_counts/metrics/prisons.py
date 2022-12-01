@@ -55,7 +55,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonPropertyOffenseIncludesExcludes,
     PrisonPublicOrderOffenseIncludesExcludes,
     PrisonReadmissionsIncludesExcludes,
-    PrisonReadmissionsNewCommitmentIncludesExcludes,
+    PrisonReadmissionsNewConvictionIncludesExcludes,
     PrisonReadmissionsParoleIncludesExcludes,
     PrisonReadmissionsProbationIncludesExcludes,
     PrisonReleasesDeathIncludesExcludes,
@@ -284,36 +284,27 @@ readmissions = MetricDefinition(
     metric_type=MetricType.READMISSIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Readmissions",
-    description="Measures the number of individuals admitted who had at least one other prison admission within the prior 12 months.",
+    description="The number of admission events to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within the previous three years (1,096 days).",
     measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Exclude re-entry after a temporary exit (escape, work release, appointment, etc.).",
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    reporting_note="If a person admitted on June 23, 2022, had been incarcerated at any time between June 23, 2019, and June 23, 2022, it would count as a readmission. This metric is based on admission events, so if the same person is readmitted three times in a time period, it would count as three readmissions.",
     specified_contexts=[],
     includes_excludes=IncludesExcludesSet(
         members=PrisonReadmissionsIncludesExcludes,
-        excluded_set={
-            PrisonReadmissionsIncludesExcludes.TEMP_ABSENCE,
-            PrisonReadmissionsIncludesExcludes.TRANSFERRED_IN_STATE,
-        },
     ),
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=PrisonsReadmissionType,
             required=False,
             dimension_to_includes_excludes={
-                PrisonsReadmissionType.NEW_ADMISSION: IncludesExcludesSet(
-                    members=PrisonReadmissionsNewCommitmentIncludesExcludes,
-                    excluded_set={
-                        PrisonReadmissionsNewCommitmentIncludesExcludes.OTHER
-                    },
+                PrisonsReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
+                    members=PrisonReadmissionsNewConvictionIncludesExcludes,
                 ),
                 PrisonsReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
                     members=PrisonReadmissionsProbationIncludesExcludes,
-                    excluded_set={PrisonReadmissionsProbationIncludesExcludes.OTHER},
                 ),
                 PrisonsReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
                     members=PrisonReadmissionsParoleIncludesExcludes,
-                    excluded_set={PrisonReadmissionsParoleIncludesExcludes.OTHER},
                 ),
             },
         )

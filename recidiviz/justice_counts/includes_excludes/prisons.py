@@ -382,58 +382,38 @@ class PrisonReleasesDeathIncludesExcludes(Enum):
 
 # Readmissions
 class PrisonReadmissionsIncludesExcludes(Enum):
-    NEW_SENTENCE = "People with new prison sentences"
-    BOARD_HOLD = "People entering prison on a board hold"
-    SPLIT_SENTENCE = "People entering prison on a split sentence"
-    SHOCK_PROBATION = "People entering prison on shock probation"
-    INCARCERATION_SANCTION_PROBATION = (
-        "People entering prison to serve an incarceration sanction while on probation"
+    NEW_CONVICTION = "Admission due to a new criminal court conviction resulting in a prison sentence"
+    RETURN_FROM_PROBATION = "Admission due to a return from probation"
+    RETURN_FROM_PAROLE = "Admission due to a return from parole"
+    RETURN_FROM_SUPERVISION = (
+        "Admission due to a return from other community supervision"
     )
-    REVOKED_PROBATION = "People entering prison who were revoked from probation"
-    INCARCERATION_SANCTION_PAROLE = (
-        "People entering prison to serve an incarceration sanction while on parole"
-    )
-    REVOKED_PAROLE = "People entering prison who were revoked from parole"
-    AWOL = "People returning to prison from AWOL status or escape"
-    TRANSFERRED_FROM_STATE = "People transferred from another state"
-    TRANSFERRED_OUT_OF_STATE = "People entering prison facilities in other states who are under the jurisdiction of the agency"
-    TRANSFERRED_JAIL = (
-        "People entering jails who are under the jurisdiction of the agency"
-    )
-    PRIVATE_FACILITIES = "People entering private prison facilities who are under the jurisdiction of the agency"
-    OTHER = "Other admissions not captured by the listed categories"
-    TEMP_ABSENCE = "People returning to prison from temporary absences (e.g., from court, hospital, furlough, work release)"
-    TRANSFERRED_IN_STATE = "People transferred between facilities in the same state"
 
 
-class PrisonReadmissionsNewCommitmentIncludesExcludes(Enum):
+class PrisonReadmissionsNewConvictionIncludesExcludes(Enum):
     NEW_SENTENCES = "People with new prison sentences"
     SPLIT_SENTENCE = "People with new split sentences"
-    OTHER = "Other readmissions not captured by the listed categories"
 
 
 class PrisonReadmissionsProbationIncludesExcludes(Enum):
-    PROBATION = (
-        "People entering prison to serve an incarceration sanction while on probation"
-    )
-    SHOCK_PROBATION = "People entering prison to serve a shock probation sentence"
-    TECHNICAL_VIOLATION = "People entering prison who were revoked from probation for a technical violation"
-    NEW_VIOLATION = "People entering prison who were revoked from probation for a new offense violation"
-    TRANSFERRED_IN = "People transferred from another state who were on probation immediately prior to their admission"
-    PENDING_HEARING = "People entering prison pending a hearing who were on probation immediately prior to their admission"
-    OTHER = "Other readmissions not captured by the listed categories"
+    PROBATION = "Admissions to serve a probation supervision incarceration sanction"
+    PROBATION_REVOCATION = "Admissions due to revocation from probation supervision for technical violation(s)"
+    NEW_VIOLATION = "Admissions due to revocations from probation supervision for new offense violation(s)"
+    TRANSFERRED_IN = "Admissions due to transfers from another jurisdiction of people who were on probation supervision immediately prior to admission"
+    PENDING_HEARING = "Admissions for holds pending a probation hearing decision for people on probation supervision immediately prior to their admission"
 
 
 class PrisonReadmissionsParoleIncludesExcludes(Enum):
-    PAROLE = "People entering prison to serve an incarceration sanction while on parole"
+    PAROLE = "Admissions to serve a parole supervision incarceration sanction"
     TECHNICAL_VIOLATION = (
-        "People entering prison who were revoked from parole for a technical violation"
+        "Admissions due to revocations from parole for technical violation(s)"
     )
-    NEW_VIOLATION = "People entering prison who were revoked from parole for a new offense violation"
-    TRANSFERRED_IN = "People transferred from another state who were on parole immediately prior to their admission"
-    PENDING_HEARING = "People entering prison pending a hearing who were on parole immediately prior to their admission"
-    BOARD_HOLD = "People entering prison on a board hold"
-    OTHER = "Other readmissions not captured by the listed categories"
+    NEW_VIOLATION = (
+        "Admissions due to revocations from parole for new offense violation(s)"
+    )
+    TRANSFERRED_IN = "Admissions due to transfers from another jurisdiction of people who were on parole supervision immediately prior to admission"
+    PENDING_HEARING = "Admissions for holds pending a parole hearing decision for people on parole supervision immediately prior to their admission"
+    BOARD_HOLD = "Admissions due to a parole board hold"
 
 
 # Use of force incidents
