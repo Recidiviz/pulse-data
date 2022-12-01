@@ -505,7 +505,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             metrics[7]["filenames"], ["use_of_force", "use_of_force_by_type"]
         )
-        self.assertEqual(metrics[8]["filenames"], ["grievances_upheld"])
+        self.assertEqual(
+            metrics[8]["filenames"], ["grievances_upheld", "grievances_upheld_by_type"]
+        )
 
     def test_get_agency_metrics(self) -> None:
         self.session.add_all(

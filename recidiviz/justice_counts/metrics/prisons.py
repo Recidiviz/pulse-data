@@ -18,6 +18,7 @@
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
+    GrievancesUpheldType,
     PrisonsExpenseType,
     PrisonsFundingType,
     PrisonsOffenseType,
@@ -42,7 +43,12 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonExpensesPersonnelIncludesExcludes,
     PrisonExpensesTrainingIncludesExcludes,
     PrisonFundingIncludesExcludes,
+    PrisonGrievancesDiscriminationIncludesExcludes,
+    PrisonGrievancesHealthCareIncludesExcludes,
     PrisonGrievancesIncludesExcludes,
+    PrisonGrievancesLegalIncludesExcludes,
+    PrisonGrievancesLivingConditionsIncludesExcludes,
+    PrisonGrievancesPersonalSafetyIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonPersonOffenseIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
@@ -545,7 +551,7 @@ grievances_upheld = MetricDefinition(
     metric_type=MetricType.GRIEVANCES_UPHELD,
     category=MetricCategory.FAIRNESS,
     display_name="Grievances Upheld",
-    description="Measures the number of grievances filed with the institution that were upheld.",
+    description="The number of complaints from people who are incarcerated under the agency’s prison jurisdiction received via the process described in the institution’s grievance policy, which were resolved in a way that affirmed the complaint.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     definitions=[
@@ -557,9 +563,33 @@ grievances_upheld = MetricDefinition(
     includes_excludes=IncludesExcludesSet(
         members=PrisonGrievancesIncludesExcludes,
         excluded_set={
+            PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED,
             PrisonGrievancesIncludesExcludes.DUPLICATE,
             PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION,
             PrisonGrievancesIncludesExcludes.INFORMAL,
         },
     ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=GrievancesUpheldType,
+            required=False,
+            dimension_to_includes_excludes={
+                GrievancesUpheldType.LIVING_CONDITIONS: IncludesExcludesSet(
+                    members=PrisonGrievancesLivingConditionsIncludesExcludes,
+                ),
+                GrievancesUpheldType.PERSONAL_SAFETY: IncludesExcludesSet(
+                    members=PrisonGrievancesPersonalSafetyIncludesExcludes,
+                ),
+                GrievancesUpheldType.DISCRIMINATION: IncludesExcludesSet(
+                    members=PrisonGrievancesDiscriminationIncludesExcludes,
+                ),
+                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: IncludesExcludesSet(
+                    members=PrisonGrievancesHealthCareIncludesExcludes,
+                ),
+                GrievancesUpheldType.LEGAL: IncludesExcludesSet(
+                    members=PrisonGrievancesLegalIncludesExcludes,
+                ),
+            },
+        ),
+    ],
 )
