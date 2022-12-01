@@ -22,8 +22,11 @@ all data in production to be imported in staging (e.g. in MO where data is only 
 in production each week).
 
 Example usage:
-python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_tn --exact
 python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_mo
+python -m recidiviz.tools.ingest.operations.compare_raw_data_between_projects --region us_tn \
+    --source-project-id recidiviz-staging --source-ingest-instance PRIMARY \
+    --comparison-project-id recidiviz-staging --comparison-ingest-instance SECONDARY \
+    --exact
 """
 
 import argparse
@@ -43,16 +46,16 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
 COMPARISON_TEMPLATE = """
 WITH compared AS (
   SELECT {columns}, {datetime_column} AS update_datetime
-  FROM `{source_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
+  FROM `{source_project_id}.{source_raw_data_dataset_id}.{raw_data_table_id}`
   EXCEPT DISTINCT
   SELECT {columns}, {datetime_column} AS update_datetime
-  FROM `{comparison_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
+  FROM `{comparison_project_id}.{comparison_raw_data_dataset_id}.{raw_data_table_id}`
 )
 SELECT update_datetime, COUNT(*) as num_missing_rows
 FROM compared
@@ -63,27 +66,38 @@ ORDER BY update_datetime
 
 def compare_raw_data_between_projects(
     region_code: str,
-    source_project_id: str = environment.GCP_PROJECT_STAGING,
-    comparison_project_id: str = environment.GCP_PROJECT_PRODUCTION,
+    source_project_id: str,
+    source_ingest_instance: DirectIngestInstance,
+    comparison_project_id: str,
+    comparison_ingest_instance: DirectIngestInstance,
     truncate_update_datetime_part: Optional[str] = None,
 ) -> List[str]:
-    """Compares the raw data between staging and production for a given region."""
+    """Compares the raw data between specified projects and instances for given region."""
     logging.info(
-        "**** Ensuring all raw data for [%s] in [%s] also exists in [%s] ****",
+        "**** Ensuring all raw data for [%s] in (project=[%s], instance=[%s]) also exists in "
+        "(project=[%s], instance=[%s]) ****",
         region_code.upper(),
         source_project_id,
+        source_ingest_instance.value,
         comparison_project_id,
+        comparison_ingest_instance.value,
     )
 
     raw_file_config = DirectIngestRegionRawFileConfig(region_code)
 
     bq_client = BigQueryClientImpl(project_id=source_project_id)
-    dataset_id = raw_tables_dataset_for_region(
+    source_dataset_id = raw_tables_dataset_for_region(
         state_code=StateCode(region_code.upper()),
-        instance=DirectIngestInstance.PRIMARY,
+        instance=source_ingest_instance,
         sandbox_dataset_prefix=None,
     )
-    source_dataset = bq_client.dataset_ref_for_id(dataset_id)
+    source_dataset = bq_client.dataset_ref_for_id(source_dataset_id)
+
+    comparison_dataset_id = raw_tables_dataset_for_region(
+        state_code=StateCode(region_code.upper()),
+        instance=comparison_ingest_instance,
+        sandbox_dataset_prefix=None,
+    )
 
     query_jobs: Dict[str, bigquery.QueryJob] = {}
     for file_tag, file_config in raw_file_config.raw_file_configs.items():
@@ -100,8 +114,9 @@ def compare_raw_data_between_projects(
             query_str=StrictStringFormatter().format(
                 COMPARISON_TEMPLATE,
                 source_project_id=source_project_id,
+                source_raw_data_dataset_id=source_dataset_id,
                 comparison_project_id=comparison_project_id,
-                raw_data_dataset_id=dataset_id,
+                comparison_raw_data_dataset_id=comparison_dataset_id,
                 raw_data_table_id=file_tag,
                 columns=columns,
                 datetime_column=(
@@ -134,7 +149,7 @@ def compare_raw_data_between_projects(
                 "%s | Missing table %s.%s.%s",
                 justified_name,
                 comparison_project_id,
-                dataset_id,
+                comparison_dataset_id,
                 file_tag,
             )
             failed_tables.append(file_tag)
@@ -144,35 +159,54 @@ def compare_raw_data_between_projects(
 
         if counts:
             logging.warning(
-                "%s | Missing data in the %s table",
+                "%s | Missing data in the %s.%s table",
                 justified_name,
                 comparison_project_id,
+                comparison_ingest_instance,
             )
             for update_datetime, num_missing in counts:
                 logging.warning("\t%ss: %d", update_datetime.isoformat(), num_missing)
             failed_tables.append(file_tag)
         else:
             logging.info(
-                "%s | %s contains all of the data from %s",
+                "%s | (project=[%s], instance=[%s]) contains all of the data from (project=[%s], instance=[%s])",
                 justified_name,
                 comparison_project_id,
+                comparison_ingest_instance.value,
                 source_project_id,
+                source_ingest_instance.value,
             )
 
     return failed_tables
 
 
 def output_failed_tables(
-    failed_tables: List[str], source_project_id: str, comparison_project_id: str
+    failed_tables: List[str],
+    source_project_id: str,
+    source_ingest_instance: DirectIngestInstance,
+    comparison_project_id: str,
+    comparison_ingest_instance: DirectIngestInstance,
 ) -> None:
     if failed_tables:
         logging.error(
-            "FAILURE - The following tables had data in %s that was not in %s.",
+            "FAILURE - The following tables had data in (project=[%s], instance=[%s]), that was not in "
+            "(project=[%s], instance=[%s]).",
             source_project_id,
+            source_ingest_instance.value,
             comparison_project_id,
+            comparison_ingest_instance.value,
         )
         for table in failed_tables:
             logging.error("- %s", table)
+    else:
+        logging.info(
+            "None of the tables had data in (project=[%s], instance=[%s]) that was not in "
+            "(project=[%s], instance=[%s])",
+            source_project_id,
+            source_ingest_instance.value,
+            comparison_project_id,
+            comparison_ingest_instance.value,
+        )
 
 
 def main() -> None:
@@ -188,6 +222,32 @@ def main() -> None:
         "production also exists in staging.",
     )
     parser.add_argument(
+        "--source-project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        default=GCP_PROJECT_PRODUCTION,
+        help="Specifies the project id of the raw data to be compared against.",
+    )
+    parser.add_argument(
+        "--source-ingest-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        default=DirectIngestInstance.PRIMARY,
+        help="Specifies the ingest instance of the raw data to be compared against.",
+    )
+    parser.add_argument(
+        "--comparison-project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        default=GCP_PROJECT_STAGING,
+        help="Specifies the project id of the raw data to be compared to.",
+    )
+    parser.add_argument(
+        "--comparison-ingest-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        default=DirectIngestInstance.PRIMARY,
+        help="Specifies the ingest instance of the raw data to be compared to.",
+    )
+    parser.add_argument(
         "--truncate-update-datetime",
         type=str,
         choices=["SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH"],
@@ -198,37 +258,67 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    production_failed_tables = compare_raw_data_between_projects(
+    source_to_comparison_failed_tables = compare_raw_data_between_projects(
         region_code=args.region,
-        source_project_id=environment.GCP_PROJECT_STAGING,
-        comparison_project_id=environment.GCP_PROJECT_PRODUCTION,
+        source_project_id=args.source_project_id,
+        source_ingest_instance=args.source_ingest_instance,
+        comparison_project_id=args.comparison_project_id,
+        comparison_ingest_instance=args.comparison_ingest_instance,
         truncate_update_datetime_part=args.truncate_update_datetime,
     )
 
-    staging_failed_tables = []
+    comparison_to_source_failed_tables = []
     if args.exact:
-        staging_failed_tables = compare_raw_data_between_projects(
+        # Reverse the source and comparison project ID + instance
+        comparison_to_source_failed_tables = compare_raw_data_between_projects(
             region_code=args.region,
-            source_project_id=environment.GCP_PROJECT_PRODUCTION,
-            comparison_project_id=environment.GCP_PROJECT_STAGING,
+            source_project_id=args.comparison_project_id,
+            source_ingest_instance=args.comparison_ingest_instance,
+            comparison_project_id=args.source_project_id,
+            comparison_ingest_instance=args.source_ingest_instance,
             truncate_update_datetime_part=args.truncate_update_datetime,
         )
 
     logging.info("*****" * 20)
 
-    output_failed_tables(
-        production_failed_tables,
-        source_project_id=environment.GCP_PROJECT_STAGING,
-        comparison_project_id=environment.GCP_PROJECT_PRODUCTION,
+    logging.info(
+        "RESULTS: Comparing (project=[%s], instance=[%s]) vs. (project=[%s], instance=[%s])",
+        args.source_project_id,
+        args.source_ingest_instance.value,
+        args.comparison_project_id,
+        args.comparison_ingest_instance.value,
     )
     output_failed_tables(
-        staging_failed_tables,
-        source_project_id=environment.GCP_PROJECT_PRODUCTION,
-        comparison_project_id=environment.GCP_PROJECT_STAGING,
+        source_to_comparison_failed_tables,
+        source_project_id=args.source_project_id,
+        source_ingest_instance=args.source_ingest_instance,
+        comparison_project_id=args.comparison_project_id,
+        comparison_ingest_instance=args.comparison_ingest_instance,
     )
-    if not production_failed_tables and not staging_failed_tables:
+    if args.exact:
+        logging.info(
+            "RESULTS: Comparing (project=[%s], instance=[%s]) vs. (project=[%s], instance=[%s])",
+            args.comparison_project_id,
+            args.comparison_ingest_instance.value,
+            args.source_project_id,
+            args.source_ingest_instance.value,
+        )
+        output_failed_tables(
+            comparison_to_source_failed_tables,
+            source_project_id=args.comparison_project_id,
+            source_ingest_instance=args.comparison_ingest_instance,
+            comparison_project_id=args.source_project_id,
+            comparison_ingest_instance=args.source_ingest_instance,
+        )
+    if (
+        not source_to_comparison_failed_tables
+        and not comparison_to_source_failed_tables
+    ):
         logging.info("SUCCESS - All raw data was present.")
-    sys.exit(len(production_failed_tables) + len(staging_failed_tables))
+    sys.exit(
+        len(source_to_comparison_failed_tables)
+        + len(comparison_to_source_failed_tables)
+    )
 
 
 if __name__ == "__main__":
