@@ -287,7 +287,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         ingest_info.state_supervision_violated_condition_entries.add(
             state_supervision_violated_condition_entry_id="VIOLATED_CONDITION_ENTRY_ID",
-            condition="CURFEW",
             state_code="US_XX",
         )
 
@@ -302,7 +301,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         ingest_info.state_supervision_violated_condition_entries.add(
             state_supervision_violated_condition_entry_id="VIOLATED_CONDITION_ENTRY_ID",
-            condition="CURFEW",
             state_code="US_XX",
         )
 
@@ -451,7 +449,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code="US_XX",
-                    condition="CURFEW",
                 )
             ],
         )

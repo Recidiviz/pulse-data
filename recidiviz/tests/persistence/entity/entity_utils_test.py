@@ -700,7 +700,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     schema.StateSupervisionViolatedConditionEntry: [
         schema.StateSupervisionViolatedConditionEntry(
             state_code=StateCode.US_XX.value,
-            condition="DRG",
             condition_raw_text="DRG",
         )
     ],

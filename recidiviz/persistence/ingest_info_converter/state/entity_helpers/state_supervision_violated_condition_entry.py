@@ -40,7 +40,6 @@ def convert(
     new = entities.StateSupervisionViolatedConditionEntry.builder()
 
     # 1-to-1 mappings
-    new.condition = getattr(proto, "condition")
     new.condition_raw_text = getattr(proto, "condition_raw_text")
     new.state_code = metadata.region
 

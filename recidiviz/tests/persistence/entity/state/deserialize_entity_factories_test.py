@@ -540,14 +540,12 @@ class TestDeserializeEntityFactories(unittest.TestCase):
     def test_deserialize_StateSupervisionViolatedConditionEntry(self) -> None:
         result = deserialize_entity_factories.StateSupervisionViolatedConditionEntryFactory.deserialize(
             state_code="us_xx",
-            condition="sober",
             condition_raw_text="sober",
         )
 
         # Assert
         expected_result = entities.StateSupervisionViolatedConditionEntry(
             state_code="US_XX",
-            condition="SOBER",
             condition_raw_text="SOBER",
         )
 
