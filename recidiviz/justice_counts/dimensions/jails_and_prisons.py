@@ -83,15 +83,15 @@ class JailReleaseType(DimensionBase, enum.Enum):
 
 
 class PrisonsReleaseType(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "Sentence Completion"
     TO_PAROLE_SUPERVISION = "To Parole Supervision"
     TO_PROBATION_SUPERVISION = "To Probation Supervision"
+    TO_COMMUNITY_SUPERVISION = (
+        "To Other Community Supervision That Is Not Probation or Parole"
+    )
+    NO_CONTROL = "No Additional Correctional Control"
     DEATH = "Death"
-    TRANSFER = "Transfer"
-    UNAPPROVED_ABSENCE = "Unapproved Absence"
-    COMPASSIONATE_RELEASE = "Compassionate Release"
-    UNKNOWN = "Unknown"
-    OTHER = "Other"
+    UNKNOWN = "Unknown Release"
+    OTHER = "Other Release"
 
     @classmethod
     def dimension_identifier(cls) -> str:

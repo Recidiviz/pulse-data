@@ -29,8 +29,9 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesIncludesExcludes,
+    PrisonReleasesCommunitySupervisionIncludesExcludes,
     PrisonReleasesDeathIncludesExcludes,
-    PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+    PrisonReleasesNoControlIncludesExcludes,
     PrisonReleasesToParoleIncludesExcludes,
     PrisonReleasesToProbationIncludesExcludes,
 )
@@ -1248,10 +1249,6 @@ class TestMetricInterface(TestCase):
             dimension_to_enabled_status={d: True for d in PrisonsReleaseType},
             dimension_to_value=None,
             dimension_to_includes_excludes_member_to_setting={
-                PrisonsReleaseType.SENTENCE_COMPLETION: {
-                    d: IncludesExcludesSetting.NO
-                    for d in PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes
-                },
                 PrisonsReleaseType.TO_PAROLE_SUPERVISION: {
                     d: IncludesExcludesSetting.YES
                     for d in PrisonReleasesToParoleIncludesExcludes
@@ -1260,13 +1257,18 @@ class TestMetricInterface(TestCase):
                     d: IncludesExcludesSetting.NOT_AVAILABLE
                     for d in PrisonReleasesToProbationIncludesExcludes
                 },
+                PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: {
+                    d: IncludesExcludesSetting.YES
+                    for d in PrisonReleasesCommunitySupervisionIncludesExcludes
+                },
+                PrisonsReleaseType.NO_CONTROL: {
+                    d: IncludesExcludesSetting.NO
+                    for d in PrisonReleasesNoControlIncludesExcludes
+                },
                 PrisonsReleaseType.DEATH: {
                     d: IncludesExcludesSetting.YES
                     for d in PrisonReleasesDeathIncludesExcludes
                 },
-                PrisonsReleaseType.TRANSFER: {},
-                PrisonsReleaseType.UNAPPROVED_ABSENCE: {},
-                PrisonsReleaseType.COMPASSIONATE_RELEASE: {},
                 PrisonsReleaseType.UNKNOWN: {},
                 PrisonsReleaseType.OTHER: {},
             },
@@ -1283,59 +1285,9 @@ class TestMetricInterface(TestCase):
                 {
                     "datapoints": None,
                     "enabled": True,
-                    "label": PrisonsReleaseType.SENTENCE_COMPLETION.value,
-                    "key": PrisonsReleaseType.SENTENCE_COMPLETION.value,
-                    "settings": [
-                        {
-                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.NOT_ELIGIBLE_FOR_PAROLE.name,
-                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.NOT_ELIGIBLE_FOR_PAROLE.value,
-                            "included": "No",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.APPROVED_FOR_PAROLE.name,
-                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.APPROVED_FOR_PAROLE.value,
-                            "included": "No",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.DENIED_PAROLE.name,
-                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.DENIED_PAROLE.value,
-                            "included": "No",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.COMMUTED_SENTENCE.name,
-                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.COMMUTED_SENTENCE.value,
-                            "included": "No",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER.name,
-                            "label": PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes.OTHER.value,
-                            "included": "No",
-                            "default": "No",
-                        },
-                    ],
-                },
-                {
-                    "datapoints": None,
-                    "enabled": True,
                     "label": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
                     "settings": [
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
                         {
                             "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
                             "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
@@ -1343,8 +1295,8 @@ class TestMetricInterface(TestCase):
                             "default": "Yes",
                         },
                         {
-                            "key": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.value,
+                            "key": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.value,
                             "included": "Yes",
                             "default": "Yes",
                         },
@@ -1355,16 +1307,10 @@ class TestMetricInterface(TestCase):
                             "default": "Yes",
                         },
                         {
-                            "key": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.value,
+                            "key": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.name,
+                            "label": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.value,
                             "included": "Yes",
                             "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.OTHER.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.OTHER.value,
-                            "included": "Yes",
-                            "default": "No",
                         },
                     ],
                 },
@@ -1399,22 +1345,50 @@ class TestMetricInterface(TestCase):
                             "default": "Yes",
                         },
                         {
-                            "key": PrisonReleasesToProbationIncludesExcludes.COMMUTED_SENTENCE.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.COMMUTED_SENTENCE.value,
-                            "included": "N/A",
-                            "default": "Yes",
-                        },
-                        {
                             "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
                             "included": "N/A",
                             "default": "Yes",
                         },
+                    ],
+                },
+                {
+                    "datapoints": None,
+                    "enabled": True,
+                    "label": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
+                    "key": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
+                    "settings": [
                         {
-                            "key": PrisonReleasesToProbationIncludesExcludes.OTHER.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.OTHER.value,
-                            "included": "N/A",
-                            "default": "No",
+                            "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
+                            "label": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.name,
+                            "label": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.value,
+                            "included": "Yes",
+                            "default": "Yes",
+                        },
+                    ],
+                },
+                {
+                    "datapoints": None,
+                    "enabled": True,
+                    "label": PrisonsReleaseType.NO_CONTROL.value,
+                    "key": PrisonsReleaseType.NO_CONTROL.value,
+                    "settings": [
+                        {
+                            "key": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.name,
+                            "label": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.value,
+                            "included": "No",
+                            "default": "Yes",
+                        },
+                        {
+                            "key": PrisonReleasesNoControlIncludesExcludes.DUAL_SUPERVISION.name,
+                            "label": PrisonReleasesNoControlIncludesExcludes.DUAL_SUPERVISION.value,
+                            "included": "No",
+                            "default": "Yes",
                         },
                     ],
                 },
@@ -1436,34 +1410,7 @@ class TestMetricInterface(TestCase):
                             "included": "Yes",
                             "default": "Yes",
                         },
-                        {
-                            "key": PrisonReleasesDeathIncludesExcludes.OTHER.name,
-                            "label": PrisonReleasesDeathIncludesExcludes.OTHER.value,
-                            "included": "Yes",
-                            "default": "No",
-                        },
                     ],
-                },
-                {
-                    "datapoints": None,
-                    "enabled": True,
-                    "label": PrisonsReleaseType.TRANSFER.value,
-                    "key": PrisonsReleaseType.TRANSFER.value,
-                    "settings": [],
-                },
-                {
-                    "datapoints": None,
-                    "enabled": True,
-                    "label": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
-                    "key": PrisonsReleaseType.UNAPPROVED_ABSENCE.value,
-                    "settings": [],
-                },
-                {
-                    "datapoints": None,
-                    "enabled": True,
-                    "label": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
-                    "key": PrisonsReleaseType.COMPASSIONATE_RELEASE.value,
-                    "settings": [],
                 },
                 {
                     "datapoints": None,

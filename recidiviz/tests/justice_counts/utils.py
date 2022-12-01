@@ -707,7 +707,7 @@ class JusticeCountsSchemaTestObjects:
                 dimension_identifier_to_member={
                     PrisonsReleaseType.dimension_identifier(): PrisonsReleaseType.TO_PAROLE_SUPERVISION.name
                 },
-                includes_excludes_key="AUTOMATIC_OR_PRESUMPTIVE",
+                includes_excludes_key="ELIGIBLE",
                 source_id=agency_id,
                 value="No",
             ),

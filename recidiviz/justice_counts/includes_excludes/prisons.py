@@ -313,71 +313,53 @@ class PrisonAverageDailyPopulationIncludesExcludes(Enum):
 
 # Releases
 class PrisonReleasesIncludesExcludes(Enum):
-    NO_CONTROL = "People released with no further correctional control"
-    PAROLE = "People released to parole"
-    PROBATION = "People released to probation"
-    TRANSFERRED_OUT = "People transferred to another jurisdiction"
-    DEATH = "People who died under the agency’s jurisdiction"
-    AWOL = "People who escaped from the agency’s jurisdiction or are AWOL"
-    COMMUTED_SENTENCE = "People whose sentence was commuted or lowered to time served"
-    TEMPORARILY_ABSENT = "People who are temporarily absent for less than 30 days (e.g., furlough, hospital, work release)"
-    EMERGENCY_RELEASE = "Emergency releases (such as during COVID-19)"
-    JAIL_RELEASE = (
-        "People released from jails who were under the jurisdiction of the agency"
+    PROBATION = (
+        "Releases to probation supervision following a period of jail incarceration"
     )
-    PRIVATE_FACILITIES_RELEASE = "People released from private prison facilities who were under the jurisdiction of the agency"
-    OTHER = "Other release not captured by the listed categories"
-    TRANSFERRED_IN = "People transferred from one of the agency’s facilities to another"
-    TEMP_TRANSFER = (
-        "People who are temporarily transferred (e.g., to court or hospital)"
+    PAROLE = "Releases to parole supervision following a period of jail incarceration"
+    COMMUNITY_SUPERVISION = (
+        "Releases to other community supervision that is not probation or parole"
     )
-    TEMP_EXIT = "People who exit temporarily (e.g., to work release or other)"
+    NO_CONTROL = "Releases with no additional correctional control"
+    INPATIENT_TREATMENT = "Releases to inpatient treatment in the community"
 
 
 class PrisonReleasesToParoleIncludesExcludes(Enum):
-    AUTOMATIC_OR_PRESUMPTIVE = (
-        "People released on automatic or presumptive parole or re-parole"
+    AFTER_SANCTION = (
+        "Releases back to parole after a prison incarceration parole sanction"
     )
-    PAROLE_BOARD_VOTE = (
-        "People released to parole or re-parole after a positive parole board vote"
+    ELIGIBLE = "Releases to parole at eligibility for release from prison"
+    COMMUTED_SENTENCE = "Releases to parole due to commuted or lowered sentence"
+    RELEASE_TO_PAROLE = (
+        "Releases to parole or re-parole in the jurisdiction of another state"
     )
-    AFTER_SANCTION = "People returning to parole after a sanction served in prison"
-    POST_RELEASE_SUPERVISION = "People released to another form of post-release supervision that is not probation (e.g., conditional release, provisional release)"
-    COMMUTED_SENTENCE = "People whose sentence was commuted or lowered to time served and released to parole"
-    TRANSFERRED_OUT = (
-        "People released to parole or re-parole in the jurisdiction of another state"
-    )
-    OTHER = "Other releases to parole not captured by the listed categories"
 
 
 class PrisonReleasesToProbationIncludesExcludes(Enum):
-    COMPLETED_SENTENCE = "People released after completing a prison sentence who have an additional sentence of probation"
-    AFTER_SANCTION = "People returning to probation after a sanction served in prison"
-    SPLIT_SENTENCE = (
-        "People released to probation to serve a split or on-and-after sentence"
+    COMPLETED_SENTENCE = "Releases to an additional probation sentence after completing a prison sentence"
+    AFTER_SANCTION = (
+        "Releases back to probation after a prison incarceration probation sanction"
     )
-    SHOCK_PROBATION = "People released to probation after a shock probation sentence"
-    COMMUTED_SENTENCE = "People whose sentence was commuted or lowered to time served and released to parole"
+    SPLIT_SENTENCE = "Releases to probation to serve a split or on-and-after sentence"
+    SHOCK_PROBATION = "Releases to probation after a shock probation sentence"
     TRANSFERRED_OUT = (
-        "People released to probation in the jurisdiction of another state"
+        "Releases to probation in the jurisdiction of another county or state"
     )
-    OTHER = "Other releases to probation not captured by the listed categories"
 
 
-class PrisonReleasesNoAdditionalCorrectionalControlIncludesExcludes(Enum):
-    NOT_ELIGIBLE_FOR_PAROLE = "People who were not eligible for parole and had no additional sentence to serve"
-    APPROVED_FOR_PAROLE = "People who were approved for parole but maxed out with no additional sentence to serve"
-    DENIED_PAROLE = "People who were denied parole and maxed out with no additional sentence to serve"
-    COMMUTED_SENTENCE = "People whose sentence was commuted or lowered to time served with no additional supervision"
-    OTHER = "Other releases to probation not captured by the listed categories"
+class PrisonReleasesCommunitySupervisionIncludesExcludes(Enum):
+    RELEASED_TO_OTHER_AGENCY = "Releases to other community supervision agency"
+    DUAL_SUPERVISION = "Releases to dual or concurrent supervision with more than one community supervision agency"
+
+
+class PrisonReleasesNoControlIncludesExcludes(Enum):
+    COMMUNITY_SUPERVISION = "Releases to other community supervision agency"
+    DUAL_SUPERVISION = "Releases to dual or concurrent supervision with more than one community supervision agency"
 
 
 class PrisonReleasesDeathIncludesExcludes(Enum):
-    DEATH = "People who died while under the agency’s jurisdiction"
-    DEATH_WHILE_ABSENT = (
-        "People who died while temporarily absent (e.g., hospital, court, work release)"
-    )
-    OTHER = "Other deaths not captured by the listed categories"
+    DEATH = "Releases due to death of people in custody"
+    DEATH_WHILE_ABSENT = "Releases due to death of people in custody who were temporarily absent (e.g., hospital, court, work release)"
 
 
 # Readmissions

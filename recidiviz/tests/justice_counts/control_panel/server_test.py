@@ -434,20 +434,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # disaggregation.
         self.assertEqual(metrics[6]["key"], prisons.releases.key)
         self.assertEqual(
-            metrics[6]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[6]["disaggregations"][0]["dimensions"][0]["settings"],
             [
-                {
-                    "key": "AUTOMATIC_OR_PRESUMPTIVE",
-                    "label": PrisonReleasesToParoleIncludesExcludes.AUTOMATIC_OR_PRESUMPTIVE.value,
-                    "included": "No",
-                    "default": "Yes",
-                },
-                {
-                    "key": "PAROLE_BOARD_VOTE",
-                    "label": PrisonReleasesToParoleIncludesExcludes.PAROLE_BOARD_VOTE.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
                 {
                     "key": "AFTER_SANCTION",
                     "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
@@ -455,9 +443,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": "Yes",
                 },
                 {
-                    "key": "POST_RELEASE_SUPERVISION",
-                    "label": PrisonReleasesToParoleIncludesExcludes.POST_RELEASE_SUPERVISION.value,
-                    "included": "Yes",
+                    "key": "ELIGIBLE",
+                    "label": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.value,
+                    "included": "No",
                     "default": "Yes",
                 },
                 {
@@ -467,16 +455,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": "Yes",
                 },
                 {
-                    "key": "TRANSFERRED_OUT",
-                    "label": PrisonReleasesToParoleIncludesExcludes.TRANSFERRED_OUT.value,
+                    "key": "RELEASE_TO_PAROLE",
+                    "label": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.value,
                     "included": "Yes",
                     "default": "Yes",
-                },
-                {
-                    "key": "OTHER",
-                    "label": PrisonReleasesToParoleIncludesExcludes.OTHER.value,
-                    "included": "No",
-                    "default": "No",
                 },
             ],
         )
