@@ -18,6 +18,7 @@
 
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     CorrectionalFacilityForceType,
+    GrievancesUpheldType,
     PrisonsExpenseType,
     PrisonsFundingType,
     PrisonsOffenseType,
@@ -128,5 +129,11 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="grievances_upheld",
         definition=prisons.grievances_upheld,
+    ),
+    MetricFile(
+        canonical_filename="grievances_upheld_by_type",
+        definition=prisons.grievances_upheld,
+        disaggregation=GrievancesUpheldType,
+        disaggregation_column_name="grievances_type",
     ),
 ]

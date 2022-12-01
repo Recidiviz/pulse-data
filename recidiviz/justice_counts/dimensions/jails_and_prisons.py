@@ -166,8 +166,8 @@ class GrievancesUpheldType(DimensionBase, enum.Enum):
     DISCRIMINATION = "Discrimination, Racial Bias, or Religious Practices"
     ACCESS_TO_HEALTH_CARE = "Access to Health Care"
     LEGAL = "Legal"
-    VACANT = "Vacant Positions"
-    UNKNOWN = "Unknown"
+    OTHER = "Other Grievance"
+    UNKNOWN = "Unknown Grievance"
 
     @classmethod
     def dimension_identifier(cls) -> str:

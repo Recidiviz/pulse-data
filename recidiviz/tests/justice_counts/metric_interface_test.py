@@ -1540,7 +1540,7 @@ class TestMetricInterface(TestCase):
             "frequency": prisons.grievances_upheld.reporting_frequencies[0].value,
             "custom_frequency": None,
             "starting_month": None,
-            "filenames": ["grievances_upheld"],
+            "filenames": ["grievances_upheld", "grievances_upheld_by_type"],
             "value": 200,
             "disaggregations": [],
             "datapoints": None,
@@ -1562,7 +1562,7 @@ class TestMetricInterface(TestCase):
                     "key": PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED.name,
                     "label": PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED.value,
                     "included": "Yes",
-                    "default": "Yes",
+                    "default": "No",
                 },
                 {
                     "key": PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION.name,

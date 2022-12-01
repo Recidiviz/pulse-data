@@ -465,14 +465,15 @@ class PrisonGrievancesIncludesExcludes(Enum):
 
 class PrisonGrievancesLivingConditionsIncludesExcludes(Enum):
     CLASSIFICATION = "Grievances related to classification of a person under the agency’s jurisdiction"
-    SOLITARY_CONFINEMENT = "Grievances related to the use of solitary confinement"
+    ADMIN_SEGREGATION = "Grievances related to the use of administrative segregation"
+    DISCIP_SEGREGATION = "Grievances related to the use of disciplinary segregation"
     OVERCROWDING = "Grievances related to overcrowding"
-    UNSANITARY_CONDITIONS = "Grievances related to unsanitary conditions"
+    UNSANITARY_CONDITIONS = "Grievances related to unsanitary conditions in the facility in general (i.e., not specific to living conditions)"
     FOOD = "Grievances related to food"
-    MAINTENANCE = "Grievances related to maintenance issues"
-    TESTING = "Grievances related to testing and searches"
+    MAINTENANCE = "Grievances related to facility maintenance issues"
+    TESTING = "Grievances related to testing bodily fluids"
+    SEARCHES = "Grievances related to body searches"
     PERSONAL_PROPERTY = "Grievances related to personal property"
-    OTHER = "Other living conditions grievances not captured by the listed categories"
 
 
 class PrisonGrievancesPersonalSafetyIncludesExcludes(Enum):
@@ -486,7 +487,7 @@ class PrisonGrievancesPersonalSafetyIncludesExcludes(Enum):
     EMOTIONAL_HARM_BY_AGENCY = "Grievances related to emotional harm or threats of emotional harm by another person under the agency’s jurisdiction"
     HARASSMENT_HARM_BY_STAFF = "Grievances related to harassment by staff"
     HARASSMENT_HARM_BY_AGENCY = "Grievances related to harassment by another person under the agency’s jurisdiction"
-    OTHER = "Other personal safety grievances not captured by the listed categories"
+    PREA = "Grievances related to the Prison Rape Elimination Act (PREA)"
 
 
 class PrisonGrievancesDiscriminationIncludesExcludes(Enum):
@@ -495,7 +496,7 @@ class PrisonGrievancesDiscriminationIncludesExcludes(Enum):
     )
     RACIAL_DISCRIMINATION_AGENCY = "Grievances related to discrimination or racial bias by another person under the agency’s jurisdiction"
     RELIGIOUS_DISCRIMINATION = "Grievances related to the ability of a person under the agency’s jurisdiction to practice or observe their religious beliefs"
-    OTHER = "Other discrimination, racial bias, religious practices grievances not captured by the listed categories"
+    RELIGIOUS_DISCRIMINATION_LEVIED = "Grievances related to the ability of the person under the agency’s jurisdiction to practice or observe their religious beliefs levied at other people incarcerated in the agency’s jurisdiction"
 
 
 class PrisonGrievancesHealthCareIncludesExcludes(Enum):
@@ -508,9 +509,6 @@ class PrisonGrievancesHealthCareIncludesExcludes(Enum):
     PRIVACY = "Grievances related to confidentiality or privacy issues"
     MEDICATION = "Grievances related to medication"
     MEDICAL_EQUIPMENT = "Grievances related to medical equipment"
-    OTHER = (
-        "Other access to health care grievances not captured by the listed categories"
-    )
 
 
 class PrisonGrievancesLegalIncludesExcludes(Enum):
@@ -519,4 +517,3 @@ class PrisonGrievancesLegalIncludesExcludes(Enum):
     LEGAL_SERVICES = "Grievances related to access to legal services"
     LEGAL_PROPERTY = "Grievances related to access to legal property"
     LEGAL_COMMUNICATION = "Grievances related to access to legal communication"
-    OTHER = "Other legal grievances not captured by the listed categories"
