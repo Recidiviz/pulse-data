@@ -31,7 +31,7 @@ def main() -> None:
 
     logging.info("Triggering the historical DAG.")
     pubsub_helper.publish_message_to_topic(
-        topic="v1.trigger_historical_pipelines",
+        topic="v1.calculator.trigger_historical_pipelines",
         message="Trigger",
     )
 
