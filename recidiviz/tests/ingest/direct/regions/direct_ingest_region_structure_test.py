@@ -345,68 +345,74 @@ class DirectIngestRegionDirStructureBase:
     def test_collect_and_build_raw_table_migrations(self) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-789"):
             for region_code in self.region_dir_names:
-                raw_file_manager = DirectIngestRegionRawFileConfig(
-                    region_code=region_code, region_module=self.region_module_override
-                )
-                collector = DirectIngestRawTableMigrationCollector(
-                    region_code, regions_module_override=self.region_module_override
-                )
-                # Test this doesn't crash
-                _ = collector.collect_raw_table_migration_queries(
-                    sandbox_dataset_prefix=None
-                )
-
-                # Check that migrations are valid
-                migrations = collector.collect_raw_table_migrations()
-                for migration in migrations:
-                    self.test.assertTrue(
-                        migration.file_tag in raw_file_manager.raw_file_tags,
-                        f"Tag {migration.file_tag} listed in migration for region "
-                        f"[{region_code}] is not listed in config.",
+                for instance in DirectIngestInstance:
+                    raw_file_manager = DirectIngestRegionRawFileConfig(
+                        region_code=region_code,
+                        region_module=self.region_module_override,
+                    )
+                    collector = DirectIngestRawTableMigrationCollector(
+                        region_code,
+                        instance=instance,
+                        regions_module_override=self.region_module_override,
+                    )
+                    # Test this doesn't crash
+                    _ = collector.collect_raw_table_migration_queries(
+                        sandbox_dataset_prefix=None
                     )
 
-                    raw_file_config = raw_file_manager.raw_file_configs[
-                        migration.file_tag
-                    ]
-                    for col_name in migration.filters:
-                        self.assertColumnIsDocumented(
-                            migration.file_tag, col_name, raw_file_config
+                    # Check that migrations are valid
+                    migrations = collector.collect_raw_table_migrations()
+                    for migration in migrations:
+                        self.test.assertTrue(
+                            migration.file_tag in raw_file_manager.raw_file_tags,
+                            f"Tag {migration.file_tag} listed in migration for region "
+                            f"[{region_code}] is not listed in config.",
                         )
-                    if isinstance(migration, UpdateRawTableMigration):
-                        for col_name in migration.updates:
+
+                        raw_file_config = raw_file_manager.raw_file_configs[
+                            migration.file_tag
+                        ]
+                        for col_name in migration.filters:
                             self.assertColumnIsDocumented(
                                 migration.file_tag, col_name, raw_file_config
                             )
+                        if isinstance(migration, UpdateRawTableMigration):
+                            for col_name in migration.updates:
+                                self.assertColumnIsDocumented(
+                                    migration.file_tag, col_name, raw_file_config
+                                )
 
-                # Check that update_datetime_filters, filters and optional updates are unique
-                for migration in migrations:
-                    if isinstance(migration, UpdateRawTableMigration):
-                        distinct_update_values: List[
-                            Tuple[
-                                Optional[List[datetime]],
-                                List[Tuple[str, str]],
-                                List[Tuple[str, Optional[str]]],
-                            ]
-                        ] = []
-                        update_values = (
-                            migration.update_datetime_filters,
-                            list(migration.filters.items()),
-                            list(migration.updates.items()),
-                        )
-                        self.test.assertFalse(update_values in distinct_update_values)
-                        distinct_update_values.append(update_values)
-                    if isinstance(migration, DeleteFromRawTableMigration):
-                        distinct_deletion_values: List[
-                            Tuple[Optional[List[datetime]], List[Tuple[str, str]]]
-                        ] = []
-                        deletion_values = (
-                            migration.update_datetime_filters,
-                            list(migration.filters.items()),
-                        )
-                        self.test.assertFalse(
-                            deletion_values in distinct_deletion_values
-                        )
-                        distinct_deletion_values.append(deletion_values)
+                    # Check that update_datetime_filters, filters and optional updates are unique
+                    for migration in migrations:
+                        if isinstance(migration, UpdateRawTableMigration):
+                            distinct_update_values: List[
+                                Tuple[
+                                    Optional[List[datetime]],
+                                    List[Tuple[str, str]],
+                                    List[Tuple[str, Optional[str]]],
+                                ]
+                            ] = []
+                            update_values = (
+                                migration.update_datetime_filters,
+                                list(migration.filters.items()),
+                                list(migration.updates.items()),
+                            )
+                            self.test.assertFalse(
+                                update_values in distinct_update_values
+                            )
+                            distinct_update_values.append(update_values)
+                        if isinstance(migration, DeleteFromRawTableMigration):
+                            distinct_deletion_values: List[
+                                Tuple[Optional[List[datetime]], List[Tuple[str, str]]]
+                            ] = []
+                            deletion_values = (
+                                migration.update_datetime_filters,
+                                list(migration.filters.items()),
+                            )
+                            self.test.assertFalse(
+                                deletion_values in distinct_deletion_values
+                            )
+                            distinct_deletion_values.append(deletion_values)
 
     def assertColumnIsDocumented(
         self, file_tag: str, col_name: str, raw_file_config: DirectIngestRawFileConfig

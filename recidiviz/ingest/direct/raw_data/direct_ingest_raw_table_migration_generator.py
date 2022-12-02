@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -48,6 +49,7 @@ class RawTableMigrationGenerator:
     def migration_queries(
         cls,
         migrations: List["RawTableMigration"],
+        ingest_instance: DirectIngestInstance,
         sandbox_dataset_prefix: Optional[str],
     ) -> List[str]:
         """Generates a list of migration queries that can be run in BQ from the list of
@@ -72,14 +74,18 @@ class RawTableMigrationGenerator:
                         List[DeleteFromRawTableMigration], grouped_migrations
                     )
                     queries = cls._queries_for_delete_migrations(
-                        delete_migrations, sandbox_dataset_prefix
+                        delete_migrations,
+                        ingest_instance=ingest_instance,
+                        sandbox_dataset_prefix=sandbox_dataset_prefix,
                     )
                 elif migration_cls == UpdateRawTableMigration:
                     update_migrations = cast(
                         List[UpdateRawTableMigration], grouped_migrations
                     )
                     queries = cls._queries_for_update_migrations(
-                        update_migrations, sandbox_dataset_prefix=sandbox_dataset_prefix
+                        update_migrations,
+                        ingest_instance=ingest_instance,
+                        sandbox_dataset_prefix=sandbox_dataset_prefix,
                     )
                 else:
                     raise ValueError(
@@ -99,13 +105,17 @@ class RawTableMigrationGenerator:
         use in debugging and to generate migrations that need to be run on data that has
         already been imported to BQ.
         """
-        print(
-            f"/**************************** {metadata.project_id()} ****************************/"
-        )
-        for query in cls.migration_queries(
-            migrations, sandbox_dataset_prefix=sandbox_dataset_prefix
-        ):
-            print(query)
+        for ingest_instance in DirectIngestInstance:
+            print(
+                f"/************************ (project=[{metadata.project_id()}], "
+                f"instance=[{ingest_instance.value}]) ************************/"
+            )
+            for query in cls.migration_queries(
+                migrations,
+                ingest_instance=ingest_instance,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
+            ):
+                print(query)
 
     @classmethod
     def _check_file_tags_match(cls, migrations: Sequence["RawTableMigration"]) -> None:
@@ -146,13 +156,15 @@ class RawTableMigrationGenerator:
     def _queries_for_delete_migrations(
         cls,
         migrations: List["DeleteFromRawTableMigration"],
+        ingest_instance: DirectIngestInstance,
         sandbox_dataset_prefix: Optional[str],
     ) -> List[str]:
         """Generates a list of migration queries from a list of DELETE FROM migration
         config objects."""
         cls._check_filter_keys_match(migrations)
         raw_table = migrations[0].raw_table(
-            sandbox_dataset_prefix=sandbox_dataset_prefix
+            ingest_instance=ingest_instance,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         ordered_filter_keys = migrations[0].ordered_filter_keys
 
@@ -181,6 +193,7 @@ class RawTableMigrationGenerator:
     def _queries_for_update_migrations(
         cls,
         migrations: List["UpdateRawTableMigration"],
+        ingest_instance: DirectIngestInstance,
         sandbox_dataset_prefix: Optional[str],
     ) -> List[str]:
         """Generates a list of migration queries from a list of UPDATE migration
@@ -195,7 +208,9 @@ class RawTableMigrationGenerator:
         for grouped_migrations in migrations_by_update_keys.values():
             result.append(
                 cls._migration_query_for_migrations_matching_update_keys(
-                    grouped_migrations, sandbox_dataset_prefix=sandbox_dataset_prefix
+                    grouped_migrations,
+                    ingest_instance=ingest_instance,
+                    sandbox_dataset_prefix=sandbox_dataset_prefix,
                 )
             )
 
@@ -205,13 +220,15 @@ class RawTableMigrationGenerator:
     def _migration_query_for_migrations_matching_update_keys(
         cls,
         migrations: List["UpdateRawTableMigration"],
+        ingest_instance: DirectIngestInstance,
         sandbox_dataset_prefix: Optional[str],
     ) -> str:
         """Generates a list of migration queries from a list of UPDATE migration
         config objects that update the same set of columns."""
         cls._check_update_keys_match(migrations)
         raw_table = migrations[0].raw_table(
-            sandbox_dataset_prefix=sandbox_dataset_prefix
+            ingest_instance=ingest_instance,
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         ordered_filter_keys = migrations[0].ordered_filter_keys
         ordered_update_key = migrations[0].ordered_update_keys

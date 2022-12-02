@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_generator import (
     RawTableMigrationGenerator,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 _MIGRATIONS_FUNCTION_EXPECTED_NAME = "get_migrations"
 
@@ -52,10 +53,14 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
     """
 
     def __init__(
-        self, region_code: str, regions_module_override: Optional[ModuleType] = None
+        self,
+        region_code: str,
+        instance: DirectIngestInstance,
+        regions_module_override: Optional[ModuleType] = None,
     ):
         regions_module = regions_module_override or regions
         self.region_code = region_code
+        self.instance = instance
         self.migrations_dir_module = self.get_relative_module(
             regions_module,
             [self.region_code.lower(), RAW_DATA_SUBDIR, MIGRATIONS_SUBDIR],
@@ -74,7 +79,9 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
 
         return {
             file_tag: RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=sandbox_dataset_prefix
+                migrations,
+                ingest_instance=self.instance,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
             )
             for file_tag, migrations in migrations_by_file_tag.items()
         }

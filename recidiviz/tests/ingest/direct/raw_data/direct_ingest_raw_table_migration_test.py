@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     UpdateRawTableMigration,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
@@ -58,7 +59,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         with local_project_id_override("recidiviz-789"):
             self.assertEqual(
                 "recidiviz-789.us_xx_raw_data.mytag",
-                migration.raw_table(sandbox_dataset_prefix=None),
+                migration.raw_table(
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
+                ),
             )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(("COL1", "COL2"), migration.ordered_filter_keys)
@@ -78,7 +82,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         with local_project_id_override("recidiviz-789"):
             self.assertEqual(
                 "recidiviz-789.us_xx_raw_data.mytag",
-                migration.raw_table(sandbox_dataset_prefix=None),
+                migration.raw_table(
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
+                ),
             )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(
@@ -109,7 +116,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         with local_project_id_override("recidiviz-789"):
             self.assertEqual(
                 "recidiviz-789.us_xx_raw_data.mytag",
-                migration.raw_table(sandbox_dataset_prefix=None),
+                migration.raw_table(
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
+                ),
             )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(("COL1", "COL2"), migration.ordered_filter_keys)
@@ -136,7 +146,10 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         with local_project_id_override("recidiviz-789"):
             self.assertEqual(
                 "recidiviz-789.us_xx_raw_data.mytag",
-                migration.raw_table(sandbox_dataset_prefix=None),
+                migration.raw_table(
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    sandbox_dataset_prefix=None,
+                ),
             )
             self.assertEqual("mytag", migration.file_tag)
             self.assertEqual(
@@ -176,10 +189,16 @@ class TestDirectIngestRawTableMigration(unittest.TestCase):
         )
         with local_project_id_override("recidiviz-789"):
             self.assertEqual(
-                "recidiviz-789.my_prefix_us_xx_raw_data.mytag",
-                delete_migration.raw_table(sandbox_dataset_prefix="my_prefix"),
+                "recidiviz-789.my_prefix_us_xx_raw_data_secondary.mytag",
+                delete_migration.raw_table(
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    sandbox_dataset_prefix="my_prefix",
+                ),
             )
             self.assertEqual(
-                "recidiviz-789.my_prefix_us_xx_raw_data.mytag",
-                update_migration.raw_table(sandbox_dataset_prefix="my_prefix"),
+                "recidiviz-789.my_prefix_us_xx_raw_data_secondary.mytag",
+                update_migration.raw_table(
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    sandbox_dataset_prefix="my_prefix",
+                ),
             )

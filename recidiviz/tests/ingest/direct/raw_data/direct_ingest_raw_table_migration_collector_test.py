@@ -23,7 +23,9 @@ from unittest.mock import Mock, patch
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.utils.string import StrictStringFormatter
 
 DATE_1 = datetime.datetime(2020, 6, 10, 0, 0)
 DATE_2 = datetime.datetime(2020, 9, 21, 0, 0)
@@ -33,10 +35,17 @@ DATE_2 = datetime.datetime(2020, 9, 21, 0, 0)
 class TestDirectIngestRawTableMigrationCollector(unittest.TestCase):
     """Tests for the DirectIngestRawTableMigrationCollector class."""
 
+    @staticmethod
+    def _format_query(query: str, raw_data_dataset: str) -> str:
+        return StrictStringFormatter().format(query, raw_data_dataset=raw_data_dataset)
+
     def test_collect_queries(self) -> None:
         collector = DirectIngestRawTableMigrationCollector(
-            region_code="us_xx", regions_module_override=fake_regions
+            region_code="us_xx",
+            instance=DirectIngestInstance.PRIMARY,
+            regions_module_override=fake_regions,
         )
+
         queries_map = collector.collect_raw_table_migration_queries(
             sandbox_dataset_prefix=None
         )
@@ -76,7 +85,9 @@ WHERE STRUCT(COL1) IN (
 
     def test_collect_queries_for_sandbox(self) -> None:
         collector = DirectIngestRawTableMigrationCollector(
-            region_code="us_xx", regions_module_override=fake_regions
+            region_code="us_xx",
+            instance=DirectIngestInstance.PRIMARY,
+            regions_module_override=fake_regions,
         )
         queries_map = collector.collect_raw_table_migration_queries(
             sandbox_dataset_prefix="my_prefix"

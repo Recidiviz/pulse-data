@@ -611,8 +611,10 @@ class DirectIngestRawFileImportManager:
         )
         self.allow_incomplete_configs = allow_incomplete_configs
         self.csv_reader = csv_reader
+        self.instance = instance
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
+            instance=self.instance,
             regions_module_override=self.region.region_module,
         ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
         self.raw_tables_dataset = raw_tables_dataset_for_region(
@@ -644,6 +646,7 @@ class DirectIngestRawFileImportManager:
             self._load_contents_to_bigquery(parts.file_tag, temp_output_paths, columns)
 
         migration_queries = self.raw_table_migrations.get(parts.file_tag, [])
+
         logging.info(
             "Running [%s] migration queries for table [%s]",
             len(migration_queries),
