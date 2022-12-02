@@ -48,14 +48,13 @@ def update_raw_data_table_schemas() -> None:
 
     logging.info("Getting raw file configs...")
     file_kwargs = [
-        # We only want to update `PRIMARY` raw data schemas within a deploy tool. `SECONDARY` raw data schemas are
-        # only updated when reruns are kicked off.
         {
             "state_code": state_code,
             "raw_file_tag": raw_file_tag,
-            "instance": DirectIngestInstance.PRIMARY,
+            "instance": instance,
         }
         for state_code in state_codes
+        for instance in DirectIngestInstance
         for raw_file_tag in get_region_raw_file_config(
             state_code.value
         ).raw_file_configs
@@ -64,11 +63,12 @@ def update_raw_data_table_schemas() -> None:
     logging.info("Creating raw data datasets (if necessary)...")
     bq_client = BigQueryClientImpl()
     for state_code in state_codes:
-        raw_data_dataset_id = raw_tables_dataset_for_region(
-            state_code=state_code, instance=DirectIngestInstance.PRIMARY
-        )
-        raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
-        bq_client.create_dataset_if_necessary(raw_data_dataset_ref)
+        for instance in DirectIngestInstance:
+            raw_data_dataset_id = raw_tables_dataset_for_region(
+                state_code=state_code, instance=instance
+            )
+            raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
+            bq_client.create_dataset_if_necessary(raw_data_dataset_ref)
 
     log_path = os.path.join(get_deploy_logs_dir(), "update_raw_data_table_schemas.log")
     logging.info("Writing logs to %s", log_path)

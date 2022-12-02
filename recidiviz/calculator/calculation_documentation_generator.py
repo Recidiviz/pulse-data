@@ -856,7 +856,9 @@ class CalculationDocumentationGenerator:
         is_metric = dag_key.dataset_id in DATAFLOW_METRICS_DATASET
         is_documented_view = not (is_source_table or is_raw_data_view or is_metric)
         if is_raw_data_view and (
-            not dag_key.dataset_id.endswith("_raw_data_up_to_date_views")
+            not dag_key.dataset_id.endswith(
+                ("_raw_data_up_to_date_views", "_raw_data_up_to_date_views_secondary")
+            )
             or not dag_key.table_id.endswith("_latest")
         ):
             raise ValueError(

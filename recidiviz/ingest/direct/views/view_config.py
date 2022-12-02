@@ -38,11 +38,10 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
             # table in all regions
             DirectIngestRawDataTableLatestViewCollector(
                 region_code=state_code.value.lower(),
-                # We only automatically deploy direct ingest *latest view builders for PRIMARY. The `*latest` views
-                # for SECONDARY will be created when a rerun is started.
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_source_instance=instance,
                 src_raw_tables_sandbox_dataset_prefix=None,
             ).collect_view_builders()
+            for instance in DirectIngestInstance
             for state_code in get_direct_ingest_states_existing_in_env()
         )
     )
