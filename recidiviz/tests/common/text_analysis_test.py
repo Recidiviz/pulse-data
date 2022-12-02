@@ -132,7 +132,7 @@ class TestTextAnalyzer(unittest.TestCase):
                 "h.i. h.i.",
                 normalizers=FakeTextEntity.HELLO.normalizers,
             ),
-            "h",
+            "h h",
         )
         self.assertSetEqual(
             self.text_analyzer.extract_entities(text="h.i. h.i."),
@@ -141,9 +141,9 @@ class TestTextAnalyzer(unittest.TestCase):
 
     def test_fuzzy_matching_with_chunk_size(self) -> None:
         """Tests the optional `chunk_size` term for a TextEntity works as expected."""
-        # self.assertIn(
-        #     FakeTextEntity.CHUNKER,
-        #     self.text_analyzer.extract_entities(
-        #         "sufficient community service acquired"
-        #     ),
-        # )
+        self.assertIn(
+            FakeTextEntity.CHUNKER,
+            self.text_analyzer.extract_entities(
+                "sufficient community service acquired"
+            ),
+        )
