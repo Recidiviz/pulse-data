@@ -525,15 +525,11 @@ EOF
 }
 
 
-module "workflows_keys_table" {
-  source = "./modules/reference-table"
-
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
+resource "google_bigquery_table" "workflows_keys_table" {
   dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  table_id = "workflows_keys"
+  deletion_protection = false
 
-  table_name = "workflows_keys"
   schema     = <<EOF
 [
   {
