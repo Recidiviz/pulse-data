@@ -171,10 +171,10 @@ class TextAnalyzer:
             text = re.sub(expression, replacement, text)
         return text.strip()
 
-    def _tokenize(self, text: str) -> Set[str]:
-        """Tokenizes the text and removes any stop words."""
+    def _tokenize(self, text: str) -> List[str]:
+        """Tokenizes the text and removes any stop words, while preserving word order."""
         tokenized_text = self.tokenizer.tokenize(text)
-        return set(tokenized_text) - self.stop_words
+        return [token for token in tokenized_text if token not in self.stop_words]
 
     def _stem(self, token: str) -> str:
         """Stems the token (reduces the word to its root form)."""
@@ -188,7 +188,7 @@ class TextAnalyzer:
     ) -> str:
         """Normalizes a text string, by lowercasing, removing punctuation,
         irregular white space, and stop words. Optionally stems the tokens."""
-        tokens = list(self._tokenize(self._clean_text(text, normalizers)))
+        tokens = self._tokenize(self._clean_text(text, normalizers))
         if stem_tokens:
             tokens = [self._stem(token) for token in tokens]
         return " ".join(tokens)
