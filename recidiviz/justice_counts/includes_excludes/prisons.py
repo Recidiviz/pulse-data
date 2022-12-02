@@ -19,6 +19,23 @@
 from enum import Enum
 
 
+# Population
+class PopulationIncludesExcludes(Enum):
+    STATE_PRISON = "People in state prison, penitentiary, or correctional institutions"
+    BOOT_CAMPS = "People in boot camps"
+    RECEPTION_CENTERS = "People in reception, diagnostic, and classification centers"
+    RELEASE_CENTERS = "People in release centers"
+    TREATMENT_FACILITIES = (
+        "People in drug and alcohol treatment facilities for people in prison"
+    )
+    HALFWAY_HOUSE = "People in prison-run halfway houses and transitional housing"
+    LOCAL_JAIL = "People in the prison agency’s jurisdiction and held in local jail"
+    PRIVATE_PRISON = "People in the prison agency’s jurisdiction and held in private prison facilities"
+    OUT_OF_STATE = "People in the prison agency’s jurisdiction and held in other states’ prison facilities"
+    TEMPORARY_ABSENT = "People who are temporarily absent for less than 30 days (e.g., furlough, hospital, work release)"
+    NOT_CONVICTED = "People who have not been convicted of committing crime(s) but are being held by the agency"
+
+
 # Funding
 class PrisonFundingIncludesExcludes(Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
@@ -193,91 +210,146 @@ class VacantPrisonStaffIncludesExcludes(Enum):
 
 # Admissions
 class PrisonAdmissionsIncludesExcludes(Enum):
-    NEW_SENTENCES = "People with new prison sentences"
-    BOARD_HOLD = "People entering prison on a board hold"
-    SPLIT_SENTENCE = "People entering prison on a split sentence"
-    SHOCK_PROBATION = "People entering prison on shock probation"
-    INCARCERATION_SANCTION = (
-        "People entering prison to serve an incarceration sanction while on probation"
+    """Includes/Excludes for Prisons Admissions at the metric-level."""
+
+    NEW_SENTENCES = "Admissions to prison for a new prison sentence"
+    BOARD_HOLD = "Admissions to prison for a parole board hold"
+    SUSPENDED_SENTENCE = (
+        "Admissions to prison to serve a suspended sentence of prison incarceration"
     )
-    REVOKED_PROBATION = "People entering prison who were revoked from probation"
-    REVOKED_PAROLE = "People entering prison who were revoked from parole"
-    AWOL_STATUS = "People returning to prison from AWOL status or escape"
-    TRANSFERRED_STATE = "People transferred from another state"
-    TRANSFERRED_JAILS = (
-        "People entering jails who are under the jurisdiction of the agency"
+    SPLIT_SENTENCE = (
+        "Admissions to prison to serve a split sentence of prison incarceration"
     )
-    TRANSFERRED_PRIVATE_PRISONS = "People entering private prison facilities who are under the jurisdiction of the agency"
-    TRANSFERRED_PRISONS = (
-        "People entering prison facilities who are under the jurisdiction of the agency"
+    SHOCK_PROBATION = "Admissions to prison to serve a shock probation sentence"
+    PROBATION_SANCTION = (
+        "Admissions to prison to serve a probation supervision incarceration sanction"
     )
-    OTHER = "Other admissions not captured by the listed categories"
-    RETURNING_FROM_ABSENCE = "People returning to prison from temporary absences (e.g., from court, hospital, furlough, work release)"
+    REVOKED_PROBATION = "Admissions to prison for revocation of probation supervision"
+    PAROLE_SANCTION = (
+        "Admissions to prison to serve a parole supervision incarceration sanction"
+    )
+    REVOKED_PAROLE = (
+        "Admissions to prison to serve a parole supervision incarceration sanction"
+    )
+    AWOL_STATUS = (
+        "Admissions to prison from Absent Without Leave (AWOL) status or escape status"
+    )
+    TRANSFERRED_JAILS = "Admissions to prison from jail(s) that are under the jurisdiction of the agency"
+    TRANSFERRED_PRIVATE_PRISONS = (
+        "Admissions to prison from private prison facilities contracted with the agency"
+    )
+    TRANSFERRED_STATE_JURISDICTION = "Admissions to prison from prison facilities in other states that are under the jurisdiction of the agency (e.g., contracted beds)"
+    TRANSFERRED_NO_STATE_JURISDICTION = "Admissions to prison from prison facilities in other states that are not under the jurisdiction of the agency (e.g., interstate transfer)"
+    RETURNING_FROM_ABSENCE = "Admissions to prison from temporary absences (e.g., from court, hospital, furlough, work release)"
     TRANSFERRED_BETWEEN_FACILITIES = (
-        "People transferred between facilities in the same state"
+        "Admissions due to transfers between prison facilities in the same state"
     )
 
 
 class PrisonPersonOffenseIncludesExcludes(Enum):
-    HOMICIDE = "Homicide or manslaughter"
     AGGRAVATED_ASSAULT = "Aggravated assault"
     SIMPLE_ASSAULT = "Simple assault"
     INTIMIDATION = "Intimidation"
+    MURDER = "Murder and nonnegligent manslaughter"
+    MANSLAUGHTER = "Negligent manslaughter"
+    HUMAN_TRAFFICKING_COMMERCIAL = "Human trafficking, commercial sex acts"
+    HUMAN_TRAFFICKING_INVOLUNTARY = "Human trafficking, involuntary servitude"
     KIDNAPPING = "Kidnapping or abduction"
-    ROBBERY = "Robbery"
-    FORCIBLE_SEX_OFFENSES = "Forcible sex offenses"
-    NON_FORCIBLE_SEX_OFFENSES = "Non-forcible sex offenses"
-    HUMAN_TRAFFICKING = "Human trafficking"
-    CHILD_PORNOGRAPHY = "Child Pornography"
-    CHILD_ENDANGERMENT = "Child Endangerment"
-    WEAPONS = "Weapons"
-    HARASSMENT = "Harassment"
-    ARSON = "Arson"
-    OTHER = "Other person offenses not captured by the listed categories"
+    RAPE = "Rape"
+    SODOMY = "Sodomy"
+    SEXUAL_ASSAULT = "Sexual assault with an object"
+    FONDLING = "Fondling"
+    INCEST = "Incest"
+    STATUTORY_RAPE = "Statutory rape"
+    JUSTIFIABLE_HOMICIDE = "Justifiable homicide"
 
 
 class PrisonPropertyOffenseIncludesExcludes(Enum):
     ARSON = "Arson"
-    BURGLARY = "Burglary"
-    COUNTERFEITING = "Counterfeiting or forgery"
-    VANDALISM = "Destruction, damage, or vandalism of property"
+    BRIBERY = "Bribery"
+    BURGLARY = "Burglary/ breaking and entering"
+    COUNTERFEITING = "Counterfeiting/forgery"
+    VANDALISM = "Destruction/damage/vandalism of property"
     EMBEZZLEMENT = "Embezzlement"
-    EXTORTION = "Extortion or blackmail"
-    BAD_CHECKS = "Bad checks"
-    FRAUD = "Fraud"
-    LARCENY = "Larceny or theft"
-    MOTOR_VEHICLE_THEFT = "Motor vehicle theft"
-    STOLEN_PROPERTY = "Stolen property"
-    OTHER = "Other property offenses not captured by the listed categories"
-
-
-class PrisonDrugOffenseIncludesExcludes(Enum):
-    PRODUCTION = "Production"
-    TRANSPORTATION = "Transportation or importation"
-    DISTRIBUTION = "Distribution, sale, or trafficking"
-    POSSESSION = "Possession"
-    PURCHASE = "Purchase"
-    USE = "Use"
-    EQUIPMENT_OR_DEVICES = "Equipment or devices"
-    OTHER = "Other drug offenses not captured by the listed categories"
+    EXTORTION = "Extortion/blackmail"
+    FALSE_PRETENSES = "False pretenses/swindle/confidence game"
+    CREDIT_CARD = "Credit card/automated teller machine fraud"
+    IMPERSONATION = "Impersonation"
+    WELFARE_FRAUD = "Welfare Fraud"
+    WIRE_FRAUD = "Wire Fraud"
+    IDENTITY_THEFT = "Identity theft"
+    HACKING = "Hacking/computer invasion"
+    POCKET_PICKING = "Pocket-picking"
+    PURSE_SNATCHING = "Purse-snatching"
+    SHOPLIFTING = "Shoplifting"
+    THEFT_FROM_BULIDING = "Theft from building"
+    THEFT_FROM_MACHINE = "Theft from coin-operated machine or device"
+    THEFT_FROM_VEHICLE = "Theft from motor vehicle"
+    THEFT_OF_VEHICLE_PARTS = "Theft of motor vehicle parts or accessories"
+    LARCENY = "All other larceny"
+    THEFT_OF_VEHICLE = "Theft of motor vehicle"
+    ROBBERY = "Robbery"
+    STOLEN_PROPERTY = "Stolen property offenses"
 
 
 class PrisonPublicOrderOffenseIncludesExcludes(Enum):
-    GAMBLING = "Gambling"
-    BRIBERY = "Bribery"
-    ADULT_PORNOGRAPHY = "Adult pornography/obscene material"
+    """Includes/Excludes for the Prison Definition Public Order Offenses"""
+
+    ANIMAL_CRUELTY = "Animal cruelty"
+    IMPORT_VIOLATIONS = "Import violations"
+    EXPORT_VIOLATIONS = "Export violations"
+    LIQUOR = "Federal liquor offenses"
+    TOBACCO = "Federal tobacco offenses"
+    WILDLIFE = "Wildlife trafficking"
+    ESPIONAGE = "Espionage"
+    MONEY_LAUNDERING = "Money laundering"
+    HARBORING = "Harboring escapee/concealing from arrest"
+    FLIGHT_PROSECUTION = "Flight to avoid prosecution"
+    FLIGHT_DEPORTATION = "Flight to avoid deportation"
+    BETTING = "Betting/wagering"
+    GAMBLING = "Operating/promoting/assisting gambling"
+    SPORTS_TAMPERING = "Sports tampering"
+    ILLEGAL_ENTRY = "Illegal entry into the United States"
+    FALSE_CITIZENSHIP = "False citizenship"
+    SMUGGLING = "Smuggling aliens"
+    RENTRY = "Re-entry after deportation"
+    PORNOGRAPHY = "Pornography/obscene material"
     PROSTITUTION = "Prostitution"
-    CURFEW = "Curfew, loitering, or vagrancy"
-    DUI = "Driving under the influence"
-    DRUNKENNESS = "Drunkenness"
-    TRESPASS = "Trespass"
+    ASSISTING_PROSTITUTION = "Assisting or promoting prostitution"
+    PURCHASING_PROSTITUTION = "Purchasing prostitution"
+    TREASON = "Treason"
+    WEAPON_LAW_VIOLATIONS = "Weapon law violations"
+    FIREARM_VIOLATIONS = "Violation of National Firearm Act of 1934"
+    WEAPONS_OF_MASS_DESTRUCTION = "Weapons of mass destruction"
+    EXPLOSIVES = "Explosives"
+    FAILURE_TO_APPEAR = "Failure to appear"
+    CURFEW = "Curfew/loitering/vagrancy violations"
     DISORDERLY_CONDUCT = "Disorderly conduct"
-    HARASSMENT = "Harassment"
-    VIOLATION_OR_RESTRAINING_ORDER = "Violation of a restraining order"
-    OTHER_SEX_OFFENSES = "Other sex offenses not captured by the listed categories"
-    NONVIOLENT_FAMILY_OFFENSES = "Nonviolent family offenses"
-    VOYEURISM = "Voyeurism"
-    OTHER = "Other public order offenses not captured by the listed categories"
+    DUI = "Driving under the influence"
+    FAMILY_OFFENSES = "Family offenses, nonviolent"
+    FEDERAL_RESOURCE_VIOLATIONS = "Federal resource violations"
+    LIQUOR_LAW_VIOLATIONS = "Liquor law violations"
+    PERJURY = "Perjury"
+    TRESPASS = "Trespass of real property"
+    DRUG_VIOLATIONS = "Drug/narcotic violations"
+    DRUG_EQUIPMENT_VIOLATIONS = "Drug equipment violations"
+    DRUG_SALES = "Drug sales"
+    DRUG_DISTRIBUTION = "Drug distribution"
+    DRUG_MANUFACTURING = "Drug manufacturing"
+    DRUG_SMUGGLING = "Drug smuggling"
+    DRUG_PRODUCTION = "Drug production"
+    DRUG_POSSESSION = "Drug possession"
+
+
+class PrisonDrugOffenseIncludesExcludes(Enum):
+    DRUG_VIOLATIONS = "Drug/narcotic violations"
+    DRUG_EQUIPMENT_VIOLATIONS = "Drug equipment violations"
+    DRUG_SALES = "Drug sales"
+    DRUG_DISTRIBUTION = "Drug distribution"
+    DRUG_MANUFACTURING = "Drug manufacturing"
+    DRUG_SMUGGLING = "Drug smuggling"
+    DRUG_PRODUCTION = "Drug production"
+    DRUG_POSSESSION = "Drug possession"
 
 
 # Average daily population

@@ -301,9 +301,9 @@ admissions = MetricDefinition(
     metric_type=MetricType.ADMISSIONS,
     category=MetricCategory.POPULATIONS,
     display_name="Admissions",
-    description="Measures the number of new admissions to your state correctional system.",
+    description="The number of admission events to agency’s prison jurisdiction.",
     measurement_type=MeasurementType.DELTA,
-    reporting_note="Report individuals in the most serious category (new sentence > violation > hold).",
+    reporting_note="Admissions are based on the number of events in which a person was incarcerated in a prison facility, not the number of individual people who entered the facility. If the same person was admitted to prison three times in a time period, it would count as three admissions.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=IncludesExcludesSet(
         members=PrisonAdmissionsIncludesExcludes,
@@ -312,21 +312,7 @@ admissions = MetricDefinition(
             PrisonAdmissionsIncludesExcludes.TRANSFERRED_BETWEEN_FACILITIES,
         },
     ),
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
-            value_type=ValueType.TEXT,
-            label="Please provide your agency's definition of admission.",
-            required=True,
-        ),
-        Context(
-            key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does your count include individuals admitted for violation of conditions?",
-            multiple_choice_options=YesNoContext,
-            required=False,
-        ),
-    ],
+    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=PrisonsOffenseType,
@@ -336,28 +322,27 @@ admissions = MetricDefinition(
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
                     members=PrisonPersonOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPersonOffenseIncludesExcludes.ARSON,
-                        PrisonPersonOffenseIncludesExcludes.HARASSMENT,
-                        PrisonPersonOffenseIncludesExcludes.OTHER,
+                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
                     },
                 ),
                 PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
                     members=PrisonPropertyOffenseIncludesExcludes,
-                    excluded_set={
-                        PrisonPropertyOffenseIncludesExcludes.OTHER,
-                    },
-                ),
-                PrisonsOffenseType.DRUG: IncludesExcludesSet(
-                    members=PrisonDrugOffenseIncludesExcludes,
-                    excluded_set={
-                        PrisonDrugOffenseIncludesExcludes.OTHER,
-                    },
                 ),
                 PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PrisonPublicOrderOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPublicOrderOffenseIncludesExcludes.OTHER,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
+                ),
+                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                    members=PrisonDrugOffenseIncludesExcludes,
                 ),
             },
         )
@@ -412,28 +397,27 @@ average_daily_population = MetricDefinition(
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
                     members=PrisonPersonOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPersonOffenseIncludesExcludes.ARSON,
-                        PrisonPersonOffenseIncludesExcludes.HARASSMENT,
-                        PrisonPersonOffenseIncludesExcludes.OTHER,
+                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
                     },
                 ),
                 PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
                     members=PrisonPropertyOffenseIncludesExcludes,
-                    excluded_set={
-                        PrisonPropertyOffenseIncludesExcludes.OTHER,
-                    },
-                ),
-                PrisonsOffenseType.DRUG: IncludesExcludesSet(
-                    members=PrisonDrugOffenseIncludesExcludes,
-                    excluded_set={
-                        PrisonDrugOffenseIncludesExcludes.OTHER,
-                    },
                 ),
                 PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PrisonPublicOrderOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPublicOrderOffenseIncludesExcludes.OTHER,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
+                ),
+                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                    members=PrisonDrugOffenseIncludesExcludes,
                 ),
             },
         ),
