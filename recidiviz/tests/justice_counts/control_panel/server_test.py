@@ -640,7 +640,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=3.0,
             report_id=report_published.id,
-            dimension_display_name="Person",
+            dimension_display_name="Person Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
@@ -649,7 +649,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=4.0,
             report_id=report_published.id,
-            dimension_display_name="Property",
+            dimension_display_name="Property Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
@@ -658,7 +658,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=1.0,
             report_id=report_published.id,
-            dimension_display_name="Drug",
+            dimension_display_name="Drug Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
@@ -667,7 +667,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=5.0,
             report_id=report_published.id,
-            dimension_display_name="Public Order",
+            dimension_display_name="Public Order Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
@@ -676,7 +676,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=2.0,
             report_id=report_published.id,
-            dimension_display_name="Other",
+            dimension_display_name="Other Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
         self.check_agency_metric_datapoint(
@@ -685,7 +685,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ],
             value=6.0,
             report_id=report_published.id,
-            dimension_display_name="Unknown",
+            dimension_display_name="Unknown Offenses",
             disaggregation_display_name="Prisons Offense Type",
         )
 

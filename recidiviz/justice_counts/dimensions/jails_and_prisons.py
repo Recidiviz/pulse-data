@@ -111,12 +111,12 @@ class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
 
 
 class PrisonsOffenseType(DimensionBase, enum.Enum):
-    PERSON = "Person"
-    PROPERTY = "Property"
-    DRUG = "Drug"
-    PUBLIC_ORDER = "Public Order"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    PERSON = "Person Offenses"
+    PROPERTY = "Property Offenses"
+    DRUG = "Drug Offenses"
+    PUBLIC_ORDER = "Public Order Offenses"
+    OTHER = "Other Offenses"
+    UNKNOWN = "Unknown Offenses"
 
     @classmethod
     def dimension_identifier(cls) -> str:
