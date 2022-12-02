@@ -23,6 +23,7 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
+from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -79,10 +80,14 @@ def get_dimension(datapoint: schema.Datapoint) -> Tuple[Optional[DimensionBase],
 
 
 def is_datapoint_deprecated(datapoint: schema.Datapoint) -> bool:
-    """Return True if `dimension_identifier_to_member` references a deprecated dimension
+    """Return True if the metric is not in the metric registry or if
+    the `dimension_identifier_to_member` references a deprecated dimension
     identifier or enum member. These datapoints will be filtered out after fetching
     from the database.
     """
+    metric = METRIC_KEY_TO_METRIC.get(datapoint.metric_definition_key)
+    if metric is None:
+        return True
     _, success = get_dimension(datapoint)
     return not success
 
