@@ -556,7 +556,6 @@ def incarceration_period_release_reason_mapper(
     """
     raw_text = raw_text.upper()
     if raw_text.startswith("CCIS"):
-        # Handle release reason codes from CCIS tables
         _, end_movement_code = raw_text.split("-")
     else:
         # Handle release reason codes from SCI tables
@@ -639,6 +638,7 @@ def incarceration_period_admission_reason_mapper(
             start_movement_code,
             start_is_admin_edge,
         ) = raw_text.split("-")
+
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the
         # REVOCATION admission_reason for admissions from parole for treatment

@@ -5,9 +5,9 @@ manifest_language: 1.0.0
 input_columns:
   - ParoleNumber
   - LsirID
-  - ParoleCountID # Parole count id (meaning unclear)
-  - LSIRScore # Index of a particular instance of this assessment taken by a particular person
-  - ReleaseStatus # Release status (meaning unclear)
+  - ParoleCountID
+  - LSIRScore
+  - ReleaseStatus
   - InterviewDate
 unused_columns: []
 output:

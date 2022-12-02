@@ -4,22 +4,22 @@
 manifest_language: 1.0.0
 input_columns:
   - Control_Number
-  - Test_Desc # assessment_type
-  - Test_Dt # assessment_date
-  - Test_Score # assessment_score
-  - RSTRvsd_Flg # assessment_metadata: RST Version flag
-  - Inmate_number # Inmate number
-  - Test_Id # Test id
-  - AsmtVer_Num # external_id: Assessment version number (index number for a particular instance of a particular assessment for a particular person)
-  - Fac_Cd # Facility code - TODO(#3031): Add state_assessment.location
-  - ModBy_EmpNum # "Modified by" employee number - unused
-  - LstMod_Dt # Last modified date - unused
-  - Fab_ind # Unknown - unused
+  - Test_Desc
+  - Test_Dt
+  - Test_Score
+  - RSTRvsd_Flg
+  - Inmate_number
+  - Test_Id
+  - AsmtVer_Num
+  - Fac_Cd
+  - ModBy_EmpNum
+  - LstMod_Dt
+  - Fab_ind
 unused_columns:
-  - Fac_Cd # Facility code - TODO(#3031): Add state_assessment.location
-  - ModBy_EmpNum # "Modified by" employee number - unused
-  - LstMod_Dt # Last modified date - unused
-  - Fab_ind # Unknown - unused
+  - Fac_Cd
+  - ModBy_EmpNum
+  - LstMod_Dt
+  - Fab_ind
 output:
   StatePerson:
     external_ids:
