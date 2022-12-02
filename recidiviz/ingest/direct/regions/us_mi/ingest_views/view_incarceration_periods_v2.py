@@ -220,7 +220,7 @@ ad_seg_designation as (
         offender_designation_code_id,
         date(start_date) as start_date, 
         date(end_date) as end_date,
-        last_update_date,
+        date(last_update_date),
         LEAD(date(start_date)) OVER(partition by offender_id ORDER BY DATE(start_date), DATE(end_date)) as next_start_date,
     from {ADH_OFFENDER_DESIGNATION}
     where offender_designation_code_id in ('11672', '11670', '11389') -- segregation designations

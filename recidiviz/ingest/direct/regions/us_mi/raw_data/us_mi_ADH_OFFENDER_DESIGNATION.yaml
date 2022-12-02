@@ -45,16 +45,21 @@ columns:
       - value: "16181"
         description: PREA-Assmt Pending (Intake Only)
   - name: start_date
+    description: start date of designation
     is_datetime: True
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: end_date
+    description: end date of designation
     is_datetime: True
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
     is_pii: True
-    description: Date record last updated
   - name: last_update_date
+    description: Date desgination was last updated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
     is_datetime: True
