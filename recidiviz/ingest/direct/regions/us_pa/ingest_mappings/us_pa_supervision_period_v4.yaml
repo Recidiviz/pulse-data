@@ -58,6 +58,13 @@ output:
                 StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - "08" # Other States' Deferred Sentence
                   - "09" # Emergency Release - used for COVID releases
+                  # possibly termination reasons
+                  - "40"
+                  - "41"
+                  - "42"
+                  - "43"
+                  - "44"
+                  - "45"
                 StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - "06" # Paroled/Reparoled by other state and transferred to PA
                   - "07" # Sentenced to Probation by other state and transferred to PA
@@ -83,6 +90,11 @@ output:
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - "50" # Case Opened in Error
                   - "51" # ?? Not in data dictionary
+                  # possibly admission reasons
+                  - "03"
+                  - "04"
+                  - "05"
+                  - "07"
                 StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION: "44"
                 # Conviction and return to prison to serve detainer sentence
                 StateSupervisionPeriodTerminationReason.REVOCATION:

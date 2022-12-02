@@ -7,17 +7,17 @@ input_columns:
   - end_movement_date
   - location
   - control_number
-  - sequence_number # Move sequence number - handled manually in the controller
-  - start_sentence_status_code # Sentence status code at start edge - handled manually in the controller
-  - end_sentence_status_code # Sentence status code at end edge - handled manually in the controller
-  - start_parole_status_code # Parole status code at start edge - handled manually in the controller
-  - end_parole_status_code # Parole status code at end edge - handled manually in the controller
-  - start_movement_code # Movement code at start edge - handled manually in the controller
-  - end_movement_code # Movement code at end edge - handled manually in the controller
-  - start_is_new_revocation # Indicates if period started with a parole revocation  - handled manually in the controller
-  - start_is_admin_edge # Indicates if period is starting due to an administrative update  - handled manually in the controller
-  - end_is_admin_edge # Indicates if period is ending due to an administrative update  - handled manually in the controller
-  - sentence_type # Sentence type (general vs treatment) - handled manually in the controller
+  - sequence_number
+  - start_sentence_status_code
+  - end_sentence_status_code
+  - start_parole_status_code
+  - end_parole_status_code
+  - start_movement_code
+  - end_movement_code
+  - start_is_new_revocation
+  - start_is_admin_edge
+  - end_is_admin_edge
+  - sentence_type
   - inmate_number
 unused_columns:
   - start_sentence_status_code # gone from controller??
