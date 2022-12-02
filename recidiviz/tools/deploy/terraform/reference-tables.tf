@@ -523,3 +523,29 @@ module "state_resident_populations_table" {
 ]
 EOF
 }
+
+
+module "workflows_keys_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "workflows_keys"
+  schema     = <<EOF
+[
+  {
+    "name": "key",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "value",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
