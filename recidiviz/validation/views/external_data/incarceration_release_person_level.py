@@ -17,17 +17,26 @@
 """A view containing external data for person level incarceration releases to validate against."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
+from recidiviz.validation.views.external_data import regions as external_data_regions
 
-_QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_id_validation_dataset}.incarceration_release_person_level_raw`
+_LEGACY_QUERY_TEMPLATE = """
+SELECT region_code, person_external_id, 'US_ID_DOC' as external_id_type, release_date
+FROM `{project_id}.{us_id_validation_dataset}.incarceration_release_person_level_raw`
 UNION ALL
-SELECT * FROM `{project_id}.{us_pa_validation_dataset}.incarceration_release_person_level_raw`
+SELECT region_code, person_external_id, 'US_PA_CONT' as external_id_type, release_date
+FROM `{project_id}.{us_pa_validation_dataset}.incarceration_release_person_level_raw`
 UNION ALL 
-SELECT 'US_PA' as region_code, control_number as person_external_id, PARSE_DATE('%m/%d/%Y', mov_date_std) as release_date
+SELECT
+    'US_PA' as region_code,
+    control_number as person_external_id,
+    'US_PA_CONT' as external_id_type,
+    PARSE_DATE('%m/%d/%Y', mov_date_std) as release_date
 FROM (
     SELECT control_number, mov_date_std FROM `{project_id}.{us_pa_validation_dataset}.2021_03_incarceration_releases`
     UNION ALL
@@ -52,27 +61,68 @@ FROM (
     SELECT control_number, move_dt_std FROM `{project_id}.{us_pa_validation_dataset}.2022_01_incarceration_releases`
 )
 UNION ALL
-SELECT * FROM `{project_id}.{us_me_validation_dataset}.incarceration_release_person_level_raw`
+SELECT region_code, person_external_id, 'US_ME_DOC' as external_id_type, release_date
+FROM `{project_id}.{us_me_validation_dataset}.incarceration_release_person_level_raw`
 """
 
-INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    view_id="incarceration_release_person_level",
-    view_query_template=_QUERY_TEMPLATE,
-    description="Contains external data for person level incarceration releases to "
-    "validate against. See http://go/external-validations for instructions on adding "
-    "new data.",
-    us_id_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ID
-    ),
-    us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_PA
-    ),
-    us_me_validation_dataset=dataset_config.validation_dataset_for_state(
-        StateCode.US_ME
-    ),
-)
+VIEW_ID = "incarceration_release_person_level"
+
+
+def get_incarceration_release_person_level_view_builder() -> SimpleBigQueryViewBuilder:
+    region_views = BigQueryViewCollector.collect_view_builders_in_module(
+        builder_type=SimpleBigQueryViewBuilder,
+        view_dir_module=external_data_regions,
+        recurse=True,
+        view_builder_attribute_name_regex=".*_VIEW_BUILDER",
+    )
+
+    region_subqueries = []
+    region_dataset_params = {}
+    # Gather all region views with a matching view id and union them in.
+    for region_view in region_views:
+        if region_view.view_id == VIEW_ID and region_view.should_deploy_in_project(
+            metadata.project_id()
+        ):
+            dataset_param = f"{region_view.table_for_query.dataset_id}_dataset"
+            region_dataset_params[
+                dataset_param
+            ] = region_view.table_for_query.dataset_id
+            region_subqueries.append(
+                f"""
+SELECT region_code, person_external_id, external_id_type, release_date
+FROM `{{project_id}}.{{{dataset_param}}}.{region_view.table_for_query.table_id}`
+"""
+            )
+
+    query_template = "\nUNION ALL\n".join(region_subqueries + [_LEGACY_QUERY_TEMPLATE])
+
+    return SimpleBigQueryViewBuilder(
+        dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
+        view_id=VIEW_ID,
+        view_query_template=query_template,
+        description="Contains external data for person level incarceration releases to "
+        "validate against. See http://go/external-validations for instructions on adding "
+        "new data.",
+        should_materialize=True,
+        # Specify default values here so that mypy knows these are not used in the
+        # dictionary below.
+        projects_to_deploy=None,
+        materialized_address_override=None,
+        should_deploy_predicate=None,
+        clustering_fields=None,
+        us_id_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_ID
+        ),
+        us_pa_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_PA
+        ),
+        us_me_validation_dataset=dataset_config.validation_dataset_for_state(
+            StateCode.US_ME
+        ),
+        **region_dataset_params,
+    )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER.build_and_print()
+        get_incarceration_release_person_level_view_builder().build_and_print()
