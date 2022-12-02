@@ -523,25 +523,3 @@ module "state_resident_populations_table" {
 ]
 EOF
 }
-
-
-resource "google_bigquery_table" "workflows_keys_table" {
-  dataset_id     = module.external_reference_dataset.dataset_id
-  table_id = "workflows_keys"
-  deletion_protection = false
-
-  schema     = <<EOF
-[
-  {
-    "name": "key",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "value",
-    "type": "STRING",
-    "mode": "REQUIRED"
-  }
-]
-EOF
-}
