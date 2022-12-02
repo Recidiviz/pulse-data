@@ -37,6 +37,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             districts.district_name AS district,
             ids.email_address AS email,
             true AS has_caseload,
+            false as has_facility_caseload,
             names.given_names as given_names,
             names.surname as surname,
         FROM caseload_staff_ids ids
@@ -56,6 +57,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             district,
             email_address AS email,
             false AS has_caseload,
+            false AS has_facility_caseload,
             first_name as given_names,
             last_name as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_nd_leadership_users`
