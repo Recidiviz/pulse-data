@@ -59,6 +59,12 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
             export_collection_name="US_TN-supervisionLevelDowngrade",
         ),
     ],
+    "US_ME": [
+        OpportunityExportConfig(
+            source_filename="us_me_complete_transfer_to_sccp_form_record.json",
+            export_collection_name="US_ME-SCCPReferrals",
+        ),
+    ],
 }
 
 
