@@ -43,6 +43,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             facilities.district AS district,
             LOWER(roster.email_address) AS email,
             logic_staff IS NOT NULL AS has_caseload,
+            FALSE AS  has_facility_caseload,
             FirstName as given_names,
             LastName as surname,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
@@ -67,6 +68,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         leadership.district,
         leadership.email,
         logic_staff IS NOT NULL AS has_caseload,
+        false AS has_facility_caseload,
         leadership.given_names as given_names,
         leadership.surname as surname,
     FROM leadership_users leadership

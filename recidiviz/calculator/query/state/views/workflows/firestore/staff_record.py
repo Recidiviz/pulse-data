@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.workflows.us_id.supervision_staff_template import (
     US_ID_SUPERVISION_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_staff_template import (
+    US_ME_INCARCERATION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
     US_ND_SUPERVISION_STAFF_TEMPLATE,
 )
@@ -48,12 +51,15 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
         , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
+        , me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE})
     
     SELECT {{columns}} FROM tn_staff
     UNION ALL 
     SELECT {{columns}} FROM nd_staff
     UNION ALL
     SELECT {{columns}} FROM id_staff
+    UNION ALL
+    SELECT {{columns}} FROM me_staff
 """
 
 STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -69,6 +75,7 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "district",
         "email",
         "has_caseload",
+        "has_facility_caseload",
         "given_names",
         "surname",
     ],
@@ -84,6 +91,7 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
+    us_me_raw_data_dataset="us_me_raw_data",
     should_materialize=True,
 )
 
