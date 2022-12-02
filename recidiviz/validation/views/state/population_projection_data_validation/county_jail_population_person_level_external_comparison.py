@@ -45,10 +45,11 @@ WITH external_data AS (
   SELECT
     region_code,
     person_external_id,
+    external_id_type,
     facility,
     legal_status,
     date_of_stay,
-  FROM `{project_id}.{external_accuracy_dataset}.us_id_county_jail_09_2020_incarceration_population`
+  FROM `{project_id}.{external_accuracy_dataset}.county_jail_population_person_level`
   WHERE date_of_stay = '{comparison_date}'
 ),
 internal_metrics AS (
@@ -56,10 +57,17 @@ internal_metrics AS (
     state_code AS region_code,
     report_month AS date_of_stay,
     external_id AS person_external_id,
+    id_type AS external_id_type,
     facility,
     compartment_level_2 AS legal_status,
-  FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized`
-  LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id`
+  FROM (
+    SELECT state_code, person_id, report_month, facility, compartment_level_2
+    FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized`
+    -- TODO(#16974): Replace with `us_ix_monthly_paid_incarceration_population` once it is created.
+    -- UNION ALL
+    -- SELECT 'US_IX' AS state_code, person_id, report_month, facility, compartment_level_2
+    -- FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized`
+  ) LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id`
   USING (state_code, person_id)
   WHERE report_month = '{comparison_date}'
     AND (facility = 'COUNTY JAIL'
@@ -88,7 +96,7 @@ FROM
   external_data
 FULL OUTER JOIN
   internal_metrics_for_valid_regions_and_dates internal_data
-USING(region_code, date_of_stay, person_external_id)
+USING(region_code, date_of_stay, person_external_id, external_id_type)
 {filter_clause}
 ORDER BY region_code, date_of_stay, person_external_id
 """

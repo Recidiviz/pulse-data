@@ -23,19 +23,38 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
 _QUERY_TEMPLATE = """
-SELECT * FROM `{project_id}.{us_id_validation_dataset}.us_id_county_jail_09_2020_incarceration_population`
+SELECT 
+    region_code,
+    person_external_id,
+    'US_ID_DOC' as external_id_type,
+    facility,
+    legal_status,
+    date_of_stay,
+FROM `{project_id}.{us_id_validation_dataset}.us_id_county_jail_09_2020_incarceration_population`
+UNION ALL
+SELECT 
+    region_code,
+    person_external_id,
+    external_id_type,
+    facility,
+    legal_status,
+    date_of_stay,
+FROM `{project_id}.{us_ix_validation_dataset}.county_jail_incarceration_population_person_level`
 """
 
 COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.EXTERNAL_ACCURACY_DATASET,
     # Note: right now the validation view that consumes this is ID specific
-    view_id="us_id_county_jail_09_2020_incarceration_population",
+    view_id="county_jail_population_person_level",
     view_query_template=_QUERY_TEMPLATE,
     description="Contains external data for person level county jail populations to "
     "validate against. See http://go/external-validations for instructions on adding "
     "new data.",
     us_id_validation_dataset=dataset_config.validation_dataset_for_state(
         StateCode.US_ID
+    ),
+    us_ix_validation_dataset=dataset_config.validation_dataset_for_state(
+        StateCode.US_IX
     ),
 )
 
