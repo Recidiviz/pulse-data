@@ -75,14 +75,17 @@ class RawTableMigration:
 
         self._validate_column_value_list("filters", filters)
 
-    def raw_table(self, sandbox_dataset_prefix: Optional[str]) -> str:
+    def raw_table(
+        self,
+        sandbox_dataset_prefix: Optional[str],
+        ingest_instance: DirectIngestInstance,
+    ) -> str:
         """Returns the BQ raw table for this migration. Must be calculated dynamically rather than in the constructor
         because these migrations can be defined as top-level vars where the project_id is not yet available.
         """
         dataset_id = raw_tables_dataset_for_region(
             state_code=StateCode(self._region_code_lower.upper()),
-            # TODO(#16568): create migrations for both instances.
-            instance=DirectIngestInstance.PRIMARY,
+            instance=ingest_instance,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
         return f"{metadata.project_id()}.{dataset_id}.{self.file_tag}"

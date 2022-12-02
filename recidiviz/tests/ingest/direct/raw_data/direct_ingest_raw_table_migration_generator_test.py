@@ -31,6 +31,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_generator import (
     RawTableMigrationGenerator,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.metadata import local_project_id_override
 
 _DATE_1 = datetime.datetime(2020, 4, 14, 0, 31, 0)
@@ -60,12 +61,16 @@ class TestDirectIngestRawTableMigrationGenerator(unittest.TestCase):
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_project_1_queries = [
@@ -84,6 +89,42 @@ WHERE STRUCT(COL1, update_datetime) IN (
         ]
         self.assertEqual(expected_project_2_queries, project_2_queries)
 
+    def test_delete_migration_secondary(self) -> None:
+        migration = DeleteFromRawTableMigration(
+            migrations_file=self._migration_file_path_for_tag("tagC"),
+            update_datetime_filters=[_DATE_1],
+            filters=[("COL1", "31415")],
+        )
+        with local_project_id_override("recidiviz-456"):
+            project_1_queries = RawTableMigrationGenerator.migration_queries(
+                [migration],
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                sandbox_dataset_prefix=None,
+            )
+
+        with local_project_id_override("recidiviz-789"):
+            project_2_queries = RawTableMigrationGenerator.migration_queries(
+                [migration],
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                sandbox_dataset_prefix=None,
+            )
+
+        expected_project_1_queries = [
+            """DELETE FROM `recidiviz-456.us_xx_raw_data_secondary.tagC`
+WHERE STRUCT(COL1, update_datetime) IN (
+    STRUCT("31415", "2020-04-14T00:31:00")
+);"""
+        ]
+        self.assertEqual(expected_project_1_queries, project_1_queries)
+
+        expected_project_2_queries = [
+            """DELETE FROM `recidiviz-789.us_xx_raw_data_secondary.tagC`
+WHERE STRUCT(COL1, update_datetime) IN (
+    STRUCT("31415", "2020-04-14T00:31:00")
+);"""
+        ]
+        self.assertEqual(expected_project_2_queries, project_2_queries)
+
     def test_delete_migration_multiple_filters_and_dates(self) -> None:
         migration = DeleteFromRawTableMigration(
             migrations_file=self._migration_file_path_for_tag("file_tag_first"),
@@ -92,7 +133,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
         )
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries = [
@@ -112,12 +155,16 @@ WHERE STRUCT(col_name_1a, col_name_1b, update_datetime) IN (
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_project_1_queries = [
@@ -147,12 +194,16 @@ WHERE STRUCT(COL1) IN (
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_project_1_queries = [
@@ -184,7 +235,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
         )
         with local_project_id_override("recidiviz-456"):
             queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries = [
@@ -210,12 +263,16 @@ WHERE original.col_name_1a = updates.col_name_1a AND original.col_name_1b = upda
         )
         with local_project_id_override("recidiviz-456"):
             project_1_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         with local_project_id_override("recidiviz-789"):
             project_2_queries = RawTableMigrationGenerator.migration_queries(
-                [migration], sandbox_dataset_prefix=None
+                [migration],
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_project_1_queries = [
@@ -290,7 +347,9 @@ WHERE original.COL1 = updates.COL1;"""
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -321,7 +380,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -357,7 +418,9 @@ WHERE STRUCT(COL1, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -392,7 +455,9 @@ WHERE STRUCT(COL1) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -428,7 +493,9 @@ WHERE STRUCT(COL2, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -464,7 +531,9 @@ WHERE STRUCT(COL2, update_datetime) IN (
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -499,7 +568,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -540,7 +611,9 @@ WHERE original.COL1 = updates.COL1;"""
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -581,7 +654,9 @@ WHERE original.COL1 = updates.COL1;""",
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -623,7 +698,9 @@ WHERE original.COL1 = updates.COL1;""",
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -662,7 +739,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
@@ -696,7 +775,9 @@ WHERE original.COL1 = updates.COL1 AND original.update_datetime = updates.update
 
         with local_project_id_override("recidiviz-456"):
             queries_map = RawTableMigrationGenerator.migration_queries(
-                migrations, sandbox_dataset_prefix=None
+                migrations,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix=None,
             )
 
         expected_queries_map = [
