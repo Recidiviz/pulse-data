@@ -2,7 +2,7 @@
 
 dataset: validation_external_accuracy
 tables:
-  - name: incarceration_admission_person_level
+  - name: incarceration_admission_person_level_materialized
     columns:
       - region_code
       - person_external_id
@@ -21,7 +21,7 @@ tables:
       - person_external_id
       - date_of_stay
       - facility
-  - name: incarceration_release_person_level
+  - name: incarceration_release_person_level_materialized
     columns:
       - region_code
       - person_external_id

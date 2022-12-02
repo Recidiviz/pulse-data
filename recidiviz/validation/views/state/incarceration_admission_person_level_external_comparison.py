@@ -37,16 +37,16 @@ INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH external_data AS (
     -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to
     -- generate data to insert into the `incarceration_admission_person_level` table.
-    SELECT region_code, person_external_id, admission_date
-    FROM `{project_id}.{external_accuracy_dataset}.incarceration_admission_person_level`
+    SELECT region_code, person_external_id, external_id_type, admission_date
+    FROM `{project_id}.{external_accuracy_dataset}.incarceration_admission_person_level_materialized`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
     SELECT region_code, admission_date, external_data.person_external_id, person_id
     FROM external_data
     LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
-    -- Limit to 'US_PA_CONT' id_type for US_PA
-    AND (region_code != 'US_PA' OR id_type = 'US_PA_CONT')
+    -- Limit to the correct ID type in states that have multiple
+    AND external_data.external_id_type = all_state_person_ids.id_type
 ), internal_data AS (
     SELECT state_code as region_code, person_external_id, person_id, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`

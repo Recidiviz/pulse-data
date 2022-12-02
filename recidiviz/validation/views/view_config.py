@@ -27,7 +27,7 @@ from recidiviz.validation.views.external_data.county_jail_population_person_leve
     COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.validation.views.external_data.incarceration_admission_person_level import (
-    INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
+    get_incarceration_admission_person_level_view_builder,
 )
 from recidiviz.validation.views.external_data.incarceration_population_by_facility import (
     INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
@@ -36,7 +36,7 @@ from recidiviz.validation.views.external_data.incarceration_population_person_le
     get_incarceration_population_person_level_view_builder,
 )
 from recidiviz.validation.views.external_data.incarceration_release_person_level import (
-    INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+    get_incarceration_release_person_level_view_builder,
 )
 from recidiviz.validation.views.external_data.population_projection_monthly_population import (
     POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER,
@@ -50,8 +50,14 @@ from recidiviz.validation.views.external_data.recidivism_person_level import (
 from recidiviz.validation.views.external_data.regions.us_co.incarceration_population_person_level import (
     US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.validation.views.external_data.regions.us_ix.incarceration_admission_person_level import (
+    US_IX_INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
+)
 from recidiviz.validation.views.external_data.regions.us_ix.incarceration_population_person_level import (
     US_IX_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+)
+from recidiviz.validation.views.external_data.regions.us_ix.incarceration_release_person_level import (
+    US_IX_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
 )
 from recidiviz.validation.views.external_data.regions.us_ix.supervision_population_person_level import (
     US_IX_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
@@ -196,10 +202,10 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
         + [
             # External Validation Data
             COUNTY_JAIL_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
-            INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
+            get_incarceration_admission_person_level_view_builder(),
             INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
             get_incarceration_population_person_level_view_builder(),
-            INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
+            get_incarceration_release_person_level_view_builder(),
             POPULATION_PROJECTION_MONTHLY_POPULATION_PER_FACILITY_VIEW_BUILDER,
             POPULATION_PROJECTION_MONTHLY_POPULATION_VIEW_BUILDER,
             RECIDIVISM_PERSON_LEVEL_VIEW_BUILDER,
@@ -214,7 +220,9 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             US_MI_INCARCERATION_POPULATION_BY_FACILITY_VIEW_BUILDER,
             US_MI_SUPERVISION_POPULATION_BY_TYPE_VIEW_BUILDER,
             US_CO_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_IX_INCARCERATION_ADMISSION_PERSON_LEVEL_VIEW_BUILDER,
             US_IX_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
+            US_IX_INCARCERATION_RELEASE_PERSON_LEVEL_VIEW_BUILDER,
             US_IX_SUPERVISION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
             US_OZ_INCARCERATION_POPULATION_PERSON_LEVEL_VIEW_BUILDER,
         ]
