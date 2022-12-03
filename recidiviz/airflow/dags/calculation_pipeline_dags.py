@@ -356,10 +356,7 @@ def execute_calculations(
         raise Exception("Configuration file not specified")
 
     state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
-    # TODO(#15931): Remove dry run once tested
-    operations_bq_refresh_completion = create_bq_refresh_nodes(
-        "OPERATIONS", dry_run=True
-    )
+    operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
