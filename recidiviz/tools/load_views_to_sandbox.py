@@ -78,6 +78,9 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.big_query_view_sub_dag_collector import (
     BigQueryViewSubDagCollector,
 )
+from recidiviz.big_query.union_all_big_query_view_builder import (
+    UnionAllBigQueryViewBuilder,
+)
 from recidiviz.big_query.view_update_manager import (
     build_views_to_update,
     create_managed_dataset_and_deploy_views_for_view_builders,
@@ -114,9 +117,11 @@ class _AllButSomeBigQueryViewsCollector(BigQueryViewCollector[BigQueryViewBuilde
 
 
 def load_all_views_to_sandbox(
+    *,
     sandbox_dataset_prefix: str,
     prompt: bool,
-    dataflow_dataset_override: Optional[str] = None,
+    dataflow_dataset_override: Optional[str],
+    filter_union_all: bool,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|. If
     |dataflow_dataset_override| is not set, excludes views in
@@ -133,6 +138,7 @@ def load_all_views_to_sandbox(
         prompt=prompt,
         collected_builders=collected_builders,
         dataflow_dataset_override=dataflow_dataset_override,
+        filter_union_all=filter_union_all,
     )
 
 
@@ -152,6 +158,7 @@ def _load_manually_filtered_views_to_sandbox(
     sandbox_dataset_prefix: str,
     prompt: bool,
     dataflow_dataset_override: Optional[str],
+    filter_union_all: bool,
     view_ids_to_load: Optional[List[str]],
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
@@ -226,6 +233,7 @@ def _load_manually_filtered_views_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
         dataflow_dataset_override=dataflow_dataset_override,
+        filter_union_all=filter_union_all,
         collected_builders=collected_builders,
     )
 
@@ -389,6 +397,7 @@ def _load_views_changed_on_branch_to_sandbox(
     sandbox_dataset_prefix: str,
     prompt: bool,
     dataflow_dataset_override: Optional[str],
+    filter_union_all: bool,
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
@@ -442,6 +451,7 @@ def _load_views_changed_on_branch_to_sandbox(
         sandbox_dataset_prefix=sandbox_dataset_prefix,
         prompt=prompt,
         dataflow_dataset_override=dataflow_dataset_override,
+        filter_union_all=filter_union_all,
         collected_builders=collected_builders,
     )
 
@@ -455,8 +465,10 @@ def _load_collected_views_to_sandbox(
     sandbox_dataset_prefix: str,
     prompt: bool,
     collected_builders: List[BigQueryViewBuilder],
-    dataflow_dataset_override: Optional[str] = None,
+    dataflow_dataset_override: Optional[str],
+    filter_union_all: bool,
 ) -> None:
+    """Loads the provided list of builders to a sandbox dataset."""
     logging.info(
         "Will load the following views to the sandbox: \n%s",
         _sorted_address_list_str({b.address for b in collected_builders}),
@@ -465,6 +477,12 @@ def _load_collected_views_to_sandbox(
         prompt_for_confirmation(
             f"Continue with loading {len(collected_builders)} views?"
         )
+
+    if filter_union_all:
+        addresses_to_load = {b.address for b in collected_builders}
+        for builder in collected_builders:
+            if isinstance(builder, UnionAllBigQueryViewBuilder):
+                builder.set_parent_address_filter(addresses_to_load)
 
     logging.info("Updating %s views...", len(collected_builders))
 
@@ -522,6 +540,17 @@ def parse_arguments() -> argparse.Namespace:
         "updated views should reference.",
         type=str,
         required=False,
+    )
+
+    parser.add_argument(
+        "--no-filter-union-all",
+        dest="filter_union_all",
+        action="store_false",
+        help="If True, all UnionAllBigQueryViewBuilder views (e.g. "
+        "task_eligibility.all_tasks) will only query from views loaded in the "
+        "sandbox. Otherwise, the UnionAllBigQueryViewBuilder views will query "
+        "ALL parent views like they do in production. This should generally be "
+        "set to false to avoid unnecessarily expensive sandbox runs.",
     )
 
     subparsers = parser.add_subparsers(
@@ -606,12 +635,14 @@ if __name__ == "__main__":
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
+                filter_union_all=args.filter_union_all,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
+                filter_union_all=args.filter_union_all,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
                 update_ancestors=args.update_ancestors,
@@ -622,6 +653,7 @@ if __name__ == "__main__":
                 sandbox_dataset_prefix=args.sandbox_dataset_prefix,
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
+                filter_union_all=args.filter_union_all,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
             )
         else:
