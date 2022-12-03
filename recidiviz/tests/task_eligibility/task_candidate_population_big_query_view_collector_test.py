@@ -82,8 +82,8 @@ class TestTaskCandidatePopulationBigQueryViewCollector(unittest.TestCase):
 
     def test_state_agnostic_no_raw_data_tables(self) -> None:
         collector = TaskCandidatePopulationBigQueryViewCollector()
-        all_criteria_builders = collector.collect_view_builders()
-        for builder in all_criteria_builders:
+        all_population_builders = collector.collect_view_builders()
+        for builder in all_population_builders:
             if isinstance(
                 builder, StateAgnosticTaskCandidatePopulationBigQueryViewBuilder
             ):
@@ -93,6 +93,6 @@ class TestTaskCandidatePopulationBigQueryViewCollector(unittest.TestCase):
                     if is_state_specific_address(parent_address):
                         raise ValueError(
                             f"Found state-specific address [{parent_address}] "
-                            f"referenced from state-agnostic criteria view "
+                            f"referenced from state-agnostic candidate population view "
                             f"[{view.address}]."
                         )

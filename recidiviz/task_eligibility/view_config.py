@@ -27,6 +27,9 @@ from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector imp
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_collector import (
     TaskCandidatePopulationBigQueryViewCollector,
 )
+from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
+    TaskCompletionEventBigQueryViewCollector,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_collector import (
     TaskCriteriaBigQueryViewCollector,
 )
@@ -41,6 +44,7 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             (
                 TaskCriteriaBigQueryViewCollector().collect_view_builders(),
                 TaskCandidatePopulationBigQueryViewCollector().collect_view_builders(),
+                TaskCompletionEventBigQueryViewCollector().collect_view_builders(),
                 SingleTaskEligibilityBigQueryViewCollector().collect_view_builders(),
                 task_eligiblity_spans.get_unioned_view_builders(),
             )
