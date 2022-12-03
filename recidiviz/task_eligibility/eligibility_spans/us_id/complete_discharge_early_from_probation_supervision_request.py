@@ -21,6 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_supervision_population,
 )
+from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     negative_ua_within_90_days,
     no_felony_within_24_months,
@@ -58,6 +59,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         income_verified_within_3_months.VIEW_BUILDER,
         not_at_liberty.VIEW_BUILDER,
     ],
+    completion_event_builder=early_discharge.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

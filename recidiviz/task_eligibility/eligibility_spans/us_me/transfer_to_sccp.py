@@ -23,6 +23,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
+from recidiviz.task_eligibility.completion_events import (
+    release_to_community_confinement_supervision,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     minimum_or_community_custody,
     no_detainers_warrants_or_other,
@@ -50,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         x_months_remaining_on_sentence.VIEW_BUILDER,
         no_detainers_warrants_or_other.VIEW_BUILDER,
     ],
+    completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

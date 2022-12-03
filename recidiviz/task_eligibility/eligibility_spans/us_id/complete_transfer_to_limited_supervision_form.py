@@ -21,6 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population_not_limited,
 )
+from recidiviz.task_eligibility.completion_events import transfer_to_limited_supervision
 from recidiviz.task_eligibility.criteria.general import (
     negative_ua_within_90_days,
     no_felony_within_24_months,
@@ -60,6 +61,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_supervision_at_least_one_year.VIEW_BUILDER,
         not_at_liberty.VIEW_BUILDER,
     ],
+    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
