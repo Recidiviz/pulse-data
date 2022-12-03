@@ -28,6 +28,7 @@ TASK_EVENTS_DESCRIPTION = (
 )
 
 
+# TODO(#16809): Deprecate this view entirely in favor of task completion event views.
 TASK_EVENTS_QUERY_TEMPLATE = """
     WITH early_discharge AS (
         SELECT

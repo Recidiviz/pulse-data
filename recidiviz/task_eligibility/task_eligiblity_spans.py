@@ -25,6 +25,7 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.dataset_config import (
+    TASK_COMPLETION_EVENTS_DATASET_ID,
     TASK_ELIGIBILITY_DATASET_ID,
     task_eligibility_spans_state_specific_dataset,
 )
@@ -38,6 +39,12 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 )
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_collector import (
     TaskCandidatePopulationBigQueryViewCollector,
+)
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    TaskCompletionEventBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
+    TaskCompletionEventBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -104,6 +111,12 @@ unions the results of all single-state `all_state_specific_criteria` views (e.g.
 
 ALL_POPULATIONS_VIEW_ID = "all_candidate_populations"
 
+
+ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE = """
+This view contains all task completion events for all people across all states. It 
+unions the results of all the completion event views in `{completion_event_dataset_id}`.
+"""
+ALL_COMPLETION_EVENTS_VIEW_ID = "all_completion_events"
 
 ALL_TASKS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
 This view contains all task eligiblity spans for {state_code} tasks. It unions the 
@@ -322,13 +335,35 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
     ]
 
 
+def get_completion_events_unioned_view_builder() -> UnionAllBigQueryViewBuilder:
+    view_collector = TaskCompletionEventBigQueryViewCollector()
+
+    def get_completion_event_select_statement(
+        vb: TaskCompletionEventBigQueryViewBuilder,
+    ) -> str:
+        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
+        return f"SELECT '{vb.completion_event_type}' AS completion_event_type, *"
+
+    return UnionAllBigQueryViewBuilder(
+        dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
+        view_id=ALL_COMPLETION_EVENTS_VIEW_ID,
+        description=StrictStringFormatter().format(
+            ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE,
+            completion_event_dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
+        ),
+        parent_view_builders=view_collector.collect_view_builders(),
+        builder_to_select_statement=get_completion_event_select_statement,
+    )
+
+
 def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
     """Returns a list of view builders for views that union together results from
-    disparate criteria, population, and task eligibility spans views.
+    disparate criteria, population, completion event, and task eligibility spans views.
     """
 
     return [
         *_get_criteria_unioned_view_builders(),
         *_get_candidate_population_unioned_view_builders(),
+        get_completion_events_unioned_view_builder(),
         *_get_eligiblity_spans_unioned_view_builders(),
     ]

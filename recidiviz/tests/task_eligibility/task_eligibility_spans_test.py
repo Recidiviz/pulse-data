@@ -40,6 +40,10 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 dataset_id="task_eligibility_candidates_general",
                 table_id="all_general_candidate_populations",
             ),
+            BigQueryAddress(
+                dataset_id="task_eligibility_completion_events",
+                table_id="all_completion_events",
+            ),
             BigQueryAddress(dataset_id="task_eligibility", table_id="all_tasks"),
             BigQueryAddress(
                 dataset_id="task_eligibility_criteria_us_id",

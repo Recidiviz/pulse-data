@@ -14,17 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dataset configuration for task eligibility views"""
-
-from recidiviz.common.constants.states import StateCode
-
-# Dataset with views that union together all task eligibility spans,
-# component criteria, and populations.
-TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
-
-TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events"
-
-
-def task_eligibility_spans_state_specific_dataset(state_code: StateCode) -> str:
-    """Returns the dataset containing task eligibility spans for this region."""
-    return f"task_eligibility_spans_{state_code.value.lower()}"
