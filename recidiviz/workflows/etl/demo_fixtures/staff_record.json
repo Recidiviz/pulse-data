@@ -1,2 +1,2 @@
-{"id":"TESTOFFICER1","state_code":"US_TN","name":"BRUNHILDE GUTHRIE","email":"demo1@xx.gov","has_caseload":true,"district":"1", "given_names": "BRUNHILDE", "surname": "GUTHRIE"}
-{"id":"TESTOFFICER2","state_code":"US_TN","name":"CORNELIUS KHAN","email":"demo2@xx.gov","has_caseload":true,"district":"1", "given_names": "CORNELIUS", "surname": "KHAN"}
+{"id":"TESTOFFICER1","state_code":"US_TN","name":"BRUNHILDE GUTHRIE","email":"demo1@xx.gov","has_caseload":true,"has_facility_caseload":false,"district":"1", "given_names": "BRUNHILDE", "surname": "GUTHRIE"}
+{"id":"TESTOFFICER2","state_code":"US_TN","name":"CORNELIUS KHAN","email":"demo2@xx.gov","has_caseload":true,"has_facility_caseload":false,"district":"1", "given_names": "CORNELIUS", "surname": "KHAN"}

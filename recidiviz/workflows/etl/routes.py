@@ -40,6 +40,9 @@ from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     WorkflowsOpportunityETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
+    WorkflowsResidentETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
     WorkflowsStaffETLDelegate,
 )
@@ -53,6 +56,7 @@ def get_workflows_delegates() -> List[WorkflowsETLDelegate]:
         WorkflowsOpportunityETLDelegate(),
         WorkflowsStaffETLDelegate(),
         WorkflowsClientETLDelegate(),
+        WorkflowsResidentETLDelegate(),
     ]
 
 
