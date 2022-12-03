@@ -35,6 +35,9 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
     StateSpecificTaskCandidatePopulationBigQueryViewBuilder,
     TaskCandidatePopulationBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    TaskCompletionEventBigQueryViewBuilder,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
     TaskCriteriaBigQueryViewBuilder,
@@ -93,6 +96,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         description: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> None:
         self._validate_builder_state_codes(
             state_code, candidate_population_view_builder, criteria_spans_view_builders
@@ -122,6 +126,8 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.task_name = task_name
         self.candidate_population_view_builder = candidate_population_view_builder
         self.criteria_spans_view_builders = criteria_spans_view_builders
+        # TODO(#16808): Pull this view in to the query to populate a new end_reason column.
+        self.completion_event_builder = completion_event_builder
 
     @staticmethod
     def _build_query_template(

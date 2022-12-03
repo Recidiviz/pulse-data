@@ -21,6 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     supervision_population_active_levels,
 )
+from recidiviz.task_eligibility.completion_events import supervision_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     supervision_level_higher_than_assessment_level,
 )
@@ -42,6 +43,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
     ],
+    completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
