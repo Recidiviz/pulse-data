@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prison system."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     GrievancesUpheldType,
     PrisonsExpenseType,
@@ -75,12 +74,10 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
-    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
