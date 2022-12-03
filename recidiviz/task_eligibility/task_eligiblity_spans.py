@@ -201,8 +201,7 @@ def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
             raise ValueError(f"Unexpected view builder type: {view_builder}")
 
     def get_criteria_select_statement(vb: TaskCriteriaBigQueryViewBuilder) -> str:
-        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
-        return f"SELECT '{vb.criteria_name}' AS criteria_name, *"
+        return f"SELECT '{vb.criteria_name}' AS criteria_name, state_code, person_id, start_date, end_date, meets_criteria, reason"
 
     subpart_unioned_view_builders = []
     for (
@@ -282,8 +281,7 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
     def get_population_select_statement(
         vb: TaskCandidatePopulationBigQueryViewBuilder,
     ) -> str:
-        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
-        return f"SELECT '{vb.population_name}' AS population_name, *"
+        return f"SELECT '{vb.population_name}' AS population_name, state_code, person_id, start_date, end_date"
 
     subpart_unioned_view_builders = []
     for (
@@ -341,8 +339,7 @@ def get_completion_events_unioned_view_builder() -> UnionAllBigQueryViewBuilder:
     def get_completion_event_select_statement(
         vb: TaskCompletionEventBigQueryViewBuilder,
     ) -> str:
-        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
-        return f"SELECT '{vb.completion_event_type}' AS completion_event_type, *"
+        return f"SELECT '{vb.completion_event_type}' AS completion_event_type, state_code, person_id, completion_event_date"
 
     return UnionAllBigQueryViewBuilder(
         dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
