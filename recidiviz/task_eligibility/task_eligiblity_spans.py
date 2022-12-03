@@ -18,12 +18,11 @@
 eligiblity spans into central locations.
 """
 from collections import defaultdict
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import List, Sequence
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryViewBuilder,
-    BigQueryViewBuilderType,
-    SimpleBigQueryViewBuilder,
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.union_all_big_query_view_builder import (
+    UnionAllBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_DATASET_ID,
@@ -49,18 +48,6 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_collector import (
     TaskCriteriaBigQueryViewCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
-
-SELECT_STATEMENT_TEMPLATE = """
-SELECT * FROM `{{project_id}}.{{{dataset_id}_dataset}}.{view_id}`
-"""
-
-CRITERIA_SELECT_STATEMENT_TEMPLATE = """
-SELECT '{criteria_name}' AS criteria_name, * FROM `{{project_id}}.{{{dataset_id}_dataset}}.{view_id}`
-"""
-
-POPULATION_SELECT_STATEMENT_TEMPLATE = """
-SELECT '{population_name}' AS population_name, * FROM `{{project_id}}.{{{dataset_id}_dataset}}.{view_id}`
-"""
 
 ALL_CRITERIA_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
 This view contains all criteria spans for {state_code} criteria with state-specific
@@ -132,7 +119,7 @@ results of all single-state `all_tasks` views (e.g. `task_eligibility_us_xx.all_
 TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID = "all_tasks"
 
 
-def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
+def _get_eligiblity_spans_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     """Returns a list of view builders containing:
     a) one view per state, which unions task eligiblity spans for that state into
         a single 'all_tasks' view for that state, and
@@ -153,7 +140,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
 
         dataset_id = task_eligibility_spans_state_specific_dataset(state_code)
         state_specific_unioned_view_builders.append(
-            _build_union_all_view_builder(
+            UnionAllBigQueryViewBuilder(
                 dataset_id=dataset_id,
                 view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID,
                 description=StrictStringFormatter().format(
@@ -161,7 +148,7 @@ def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
                     state_code=state_code.value,
                     state_specific_spans_dataset_id=dataset_id,
                 ),
-                view_builders=task_view_builders,
+                parent_view_builders=task_view_builders,
             )
         )
 
@@ -171,16 +158,16 @@ def _get_eligiblity_spans_unioned_view_builders() -> List[BigQueryViewBuilder]:
         )
 
     return state_specific_unioned_view_builders + [
-        _build_union_all_view_builder(
+        UnionAllBigQueryViewBuilder(
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=TASK_ELIGIBILITY_SPANS_ALL_TASKS_VIEW_ID,
             description=ALL_TASKS_ALL_STATES_DESCRIPTION,
-            view_builders=state_specific_unioned_view_builders,
+            parent_view_builders=state_specific_unioned_view_builders,
         )
     ]
 
 
-def _get_criteria_unioned_view_builders() -> List[BigQueryViewBuilder]:
+def _get_criteria_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     """Returns a list of view builders containing:
     a) one view per state, which unions criteria spans with state-specific logic for
      that state into a single 'all_state_specific_criteria' view for that state, and
@@ -200,10 +187,9 @@ def _get_criteria_unioned_view_builders() -> List[BigQueryViewBuilder]:
         else:
             raise ValueError(f"Unexpected view builder type: {view_builder}")
 
-    def select_statement_format_args_fn(
-        vb: TaskCriteriaBigQueryViewBuilder,
-    ) -> Dict[str, str]:
-        return {"criteria_name": vb.criteria_name}
+    def get_criteria_select_statement(vb: TaskCriteriaBigQueryViewBuilder) -> str:
+        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
+        return f"SELECT '{vb.criteria_name}' AS criteria_name, *"
 
     subpart_unioned_view_builders = []
     for (
@@ -218,7 +204,7 @@ def _get_criteria_unioned_view_builders() -> List[BigQueryViewBuilder]:
 
         dataset_id = f"task_eligibility_criteria_{state_code.value.lower()}"
         subpart_unioned_view_builders.append(
-            _build_union_all_view_builder(
+            UnionAllBigQueryViewBuilder(
                 dataset_id=dataset_id,
                 view_id=CRITERIA_SPANS_ALL_STATE_SPECIFIC_CRITERIA_VIEW_ID,
                 description=StrictStringFormatter().format(
@@ -226,38 +212,36 @@ def _get_criteria_unioned_view_builders() -> List[BigQueryViewBuilder]:
                     state_code=state_code.value,
                     state_specific_criteria_dataset_id=dataset_id,
                 ),
-                view_builders=criteria_view_builders,
-                select_statement_template=CRITERIA_SELECT_STATEMENT_TEMPLATE,
-                select_statement_format_args_fn=select_statement_format_args_fn,
+                parent_view_builders=criteria_view_builders,
+                builder_to_select_statement=get_criteria_select_statement,
             )
         )
 
     dataset_id = "task_eligibility_criteria_general"
     subpart_unioned_view_builders.append(
-        _build_union_all_view_builder(
+        UnionAllBigQueryViewBuilder(
             dataset_id=dataset_id,
             view_id=CRITERIA_SPANS_ALL_GENERAL_CRITERIA_VIEW_ID,
             description=StrictStringFormatter().format(
                 ALL_CRITERIA_GENERAL_DESCRIPTION_TEMPLATE,
                 general_criteria_dataset_id=dataset_id,
             ),
-            view_builders=general_builders,
-            select_statement_template=CRITERIA_SELECT_STATEMENT_TEMPLATE,
-            select_statement_format_args_fn=select_statement_format_args_fn,
+            parent_view_builders=general_builders,
+            builder_to_select_statement=get_criteria_select_statement,
         )
     )
 
     return subpart_unioned_view_builders + [
-        _build_union_all_view_builder(
+        UnionAllBigQueryViewBuilder(
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=ALL_CRITERIA_VIEW_ID,
             description=ALL_CRITERIA_DESCRIPTION,
-            view_builders=subpart_unioned_view_builders,
+            parent_view_builders=subpart_unioned_view_builders,
         )
     ]
 
 
-def _get_candidate_population_unioned_view_builders() -> List[BigQueryViewBuilder]:
+def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
     """Returns a list of view builders containing:
     a) one view per state, which unions candidate population spans with state-specific
      logic for that state into a single 'all_state_specific_candidate_populations' view for that
@@ -282,10 +266,11 @@ def _get_candidate_population_unioned_view_builders() -> List[BigQueryViewBuilde
         else:
             raise ValueError(f"Unexpected view builder type: {view_builder}")
 
-    def select_statement_format_args_fn(
+    def get_population_select_statement(
         vb: TaskCandidatePopulationBigQueryViewBuilder,
-    ) -> Dict[str, str]:
-        return {"population_name": vb.population_name}
+    ) -> str:
+        # TODO(#15132): Select columns explicitly to be tolerant of different column orders
+        return f"SELECT '{vb.population_name}' AS population_name, *"
 
     subpart_unioned_view_builders = []
     for (
@@ -300,7 +285,7 @@ def _get_candidate_population_unioned_view_builders() -> List[BigQueryViewBuilde
 
         dataset_id = f"task_eligibility_candidates_{state_code.value.lower()}"
         subpart_unioned_view_builders.append(
-            _build_union_all_view_builder(
+            UnionAllBigQueryViewBuilder(
                 dataset_id=dataset_id,
                 view_id=POPULATION_SPANS_ALL_STATE_SPECIFIC_POPULATIONS_VIEW_ID,
                 description=StrictStringFormatter().format(
@@ -308,33 +293,31 @@ def _get_candidate_population_unioned_view_builders() -> List[BigQueryViewBuilde
                     state_code=state_code.value,
                     state_specific_populations_dataset_id=dataset_id,
                 ),
-                view_builders=population_view_builders,
-                select_statement_template=POPULATION_SELECT_STATEMENT_TEMPLATE,
-                select_statement_format_args_fn=select_statement_format_args_fn,
+                parent_view_builders=population_view_builders,
+                builder_to_select_statement=get_population_select_statement,
             )
         )
 
     dataset_id = "task_eligibility_candidates_general"
     subpart_unioned_view_builders.append(
-        _build_union_all_view_builder(
+        UnionAllBigQueryViewBuilder(
             dataset_id=dataset_id,
             view_id=POPULATION_SPANS_ALL_GENERAL_POPULATIONS_VIEW_ID,
             description=StrictStringFormatter().format(
                 ALL_POPULATIONS_GENERAL_DESCRIPTION_TEMPLATE,
                 general_population_dataset_id=dataset_id,
             ),
-            view_builders=general_builders,
-            select_statement_template=POPULATION_SELECT_STATEMENT_TEMPLATE,
-            select_statement_format_args_fn=select_statement_format_args_fn,
+            parent_view_builders=general_builders,
+            builder_to_select_statement=get_population_select_statement,
         )
     )
 
     return subpart_unioned_view_builders + [
-        _build_union_all_view_builder(
+        UnionAllBigQueryViewBuilder(
             dataset_id=TASK_ELIGIBILITY_DATASET_ID,
             view_id=ALL_POPULATIONS_VIEW_ID,
             description=ALL_POPULATIONS_DESCRIPTION,
-            view_builders=subpart_unioned_view_builders,
+            parent_view_builders=subpart_unioned_view_builders,
         )
     ]
 
@@ -349,62 +332,3 @@ def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
         *_get_candidate_population_unioned_view_builders(),
         *_get_eligiblity_spans_unioned_view_builders(),
     ]
-
-
-def _build_union_all_view_builder(
-    dataset_id: str,
-    view_id: str,
-    description: str,
-    view_builders: Sequence[BigQueryViewBuilderType],
-    select_statement_template: str = SELECT_STATEMENT_TEMPLATE,
-    select_statement_format_args_fn: Optional[
-        Callable[[BigQueryViewBuilderType], Dict[str, str]]
-    ] = None,
-) -> BigQueryViewBuilder:
-    """Returns a view at address (dataset_id, view_id) that unions together 'SELECT *'
-    queries against the materialized location of each of the views in |view_builders|.
-
-    If a custom |select_statement_template| is provided, that query will be used instead
-    of a simple SELECT * query. The user may also define a function that provides
-    additional format args for that custom template.
-    """
-    if not view_builders:
-        raise ValueError(
-            f"Found no view builders to union for view `{dataset_id}.{view_id}`"
-        )
-
-    select_queries = []
-    query_format_args = {}
-    for vb in view_builders:
-        if not vb.materialized_address:
-            raise ValueError(f"Expected view [{vb.address}] to be materialized.")
-
-        additional_format_args = (
-            select_statement_format_args_fn(vb)
-            if select_statement_format_args_fn
-            else {}
-        )
-        select_queries.append(
-            StrictStringFormatter().format(
-                select_statement_template,
-                dataset_id=vb.materialized_address.dataset_id,
-                view_id=vb.materialized_address.table_id,
-                **additional_format_args,
-            )
-        )
-        query_format_args[f"{vb.dataset_id}_dataset"] = vb.dataset_id
-
-    view_query_template = "UNION ALL".join(select_queries)
-
-    return SimpleBigQueryViewBuilder(
-        dataset_id=dataset_id,
-        view_id=view_id,
-        description=description,
-        view_query_template=view_query_template,
-        should_materialize=True,
-        materialized_address_override=None,
-        projects_to_deploy=None,
-        should_deploy_predicate=None,
-        clustering_fields=None,
-        **query_format_args,
-    )

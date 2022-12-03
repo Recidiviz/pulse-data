@@ -148,7 +148,10 @@ def compare_metric_view_output_to_sandbox(
             sandbox_dataset_prefix,
         )
         load_all_views_to_sandbox(
-            sandbox_dataset_prefix=sandbox_dataset_prefix, prompt=False
+            sandbox_dataset_prefix=sandbox_dataset_prefix,
+            prompt=False,
+            filter_union_all=True,
+            dataflow_dataset_override=None,
         )
 
     bq_client = BigQueryClientImpl()
