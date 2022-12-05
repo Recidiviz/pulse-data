@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ind_Alert
+file_description: |-
+  This table is a reference table for the alert reference codes used in the table ind_Offender_Alert.
+data_classification: source
+primary_key_cols:
+  - AlertId
+columns:
+  - name: AlertId
+    description: Primary key for this table. Joins to `ind_Offender_Alert.AlertId`.
+  - name: AlertDesc
+    description: Description for this alert code.
+  - name: Restriction
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: AlertTypeId
+    description: Code for type of alert, joins to `ind_AlertType.AlertTypeId`.
+  - name: SYSTEM_REF_TX
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: SYSTEM_REF_COMMENTS_TX
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Inactive
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: Locking
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: InsertUserId
+    description: |-
+      ID of the user who created this record.
+    is_pii: True
+  - name: InsertDate
+    description: |-
+      Timestamp for record creation.
+    is_datetime: True
+  - name: UpdateUserId
+    description: |-
+      ID of the user who most recently modified this record.
+    is_pii: True
+  - name: UpdateDate
+    description: |-
+      Timestamp for record modification.
+    is_datetime: True
+  - name: IsCustom
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: SystemRow
+    description: |-
+      TODO(#15329): Fill in column description
+  - name: AlertVisibilityTypeId
+    description: Code for visibility status of this alert, joins to `ind_AlertVisibilityType.AlertVisibilityTypeId`.
