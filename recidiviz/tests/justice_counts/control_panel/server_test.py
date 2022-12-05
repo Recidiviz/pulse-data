@@ -413,7 +413,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [],
         )
 
-        self.assertEqual(metrics[4]["key"], prisons.average_daily_population.key)
+        self.assertEqual(metrics[4]["key"], prisons.daily_population.key)
         # Readmissions metric has a prefilled context.
         self.assertEqual(metrics[5]["key"], prisons.readmissions.key)
         self.assertEqual(
@@ -477,7 +477,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "population",
                 "population_by_type",
                 "population_by_race",
-                "population_by_gender",
+                "population_by_biological_sex",
             ],
         )
         self.assertEqual(

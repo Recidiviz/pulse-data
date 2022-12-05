@@ -26,10 +26,7 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     PrisonsReleaseType,
     PrisonsStaffType,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import prisons
 
@@ -86,25 +83,25 @@ PRISON_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population",
-        definition=prisons.average_daily_population,
+        definition=prisons.daily_population,
     ),
     MetricFile(
         canonical_filename="population_by_type",
-        definition=prisons.average_daily_population,
+        definition=prisons.daily_population,
         disaggregation=PrisonsOffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        definition=prisons.average_daily_population,
+        definition=prisons.daily_population,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="population_by_gender",
-        definition=prisons.average_daily_population,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        canonical_filename="population_by_biological_sex",
+        definition=prisons.daily_population,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="releases",

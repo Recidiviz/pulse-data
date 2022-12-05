@@ -352,37 +352,6 @@ class PrisonDrugOffenseIncludesExcludes(Enum):
     DRUG_POSSESSION = "Drug possession"
 
 
-# Average daily population
-
-
-class PrisonAverageDailyPopulationIncludesExcludes(Enum):
-    CORRECTIONAL_INSTITUTIONS = "People held in the agency’s correctional institutions"
-    AGENCY_CAMPS = (
-        "People held in the agency’s boot camps, conservation camps, and forestry camps"
-    )
-    AGENCY_RECEPTION_CENTERS = (
-        "People held in the agency’s reception, diagnostic, and classification centers"
-    )
-    AGENCY_RELEASE_CENTERS = (
-        "People held in the agency’s release centers, halfway houses, and road camps"
-    )
-    AGENCY_HOSPITALS = "People held in the agency’s hospitals and drug and alcohol treatment facilities"
-    VOCATIONAL_FACILITIES = "People held in the agency’s vocational training facilities"
-    TEMPORARILY_ABSENT = "People who are temporarily absent for less than 30 days (e.g., furlough, hospital, work release)"
-    JAILS = "People under the agency’s jurisdiction held in local jails"
-    PRIVATE_FACILITIES = (
-        "People under the agency’s jurisdiction held in private facilities"
-    )
-    OUTSIDE_FACILITY = (
-        "People under the agency’s jurisdiction held in another state’s facility"
-    )
-    OTHER = "Other people under the agency’s jurisdiction not captured by the listed categories"
-    HOUSED_FOR_OTHER_AGENCIES = (
-        "People housed in the agency’s correctional facilities for other jurisdictions"
-    )
-    AWOL = "People who are AWOL or have escaped (more than 30 days)"
-
-
 # Releases
 class PrisonReleasesIncludesExcludes(Enum):
     PROBATION = (

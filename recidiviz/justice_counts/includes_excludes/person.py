@@ -19,6 +19,17 @@
 from enum import Enum
 
 
+# Biological Sex
+class MaleBiologicalSexIncludesExcludes(Enum):
+    MALE = "Male biological sex"
+    UNKNOWN = "Unknown biological sex"
+
+
+class FemaleBiologicalSexIncludesExcludes(Enum):
+    FEMALE = "Female biological sex"
+    UNKNOWN = "Unknown biological sex"
+
+
 # Gender
 class GenderIncludesExcludes(Enum):
     MALE = "Male"

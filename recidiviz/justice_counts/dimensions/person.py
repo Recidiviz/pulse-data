@@ -207,6 +207,16 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
         return "Unknown Ethnicity"
 
 
+class BiologicalSex(DimensionBase, enum.Enum):
+    MALE = "Male Biological Sex"
+    FEMALE = "Female Biological Sex"
+    UNKNOWN = "Unknown Biological Sex"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "global/biological_sex"
+
+
 class GenderRestricted(DimensionBase, enum.Enum):
     MALE = "Male"
     FEMALE = "Female"

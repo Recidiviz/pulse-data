@@ -30,6 +30,7 @@ from recidiviz.justice_counts.dimensions import (
 # All official Justice Counts dimensions should be "checked in" here
 DIMENSIONS = [
     person.Age,
+    person.BiologicalSex,
     person.Race,
     person.RaceAndEthnicity,
     person.Gender,
