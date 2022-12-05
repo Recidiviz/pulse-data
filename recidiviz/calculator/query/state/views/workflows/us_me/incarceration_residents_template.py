@@ -110,13 +110,18 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
           USING(person_external_id)
 
     ),
+    me_sccp_eligibility AS (
+        SELECT
+            external_id AS person_external_id,
+            ["usMeSCCP"] AS eligible_opportunities,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_me_complete_transfer_to_sccp_form_record_materialized`
+    ),
     me_residents AS (
         SELECT
-            #* EXCEPT(eligible_opportunities),
-            # {array_concat_with_null(["me_sccp_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
-            *,
-            ["usMeSCCP"] as all_eligible_opportunities
+            * EXCEPT(eligible_opportunities),
+             {array_concat_with_null(["me_sccp_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
         FROM resident_info
+        LEFT JOIN me_sccp_eligibility USING(person_external_id)
         WHERE officer_id IS NOT NULL
     )
 """

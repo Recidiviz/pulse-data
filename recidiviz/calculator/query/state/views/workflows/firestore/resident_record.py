@@ -70,6 +70,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=RESIDENT_RECORD_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
