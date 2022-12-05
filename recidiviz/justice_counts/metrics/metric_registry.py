@@ -72,7 +72,7 @@ METRICS = [
     prisons.total_staff,
     prisons.residents,
     prisons.admissions,
-    prisons.average_daily_population,
+    prisons.daily_population,
     prisons.readmissions,
     prisons.releases,
     prisons.staff_use_of_force_incidents,

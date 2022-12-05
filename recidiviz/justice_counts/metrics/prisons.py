@@ -26,13 +26,17 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     PrisonsStaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
-from recidiviz.justice_counts.includes_excludes.person import GenderIncludesExcludes
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.prisons import (
+    PopulationIncludesExcludes,
     PrisonAdmissionsIncludesExcludes,
-    PrisonAverageDailyPopulationIncludesExcludes,
     PrisonClinicalStaffIncludesExcludes,
     PrisonDrugOffenseIncludesExcludes,
     PrisonExpensesContractBedsIncludesExcludes,
@@ -346,59 +350,52 @@ admissions = MetricDefinition(
     ],
 )
 
-average_daily_population = MetricDefinition(
+daily_population = MetricDefinition(
     system=System.PRISONS,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
-    display_name="Average Daily Population",
-    description="Measures the average daily population of individuals held in your state corrections system.",
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonAverageDailyPopulationIncludesExcludes,
-        excluded_set={
-            PrisonAverageDailyPopulationIncludesExcludes.AWOL,
-            PrisonAverageDailyPopulationIncludesExcludes.HOUSED_FOR_OTHER_AGENCIES,
-        },
-    ),
+    display_name="Daily Population",
+    description="A single day count of the number of people incarcerated in the agency’s prison jurisdiction.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Calculate the average against a 30-day month. Report individuals in the most serious category (new sentence > violation > hold).",
+    specified_contexts=[],
+    includes_excludes=IncludesExcludesSet(
+        members=PopulationIncludesExcludes,
+        excluded_set={
+            PopulationIncludesExcludes.NOT_CONVICTED,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(
-            dimension=GenderRestricted,
+            dimension=BiologicalSex,
             required=True,
             dimension_to_includes_excludes={
-                GenderRestricted.MALE: IncludesExcludesSet(
-                    members=GenderIncludesExcludes,
-                    excluded_set={
-                        GenderIncludesExcludes.FEMALE,
-                        GenderIncludesExcludes.OTHER,
-                        GenderIncludesExcludes.UNKNOWN,
-                    },
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
                 ),
-                GenderRestricted.FEMALE: IncludesExcludesSet(
-                    members=GenderIncludesExcludes,
-                    excluded_set={
-                        GenderIncludesExcludes.MALE,
-                        GenderIncludesExcludes.OTHER,
-                        GenderIncludesExcludes.UNKNOWN,
-                    },
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
                 ),
             },
         ),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(
             dimension=PrisonsOffenseType,
-            required=False,
-            display_name="Prison Offense Type",
+            required=True,
             dimension_to_includes_excludes={
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
                     members=PrisonPersonOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
+                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
                     },
                 ),
                 PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
                     members=PrisonPropertyOffenseIncludesExcludes,
+                ),
+                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                    members=PrisonDrugOffenseIncludesExcludes,
                 ),
                 PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PrisonPublicOrderOffenseIncludesExcludes,
@@ -412,9 +409,6 @@ average_daily_population = MetricDefinition(
                         PrisonPublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
                         PrisonPublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
-                ),
-                PrisonsOffenseType.DRUG: IncludesExcludesSet(
-                    members=PrisonDrugOffenseIncludesExcludes,
                 ),
             },
         ),
