@@ -34,12 +34,12 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="funding",
         definition=prisons.funding,
-        disaggregation=PrisonsFundingType,
-        disaggregation_column_name="funding_type",
     ),
     MetricFile(
         canonical_filename="funding_by_type",
         definition=prisons.funding,
+        disaggregation=PrisonsFundingType,
+        disaggregation_column_name="funding_type",
     ),
     MetricFile(
         canonical_filename="expenses",
