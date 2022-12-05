@@ -698,7 +698,7 @@ def get_api_blueprint(
 
     ### Dashboards ###
 
-    def get_agency_datapoints(agency_id: str, published_only: bool = False) -> Response:
+    def get_agency_datapoints(agency_id: str) -> Response:
         permissions = g.user_context.permissions if "user_context" in g else []
         if agency_id is None:
             # If no agency_id is specified, pick one of the agencies
@@ -719,7 +719,6 @@ def get_api_blueprint(
             # we are only fetching reports here to get the list of report
             # ids in an agency, so no need to fetch datapoints here
             include_datapoints=False,
-            published_only=published_only,
         )
         report_id_to_status = {report.id: report.status for report in reports}
         report_id_to_frequency = {
@@ -780,13 +779,6 @@ def get_api_blueprint(
     def get_datapoints_by_agency_id(agency_id: str) -> Response:
         try:
             return get_agency_datapoints(agency_id=agency_id)
-        except Exception as e:
-            raise _get_error(error=e) from e
-
-    @api_blueprint.route("agencies/<agency_id>/published_datapoints", methods=["GET"])
-    def get_published_datapoints_by_agency_id(agency_id: str) -> Response:
-        try:
-            return get_agency_datapoints(agency_id=agency_id, published_only=True)
         except Exception as e:
             raise _get_error(error=e) from e
 
