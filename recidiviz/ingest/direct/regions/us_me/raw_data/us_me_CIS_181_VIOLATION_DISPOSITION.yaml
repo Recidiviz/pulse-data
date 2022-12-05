@@ -10,10 +10,13 @@ columns:
     description: ID of the related disciplinary case, joins to CIS_180_DISCIPLINARY_CASE.DISCIPLINARY_CASE_ID.
   - name: Cis_1810_Disposition_Class_Cd
   - name: Cis_1810_Violation_Class_Cd
+    description: Code of this violation disposition class to be merged with CIS_1810.
   - name: Cis_1811_Disposition_Type_Cd
   - name: Cis_1811_Violation_Type_Cd
+    description: Code of violation disposition type to be merged with CIS_1811.
   - name: Cis_1812_Violation_Plea_Type_Cd
   - name: Cis_1813_Disposition_Outcome_Type_Cd
+    description: Disposition outcome type to be merged with CIS_1813.
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date

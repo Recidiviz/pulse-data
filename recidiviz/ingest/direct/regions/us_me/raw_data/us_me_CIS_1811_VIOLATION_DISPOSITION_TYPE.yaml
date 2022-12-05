@@ -7,6 +7,7 @@ primary_key_cols:
   - Violation_Disposition_Type_Cd
 columns:
   - name: Cis_1810_Violation_Disposition_Class_Cd
+    description: Violation disposition class code.
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
