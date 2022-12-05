@@ -10,7 +10,9 @@ columns:
     description: This is the client ID associated with the note.
     is_pii: True
   - name: Cis_2040_Contact_Mode_Cd
+    description: Contact mode code. Some CMs use this field to group their notes. E.g. if related to programming, could be set as <Program/Service>
   - name: Cis_2041_Note_Type_Cd
+    description: Note type code. It usually gives an idea of where the note came from. E.g. CMs usually put theirs as <Case Plan/Management>. Program teachers use <Education Notes>.
   - name: Cis_2042_Person_Contacted_Cd
   - name: Cis_900_Empl_Create_Id
     is_pii: True

@@ -18,4 +18,4 @@ columns:
     is_pii: True
   - name: Modified_On_Date
   - name: Violation_Disposition_Class_Cd
-    description: Primary key
+    description: Primary key. Code of this violation disposition class.

@@ -42,6 +42,7 @@ columns:
   - name: CREATED_BY_TX
     is_pii: True
   - name: CREATED_ON_DATE
+    description: Date the record was created on
   - name: DISCIPLINARY_ACTION_FORMAL_IND
   - name: DISCIPLINARY_CASE_ID
     description: Primary key
