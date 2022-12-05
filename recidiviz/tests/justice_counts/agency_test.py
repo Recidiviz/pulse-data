@@ -115,6 +115,12 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             {"Agency Alpha", "Beta Initiative", "Agency Gamma", "Agency Delta"},
         )
 
+        # Test to_json
+        self.assertEqual(
+            {a.to_json()["state"] for a in agencies},
+            {"California", "Alaska"},
+        )
+
         # Raise error if agency of that name already exists
         with self.assertRaisesRegex(
             IntegrityError,
