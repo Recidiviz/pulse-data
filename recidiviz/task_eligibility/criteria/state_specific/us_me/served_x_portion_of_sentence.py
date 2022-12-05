@@ -75,8 +75,9 @@ term_crit_date AS (
                     INTERVAL SAFE_CAST(ROUND(term_duration_days*2/3) AS INT64) DAY)
             ELSE DATE_ADD(
                 start_date, 
-                INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)
-        END critical_date
+                INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)        
+        END critical_date,
+        IF(term_duration_days/365 > 5, '2/3', '1/2') AS x_portion_served,
     FROM term_wdur_cte
 ),
 {create_sub_sessions_with_attributes('term_crit_date')},
@@ -91,23 +92,32 @@ critical_date_spans AS (
             OVER(PARTITION BY state_code, person_id, start_date, end_date 
             ORDER BY critical_date DESC) = 1
 ),
-
+save_x_portion_served AS (
+    SELECT
+        DISTINCT person_id, state_code, critical_date, x_portion_served
+    FROM critical_date_spans
+),
 {critical_date_has_passed_spans_cte()}
 
 SELECT
-    state_code,
-    person_id,
-    start_date,                                 
+    cd.state_code,
+    cd.person_id,
+    cd.start_date,                                 
     -- if the most recent subsession is True, then end_date should be NULL instead of 
     -- term end_date                             
-    IF((ROW_NUMBER() OVER (PARTITION BY person_id, state_code
-                           ORDER BY start_date DESC) =  1) 
-            AND (critical_date_has_passed), 
+    IF((ROW_NUMBER() OVER (PARTITION BY cd.person_id, cd.state_code
+                           ORDER BY cd.start_date DESC) =  1) 
+            AND (cd.critical_date_has_passed), 
         NULL, 
-        end_date) AS end_date,                       
-    critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
-FROM critical_date_has_passed_spans
+        cd.end_date) AS end_date,                       
+    cd.critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(cd.critical_date AS eligible_date,
+                   xps.x_portion_served AS x_portion_served)) AS reason,
+FROM critical_date_has_passed_spans cd
+LEFT JOIN save_x_portion_served xps
+    ON  xps.person_id = cd.person_id
+        AND xps.state_code = cd.state_code
+        ANd xps.critical_date = cd.critical_date
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
