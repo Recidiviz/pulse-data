@@ -794,6 +794,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "name": agency.name,
                     "systems": agency.systems,
                     "state_code": agency.state_code,
+                    "state": agency.get_state_name(),
                 }
             ],
         )
@@ -830,6 +831,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "name": agency_A.name,
                     "systems": agency_A.systems,
                     "state_code": agency_A.state_code,
+                    "state": agency_A.get_state_name(),
                 },
                 {
                     "fips_county_code": agency_B.fips_county_code,
@@ -837,6 +839,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "name": agency_B.name,
                     "systems": agency_B.systems,
                     "state_code": agency_B.state_code,
+                    "state": agency_B.get_state_name(),
                 },
                 {
                     "fips_county_code": agency_C.fips_county_code,
@@ -844,6 +847,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "name": agency_C.name,
                     "systems": agency_C.systems,
                     "state_code": agency_C.state_code,
+                    "state": agency_C.get_state_name(),
                 },
             ],
         )
