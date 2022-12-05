@@ -292,6 +292,10 @@ class Agency(Source):
         fips.validate_county_code(fips_county_code)
         return fips_county_code
 
+    def get_state_name(self) -> str:
+        state_name = StateCode(self.state_code.upper()).get_state().name
+        return state_name
+
     __mapper_args__ = {
         "polymorphic_identity": "agency",
     }
@@ -308,6 +312,7 @@ class Agency(Source):
             ],
             "state_code": self.state_code,
             "fips_county_code": self.fips_county_code,
+            "state": self.get_state_name(),
         }
 
 
