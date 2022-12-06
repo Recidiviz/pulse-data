@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 def main(engine: Engine) -> None:
-    """For each agency, this function checks if a monthly report exists for the current
-    month and year. If the monthly report already exists, nothing is done. If the
+    """For each agency, this function checks if a monthly report exists for the most recent previous
+    month/year. If the monthly report already exists, nothing is done. If the
     monthly report does not exist, one is created.
 
     Additionally, for each agency, this function checks if an annual report exists for
-    the current month and year. If the annual report already exists, nothing is done. If
+    the most recent previous month/year. If the annual report already exists, nothing is done. If
     the annual report does not exists AND it is specified month to create an annual report,
     an annual report is created."""
 
@@ -54,6 +54,12 @@ def main(engine: Engine) -> None:
     current_dt = datetime.datetime.now(tz=datetime.timezone.utc)
     current_month = current_dt.month
     current_year = current_dt.year
+    # Calculate most recent previous month and year
+    if current_month > 1:
+        previous_month = current_month - 1
+    else:
+        previous_month = 12
+    previous_year = current_year - 1
 
     logger.info("Generating new Reports in database %s", engine.url)
     for agency in session.query(schema.Agency).all():
@@ -77,6 +83,8 @@ def main(engine: Engine) -> None:
             user_account_id=None,
             current_month=current_month,
             current_year=current_year,
+            previous_month=previous_month,
+            previous_year=previous_year,
             systems={schema.System[sys] for sys in agency.systems},
             metric_key_to_datapoints=metric_key_to_datapoints,
         )
@@ -85,22 +93,22 @@ def main(engine: Engine) -> None:
             logger.info(
                 "Generated Monthly Report for Agency %s, Month %s, Year %s",
                 agency.name,
-                current_month,
-                current_year,
+                previous_month,
+                previous_year if previous_month == 12 else current_year,
             )
         elif monthly_report is None and monthly_metric_defs is not None:
             logger.info(
                 "Monthly Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
-                current_month,
-                current_year,
+                previous_month,
+                previous_year if previous_month == 12 else current_year,
             )
         elif monthly_report is None and monthly_metric_defs is None:
             logger.info(
                 "No metrics are included in Monthly Report for Agency %s, Month %s, Year %s.",
                 agency.name,
-                current_month,
-                current_year,
+                previous_month,
+                previous_year if previous_month == 12 else current_year,
             )
 
         if yearly_report is not None:
@@ -108,21 +116,21 @@ def main(engine: Engine) -> None:
                 "Generated Annual Report for Agency %s, Month %s, Year %s",
                 agency.name,
                 current_month,
-                current_year,
+                previous_year,
             )
         elif yearly_report is None and annual_metric_defs is not None:
             logger.info(
                 "Annual Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
                 current_month,
-                current_year,
+                previous_year,
             )
         elif yearly_report is None and annual_metric_defs is None:
             logger.info(
                 "No metrics are included in Annual Report for Agency %s, Month %s, Year %s.",
                 agency.name,
                 current_month,
-                current_year,
+                previous_year,
             )
 
 

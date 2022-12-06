@@ -202,6 +202,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account_id=None,
                 current_month=1,
                 current_year=2022,
+                previous_month=12,
+                previous_year=2021,
                 systems={
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
@@ -245,6 +247,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account_id=user_id_A,
                 current_month=1,
                 current_year=2022,
+                previous_month=12,
+                previous_year=2021,
                 systems={
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
@@ -262,11 +266,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 self.assertEqual(
                     new_monthly_report_A.date_range_start,
-                    datetime.date(2022, 1, 1),
+                    datetime.date(2021, 12, 1),
                 )
                 self.assertEqual(
                     new_monthly_report_A.date_range_end,
-                    datetime.date(2022, 2, 1),
+                    datetime.date(2022, 1, 1),
                 )
             if new_yearly_report_A:
                 self.assertEqual(new_yearly_report_A.source_id, agency_id_A)
@@ -275,11 +279,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 )
                 self.assertEqual(
                     new_yearly_report_A.date_range_start,
-                    datetime.date(2022, 1, 1),
+                    datetime.date(2021, 1, 1),
                 )
                 self.assertEqual(
                     new_yearly_report_A.date_range_end,
-                    datetime.date(2023, 1, 1),
+                    datetime.date(2022, 1, 1),
                 )
 
             # Case 2 (Neither Monthly nor Annual report created (already exist))
@@ -294,6 +298,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account_id=user_id_A,
                 current_month=1,
                 current_year=2022,
+                previous_month=12,
+                previous_year=2021,
                 systems={
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
@@ -339,6 +345,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account_id=user_id_A,
                 current_month=1,
                 current_year=2022,
+                previous_month=12,
+                previous_year=2021,
                 systems={
                     schema.System[sys]
                     for sys in self.test_schema_objects.test_agency_A.systems
