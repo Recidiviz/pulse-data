@@ -32,7 +32,7 @@ def user_event_template(
             person_id,
             person_external_id,
             -- this incorporates state code so we don't need to join on it explicitly
-            pseudonymized_id AS client_id,
+            pseudonymized_id,
         FROM `{{project_id}}.{{workflows_views_dataset}}.client_record_archive_materialized` client_records
     )
 
@@ -47,7 +47,8 @@ def user_event_template(
     FROM (
         SELECT
             -- default columns for all views
-            client_id,
+            -- this field was renamed, fall back to previous name for older records
+            IFNULL(justice_involved_person_id, client_id) AS pseudonymized_id,
             timestamp,
             session_id,
             context_page_url,
@@ -62,5 +63,5 @@ def user_event_template(
     -- inner join to filter out recidiviz users and others unidentified (if any)
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users`
         USING (user_id)
-    LEFT JOIN clients USING (client_id)
+    LEFT JOIN clients USING (pseudonymized_id)
     """
