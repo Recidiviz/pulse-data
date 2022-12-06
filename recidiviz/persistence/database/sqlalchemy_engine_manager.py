@@ -29,9 +29,6 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
-    SQLALCHEMY_SSL_CERT_PATH,
-    SQLALCHEMY_SSL_KEY_PATH,
-    SQLALCHEMY_USE_SSL,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -342,8 +339,6 @@ class SQLAlchemyEngineManager:
     def update_sqlalchemy_env_vars(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        # TODO(#14842): Remove this once prod-data-client is deprecated
-        ssl_cert_path: Optional[str] = None,
         migration_user: bool = False,
         readonly_user: bool = False,
         using_proxy: bool = False,
@@ -360,7 +355,6 @@ class SQLAlchemyEngineManager:
             SQLALCHEMY_DB_HOST,
             SQLALCHEMY_DB_USER,
             SQLALCHEMY_DB_PASSWORD,
-            SQLALCHEMY_USE_SSL,
         ]
         original_values = {
             env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars
@@ -403,25 +397,6 @@ class SQLAlchemyEngineManager:
             os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(database_key=database_key)
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(
                 database_key=database_key
-            )
-
-        # TODO(#14842): Remove this once prod-data-client is deprecated
-        if ssl_cert_path is None:
-            os.environ[SQLALCHEMY_USE_SSL] = "0"
-        else:
-            original_values[SQLALCHEMY_SSL_CERT_PATH] = os.environ.get(
-                SQLALCHEMY_SSL_CERT_PATH
-            )
-            original_values[SQLALCHEMY_SSL_KEY_PATH] = os.environ.get(
-                SQLALCHEMY_SSL_KEY_PATH
-            )
-
-            os.environ[SQLALCHEMY_USE_SSL] = "1"
-            os.environ[SQLALCHEMY_SSL_CERT_PATH] = os.path.join(
-                ssl_cert_path, "client-cert.pem"
-            )
-            os.environ[SQLALCHEMY_SSL_KEY_PATH] = os.path.join(
-                ssl_cert_path, "client-key.pem"
             )
 
         return original_values
@@ -474,37 +449,6 @@ class SQLAlchemyEngineManager:
         )
         engine = create_engine(url)
         return engine
-
-    # TODO(#14842): Remove this once prod-data-client is deprecated
-    @classmethod
-    @environment.local_only
-    def get_engine_for_database_with_ssl_certs(
-        cls, *, database_key: SQLAlchemyDatabaseKey, ssl_cert_path: str
-    ) -> Engine:
-        db_user = cls._get_db_user(database_key=database_key)
-        db_password = cls._get_db_password(database_key=database_key)
-        host_name = cls._get_db_host(database_key=database_key)
-        db_name = database_key.db_name
-        db_port = cls._get_db_port()
-
-        url = URL.create(
-            drivername="postgresql",
-            username=db_user,
-            password=db_password,
-            host=host_name,
-            port=db_port,
-            database=db_name,
-        )
-
-        return create_engine(
-            url,
-            connect_args={
-                "sslmode": "require",
-                "sslcert": os.path.join(ssl_cert_path, "client-cert.pem"),
-                "sslkey": os.path.join(ssl_cert_path, "client-key.pem"),
-                "sslrootcert": os.path.join(ssl_cert_path, "server-ca.pem"),
-            },
-        )
 
     @classmethod
     def _get_db_port(cls) -> int:

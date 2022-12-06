@@ -233,51 +233,6 @@ resource "google_sql_user" "readonly" {
 }
 
 
-# TODO(#14874): Remove when prod-data-client has been deprecated
-# Create a client certificate for the `prod-data-client`
-resource "google_sql_ssl_cert" "client_cert" {
-  instance    = google_sql_database_instance.data.name
-  common_name = "prod-data-client-${local.stripped_cloudsql_instance_id}"
-}
-
-# TODO(#14874): Remove when prod-data-client has been deprecated
-# Store client key in a secret
-resource "google_secret_manager_secret" "secret_client_key" {
-  secret_id = "${var.base_secret_name}_db_client_key"
-  replication { automatic = true }
-}
-
-# TODO(#14874): Remove when prod-data-client has been deprecated
-resource "google_secret_manager_secret_version" "secret_version_client_key" {
-  secret      = google_secret_manager_secret.secret_client_key.name
-  secret_data = google_sql_ssl_cert.client_cert.private_key
-}
-
-# TODO(#14874): Remove when prod-data-client has been deprecated
-# Store client certificate in a secret
-resource "google_secret_manager_secret" "secret_client_cert" {
-  secret_id = "${var.base_secret_name}_db_client_cert"
-  replication { automatic = true }
-}
-
-# TODO(#14874): Remove when prod-data-client has been deprecated
-resource "google_secret_manager_secret_version" "secret_version_client_cert" {
-  secret      = google_secret_manager_secret.secret_client_cert.name
-  secret_data = google_sql_ssl_cert.client_cert.cert
-}
-
-# TODO(#14874): Remove when prod-data-client has been deprecated
-# Store server certificate in a secret
-resource "google_secret_manager_secret" "secret_server_cert" {
-  secret_id = "${var.base_secret_name}_db_server_cert"
-  replication { automatic = true }
-}
-# TODO(#14874): Remove when prod-data-client has been deprecated
-resource "google_secret_manager_secret_version" "secret_version_server_cert" {
-  secret      = google_secret_manager_secret.secret_server_cert.name
-  secret_data = google_sql_database_instance.data.server_ca_cert[0].cert
-}
-
 # Provides a BQ connection to the default 'postgres' database in
 # this instance.
 resource "google_bigquery_connection" "default_db_bq_connection" {

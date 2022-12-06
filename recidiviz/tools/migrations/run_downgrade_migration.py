@@ -41,10 +41,7 @@ from recidiviz.tools.migrations.migration_helpers import (
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -89,7 +86,10 @@ def main(schema_type: SchemaType, repo_root: str, target_revision: str) -> None:
     This checks for user validations that the database and branches are correct and then runs the downgrade
     migration.
     """
-    prompt_for_confirmation("This script will run a DOWNGRADE migration.", "DOWNGRADE")
+    prompt_for_confirmation(
+        "This script will run a DOWNGRADE migration against a live database.",
+        "DOWNGRADE",
+    )
     confirm_correct_db_instance(schema_type)
     confirm_correct_git_branch(repo_root)
 
@@ -98,7 +98,7 @@ def main(schema_type: SchemaType, repo_root: str, target_revision: str) -> None:
             logging.info("RUNNING AGAINST PRODUCTION\n")
 
         for database_key, _ in EngineIteratorDelegate.iterate_and_connect_to_engines(
-            schema_type, using_proxy=True
+            schema_type, dry_run=False
         ):
             # Run downgrade
             try:

@@ -31,9 +31,6 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
-    SQLALCHEMY_SSL_CERT_PATH,
-    SQLALCHEMY_SSL_KEY_PATH,
-    SQLALCHEMY_USE_SSL,
 )
 
 # String defining database implementation used by SQLAlchemy engine
@@ -42,15 +39,25 @@ _DB_TYPE = "postgresql"
 
 def get_sqlalchemy_url() -> str:
     """Returns string needed to connect to database."""
+    # These environment variables are expected to be set up via SQLAlchemyEngineManager.update_sqlalchemy_env_vars
+    # alembic commands against live databases are expected to be run by our `recidiviz/tools/migrations/` scripts,
+    # and never run directly via CLI
+    user = os.getenv(SQLALCHEMY_DB_USER)
+    password = os.getenv(SQLALCHEMY_DB_PASSWORD)
+    host = os.getenv(SQLALCHEMY_DB_HOST)
+    db_name = os.getenv(SQLALCHEMY_DB_NAME)
+    port = os.getenv(SQLALCHEMY_DB_PORT)
 
-    # Boolean int (0 or 1) indicating whether to use SSL to connect to the
-    # database
-    # TODO(#14842): Remove this once prod-data-client is deprecated
-    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, "0"))
+    url = URL.create(
+        drivername=_DB_TYPE,
+        username=user,
+        password=password,
+        database=db_name,
+        host=host,
+        port=port,
+    )
 
-    if use_ssl not in {0, 1}:
-        raise RuntimeError(f"Invalid value for use_ssl: {use_ssl}")
-    return _get_sqlalchemy_url(use_ssl=bool(use_ssl))
+    return url.render_as_string(hide_password=False)
 
 
 def run_migrations_offline(target_metadata: DeclarativeMeta, **kwargs: Any) -> None:
@@ -101,32 +108,3 @@ def run_migrations_online(
         )
 
         context.run_migrations()
-
-
-def _get_sqlalchemy_url(use_ssl: bool = True) -> str:
-    """Returns string used for SQLAlchemy engine, with SSL params if |use_ssl| is True."""
-
-    user = os.getenv(SQLALCHEMY_DB_USER)
-    password = os.getenv(SQLALCHEMY_DB_PASSWORD)
-    host = os.getenv(SQLALCHEMY_DB_HOST)
-    db_name = os.getenv(SQLALCHEMY_DB_NAME)
-    port = os.getenv(SQLALCHEMY_DB_PORT)
-
-    url = URL.create(
-        drivername=_DB_TYPE,
-        username=user,
-        password=password,
-        database=db_name,
-        host=host,
-        port=port,
-    )
-
-    # TODO(#14842): Remove this once prod-data-client is deprecated
-    if use_ssl:
-        ssl_key_path = os.getenv(SQLALCHEMY_SSL_KEY_PATH)
-        ssl_cert_path = os.getenv(SQLALCHEMY_SSL_CERT_PATH)
-        url = url.update_query_dict(
-            {"sslkey": ssl_key_path, "sslcert": ssl_cert_path}, append=True
-        )
-
-    return url.render_as_string(hide_password=False)

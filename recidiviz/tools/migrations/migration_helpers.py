@@ -22,7 +22,6 @@ import logging
 import sys
 from typing import Generator, List, Optional, Tuple
 
-import attr
 from pygit2.repository import Repository
 from sqlalchemy.engine import Engine
 
@@ -99,21 +98,14 @@ class EngineIteratorDelegate(abc.ABC):
     @staticmethod
     def iterate_and_connect_to_engines(
         schema_type: SchemaType,
-        using_proxy: Optional[bool] = False,
-        ssl_cert_path: Optional[str] = None,
         dry_run: Optional[bool] = False,
     ) -> Generator[Tuple[SQLAlchemyDatabaseKey, Engine], None, None]:
         delegate: EngineIteratorDelegate
 
-        if using_proxy:
-            delegate = CloudSQLProxyEngineIteratorDelegate()
-        elif ssl_cert_path:
-            # TODO(#14842): Remove this once prod-data-client is deprecated
-            delegate = ProdDataClientEngineIteratorDelegate(ssl_cert_path=ssl_cert_path)
-        elif dry_run:
+        if dry_run:
             delegate = DryRunEngineIteratorDelegate()
         else:
-            raise RuntimeError("Must specify using_proxy, ssl_cert_path, or dry_run")
+            delegate = CloudSQLProxyEngineIteratorDelegate()
 
         yield from iterate_and_connect_to_engines(
             schema_type=schema_type, delegate=delegate
@@ -138,35 +130,6 @@ class CloudSQLProxyEngineIteratorDelegate(EngineIteratorDelegate):
     def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
         return SQLAlchemyEngineManager.get_engine_for_database_with_proxy(
             database_key=database_key,
-        )
-
-    def teardown_engine(self, database_key: SQLAlchemyDatabaseKey) -> None:
-        pass
-
-
-@attr.s(auto_attribs=True)
-class ProdDataClientEngineIteratorDelegate(EngineIteratorDelegate):
-    """Engine iterator delegate for running migrations from `prod-data-client`"""
-
-    ssl_cert_path: str
-
-    def setup(self) -> None:
-        pass
-
-    def setup_engine(
-        self, database_key: SQLAlchemyDatabaseKey
-    ) -> dict[str, Optional[str]]:
-        logging.info("Using SSL certificate path: %s", self.ssl_cert_path)
-
-        return SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-            database_key=database_key,
-            ssl_cert_path=self.ssl_cert_path,
-            migration_user=True,
-        )
-
-    def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
-        return SQLAlchemyEngineManager.get_engine_for_database_with_ssl_certs(
-            database_key=database_key, ssl_cert_path=self.ssl_cert_path
         )
 
     def teardown_engine(self, database_key: SQLAlchemyDatabaseKey) -> None:
