@@ -18,7 +18,10 @@
 
 from typing import Set
 
-from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
+from recidiviz.calculator.query.bq_utils import (
+    exclude_rows_with_missing_fields,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.utils.state_specific_query_strings import (
     state_specific_dataflow_facility_name_transformation,
@@ -53,6 +56,10 @@ external_data AS (
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
 ),
+dates_per_region AS (
+    -- Only compare regions and months for which we have external validation data
+    SELECT DISTINCT region_code, date_of_stay FROM external_data_with_ids {external_data_required_fields_clause}
+),
 sanitized_internal_metrics AS (
   SELECT
       state_code AS region_code, 
@@ -60,15 +67,11 @@ sanitized_internal_metrics AS (
       person_external_id, 
       CAST(person_id AS STRING) AS person_id,
       {state_specific_dataflow_facility_name_transformation},
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_to_single_day_metrics_materialized`
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` dataflow
+   INNER JOIN dates_per_region dates
+      ON dataflow.state_code = dates.region_code
+      AND dates.date_of_stay BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
    WHERE included_in_state_population
-),
-internal_metrics_for_valid_regions_and_dates AS (
-  SELECT * FROM
-  -- Only compare regions and months for which we have external validation data
-  (SELECT DISTINCT region_code, date_of_stay FROM external_data_with_ids {external_data_required_fields_clause})
-  LEFT JOIN sanitized_internal_metrics
-  USING (region_code, date_of_stay)
 )
 SELECT
   region_code,
@@ -81,7 +84,7 @@ SELECT
 FROM
     external_data_with_ids external_data
 FULL OUTER JOIN
-    internal_metrics_for_valid_regions_and_dates internal_data
+    sanitized_internal_metrics internal_data
 USING (region_code, date_of_stay, person_id)
 {filter_clause}
 """
@@ -115,4 +118,7 @@ def incarceration_population_person_level_query(
             external_data_required_fields
         ),
         state_specific_dataflow_facility_name_transformation=state_specific_dataflow_facility_name_transformation(),
+        non_null_end_date=nonnull_end_date_exclusive_clause(
+            "dataflow.end_date_exclusive"
+        ),
     )

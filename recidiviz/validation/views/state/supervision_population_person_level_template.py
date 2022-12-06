@@ -18,7 +18,10 @@
 
 from typing import Set
 
-from recidiviz.calculator.query.bq_utils import exclude_rows_with_missing_fields
+from recidiviz.calculator.query.bq_utils import (
+    exclude_rows_with_missing_fields,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
@@ -52,6 +55,10 @@ external_data_with_ids AS (
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
 ),
+dates_per_region AS (
+    -- Only compare regions and months for which we have external validation data
+    SELECT DISTINCT region_code, date_of_supervision FROM external_data {external_data_required_fields_clause}
+),
 sanitized_internal_metrics AS (
   SELECT
       state_code AS region_code, 
@@ -69,13 +76,13 @@ sanitized_internal_metrics AS (
       END AS supervising_officer_external_id,
       supervision_level_raw_text,
       supervising_district_external_id,
-      ROW_NUMBER() OVER (PARTITION BY state_code, date_of_supervision, person_external_id
-                        ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
-                        AS inclusion_order
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_to_single_day_metrics_materialized`
-   WHERE CASE
-     WHEN state_code = 'US_ID' 
-     THEN
+  FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
+  INNER JOIN dates_per_region dates
+      ON dataflow.state_code = dates.region_code
+      AND dates.date_of_supervision BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
+  WHERE CASE
+      WHEN state_code = 'US_ID'
+      THEN
         -- Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
         -- The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
         --    - `INFORMAL_PROBATION` - although IDOC does not actively supervise these folks, they can be revoked
@@ -84,18 +91,13 @@ sanitized_internal_metrics AS (
         supervision_type IN ('PROBATION', 'PAROLE', 'DUAL')
         -- TODO(#3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter.
         AND supervising_district_external_id IS NOT NULL
-     ELSE TRUE
-   END
-   AND included_in_state_population
-),
-internal_metrics_for_valid_regions_and_dates AS (
-  SELECT * FROM
-  -- Only compare regions and months for which we have external validation data
-  (SELECT DISTINCT region_code, date_of_supervision FROM external_data {external_data_required_fields_clause})
-  LEFT JOIN
-    sanitized_internal_metrics
-  USING (region_code, date_of_supervision)
-  WHERE inclusion_order = 1
+      ELSE TRUE
+      END
+      AND included_in_state_population
+  QUALIFY ROW_NUMBER() OVER (
+      PARTITION BY state_code, date_of_supervision, person_external_id
+      ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC
+  ) = 1
 )
 SELECT
       region_code,
@@ -113,7 +115,7 @@ SELECT
 FROM
   external_data_with_ids external_data
 FULL OUTER JOIN
-  internal_metrics_for_valid_regions_and_dates internal_data
+  sanitized_internal_metrics internal_data
 USING(region_code, date_of_supervision, person_id)
 {filter_clause}
 """
@@ -145,5 +147,8 @@ def supervision_population_person_level_query(
         filter_clause=filter_clause,
         external_data_required_fields_clause=exclude_rows_with_missing_fields(
             external_data_required_fields
+        ),
+        non_null_end_date=nonnull_end_date_exclusive_clause(
+            "dataflow.end_date_exclusive"
         ),
     )
