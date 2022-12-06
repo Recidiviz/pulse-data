@@ -36,7 +36,7 @@ import Verify from "./routes/Verify";
 import StoreProvider from "./stores";
 import { redactLocalStorageCache } from "./utils";
 import "./window.d";
-import HangTight from "./routes/HangTight";
+import Home from "./routes/Home";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -84,7 +84,7 @@ ReactDOM.render(
         <RoutingContainer>
           <Verify path="verify" />
           <Onboarding path="onboarding" />
-          <HangTight path="/" />
+          <Home path="/" />
         </RoutingContainer>
       </ToastProvider>
     </StoreProvider>
