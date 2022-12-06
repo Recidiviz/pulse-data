@@ -39,14 +39,18 @@ output:
                   $include_nulls: True
               $custom_parser: us_pa_custom_enum_parsers.incarceration_period_admission_reason_mapper
           release_reason:
-            $enum_mapping:
-              $raw_text:
-                $concat:
-                  $values:
-                    - $literal("CCIS")
-                    - end_status_code
-                  $include_nulls: True
-              $custom_parser: us_pa_custom_enum_parsers.incarceration_period_release_reason_mapper
+            $conditional:
+              - $if:
+                  $not_null: end_date
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("CCIS")
+                          - end_status_code
+                        $include_nulls: True
+                    $custom_parser: us_pa_custom_enum_parsers.incarceration_period_release_reason_mapper
           facility: location
           incarceration_type: $literal_enum(StateIncarcerationType.COUNTY_JAIL)
           specialized_purpose_for_incarceration:
