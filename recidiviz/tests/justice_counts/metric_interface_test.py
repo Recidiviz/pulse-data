@@ -246,6 +246,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Emergency",
                                 "value": 20,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -253,6 +254,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Non-emergency",
                                 "value": 60,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -260,6 +262,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Unknown",
                                 "value": 20,
                                 "enabled": True,
+                                "description": None,
                             },
                         ],
                     }
@@ -383,6 +386,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Drug",
                                 "value": 60,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -390,6 +394,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Person",
                                 "value": 10,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -397,6 +402,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Property",
                                 "value": 40,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -404,6 +410,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Unknown",
                                 "value": 10,
                                 "enabled": True,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
@@ -411,6 +418,7 @@ class TestMetricInterface(TestCase):
                                 "label": "Other",
                                 "value": 0,
                                 "enabled": True,
+                                "description": None,
                             },
                         ],
                     }
@@ -688,18 +696,21 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
+                                "description": None,
                             },
                         ],
                     }
@@ -760,18 +771,21 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
+                                "description": None,
                             },
                         ],
                     }
@@ -842,18 +856,21 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
+                                "description": None,
                             },
                         ],
                     }
@@ -916,18 +933,21 @@ class TestMetricInterface(TestCase):
                                 "enabled": True,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
+                                "description": None,
                             },
                         ],
                     }
@@ -1084,6 +1104,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
@@ -1094,6 +1115,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
+                                "description": None,
                             },
                             {
                                 "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
@@ -1104,6 +1126,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
+                                "description": None,
                             },
                         ],
                     }
@@ -1287,6 +1310,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
+                    "description": None,
                     "settings": [
                         {
                             "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
@@ -1319,6 +1343,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PROBATION_SUPERVISION.value,
+                    "description": "The number of release events from the agency’s prison jurisdiction to probation supervision.",
                     "settings": [
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
@@ -1357,6 +1382,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
+                    "description": None,
                     "settings": [
                         {
                             "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
@@ -1377,6 +1403,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.NO_CONTROL.value,
                     "key": PrisonsReleaseType.NO_CONTROL.value,
+                    "description": None,
                     "settings": [
                         {
                             "key": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.name,
@@ -1397,6 +1424,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "key": PrisonsReleaseType.DEATH.value,
                     "label": PrisonsReleaseType.DEATH.value,
+                    "description": None,
                     "settings": [
                         {
                             "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
@@ -1417,6 +1445,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.UNKNOWN.value,
                     "key": PrisonsReleaseType.UNKNOWN.value,
+                    "description": None,
                     "settings": [],
                 },
                 {
@@ -1424,6 +1453,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.OTHER.value,
                     "key": PrisonsReleaseType.OTHER.value,
+                    "description": None,
                     "settings": [],
                 },
             ],
@@ -1615,6 +1645,7 @@ class TestMetricInterface(TestCase):
                     "label": dim.value,
                     "race": dim.race,
                     "value": 10,
+                    "description": None,
                 }
                 for dim in RaceAndEthnicity
             ],

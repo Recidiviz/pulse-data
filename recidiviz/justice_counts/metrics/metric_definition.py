@@ -135,6 +135,8 @@ class AggregatedDimension:
     dimension: Type[DimensionBase]
     # Whether this disaggregation is requested but not required
     required: bool
+    # Maps dimension member to it's 'breakdown description'.
+    dimension_to_description: Optional[Dict[DimensionBase, str]] = None
     # Whether the disaggregated values should sum to the total metric value
     should_sum_to_total: bool = False
     # Text displayed as label in frontend

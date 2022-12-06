@@ -432,6 +432,9 @@ releases = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsReleaseType,
             required=False,
+            dimension_to_description={
+                PrisonsReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision."
+            },
             dimension_to_includes_excludes={
                 PrisonsReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesToProbationIncludesExcludes,

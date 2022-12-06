@@ -97,6 +97,7 @@ class MetricAggregatedDimensionData:
                 entry_point=entry_point,
                 dimension_to_includes_excludes=dimension_definition.dimension_to_includes_excludes,
                 dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
+                dimension_to_description=dimension_definition.dimension_to_description,
             ),
             "enabled": is_disaggregation_enabled,
         }
@@ -218,6 +219,7 @@ class MetricAggregatedDimensionData:
     def dimension_to_json(
         self,
         entry_point: DatapointGetRequestEntryPoint,
+        dimension_to_description: Optional[Dict[DimensionBase, str]] = None,
         dimension_to_includes_excludes: Optional[
             Dict[DimensionBase, IncludesExcludesSet]
         ] = None,
@@ -276,6 +278,10 @@ class MetricAggregatedDimensionData:
                         code="no_dimension_values",
                         description=f"Metric {dimension.to_enum().value} has no dimension values",
                     )
+                if dimension_to_description is not None:
+                    json["description"] = dimension_to_description.get(dimension)
+                else:
+                    json["description"] = None
                 dimensions.append(json)
         return dimensions
 
