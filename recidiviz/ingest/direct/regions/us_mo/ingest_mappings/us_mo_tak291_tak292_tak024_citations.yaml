@@ -39,7 +39,22 @@ output:
                 $iterable: VIOLATED_CONDITIONS
                 $result:
                   StateSupervisionViolatedConditionEntry:
-                    condition_raw_text: $iter_item
+                    condition:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - "ASC"
+                            - "DIR"
+                            - "DRG"
+                            - "EMP"
+                            - "INT"
+                            - "LAW"
+                            - "RES"
+                            - "SPC"
+                            - "SUP"
+                            - "TRA"
+                            - "WEA"
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:

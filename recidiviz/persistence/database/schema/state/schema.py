@@ -466,6 +466,21 @@ state_supervision_violation_type = Enum(
     name="state_supervision_violation_type",
 )
 
+state_supervision_violated_condition_type = Enum(
+    state_enum_strings.state_supervision_violated_condition_type_employment,
+    state_enum_strings.state_supervision_violated_condition_type_failure_to_notify,
+    state_enum_strings.state_supervision_violated_condition_type_failure_to_report,
+    state_enum_strings.state_supervision_violated_condition_type_financial,
+    state_enum_strings.state_supervision_violated_condition_type_law,
+    state_enum_strings.state_supervision_violated_condition_type_special_conditions,
+    state_enum_strings.state_supervision_violated_condition_type_substance,
+    state_enum_strings.state_supervision_violated_condition_type_treatment_compliance,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_supervision_violated_condition_type",
+)
+
+
 state_supervision_violation_response_type = Enum(
     state_enum_strings.state_supervision_violation_response_type_citation,
     state_enum_strings.state_supervision_violation_response_type_violation_report,
@@ -2116,6 +2131,12 @@ class StateSupervisionViolatedConditionEntry(
         index=True,
         comment=STATE_CODE_COMMENT,
     )
+
+    condition = Column(
+        state_supervision_violated_condition_type,
+        comment="The specific condition of supervision which was violated.",
+    )
+
     condition_raw_text = Column(
         String(255),
         comment="The raw text value of the condition.",

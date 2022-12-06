@@ -36,6 +36,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_dele
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -162,7 +165,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition_raw_text="DRG"
+                        state_code="US_XX",
+                        condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                        condition_raw_text="DRG",
                     )
                 ],
             )
@@ -191,7 +196,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition_raw_text="DRG"
+                        state_code="US_XX",
+                        condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                        condition_raw_text="DRG",
                     )
                 ],
             )
@@ -249,7 +256,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition_raw_text="WEA"
+                        state_code="US_XX",
+                        condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                        condition_raw_text="WEA",
                     )
                 ],
             ),
@@ -267,10 +276,14 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 ],
                 supervision_violated_conditions=[
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition_raw_text="DRG"
+                        state_code="US_XX",
+                        condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                        condition_raw_text="DRG",
                     ),
                     NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                        state_code="US_XX", condition_raw_text="EMP"
+                        state_code="US_XX",
+                        condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                        condition_raw_text="EMP",
                     ),
                 ],
             ),
@@ -897,7 +910,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition_raw_text="LAW"
+                    state_code="US_MO",
+                    condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                    condition_raw_text="LAW",
                 ),
             ],
         )

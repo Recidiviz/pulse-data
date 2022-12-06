@@ -23,6 +23,34 @@
         "$result": {
           "StateSupervisionViolatedConditionEntry": {
             "condition": {
+              "$enum_mapping": {
+                "$raw_text": {
+                  "$custom": {
+                    "$function": "us_pa_custom_parsers.violated_condition_from_violation_code",
+                    "$args": {
+                      "violation_code": {
+                        "$json_extract": {
+                          "$key": "violation_code",
+                          "$json": "$iter_item"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "$mappings": {
+                "StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7"
+                ]
+              }
+            },
+            "condition_raw_text": {
               "$custom": {
                 "$function": "us_pa_custom_parsers.violated_condition_from_violation_code",
                 "$args": {
