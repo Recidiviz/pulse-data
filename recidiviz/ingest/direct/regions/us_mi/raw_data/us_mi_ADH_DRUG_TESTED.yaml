@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_DRUG_TESTED
+file_description: OMNI-database table recording drug tests
+data_classification: source
+primary_key_cols:
+  - drug_tested_id
+columns:
+  - name: drug_tested_id
+    description: TODO(#16348)
+  - name: substance_abuse_test_id
+    description: TODO(#16348)
+  - name: tested_drug_code_id
+    description: TODO(#16348)
+  - name: positive_negative_id
+    description: TODO(#16348)
+  - name: drug_level
+    description: TODO(#16348)
+  - name: drug_level_unit_id
+    description: TODO(#16348)
+  - name: additional_drug_flag
+    description: TODO(#16348)
+  - name: notes
+    description: TODO(#16348)
+    is_pii: True
+  - name: last_update_user
+    description: user who last updated the record
+    is_pii: True
+  - name: last_update_date
+    description: date record was last updated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: TODO(#16348)
+  - name: record_source_id
+    description: TODO(#16348)
