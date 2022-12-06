@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 ENABLED_VITALS: Dict[str, List[str]] = {
     "US_ND": ["timely_contact", "timely_risk_assessment", "timely_discharge"],
     "US_ID": ["timely_contact", "timely_risk_assessment", "timely_downgrade"],
+    "US_IX": ["timely_contact", "timely_risk_assessment", "timely_downgrade"],
 }
 
 
