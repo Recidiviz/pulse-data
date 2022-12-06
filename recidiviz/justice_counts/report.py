@@ -157,6 +157,8 @@ class ReportInterface:
         user_account_id: Optional[int],
         current_month: int,
         current_year: int,
+        previous_month: int,
+        previous_year: int,
         systems: Set[schema.System],
         metric_key_to_datapoints: Dict[str, DatapointsForMetricT],
     ) -> Tuple[
@@ -165,9 +167,9 @@ class ReportInterface:
         Optional[List[MetricDefinition]],
         Optional[List[MetricDefinition]],
     ]:
-        """Creates a new monthly report (for the current month/year) and annual report
-        (for the current month/year) for the agency if those reports do not already
-        exist and reports have metrics available for the current month."""
+        """Creates a new monthly report (for the most recent previous month/year) and annual report
+        (for the most recent previous month/year) for the agency if those reports do not already
+        exist and reports have metrics available."""
         monthly_report = None
         yearly_report = None
 
@@ -177,7 +179,7 @@ class ReportInterface:
                 systems=systems,
                 metric_key_to_datapoints=metric_key_to_datapoints,
                 report_frequency=ReportingFrequency.MONTHLY.value,
-                starting_month=current_month,
+                starting_month=previous_month,
             )
         except JusticeCountsServerError:
             monthly_metric_defs = None
@@ -188,8 +190,8 @@ class ReportInterface:
                 session,
                 agency_id,
                 user_account_id,
-                current_year,
-                current_month,
+                previous_year if previous_month == 12 else current_year,
+                previous_month,
                 ReportingFrequency.MONTHLY.value,
             )
 
@@ -210,7 +212,7 @@ class ReportInterface:
                 session,
                 agency_id,
                 user_account_id,
-                current_year,
+                previous_year,
                 current_month,
                 ReportingFrequency.ANNUAL.value,
             )
