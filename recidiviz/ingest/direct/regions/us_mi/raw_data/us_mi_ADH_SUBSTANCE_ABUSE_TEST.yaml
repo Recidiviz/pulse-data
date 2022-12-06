@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_SUBSTANCE_ABUSE_TEST
+file_description: OMNI-database table for substance abuse test records
+data_classification: source
+primary_key_cols:
+  - substance_abuse_test_id
+columns:
+  - name: substance_abuse_test_id
+    description: OMNI-database generated ID for a substance abuse test record
+  - name: offender_booking_id
+    description: OMNI-database generated ID for an individual's booking
+    is_pii: True
+  - name: specimen_date
+    description: Date test specimen was taken
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: sample_taken_flag
+    description: Flag for whether sample was taken
+  - name: sample_not_taken_reason_id
+    description: TODO(#16348)
+  - name: sample_type_id
+    description: TODO(#16348)
+  - name: test_taker_type_id
+    description: TODO(#16348)
+  - name: test_taker_employee_id
+    description: Id for employee that took the test
+    is_pii: True
+  - name: test_taker_other_id
+    description: TODO(#16348)
+  - name: test_schedule_print_date
+    description: TODO(#16348)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: lab_sample_ref_code
+    description: TODO(#16348)
+  - name: reason_tested_id
+    description: TODO(#16348)
+  - name: overall_result_id
+    description: TODO(#16348)
+  - name: sample_void_reason_id
+    description: TODO(#16348)
+  - name: patch_length_of_wear_days
+    description: TODO(#16348)
+  - name: completion_of_wear_id
+    description: TODO(#16348)
+  - name: patch_removal_reason_id
+    description: TODO(#16348)
+  - name: testing_lab_id
+    description: TODO(#16348)
+  - name: lab_test_date
+    description: TODO(#16348)
+  - name: misconduct_incident_id
+    description: TODO(#16348)
+  - name: offender_type_id
+    description: TODO(#16348)
+  - name: notes
+    description: TODO(#16348)
+    is_pii: True
+  - name: test_result_create_date
+    description: TODO(#16348)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: positive_response_id
+    description: TODO(#16348)
+  - name: positive_response_date
+    description: TODO(#16348)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: specimen_location_id
+    description: TODO(#16348)
+  - name: last_update_user
+    description: User who last updated the record
+    is_pii: True
+  - name: last_update_date
+    description: Date record was last updated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: TODO(#16348)
+  - name: record_source_id
+    description: TODO(#16348)
+  - name: program_id
+    description: TODO(#16348)
+  - name: record_sent_to_lab_flag
+    description: TODO(#16348)
+  - name: record_sent_to_lab_date
+    description: TODO(#16348)
+  - name: default_drug_panel_id
+    description: TODO(#16348)
+  - name: print_flag
+    description: TODO(#16348)
+  - name: print_date
+    description: TODO(#16348)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: printed_by_user
+    description: TODO(#16348)
+    is_pii: True
