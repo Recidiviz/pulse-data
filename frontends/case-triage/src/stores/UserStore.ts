@@ -46,6 +46,11 @@ export interface FeatureVariants {
   [feature: string]: string;
 }
 
+type UserAppMetadata = {
+  // eslint-disable-next-line camelcase
+  state_code: string;
+};
+
 export default class UserStore {
   authError?: Error;
 
@@ -248,5 +253,9 @@ export default class UserStore {
 
   setShouldSeeOnboarding(shouldSeeOnboarding: boolean): void {
     this.shouldSeeOnboarding = shouldSeeOnboarding;
+  }
+
+  get userAppMetadata(): UserAppMetadata {
+    return this.user?.[APP_METADATA_CLAIM];
   }
 }

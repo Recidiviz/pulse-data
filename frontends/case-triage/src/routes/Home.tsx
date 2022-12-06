@@ -37,6 +37,7 @@ import CaseCard, { CaseCardDrawer } from "../components/CaseCard";
 import ClientList from "../components/ClientList";
 import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
+import HangTight from "./HangTight";
 
 const Container = styled.div`
   display: flex;
@@ -70,46 +71,54 @@ const Home = (props: RouteComponentProps): ReactElement => {
 
   return (
     <AuthWall>
-      <Header
-        left={
-          <Link to="/">
-            <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
-          </Link>
-        }
-        center={
-          <Search
-            inputClassName="fs-exclude"
-            placeholder="Search"
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              clientsStore.filterClients(e.target.value);
-            }}
-            onPressEnter={(e: React.KeyboardEvent<HTMLInputElement>) => {
-              trackSearchBarEnterPressed((e.target as HTMLInputElement).value);
-            }}
-            onFocus={trackSearchBarFocused}
-            value={clientsStore.clientSearchString}
+      {userStore.userAppMetadata?.state_code.toLowerCase() === "recidiviz" ? (
+        <>
+          <Header
+            left={
+              <Link to="/">
+                <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+              </Link>
+            }
+            center={
+              <Search
+                inputClassName="fs-exclude"
+                placeholder="Search"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  clientsStore.filterClients(e.target.value);
+                }}
+                onPressEnter={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                  trackSearchBarEnterPressed(
+                    (e.target as HTMLInputElement).value
+                  );
+                }}
+                onFocus={trackSearchBarFocused}
+                value={clientsStore.clientSearchString}
+              />
+            }
+            right={<UserSection />}
           />
-        }
-        right={<UserSection />}
-      />
-      <Container>
-        <ClientList />
-        <CaseCardDrawer>{ClientCard}</CaseCardDrawer>
-        <ErrorToasts />
-      </Container>
-      <Modal
-        isOpen={userStore.shouldReload}
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        appElement={document.getElementById("root")!}
-      >
-        <div>
-          Please reload the page. A new update is available, and the app may not
-          continue to work correctly without refreshing.
-        </div>
-        <ReloadButton onClick={() => window.location.reload()}>
-          Reload
-        </ReloadButton>
-      </Modal>
+          <Container>
+            <ClientList />
+            <CaseCardDrawer>{ClientCard}</CaseCardDrawer>
+            <ErrorToasts />
+          </Container>
+          <Modal
+            isOpen={userStore.shouldReload}
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            appElement={document.getElementById("root")!}
+          >
+            <div>
+              Please reload the page. A new update is available, and the app may
+              not continue to work correctly without refreshing.
+            </div>
+            <ReloadButton onClick={() => window.location.reload()}>
+              Reload
+            </ReloadButton>
+          </Modal>
+        </>
+      ) : (
+        <HangTight />
+      )}
     </AuthWall>
   );
 };
