@@ -19,13 +19,10 @@
 To generate the BQ view, run:
 python -m recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_snapshot_by_dimension
 """
-from recidiviz.calculator.query.bq_utils import filter_to_enabled_states
+from recidiviz.calculator.query.bq_utils import filter_to_pathways_states
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -86,9 +83,7 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     dimensions=("state_code", "district", "supervision_level", "race"),
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     get_pathways_supervision_last_updated_date=state_specific_query_strings.get_pathways_supervision_last_updated_date(),
-    filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="state_code", enabled_states=get_pathways_enabled_states()
-    ),
+    filter_to_enabled_states=filter_to_pathways_states(state_code_column="state_code"),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
 )
 

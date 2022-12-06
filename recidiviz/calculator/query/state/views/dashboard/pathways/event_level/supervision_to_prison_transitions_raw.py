@@ -32,7 +32,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_bigquery,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -144,7 +144,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER = SelectedColumnsBigQueryView
     age_group=add_age_groups("sessions.age_end"),
     first_known_location=first_known_location("compartment_location_end"),
     non_active_supervision_levels=non_active_supervision_levels(),
-    enabled_states=str(tuple(get_pathways_enabled_states())),
+    enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "sessions.state_code",
         "sessions.correctional_level_end",

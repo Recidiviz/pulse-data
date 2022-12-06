@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_constant
     get_constant_dimensions_unnested,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_bigquery,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_dimension_combinations import (
     state_specific_joins,
@@ -96,7 +96,7 @@ PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     constant_dimensions=",".join(
         get_constant_dimensions_unnested(prison_constant_dimensions)
     ),
-    enabled_states=str(get_pathways_enabled_states()),
+    enabled_states=str(get_pathways_enabled_states_for_bigquery()),
     state_specific_joins=" ".join(state_specific_joins),
 )
 

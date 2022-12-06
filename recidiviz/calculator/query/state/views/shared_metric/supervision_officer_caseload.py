@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
-    filter_to_enabled_states,
+    filter_to_pathways_states,
     get_binned_time_period_months,
     non_active_supervision_levels,
 )
@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -117,9 +114,7 @@ SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_OFFICER_CASELOAD_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dashboards_dataset=DASHBOARD_VIEWS_DATASET,
-    filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="state_code", enabled_states=get_pathways_enabled_states()
-    ),
+    filter_to_enabled_states=filter_to_pathways_states(state_code_column="state_code"),
     transition_time_period=get_binned_time_period_months(
         "end_date", special_case_expr="WHEN s.end_date is NULL THEN 'months_0_6'"
     ),

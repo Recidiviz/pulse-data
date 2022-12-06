@@ -37,7 +37,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     get_pathways_incarceration_last_updated_date,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_bigquery,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -120,7 +120,7 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilde
         description=LIBERTY_TO_PRISON_TRANSITIONS_DESCRIPTION,
         age_group=add_age_groups("age_start"),
         sessions_dataset=dataset_config.SESSIONS_DATASET,
-        enabled_states=str(tuple(get_pathways_enabled_states())),
+        enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
         binned_time_periods=get_binned_time_period_months("sum_length.transition_date"),
         length_of_stay=create_buckets_with_cap(
             convert_days_to_years("sum_length.prior_length_of_incarceration_days"), 11

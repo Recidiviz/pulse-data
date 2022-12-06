@@ -35,7 +35,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_bigquery,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -162,7 +162,7 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewB
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         age_group=add_age_groups("s.age_end"),
         first_known_location=first_known_location("compartment_location_end"),
-        enabled_states=str(tuple(get_pathways_enabled_states())),
+        enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
         state_specific_supervision_level=pathways_state_specific_supervision_level(
             "s.state_code",
             "s.correctional_level_end",

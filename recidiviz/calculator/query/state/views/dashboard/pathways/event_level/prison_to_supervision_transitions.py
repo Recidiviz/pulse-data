@@ -32,7 +32,7 @@ from recidiviz.calculator.query.state import (
     state_specific_query_strings,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
+    get_pathways_enabled_states_for_bigquery,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -131,7 +131,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
         outflow_compartments='("SUPERVISION")',
         age_group=add_age_groups("sessions.age_end"),
-        enabled_states=str(tuple(get_pathways_enabled_states())),
+        enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
         state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
         formatted_name=get_person_full_name("person.full_name"),

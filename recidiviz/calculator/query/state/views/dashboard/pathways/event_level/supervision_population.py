@@ -23,7 +23,7 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.bq_utils import (
-    filter_to_enabled_states,
+    filter_to_pathways_states,
     get_binned_time_period_months,
 )
 from recidiviz.calculator.query.state import (
@@ -32,9 +32,6 @@ from recidiviz.calculator.query.state import (
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     pathways_state_specific_supervision_level,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -124,9 +121,7 @@ SUPERVISION_POPULATION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     description=SUPERVISION_POPULATION_VIEW_DESCRIPTION,
     dashboards_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    filter_to_enabled_states=filter_to_enabled_states(
-        state_code_column="state_code", enabled_states=get_pathways_enabled_states()
-    ),
+    filter_to_enabled_states=filter_to_pathways_states(state_code_column="state_code"),
     state_specific_supervision_level=pathways_state_specific_supervision_level(
         "sessions.state_code",
         "session_attributes.correctional_level",

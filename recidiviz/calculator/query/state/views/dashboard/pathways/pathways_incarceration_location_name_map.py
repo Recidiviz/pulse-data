@@ -15,20 +15,16 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Pathways helper view to map from location ID to aggregating location id and name"""
+from recidiviz.calculator.query.bq_utils import filter_to_pathways_states
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-ENABLED_STATE_CODES = ", ".join(f'"{state}"' for state in get_pathways_enabled_states())
 
 PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_NAME = (
     "pathways_incarceration_location_name_map"
@@ -52,7 +48,7 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
             END AS aggregating_location_id,
             level_1_incarceration_location_name AS location_name,
         FROM `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names`
-        WHERE state_code IN ({enabled_states})
+        {filter_to_pathways_states}
     )
     SELECT
         {dimensions_clause},
@@ -67,7 +63,7 @@ PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryVi
     description=PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_DESCRIPTION,
     dimensions=("state_code", "location_id", "location_name"),
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    enabled_states=ENABLED_STATE_CODES,
+    filter_to_pathways_states=filter_to_pathways_states(state_code_column="state_code"),
     pathways_level_2_incarceration_state_codes=PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS,
 )
 
