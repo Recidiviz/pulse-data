@@ -158,7 +158,9 @@ output:
                         - Serving Local Jail Sentence
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
-              - $else: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
+              - $else_if:
+                  $not_null: end_date
+                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
           custodial_authority:
             $conditional:
               - $if:
