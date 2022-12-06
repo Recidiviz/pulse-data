@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Important note: This script should be run from `prod-data-client` unless the --dry-run
-flag is set. It will not work when run anywhere else (and notably the --dry-run flag will
-not work if run on `prod-data-client`).
-
 This script runs alembic migrations against production and staging database instances.
 It fetches the appropriate secrets and validates with the user that the intended migrations
 are being run before executing them.
@@ -34,8 +30,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 # Run against the live jails database:
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JAILS \
-    --project-id recidiviz-staging \
-    --ssl-cert-path ~/dev_data_certs
+    --project-id recidiviz-staging
 """
 import argparse
 import logging
@@ -52,10 +47,7 @@ from recidiviz.tools.migrations.migration_helpers import (
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -89,14 +81,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
-    # TODO(#14842): Remove this once prod-data-client is deprecated
-    parser.add_argument(
-        "--ssl-cert-path",
-        type=str,
-        default=None,
-        help="The path to the folder where the certs live. "
-        "This argument is required if running against live databases.",
-    )
     parser.add_argument(
         "--skip-db-name-check",
         action="store_true",
@@ -108,12 +92,6 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         help="If included, skips the manual git branch confirmation and verifies that the hash is as expected.",
     )
-    parser.add_argument(
-        "--using-proxy",
-        action="store_true",
-        help="If included, SQLAlchemy will be configured to connect to the Cloud SQL Proxy.",
-    )
-
     return parser
 
 
@@ -123,8 +101,6 @@ def main(
     dry_run: bool,
     skip_db_name_check: bool,
     confirm_hash: Optional[str] = None,
-    ssl_cert_path: Optional[str] = None,
-    using_proxy: bool = False,
 ) -> None:
     """
     Invokes the main code path for running migrations.
@@ -143,8 +119,6 @@ def main(
     # Run migrations
     for database_key, _engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
         schema_type,
-        using_proxy=using_proxy,
-        ssl_cert_path=ssl_cert_path,
         dry_run=dry_run,
     ):
         try:
@@ -164,28 +138,14 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()
-    with local_project_id_override(args.project_id):
-        if args.using_proxy:
-            with cloudsql_proxy_control.connection(
-                schema_type=args.database,
-                prompt=not args.skip_db_name_check,
-            ):
-                main(
-                    schema_type=args.database,
-                    repo_root=args.repo_root,
-                    dry_run=args.dry_run,
-                    skip_db_name_check=args.skip_db_name_check,
-                    confirm_hash=args.confirm_hash,
-                    ssl_cert_path=args.ssl_cert_path,
-                    using_proxy=args.using_proxy,
-                )
-        else:
-            main(
-                schema_type=args.database,
-                repo_root=args.repo_root,
-                dry_run=args.dry_run,
-                skip_db_name_check=args.skip_db_name_check,
-                confirm_hash=args.confirm_hash,
-                ssl_cert_path=args.ssl_cert_path,
-                using_proxy=args.using_proxy,
-            )
+    with local_project_id_override(args.project_id), cloudsql_proxy_control.connection(
+        schema_type=args.database,
+        prompt=not args.skip_db_name_check,
+    ):
+        main(
+            schema_type=args.database,
+            repo_root=args.repo_root,
+            dry_run=args.dry_run,
+            skip_db_name_check=args.skip_db_name_check,
+            confirm_hash=args.confirm_hash,
+        )

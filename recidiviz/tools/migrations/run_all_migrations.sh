@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
-# TODO(#14842): Remove this once prod-data-client is deprecated
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
+
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../script_base.sh"
-
-echo 'Running migrations against all databases.'
+# shellcheck source=recidiviz/tools/postgres/script_helpers.sh
+source "${BASH_SOURCE_DIR}/../postgres/script_helpers.sh"
 
 MIGRATIONS_HASH=$1
 PROJECT_ID=$2
 
+echo "Running migrations against all databases in ${PROJECT_ID}..."
+
+function run_migrations {
+  SCHEMA_TYPE=$1
+
+  echo "Running migrations to head for ${SCHEMA_TYPE}..."
+  run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head \
+    --database "${SCHEMA_TYPE}" \
+    --project-id "${PROJECT_ID}" \
+    --confirm-hash "${MIGRATIONS_HASH}" \
+    --skip-db-name-check
+}
+
+# run_migrations clauses have been explicitly duplicated for ease of disabling/enabling per project
 if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database STATE --project-id recidiviz-123 --ssl-cert-path ~/prod_state_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database OPERATIONS --project-id recidiviz-123 --ssl-cert-path ~/prod_operations_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database JUSTICE_COUNTS --project-id recidiviz-123 --ssl-cert-path ~/dev_justice_counts_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database CASE_TRIAGE --project-id recidiviz-123 --ssl-cert-path ~/prod_case_triage_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database PATHWAYS --project-id recidiviz-123 --ssl-cert-path ~/prod_pathways_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
+  run_migrations STATE
+  run_migrations OPERATIONS
+  run_migrations JUSTICE_COUNTS
+  run_migrations CASE_TRIAGE
+  run_migrations PATHWAYS
 elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database STATE --project-id recidiviz-staging --ssl-cert-path ~/dev_state_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database OPERATIONS --project-id recidiviz-staging --ssl-cert-path ~/dev_operations_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database JUSTICE_COUNTS --project-id recidiviz-staging --ssl-cert-path ~/dev_justice_counts_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database CASE_TRIAGE --project-id recidiviz-staging --ssl-cert-path ~/dev_case_triage_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
-    run_cmd python -m recidiviz.tools.migrations.run_migrations_to_head --database PATHWAYS --project-id recidiviz-staging --ssl-cert-path ~/dev_pathways_data_certs/ --skip-db-name-check --confirm-hash "$MIGRATIONS_HASH"
+  run_migrations STATE
+  run_migrations OPERATIONS
+  run_migrations JUSTICE_COUNTS
+  run_migrations CASE_TRIAGE
+  run_migrations PATHWAYS
 else
-    echo_error "Unrecognized project id for migration: ${PROJECT_ID}"
-    exit 1
+  echo_error "Unrecognized project id for migration: ${PROJECT_ID}"
+  exit 1
 fi

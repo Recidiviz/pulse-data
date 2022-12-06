@@ -32,8 +32,7 @@ python -m recidiviz.tools.migrations.run_stamp_migration \
     --database STATE \
     --project-id recidiviz-staging \
     --current-revision [revision_id] \
-    --target-revision [revision_id] \
-    --using-proxy
+    --target-revision [revision_id]
 
 """
 import argparse
@@ -52,10 +51,7 @@ from recidiviz.tools.migrations.migration_helpers import (
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -105,11 +101,6 @@ def create_parser() -> argparse.ArgumentParser:
         help="Dry run? Migrates a fresh local postgres to HEAD and stamps the target revision",
         default=True,
     )
-    parser.add_argument(
-        "--using-proxy",
-        action="store_true",
-        help="If included, SQLAlchemy will be configured to connect to the Cloud SQL Proxy.",
-    )
     return parser
 
 
@@ -123,7 +114,6 @@ def main(
     current_revision: str,
     target_revision: str,
     dry_run: bool,
-    using_proxy: bool,
 ) -> None:
     """
     Invokes the main code path for stamping a migration. Stamping is used to tell Alembic to apply a migration without
@@ -144,7 +134,6 @@ def main(
 
     for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
         schema_type,
-        using_proxy=using_proxy,
         dry_run=dry_run,
     ):
         if dry_run:
@@ -168,7 +157,6 @@ def main(
 
     for database_key, engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
         schema_type,
-        using_proxy=using_proxy,
         dry_run=dry_run,
     ):
         logging.info(
@@ -190,23 +178,13 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()
-    with local_project_id_override(args.project_id):
-        if args.using_proxy:
-            with cloudsql_proxy_control.connection(schema_type=args.database):
-                main(
-                    schema_type=args.database,
-                    repo_root=args.repo_root,
-                    current_revision=args.current_revision,
-                    target_revision=args.target_revision,
-                    dry_run=args.dry_run,
-                    using_proxy=args.using_proxy,
-                )
-        else:
-            main(
-                schema_type=args.database,
-                repo_root=args.repo_root,
-                current_revision=args.current_revision,
-                target_revision=args.target_revision,
-                dry_run=args.dry_run,
-                using_proxy=args.using_proxy,
-            )
+    with local_project_id_override(args.project_id), cloudsql_proxy_control.connection(
+        schema_type=args.database
+    ):
+        main(
+            schema_type=args.database,
+            repo_root=args.repo_root,
+            current_revision=args.current_revision,
+            target_revision=args.target_revision,
+            dry_run=args.dry_run,
+        )

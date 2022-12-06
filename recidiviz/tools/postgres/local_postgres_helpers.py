@@ -39,7 +39,6 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
-    SQLALCHEMY_USE_SSL,
 )
 from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -77,7 +76,6 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
         SQLALCHEMY_DB_NAME,
         SQLALCHEMY_DB_HOST,
         SQLALCHEMY_DB_PORT,
-        SQLALCHEMY_USE_SSL,
         SQLALCHEMY_DB_USER,
         SQLALCHEMY_DB_PASSWORD,
     ]
@@ -85,7 +83,6 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
 
     os.environ[SQLALCHEMY_DB_NAME] = get_on_disk_postgres_database_name()
     os.environ[SQLALCHEMY_DB_HOST] = "localhost"
-    os.environ[SQLALCHEMY_USE_SSL] = "0"
     os.environ[SQLALCHEMY_DB_USER] = TEST_POSTGRES_USER_NAME
     os.environ[SQLALCHEMY_DB_PORT] = str(get_on_disk_postgres_port())
     os.environ[SQLALCHEMY_DB_PASSWORD] = ""
