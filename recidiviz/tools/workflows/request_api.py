@@ -27,6 +27,7 @@ Example usage:
 python -m recidiviz.tools.workflows.request_api staging a1b2c3 complete_request
 """
 import argparse
+import json
 from http import HTTPStatus
 
 import requests
@@ -35,6 +36,7 @@ from recidiviz.tools.workflows.fixtures.tomis_contact_notes import (
     complete_request_obj,
     note_name_to_obj,
 )
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.secrets import get_secret
 
 LOCALHOST_URL = "http://localhost:5000/"
@@ -56,6 +58,7 @@ def insert_contact_note(
             f"Could not generate CSRF token. Got status_code {response.status_code} on /init"
         )
     headers["X-CSRF-Token"] = response.json()["csrf"]
+    headers["Referer"] = "https://app-staging.recidiviz.org"
 
     request_fixture = note_name_to_obj.get(fixture_name, complete_request_obj)
 
@@ -74,6 +77,7 @@ def insert_contact_note(
         "timeoutSecs": timeout_secs,
     }
 
+    print(f"Sending request with data:\n {json.dumps(request_fixture, indent=2)}")
     response = s.post(
         url + "workflows/external_request/US_TN/insert_contact_note",
         headers=headers,
@@ -97,6 +101,7 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    insert_contact_note(
-        args.target_env, args.token, args.fixture_name, int(args.timeout_secs)
-    )
+    with local_project_id_override("recidiviz-staging"):
+        insert_contact_note(
+            args.target_env, args.token, args.fixture_name, int(args.timeout_secs)
+        )
