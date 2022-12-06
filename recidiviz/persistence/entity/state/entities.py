@@ -97,6 +97,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -1120,7 +1123,9 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolatedConditionEntry(
+    EnumEntity, BuildableAttr, DefaultableAttr
+):
     """Models a condition applied to a supervision sentence, whose violation may be
     recorded in a StateSupervisionViolation.
     """
@@ -1129,6 +1134,11 @@ class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableA
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
+    # An enum corresponding to the condition
+    condition: Optional[StateSupervisionViolatedConditionType] = attr.ib(
+        default=None,
+        validator=attr_validators.is_opt(StateSupervisionViolatedConditionType),
+    )
 
     # The most granular information from the state about the specific supervision condition that was violated
     condition_raw_text: Optional[str] = attr.ib(

@@ -84,11 +84,22 @@ output:
                   $split_json: violation_types
                 $result:
                   StateSupervisionViolatedConditionEntry:
-                    condition_raw_text:
-                      $custom:
-                        $function: us_pa_custom_parsers.violated_condition_from_violation_code
-                        $args:
-                          violation_code:
-                            $json_extract:
-                              $json: $iter_item
-                              $key: violation_code
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $custom:
+                            $function: us_pa_custom_parsers.violated_condition_from_violation_code
+                            $args:
+                              violation_code:
+                                $json_extract:
+                                  $json: $iter_item
+                                  $key: violation_code
+                        $mappings:
+                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - "1"
+                            - "2"
+                            - "3"
+                            - "4"
+                            - "5"
+                            - "6"
+                            - "7"

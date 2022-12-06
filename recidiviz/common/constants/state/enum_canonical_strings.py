@@ -361,6 +361,16 @@ state_supervision_violation_type_misdemeanor = "MISDEMEANOR"
 state_supervision_violation_type_municipal = "MUNICIPAL"
 state_supervision_violation_type_technical = "TECHNICAL"
 
+# state_supervision_violated_condition.py
+state_supervision_violated_condition_type_employment = "EMPLOYMENT"
+state_supervision_violated_condition_type_failure_to_notify = "FAILURE_TO_NOTIFY"
+state_supervision_violated_condition_type_failure_to_report = "FAILURE_TO_REPORT"
+state_supervision_violated_condition_type_financial = "FINANCIAL"
+state_supervision_violated_condition_type_law = "LAW"
+state_supervision_violated_condition_type_special_conditions = "SPECIAL_CONDITIONS"
+state_supervision_violated_condition_type_substance = "SUBSTANCE"
+state_supervision_violated_condition_type_treatment_compliance = "TREATMENT_COMPLIANCE"
+
 # state_supervision_violation_response.py
 state_supervision_violation_response_type_citation = "CITATION"
 state_supervision_violation_response_type_violation_report = "VIOLATION_REPORT"
