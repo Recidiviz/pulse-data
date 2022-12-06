@@ -27,15 +27,12 @@ from recidiviz.big_query.with_metadata_query_big_query_view import (
 )
 from recidiviz.calculator.query.bq_utils import (
     add_age_groups,
-    filter_to_enabled_states,
+    filter_to_pathways_states,
     get_binned_time_period_months,
 )
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
@@ -116,8 +113,8 @@ PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
         materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         add_age_groups=add_age_groups(),
-        filter_to_enabled_states=filter_to_enabled_states(
-            state_code_column="state_code", enabled_states=get_pathways_enabled_states()
+        filter_to_enabled_states=filter_to_pathways_states(
+            state_code_column="state_code"
         ),
         dimensions_clause=PathwaysMetricBigQueryViewBuilder.replace_unknowns(
             [

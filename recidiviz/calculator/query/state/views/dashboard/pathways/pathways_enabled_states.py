@@ -63,3 +63,10 @@ def get_pathways_enabled_states() -> List[str]:
         _pathways_enabled_states += [PATHWAYS_OFFLINE_DEMO_STATE.value]
 
     return _pathways_enabled_states
+
+
+def get_pathways_enabled_states_for_bigquery() -> List[str]:
+    # This can't be automatically detected based on environment because BigQuery views may be
+    # compiled locally (where we want it to include US_IX), but DB migrations are also run locally
+    # (where we don't want it to include US_IX).
+    return get_pathways_enabled_states() + [StateCode.US_IX.value]

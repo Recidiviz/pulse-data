@@ -15,17 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Pathways helper view to map from location ID to aggregating office name."""
+from recidiviz.calculator.query.bq_utils import filter_to_pathways_states
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
-    get_pathways_enabled_states,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-ENABLED_STATE_CODES = ", ".join(f'"{state}"' for state in get_pathways_enabled_states())
 
 PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_NAME = (
     "pathways_supervision_location_name_map"
@@ -53,7 +49,7 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_QUERY_TEMPLATE = """
             ELSE INITCAP(level_1_supervision_location_name)
         END AS location_name,
     FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized`
-    WHERE state_code IN ({enabled_states})
+    {filter_to_enabled_states}
 """
 
 PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryViewBuilder(
@@ -63,7 +59,7 @@ PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER = PathwaysMetricBigQueryView
     description=PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_DESCRIPTION,
     dimensions=("state_code",),
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    enabled_states=ENABLED_STATE_CODES,
+    filter_to_enabled_states=filter_to_pathways_states(state_code_column="state_code"),
 )
 
 
