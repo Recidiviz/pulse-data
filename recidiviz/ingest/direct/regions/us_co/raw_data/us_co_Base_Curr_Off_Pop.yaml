@@ -98,14 +98,29 @@ columns:
   - name: CURR_LSI_SRC_CD
   - name: MAX_CTAP_DTD
   - name: CURR_CTAP_RISK_SRL
+    description: |-
+      Unique serial number for CTAP record in the Base_ctap table.
   - name: CURR_CTAP_ASMNT_TYP
   - name: CURR_RISK_LVL
+    description: |-
+      Description of risk level based on score and assessment type on CTAP assessment. Ranges are in file AR 250.
   - name: CURR_CTAP_SCOR
+    description: |-
+      Most recent Total CTAP score for an offender. Originates from the eOMIS RISKASMTTOOL Table.
   - name: MAX_CLS_DTD
   - name: CURR_A_SCOR
+    description: |-
+      Score for the "top half" of the classification scoring. Based on columns in eomis.CUSTODYCLASS
   - name: CURR_T_SCOR
+    description: |-
+      Total score for the classification. Taken from eomis.CUSTODYCLASS
   - name: CURR_SCOR_CUSTLVL
+    description: |-
+      Custody Level assigned to offender based on classification scoring. Taken from eomis.custodyclass.suggestedcustodygrade.
   - name: CURR_CUSTLVL
+    description: |-
+      Current Custody level of offender. A score custody level can be overridden, this is where the overridden score is. 
+      Taken from eomis.inmateprofile, originally labeled as currentcustodyclassification or also in eomis.custodyclass.
   - name: INMATSTAT_SRL
   - name: CURR_INMATSTAT_CD
   - name: MSC_CRIME_SRL
