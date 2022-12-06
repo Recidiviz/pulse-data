@@ -251,7 +251,7 @@ output:
                   - SO Moderate
                   - Moderate-Old
                   - SO To General Mod
-                StateSupervisionLevel.MAXIMUM:
+                StateSupervisionLevel.HIGH:
                   - Maximum
                   - Level 4
                   - High
