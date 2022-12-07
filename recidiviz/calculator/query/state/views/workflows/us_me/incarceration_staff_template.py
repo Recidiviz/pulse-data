@@ -54,7 +54,7 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
             UPPER(lu.last_name) as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_me_leadership_users` lu
         LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` roster
-            ON LOWER(roster.Email_Tx) = lu.email_address
+            ON LOWER(roster.Email_Tx) = LOWER(lu.email_address)
     )
     SELECT 
         {columns}
