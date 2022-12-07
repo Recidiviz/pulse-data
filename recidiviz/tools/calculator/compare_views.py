@@ -22,6 +22,8 @@ When run, creates two tables and prints out statistics about the run:
 - differences table: shows only the differences between the two tables, excluding rows that match and
   setting matching values to null.
 
+The output tables will be named based on the original dataset / view IDs.
+
 Example full comparison:
 state_code | person_id | district | supervision_type | in_both | in_original | in_new
 ---------- | --------- |--------- | ---------------- | ------- | ----------- | ------
@@ -46,10 +48,10 @@ values will count as two rows: one in_original and one in_new.
 
 This can be run with the following command:
     python -m recidiviz.tools.calculator.compare_views \
-        --dataset DATASET \
-        [--dataset_prefix_orig DATASET_PREFIX_ORIG] \
-        [--dataset_prefix_new DATASET_PREFIX_NEW] \
-        --view_id VIEW \
+        --dataset_original DATASET_ORIGINAL \
+        --dataset_new DATASET_NEW \
+        --view_id VIEW_ID \
+        [--view_id_new VIEW_ID_NEW] \
         --output_dataset_prefix OUTPUT_DATASET_PREFIX \
         [--primary_keys PRIMARY_KEYS] \
         [--grouping_columns GROUPING_COLUMNS] \
@@ -58,8 +60,8 @@ This can be run with the following command:
 
 Example usage:
     python -m recidiviz.tools.calculator.compare_views \
-        --dataset dashboard_views \
-        --dataset_prefix_new dana_pathways \
+        --dataset_original dashboard_views \
+        --dataset_new dana_pathways_dashboard_views \
         --view_id supervision_to_prison_transitions_materialized \
         --output_dataset_prefix dana_pathways \
         --grouping_columns state_code
@@ -107,7 +109,7 @@ _COLUMNS_QUERY = """
       table_name,
       column_name,
       data_type
-    FROM `{project_id}.{dataset_orig}.INFORMATION_SCHEMA.COLUMNS`
+    FROM `{project_id}.{dataset_original}.INFORMATION_SCHEMA.COLUMNS`
     WHERE table_name = "{table_name}"
 """
 
@@ -190,7 +192,7 @@ def get_columns_to_compare_and_ignore(
     column_query = StrictStringFormatter().format(
         _COLUMNS_QUERY,
         project_id=project_id,
-        dataset_orig=dataset,
+        dataset_original=dataset,
         table_name=table_name,
     )
     logging.info("Running query:\n%s", column_query)
@@ -201,10 +203,10 @@ def get_columns_to_compare_and_ignore(
 
 def compare_view(
     *,
-    dataset: str,
-    dataset_prefix_new: Optional[str],
-    dataset_prefix_orig: Optional[str],
+    dataset_original: str,
+    dataset_new: str,
     view_id: str,
+    view_id_new: Optional[str],
     output_dataset_prefix: str,
     primary_keys: Optional[List[str]],
     grouping_columns: Optional[List[str]],
@@ -214,14 +216,11 @@ def compare_view(
     prints statistics about the number of rows in both views, the original view, and the new view.
     """
     # Setup + determine which columns we'll be comparing
-    dataset_orig = (
-        f"{dataset_prefix_orig}_{dataset}" if dataset_prefix_orig else dataset
-    )
-    dataset_new = f"{dataset_prefix_new}_{dataset}" if dataset_prefix_new else dataset
-
+    if view_id_new is None:
+        view_id_new = view_id
     bq_client = BigQueryClientImpl(project_id=project_id)
     comparison_output_dataset_id = (
-        f"{output_dataset_prefix}_{dataset}_comparison_output"
+        f"{output_dataset_prefix}_{dataset_original}_comparison_output"
     )
     comparison_output_dataset_ref = bq_client.dataset_ref_for_id(
         comparison_output_dataset_id
@@ -232,9 +231,17 @@ def compare_view(
     )
 
     column_df, ignored_df = get_columns_to_compare_and_ignore(
-        project_id, dataset_orig, view_id
+        project_id, dataset_original, view_id
+    )
+    new_column_df, _ = get_columns_to_compare_and_ignore(
+        project_id, dataset_new, view_id_new
     )
     column_names = column_df["column_name"].tolist()
+    if not column_df.equals(new_column_df):
+        raise ValueError(
+            f"Original and new datasets comparable columns do not match. Original: {column_names}. "
+            f"New: {new_column_df['column_name'].tolist()}"
+        )
 
     # If primary keys were not specified, try to find columns that are some form of identifier
     if primary_keys is None:
@@ -254,8 +261,8 @@ def compare_view(
     # Construct a query that tells us which rows are in original, new, or both
     query = StrictStringFormatter().format(
         _COMPARISON_QUERY,
-        table_name_orig=f"`{project_id}.{dataset_orig}.{view_id}`",
-        table_name_new=f"`{project_id}.{dataset_new}.{view_id}`",
+        table_name_orig=f"`{project_id}.{dataset_original}.{view_id}`",
+        table_name_new=f"`{project_id}.{dataset_new}.{view_id_new}`",
         id_col=primary_keys[0],
         columns_for_query=format_lines_for_query(column_names),
         columns_for_join=format_lines_for_query(
@@ -348,18 +355,22 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to call the compare_view function."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, required=True, help="Dataset to compare")
     parser.add_argument(
-        "--dataset_prefix_orig",
+        "--dataset_original",
         type=str,
-        help="Prefix (e.g. from a sandbox) for the 'original' dataset to compare",
+        required=True,
+        help="Original dataset to compare",
     )
     parser.add_argument(
-        "--dataset_prefix_new",
-        type=str,
-        help="Prefix (e.g. from a sandbox) for the 'new' dataset to compare",
+        "--dataset_new", type=str, required=True, help="New dataset to compare"
     )
     parser.add_argument("--view_id", type=str, required=True, help="View ID to compare")
+    parser.add_argument(
+        "--view_id_new",
+        type=str,
+        help="View ID for the 'new' view in the comparison. If not set, will use the same value as "
+        "--view_id.",
+    )
     parser.add_argument(
         "--output_dataset_prefix",
         type=str,
@@ -401,10 +412,10 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
     logging.basicConfig(level=known_args.log_level)
     compare_view(
-        dataset=known_args.dataset,
-        dataset_prefix_orig=known_args.dataset_prefix_orig,
-        dataset_prefix_new=known_args.dataset_prefix_new,
+        dataset_original=known_args.dataset_original,
+        dataset_new=known_args.dataset_new,
         view_id=known_args.view_id,
+        view_id_new=known_args.view_id_new,
         output_dataset_prefix=known_args.output_dataset_prefix,
         primary_keys=known_args.primary_keys,
         grouping_columns=known_args.grouping_columns,
