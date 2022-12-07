@@ -1310,7 +1310,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_PAROLE_SUPERVISION.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction to parole supervision.",
                     "settings": [
                         {
                             "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
@@ -1382,7 +1382,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
                     "key": PrisonsReleaseType.TO_COMMUNITY_SUPERVISION.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
                     "settings": [
                         {
                             "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
@@ -1403,7 +1403,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.NO_CONTROL.value,
                     "key": PrisonsReleaseType.NO_CONTROL.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
                     "settings": [
                         {
                             "key": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.name,
@@ -1424,7 +1424,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "key": PrisonsReleaseType.DEATH.value,
                     "label": PrisonsReleaseType.DEATH.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
                     "settings": [
                         {
                             "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
@@ -1445,7 +1445,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.UNKNOWN.value,
                     "key": PrisonsReleaseType.UNKNOWN.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
                     "settings": [],
                 },
                 {
@@ -1453,7 +1453,7 @@ class TestMetricInterface(TestCase):
                     "enabled": True,
                     "label": PrisonsReleaseType.OTHER.value,
                     "key": PrisonsReleaseType.OTHER.value,
-                    "description": None,
+                    "description": "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
                     "settings": [],
                 },
             ],

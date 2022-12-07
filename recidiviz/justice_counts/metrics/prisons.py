@@ -129,6 +129,14 @@ funding = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsFundingType,
             required=False,
+            dimension_to_description={
+                PrisonsFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsFundingType.COMMISSARY_AND_FEES: "The amount of funding the agency collected through sales and/or fees charged to people who are incarcerated under the jurisdiction of the agency or their visitors.",
+                PrisonsFundingType.CONTRACT_BEDS: "The amount of funding the agency collected through contracts to provide custody and care for people who are incarcerated under the jurisdiction of another agency.",
+                PrisonsFundingType.OTHER: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated that is not appropriated by the state, funded through grants, earned from commissary and fees, or collected from contracted beds.",
+                PrisonsFundingType.UNKNOWN: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated for which the source is not known.",
+            },
             dimension_to_includes_excludes={
                 PrisonsFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
                     members=PrisonsFundingStateAppropriationIncludesExcludes,
@@ -178,6 +186,15 @@ total_staff = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsStaffType,
             required=False,
+            dimension_to_description={
+                PrisonsStaffType.SECURITY: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their custody, supervision, and monitoring.",
+                PrisonsStaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated but support the day-to-day operations of the agency.",
+                PrisonsStaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
+                PrisonsStaffType.PROGRAMMATIC: "The number of full-time equivalent positions that are not medical or clinical staff and provide services and programming to people who are incarcerated.",
+                PrisonsStaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical or medical staff, or programmatic staff.",
+                PrisonsStaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are of an unknown type.",
+                PrisonsStaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
+            },
             dimension_to_includes_excludes={
                 PrisonsStaffType.SECURITY: IncludesExcludesSet(
                     members=PrisonSecurityStaffIncludesExcludes,
@@ -239,6 +256,15 @@ expenses = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsExpenseType,
             required=False,
+            dimension_to_description={
+                PrisonsExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used to support maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsExpenseType.HEALTH_CARE: "The amount spent by the agency on medical care for people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsExpenseType.CONTRACT_BEDS: "The amount spent by the agency on contracts with other agencies to provide custody and care for people who are incarcerated under the jurisdiction of the agency.",
+                PrisonsExpenseType.OTHER: "The amount spent by the agency on other costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated that are not personnel, training, facilities and equipment, health care, or contract bed expenses.",
+                PrisonsExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated for a purpose that is not known.",
+            },
             dimension_to_includes_excludes={
                 PrisonsExpenseType.PERSONNEL: IncludesExcludesSet(
                     members=PrisonExpensesPersonnelIncludesExcludes,
@@ -282,6 +308,13 @@ readmissions = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsReadmissionType,
             required=False,
+            dimension_to_description={
+                PrisonsReadmissionType.NEW_CONVICTION: "The number of incarceration admissions due to new criminal conviction to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                PrisonsReadmissionType.RETURN_FROM_PROBATION: "The number of admissions due to probation hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                PrisonsReadmissionType.RETURN_FROM_PAROLE: "The number of incarceration admissions due to parole hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                PrisonsReadmissionType.OTHER_READMISSIONS: "The number of admissions, which were not admissions for a new conviction, admissions for a return from probation, or admissions for a return from parole, but an other admission to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                PrisonsReadmissionType.UNKNOWN_READMISSIONS: "The number of admissions, for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+            },
             dimension_to_includes_excludes={
                 PrisonsReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
                     members=PrisonReadmissionsNewConvictionIncludesExcludes,
@@ -319,6 +352,14 @@ admissions = MetricDefinition(
             dimension=PrisonsOffenseType,
             required=False,
             display_name="Prison Offense Type",
+            dimension_to_description={
+                PrisonsOffenseType.PERSON: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
+                PrisonsOffenseType.PROPERTY: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a property offense (the definition of property offenses configured in Section 2.3 will be applied to this section).",
+                PrisonsOffenseType.PUBLIC_ORDER: "The number of post-adjudication admissions to the agency’s jail jurisdiction for which the most serious offense was a public order offense (the definition of drug offenses configured in Section 2.4 will be applied to this section).",
+                PrisonsOffenseType.DRUG: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was a drug offense (the definition of public order offenses configured in Section 2.5 will be applied to this section).",
+                PrisonsOffenseType.OTHER: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was for another type of offense that was not a person offense, a property offense, a drug offense, or a public order offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
+                PrisonsOffenseType.UNKNOWN: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense charge type is not known.",
+            },
             dimension_to_includes_excludes={
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
                     members=PrisonPersonOffenseIncludesExcludes,
@@ -369,6 +410,11 @@ daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=BiologicalSex,
             required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is not known.",
+            },
             dimension_to_includes_excludes={
                 BiologicalSex.MALE: IncludesExcludesSet(
                     members=MaleBiologicalSexIncludesExcludes,
@@ -384,6 +430,14 @@ daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=PrisonsOffenseType,
             required=True,
+            dimension_to_description={
+                PrisonsOffenseType.PERSON: "A single day count of the number of people incarcerated whose most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
+                PrisonsOffenseType.PROPERTY: "A single day count of the number of people incarcerated whose most serious offense was a property crime (the definition of property offenses configured in Section 2.3 will be applied to this section).",
+                PrisonsOffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated whose most serious offense was a public order crime (the definition of public order offenses configured in Section 2.4 will be applied to this section).",
+                PrisonsOffenseType.DRUG: "A single day count of the number of people incarcerated whose most serious offense was a drug crime (the definition of drug offenses configured in Section 2.5 will be applied to this section).",
+                PrisonsOffenseType.OTHER: "A single day count of the number of people incarcerated whose most serious offense was not a person offense, property offense, public order offense, or drug offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
+                PrisonsOffenseType.UNKNOWN: "A single day count of the number of people incarcerated whose most serious offense was an unknown crime.",
+            },
             dimension_to_includes_excludes={
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
                     members=PrisonPersonOffenseIncludesExcludes,
@@ -433,7 +487,13 @@ releases = MetricDefinition(
             dimension=PrisonsReleaseType,
             required=False,
             dimension_to_description={
-                PrisonsReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision."
+                PrisonsReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision.",
+                PrisonsReleaseType.TO_PAROLE_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to parole supervision.",
+                PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
+                PrisonsReleaseType.NO_CONTROL: "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
+                PrisonsReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
+                PrisonsReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
+                PrisonsReleaseType.UNKNOWN: "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
             },
             dimension_to_includes_excludes={
                 PrisonsReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
@@ -507,6 +567,15 @@ grievances_upheld = MetricDefinition(
         AggregatedDimension(
             dimension=GrievancesUpheldType,
             required=False,
+            dimension_to_description={
+                GrievancesUpheldType.LIVING_CONDITIONS: "The number of grievances upheld that relate to the living conditions of people who are incarcerated under the jurisdiction of the agency.",
+                GrievancesUpheldType.PERSONAL_SAFETY: "The number of grievances upheld that relate to the personal safety of people who are incarcerated under the jurisdiction of the agency.",
+                GrievancesUpheldType.DISCRIMINATION: "The number of grievances upheld that relate to acts of discrimination toward, racial bias against, or interference of religious practices of people who are incarcerated under the jurisdiction of the agency.",
+                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: "The number of grievances upheld that relate to the accessibility of health care to people who are incarcerated under the jurisdiction of the agency.",
+                GrievancesUpheldType.LEGAL: "The number of grievances upheld that relate to access to the legal process among people who are incarcerated under the jurisdiction of the agency.",
+                GrievancesUpheldType.OTHER: "The number of grievances upheld that relate to another issue or concern that is not related to living conditions; personal safety; discrimination, racial bias, or religious practices; access to health care; or legal concerns.",
+                GrievancesUpheldType.UNKNOWN: "The number of grievances upheld that relate to an issue or concern that is not known.",
+            },
             dimension_to_includes_excludes={
                 GrievancesUpheldType.LIVING_CONDITIONS: IncludesExcludesSet(
                     members=PrisonGrievancesLivingConditionsIncludesExcludes,
