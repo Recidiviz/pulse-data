@@ -64,3 +64,4 @@ columns:
   - name: DaysToLock
   - name: IsOpioidUsedForRecSupLvl
   - name: IsOpioidUsedForSubUseScale
+  - name: FkCoSyCourtSummary

@@ -57,3 +57,4 @@ columns:
   - name: DateCreatedAsString
   - name: DateComputedAsString
   - name: FkShSyCodeMatrixType
+  - name: FkPtMaster
