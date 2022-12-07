@@ -18,8 +18,10 @@
 Predefined request bodies to use in test requests to TOMIS via recidiviz.tools.workflows.request_api
 """
 
-complete_request_obj = {
-    "ContactNoteDateTime": "2022-10-01T13:31:34.558Z",
+from datetime import datetime, timedelta
+from typing import Any, List, Optional
+
+complete_request_basic_obj = {
     "ContactTypeCode1": "TEPE",
     "ContactTypeCode2": "",
     "ContactTypeCode3": "",
@@ -43,8 +45,31 @@ complete_request_obj = {
     "Comment10": "Test 10",
 }
 
+complete_request_full_obj = {
+    "ContactTypeCode1": "TEPE",
+    "ContactTypeCode2": "",
+    "ContactTypeCode3": "",
+    "ContactTypeCode4": "",
+    "ContactTypeCode5": "",
+    "ContactTypeCode6": "",
+    "ContactTypeCode7": "",
+    "ContactTypeCode8": "",
+    "ContactTypeCode9": "",
+    "ContactTypeCode10": "",
+    "ContactSequenceNumber": 1,
+    "Comment1": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment2": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment3": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment4": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment5": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment6": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment7": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment8": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment9": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "Comment10": "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+}
+
 incomplete_request_obj = {
-    "ContactNoteDateTime": "2022-10-02T13:31:34.558Z",
     "ContactTypeCode1": "TEPE",
     "ContactSequenceNumber": 1,
     "Comment1": "Test 1",
@@ -52,7 +77,6 @@ incomplete_request_obj = {
 
 
 empty_comments_request_obj = {
-    "ContactNoteDateTime": "2022-10-03T13:31:34.558Z",
     "ContactTypeCode1": "TEPE",
     "ContactTypeCode2": "",
     "ContactTypeCode3": "",
@@ -76,8 +100,46 @@ empty_comments_request_obj = {
     "Comment10": "",
 }
 
-note_name_to_obj = {
-    "complete_request": complete_request_obj,
-    "incomplete_request": incomplete_request_obj,
-    "empty_comments_request": empty_comments_request_obj,
+
+def with_sequence_number(note: dict[str, Any], sequence_number: int) -> dict[str, Any]:
+    cp = note.copy()
+    cp["ContactSequenceNumber"] = sequence_number
+    return cp
+
+
+note_name_to_objs = {
+    "complete_request": [complete_request_basic_obj],
+    "complete_request_full": [complete_request_full_obj],
+    "incomplete_request": [incomplete_request_obj],
+    "empty_comments_request": [empty_comments_request_obj],
+    "two_page_request": [
+        complete_request_full_obj,
+        with_sequence_number(complete_request_full_obj, 2),
+    ],
+    "ten_page_request": [
+        with_sequence_number(complete_request_full_obj, i) for i in range(1, 11)
+    ],
 }
+
+_START_DATE = datetime(2022, 10, 1)
+
+
+def build_notes(
+    notes: List[dict[str, Any]],
+    test_case_number: int,
+    offender_id: Optional[str],
+    user_id: Optional[str],
+) -> List[dict[str, Any]]:
+    transformed_notes: List[dict[str, Any]] = []
+    for note in notes:
+        transformed_note = note.copy()
+        transformed_note["ContactNoteDateTime"] = (
+            _START_DATE + timedelta(days=test_case_number)
+        ).isoformat()
+        if offender_id:
+            transformed_note["OffenderId"] = offender_id
+        if user_id:
+            transformed_note["UserId"] = user_id
+        transformed_notes.append(transformed_note)
+
+    return transformed_notes

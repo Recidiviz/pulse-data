@@ -25,7 +25,9 @@ from flask import Flask
 from mock import MagicMock, patch
 
 from recidiviz.case_triage.workflows.interface import WorkflowsExternalRequestInterface
-from recidiviz.tools.workflows.fixtures.tomis_contact_notes import complete_request_obj
+from recidiviz.tools.workflows.fixtures.tomis_contact_notes import (
+    complete_request_basic_obj,
+)
 from recidiviz.utils.types import assert_type
 
 
@@ -53,7 +55,7 @@ class TestWorkflowsInterface(TestCase):
     def test_insert_contact_note_is_test_success(
         self, mock_get_secret: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
+        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
         response_json = {"status": "OK"}
         mock_get_secret.return_value = self.fake_url
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -69,7 +71,7 @@ class TestWorkflowsInterface(TestCase):
     def test_insert_contact_note_is_test_success_text_only(
         self, mock_get_secret: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
+        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
         mock_get_secret.return_value = self.fake_url
         response_text = "response"
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -85,7 +87,7 @@ class TestWorkflowsInterface(TestCase):
     def test_insert_contact_note_is_test_exception_raised(
         self, mock_get_secret: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_obj}
+        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
         mock_get_secret.return_value = self.fake_url
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())

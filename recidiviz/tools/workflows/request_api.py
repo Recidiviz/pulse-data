@@ -33,8 +33,8 @@ from http import HTTPStatus
 import requests
 
 from recidiviz.tools.workflows.fixtures.tomis_contact_notes import (
-    complete_request_obj,
-    note_name_to_obj,
+    build_notes,
+    note_name_to_objs,
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.secrets import get_secret
@@ -47,6 +47,17 @@ def insert_contact_note(
     target_env: str, token: str, fixture_name: str, timeout_secs: int
 ) -> None:
     """Used to make a test request to TOMIS"""
+    if not fixture_name in note_name_to_objs:
+        raise Exception(
+            f"fixture name not found, options are {note_name_to_objs.keys()}"
+        )
+
+    offender_id = get_secret("workflows_us_tn_test_offender_id")
+    user_id = get_secret("workflows_us_tn_test_user_id")
+
+    if offender_id is None or user_id is None:
+        raise Exception("Missing OffenderId and/or UserId secret")
+
     url = STAGING_URL if target_env == "staging" else LOCALHOST_URL
 
     # Get a valid CSRF token
@@ -60,30 +71,29 @@ def insert_contact_note(
     headers["X-CSRF-Token"] = response.json()["csrf"]
     headers["Referer"] = "https://app-staging.recidiviz.org"
 
-    request_fixture = note_name_to_obj.get(fixture_name, complete_request_obj)
+    pages = note_name_to_objs[fixture_name]
+    test_case_number = list(note_name_to_objs.keys()).index(fixture_name)
+    total_duration = 0
+    for page in build_notes(pages, test_case_number, offender_id, user_id):
+        data = {
+            "isTest": True,
+            "fixture": page,
+            "env": target_env,
+            "timeoutSecs": timeout_secs,
+        }
 
-    offender_id = get_secret("workflows_us_tn_test_offender_id")
-    user_id = get_secret("workflows_us_tn_test_user_id")
+        print(f"Sending request with data:\n {json.dumps(page, indent=2)}")
+        response = s.post(
+            url + "workflows/external_request/US_TN/insert_contact_note",
+            headers=headers,
+            json=data,
+        )
+        resp_json = response.json()
+        print(resp_json)
+        if "duration" in resp_json:
+            total_duration += resp_json["duration"]
 
-    if offender_id is None or user_id is None:
-        raise Exception("OffenderId and UserId should be filled")
-
-    request_fixture["OffenderId"] = offender_id
-    request_fixture["UserId"] = user_id
-    data = {
-        "isTest": True,
-        "fixture": request_fixture,
-        "env": target_env,
-        "timeoutSecs": timeout_secs,
-    }
-
-    print(f"Sending request with data:\n {json.dumps(request_fixture, indent=2)}")
-    response = s.post(
-        url + "workflows/external_request/US_TN/insert_contact_note",
-        headers=headers,
-        json=data,
-    )
-    print(response.json())
+    print(f"Total duration: {total_duration}")
 
 
 if __name__ == "__main__":
@@ -97,7 +107,7 @@ if __name__ == "__main__":
         "--fixture_name", help="Name of the fixture to use in the test request to TOMIS"
     )
     parser.add_argument(
-        "--timeout_secs", help="Timeout to pass in put request to TOMIS", default=5
+        "--timeout_secs", help="Timeout to pass in put request to TOMIS", default=360
     )
 
     args = parser.parse_args()

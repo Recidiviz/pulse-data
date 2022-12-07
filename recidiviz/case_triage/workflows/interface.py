@@ -85,10 +85,8 @@ class WorkflowsExternalRequestInterface:
                 )
                 if tomis_response.status_code != requests.codes.ok:
                     tomis_response.raise_for_status()
-                logging.info(
-                    "Request to TOMIS completed in %s seconds",
-                    round(time.perf_counter() - start_time, 2),
-                )
+                duration = round(time.perf_counter() - start_time, 2)
+                logging.info("Request to TOMIS completed in %s seconds", duration)
                 text_data = tomis_response.text
                 json_data = ""
                 try:
@@ -100,18 +98,17 @@ class WorkflowsExternalRequestInterface:
                         message="Successfully called TOMIS",
                         text=text_data,
                         json=json_data,
+                        duration=duration,
                     ),
                     HTTPStatus.OK,
                 )
             except Exception as e:
-                logging.info(
-                    "Request to TOMIS failed in %s seconds",
-                    round(time.perf_counter() - start_time, 2),
-                )
+                duration = round(time.perf_counter() - start_time, 2)
+                logging.info("Request to TOMIS failed in %s seconds", duration)
                 return make_response(
                     jsonify(
                         message=f"An error occurred while calling TOMIS: {e}",
-                        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                        duration=duration,
                     ),
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
