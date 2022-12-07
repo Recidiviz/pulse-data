@@ -27,14 +27,14 @@ function run_migrations {
 if [[ "$PROJECT_ID" = 'recidiviz-123' ]]; then
   run_migrations STATE
   run_migrations OPERATIONS
-# TODO(#17134): Uncomment once 919ba25c05af has been downgraded  
-#  run_migrations JUSTICE_COUNTS
+  run_migrations JUSTICE_COUNTS
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
 elif [[ "$PROJECT_ID" = 'recidiviz-staging' ]]; then
   run_migrations STATE
-  run_migrations OPERATIONS
-  run_migrations JUSTICE_COUNTS
+  run_migrations OPERATIONS  
+# TODO(#17134): Uncomment once 919ba25c05af has been downgraded  
+#  run_migrations JUSTICE_COUNTS
   run_migrations CASE_TRIAGE
   run_migrations PATHWAYS
 else
