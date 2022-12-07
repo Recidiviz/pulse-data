@@ -28,8 +28,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_xx")
-
 
 class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
     """Tests for converting state supervision case type entries."""
@@ -44,7 +42,8 @@ class StateSupervisionCaseTypeEntryTest(unittest.TestCase):
 
         # Act
         result = state_supervision_case_type_entry.convert(
-            ingest_case_type_entry, _EMPTY_METADATA
+            ingest_case_type_entry,
+            FakeLegacyStateIngestMetadata.for_state("us_xx"),
         )
 
         # Assert

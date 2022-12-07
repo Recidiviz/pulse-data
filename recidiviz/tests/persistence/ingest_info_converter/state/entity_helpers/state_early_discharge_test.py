@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecisionStatus,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -36,11 +37,15 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateEarlyDischargeConverterTest(unittest.TestCase):
     """Tests for converting state early discharges."""
+
+    empty_metadata: LegacyStateIngestMetadata
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
     def testParseStateSupervisionViolationResponse(self) -> None:
         # Arrange
@@ -59,7 +64,9 @@ class StateEarlyDischargeConverterTest(unittest.TestCase):
         # Act
         response_builder = entities.StateEarlyDischarge.builder()
         state_early_discharge.copy_fields_to_builder(
-            response_builder, ingest_response, _EMPTY_METADATA
+            response_builder,
+            ingest_response,
+            StateEarlyDischargeConverterTest.empty_metadata,
         )
         result = response_builder.build(StateEarlyDischargeFactory.deserialize)
 

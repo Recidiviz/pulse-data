@@ -36,8 +36,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateAssessmentConverterTest(unittest.TestCase):
     """Tests for converting assessments."""
@@ -58,7 +56,9 @@ class StateAssessmentConverterTest(unittest.TestCase):
         # Act
         assessment_builder = entities.StateAssessment.builder()
         state_assessment.copy_fields_to_builder(
-            assessment_builder, ingest_assessment, _EMPTY_METADATA
+            assessment_builder,
+            ingest_assessment,
+            FakeLegacyStateIngestMetadata.for_state("us_nd"),
         )
         result = assessment_builder.build(StateAssessmentFactory.deserialize)
 

@@ -20,25 +20,19 @@ import os
 import unittest
 from typing import List
 
+import attr
 from mock import patch
 
 import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.tests.big_query import test_views
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,
-)
-from recidiviz.tests.big_query.test_views.good_view_1 import GOOD_VIEW_1
-from recidiviz.tests.big_query.test_views.good_view_2 import GOOD_VIEW_2
-from recidiviz.tests.big_query.test_views.view_builder_alternate_name import (
-    VIEW_ALTERNATE_NAME,
-)
-from recidiviz.tests.big_query.test_views.views_subdirectory.good_view_3 import (
-    GOOD_VIEW_3,
 )
 
 VIEWS_DIR_RELATIVE_PATH = os.path.relpath(
@@ -49,6 +43,42 @@ VIEWS_DIR_RELATIVE_PATH = os.path.relpath(
 class BigQueryViewCollectorTest(unittest.TestCase):
     """Tests for BigQueryViewCollector."""
 
+    @attr.s(frozen=True)
+    class DeflatedView:
+        clazz: type[BigQueryView] = attr.ib()
+        project: str = attr.ib()
+        dataset_id: str = attr.ib()
+        view_id: str = attr.ib()
+        view_query: str = attr.ib()
+
+    good_view_1: DeflatedView
+    good_view_2: DeflatedView
+    good_view_3: DeflatedView
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.good_view_1 = cls.DeflatedView(
+            clazz=BigQueryView,
+            project="project-id",
+            dataset_id="my_dataset",
+            view_id="early_discharge_incarceration_sentence",
+            view_query="SELECT * FROM table1",
+        )
+        cls.good_view_2 = cls.DeflatedView(
+            clazz=DirectIngestPreProcessedIngestView,
+            project="project-id",
+            dataset_id="NO DATASET",
+            view_id="ingest_view_name",
+            view_query="WITH\n\nSELECT * FROM table1\nORDER BY some_col, another_col;",
+        )
+        cls.good_view_3 = cls.DeflatedView(
+            clazz=BigQueryView,
+            project="project-id",
+            dataset_id="my_dataset_3",
+            view_id="early_discharge_incarceration_sentence",
+            view_query="SELECT * FROM table1",
+        )
+
     def setUp(self) -> None:
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
@@ -57,6 +87,20 @@ class BigQueryViewCollectorTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
+    def _deflated(
+        self, viewlist: List[BigQueryView]
+    ) -> List["BigQueryViewCollectorTest.DeflatedView"]:
+        return [
+            BigQueryViewCollectorTest.DeflatedView(
+                clazz=v.__class__,
+                project=v.project,
+                dataset_id=v.dataset_id,
+                view_id=v.view_id,
+                view_query=v.view_query,
+            )
+            for v in viewlist
+        ]
+
     def test_collect_view_builders(self) -> None:
         builders = BigQueryViewCollector.collect_view_builders_in_dir(
             builder_type=FakeBigQueryViewBuilder,
@@ -64,7 +108,13 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             view_file_prefix_filter="good_",
         )
         views: List[BigQueryView] = [builder.build() for builder in builders]
-        self.assertCountEqual([GOOD_VIEW_1, GOOD_VIEW_2], views)
+        self.assertCountEqual(
+            [
+                BigQueryViewCollectorTest.good_view_1,
+                BigQueryViewCollectorTest.good_view_2,
+            ],
+            self._deflated(views),
+        )
 
     def test_collect_view_builders_recursive(self) -> None:
         builders = BigQueryViewCollector.collect_view_builders_in_dir(
@@ -74,7 +124,14 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             view_file_prefix_filter="good_",
         )
         views: List[BigQueryView] = [builder.build() for builder in builders]
-        self.assertCountEqual([GOOD_VIEW_1, GOOD_VIEW_2, GOOD_VIEW_3], views)
+        self.assertCountEqual(
+            [
+                BigQueryViewCollectorTest.good_view_1,
+                BigQueryViewCollectorTest.good_view_2,
+                BigQueryViewCollectorTest.good_view_3,
+            ],
+            self._deflated(views),
+        )
 
     def test_collect_views_too_narrow_view_type(self) -> None:
         with self.assertRaisesRegex(
@@ -97,7 +154,10 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             view_file_prefix_filter="good_view_2",
         )
 
-        self.assertCountEqual([GOOD_VIEW_2], [b.build() for b in builders])
+        self.assertCountEqual(
+            [BigQueryViewCollectorTest.good_view_2],
+            self._deflated([b.build() for b in builders]),
+        )
 
     def test_file_no_builder_raises(self) -> None:
         with self.assertRaisesRegex(
@@ -131,7 +191,10 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             view_builder_attribute_name_regex="[A-Z]{2}_VIEW_BUILDER",
         )
 
-        self.assertCountEqual([VIEW_ALTERNATE_NAME], [b.build() for b in builders])
+        self.assertCountEqual(
+            [BigQueryViewCollectorTest.good_view_1],
+            self._deflated([b.build() for b in builders]),
+        )
 
     def test_file_builder_wrong_name_raises_regex(self) -> None:
         with self.assertRaisesRegex(

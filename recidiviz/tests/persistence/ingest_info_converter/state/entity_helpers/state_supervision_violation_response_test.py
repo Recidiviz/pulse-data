@@ -35,8 +35,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("US_XX")
-
 
 class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
     """Tests for converting state supervision violations."""
@@ -56,7 +54,9 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         # Act
         response_builder = entities.StateSupervisionViolationResponse.builder()
         state_supervision_violation_response.copy_fields_to_builder(
-            response_builder, ingest_response, _EMPTY_METADATA
+            response_builder,
+            ingest_response,
+            FakeLegacyStateIngestMetadata.for_state("US_XX"),
         )
         result = response_builder.build(
             StateSupervisionViolationResponseFactory.deserialize

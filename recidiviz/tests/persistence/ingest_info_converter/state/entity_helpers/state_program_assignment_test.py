@@ -34,8 +34,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateProgramAssignmentConverterTest(unittest.TestCase):
     """Tests for converting program assignments."""
@@ -56,7 +54,9 @@ class StateProgramAssignmentConverterTest(unittest.TestCase):
         # Act
         program_assignment_builder = entities.StateProgramAssignment.builder()
         state_program_assignment.copy_fields_to_builder(
-            program_assignment_builder, ingest_program_assignment, _EMPTY_METADATA
+            program_assignment_builder,
+            ingest_program_assignment,
+            FakeLegacyStateIngestMetadata.for_state("us_nd"),
         )
         result = program_assignment_builder.build(
             StateProgramAssignmentFactory.deserialize

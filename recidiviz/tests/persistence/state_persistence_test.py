@@ -62,13 +62,6 @@ EXTERNAL_ID_2 = "EXTERNAL_ID_2"
 FULL_NAME_1 = "TEST_FULL_NAME_1"
 STATE_CODE = "US_XX"
 COUNTY_CODE = "COUNTY"
-DEFAULT_METADATA = IngestMetadata(
-    region="us_xx",
-    ingest_time=datetime(year=1000, month=1, day=1),
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
-    ),
-)
 ID_TYPE = "ID_TYPE"
 ID = 1
 ID_2 = 2
@@ -107,7 +100,9 @@ class _PatchedStateEntityMatcher(StateEntityMatcher):
     """Subclass of StateEntityMatcher which will throw entity matching errors for certain objects."""
 
     def __init__(self, erroring_class: Type, erroring_external_ids: List[str]):
-        state_matching_delegate = UsXxMatchingDelegate(ingest_metadata=DEFAULT_METADATA)
+        state_matching_delegate = UsXxMatchingDelegate(
+            ingest_metadata=TestStatePersistence.default_metadata
+        )
         super().__init__(state_matching_delegate)
         self.erroring_external_ids = erroring_external_ids
         self.erroring_class = erroring_class
@@ -147,10 +142,18 @@ class TestStatePersistence(TestCase):
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
+    default_metadata: IngestMetadata
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.default_metadata = IngestMetadata(
+            region="us_xx",
+            ingest_time=datetime(year=1000, month=1, day=1),
+            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+                schema_type=SchemaType.STATE
+            ),
+        )
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
@@ -303,7 +306,7 @@ class TestStatePersistence(TestCase):
                 general_parsing_errors=0,
                 protected_class_errors=0,
             ),
-            ingest_metadata=DEFAULT_METADATA,
+            ingest_metadata=TestStatePersistence.default_metadata,
             total_people=len(parsed_entities),
         )
 
@@ -437,7 +440,7 @@ class TestStatePersistence(TestCase):
                 general_parsing_errors=0,
                 protected_class_errors=0,
             ),
-            ingest_metadata=DEFAULT_METADATA,
+            ingest_metadata=TestStatePersistence.default_metadata,
             total_people=len(parsed_entities),
         )
 

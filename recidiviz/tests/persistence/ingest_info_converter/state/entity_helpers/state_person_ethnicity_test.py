@@ -28,8 +28,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
-
 
 class StatePersonEthnicityConverterTest(unittest.TestCase):
     """Tests for converting state person ethnicities."""
@@ -44,7 +42,8 @@ class StatePersonEthnicityConverterTest(unittest.TestCase):
 
         # Act
         result = state_person_ethnicity.convert(
-            ingest_person_ethnicity, _EMPTY_METADATA
+            ingest_person_ethnicity,
+            FakeLegacyStateIngestMetadata.for_state(region="us_nd"),
         )
 
         # Assert

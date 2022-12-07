@@ -37,8 +37,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_ca")
-
 
 class StateSupervisionContactConverterTest(unittest.TestCase):
     """Tests for converting supervision contacts."""
@@ -60,7 +58,9 @@ class StateSupervisionContactConverterTest(unittest.TestCase):
         # Act
         contact_builder = entities.StateSupervisionContact.builder()
         state_supervision_contact.copy_fields_to_builder(
-            contact_builder, ingest_contact, _EMPTY_METADATA
+            contact_builder,
+            ingest_contact,
+            FakeLegacyStateIngestMetadata.for_state("us_ca"),
         )
         result = contact_builder.build(StateSupervisionContactFactory.deserialize)
 

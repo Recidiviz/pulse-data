@@ -36,8 +36,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-METADATA = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
-
 
 class StateSupervisionSentenceConverterTest(unittest.TestCase):
     """Tests for converting state supervision sentences."""
@@ -60,7 +58,9 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
         # Act
         supervision_builder = entities.StateSupervisionSentence.builder()
         state_supervision_sentence.copy_fields_to_builder(
-            supervision_builder, ingest_supervision, METADATA
+            supervision_builder,
+            ingest_supervision,
+            FakeLegacyStateIngestMetadata.for_state(region="us_nd"),
         )
         result = supervision_builder.build(StateSupervisionSentenceFactory.deserialize)
 

@@ -26,11 +26,13 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateAgentConverterTest(unittest.TestCase):
     """Tests for converting state agents."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
     def testParseStateAgent(self):
         # Arrange
@@ -42,7 +44,9 @@ class StateAgentConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_agent.convert(ingest_agent, _EMPTY_METADATA)
+        result = state_agent.convert(
+            ingest_agent, StateAgentConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StateAgent(
@@ -62,7 +66,9 @@ class StateAgentConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_agent.convert(ingest_agent, _EMPTY_METADATA)
+        result = state_agent.convert(
+            ingest_agent, StateAgentConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StateAgent.new_with_defaults(
