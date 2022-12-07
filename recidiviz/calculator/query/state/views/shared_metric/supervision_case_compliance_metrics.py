@@ -17,7 +17,7 @@
 """Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
+from recidiviz.calculator.query.bq_utils import filter_out_absconsions
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -30,7 +30,7 @@ Case compliance metrics with supervising_officer_external_id pulled directly fro
 """
 
 SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
-    {hack_us_id_absconsions('most_recent_supervision_case_compliance_metrics_materialized')}
+    {filter_out_absconsions('most_recent_supervision_case_compliance_metrics_materialized')}
 """
 
 SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

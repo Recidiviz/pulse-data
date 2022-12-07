@@ -124,7 +124,7 @@ def generate_district_id_from_district_name(district_name_field: str) -> str:
 
 # TODO(#12146): Exclude absconsion periods from US_ID in the
 #  UsIdSupervisionCaseCompliance delegate
-def hack_us_id_absconsions(
+def filter_out_absconsions(
     dataflow_metric_table: str, include_state_pop: bool = False
 ) -> str:
     include_state_pop_string = (
@@ -139,7 +139,7 @@ def hack_us_id_absconsions(
             `{{project_id}}.{{state_base_dataset}}.state_supervision_period`
           WHERE
             termination_date IS NULL
-            AND (state_code != 'US_ID' OR admission_reason != 'ABSCONSION')
+            AND IFNULL(admission_reason, '') != 'ABSCONSION'
         )
         SELECT *
         FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}` metric

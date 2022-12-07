@@ -24,9 +24,6 @@ from recidiviz.calculator.query.state.views.reference.agent_external_id_to_full_
 from recidiviz.calculator.query.state.views.reference.augmented_agent_info import (
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.covid_report_weeks import (
-    COVID_REPORT_WEEKS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -72,7 +69,6 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-    COVID_REPORT_WEEKS_VIEW_BUILDER,
     SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
