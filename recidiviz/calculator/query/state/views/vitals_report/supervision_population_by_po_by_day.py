@@ -18,7 +18,7 @@
 from typing import Dict, Optional, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import hack_us_id_absconsions
+from recidiviz.calculator.query.bq_utils import filter_out_absconsions
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
     state_specific_entity_filter,
@@ -43,11 +43,29 @@ contact_population_by_state = {
         "INTERSTATE_COMPACT",
         "INTERNAL_UNKNOWN",
     ),
+    "US_IX": (
+        "MINIMUM",
+        "MEDIUM",
+        "HIGH",
+        "MAXIMUM",
+        "DIVERSION",
+        "INTERSTATE_COMPACT",
+        "INTERNAL_UNKNOWN",
+    ),
 }
 
 risk_assessment_population_by_state = {
     "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
     "US_ID": (
+        "MINIMUM",
+        "MEDIUM",
+        "HIGH",
+        "MAXIMUM",
+        "DIVERSION",
+        "INTERSTATE_COMPACT",
+        "INTERNAL_UNKNOWN",
+    ),
+    "US_IX": (
         "MINIMUM",
         "MEDIUM",
         "HIGH",
@@ -87,7 +105,7 @@ def generate_state_specific_population(
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
     WITH supervision_population_metrics AS (
-        {hack_us_id_absconsions('most_recent_supervision_population_span_to_single_day_metrics_materialized', include_state_pop=True)}
+        {filter_out_absconsions('most_recent_supervision_population_span_to_single_day_metrics_materialized', include_state_pop=True)}
     ),
     supervision_population AS (
         SELECT

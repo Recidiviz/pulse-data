@@ -103,6 +103,49 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             `{project_id}.{static_reference_dataset_id}.us_id_roster` id_roster
         USING (email_address)
     ),
+    ix_restricted_access AS (
+        SELECT
+            'US_IX' AS state_code,
+            LOWER(IF(leadership.email_address IS NULL,
+                    ix_roster.email_address,
+                    leadership.email_address)) AS restricted_user_email,
+            '' AS allowed_supervision_location_ids,
+            CAST(NULL AS STRING) as allowed_supervision_location_level,
+            IF(internal_role IS NULL,
+                'line_staff_user',
+                internal_role) AS internal_role,
+            CASE
+                WHEN internal_role LIKE '%leadership_role%' THEN TRUE
+                ELSE FALSE
+            END AS can_access_leadership_dashboard,
+            (ix_roster.email_address IS NOT NULL) AS can_access_case_triage,
+            CASE
+                WHEN internal_role LIKE '%leadership_role%' THEN should_see_beta_charts
+                ELSE FALSE
+            END AS should_see_beta_charts,
+            CASE
+                WHEN internal_role LIKE '%leadership_role%'
+                    THEN TO_JSON_STRING(STRUCT(
+                        community_projections,
+                        facilities_projections,
+                        community_practices,
+                        operations,
+                        system_libertyToPrison,
+                        system_prison,
+                        system_prisonToSupervision,
+                        system_supervision,
+                        system_supervisionToLiberty,
+                        system_supervisionToPrison,
+                        workflows
+                    ))
+                ELSE TO_JSON_STRING(NULL)
+            END AS routes,
+        FROM
+            `{project_id}.{static_reference_dataset_id}.us_ix_leadership_users` leadership
+        FULL OUTER JOIN
+            `{project_id}.{static_reference_dataset_id}.us_ix_roster` ix_roster
+        USING (email_address)
+    ),
     me_restricted_access AS (
         SELECT
             'US_ME' AS state_code,
@@ -270,6 +313,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         SELECT * FROM co_restricted_access
         UNION ALL
         SELECT * FROM id_restricted_access
+        UNION ALL
+        SELECT * FROM ix_restricted_access
         UNION ALL
         SELECT * FROM me_restricted_access
         UNION ALL
