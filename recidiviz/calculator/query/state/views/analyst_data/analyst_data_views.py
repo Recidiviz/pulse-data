@@ -78,15 +78,6 @@ from recidiviz.calculator.query.state.views.analyst_data.task_events import (
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_lsu import (
-    US_ID_DAY_0_LSU_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_overdue_discharge import (
-    US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_day_0_supervision_downgrade import (
-    US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_early_discharge_requests import (
     US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
 )
@@ -216,9 +207,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
         TASK_EVENTS_VIEW_BUILDER,
         US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
-        US_ID_DAY_0_LSU_VIEW_BUILDER,
-        US_ID_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
-        US_ID_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
         US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
         US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
         US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
