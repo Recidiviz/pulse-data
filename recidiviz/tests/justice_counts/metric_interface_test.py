@@ -135,6 +135,7 @@ class TestMetricInterface(TestCase):
                 "reporting_note": None,
                 "description": "Measures the total annual budget (in dollars) of your agency.",
                 "definitions": [],
+                "disaggregated_by_supervision_subsystems": None,
                 "category": "CAPACITY AND COST",
                 "value": 100000,
                 "unit": "USD",
@@ -189,6 +190,7 @@ class TestMetricInterface(TestCase):
                 "definitions": [
                     d.to_json() for d in metric_definition.definitions or []
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.value,
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
@@ -300,6 +302,7 @@ class TestMetricInterface(TestCase):
                         "definition": "Found to be supported by the evidence, and may or may not result in disciplinary action.",
                     },
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.value,
                 "settings": [],
                 "value": reported_metric.value,
@@ -335,6 +338,7 @@ class TestMetricInterface(TestCase):
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
                 "definitions": [],
+                "disaggregated_by_supervision_subsystems": None,
                 "datapoints": None,
                 "category": metric_definition.category.value,
                 "value": reported_metric.value,
@@ -675,6 +679,7 @@ class TestMetricInterface(TestCase):
                         "term": "Calls for service",
                     }
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
                 "label": "Calls for Service",
@@ -750,6 +755,7 @@ class TestMetricInterface(TestCase):
                         "term": "Calls for service",
                     }
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
                 "label": "Calls for Service",
@@ -834,6 +840,7 @@ class TestMetricInterface(TestCase):
                         "term": "Calls for service",
                     }
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
                 "label": "Calls for Service",
@@ -912,6 +919,7 @@ class TestMetricInterface(TestCase):
                         "term": "Calls for service",
                     }
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
                 "label": "Calls for Service",
@@ -1079,6 +1087,7 @@ class TestMetricInterface(TestCase):
                         "term": "Calls for service",
                     }
                 ],
+                "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
                 "label": "Calls for Service",
@@ -1510,6 +1519,7 @@ class TestMetricInterface(TestCase):
                     "term": "Grievance",
                 }
             ],
+            "disaggregated_by_supervision_subsystems": None,
             "reporting_note": prisons.grievances_upheld.reporting_note,
             "unit": prisons.grievances_upheld.metric_type.unit,
             "category": prisons.grievances_upheld.category.value,
@@ -1593,6 +1603,7 @@ class TestMetricInterface(TestCase):
             "system": "Law Enforcement",
             "display_name": law_enforcement.annual_budget.display_name,
             "description": law_enforcement.annual_budget.description,
+            "disaggregated_by_supervision_subsystems": None,
             "definitions": [],
             "reporting_note": law_enforcement.annual_budget.reporting_note,
             "unit": law_enforcement.annual_budget.metric_type.unit,

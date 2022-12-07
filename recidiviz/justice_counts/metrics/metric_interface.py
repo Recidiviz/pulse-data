@@ -74,6 +74,11 @@ class MetricInterface:
         factory=list
     )
 
+    # This field should is none for non-supervision metrics, and should
+    # is a boolean for supervision metrics. If True, it means this
+    # metric is disaggregated by supervision subsystems.
+    disaggregated_by_supervision_subsystems: Optional[bool] = attr.field(default=None)
+
     # Values for includes_excludes settings at the metric level.
     includes_excludes_member_to_setting: Dict[
         enum.Enum, Optional[IncludesExcludesSetting]
@@ -191,6 +196,7 @@ class MetricInterface:
                 )
                 for d in self.aggregated_dimensions
             ],
+            "disaggregated_by_supervision_subsystems": self.disaggregated_by_supervision_subsystems,
         }
 
     @classmethod
@@ -263,6 +269,9 @@ class MetricInterface:
             includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             is_metric_enabled=json.get("enabled"),
             custom_reporting_frequency=CustomReportingFrequency.from_json(json),
+            disaggregated_by_supervision_subsystems=json.get(
+                "disaggregated_by_supervision_subsystems"
+            ),
         )
 
     ### Helpers ###
