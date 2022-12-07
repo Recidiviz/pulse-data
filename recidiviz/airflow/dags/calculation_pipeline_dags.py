@@ -31,6 +31,7 @@ from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessage
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.state import State
 from airflow.utils.trigger_rule import TriggerRule
+from google.api_core.retry import Retry
 from google.cloud import tasks_v2
 from google.cloud.tasks_v2 import CloudTasksClient
 from requests import Response
@@ -91,6 +92,8 @@ default_args = {
     "email_on_failure": True,
 }
 
+retry: Retry = Retry(predicate=lambda _: False)
+
 PipelineConfigArgs = NamedTuple(
     "PipelineConfigArgs",
     [("state_code", str), ("pipeline_name", str), ("staging_only", Optional[bool])],
@@ -101,7 +104,7 @@ def trigger_export_operator(export_name: str) -> PubSubPublishMessageOperator:
     # TODO(#4593) Migrate to IAPHTTPOperator
     return PubSubPublishMessageOperator(
         task_id=f"trigger_{export_name.lower()}_bq_metric_export",
-        project=project_id,
+        project_id=project_id,
         topic="v1.export.view.data",
         messages=[{"data": bytes(export_name, "utf-8")}],
     )
@@ -162,8 +165,10 @@ def dataflow_operator_for_pipeline(
 def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
+    if not project_id:
+        raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
-        project_id,
+        project=project_id,
         location=queue_location,
         queue=queue_name,
         task=uuid.uuid4().hex,
@@ -181,6 +186,7 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
         location=queue_location,
         queue_name=queue_name,
         task=task,
+        retry=retry,
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
@@ -190,8 +196,10 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
 def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
+    if not project_id:
+        raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
-        project_id,
+        project=project_id,
         location=queue_location,
         queue=queue_name,
         task=uuid.uuid4().hex,
@@ -209,6 +217,7 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
         location=queue_location,
         queue_name=queue_name,
         task=task,
+        retry=retry,
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
@@ -222,8 +231,10 @@ def trigger_refresh_bq_dataset_operator(
     queue_location = "us-east1"
     queue_name = "bq-view-update"
     endpoint = f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}{'?dry_run=True' if dry_run else ''}"
+    if not project_id:
+        raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
-        project_id,
+        project=project_id,
         location=queue_location,
         queue=queue_name,
         task=uuid.uuid4().hex,
@@ -241,14 +252,17 @@ def trigger_refresh_bq_dataset_operator(
         location=queue_location,
         queue_name=queue_name,
         task=task,
+        retry=retry,
     )
 
 
 def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "validations"
+    if not project_id:
+        raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
-        project_id,
+        project=project_id,
         location=queue_location,
         queue=queue_name,
         task=uuid.uuid4().hex,
@@ -266,6 +280,7 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
         location=queue_location,
         queue_name=queue_name,
         task=task,
+        retry=retry,
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
