@@ -28,6 +28,7 @@ from recidiviz.task_eligibility.completion_events import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     minimum_or_community_custody,
+    no_class_a_or_b_violation_for_90_days,
     no_detainers_warrants_or_other,
     served_x_portion_of_sentence,
     x_months_remaining_on_sentence,
@@ -52,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         served_x_portion_of_sentence.VIEW_BUILDER,
         x_months_remaining_on_sentence.VIEW_BUILDER,
         no_detainers_warrants_or_other.VIEW_BUILDER,
+        no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )
