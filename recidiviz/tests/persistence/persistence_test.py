@@ -153,29 +153,33 @@ PERSON_STATE_2_ENTITY = StatePerson(
 INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     region=STATE_CODE,
     ingest_time=DATETIME,
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
+    database_key=SQLAlchemyDatabaseKey(
+        schema_type=SchemaType.STATE,
+        db_name="postgres",
     ),
 )
 INGEST_METADATA_STATE_1_UPDATE = IngestMetadata(
     region=STATE_CODE,
     ingest_time=DATETIME_2,
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
+    database_key=SQLAlchemyDatabaseKey(
+        schema_type=SchemaType.STATE,
+        db_name="postgres",
     ),
 )
 INGEST_METADATA_STATE_2_INSERT = IngestMetadata(
     region=STATE_CODE_2,
     ingest_time=DATETIME,
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
+    database_key=SQLAlchemyDatabaseKey(
+        schema_type=SchemaType.STATE,
+        db_name="postgres",
     ),
 )
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
     region=STATE_CODE_2,
     ingest_time=DATETIME_2,
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
+    database_key=SQLAlchemyDatabaseKey(
+        schema_type=SchemaType.STATE,
+        db_name="postgres",
     ),
 )
 

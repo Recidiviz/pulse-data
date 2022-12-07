@@ -23,6 +23,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -32,18 +33,22 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_ENUM_OVERRIDES = (
-    EnumOverrides.Builder()
-    .add("LCP", StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS)
-    .build()
-)
-_METADATA_WITH_OVERRIDES = FakeLegacyStateIngestMetadata.for_state(
-    "us_ca", enum_overrides=_ENUM_OVERRIDES
-)
-
 
 class StateIncarcerationIncidentOutcomeConverterTest(unittest.TestCase):
     """Tests for converting StateIncarcerationIncidentOutcomes."""
+
+    metadata_with_overrides: LegacyStateIngestMetadata
+
+    @classmethod
+    def setUpClass(cls):
+        enum_overrides = (
+            EnumOverrides.Builder()
+            .add("LCP", StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS)
+            .build()
+        )
+        cls.metadata_with_overrides = FakeLegacyStateIngestMetadata.for_state(
+            "us_ca", enum_overrides=enum_overrides
+        )
 
     def testParseStateIncarcerationIncident(self) -> None:
         # Arrange
@@ -60,7 +65,8 @@ class StateIncarcerationIncidentOutcomeConverterTest(unittest.TestCase):
 
         # Act
         result = state_incarceration_incident_outcome.convert(
-            ingest_incident_outcome, _METADATA_WITH_OVERRIDES
+            ingest_incident_outcome,
+            StateIncarcerationIncidentOutcomeConverterTest.metadata_with_overrides,
         )
 
         # Assert

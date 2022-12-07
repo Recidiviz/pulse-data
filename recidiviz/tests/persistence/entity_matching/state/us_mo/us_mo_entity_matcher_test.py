@@ -25,8 +25,8 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
-from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
-    BaseStateEntityMatcherTest,
+from recidiviz.tests.persistence.entity_matching.state.state_entity_matcher_test import (
+    TestStateEntityMatching,
 )
 
 _EXTERNAL_ID = "EXTERNAL_ID"
@@ -40,20 +40,26 @@ _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 _DATE_4 = datetime.date(year=2019, month=4, day=1)
-DEFAULT_METADATA = IngestMetadata(
-    region=_US_MO,
-    ingest_time=datetime.datetime(year=1000, month=1, day=1),
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
-    ),
-)
 
 
-class TestMoEntityMatching(BaseStateEntityMatcherTest):
+class TestMoEntityMatching(TestStateEntityMatching):
     """Test class for US_MO specific entity matching logic."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        TestMoEntityMatching.default_metadata = IngestMetadata(
+            region=_US_MO,
+            ingest_time=datetime.datetime(year=1000, month=1, day=1),
+            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+                schema_type=SchemaType.STATE
+            ),
+        )
 
     @staticmethod
     def _match(
         session: Session, ingested_people: List[state_entities.StatePerson]
     ) -> MatchedEntities:
-        return entity_matching.match(session, _US_MO, ingested_people, DEFAULT_METADATA)
+        return entity_matching.match(
+            session, _US_MO, ingested_people, TestMoEntityMatching.default_metadata
+        )

@@ -16,7 +16,7 @@
 # =============================================================================
 """Unittests for helpers in pipeline_args_utils.py."""
 import unittest
-from typing import List
+from typing import Dict, List
 
 import attr
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -39,63 +39,72 @@ STATE_CODE = "US_XX"
 class TestPipelineArgsUtils(unittest.TestCase):
     """Unittests for helpers in pipeline_args_utils.py."""
 
-    ALL_METRICS = {
-        metric: True
-        for table, metric in DATAFLOW_TABLES_TO_METRIC_TYPES.items()
-        if "incarceration" in table and "span" not in table
-    }
+    default_incarceration_pipeline_args: MetricPipelineJobArgs
+    default_apache_beam_options_dict: Dict
 
-    default_beam_args: List[str] = [
-        "--project",
-        "recidiviz-staging",
-        "--job_name",
-        "incarceration-args-test",
-    ]
+    @classmethod
+    def setUpClass(cls):
+        all_metrics = {
+            metric: True
+            for table, metric in DATAFLOW_TABLES_TO_METRIC_TYPES.items()
+            if "incarceration" in table and "span" not in table
+        }
 
-    pipeline_options = PipelineOptions(
-        derive_apache_beam_pipeline_args(default_beam_args)
-    )
+        default_beam_args: List[str] = [
+            "--project",
+            "recidiviz-staging",
+            "--job_name",
+            "incarceration-args-test",
+        ]
 
-    DEFAULT_INCARCERATION_PIPELINE_ARGS = MetricPipelineJobArgs(
-        state_code=STATE_CODE,
-        project_id="recidiviz-staging",
-        input_dataset="state",
-        normalized_input_dataset=STATE_CODE.lower() + "_normalized_state",
-        output_dataset="dataflow_metrics",
-        metric_inclusions=ALL_METRICS,
-        person_id_filter_set=None,
-        reference_dataset="reference_views",
-        static_reference_dataset="static_reference_tables",
-        calculation_month_count=-1,
-        calculation_end_month=None,
-        job_name="incarceration-args-test",
-        region="us-west1",
-        # These are dummy beam pipeline options just to properly instantiate this
-        # class. The equality of expected beam pipeline options are all tested
-        # separately from the rest of the attributes on the CalculationPipelineJobArgs.
-        apache_beam_pipeline_options=pipeline_options,
-    )
+        pipeline_options = PipelineOptions(
+            derive_apache_beam_pipeline_args(default_beam_args)
+        )
 
-    DEFAULT_APACHE_BEAM_OPTIONS_DICT = {
-        "runner": "DataflowRunner",
-        "project": "recidiviz-staging",
-        "job_name": "incarceration-args-test",
-        "save_main_session": True,
-        # This location holds execution files necessary for running each pipeline and is
-        # only updated when templates are deployed.
-        "staging_location": "gs://recidiviz-staging-dataflow-templates/staging/",
-        # This location holds actual temp files generated during each pipeline run.
-        "temp_location": "gs://recidiviz-staging-dataflow-templates-scratch/temp/",
-        "region": "us-west1",
-        "machine_type": "n1-standard-4",
-        "network": "default",
-        "subnetwork": "https://www.googleapis.com/compute/v1/projects/recidiviz-staging/"
-        "regions/us-west1/subnetworks/default",
-        "use_public_ips": False,
-        "experiments": ["shuffle_mode=service", "use_beam_bq_sink", "use_runner_v2"],
-        "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
-        "disk_size_gb": 50,
-    }
+        cls.default_incarceration_pipeline_args = MetricPipelineJobArgs(
+            state_code=STATE_CODE,
+            project_id="recidiviz-staging",
+            input_dataset="state",
+            normalized_input_dataset=STATE_CODE.lower() + "_normalized_state",
+            output_dataset="dataflow_metrics",
+            metric_inclusions=all_metrics,
+            person_id_filter_set=None,
+            reference_dataset="reference_views",
+            static_reference_dataset="static_reference_tables",
+            calculation_month_count=-1,
+            calculation_end_month=None,
+            job_name="incarceration-args-test",
+            region="us-west1",
+            # These are dummy beam pipeline options just to properly instantiate this
+            # class. The equality of expected beam pipeline options are all tested
+            # separately from the rest of the attributes on the CalculationPipelineJobArgs.
+            apache_beam_pipeline_options=pipeline_options,
+        )
+
+        cls.default_apache_beam_options_dict = {
+            "runner": "DataflowRunner",
+            "project": "recidiviz-staging",
+            "job_name": "incarceration-args-test",
+            "save_main_session": True,
+            # This location holds execution files necessary for running each pipeline and is
+            # only updated when templates are deployed.
+            "staging_location": "gs://recidiviz-staging-dataflow-templates/staging/",
+            # This location holds actual temp files generated during each pipeline run.
+            "temp_location": "gs://recidiviz-staging-dataflow-templates-scratch/temp/",
+            "region": "us-west1",
+            "machine_type": "n1-standard-4",
+            "network": "default",
+            "subnetwork": "https://www.googleapis.com/compute/v1/projects/recidiviz-staging/"
+            "regions/us-west1/subnetworks/default",
+            "use_public_ips": False,
+            "experiments": [
+                "shuffle_mode=service",
+                "use_beam_bq_sink",
+                "use_runner_v2",
+            ],
+            "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
+            "disk_size_gb": 50,
+        }
 
     def _assert_pipeline_args_equal_exclude_beam_options(
         self,
@@ -139,11 +148,12 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Assert
         self._assert_pipeline_args_equal_exclude_beam_options(
-            incarceration_pipeline_args, self.DEFAULT_INCARCERATION_PIPELINE_ARGS
+            incarceration_pipeline_args,
+            TestPipelineArgsUtils.default_incarceration_pipeline_args,
         )
         self.assertEqual(
             pipeline_options.get_all_options(drop_default=True),
-            self.DEFAULT_APACHE_BEAM_OPTIONS_DICT,
+            TestPipelineArgsUtils.default_apache_beam_options_dict,
         )
 
     def test_minimal_incarceration_pipeline_args_save_to_template(self) -> None:
@@ -172,10 +182,13 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Assert
         self._assert_pipeline_args_equal_exclude_beam_options(
-            incarceration_pipeline_args, self.DEFAULT_INCARCERATION_PIPELINE_ARGS
+            incarceration_pipeline_args,
+            TestPipelineArgsUtils.default_incarceration_pipeline_args,
         )
 
-        expected_apache_beam_options_dict = self.DEFAULT_APACHE_BEAM_OPTIONS_DICT.copy()
+        expected_apache_beam_options_dict = (
+            TestPipelineArgsUtils.default_apache_beam_options_dict.copy()
+        )
         expected_apache_beam_options_dict[
             "template_location"
         ] = "gs://recidiviz-staging-dataflow-templates/templates/incarceration-args-test"
@@ -227,7 +240,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Assert
         expected_incarceration_pipeline_args = attr.evolve(
-            self.DEFAULT_INCARCERATION_PIPELINE_ARGS,
+            TestPipelineArgsUtils.default_incarceration_pipeline_args,
             calculation_month_count=6,
             calculation_end_month="2009-07",
             input_dataset="county",
@@ -300,14 +313,14 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
         # Assert
         expected_incarceration_pipeline_args = attr.evolve(
-            self.DEFAULT_INCARCERATION_PIPELINE_ARGS,
+            TestPipelineArgsUtils.default_incarceration_pipeline_args,
             person_id_filter_set={685253, 12345, 99999},
         )
         self._assert_pipeline_args_equal_exclude_beam_options(
             incarceration_pipeline_args, expected_incarceration_pipeline_args
         )
         self.assertEqual(
-            self.DEFAULT_APACHE_BEAM_OPTIONS_DICT,
+            TestPipelineArgsUtils.default_apache_beam_options_dict,
             pipeline_options.get_all_options(drop_default=True),
         )
 

@@ -23,6 +23,7 @@ from recidiviz.common.constants.state.state_charge import (
     StateChargeClassificationType,
     StateChargeStatus,
 )
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -35,11 +36,15 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateChargeConverterTest(unittest.TestCase):
     """Tests for converting charges."""
+
+    empty_metadata: LegacyStateIngestMetadata
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
     def testParseStateCharge(self) -> None:
         # Arrange
@@ -68,7 +73,7 @@ class StateChargeConverterTest(unittest.TestCase):
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA
+            charge_builder, ingest_charge, StateChargeConverterTest.empty_metadata
         )
         result = charge_builder.build(StateChargeFactory.deserialize)
 
@@ -119,7 +124,7 @@ class StateChargeConverterTest(unittest.TestCase):
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA
+            charge_builder, ingest_charge, StateChargeConverterTest.empty_metadata
         )
         result = charge_builder.build(StateChargeFactory.deserialize)
 
@@ -161,7 +166,7 @@ class StateChargeConverterTest(unittest.TestCase):
         # Act
         charge_builder = entities.StateCharge.builder()
         state_charge.copy_fields_to_builder(
-            charge_builder, ingest_charge, _EMPTY_METADATA
+            charge_builder, ingest_charge, StateChargeConverterTest.empty_metadata
         )
         result = charge_builder.build(StateChargeFactory.deserialize)
 

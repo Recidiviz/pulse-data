@@ -25,11 +25,13 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateAliasConverterTest(unittest.TestCase):
     """Tests for converting state aliases."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
     def testParseStateAliasNameParts(self):
         # Arrange
@@ -44,7 +46,9 @@ class StateAliasConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_alias.convert(ingest_alias, _EMPTY_METADATA)
+        result = state_alias.convert(
+            ingest_alias, StateAliasConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StatePersonAlias(
@@ -69,7 +73,9 @@ class StateAliasConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_alias.convert(ingest_alias, _EMPTY_METADATA)
+        result = state_alias.convert(
+            ingest_alias, StateAliasConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StatePersonAlias(
@@ -95,4 +101,4 @@ class StateAliasConverterTest(unittest.TestCase):
 
         # Act
         with self.assertRaises(ValueError):
-            state_alias.convert(ingest_alias, _EMPTY_METADATA)
+            state_alias.convert(ingest_alias, StateAliasConverterTest.empty_metadata)

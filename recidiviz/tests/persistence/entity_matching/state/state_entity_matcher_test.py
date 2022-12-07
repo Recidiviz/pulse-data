@@ -112,17 +112,23 @@ _STATE_CODE = "US_XX"
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
-DEFAULT_METADATA = IngestMetadata(
-    region="us_xx",
-    ingest_time=datetime.datetime(year=1000, month=1, day=1),
-    database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-        schema_type=SchemaType.STATE
-    ),
-)
 
 
 class TestStateEntityMatching(BaseStateEntityMatcherTest):
     """Tests for default state entity matching logic."""
+
+    default_metadata: IngestMetadata
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        TestStateEntityMatching.default_metadata = IngestMetadata(
+            region="us_xx",
+            ingest_time=datetime.datetime(year=1000, month=1, day=1),
+            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
+                schema_type=SchemaType.STATE
+            ),
+        )
 
     def setUp(self) -> None:
         super().setUp()
@@ -136,14 +142,19 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.addCleanup(self.matching_delegate_patcher.stop)
 
     def _get_base_delegate(self, **_kwargs: Any) -> BaseStateMatchingDelegate:
-        return BaseStateMatchingDelegate(_STATE_CODE, DEFAULT_METADATA)
+        return BaseStateMatchingDelegate(
+            _STATE_CODE, TestStateEntityMatching.default_metadata
+        )
 
     @staticmethod
     def _match(
         session: Session, ingested_people: List[state_entities.StatePerson]
     ) -> MatchedEntities:
         return entity_matching.match(
-            session, _STATE_CODE, ingested_people, DEFAULT_METADATA
+            session,
+            _STATE_CODE,
+            ingested_people,
+            TestStateEntityMatching.default_metadata,
         )
 
     def test_match_newPerson(self) -> None:

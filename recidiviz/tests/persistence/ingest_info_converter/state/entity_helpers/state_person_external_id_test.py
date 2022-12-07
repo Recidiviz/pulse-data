@@ -18,6 +18,7 @@
 
 import unittest
 
+from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -27,11 +28,15 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
-
 
 class StatePersonExternalIdConverterTest(unittest.TestCase):
     """Tests for converting state person external ids."""
+
+    empty_metadata: LegacyStateIngestMetadata
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
 
     def testParseStatePersonExternalId(self) -> None:
         # Arrange
@@ -42,7 +47,9 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_person_external_id.convert(ingest_external_id, _EMPTY_METADATA)
+        result = state_person_external_id.convert(
+            ingest_external_id, StatePersonExternalIdConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StatePersonExternalId(
@@ -62,7 +69,9 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
         )
 
         # Act
-        result = state_person_external_id.convert(ingest_external_id, _EMPTY_METADATA)
+        result = state_person_external_id.convert(
+            ingest_external_id, StatePersonExternalIdConverterTest.empty_metadata
+        )
 
         # Assert
         expected_result = entities.StatePersonExternalId(

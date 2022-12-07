@@ -38,11 +38,13 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-_EMPTY_METADATA = FakeLegacyStateIngestMetadata.for_state("us_nd")
-
 
 class StateIncarcerationPeriodConverterTest(unittest.TestCase):
     """Tests for converting incarcerations."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.empty_metadata = FakeLegacyStateIngestMetadata.for_state("us_nd")
 
     def testParseStateIncarcerationPeriod(self):
         # Arrange
@@ -64,7 +66,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         # Act
         incarceration_builder = entities.StateIncarcerationPeriod.builder()
         state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
+            incarceration_builder,
+            ingest_incarceration,
+            StateIncarcerationPeriodConverterTest.empty_metadata,
         )
         result = incarceration_builder.build(
             StateIncarcerationPeriodFactory.deserialize
@@ -102,7 +106,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         # Act
         incarceration_builder = entities.StateIncarcerationPeriod.builder()
         state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
+            incarceration_builder,
+            ingest_incarceration,
+            StateIncarcerationPeriodConverterTest.empty_metadata,
         )
         result = incarceration_builder.build(
             StateIncarcerationPeriodFactory.deserialize
@@ -129,7 +135,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         # Act
         incarceration_builder = entities.StateIncarcerationPeriod.builder()
         state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
+            incarceration_builder,
+            ingest_incarceration,
+            StateIncarcerationPeriodConverterTest.empty_metadata,
         )
         result = incarceration_builder.build(
             StateIncarcerationPeriodFactory.deserialize
@@ -157,7 +165,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         # Act
         incarceration_builder = entities.StateIncarcerationPeriod.builder()
         state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
+            incarceration_builder,
+            ingest_incarceration,
+            StateIncarcerationPeriodConverterTest.empty_metadata,
         )
         result = incarceration_builder.build(
             StateIncarcerationPeriodFactory.deserialize

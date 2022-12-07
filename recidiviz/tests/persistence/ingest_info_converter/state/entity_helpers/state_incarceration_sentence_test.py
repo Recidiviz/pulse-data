@@ -34,8 +34,6 @@ from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
 
-METADATA = FakeLegacyStateIngestMetadata.for_state(region="us_nd")
-
 
 class StateIncarcerationSentenceConverterTest(unittest.TestCase):
     """Tests for converting state incarceration sentences."""
@@ -65,7 +63,9 @@ class StateIncarcerationSentenceConverterTest(unittest.TestCase):
         # Act
         incarceration_builder = entities.StateIncarcerationSentence.builder()
         state_incarceration_sentence.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, METADATA
+            incarceration_builder,
+            ingest_incarceration,
+            FakeLegacyStateIngestMetadata.for_state(region="us_nd"),
         )
         result = incarceration_builder.build(
             StateIncarcerationSentenceFactory.deserialize
