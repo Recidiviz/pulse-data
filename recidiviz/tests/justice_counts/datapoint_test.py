@@ -350,6 +350,26 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 '{"custom_frequency": "ANNUAL", "starting_month": 3}',
             )
 
+            agency_metric = MetricInterface(
+                key=law_enforcement.annual_budget.key,
+                custom_reporting_frequency=CustomReportingFrequency(
+                    frequency=ReportingFrequency.MONTHLY
+                ),
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 1)
+            # Annual frequency starting in March
+            self.assertEqual(
+                datapoints[0].value,
+                '{"custom_frequency": "MONTHLY", "starting_month": null}',
+            )
+
     def test_save_invalid_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             monthly_report = self.test_schema_objects.test_report_monthly
