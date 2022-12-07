@@ -23,12 +23,12 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 20000
+    hard_num_allowed_rows_override: 70000
     override_reason:
       In MO we rely on a table where they build incarceration period
       spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
       rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
-      query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010.
+      query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010. Error is ballooning over time to 51304 as of 12/7/2022.
       Inital investigations into this show entity deletion as the main culprit. A new full historical dump will be needed to correct these.
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 2500
@@ -39,13 +39,13 @@ num_allowed_rows_overrides:
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
       at 1699 as of 07/01/2022. 2041 as of 9/27/2022. Will require more investigation.
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 700
-    override_reason: TODO(#15905). TODO(#16331) - Similar to failing overlapping_incarceration_periods, entity deletion appears to be a major culprit for duplicate periods over time (causing this validation to fail when the duplicate period is an open one. A new full historical dump will be needed to correct these.
+    hard_num_allowed_rows_override: 2000
+    override_reason: TODO(#15905). TODO(#16331) - Similar to failing overlapping_incarceration_periods, entity deletion appears to be a major culprit for duplicate periods over time (causing this validation to fail when the duplicate period is an open one. A new full historical dump will be needed to correct these. Error is 1326 as of 12/7/2022.
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 80
-    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly.
+    hard_num_allowed_rows_override: 150
+    override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly. Error is 96 as of 12/7/2022.
   - validation_name: incarceration_release_prior_to_admission
-    hard_num_allowed_rows_override: 22
+    hard_num_allowed_rows_override: 24
     override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 1500000
@@ -62,3 +62,6 @@ num_allowed_rows_overrides:
   - validation_name: sessions_persons_in_incarceration_or_supervision
     hard_num_allowed_rows_override: 190000
     override_reason: Currently have different logic between sessions and incarceration/supervision period views to filter out certain types of periods. #TODO(#15790) - Investigate best fix for longterm parity betweeen sessions and periods
+  - validation_name: incarceration_commitments_subset_of_admissions
+    hard_num_allowed_rows_override: 1
+    override_reason: There appears to be one very old data point that surfaced on 11/28/2022 which is causing a failure in this validation now. It's not clear why this suddenly popped up, but all data will be refreshed with a full historical and this may be a result of wonkiness before that is done. TODO(#15905) - check on this after full data refresh.
