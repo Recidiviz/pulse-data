@@ -129,9 +129,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_agent_super
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_required_treatment import (
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_treatment_classification_codes import (
-    US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_specialized_agents_preprocessed import (
     US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -223,7 +220,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
         US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
         US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
-        US_PA_RAW_TREATMENT_CLASSIFICATION_CODES_VIEW_BUILDER,
         US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
         US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
         US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,

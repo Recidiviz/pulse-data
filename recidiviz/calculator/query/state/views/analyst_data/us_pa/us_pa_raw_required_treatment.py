@@ -208,7 +208,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
     LEFT JOIN treatment
         ON df_and_board_actions.person_external_id = treatment.ParoleNumber
         AND treatment.treatment_start_date >= board_action_date
-    LEFT JOIN `{project_id}.{analyst_dataset}.us_pa_raw_treatment_classification_codes`
+    LEFT JOIN `{project_id}.{raw_dataset}.treatment_classification_codes_latest`
         ON IF(LENGTH(TrtClassCode)=5,SUBSTR(TrtClassCode,0,3),SUBSTR(TrtClassCode,0,2)) = classification_code
     LEFT JOIN (SELECT DISTINCT state_code, 
               level_1_supervision_location_external_id,
