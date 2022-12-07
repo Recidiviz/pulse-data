@@ -527,6 +527,7 @@ class DatapointInterface:
                     source=agency,
                     context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
                     value=agency_metric.custom_reporting_frequency.to_json_str(),
+                    dimension_identifier_to_member=None,
                 ),
                 session,
             )
