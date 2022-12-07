@@ -38,7 +38,7 @@ resource "google_composer_environment" "default_v2" {
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
       }
-      image_version = "composer-2.0.8-airflow-2.2.3"
+      image_version = "composer-2.0.31-airflow-2.3.3"
     }
 
     private_environment_config {

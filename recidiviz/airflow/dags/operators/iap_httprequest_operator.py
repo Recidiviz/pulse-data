@@ -20,7 +20,7 @@ A subclass of PythonOperator to call the IAP request while managing the return r
 import os
 from typing import Any, Dict, Optional
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from airflow.utils.decorators import apply_defaults
 
 from recidiviz.cloud_functions.cloud_function_utils import (
@@ -64,7 +64,6 @@ class IAPHTTPRequestOperator(PythonOperator):
             task_id=task_id,
             python_callable=_make_iap_request,
             op_kwargs={"url": url, "url_method": url_method, "data": data},
-            provide_context=True,
             *args,
             **kwargs,
         )
