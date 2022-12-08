@@ -14,7 +14,7 @@ columns:
     description: Date test specimen was taken
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sample_taken_flag
     description: Flag for whether sample was taken
   - name: sample_not_taken_reason_id
@@ -32,7 +32,7 @@ columns:
     description: TODO(#16348)
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: lab_sample_ref_code
     description: TODO(#16348)
   - name: reason_tested_id
@@ -62,14 +62,14 @@ columns:
     description: TODO(#16348)
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: positive_response_id
     description: TODO(#16348)
   - name: positive_response_date
     description: TODO(#16348)
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: specimen_location_id
     description: TODO(#16348)
   - name: last_update_user
