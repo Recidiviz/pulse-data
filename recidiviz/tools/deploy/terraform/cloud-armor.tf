@@ -25,81 +25,81 @@ locals {
     description = "WAF rules that can be used to detect malicious traffic that matches OWASP Top 10 style attacks"
     default = [
       {
-        action     = "deny(403)"
-        priority   = "1000"
-        expression = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 4, 'opt_out_rule_ids': ['owasp-crs-v030301-id942432-sqli', 'owasp-crs-v030301-id942421-sqli', 'owasp-crs-v030301-id942420-sqli']})"
+        action      = "deny(403)"
+        priority    = "1000"
+        expression  = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 4})"
         description = "SQL Injection"
       },
       {
-        action     = "deny(403)"
-        priority   = "1001"
-        expression = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1001"
+        expression  = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1})"
         description = "Cross-site scripting"
       },
       {
-        action     = "deny(403)"
-        priority   = "1002"
-        expression = "evaluatePreconfiguredWaf('lfi-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1002"
+        expression  = "evaluatePreconfiguredWaf('lfi-v33-stable', {'sensitivity': 1})"
         description = "Local file inclusion"
       },
       {
-        action     = "deny(403)"
-        priority   = "1003"
-        expression = "evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 2})"
+        action      = "deny(403)"
+        priority    = "1003"
+        expression  = "evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 2})"
         description = "Remote file inclusion"
       },
       {
-        action     = "deny(403)"
-        priority   = "1004"
-        expression = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 3})"
+        action      = "deny(403)"
+        priority    = "1004"
+        expression  = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 3})"
         description = "Remote code execution"
       },
       {
-        action     = "deny(403)"
-        priority   = "1005"
-        expression = "evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1005"
+        expression  = "evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1})"
         description = "Method enforcement"
       },
       {
-        action     = "deny(403)"
-        priority   = "1006"
-        expression = "evaluatePreconfiguredWaf('scannerdetection-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1006"
+        expression  = "evaluatePreconfiguredWaf('scannerdetection-v33-stable', {'sensitivity': 1})"
         description = "Scanner detection"
       },
       {
-        action     = "deny(403)"
-        priority   = "1007"
-        expression = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 3})"
+        action      = "deny(403)"
+        priority    = "1007"
+        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 3})"
         description = "Protocol attack"
       },
       {
-        action     = "deny(403)"
-        priority   = "1008"
-        expression = "evaluatePreconfiguredWaf('php-v33-stable', {'sensitivity': 3})"
+        action      = "deny(403)"
+        priority    = "1008"
+        expression  = "evaluatePreconfiguredWaf('php-v33-stable', {'sensitivity': 3})"
         description = "PHP injection attack"
       },
       {
-        action     = "deny(403)"
-        priority   = "1009"
-        expression = "evaluatePreconfiguredWaf('sessionfixation-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1009"
+        expression  = "evaluatePreconfiguredWaf('sessionfixation-v33-stable', {'sensitivity': 1})"
         description = "Session fixation attack"
       },
       {
-        action     = "deny(403)"
-        priority   = "1010"
-        expression = "evaluatePreconfiguredWaf('java-v33-stable', {'sensitivity': 3})"
+        action      = "deny(403)"
+        priority    = "1010"
+        expression  = "evaluatePreconfiguredWaf('java-v33-stable', {'sensitivity': 3})"
         description = "Java attack"
       },
       {
-        action     = "deny(403)"
-        priority   = "1011"
-        expression = "evaluatePreconfiguredWaf('nodejs-v33-stable', {'sensitivity': 1})"
+        action      = "deny(403)"
+        priority    = "1011"
+        expression  = "evaluatePreconfiguredWaf('nodejs-v33-stable', {'sensitivity': 1})"
         description = "NodeJS attack"
       },
       {
-        action     = "deny(403)"
-        priority   = "1012"
-        expression = "evaluatePreconfiguredWaf('cve-canary', {'sensitivity': 3})"
+        action      = "deny(403)"
+        priority    = "1012"
+        expression  = "evaluatePreconfiguredWaf('cve-canary', {'sensitivity': 3})"
         description = "Newly discovered vulnerabilities"
       }
     ]
@@ -127,16 +127,21 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     description = local.default_rules.description
   }
 
+  advanced_options_config {
+    json_parsing = "STANDARD"
+    log_level    = "VERBOSE"
+  }
+
   # ----------------------------------------------
   # OWASP Top 10 Rules
   # ----------------------------------------------
   dynamic "rule" {
     for_each = local.owasp_rules.default
     content {
-      action   = rule.value.action
-      priority = rule.value.priority
+      action      = rule.value.action
+      priority    = rule.value.priority
       description = rule.value.description
-      preview  = true
+      preview     = true
       match {
         expr {
           expression = rule.value.expression
