@@ -28,6 +28,7 @@ python -m recidiviz.tools.workflows.request_api staging a1b2c3 complete_request
 """
 import argparse
 import json
+from datetime import datetime
 from http import HTTPStatus
 
 import requests
@@ -44,7 +45,7 @@ STAGING_URL = "https://app-staging.recidiviz.org/"
 
 
 def insert_contact_note(
-    target_env: str, token: str, fixture_name: str, timeout_secs: int
+    target_env: str, token: str, fixture_name: str, timeout_secs: int, num_times: int
 ) -> None:
     """Used to make a test request to TOMIS"""
     if not fixture_name in note_name_to_objs:
@@ -57,6 +58,11 @@ def insert_contact_note(
 
     if offender_id is None or user_id is None:
         raise Exception("Missing OffenderId and/or UserId secret")
+
+    if fixture_name == "missing_offenderid_request":
+        offender_id = None
+    if fixture_name == "missing_userid_request":
+        user_id = None
 
     url = STAGING_URL if target_env == "staging" else LOCALHOST_URL
 
@@ -72,28 +78,39 @@ def insert_contact_note(
     headers["Referer"] = "https://app-staging.recidiviz.org"
 
     pages = note_name_to_objs[fixture_name]
-    test_case_number = list(note_name_to_objs.keys()).index(fixture_name)
     total_duration = 0
-    for page in build_notes(pages, test_case_number, offender_id, user_id):
-        data = {
-            "isTest": True,
-            "fixture": page,
-            "env": target_env,
-            "timeoutSecs": timeout_secs,
-        }
+    found_error = False
+    for _ in range(num_times):
+        iteration_duration = 0
+        request_datetime = datetime.now()
+        for page in build_notes(pages, request_datetime, offender_id, user_id):
+            data = {
+                "isTest": True,
+                "fixture": page,
+                "env": target_env,
+                "timeoutSecs": timeout_secs,
+            }
 
-        print(f"Sending request with data:\n {json.dumps(page, indent=2)}")
-        response = s.post(
-            url + "workflows/external_request/US_TN/insert_contact_note",
-            headers=headers,
-            json=data,
-        )
-        resp_json = response.json()
-        print(resp_json)
-        if "duration" in resp_json:
-            total_duration += resp_json["duration"]
+            print(f"Sending request with data:\n {json.dumps(page, indent=2)}")
+            response = s.post(
+                url + "workflows/external_request/US_TN/insert_contact_note",
+                headers=headers,
+                json=data,
+            )
+            resp_json = response.json()
+            print(resp_json)
+            if "duration" in resp_json:
+                iteration_duration += resp_json["duration"]
+            if response.status_code != 200:
+                print(f"Found status code {response.status_code}, exiting")
+                found_error = True
+                break
 
-    print(f"Total duration: {total_duration}")
+        print(f"Duration: {iteration_duration}")
+        total_duration += iteration_duration
+        if found_error:
+            break
+    print(f"Average over {num_times} run(s): {total_duration / num_times}")
 
 
 if __name__ == "__main__":
@@ -109,9 +126,16 @@ if __name__ == "__main__":
     parser.add_argument(
         "--timeout_secs", help="Timeout to pass in put request to TOMIS", default=360
     )
+    parser.add_argument(
+        "--num_times", help="How many times to send the request in a row", default=1
+    )
 
     args = parser.parse_args()
     with local_project_id_override("recidiviz-staging"):
         insert_contact_note(
-            args.target_env, args.token, args.fixture_name, int(args.timeout_secs)
+            args.target_env,
+            args.token,
+            args.fixture_name,
+            int(args.timeout_secs),
+            int(args.num_times),
         )
