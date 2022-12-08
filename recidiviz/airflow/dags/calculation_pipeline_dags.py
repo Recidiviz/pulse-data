@@ -357,9 +357,7 @@ def create_bq_refresh_nodes(
     return bq_refresh_completion
 
 
-def execute_calculations(
-    should_trigger_exports: bool, should_update_all_views: bool
-) -> None:
+def execute_calculations(should_update_all_views: bool) -> None:
     """This represents the overall execution of our calculation pipelines.
 
     The series of steps is as follows:
@@ -501,32 +499,31 @@ def execute_calculations(
             >> wait_for_state_validations
         )
 
-    if should_trigger_exports:
-        states_to_trigger = {
-            pipeline.peek("state_code", str) for pipeline in metric_pipelines
-        }
-        state_trigger_export_operators = {
-            state_code: trigger_export_operator(state_code)
-            for state_code in states_to_trigger
-        }
+    states_to_trigger = {
+        pipeline.peek("state_code", str) for pipeline in metric_pipelines
+    }
+    state_trigger_export_operators = {
+        state_code: trigger_export_operator(state_code)
+        for state_code in states_to_trigger
+    }
 
-        case_triage_export_operator = trigger_export_operator("CASE_TRIAGE")
-        all_trigger_export_operators = {
-            *state_trigger_export_operators.values(),
-            case_triage_export_operator,
-            *[trigger_export_operator(export) for export in PIPELINE_AGNOSTIC_EXPORTS],
-        }
+    case_triage_export_operator = trigger_export_operator("CASE_TRIAGE")
+    all_trigger_export_operators = {
+        *state_trigger_export_operators.values(),
+        case_triage_export_operator,
+        *[trigger_export_operator(export) for export in PIPELINE_AGNOSTIC_EXPORTS],
+    }
 
-        for export_operator in all_trigger_export_operators:
-            wait_for_rematerialize >> export_operator
+    for export_operator in all_trigger_export_operators:
+        wait_for_rematerialize >> export_operator
 
-        for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
-            for metric_pipeline_operator in metric_pipeline_operators:
-                # If any metric pipeline for a particular state fails, then the exports
-                # for that state should not proceed.
-                (metric_pipeline_operator >> state_trigger_export_operators[state_code])
-                if state_code in CASE_TRIAGE_STATES:
-                    (metric_pipeline_operator >> case_triage_export_operator)
+    for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
+        for metric_pipeline_operator in metric_pipeline_operators:
+            # If any metric pipeline for a particular state fails, then the exports
+            # for that state should not proceed.
+            (metric_pipeline_operator >> state_trigger_export_operators[state_code])
+            if state_code in CASE_TRIAGE_STATES:
+                (metric_pipeline_operator >> case_triage_export_operator)
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -543,7 +540,7 @@ def execute_calculations(
 def incremental_dag() -> None:
     """This executes the calculations for all of the pipelines on a daily basis."""
 
-    execute_calculations(should_trigger_exports=True, should_update_all_views=False)
+    execute_calculations(should_update_all_views=False)
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -561,7 +558,7 @@ def historical_dag() -> None:
     """This executes the calculations for all of the pipelines after a calc code change
     gets deployed."""
 
-    execute_calculations(should_trigger_exports=False, should_update_all_views=True)
+    execute_calculations(should_update_all_views=True)
 
 
 incremental_dag = incremental_dag()
