@@ -571,3 +571,277 @@ LEGAL_STATUS_PERIODS_SUPERVISION_FILTER = r"""
         'Probation'
     )
 )"""
+
+# Charge/Sentencing
+
+# requires LOCATION_DETAILS_CTE
+CHARGE_DETAILS_CTE = r"""
+charge_details_cte AS (
+    SELECT
+        OffenderId,
+        ChargeId,
+        Docket,
+        LocationName, -- State
+        ChargeOutcomeTypeDesc,
+    FROM {scl_Charge}
+    LEFT JOIN {scl_ChargeOutcomeType}
+        USING (ChargeOutcomeTypeId)
+    LEFT JOIN location_details_cte
+        ON StateId = LocationId
+)"""
+
+TERM_DETAILS_CTE = r"""
+term_details_cte AS (
+    SELECT
+        OffenderId,
+        MasterTermId,
+        MasterTermStatusDesc,
+        TermId,
+        TermStatusDesc,
+        CAST(TermStartDate AS DATETIME) AS TermStartDate,
+        CAST(TermSentenceDate AS DATETIME) AS TermSentenceDate,
+        CAST(ReleaseDate AS DATETIME) AS ReleaseDate,
+        CAST(TentativeParoleDate AS DATETIME) AS TentativeParoleDate,
+        CAST(NextHearingDate AS DATETIME) AS NextHearingDate,
+        CAST(SegmentStartDate AS DATETIME) AS SegmentStartDate,
+        CAST(IndeterminateStartDate AS DATETIME) AS IndeterminateStartDate,
+        CAST(IndeterminateEndDate AS DATETIME) AS IndeterminateEndDate,
+        CAST(ProbationStartDate AS DATETIME) AS ProbationStartDate,
+        CAST(ProbationExpirationDate AS DATETIME) AS ProbationExpirationDate,
+        CAST(RiderStartDate AS DATETIME) AS RiderStartDate,
+        CAST(RiderExpiryDate AS DATETIME) AS RiderExpiryDate,
+        CAST(InitialParoleHearingDate AS DATETIME) AS InitialParoleHearingDate,
+        CAST(FtrdApprovedDate AS DATETIME) AS FtrdApprovedDate,
+    FROM {scl_MasterTerm}
+    LEFT JOIN {scl_MasterTermStatus}
+        USING (MasterTermStatusId)
+    LEFT JOIN {scl_Term}
+        USING (MasterTermId, OffenderId)
+    LEFT JOIN {scl_TermStatus}
+        USING (TermStatusId)
+)"""
+
+OFFENSE_DETAILS_CTE = r"""
+offense_details_cte AS (
+    SELECT
+        OffenderId,
+        OffenseId,
+        SentenceOrderId,
+        SentenceId,
+        Count,
+        CAST(OffenseDate AS DATETIME) AS OffenseDate,
+        OffenseCategoryDesc,
+        OffenseLawDesc,
+        OffenseTypeDesc,
+        OFFENSE_STATUTE,
+        VIOLENT_OFFENSE_IND,
+    FROM {scl_Offense}
+    LEFT JOIN {scl_OffenseType}
+        USING (OffenseTypeId)
+    LEFT JOIN {scl_OffenseCategory}
+        USING (OffenseCategoryId)
+    LEFT JOIN {scl_OffenseLaw}
+        USING (OffenseLawId)
+
+    -- Only join to get OffenderId
+    LEFT JOIN {scl_SentenceOrder}
+        USING (SentenceOrderId)
+
+    -- Get associated SentenceId
+    LEFT JOIN {scl_SentenceLinkOffense}
+        USING (OffenseId)
+    LEFT JOIN {scl_SentenceLink}
+        USING (SentenceLinkId)
+)"""
+
+PAROLE_DETAILS_CTE = r"""
+parole_details_cte AS (
+    SELECT
+        OffenderId,
+        ParoleId,
+        TermId,
+        CAST(ReleaseDate AS DATETIME) AS ReleaseDate,
+        ParoleTypeDesc,
+    FROM {scl_Parole}
+    LEFT JOIN {scl_ParoleType}
+        USING (ParoleTypeId)
+)"""
+
+PROBATION_DETAILS_CTE = r"""
+probation_details_cte AS (
+    SELECT
+        OffenderId,
+        SentenceOrderId,
+        ProbationSupervisionId,
+        ProbationStartDesc,
+        DurationYear,
+        DurationMonth,
+        DurationDay,
+        CAST(StartDate AS DATETIME) AS StartDate,
+        CAST(EndDate AS DATETIME) AS EndDate,
+    FROM {scl_ProbationSupervision}
+    LEFT JOIN {scl_ProbationStart}
+        USING (ProbationStartId)
+
+    -- Only join to get OffenderId
+    LEFT JOIN {scl_SentenceOrder}
+        USING (SentenceOrderId)
+)"""
+
+# requires LOCATION_DETAILS_CTE
+SUPERVISION_DETAILS_CTE = r"""
+supervision_details_cte AS (
+    SELECT
+        OffenderId,
+        SupervisionId,
+        MasterTermId,
+        CourtAuthority,
+        LocationName,
+        LocationTypeName,
+        LocationSubTypeName,
+        JudgeId,
+        FirstName,
+        MiddleName,
+        LastName,
+        CAST(SupervisionMEDDate AS DATETIME) AS SupervisionMEDDate,
+        InterstateTypeParole,
+        InterstateTypeProbation,
+        InterstateTypeOther,
+        ParoleId,
+        CAST(ImposedDate AS DATETIME) AS ImposedDate,
+        CAST(StartDate AS DATETIME) AS StartDate,
+        SupervisionTypeDesc,
+        SupervisionStatusDesc,
+    FROM {scl_Supervision}
+    LEFT JOIN {scl_SupervisionStatus}
+        USING (SupervisionStatusId)
+    LEFT JOIN {scl_SupervisionType}
+        USING (SupervisionTypeId)
+    LEFT JOIN {scl_Legist}
+        ON JudgeId = LegistId
+        AND LegistTypeId = '1' -- Judge
+    LEFT JOIN location_details_cte
+        ON CourtAuthority = LocationId
+)"""
+
+# requires LOCATION_DETAILS_CTE
+SENTENCE_ORDER_DETAILS_CTE = r"""
+sentence_order_details_cte AS (
+    SELECT
+        OffenderId,
+        TermId,
+        ChargeId,
+        Sequence,
+        SentenceOrderId,
+        ParentSentenceOrderId,
+        SentenceId,
+        HistoricalDocket,
+        CAST(EffectiveDate AS DATETIME) AS EffectiveDate,
+        CAST(SentenceDate AS DATETIME) AS SentenceDate,
+        SentenceOrderCategoryDesc,
+        SentenceOrderTypeDesc,
+        LegalStatusDesc,
+        SentenceOrderEventTypeName,
+        SentenceOrderStatusName,
+        IsApproved,
+        StateId,
+        state.LocationName AS StateName,
+        CountyId,
+        county.LocationName AS CountyName,
+        ProsecutingAuthorityLocationId,
+        prosecuting_authority.LocationName AS ProsecutingAuthorityName,
+        JudgeLegistId,
+        FirstName,
+        MiddleName,
+        LastName,
+        CAST(CorrectionsCompactStartDate AS DATETIME) AS CorrectionsCompactStartDate,
+        CAST(CorrectionsCompactEndDate AS DATETIME) AS CorrectionsCompactEndDate,
+    FROM {scl_SentenceOrder}
+    LEFT JOIN {scl_SentenceOrderType}
+        USING (SentenceOrderTypeId)
+    LEFT JOIN (
+        SELECT DISTINCT
+            SentenceOrderTypeId,
+            LegalStatusDesc,
+        FROM {scl_SentenceOrderType_LegalStatus}
+        LEFT JOIN {scl_SentenceOrderType}
+            USING (SentenceOrderTypeId)
+        LEFT JOIN {ind_LegalStatus}
+            USING (LegalStatusId)
+    ) SentenceOrderType_LegalStatus
+        USING (SentenceOrderTypeId)
+    LEFT JOIN {scl_SentenceOrderCategory}
+        USING (SentenceOrderCategoryId)
+    LEFT JOIN {scl_SentenceOrderEventType}
+        USING (SentenceOrderEventTypeId)
+    LEFT JOIN {scl_SentenceOrderStatus}
+        USING (SentenceOrderStatusId)
+    LEFT JOIN {scl_Legist}
+        ON JudgeLegistId = LegistId
+    LEFT JOIN location_details_cte state
+        ON StateId = state.LocationId
+    LEFT JOIN location_details_cte county
+        ON CountyId = county.LocationId
+    LEFT JOIN location_details_cte prosecuting_authority
+        ON ProsecutingAuthorityLocationId = prosecuting_authority.LocationId
+
+    -- Get associated SentenceId
+    LEFT JOIN {scl_SentenceLinkSentenceOrder}
+        USING (SentenceOrderId)
+    LEFT JOIN {scl_SentenceLink}
+        USING (SentenceLinkId)
+)"""
+
+SENTENCE_DETAILS_CTE = r"""
+sentence_details_cte AS (
+    SELECT
+        OffenderId,
+        MasterTermId,
+        TermId,
+        SentenceId,
+        Stayed,
+        SentenceTypeDesc,
+        SentenceStatusDesc,
+        CAST(DischargeDate AS DATETIME) AS DischargeDate,
+        SentenceDetailId,
+        SegmentYears,
+        SegmentMonths,
+        SegmentDays,
+        SegmentMaxYears,
+        SegmentMaxMonths,
+        SegmentMaxDays,
+        CAST(SegmentPED AS DATETIME) AS SegmentPED,
+        CAST(SegmentIndeterminateStartDate AS DATETIME) AS SegmentIndeterminateStartDate,
+        CAST(SegmentIndeterminateEndDate AS DATETIME) AS SegmentIndeterminateEndDate,
+        CAST(SegmentStartDate AS DATETIME) AS SegmentStartDate,
+        CAST(SegmentEndDate AS DATETIME) AS SegmentEndDate,
+        CAST(SegmentSatisfactionDate AS DATETIME) AS SegmentSatisfactionDate,
+        SentenceDetailTypeDesc,
+        -- Special circumstances (life/death)
+        OffenseSentenceTypeName,
+    FROM {scl_Sentence}
+    LEFT JOIN {scl_SentenceType}
+        USING (SentenceTypeId)
+    LEFT JOIN {scl_SentenceStatus}
+        USING (SentenceStatusId)
+    LEFT JOIN {scl_SentenceDetail}
+        USING (SentenceId)
+    LEFT JOIN {scl_SentenceDetailType}
+        USING (SentenceDetailTypeId)
+    LEFT JOIN {scl_OffenseSentenceType}
+        USING (OffenseSentenceTypeId)
+)"""
+
+RETAINED_JURISDICTION_DETAILS_CTE = r"""
+retained_jurisdiction_details_cte AS (
+    SELECT
+        SentenceOrderID,
+        RetainedJurisdictionId,
+        RetainedJurisdictionTypeName,
+        CAST(RetentionStartDate AS DATETIME) AS RetentionStartDate,
+        CAST(RetentionEndDate AS DATETIME) AS RetentionEndDate,
+        CAST(QuashedDate AS DATETIME) AS QuashedDate,
+    FROM {scl_RetainedJurisdiction}
+    LEFT JOIN {scl_RetainedJurisdictionType}
+        USING (RetainedJurisdictionTypeId)
+)"""
