@@ -87,19 +87,54 @@ output:
                     condition:
                       $enum_mapping:
                         $raw_text:
-                          $custom:
-                            $function: us_pa_custom_parsers.violated_condition_from_violation_code
-                            $args:
-                              violation_code:
-                                $json_extract:
-                                  $json: $iter_item
-                                  $key: violation_code
+                          $json_extract:
+                            $json: $iter_item
+                            $key: violation_code
                         $mappings:
-                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
-                            - "1"
-                            - "2"
-                            - "3"
-                            - "4"
-                            - "5"
-                            - "6"
-                            - "7"
+                          StateSupervisionViolatedConditionType.EMPLOYMENT:
+                            - "M07"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                            - "H01"
+                            - "M04"
+                            - "L07"
+                            - "M01"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_REPORT:
+                            - "H06"
+                            - "M02"
+                            - "M19"
+                          StateSupervisionViolatedConditionType.FINANCIAL:
+                            - "L03"
+                            - "L04"
+                            - "L05"
+                            - "L06"
+                          StateSupervisionViolatedConditionType.LAW:
+                            - "H04"
+                            - "M13"
+                            - "M20"
+                            - "H10"
+                            - "H11"
+                            - "H08"
+                          StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                            - "H02"
+                            - "M09"
+                            - "M10"
+                            - "M15"
+                            - "H05"
+                            - "L01"
+                            - "M05"
+                            - "M11"
+                            - "M12"
+                            - "M16"
+                          StateSupervisionViolatedConditionType.SUBSTANCE:
+                            - "H03"
+                            - "H12"
+                            - "L02"
+                            - "L08"
+                            - "M03"
+                            - "M14"
+                            - "M17"
+                          StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE:
+                            - "H07"
+                            - "M06"
+                            - "M08"
+                            - "M18"
