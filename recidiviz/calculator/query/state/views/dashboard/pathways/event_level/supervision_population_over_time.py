@@ -42,7 +42,6 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT {columns}
     FROM `{project_id}.{dashboards_dataset}.supervision_population_materialized`
     WHERE time_period IS NOT NULL
-    ORDER BY state_code, person_id, date_in_population
 """
 
 SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(

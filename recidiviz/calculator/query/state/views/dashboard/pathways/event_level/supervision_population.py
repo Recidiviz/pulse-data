@@ -95,7 +95,6 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
     FROM coalesced
     {filter_to_enabled_states} AND {state_specific_district_filter}
     AND time_period IS NOT NULL
-    ORDER BY state_code, person_id, year, month
     """
 
 SUPERVISION_POPULATION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
