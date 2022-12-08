@@ -18,7 +18,7 @@
 Predefined request bodies to use in test requests to TOMIS via recidiviz.tools.workflows.request_api
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, List, Optional
 
 complete_request_basic_obj = {
@@ -75,7 +75,6 @@ incomplete_request_obj = {
     "Comment1": "Test 1",
 }
 
-
 empty_comments_request_obj = {
     "ContactTypeCode1": "TEPE",
     "ContactTypeCode2": "",
@@ -101,6 +100,19 @@ empty_comments_request_obj = {
 }
 
 
+invalid_characters_request_obj = {
+    "ContactTypeCode1": "TEPE",
+    "ContactSequenceNumber": 1,
+    "Comment1": "~Test~",
+}
+
+line_too_long_request_obj = {
+    "ContactTypeCode1": "TEPE",
+    "ContactSequenceNumber": 1,
+    "Comment1": "TEXT TO FILL 71 CHARACTERS. TEXT TO FILL 71 CHARACTERS. TEXT TO FILL 71",
+}
+
+
 def with_sequence_number(note: dict[str, Any], sequence_number: int) -> dict[str, Any]:
     cp = note.copy()
     cp["ContactSequenceNumber"] = sequence_number
@@ -119,23 +131,32 @@ note_name_to_objs = {
     "ten_page_request": [
         with_sequence_number(complete_request_full_obj, i) for i in range(1, 11)
     ],
+    "invalid_characters_request": [invalid_characters_request_obj],
+    "invalid_characters_page_2_request": [
+        incomplete_request_obj,
+        with_sequence_number(invalid_characters_request_obj, 2),
+    ],
+    "line_too_long_request": [line_too_long_request_obj],
+    "out_of_order_request": [
+        incomplete_request_obj,
+        with_sequence_number(incomplete_request_obj, 3),
+        with_sequence_number(incomplete_request_obj, 2),
+    ],
+    "missing_offenderid_request": [incomplete_request_obj],
+    "missing_userid_request": [incomplete_request_obj],
 }
-
-_START_DATE = datetime(2022, 10, 1)
 
 
 def build_notes(
     notes: List[dict[str, Any]],
-    test_case_number: int,
+    request_datetime: datetime,
     offender_id: Optional[str],
     user_id: Optional[str],
 ) -> List[dict[str, Any]]:
     transformed_notes: List[dict[str, Any]] = []
     for note in notes:
         transformed_note = note.copy()
-        transformed_note["ContactNoteDateTime"] = (
-            _START_DATE + timedelta(days=test_case_number)
-        ).isoformat()
+        transformed_note["ContactNoteDateTime"] = request_datetime.isoformat()
         if offender_id:
             transformed_note["OffenderId"] = offender_id
         if user_id:

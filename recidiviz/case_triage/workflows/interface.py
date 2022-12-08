@@ -102,12 +102,30 @@ class WorkflowsExternalRequestInterface:
                     ),
                     HTTPStatus.OK,
                 )
+            except requests.exceptions.HTTPError as e:
+                duration = round(time.perf_counter() - start_time, 2)
+                logging.info("Request to TOMIS failed in %s seconds", duration)
+                text_data = e.response.text
+                json_data = ""
+                try:
+                    json_data = e.response.json()
+                except Exception as ex:
+                    logging.info("Error parsing response JSON, ignoring: %s", ex)
+                return make_response(
+                    jsonify(
+                        message=f"An error occurred while calling TOMIS: {e}",
+                        text=text_data,
+                        json=json_data,
+                        duration=duration,
+                    ),
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
             except Exception as e:
                 duration = round(time.perf_counter() - start_time, 2)
                 logging.info("Request to TOMIS failed in %s seconds", duration)
                 return make_response(
                     jsonify(
-                        message=f"An error occurred while calling TOMIS: {e}",
+                        message=f"An unknown error occurred while calling TOMIS: {e}",
                         duration=duration,
                     ),
                     HTTPStatus.INTERNAL_SERVER_ERROR,
