@@ -21,6 +21,10 @@ which clients have served 1/2 of their sentence if their term of imprisonment is
 less or equal to 5 years or 2/3 if their term of imprisonment is more than 5 years.
 """
 
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -90,7 +94,7 @@ critical_date_spans AS (
     FROM sub_sessions_with_attributes
     QUALIFY ROW_NUMBER() 
             OVER(PARTITION BY state_code, person_id, start_date, end_date 
-            ORDER BY critical_date DESC) = 1
+            ORDER BY {nonnull_end_date_clause('critical_date')} DESC) = 1
 ),
 save_x_portion_served AS (
     SELECT
@@ -118,6 +122,7 @@ LEFT JOIN save_x_portion_served xps
     ON  xps.person_id = cd.person_id
         AND xps.state_code = cd.state_code
         ANd xps.critical_date = cd.critical_date
+WHERE {nonnull_start_date_clause('cd.start_date')} != {nonnull_end_date_clause('cd.end_date')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -126,7 +131,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
             state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
         ),
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
