@@ -113,51 +113,6 @@ _COLUMNS_QUERY = """
     WHERE table_name = "{table_name}"
 """
 
-_COMPARISON_QUERY = """
-    WITH original_cte AS
-    (
-    SELECT 
-      {columns_for_query}
-    FROM {table_name_orig}
-    )
-    ,
-    new_cte AS
-    (
-    SELECT 
-      {columns_for_query}
-    FROM {table_name_new}
-    )
-    
-    SELECT
-      {columns_for_join},
-      original_cte.{id_col} IS NOT NULL AND new_cte.{id_col} IS NOT NULL AS in_both,
-      original_cte.{id_col} IS NOT NULL AS in_original,
-      new_cte.{id_col} IS NOT NULL AS in_new
-    FROM original_cte
-    FULL OUTER JOIN new_cte
-    ON
-      {join_condition}
-"""
-
-_DIFFERENCE_QUERY = """
-    WITH not_in_both AS
-    (
-    SELECT
-      *
-    FROM `{comparison_output_table}`
-    WHERE NOT in_both
-    )
-    SELECT
-      {columns_for_difference},
-      IFNULL(original_result.in_original, FALSE) AS in_original,
-      IFNULL(new_result.in_new, FALSE) AS in_new
-    FROM not_in_both original_result FULL OUTER JOIN not_in_both new_result
-    USING(
-      {columns_for_difference_join}
-    )
-    WHERE original_result.in_original OR new_result.in_new
-"""
-
 _STATS_QUERY_SUMS = """
       SUM(IF(in_original,1,0)) AS count_original,
       SUM(IF(in_new,1,0)) AS count_new,
@@ -184,6 +139,77 @@ _STATS_QUERY_NO_GROUPING = f"""
 
 def format_lines_for_query(lines: List[str], join_str: str = ",\n      ") -> str:
     return join_str.join(lines)
+
+
+def all_columns_equal_condition(column_names: List[str]) -> str:
+    return format_lines_for_query(
+        [
+            f"TO_JSON_STRING(original_rows.{col})=TO_JSON_STRING(new_rows.{col})"
+            for col in column_names
+        ],
+        join_str="\n      AND ",
+    )
+
+
+def get_comparison_query(
+    column_names: List[str], table_name_orig: str, table_name_new: str, id_col: str
+) -> str:
+    return f"""
+    WITH original_rows AS
+    (
+    SELECT
+      {format_lines_for_query(column_names)}
+    FROM {table_name_orig}
+    )
+    ,
+    new_rows AS
+    (
+    SELECT
+      {format_lines_for_query(column_names)}
+    FROM {table_name_new}
+    )
+
+    SELECT
+      {format_lines_for_query(
+        [
+            f"IFNULL(original_rows.{col}, new_rows.{col}) AS {col}"
+            for col in column_names
+        ]
+      )},
+      original_rows.{id_col} IS NOT NULL AND new_rows.{id_col} IS NOT NULL AS in_both,
+      original_rows.{id_col} IS NOT NULL AS in_original,
+      new_rows.{id_col} IS NOT NULL AS in_new
+    FROM original_rows
+    FULL OUTER JOIN new_rows
+    ON
+      {all_columns_equal_condition(column_names)}
+    """
+
+
+def get_difference_query(
+    column_names: List[str],
+    table_name_orig: str,
+    table_name_new: str,
+    primary_keys: List[str],
+) -> str:
+    def format_for_difference(col: str, primary_keys: List[str]) -> str:
+        if col in primary_keys:
+            return col
+        return f"IF(original_rows.{col} = new_rows.{col}, NULL, STRUCT(original_rows.{col} AS o, new_rows.{col} AS n)) AS {col}"
+
+    id_col = primary_keys[0]
+    return f"""
+    SELECT
+      {format_lines_for_query([format_for_difference(col, primary_keys) for col in column_names])},
+      original_rows.{id_col} IS NOT NULL AS in_original,
+      new_rows.{id_col} IS NOT NULL AS in_new
+    FROM {table_name_orig} original_rows
+    FULL OUTER JOIN {table_name_new} new_rows
+    USING(
+      {format_lines_for_query(primary_keys)}
+    )
+    WHERE NOT ({all_columns_equal_condition(column_names)})
+"""
 
 
 def get_columns_to_compare_and_ignore(
@@ -259,25 +285,13 @@ def compare_view(
         logging.warning("Using %s as primary keys", primary_keys)
 
     # Construct a query that tells us which rows are in original, new, or both
-    query = StrictStringFormatter().format(
-        _COMPARISON_QUERY,
-        table_name_orig=f"`{project_id}.{dataset_original}.{view_id}`",
-        table_name_new=f"`{project_id}.{dataset_new}.{view_id_new}`",
+    table_name_orig = f"`{project_id}.{dataset_original}.{view_id}`"
+    table_name_new = f"`{project_id}.{dataset_new}.{view_id_new}`"
+    query = get_comparison_query(
+        column_names,
+        table_name_orig=table_name_orig,
+        table_name_new=table_name_new,
         id_col=primary_keys[0],
-        columns_for_query=format_lines_for_query(column_names),
-        columns_for_join=format_lines_for_query(
-            [
-                f"IFNULL(original_cte.{col}, new_cte.{col}) AS {col}"
-                for col in column_names
-            ]
-        ),
-        join_condition=format_lines_for_query(
-            [
-                f"TO_JSON_STRING(original_cte.{col})=TO_JSON_STRING(new_cte.{col})"
-                for col in column_names
-            ],
-            join_str="\n      AND ",
-        ),
     )
 
     # Create _full table to store results of the above query
@@ -296,18 +310,11 @@ def compare_view(
     print(f"Full comparison available at `{comparison_output_table}`")
 
     # Construct query to show only the actual differences between the two tables
-    def format_for_difference(col: str, primary_keys: List[str]) -> str:
-        if col in primary_keys:
-            return col
-        return f"IF(original_result.{col} = new_result.{col}, NULL, STRUCT(original_result.{col} AS o, new_result.{col} AS n)) AS {col}"
-
-    difference_query = StrictStringFormatter().format(
-        _DIFFERENCE_QUERY,
-        comparison_output_table=comparison_output_table,
-        columns_for_difference=format_lines_for_query(
-            [format_for_difference(col, primary_keys) for col in column_names],
-        ),
-        columns_for_difference_join=format_lines_for_query(primary_keys),
+    difference_query = get_difference_query(
+        column_names,
+        table_name_orig=table_name_orig,
+        table_name_new=table_name_new,
+        primary_keys=primary_keys,
     )
 
     # Create _differences table to store results of the above query
