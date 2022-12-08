@@ -54,11 +54,12 @@ class TestDagIntegrity(unittest.TestCase):
         Verify that the DAGs discovered have the correct name
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        self.assertEqual(len(dag_bag.dag_ids), 2)
+        self.assertEqual(len(dag_bag.dag_ids), 3)
         self.assertSetEqual(
             set(dag_bag.dag_ids),
             {
                 "recidiviz-testing_incremental_calculation_pipeline_dag",
                 "recidiviz-testing_historical_calculation_pipeline_dag",
+                "recidiviz-testing_sftp_dag",
             },
         )

@@ -18,7 +18,6 @@
 The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
-import datetime
 import json
 import os
 import uuid
@@ -51,6 +50,7 @@ try:
     from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
+    from utils.default_args import DEFAULT_ARGS  # type: ignore
     from utils.export_tasks_config import (  # type: ignore
         CASE_TRIAGE_STATES,
         PIPELINE_AGNOSTIC_EXPORTS,
@@ -75,6 +75,7 @@ except ImportError:
     from recidiviz.airflow.dags.operators.iap_httprequest_sensor import (
         IAPHTTPRequestSensor,
     )
+    from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -85,12 +86,6 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 
 project_id = os.environ.get("GCP_PROJECT")
 config_file = os.environ.get("CONFIG_FILE")
-
-default_args = {
-    "start_date": datetime.date.today().strftime("%Y-%m-%d"),
-    "email": ["alerts@recidiviz.org"],
-    "email_on_failure": True,
-}
 
 retry: Retry = Retry(predicate=lambda _: False)
 
@@ -124,7 +119,7 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
     region = pipeline_config.peek("region", str)
     zone = get_zone_for_region(region)
 
-    dataflow_args = default_args.copy()
+    dataflow_args = DEFAULT_ARGS.copy()
     dataflow_args.update(
         {
             "project": project_id,
@@ -532,7 +527,7 @@ def execute_calculations(should_update_all_views: bool) -> None:
 # waiting to finish.
 @dag(
     dag_id=f"{project_id}_incremental_calculation_pipeline_dag",
-    default_args=default_args,
+    default_args=DEFAULT_ARGS,
     schedule_interval=None,
     catchup=False,
     max_active_runs=1,
@@ -549,7 +544,7 @@ def incremental_dag() -> None:
 # waiting to finish.
 @dag(
     dag_id=f"{project_id}_historical_calculation_pipeline_dag",
-    default_args=default_args,
+    default_args=DEFAULT_ARGS,
     schedule_interval=None,
     catchup=False,
     max_active_runs=1,
