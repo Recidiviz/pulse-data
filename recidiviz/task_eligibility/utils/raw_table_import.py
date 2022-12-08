@@ -21,6 +21,7 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_start_date_clause,
     revert_nonnull_end_date_clause,
+    revert_nonnull_start_date_clause,
 )
 
 
@@ -38,7 +39,7 @@ def cis_319_term_cte() -> str:
     SELECT 
         state_code, 
         person_id,
-        {revert_nonnull_end_date_clause('start_date')} AS start_date,
+        {revert_nonnull_start_date_clause('start_date')} AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
     FROM (
             SELECT
@@ -46,7 +47,7 @@ def cis_319_term_cte() -> str:
                 {nonnull_start_date_clause('SAFE_CAST(LEFT(intake_date, 10) AS DATE)')} AS start_date,
                 {nonnull_end_date_clause('SAFE_CAST(LEFT(Curr_Cust_Rel_Date, 10) AS DATE)')} AS end_date,  
                 -- TODO(#16175) should ingest the expected release date sometime soon
-            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_319_TERM_latest`
+            FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_319_TERM_latest`
             -- Using INNER JOIN here does drop a handful of people who for some reason don't have `person_id` values
             INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
                 ON Cis_100_Client_Id = external_id

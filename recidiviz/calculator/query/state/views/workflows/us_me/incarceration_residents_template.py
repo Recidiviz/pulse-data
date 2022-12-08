@@ -14,11 +14,19 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""View logic to prepare US_ID Workflows supervision clients."""
+"""View logic to prepare US_ME Workflows supervision clients."""
 
-from recidiviz.calculator.query.bq_utils import array_concat_with_null
+from recidiviz.calculator.query.bq_utils import (
+    array_concat_with_null,
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+    revert_nonnull_end_date_clause,
+    revert_nonnull_start_date_clause,
+)
+from recidiviz.task_eligibility.utils.raw_table_import import cis_319_term_cte
 
 US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
+{cis_319_term_cte()},
     us_me_incarceration_cases AS (
         SELECT
             dataflow.state_code,
@@ -26,7 +34,11 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
             person_external_id,
             sp.full_name AS person_name,
             dataflow.facility AS facility_id,
-            dataflow.start_date_inclusive AS admission_date
+            MIN(t.start_date) 
+                    OVER(w) AS admission_date,
+            MAX({nonnull_end_date_clause('t.end_date')}) 
+                    OVER(w) AS release_date
+            --TODO(#16175) ingest intake and release dates
         FROM `{{project_id}}.{{dataflow_dataset}}.most_recent_incarceration_population_span_metrics_materialized` dataflow
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
             ON dataflow.state_code = sessions.state_code
@@ -35,17 +47,25 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
             AND sessions.end_date IS NULL
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp 
             ON dataflow.person_id = sp.person_id
+        -- Use raw_table to get admission and release dates
+        LEFT JOIN term_cte t
+          ON dataflow.person_id = t.person_id
+          -- subset the possible start and end_dates to those consistent with
+          -- the current date
+              AND CURRENT_DATE('US/Eastern') 
+                    BETWEEN {nonnull_start_date_clause('t.start_date')} 
+                        AND {nonnull_end_date_clause('t.end_date')} 
         WHERE dataflow.state_code = 'US_ME' AND dataflow.included_in_state_population
             AND dataflow.end_date_exclusive IS NULL
-    )
-    , release_dates AS (
-        SELECT
-            person_id,
-            MAX(projected_release.projected_max_release_date) AS release_date
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_sentence` projected_release
-        WHERE completion_date is NULL
-            AND status != "COMPLETED"
-        GROUP BY 1
+        WINDOW w as (PARTITION BY dataflow.state_code, dataflow.person_id)
+    ),
+    us_me_incarceration_cases_wdates AS (
+        SELECT 
+            * EXCEPT(release_date, admission_date),
+            {revert_nonnull_start_date_clause('admission_date')} AS admission_date, 
+            {revert_nonnull_end_date_clause('release_date')} AS release_date
+        FROM us_me_incarceration_cases
+        GROUP BY 1,2,3,4,5,6,7
     )
     , custody_level AS (
         SELECT
@@ -97,11 +117,9 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
             unit_id,
             custody_level.custody_level,
             ic.admission_date,
-            rd.release_date,
+            ic.release_date,
         FROM
-            us_me_incarceration_cases ic
-        LEFT JOIN release_dates rd
-            USING(person_id)
+            us_me_incarceration_cases_wdates ic
         LEFT JOIN custody_level
             USING(person_id)
         LEFT JOIN housing_unit
