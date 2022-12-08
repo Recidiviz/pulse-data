@@ -112,18 +112,24 @@ output:
                       $enum_mapping:
                         $raw_text: $iter_item
                         $mappings:
-                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
-                            - "ASC"
-                            - "DIR"
-                            - "DRG"
+                          StateSupervisionViolatedConditionType.EMPLOYMENT:
                             - "EMP"
-                            - "INT"
-                            - "LAW"
-                            - "RES"
-                            - "SPC"
-                            - "SUP"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
                             - "TRA"
+                            - "RES"
+                          StateSupervisionViolatedConditionType.FAILURE_TO_REPORT:
+                            - "DIR"
+                          StateSupervisionViolatedConditionType.FINANCIAL:
+                            - "SPC"
+                          StateSupervisionViolatedConditionType.LAW:
+                            - "LAW"
                             - "WEA"
+                          StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                            - "ASC"
+                            - "SUP"
+                            - "INT"
+                          StateSupervisionViolatedConditionType.SUBSTANCE:
+                            - "DRG"
           supervision_violation_responses:
             - StateSupervisionViolationResponse:
                 external_id:
