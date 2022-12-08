@@ -22,7 +22,6 @@ To generate the BQ view, run:
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.case_triage.views import dataset_config as case_triage_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -45,7 +44,7 @@ WITH new_to_caseload AS (
 SELECT
     po_monthly_report_data.state_code,
     po_monthly_report_data.officer_external_id,
-    JSON_EXTRACT_SCALAR(etl_officers.full_name, '$.full_name') AS full_name,
+    agent_names.full_name AS full_name,
     SUM(new_to_caseload.new_to_caseload_count) AS new_to_caseload_count, 
     SUM(po_monthly_report_data.pos_discharges) AS pos_discharges,
     SUM(po_monthly_report_data.absconsions) AS absconsions,
@@ -55,8 +54,10 @@ SELECT
     SUM(po_monthly_report_data.facetoface) AS facetoface,
     SUM(po_monthly_report_data.assessments) AS assessments
  FROM `{project_id}.{po_report_dataset}.report_data_by_officer_by_month_materialized` po_monthly_report_data
- JOIN new_to_caseload USING (state_code, officer_external_id)
- JOIN `{project_id}.{case_triage_dataset}.etl_officers_materialized` etl_officers ON etl_officers.external_id = po_monthly_report_data.officer_external_id
+ INNER JOIN new_to_caseload USING (state_code, officer_external_id)
+ INNER JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent_names
+    ON agent_names.state_code = po_monthly_report_data.state_code
+    AND agent_names.external_id = po_monthly_report_data.officer_external_id
  WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Eastern'), MONTH), INTERVAL 3 MONTH)
  GROUP BY 1, 2, 3
 """
@@ -69,7 +70,7 @@ METRICS_FROM_PO_REPORT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=METRICS_FROM_PO_REPORT_DESCRIPTION,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    case_triage_dataset=case_triage_dataset_config.CASE_TRIAGE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

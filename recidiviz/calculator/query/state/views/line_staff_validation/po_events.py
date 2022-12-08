@@ -22,7 +22,6 @@ To generate the BQ view, run:
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.case_triage.views import dataset_config as case_triage_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -126,13 +125,15 @@ unordered_po_events AS (
 SELECT
         all_events.state_code,
         all_events.officer_external_id,
-        JSON_EXTRACT_SCALAR(etl_officers.full_name, '$.full_name') AS officer_full_name,
+        agent_names.full_name AS officer_full_name,
         all_events.event,
         all_events.event_date,
         all_events.person_external_id AS client_external_id,
         all_events.client_full_name
 FROM all_events
-JOIN `{project_id}.{case_triage_dataset}.etl_officers_materialized` etl_officers ON etl_officers.external_id = all_events.officer_external_id
+INNER JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent_names
+    ON agent_names.state_code = all_events.state_code
+    AND agent_names.external_id = all_events.officer_external_id
 WHERE event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 90 DAY) 
 ORDER BY all_events.event_date
 """
@@ -145,7 +146,7 @@ PO_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PO_EVENTS_DESCRIPTION,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    case_triage_dataset=case_triage_dataset_config.CASE_TRIAGE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
