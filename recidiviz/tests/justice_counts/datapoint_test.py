@@ -26,13 +26,16 @@ from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonFundingIncludesExcludes,
 )
-from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.utils.constants import (
+    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+)
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Datapoint,
     DatapointHistory,
@@ -350,11 +353,14 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 '{"custom_frequency": "ANNUAL", "starting_month": 3}',
             )
 
+    def test_save_disaggregated_by_supervision_subsystems_boolean(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
             agency_metric = MetricInterface(
-                key=law_enforcement.annual_budget.key,
-                custom_reporting_frequency=CustomReportingFrequency(
-                    frequency=ReportingFrequency.MONTHLY
-                ),
+                key=prisons.daily_population.key,
+                disaggregated_by_supervision_subsystems=True,
             )
             DatapointInterface.add_or_update_agency_datapoints(
                 agency_metric=agency_metric,
@@ -364,10 +370,9 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             )
             datapoints = session.query(Datapoint).all()
             self.assertEqual(len(datapoints), 1)
-            # Annual frequency starting in March
+            self.assertEqual(datapoints[0].value, "True")
             self.assertEqual(
-                datapoints[0].value,
-                '{"custom_frequency": "MONTHLY", "starting_month": null}',
+                datapoints[0].context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
             )
 
     def test_save_invalid_datapoint(self) -> None:
@@ -414,6 +419,67 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     metric_definition_key=law_enforcement.annual_budget.key,
                     current_time=current_time,
                 )
+
+    def test_get_disaggregated_by_supervision_subsystems_agency_metric(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            supervision_agency = self.test_schema_objects.test_agency_C
+            law_enforcement_agency = self.test_schema_objects.test_agency_A
+            session.add_all([supervision_agency, law_enforcement_agency])
+            session.flush()
+            session.refresh(supervision_agency)
+            session.refresh(law_enforcement_agency)
+            supervision_agency_metrics = (
+                DatapointInterface.get_metric_settings_by_agency(
+                    session=session, agency=supervision_agency
+                )
+            )
+
+            law_enforcement_agency_metrics = (
+                DatapointInterface.get_metric_settings_by_agency(
+                    session=session, agency=law_enforcement_agency
+                )
+            )
+
+            for metric in supervision_agency_metrics:
+                # Since the agency is a supervision agency, the disaggregated_by_supervision_subsystems
+                # field will default to False
+                self.assertEqual(metric.disaggregated_by_supervision_subsystems, False)
+
+            for metric in law_enforcement_agency_metrics:
+                # Since the agency is NOT a supervision agency, the disaggregated_by_supervision_subsystems
+                # field will default to None
+                self.assertEqual(metric.disaggregated_by_supervision_subsystems, None)
+
+            # Add agency datapoint that makes the supervision annual_budget metric be
+            # disaggregated by subsystem
+            session.add(
+                Datapoint(
+                    metric_definition_key=supervision.annual_budget.key,
+                    source=supervision_agency,
+                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                    dimension_identifier_to_member=None,
+                    value=str(True),
+                ),
+            )
+            session.flush()
+
+            supervision_agency_metrics = (
+                DatapointInterface.get_metric_settings_by_agency(
+                    session=session, agency=supervision_agency
+                )
+            )
+            for metric in supervision_agency_metrics:
+                # All metrics except for annual_budget should have a
+                # disaggregated_by_supervision_subsystems field as False,
+                # budget should be True.
+                if metric.key != supervision.annual_budget.key:
+                    self.assertEqual(
+                        metric.disaggregated_by_supervision_subsystems, False
+                    )
+                else:
+                    self.assertEqual(
+                        metric.disaggregated_by_supervision_subsystems, True
+                    )
 
     def test_get_datapoints(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
