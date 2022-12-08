@@ -18,14 +18,47 @@
 
 from unittest import TestCase
 
-from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.metric_definition import Context
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
 from recidiviz.utils.types import assert_type
+
+
+class TestAggregatedDimension(TestCase):
+    """Implements tests for the Justice Counts AggregatedDimension class."""
+
+    def test_dimension_to_contexts(self) -> None:
+        if (
+            law_enforcement.reported_crime.aggregated_dimensions is not None
+        ):  # pylint: disable=unsubscriptable-object
+            agg_dim = law_enforcement.reported_crime.aggregated_dimensions[0]
+            self.assertEqual(
+                agg_dim.dimension_to_contexts,
+                {
+                    agg_dim.dimension.OTHER: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.ADDITIONAL_CONTEXT,
+                            value_type=ValueType.TEXT,
+                            label="Please describe what data is being included in this breakdown.",
+                            required=False,
+                        )
+                    ]
+                },
+            )
+
+        # Does not have an OTHER dimension
+        if (
+            law_enforcement.calls_for_service.aggregated_dimensions is not None
+        ):  # pylint: disable=unsubscriptable-object
+            agg_dim = law_enforcement.calls_for_service.aggregated_dimensions[0]
+            self.assertIsNone(
+                agg_dim.dimension_to_contexts,
+            )
 
 
 class TestMetricDefinition(TestCase):

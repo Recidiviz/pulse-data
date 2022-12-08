@@ -152,6 +152,28 @@ class AggregatedDimension:
         Dict[DimensionBase, IncludesExcludesSet]
     ] = None
 
+    @property
+    def dimension_to_contexts(
+        self,
+    ) -> Optional[Dict[DimensionBase, List[Context]]]:
+        """Returns a dictionary with 1 key (the OTHER dimension for the disaggregation).
+        The value of the dictionary is a singleton list containing the additional context
+        for that dimension. This is used in the UI to provide additional context text
+        boxes for OTHER dimensions."""
+        for ag_type in self.dimension:  # type: ignore[attr-defined]
+            if ag_type.name == "OTHER":
+                return {
+                    ag_type: [
+                        Context(
+                            key=ContextKey.ADDITIONAL_CONTEXT,
+                            value_type=ValueType.TEXT,
+                            label="Please describe what data is being included in this breakdown.",
+                            required=False,
+                        )
+                    ]
+                }
+        return None
+
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()
 
