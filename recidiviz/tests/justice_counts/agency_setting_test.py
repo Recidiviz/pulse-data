@@ -60,13 +60,13 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
 
     def test_create_and_get_agency_setting(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            AgencySettingInterface.create_agency_setting(
+            AgencySettingInterface.create_or_update_agency_setting(
                 session=session,
                 agency_id=self.agency_A_id,
                 setting_type=AgencySettingType.TEST,
                 value=["foo", "bar"],
             )
-            AgencySettingInterface.create_agency_setting(
+            AgencySettingInterface.create_or_update_agency_setting(
                 session=session,
                 agency_id=self.agency_B_id,
                 setting_type=AgencySettingType.TEST,
@@ -92,3 +92,19 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
                 AgencySettingType.TEST.value,
             )
             self.assertEqual(agency_B_settings[0].value, [])
+
+        with SessionFactory.using_database(self.database_key) as session:
+            # Update existing setting
+            AgencySettingInterface.create_or_update_agency_setting(
+                session=session,
+                agency_id=self.agency_A_id,
+                setting_type=AgencySettingType.TEST,
+                value="new value",
+            )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            agency_A_settings = AgencySettingInterface.get_agency_settings(
+                session=session, agency_id=self.agency_A_id
+            )
+            self.assertEqual(len(agency_A_settings), 1)
+            self.assertEqual(agency_A_settings[0].value, "new value")

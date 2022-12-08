@@ -20,6 +20,7 @@
 import enum
 from typing import Any, List
 
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -34,20 +35,21 @@ class AgencySettingInterface:
     """Contains methods for setting and getting AgencySettings."""
 
     @staticmethod
-    def create_agency_setting(
+    def create_or_update_agency_setting(
         session: Session,
         agency_id: int,
         setting_type: AgencySettingType,
         value: Any,
-    ) -> schema.AgencySetting:
-        agency_setting = schema.AgencySetting(
-            source_id=agency_id,
-            setting_type=setting_type.value,
-            value=value,
+    ) -> None:
+        insert_statement = insert(schema.AgencySetting).values(
+            source_id=agency_id, setting_type=setting_type.value, value=value
         )
-        session.add(agency_setting)
-        session.commit()
-        return agency_setting
+        insert_statement = insert_statement.on_conflict_do_update(
+            constraint="unique_agency_setting",
+            set_=dict(value=value),
+        )
+
+        session.execute(insert_statement)
 
     @staticmethod
     def get_agency_settings(
