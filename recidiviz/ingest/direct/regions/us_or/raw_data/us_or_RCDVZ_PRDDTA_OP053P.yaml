@@ -1,9 +1,12 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP053P
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This file contains offense and judicial information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
+  - CUSTODY_NUMBER
+  - OFFENSE_NUMBER
 columns:
   - name: NEXT_NUMBER
   - name: RECORD_KEY
