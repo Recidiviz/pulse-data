@@ -42,7 +42,6 @@ SUPERVISION_POPULATION_BY_DIMENSION_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT {columns}
     FROM `{project_id}.{dashboards_dataset}.supervision_population_materialized`
     WHERE end_date IS NULL
-    ORDER BY state_code, person_id
 """
 
 SUPERVISION_POPULATION_BY_DIMENSION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(

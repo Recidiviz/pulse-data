@@ -88,7 +88,6 @@ PRISON_POPULATION_OVER_TIME_VIEW_QUERY_TEMPLATE = """
     SELECT DISTINCT
         {columns}
     FROM filtered_rows
-    ORDER BY state_code, date_in_population, person_id
 """
 
 PRISON_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilder(
