@@ -86,7 +86,7 @@ columns:
     description: Violation assessment date
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: violation_assessment_result_id
     description: Reference code for violation assessment result (links with ADH_REFERENCE_CODE) # Not sure what this actually means TODO(#16348)
     known_values:
@@ -101,20 +101,20 @@ columns:
   - name: available_date
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
     description: TODO(#16348)
   - name: due_process_max_date
     description: TODO(#16348)
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: waived_preliminary_flag
     description: TODO(#16348)
   - name: prelim_hearing_date
     description: Date of preliminary hearing
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: prelim_hearing_location_id
     description: Location ID for preliminary hearing (links with ADH_LOCATION)
   - name: prelim_hearing_employee_id
@@ -137,7 +137,7 @@ columns:
     description: Date of formal hearing
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_location_id
     description: Location ID for formal hearing (links with ADH_LOCATION)
   - name: formal_hearing_employee_id
@@ -180,7 +180,7 @@ columns:
     description: Arraignment date
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: arraignment_location_id
     description: Location of arraingment (links with ADH_LOCATION)
   - name: arraignment_judge
@@ -192,7 +192,7 @@ columns:
     description: Date violation charges served
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: court_room_number
     description: Court room number
   - name: violation_type_id
@@ -216,7 +216,7 @@ columns:
     description: Begin date of violation investigation
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: notes
     description: Supervision violation notes
     is_pii: True
@@ -306,7 +306,7 @@ columns:
     description: Formal hearing arraingment date
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_status_id
     description: Reference code for hearing status (links with ADH_REFERENCE_CODE)
     known_values:
