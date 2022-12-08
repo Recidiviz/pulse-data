@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TBLOCA
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This table contains the physical location of the various locations and institutions.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - LOCATION_CODE
 columns:
   - name: LOCATION_CODE
   - name: LOCATION_TYPE

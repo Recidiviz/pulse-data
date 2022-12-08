@@ -1,9 +1,13 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP010P
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This file contains transfer information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
+  - CUSTODY_NUMBER
+  - ADMISSION_NUMBER
+  - TRANSFER_NUMBER
 columns:
   - name: RECORD_KEY
   - name: CUSTODY_NUMBER

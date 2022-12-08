@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP007P
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This file contains basic information about the Adults in Custody (AIC) such as sex, race, height, etc..
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
 columns:
   - name: RECORD_KEY
   - name: SEX

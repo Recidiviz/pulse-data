@@ -1,9 +1,12 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP002P
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This is a complete list of all Adults in Custody (AIC) names that have been used. The name_type column will tell you
+  if it's the primary name or some other such as an alias.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
+  - SUBFILE_KEY
 columns:
   - name: RECORD_KEY
   - name: SUBFILE_KEY
