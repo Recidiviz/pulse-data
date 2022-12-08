@@ -102,7 +102,7 @@ def get_api_blueprint(
                 for setting in settings:
                     setting_type = setting["setting_type"]
                     setting_value = setting["value"]
-                    AgencySettingInterface.create_agency_setting(
+                    AgencySettingInterface.create_or_update_agency_setting(
                         session=current_session,
                         agency_id=agency_id,
                         setting_type=AgencySettingType(setting_type),
