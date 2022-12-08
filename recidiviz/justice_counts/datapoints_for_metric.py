@@ -56,6 +56,7 @@ class DatapointsForMetric:
     """
 
     is_metric_enabled: Optional[bool] = attr.field(default=None)
+    disaggregated_by_supervision_subsystems: bool = attr.field(default=None)
     aggregated_value: Optional[int] = None
 
     custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()

@@ -38,7 +38,10 @@ from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesS
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
+from recidiviz.justice_counts.utils.constants import (
+    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+    REPORTING_FREQUENCY_CONTEXT_KEY,
+)
 from recidiviz.justice_counts.utils.datapoint_utils import (
     filter_deprecated_datapoints,
     get_dimension,
@@ -179,6 +182,10 @@ class DatapointInterface:
                     if datapoint.context_key == REPORTING_FREQUENCY_CONTEXT_KEY:
                         metric_datapoints.custom_reporting_frequency = (
                             CustomReportingFrequency.from_datapoint(datapoint=datapoint)
+                        )
+                    if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS:
+                        metric_datapoints.disaggregated_by_supervision_subsystems = (
+                            datapoint.value == "True"
                         )
                     else:
                         metric_datapoints.context_key_to_agency_datapoint[
@@ -437,6 +444,10 @@ class DatapointInterface:
                         metric_definition=metric_definition
                     ),
                     custom_reporting_frequency=datapoints.custom_reporting_frequency,
+                    disaggregated_by_supervision_subsystems=False
+                    if metric_definition.system == schema.System.SUPERVISION
+                    and datapoints.disaggregated_by_supervision_subsystems is None
+                    else datapoints.disaggregated_by_supervision_subsystems,
                 )
             )
         return agency_metrics
@@ -528,6 +539,19 @@ class DatapointInterface:
                     context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
                     value=agency_metric.custom_reporting_frequency.to_json_str(),
                     dimension_identifier_to_member=None,
+                ),
+                session,
+            )
+
+        # 4. Add datapoint to record that metric is disaggregated_by_supervision_subsystems
+        if agency_metric.disaggregated_by_supervision_subsystems is not None:
+            update_existing_or_create(
+                schema.Datapoint(
+                    metric_definition_key=agency_metric.key,
+                    source=agency,
+                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                    dimension_identifier_to_member=None,
+                    value=str(agency_metric.disaggregated_by_supervision_subsystems),
                 ),
                 session,
             )

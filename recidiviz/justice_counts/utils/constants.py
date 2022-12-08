@@ -21,6 +21,8 @@ from recidiviz.persistence.database.schema.justice_counts.schema import System
 
 REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
 
+DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS"
+
 
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
