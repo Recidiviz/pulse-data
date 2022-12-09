@@ -146,6 +146,18 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             `{project_id}.{external_reference_dataset}.us_id_supervision_district_names`
         USING (level_2_supervision_location_external_id)
     ),
+    ix_location_names AS (
+        SELECT
+            DISTINCT
+                'US_IX' AS state_code,
+                'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_3_supervision_location_name,
+                level_2_supervision_location_external_id,
+                level_2_supervision_location_name,
+                level_1_supervision_location_external_id,
+                INITCAP(level_1_supervision_location_external_id) AS level_1_supervision_location_name,
+        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_districts_map_latest`
+    ),
     mi_location_names AS (        
         SELECT
             DISTINCT
@@ -170,6 +182,8 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     UNION ALL
     SELECT * FROM id_location_names
     UNION ALL
+    SELECT * FROM ix_location_names
+    UNION ALL
     SELECT * FROM mi_location_names;
     """
 
@@ -193,6 +207,9 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )
