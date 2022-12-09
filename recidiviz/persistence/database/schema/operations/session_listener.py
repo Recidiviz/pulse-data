@@ -75,7 +75,11 @@ def session_listener(session: Session) -> None:
                 .one_or_none()
             )
 
-            if most_recent_row and most_recent_row.timestamp > instance.timestamp:
+            # set the row's timestamp to be offset-naive (tzinfo=None) to be able to be compared with the instance ts
+            if (
+                most_recent_row
+                and most_recent_row.timestamp > instance.timestamp.replace(tzinfo=None)
+            ):
                 raise IntegrityError(
                     "Attempting to commit a DirectIngestInstanceStatus row for "
                     f"region_code={instance.region_code} and instance={instance.instance} whose timestamp is less "
