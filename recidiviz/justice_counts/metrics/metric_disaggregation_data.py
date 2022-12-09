@@ -21,12 +21,14 @@ from typing import Any, DefaultDict, Dict, List, Optional, Type, TypeVar, cast
 
 import attr
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     IncludesExcludesSet,
@@ -53,6 +55,9 @@ class MetricAggregatedDimensionData:
     dimension_to_includes_excludes_member_to_setting: Dict[
         DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
     ] = attr.field(default={})
+    dimension_to_contexts: Optional[
+        Dict[DimensionBase, List[MetricContextData]]
+    ] = attr.field(default=None)
 
     def dimension_identifier(self) -> str:
         # Identifier of the Dimension class that this breakdown corresponds to
@@ -167,20 +172,35 @@ class MetricAggregatedDimensionData:
                 dimension_to_enabled_status=dimension_to_enabled_status,
             )
 
+        dimension_enum_value_to_includes_excludes_member_to_setting = {}
+        dimension_to_contexts = {}
+        for dim in json.get("dimensions", []):
+            dimension_key = dim["key"]
+            # First, process the settings (i.e. the includes excludes)
+            # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "N/A"},
+            # "WHITE": {"SETTING_1": "No", "SETTING_2", "Yes"}}
+            dimension_enum_value_to_includes_excludes_member_to_setting[
+                dimension_key
+            ] = {
+                setting["key"]: setting["included"]
+                for setting in dim.get("settings", [])
+            }
+
+            # Now, process the contexts
+            # Need to convert dimension_key to dimension_enum_value
+            dimension_enum_value = dimension_class(dimension_key)  # type: ignore[abstract]
+            for context in dim.get("contexts", []):
+                dimension_to_contexts[dimension_enum_value] = [
+                    MetricContextData(
+                        key=ContextKey[context["key"]],
+                        value=context["value"],
+                    )
+                ]
+
         dimension_to_includes_excludes_member_to_setting: Dict[
             DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
         ] = {
             dimension: {} for dimension in dimension_class  # type: ignore[attr-defined]
-        }
-
-        # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "N/A"},
-        # "WHITE": {"SETTING_1": "No", "SETTING_2", "Yes"}}
-        dimension_enum_value_to_includes_excludes_member_to_setting = {
-            dim["key"]: {
-                setting["key"]: setting["included"]
-                for setting in dim.get("settings", [])
-            }
-            for dim in dimensions or []
         }
 
         for dimension in dimension_class:  # type: ignore[attr-defined]
@@ -212,6 +232,7 @@ class MetricAggregatedDimensionData:
         return cls(
             dimension_to_enabled_status=dimension_to_enabled_status,
             dimension_to_includes_excludes_member_to_setting=dimension_to_includes_excludes_member_to_setting,
+            dimension_to_contexts=dimension_to_contexts,
         )
 
     ### To/From JSON Helpers ###
