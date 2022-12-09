@@ -24,7 +24,6 @@ import datetime
 from typing import Dict, Optional
 
 import attr
-import pytz
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -139,7 +138,5 @@ class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
             "regionCode": self.region_code,
             "instance": self.instance.value,
             "status": self.status.value,
-            # All timestamps are stored as timezone unaware dates in the database, but
-            # convert to a timezone aware timestamp for ease of use in the frontend.
-            "timestamp": self.timestamp.replace(tzinfo=pytz.UTC).isoformat(),
+            "timestamp": self.timestamp.isoformat(),
         }
