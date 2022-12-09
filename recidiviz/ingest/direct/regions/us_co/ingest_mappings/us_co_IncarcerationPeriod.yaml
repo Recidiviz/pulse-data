@@ -58,6 +58,10 @@ output:
           release_date: end_datetime
           facility: p_facility_id
           housing_unit: p_unit_name
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: p_unit_name
+              $custom_parser: us_co_custom_enum_parsers.parse_housing_unit_type
           specialized_purpose_for_incarceration:
             $enum_mapping:
               $raw_text: start_reason #REASONFORMOVEMENT from EXTERNALMOVEMENT

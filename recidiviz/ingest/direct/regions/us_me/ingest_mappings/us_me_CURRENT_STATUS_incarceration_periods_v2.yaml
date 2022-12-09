@@ -46,6 +46,10 @@ output:
                   - "9" # County jails
                   - "8" # State of Maine
           housing_unit: housing_unit
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: housing_unit
+              $custom_parser: us_me_custom_enum_parsers.parse_housing_unit_type
           admission_date: start_date
           release_date: end_date
           facility:

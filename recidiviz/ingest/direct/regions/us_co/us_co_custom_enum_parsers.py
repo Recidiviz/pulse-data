@@ -22,3 +22,19 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_co_custom_enum_parsers.<function name>
 """
+from typing import Optional
+
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodHousingUnitType,
+)
+
+
+def parse_housing_unit_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+    """
+    Maps |housing_unit_type|, to its corresponding StateIncarcerationPeriodHousingUnitType.
+    For now, this maps everything to StateIncarcerationPeriodHousingUnitType.GENERAL, regardless of the raw text received
+    """
+
+    return StateIncarcerationPeriodHousingUnitType.GENERAL if raw_text else None
