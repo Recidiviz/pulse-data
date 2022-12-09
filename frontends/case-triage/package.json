@@ -28,7 +28,7 @@
     "param-case": "^3.0.4",
     "polished": "^4.1.0",
     "prop-types": "^15.7.2",
-    "qs": "^6.9.6",
+    "qs": "^6.10.3",
     "query-string": "^7.0.0",
     "react": "^17.0.0",
     "react-app-polyfill": "^2.0.0",
