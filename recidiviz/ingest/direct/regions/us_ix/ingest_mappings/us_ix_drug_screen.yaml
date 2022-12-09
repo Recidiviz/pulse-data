@@ -38,8 +38,8 @@ output:
                   $enum_mapping:
                     $raw_text: AllNegative
                     $mappings:
-                      StateDrugScreenResult.NEGATIVE: "1"
-                      StateDrugScreenResult.POSITIVE: "0"
+                      StateDrugScreenResult.NEGATIVE: "All Negative Results"
+                      StateDrugScreenResult.POSITIVE: "Not All Negative Results"
           sample_type:
             $enum_mapping:
               $raw_text: TestingMethodDesc
