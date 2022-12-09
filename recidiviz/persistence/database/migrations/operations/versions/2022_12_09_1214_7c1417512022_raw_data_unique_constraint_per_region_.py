@@ -2,7 +2,7 @@
 """raw_data_unique_constraint_per_region_and_instance
 
 Revision ID: 7c1417512022
-Revises: f27dbaf25678
+Revises: ca62ea223d02
 Create Date: 2022-12-09 12:14:22.977602
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "7c1417512022"
-down_revision = "f27dbaf25678"
+down_revision = "ca62ea223d02"
 branch_labels = None
 depends_on = None
 
