@@ -81,6 +81,17 @@ FROM (SELECT
       AND ARRAY_LENGTH(ineligible_criteria) = 1
       )
 WHERE DATE_DIFF(eligible_date, CURRENT_DATE('US/Pacific'), MONTH) < 6
+
+UNION ALL
+
+-- ALMOST ELIGIBLE (one discipline away)
+SELECT
+* EXCEPT(array_reasons, is_eligible),
+FROM json_to_array_cte
+WHERE 
+  -- keep if only ineligible criteria is a violation
+  'US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS' IN UNNEST(ineligible_criteria) 
+  AND ARRAY_LENGTH(ineligible_criteria) = 1
 """
 
 US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
