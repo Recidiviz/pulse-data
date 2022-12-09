@@ -126,6 +126,7 @@ class TestSchemaUtils(unittest.TestCase):
             "report_table_instance",
             "cell",
             "user_account",
+            "agency_user_account_association",
             "datapoint",
             "datapoint_history",
             "spreadsheet",

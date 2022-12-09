@@ -31,7 +31,7 @@ import enum
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
-from sqlalchemy import BOOLEAN
+from sqlalchemy import BOOLEAN, ForeignKey, Table
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     DeclarativeMeta,
@@ -239,6 +239,15 @@ class ReportStatus(enum.Enum):
     PUBLISHED = "PUBLISHED"
 
 
+# This table maintains the many-to-many relationship between UserAccount and Agency.
+agency_user_account_association_table = Table(
+    "agency_user_account_association",
+    JusticeCountsBase.metadata,
+    Column("agency_id", ForeignKey("source.id"), primary_key=True),
+    Column("user_account_id", ForeignKey("user_account.id"), primary_key=True),
+)
+
+
 class Source(JusticeCountsBase):
     """A website or organization that publishes reports.
 
@@ -298,6 +307,12 @@ class Agency(Source):
             state_name = StateCode(self.state_code.upper()).get_state().name
         return state_name
 
+    user_accounts = relationship(
+        "UserAccount",
+        secondary=agency_user_account_association_table,
+        back_populates="agencies",
+    )
+
     __mapper_args__ = {
         "polymorphic_identity": "agency",
     }
@@ -319,7 +334,8 @@ class Agency(Source):
 
 
 class UserAccount(JusticeCountsBase):
-    """A user (belonging to one or multiple Agencies) who publishes reports via the Control Panel."""
+    """A user (belonging to one or multiple Agencies) who publishes reports via the Publisher.
+    This table should only be used when necessary as a cache for certain features."""
 
     __tablename__ = "user_account"
 
@@ -334,6 +350,12 @@ class UserAccount(JusticeCountsBase):
     # Nullable so that we can create users manually first, and fill in their Auth0 id
     # after they sign in for the first time
     auth0_user_id = Column(String(255), nullable=True)
+
+    agencies = relationship(
+        "Agency",
+        secondary=agency_user_account_association_table,
+        back_populates="user_accounts",
+    )
 
     __table_args__ = tuple(
         [
