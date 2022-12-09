@@ -20,7 +20,6 @@
 from datetime import datetime
 from unittest import TestCase, mock
 
-import pytz
 from flask import Flask
 from freezegun import freeze_time
 from mock import Mock
@@ -75,10 +74,10 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.json, {})
         self.assertEqual(200, response.status_code)
 
-    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
+    @freeze_time("2022-08-29")
     def test_all_different_statuses(self) -> None:
         # Arrange
-        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
+        timestamp = datetime(2022, 8, 29)
 
         self.mock_current_ingest_statuses.return_value = {
             StateCode.US_XX: {

@@ -74,7 +74,7 @@ class DirectIngestInstanceStatus(OperationsBase):
     region_code = Column(String(255), nullable=False, index=True)
 
     # The timestamp of when the status of a particular instance changes.
-    timestamp = Column(DateTime(timezone=True), nullable=False)
+    timestamp = Column(DateTime, nullable=False)
 
     # The particular instance doing ingest.
     instance = Column(direct_ingest_instance, nullable=False, index=True)
