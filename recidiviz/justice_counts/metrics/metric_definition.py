@@ -160,10 +160,10 @@ class AggregatedDimension:
         The value of the dictionary is a singleton list containing the additional context
         for that dimension. This is used in the UI to provide additional context text
         boxes for OTHER dimensions."""
-        for ag_type in self.dimension:  # type: ignore[attr-defined]
-            if ag_type.name == "OTHER":
+        for member in self.dimension:  # type: ignore[attr-defined]
+            if member.name == "OTHER":
                 return {
-                    ag_type: [
+                    member: [
                         Context(
                             key=ContextKey.ADDITIONAL_CONTEXT,
                             value_type=ValueType.TEXT,
