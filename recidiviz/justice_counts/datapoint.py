@@ -411,20 +411,25 @@ class DatapointInterface:
         agency_datapoints = DatapointInterface.get_agency_datapoints(
             session=session, agency_id=agency.id
         )
-
-        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
-            systems={schema.System[system] for system in agency.systems or []}
+        metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
+            datapoints=agency_datapoints
         )
 
-        metric_key_to_data_points = DatapointInterface.build_metric_key_to_datapoints(
-            datapoints=agency_datapoints
+        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
+            systems={schema.System[system] for system in agency.systems or []},
+            metric_key_to_disaggregation_status={
+                metric_key: d.disaggregated_by_supervision_subsystems
+                for metric_key, d in metric_key_to_datapoints.items()
+            }
+            if schema.System.SUPERVISION.value in agency.systems
+            else {},
         )
 
         agency_metrics = []
         # For each metric associated with this agency, construct a MetricInterface object
 
         for metric_definition in metric_definitions:
-            datapoints = metric_key_to_data_points.get(
+            datapoints = metric_key_to_datapoints.get(
                 metric_definition.key,
                 DatapointsForMetric(),
             )
@@ -681,3 +686,24 @@ class DatapointInterface:
         # If a whole disaggregation is disabled, then there is a disabled
         # agency datapoint for each breakdown.
         return dimension_id is not None and len(member_set) == 0
+
+    @staticmethod
+    def is_metric_disaggregated_by_supervision_subsystem(
+        agency_datapoints: List[schema.Datapoint],
+    ) -> bool:
+        """This function returns true if a metric is disaggregated by supervision subsystems"""
+
+        if len(agency_datapoints) == 0:
+            return False
+
+        for datapoint in agency_datapoints:
+            # If a metric is disaggregated_by_supervision_subsystem, then there is an
+            # agency datapoint with a context key of DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+            # and a value of True.
+            if (
+                datapoint.context_key is DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+                and datapoint.value == str(True)
+            ):
+                return True
+
+        return False

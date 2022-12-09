@@ -343,16 +343,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            self.assertEqual(metrics[0].key, "PAROLE_RECONVICTIONS")
+            self.assertEqual(metrics[0].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[0].value, 400)
-            self.assertEqual(metrics[1].key, "PROBATION_RECONVICTIONS")
-            self.assertEqual(metrics[1].value, 500)
-            self.assertEqual(metrics[2].key, "SUPERVISION_BUDGET")
-            self.assertEqual(metrics[2].value, 400)
-            self.assertEqual(metrics[3].key, "SUPERVISION_TOTAL_STAFF")
-            self.assertEqual(metrics[3].value, 150)
+            self.assertEqual(metrics[1].key, "SUPERVISION_RECONVICTIONS")
+            self.assertEqual(metrics[1].value, None)
+            self.assertEqual(metrics[2].key, "SUPERVISION_TOTAL_STAFF")
+            self.assertEqual(metrics[2].value, 150)
             self.assertEqual(
-                metrics[3]
+                metrics[2]
                 .aggregated_dimensions[0]  # type: ignore[index]
                 .dimension_to_value[SupervisionStaffType.SUPERVISION_OFFICERS],
                 100,
@@ -365,12 +363,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            self.assertEqual(metrics[0].key, "PAROLE_RECONVICTIONS")
+            self.assertEqual(metrics[0].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[0].value, 1000)
-            self.assertEqual(metrics[1].key, "PROBATION_RECONVICTIONS")
-            self.assertEqual(metrics[1].value, 2000)
-            self.assertEqual(metrics[2].key, "SUPERVISION_BUDGET")
-            self.assertEqual(metrics[2].value, 1000)
+            self.assertEqual(metrics[1].key, "SUPERVISION_RECONVICTIONS")
+            self.assertEqual(metrics[1].value, None)
+            self.assertEqual(metrics[2].key, "SUPERVISION_TOTAL_STAFF")
+            self.assertEqual(metrics[2].value, None)
 
     def _test_law_enforcement(
         self, reports_by_instance: Dict[str, schema.Report]

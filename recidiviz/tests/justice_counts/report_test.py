@@ -1356,7 +1356,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             }
             self.assertEqual(parole_metric_systems, {schema.System.PAROLE.value})
 
-            # Parole/Probation report should have metrics for Parole and Probation
+            # Parole/Probation report should have metrics for Supervision b/c none of
+            # the metrics are broken down by the sub-systems
             parole_probation_metric_systems = {
                 metric.metric_definition.system.value
                 for metric in parole_probation_metrics
@@ -1364,8 +1365,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 parole_probation_metric_systems,
                 {
-                    schema.System.PAROLE.value,
-                    schema.System.PROBATION.value,
+                    schema.System.SUPERVISION.value,
                 },
             )
 
