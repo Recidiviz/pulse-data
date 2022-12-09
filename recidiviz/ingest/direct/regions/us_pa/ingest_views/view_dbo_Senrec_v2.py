@@ -42,6 +42,7 @@ VIEW_QUERY_TEMPLATE = """SELECT
     sentences.min_cort_sent_days,  
     sentences.min_expir_date,
     sentences.max_expir_date,
+    sentences.judge,
     offense_codes.Offense, 
     offense_codes.Category, 
     offense_codes.ASCA_Category___Ranked, 
