@@ -32,7 +32,12 @@ SELECT
     OffenderId,
     CollectionDate,
     TestingMethodDesc,
-    AllNegative,
+    -- Overwriting the 1/0 to make the raw text values more comprehensible
+    -- See conversation in #17123 for an example of incomprehensible results
+    CASE AllNegative
+        WHEN '0' THEN 'Not All Negative Results'
+        WHEN '1' THEN 'All Negative Results'
+    END AS AllNegative,
 FROM {drg_DrugTestResult}
 LEFT JOIN {drg_TestingMethod}
     USING (TestingMethodId)
