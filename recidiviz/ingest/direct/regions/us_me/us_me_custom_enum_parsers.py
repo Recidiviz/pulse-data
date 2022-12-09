@@ -26,6 +26,7 @@ from typing import Optional
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodHousingUnitType,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
@@ -591,3 +592,15 @@ def parse_supervision_termination_reason(
         return StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION
 
     return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+
+
+def parse_housing_unit_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+    """
+    Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitType.
+    For now, this maps everything to StateIncarcerationPeriodHousingUnitType.GENERAL, regardless of the raw text received
+    """
+    if not raw_text:
+        return None
+    return StateIncarcerationPeriodHousingUnitType.GENERAL
