@@ -131,7 +131,10 @@ class DirectIngestRawFileMetadata(OperationsBase):
 
     __table_args__ = (
         UniqueConstraint(
-            "region_code", "normalized_file_name", name="one_normalized_name_per_region"
+            "region_code",
+            "raw_data_instance",
+            "normalized_file_name",
+            name="one_normalized_name_per_region_and_instance",
         ),
         CheckConstraint(
             "discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
