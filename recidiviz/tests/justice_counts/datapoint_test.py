@@ -21,6 +21,7 @@ import datetime
 
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsFundingType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
@@ -30,7 +31,11 @@ from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervisi
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
+from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
+    MetricAggregatedDimensionData,
+)
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import (
@@ -248,6 +253,42 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 datapoints[3].dimension_identifier_to_member,
                 None,
+            )
+
+    def test_save_dimension_to_contexts(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_G
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
+            agency_metric = MetricInterface(
+                key=prisons.funding.key,
+                aggregated_dimensions=[
+                    MetricAggregatedDimensionData(
+                        dimension_to_contexts={
+                            PrisonsFundingType.OTHER: [
+                                MetricContextData(
+                                    key=ContextKey["ADDITIONAL_CONTEXT"],
+                                    value="User entered text...",
+                                )
+                            ]
+                        }
+                    ),
+                ],
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 1)
+            datapoint = datapoints[0]
+            self.assertEqual(datapoint.context_key, "ADDITIONAL_CONTEXT")
+            self.assertEqual(datapoint.value, "User entered text...")
+            self.assertEqual(
+                datapoint.dimension_identifier_to_member,
+                {"metric/prisons/funding/type": "OTHER"},
             )
 
     def test_save_agency_datapoints_contexts(self) -> None:
