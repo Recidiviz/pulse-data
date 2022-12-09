@@ -31,6 +31,8 @@ DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
 
 SELECT * FROM `{project_id}.{sessions_dataset}.us_id_drug_screens_preprocessed`
 UNION ALL
+SELECT * FROM `{project_id}.{sessions_dataset}.us_ix_drug_screens_preprocessed`
+UNION ALL
 SELECT * FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
 """
 
