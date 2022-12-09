@@ -562,6 +562,23 @@ class DatapointInterface:
             )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
+            for (dimension, contexts_lst) in (
+                aggregated_dimension.dimension_to_contexts or {}
+            ).items():
+                for context in contexts_lst:
+                    update_existing_or_create(
+                        schema.Datapoint(
+                            metric_definition_key=agency_metric.key,
+                            source=agency,
+                            context_key=context.key.value,
+                            value=context.value,
+                            dimension_identifier_to_member={
+                                dimension.dimension_identifier(): dimension.dimension_name
+                            },
+                        ),
+                        session=session,
+                    )
+
             for (
                 dimension,
                 is_dimension_enabled,
