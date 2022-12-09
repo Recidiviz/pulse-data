@@ -20,6 +20,7 @@ input_columns:
   - min_cort_sent_days
   - min_expir_date
   - max_expir_date
+  - judge
   - Offense
   - Grade_Category
   - Grade
@@ -171,3 +172,6 @@ output:
                       - Category
                       - SubCategory
                     $include_nulls: False
+                judge_full_name:
+                  $person_name:
+                    $full_name: judge
