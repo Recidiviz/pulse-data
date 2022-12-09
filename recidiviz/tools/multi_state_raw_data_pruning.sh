@@ -1,7 +1,7 @@
 #!/bin/bash
 #  Usage: bash recidiviz/tools/multi_state_raw_data_pruning.sh
 
-declare -a states=("US_TN" "US_MI" "US_ID" "US_ND")
+declare -a states=("US_TN" "US_MI" "US_ND")
 
 echo "Running DRY-RUN raw data pruning script in STAGING for the following states: ${states[*]}."
 echo "Output can be found in prune-staging.txt."
