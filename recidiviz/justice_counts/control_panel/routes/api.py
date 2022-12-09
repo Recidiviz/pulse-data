@@ -601,7 +601,17 @@ def get_api_blueprint(
                 # the agency is uploading for supervision, which sheets contain
                 # data for many supervision systems such as POST_RELEASE, PAROLE,
                 # and PROBATION
-                else {schema.System[system]}
+                else {schema.System[system]},
+                metric_key_to_disaggregation_status={
+                    metric_key: DatapointInterface.is_metric_disaggregated_by_supervision_subsystem(
+                        agency_datapoints=metric_key_to_agency_datapoints.get(
+                            metric_key, []
+                        ),
+                    )
+                    for metric_key, _ in metric_key_to_agency_datapoints.items()
+                }
+                if schema.System.SUPERVISION.value in agency.systems
+                else {},
             )
 
             (
@@ -746,9 +756,35 @@ def get_api_blueprint(
         agency = AgencyInterface.get_agency_by_id(
             session=current_session, agency_id=int(agency_id)
         )
+        metric_key_to_disaggregation_status = {}
+
+        if schema.System.SUPERVISION.value in agency.systems:
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=current_session, agency_id=agency.id
+            )
+
+            agency_datapoints_sorted_by_metric_key = sorted(
+                agency_datapoints, key=lambda d: d.metric_definition_key
+            )
+            metric_key_to_agency_datapoints = {
+                k: list(v)
+                for k, v in groupby(
+                    agency_datapoints_sorted_by_metric_key,
+                    key=lambda d: d.metric_definition_key,
+                )
+            }
+            metric_key_to_disaggregation_status = {
+                metric_key: DatapointInterface.is_metric_disaggregated_by_supervision_subsystem(
+                    agency_datapoints=metric_key_to_agency_datapoints.get(
+                        metric_key, []
+                    ),
+                )
+                for metric_key, _ in metric_key_to_agency_datapoints.items()
+            }
 
         metric_definitions = MetricInterface.get_metric_definitions_for_systems(
-            systems={schema.System[system] for system in agency.systems or []}
+            systems={schema.System[system] for system in agency.systems or []},
+            metric_key_to_disaggregation_status=metric_key_to_disaggregation_status,
         )
         dimension_names_by_metric_and_disaggregation = {}
         for metric_definition in metric_definitions:

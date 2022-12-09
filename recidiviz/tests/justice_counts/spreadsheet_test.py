@@ -81,7 +81,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
@@ -185,7 +186,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             self.assertEqual(len(json_response["metrics"]), 7)
@@ -236,7 +238,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             for metric in json_response["metrics"]:
@@ -281,7 +284,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.PROSECUTION}
+                    systems={schema.System.PROSECUTION},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             # There should be a missing metric error for each metric in prosecution.
@@ -343,7 +347,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             self.assertEqual(len(json_response["metrics"]), 7)
@@ -388,7 +393,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             self.assertEqual(len(json_response["metrics"]), 7)
@@ -466,7 +472,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT}
+                    systems={schema.System.LAW_ENFORCEMENT},
+                    metric_key_to_disaggregation_status={},
                 ),
             )
             self.assertEqual(len(json_response["metrics"]), 7)

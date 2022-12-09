@@ -35,7 +35,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToParoleIncludesExcludes,
     PrisonReleasesToProbationIncludesExcludes,
 )
-from recidiviz.justice_counts.metrics import law_enforcement, prisons
+from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
@@ -43,6 +43,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     CallsRespondedOptions,
     IncludesExcludesSetting,
+    MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
@@ -50,7 +51,12 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricContextData,
     MetricInterface,
 )
+from recidiviz.justice_counts.metrics.metric_registry import (
+    METRIC_KEY_TO_METRIC,
+    METRICS_BY_SYSTEM,
+)
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
 )
@@ -1685,4 +1691,56 @@ class TestMetricInterface(TestCase):
                 ),
             ),
             disaggregation_json,
+        )
+
+    def test_get_supervision_metrics(self) -> None:
+        # When no metrics are disaggregated, then we should only show supervision metrics
+        supervision_metrics = MetricInterface.get_metric_definitions_for_systems(
+            {schema.System.SUPERVISION, schema.System.PAROLE},
+            metric_key_to_disaggregation_status={},
+        )
+
+        self.assertEqual(
+            {m.key for m in supervision_metrics},
+            {
+                m.key
+                for m in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
+                if m.key != supervision.residents.key
+            },
+        )
+
+        # When termination metric is disaggregated, then we should that metric
+        # for parole and post_release and NOT for supervision,
+        supervision_metrics_and_parole = (
+            MetricInterface.get_metric_definitions_for_systems(
+                {
+                    schema.System.SUPERVISION,
+                    schema.System.PAROLE,
+                    schema.System.POST_RELEASE,
+                },
+                metric_key_to_disaggregation_status={
+                    supervision.supervision_terminations.key: True
+                },
+            )
+        )
+        parole_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
+            supervision.supervision_terminations.key.replace(
+                "SUPERVISION", schema.System.PAROLE.value, 1
+            )
+        ]
+
+        post_release_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
+            supervision.supervision_terminations.key.replace(
+                "SUPERVISION", schema.System.POST_RELEASE.value, 1
+            )
+        ]
+
+        self.assertEqual(
+            {m.key for m in supervision_metrics_and_parole},
+            {
+                m.key
+                for m in supervision_metrics
+                + [parole_terminations, post_release_terminations]
+                if m.key != supervision.supervision_terminations.key
+            },
         )

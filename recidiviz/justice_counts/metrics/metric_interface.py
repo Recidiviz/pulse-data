@@ -33,7 +33,6 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 from recidiviz.justice_counts.metrics.metric_context_data import MetricContextData
 from recidiviz.justice_counts.metrics.metric_definition import (
     IncludesExcludesSetting,
-    MetricCategory,
     MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_disaggregation_data import (
@@ -279,6 +278,7 @@ class MetricInterface:
     @staticmethod
     def get_metric_definitions_for_systems(
         systems: Set[schema.System],
+        metric_key_to_disaggregation_status: Dict[str, bool],
     ) -> List[MetricDefinition]:
         """Given a list of systems and report frequency, return all
         MetricDefinitions that belong to one of the systems and have
@@ -286,37 +286,33 @@ class MetricInterface:
         # Sort systems so that Supervision, Parole, Probation, and Post-Release
         # are always grouped together, in that order
         systems_ordered = schema.System.sort(systems=list(systems))
+        metrics = []
+        if schema.System.SUPERVISION in systems:
+            supervision_metrics = METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
+            for metric in supervision_metrics:
+                if metric_key_to_disaggregation_status.get(metric.key) is True:
+                    # If reported disaggregated, iterate through each subsystem and add
+                    # a metric for a disaggregation.
+                    for supervision_subsystem in systems - {schema.System.SUPERVISION}:
+                        # e.g. supervision_subsystem = PAROLE
+                        # Get the copy of the current supervision metric for that system.
+                        subsystem_metric = METRIC_KEY_TO_METRIC[
+                            # Change the key from e.g. SUPERVISION_TOTAL_STAFF
+                            # to PAROLE_TOTAL_STAFF.
+                            metric.key.replace(
+                                "SUPERVISION", supervision_subsystem.value, 1
+                            )
+                        ]
+                        metrics.append(subsystem_metric)
+                else:
+                    metrics.append(metric)
 
-        metrics = list(
-            itertools.chain(
-                *[METRICS_BY_SYSTEM[system.value] for system in systems_ordered]
+        else:
+            metrics = list(
+                itertools.chain(
+                    *[METRICS_BY_SYSTEM[system.value] for system in systems_ordered]
+                )
             )
-        )
-
-        if systems.intersection(
-            {schema.System.PAROLE, schema.System.PROBATION, schema.System.POST_RELEASE}
-        ):
-            # This agency reports its metrics broken down by parole/probation/post-release,
-            # so we should remove all of the generic "supervision" metrics except for the
-            # cost and capacity ones (i.e. budget and staff), and we should remove the
-            # cost and capacity ones from parole/probation/post-release.
-            metrics = [
-                metric
-                for metric in metrics
-                if not (
-                    metric.system == schema.System.SUPERVISION
-                    and metric.category != MetricCategory.CAPACITY_AND_COST
-                )
-                and not (
-                    metric.system
-                    in {
-                        schema.System.PAROLE,
-                        schema.System.PROBATION,
-                        schema.System.POST_RELEASE,
-                    }
-                    and metric.category == MetricCategory.CAPACITY_AND_COST
-                )
-            ]
 
         metric_definitions = [
             metric for metric in metrics if metric.disabled is not True
