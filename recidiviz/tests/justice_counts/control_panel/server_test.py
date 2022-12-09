@@ -609,7 +609,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response = self.client.get(f"/api/agencies/{agency.id}/published_data")
 
         self.assertEqual(response.status_code, 200)
-        metrics = assert_type(response.json, list)
+        result = assert_type(response.json, dict)
+        agency = result["agency"]
+        metrics = result["metrics"]
+
+        self.assertEqual(agency["fips_county_code"], "us_ca_san_francisco")
+        self.assertEqual(agency["name"], "Agency Prison")
+        self.assertEqual(agency["state"], "Test State")
+        self.assertEqual(agency["state_code"], "US_XX")
+        self.assertEqual(agency["systems"], ["PRISONS"])
 
         self.shared_test_agency_metrics(metrics=metrics)
 

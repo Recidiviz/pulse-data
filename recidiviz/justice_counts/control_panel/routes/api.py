@@ -889,7 +889,13 @@ def get_api_blueprint(
                 )
                 for metric in metrics
             ]
-            return jsonify(metrics_json)
+
+            return jsonify(
+                {
+                    "agency": agency.to_json(),
+                    "metrics": metrics_json,
+                }
+            )
 
         except Exception as e:
             raise _get_error(error=e) from e
