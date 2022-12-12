@@ -89,26 +89,32 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
 
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            user_id = UserAccountInterface.create_or_update_user(
+            user = UserAccountInterface.create_or_update_user(
                 session=session, auth0_user_id="test_auth0_user"
-            ).id
-            AgencyInterface.create_agency(
+            )
+            gamma_agency = AgencyInterface.create_agency(
                 session=session,
                 name="Agency Gamma",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user_id,
+                user_account_id=user.id,
             )
-            AgencyInterface.create_agency(
+            delta_agency = AgencyInterface.create_agency(
                 session=session,
                 name="Agency Delta",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
-                user_account_id=user_id,
+                user_account_id=user.id,
             )
-
+            UserAccountInterface.create_or_update_user(
+                session=session,
+                auth0_user_id="test_auth0_user",
+                agencies=[gamma_agency, delta_agency],
+            )
+        session.add_all([user, gamma_agency, delta_agency])
+        session.flush()
         agencies = AgencyInterface.get_agencies(session=session)
         self.assertEqual(
             {a.name for a in agencies},
@@ -119,6 +125,15 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             {a.to_json()["state"] for a in agencies},
             {"California", "Alaska"},
+        )
+
+        self.assertEqual(
+            gamma_agency.to_json()["team"][0]["name"],
+            user.name,
+        )
+        self.assertEqual(
+            gamma_agency.to_json()["team"][0]["auth0_user_id"],
+            user.auth0_user_id,
         )
 
         # Raise error if agency of that name already exists
@@ -132,5 +147,5 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user_id,
+                user_account_id=user.id,
             )
