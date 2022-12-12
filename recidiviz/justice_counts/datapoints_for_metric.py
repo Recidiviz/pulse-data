@@ -83,6 +83,12 @@ class DatapointsForMetric:
         DimensionBase, Dict[str, schema.Datapoint]
     ] = attr.field(factory=(lambda: defaultdict(dict)))
 
+    # dimension_to_context_key_to_datapoints will hold
+    # a mapping of context_keys to datapoints at the dimension level.
+    dimension_to_context_key_to_datapoints: Dict[
+        DimensionBase, Dict[str, schema.Datapoint]
+    ] = attr.field(default={})
+
     ### Top level methods used to construct MetricInterface ###
 
     def get_agency_contexts(
