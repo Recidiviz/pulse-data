@@ -17,7 +17,10 @@
 """Creates a view for collapsing raw ID employment data into contiguous periods of employment or unemployment overlapping with a supervision super session"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -25,7 +28,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_NAME = (
     "supervision_employment_status_sessions"
 )
 
-SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_DESCRIPTION = """View of continuous periods of unemployment or employment overlapping with time on supervision"""
+SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_DESCRIPTION = """View of continuous periods of unemployment or employment (including any alternate occupation status) overlapping with time on supervision"""
 
 SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
     #TODO(#12307): Replace unnesting logic with efficient sessionization template.
@@ -41,42 +44,49 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE = """
             s.person_id,
             s.state_code,
             date,
+            
+            # Client has an `is_employed` flag of TRUE if they have any recorded occupation that does not explicitly
+            # indicate unemployment. This could include part-time employment, student status, conditions resulting in
+            # inability to work, and other valid statuses (e.g., retired, volunteer, homemaker, etc.)
+            LOGICAL_AND(COALESCE(e.employment_status != "UNEMPLOYED", TRUE)) AS is_employed,
+            
             # If no employment periods are open on this day, we assume unemployment -- mark the status on these days as inferred.
-            LOGICAL_AND(COALESCE(is_unemployed,TRUE)) IS FALSE AS is_employed,
-            LOGICAL_AND(e.employment_start_date IS NULL) AS is_inferred,
+            LOGICAL_AND(e.start_date IS NULL) AS is_inferred,
+            
             # Use the original earliest date of employment, for cases where employment began before supervision start
-            MIN(employment_start_date) AS earliest_employment_period_start_date,
+            MIN(e.start_date) AS earliest_employment_period_start_date,
+            
             # Use the most recent verification date associated with all active employment periods on a single day
-            MAX(last_verified_date) AS last_verified_date,
+            MAX(e.last_verified_date) AS last_verified_date,
         FROM 
             date_array d
         #TODO(#12724): Use a supervision sessions view that includes all supervision periods including those overlapping with incarceration
         INNER JOIN 
             `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized` s
         ON 
-            d.date BETWEEN s.start_date AND COALESCE(DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE("US/Eastern"))
+            d.date BETWEEN s.start_date AND COALESCE(DATE_SUB(s.end_date, INTERVAL 1 DAY), CURRENT_DATE("US/Eastern"))
         LEFT JOIN 
-            `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized` e
+            `{project_id}.{normalized_state_dataset}.state_employment_period` e
         ON 
-            d.date BETWEEN e.employment_start_date AND COALESCE(e.employment_end_date_exclusive, CURRENT_DATE("US/Eastern"))
+            d.date BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE("US/Eastern"))
             AND s.person_id = e.person_id
             AND s.state_code = e.state_code
         WHERE 
-            s.state_code = "US_ID"
+            s.state_code = "US_IX"
             AND s.compartment_level_0 = "SUPERVISION"
-        GROUP BY 1,2,3
+        GROUP BY 1, 2, 3
     )
     ,
     employment_end_reasons AS (
     /* Unions employment period end reasons with transitions to incarceration for the full set of deduped employment end reasons */
         SELECT *
         FROM (
-            SELECT
+            SELECT DISTINCT
                 person_id,
-                employment_end_date_exclusive,
-                employment_end_reason,
+                end_date AS employment_end_date_exclusive,
+                end_reason AS employment_end_reason,
             FROM 
-                `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
+                `{project_id}.{normalized_state_dataset}.state_employment_period`
             UNION ALL
             SELECT
                 person_id,
@@ -137,6 +147,7 @@ SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

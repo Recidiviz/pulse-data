@@ -20,8 +20,8 @@ format."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -99,21 +99,21 @@ GROUP BY 1, 2, 3, 4, 5
 
 UNION ALL
 
--- employment_periods_preprocessed, employed periods only
+-- employed periods
 SELECT
     state_code,
     person_id,
     "EMPLOYMENT_PERIOD" AS span,
-    employment_start_date AS start_date,
-    DATE_ADD(employment_end_date, INTERVAL 1 DAY) AS end_date,
+    start_date,
+    end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         employer_name
     ))[OFFSET(0)]) AS span_attributes,
 FROM
-    `{project_id}.{sessions_dataset}.employment_periods_preprocessed_materialized`
+    `{project_id}.{normalized_state_dataset}.state_employment_period`
 WHERE
-    employment_start_date IS NOT NULL
-    AND NOT is_unemployed
+    start_date IS NOT NULL
+    AND employment_status != "UNEMPLOYED"
 GROUP BY 1, 2, 3, 4, 5
 
 UNION ALL
@@ -155,7 +155,7 @@ FROM (
         person_id,
         contact_date
     FROM
-        `{project_id}.{state_base_dataset}.state_supervision_contact`
+        `{project_id}.{normalized_state_dataset}.state_supervision_contact`
     WHERE
         status = "COMPLETED"
 )
@@ -207,7 +207,7 @@ PERSON_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSON_SPANS_QUERY_TEMPLATE,
     description=PERSON_SPANS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
     should_materialize=True,
     clustering_fields=["state_code", "span"],
