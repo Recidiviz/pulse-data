@@ -57,7 +57,7 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         the longest, unless a child has a longer sentence that its parent
         */   
         ROW_NUMBER() OVER(PARTITION BY lk.person_id, lk.date_imposed
-            ORDER BY sentence_level ASC, sentence.max_sentence_length_days_calculated DESC, sentence.sentence_id, sentence.charge_id) = 1 AS is_first_sentence,
+            ORDER BY sentence_level ASC, sentence.effective_date, sentence.max_sentence_length_days_calculated DESC, sentence.sentence_id, sentence.charge_id) = 1 AS is_first_sentence,
             
         MAX(sentence_level) OVER(PARTITION BY lk.person_id, lk.date_imposed) - 
             MIN(sentence_level) OVER(PARTITION BY lk.person_id, lk.date_imposed) + 1 AS num_levels,
