@@ -22,10 +22,7 @@ from typing import List, Optional
 import attr
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestRawFileMetadata,
-    DirectIngestSftpFileMetadata,
-)
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 
 
 @attr.define()
@@ -38,38 +35,6 @@ class DirectIngestRawFileMetadataSummary:
     latest_processed_datetimes_contained_upper_bound_inclusive: Optional[
         datetime.datetime
     ]
-
-
-class DirectIngestSftpFileMetadataManager:
-    """An abstract interface for a class that handles writing metadata about SFTP
-    files to disk.
-    """
-
-    @abc.abstractmethod
-    def has_sftp_file_been_discovered(self, remote_file_path: str) -> bool:
-        """Checks whether the file at this path has already been marked as discovered."""
-
-    @abc.abstractmethod
-    def mark_sftp_file_as_discovered(self, remote_file_path: str) -> None:
-        """Writes a new row to the appropriate metadata table for a new, unprocessed sftp
-        file."""
-
-    @abc.abstractmethod
-    def has_sftp_file_been_processed(self, remote_file_path: str) -> bool:
-        """Checks whether the file at this path has already been marked as processed."""
-
-    @abc.abstractmethod
-    def mark_sftp_file_as_processed(self, remote_file_path: str) -> None:
-        """Marks the file represented by the |remote_file_path| as processed in the appropriate
-        metadata table."""
-
-    @abc.abstractmethod
-    def get_sftp_file_metadata(
-        self, remote_file_path: str
-    ) -> DirectIngestSftpFileMetadata:
-        """Returns metadata information for the provided path. If the file has not yet been registered in the
-        appropriate metadata table, this function will generate a file_id to return with the metadata.
-        """
 
 
 class DirectIngestRawFileMetadataManager:

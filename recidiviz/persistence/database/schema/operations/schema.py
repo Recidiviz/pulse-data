@@ -85,26 +85,17 @@ class DirectIngestInstanceStatus(OperationsBase):
     _table_args__ = PrimaryKeyConstraint(region_code, timestamp, instance)
 
 
-class DirectIngestSftpFileMetadata(OperationsBase):
-    """Represents the metadata known about a file that we processed from SFTP."""
+class DirectIngestSftpRemoteFileMetadata(OperationsBase):
+    """Represents the metadata known about a remote SFTP file that we download directly."""
 
-    __tablename__ = "direct_ingest_sftp_file_metadata"
+    __tablename__ = "direct_ingest_sftp_remote_file_metadata"
 
     __table_args__ = (
-        UniqueConstraint(
-            "region_code",
-            "remote_file_path",
-            name="one_remote_sftp_name_per_region",
+        CheckConstraint(
+            "discovery_time IS NOT NULL", name="nonnull_sftp_remote_file_discovery_time"
         ),
         CheckConstraint(
-            "discovery_time IS NOT NULL", name="nonnull_sftp_file_discovery_time"
-        ),
-        CheckConstraint(
-            "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_name"
-        ),
-        CheckConstraint(
-            "(processed_time IS NULL) OR (discovery_time <= processed_time)",
-            name="discovery_post_processed_time",
+            "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_path"
         ),
     )
 
@@ -115,13 +106,45 @@ class DirectIngestSftpFileMetadata(OperationsBase):
     # The remote file path on the SFTP server
     remote_file_path = Column(String(255), index=True)
 
-    # Time when the file is actually discovered by the SFTP download controller
+    # Time when the file is actually discovered by the SFTP Airflow DAG
     discovery_time = Column(DateTime)
 
-    # Time when we have finished fully processing this file by downloading to the SFTP
-    # bucket. This time will come before the time this file is written to its final
-    # destination, the ingest bucket.
-    processed_time = Column(DateTime)
+    # Time when the file is finished fully downloaded to the SFTP bucket
+    download_time = Column(DateTime)
+
+
+class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
+    """Represents the metadata known about the ingest-ready file downloaded from SFTP.
+    This file may be post-processed from the remote files we downloaded directly."""
+
+    __tablename__ = "direct_ingest_sftp_ingest_ready_file_metadata"
+
+    __table_args__ = (
+        CheckConstraint(
+            "discovery_time IS NOT NULL",
+            name="nonnull_sftp_ingest_ready_discovery_time",
+        ),
+        CheckConstraint(
+            "post_processed_normalized_file_path IS NOT NULL AND remote_file_path IS NOT NULL",
+            name="nonnull post_processed_and_remote_paths",
+        ),
+    )
+
+    file_id = Column(Integer, primary_key=True)
+
+    region_code = Column(String(255), nullable=False, index=True)
+
+    # The file path that is post-processed from the remote file path in the SFTP GCS Bucket.
+    post_processed_normalized_file_path = Column(String(255), index=True)
+
+    # The original remote_file_path that should match the remote_file_metadata table.
+    remote_file_path = Column(String(255))
+
+    # Time when the file is actually discovered by the SFTP Airflow DAG in the SFTP bucket.
+    discovery_time = Column(DateTime)
+
+    # Time when the file is finished fully uploaded to the ingest bucket
+    upload_time = Column(DateTime)
 
 
 class DirectIngestRawFileMetadata(OperationsBase):

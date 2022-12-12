@@ -35,17 +35,34 @@ from recidiviz.persistence.entity.base_entity import Entity
 
 
 @attr.s(eq=False)
-class DirectIngestSftpFileMetadata(Entity, BuildableAttr, DefaultableAttr):
+class DirectIngestSftpRemoteFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     """Metadata about a file downloaded from SFTP for a particular region."""
 
     file_id: int = attr.ib()
     region_code: str = attr.ib()
     # The remote file path on the SFTP server
     remote_file_path: str = attr.ib()
-    # Time when the file is actually discvoered by the SFTP download controller
+    # Time when the file is actually discovered by the SFTP Airflow DAG
     discovery_time: datetime.datetime = attr.ib()
-    # Time when we have finished fully processing this file by downloading to the SFTP bucket
-    processed_time: Optional[datetime.datetime] = attr.ib()
+    # Time when the file is finished fully downloaded to the SFTP bucket
+    download_time: Optional[datetime.datetime] = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestSftpIngestReadyFileMetadata(Entity, BuildableAttr, DefaultableAttr):
+    """Metadata about a file post-processed from remote SFTP files downloaded for a
+    particular region."""
+
+    file_id: int = attr.ib()
+    region_code: str = attr.ib()
+    # The file path that is post-processed from the remote file path in the SFTP GCS Bucket.
+    post_processed_normalized_file_path: str = attr.ib()
+    # The original remote_file_path that should match the remote_file_metadata table.
+    remote_file_path: str = attr.ib()
+    # Time when the file is actually discovered by the SFTP Airflow DAG
+    discovery_time: datetime.datetime = attr.ib()
+    # Time when the file is finished fully uploaded to the ingest bucket
+    upload_time: Optional[datetime.datetime] = attr.ib()
 
 
 @attr.s(eq=False)

@@ -32,7 +32,6 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
-    DirectIngestSftpFileMetadataManager,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     secondary_raw_data_import_enabled_in_state,
@@ -46,81 +45,8 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestRawFileMetadata,
-    DirectIngestSftpFileMetadata,
-)
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils import environment
-
-
-class PostgresDirectIngestSftpFileMetadataManager(DirectIngestSftpFileMetadataManager):
-    """An implementation for a class that handles writing metadata about each sftp
-    direct ingest file to the operations Postgres table."""
-
-    def __init__(self, region_code: str, ingest_database_name: str) -> None:
-        self.region_code = region_code.upper()
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        self.ingest_database_name = ingest_database_name
-
-    def has_sftp_file_been_discovered(self, remote_file_path: str) -> bool:
-        try:
-            _ = self.get_sftp_file_metadata(remote_file_path)
-        except ValueError:
-            return False
-
-        return True
-
-    def mark_sftp_file_as_discovered(self, remote_file_path: str) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            session.add(
-                schema.DirectIngestSftpFileMetadata(
-                    region_code=self.region_code,
-                    remote_file_path=remote_file_path,
-                    discovery_time=datetime.datetime.now(tz=pytz.UTC),
-                    processed_time=None,
-                )
-            )
-
-    def get_sftp_file_metadata(
-        self, remote_file_path: str
-    ) -> DirectIngestSftpFileMetadata:
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            metadata = dao.get_sftp_file_metadata_row_for_path(
-                session, self.region_code, remote_file_path
-            )
-            return self._sftp_file_schema_metadata_as_entity(metadata)
-
-    def has_sftp_file_been_processed(self, remote_file_path: str) -> bool:
-        try:
-            metadata = self.get_sftp_file_metadata(remote_file_path)
-        except ValueError:
-            # For sftp data files, if a file's metadata is not present in the database,
-            # then it is assumed to be not processed, as it is seen as not existing.
-            return False
-
-        return metadata.processed_time is not None
-
-    def mark_sftp_file_as_processed(self, remote_file_path: str) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            metadata = dao.get_sftp_file_metadata_row_for_path(
-                session, self.region_code, remote_file_path
-            )
-            metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
-
-    @staticmethod
-    def _sftp_file_schema_metadata_as_entity(
-        schema_metadata: schema.DirectIngestRawFileMetadata,
-    ) -> DirectIngestSftpFileMetadata:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
-
-        if not isinstance(entity_metadata, DirectIngestSftpFileMetadata):
-            raise ValueError(
-                f"Unexpected metadata entity type: {type(entity_metadata)}"
-            )
-
-        return entity_metadata
 
 
 class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataManager):

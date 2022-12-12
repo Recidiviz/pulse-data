@@ -97,24 +97,6 @@ def mark_raw_file_as_invalidated(
     metadata.is_invalidated = True
 
 
-def get_sftp_file_metadata_row_for_path(
-    session: Session, region_code: str, remote_file_path: str
-) -> schema.DirectIngestSftpFileMetadata:
-    """Returns metadata information for the provided path, throws if it doesn't exist."""
-    results = (
-        session.query(schema.DirectIngestSftpFileMetadata)
-        .filter_by(region_code=region_code.upper(), remote_file_path=remote_file_path)
-        .all()
-    )
-
-    if len(results) != 1:
-        raise ValueError(
-            f"Unexpected number of metadata results for path {remote_file_path}: [{len(results)}]"
-        )
-
-    return one(results)
-
-
 def get_metadata_for_raw_files_discovered_after_datetime(
     session: Session,
     region_code: str,
