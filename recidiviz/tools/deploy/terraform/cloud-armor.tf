@@ -27,7 +27,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1000"
-        expression  = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 4})"
+        expression  = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1})"
         description = "SQL Injection"
       },
       {
