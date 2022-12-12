@@ -7,8 +7,34 @@ primary_key_cols:
   - RECORD_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each row.
   - name: SEX
+    description: |-
+      Sex information for the Adult in Custody (AIC).
+    known_values:
+      - value: M
+        description: Male
+      - value: F
+        description: Female
   - name: RACE
+    description: |-
+      Race information for the Adult in Custody (AIC).
+    known_values:
+      - value: A
+        description: Asian
+      - value: B
+        description: Black
+      - value: H
+        description: Hispanic
+      - value: I
+        description: American Indian or Alaska Native
+      - value: P
+        description: Nat Hawaiian/Pacific Islander
+      - value: U
+        description: Unknown
+      - value: W
+        description: Caucasian
   - name: HEIGHT
   - name: WEIGHT
   - name: HAIR

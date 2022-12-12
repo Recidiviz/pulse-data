@@ -9,10 +9,37 @@ primary_key_cols:
   - SUBFILE_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each row.
   - name: SUBFILE_KEY
   - name: LAST_NAME
+    description: |-
+      Last Name of the Adult in Custody (AIC).
   - name: FIRST_NAME
+    description: |-
+      Fist Name of the Adult in Custody (AIC).
   - name: MIDDLE_NAME
+    description: |-
+      Middle Name of the Adult in Custody (AIC).
   - name: NAME_TITLE
+    description: |-
+      Name suffix of the Adult in Custody (AIC).
   - name: NAME_TYPE
+    description: |-
+      Indicates whether a name is a legal name, alias, nickname, etc.
+    known_values:
+      - value: C
+        description: Court/Legal Name
+      - value: M
+        description: Moniker
+      - value: A
+        description: Alias
+      - value: X
+        description: Alternate Court Name(s)
+      - value: I
+        description: IRS Name
+      - value: T
+        description: True Name
+      - value: R
+        description: Central Records Archival name
   - name: LAST_UPDATED_WHEN

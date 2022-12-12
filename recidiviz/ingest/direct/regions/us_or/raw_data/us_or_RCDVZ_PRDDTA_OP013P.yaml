@@ -7,6 +7,8 @@ primary_key_cols:
   - RECORD_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each row.
   - name: LAST_UPDATED_WHEN
   - name: UPDATE_JOB_NAME
   - name: UPDATE_USER_ID
@@ -19,10 +21,18 @@ columns:
   - name: RESPONSIBLE_DIVISION
   - name: SUPERVISING_AUTHORITY
   - name: FIRST_NAME
+    description: |-
+      First Name of the Adult in Custody (AIC).
   - name: LAST_NAME
+    description: |-
+      Last Name of the Adult in Custody (AIC).
   - name: MIDDLE_NAME
+    description: |-
+      Middle Name of the Adult in Custody (AIC).
   - name: NAME_KEY
   - name: BIRTHDATE
+    description: |-
+      Birthdate of the Adult in Custody (AIC).
   - name: CELL_NUMBER
   - name: ADMISSION_DATE
   - name: ADMISSION_REASON
