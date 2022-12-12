@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - SentenceId
+  - OffenderId
+  - CountyId
+  - EffectiveDate
+  - SentenceDate
+  - DpedApprovedDate
+  - FtrdApprovedDate
+  - TermStatusDesc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId # Enforced to never be null in query
+                - SentenceId # Never null in scl_Sentence
+          county_code: CountyId
+          # couldn't find information for is_life (though it feels like it should be in OffenseSentenceTypeId, but that's only valued for offense sentences)
+          #TODO(#17187): Revisit pulling in is_life
+          start_date: EffectiveDate
+          status:
+            $enum_mapping:
+              $raw_text: TermStatusDesc
+              $mappings:
+                # This is not a perfect method for determining status because this uses term status instead of sentence specific status
+                # SentenceOrderTypeCode is always I (imposed), O (correctional compact), or R (retained jurisdiction), which would all map to SERVING
+                # SentenceOrderStatusId is always equal to 1 = "In Progress"
+                # SentenceDetailStatusId is always null
+                # SentenceStatusId is always null
+                StateSentenceStatus.SERVING:
+                  - Active - Incarceration
+                  # assuming these active community cases are parole
+                  - Active - Community
+                  - Discretionary Parole
+                  - Temporary Release
+                  - Escape
+                StateSentenceStatus.COMPLETED:
+                  - Inactive
+          incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          date_imposed: SentenceDate
+          projected_max_release_date: FtrdApprovedDate # This is technically the full term release date for the entire term and not just the incarceration sentence, so might not be totally true
+          projected_min_release_date: DpedApprovedDate # I think this is the same date as parole eligibility date? At least true in spotchecking some records
+          parole_eligibility_date: DpedApprovedDate # This is technially the PED for the entire term, so not 100% true in all cases
+          # couldn't find information for completion_date  #TODO(#17196): Revisit pulling this in
+          max_length_days:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: EffectiveDate
+                    - $not_null: FtrdApprovedDate
+                $then:
+                  $custom:
+                    $function: us_ix_custom_parsers.parse_duration_from_two_dates
+                    $args:
+                      start_date_str: EffectiveDate
+                      end_date_str: FtrdApprovedDate
+          min_length_days:
+            $conditional:
+              - $if:
+                  $and:
+                    - $not_null: EffectiveDate
+                    - $not_null: DpedApprovedDate
+                $then:
+                  $custom:
+                    $function: us_ix_custom_parsers.parse_duration_from_two_dates
+                    $args:
+                      start_date_str: EffectiveDate
+                      end_date_str: DpedApprovedDate

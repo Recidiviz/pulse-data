@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_charges` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - SentenceId
+  - OffenseId
+  - OffenseTypeId
+  - Count
+  - OffenseTypeDesc
+  - OffenseCategoryId
+  - Offense_statute
+  - VIOLENT_OFFENSE_IND
+  - JudgeLegistId
+  - FirstName
+  - MiddleName
+  - LastName
+  - NameSuffix
+  - CountyId
+  - OffenseDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId # Enforced to never be null in query
+                - SentenceId # Never null in scl_Sentence
+          charges:
+            - StateCharge:
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderId
+                      - OffenseId
+                status: $literal_enum(StateChargeStatus.PRESENT_WITHOUT_INFO) # Based on current ID mapping - #TODO(#17184): Revisit if need more granularity
+                offense_date: OffenseDate
+                county_code: CountyId
+                statute: Offense_statute
+                description: OffenseTypeDesc
+                classification_type:
+                  $conditional:
+                    - $if:
+                        $not_null: OffenseCategoryId
+                      $then:
+                        $enum_mapping:
+                          $raw_text: OffenseCategoryId
+                          $mappings:
+                            StateChargeClassificationType.FELONY:
+                              - "700"
+                            StateChargeClassificationType.MISDEMEANOR:
+                              - "701"
+                offense_type: OffenseTypeId # This is the id for a specific crime, not a crime category
+                is_violent:
+                  $equal:
+                    - VIOLENT_OFFENSE_IND # some mismatches here with US_ID ingest view results
+                    - $literal("1")
+                counts: Count
+                judge_external_id: JudgeLegistId
+                judge_full_name:
+                  $person_name:
+                    $given_names: FirstName
+                    $middle_names: MiddleName
+                    $surname: LastName
+                    $name_suffix: NameSuffix
