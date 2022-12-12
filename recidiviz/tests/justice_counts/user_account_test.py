@@ -67,14 +67,22 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
 
     def test_create_or_update_user(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            # Can create user with auth0_user_id and name
-            UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="auth0|user2", name="Test User 2"
+            # Can create user with auth0_user_id, name, and agencies
+            user = UserAccountInterface.create_or_update_user(
+                session=session,
+                auth0_user_id="auth0|user2",
+                name="Test User 2",
             )
 
+            agency = AgencyInterface.get_agency_by_name(
+                session=session, name="Agency Gamma"
+            )
             # Can update name
             UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="auth0|user2", name="Test User 3"
+                session=session,
+                auth0_user_id=user.auth0_user_id,
+                name="Test User 3",
+                agencies=[agency],
             )
 
     def get_user_by_auth0_user_id(self) -> None:

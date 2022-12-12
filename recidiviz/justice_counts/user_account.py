@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import coalesce
 
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
 
 
@@ -31,13 +32,16 @@ class UserAccountInterface:
     @staticmethod
     def create_or_update_user(
         session: Session,
+        agencies: Optional[List[schema.Agency]] = None,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
     ) -> UserAccount:
         """Creates a user or updates an existing user"""
         insert_statement = insert(UserAccount).values(
-            name=name, auth0_user_id=auth0_user_id
+            name=name,
+            auth0_user_id=auth0_user_id,
         )
+
         insert_statement = insert_statement.on_conflict_do_update(
             constraint="unique_auth0_user_id",
             set_=dict(
@@ -48,9 +52,11 @@ class UserAccountInterface:
                 name=coalesce(insert_statement.excluded.name, UserAccount.name),
             ),
         )
-
         result = session.execute(insert_statement)
         user = session.query(UserAccount).get(result.inserted_primary_key)
+        if agencies is not None:
+            user.agencies = agencies
+
         return user
 
     @staticmethod
