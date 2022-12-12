@@ -103,6 +103,19 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             `{project_id}.{external_reference_dataset}.us_id_incarceration_facility_names`
         ON level_2_incarceration_location_external_id = facility_code
     ),
+    ix_location_names AS (
+        SELECT
+            DISTINCT
+                'US_IX' AS state_code,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_name,
+                level_2_incarceration_location_external_id,
+                level_2_incarceration_location_name,
+                level_1_incarceration_location_external_id,
+                INITCAP(level_1_incarceration_location_external_id) AS level_1_incarceration_location_name,
+                level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
+        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_incarceration_location_names_map_latest`
+    ),
     tn_location_names AS (
         SELECT
             DISTINCT
@@ -170,6 +183,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     UNION ALL
     SELECT * FROM id_location_names
     UNION ALL
+    SELECT * FROM ix_location_names
+    UNION ALL
     SELECT * FROM tn_location_names
     UNION ALL
     SELECT * FROM mi_location_names
@@ -185,6 +200,9 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
 )
 
