@@ -81,7 +81,7 @@ sanitized_internal_metrics AS (
       ON dataflow.state_code = dates.region_code
       AND dates.date_of_supervision BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
   WHERE CASE
-      WHEN state_code = 'US_ID'
+      WHEN state_code IN ('US_ID', 'US_IX')
       THEN
         -- Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
         -- The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
