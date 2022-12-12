@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - SentenceId
+  - OffenderId
+  - CountyId
+  - EffectiveDate
+  - SentenceDate
+  - SentenceOrderTypeCode
+  - EndDate
+  - TermStatusDesc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId # Enforced to never be null in query
+                - SentenceId # Never null in scl_Sentence table
+          county_code: CountyId #  County code
+          projected_completion_date: EndDate
+          start_date: EffectiveDate
+          status:
+            # This is not a perfect method for determining status because we're sometimes using
+            # term status instead of sentence specific status, but I can't locate a better system for now
+            #
+            # SentenceOrderStatusId is always equal to 1 = "In Progress"
+            # SentenceDetailStatusId is always null
+            # SentenceStatusId is always null
+            # For some reason, these are the only two that come up for probation sentences
+            $conditional:
+              - $if:
+                  $equal:
+                    - SentenceOrderTypeCode
+                    - $literal("B") # Suspended sentence
+                $then:
+                  # using an enum mapping instead of an enum literal to preserve raw text just in case
+                  $enum_mapping:
+                    $raw_text: SentenceOrderTypeCode
+                    $mappings:
+                      # What is the difference between suspended and revoked for Idaho? Do we see suspended sentences for revocations?
+                      StateSentenceStatus.SUSPENDED:
+                        - "B" # Suspended sentence
+              - $else:
+                  $enum_mapping:
+                    $raw_text: TermStatusDesc
+                    $mappings:
+                      StateSentenceStatus.COMPLETED:
+                        - Inactive
+                      StateSentenceStatus.SERVING:
+                        - Active - Community
+                        - Escape
+                      StateSentenceStatus.REVOKED:
+                        - Active - Incarceration # Doesn't appear too often, only n=549
+          date_imposed: SentenceDate
+          supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
