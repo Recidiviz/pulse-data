@@ -174,12 +174,15 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
             if auth0_user_id is None:
                 raise ValueError("auth0_user_id is required")
-
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=session, agency_ids=agency_ids or []
+            )
             if name is not None:
                 UserAccountInterface.create_or_update_user(
                     session=session,
                     name=name,
                     auth0_user_id=auth0_user_id,
+                    agencies=agencies,
                 )
 
             if name is not None or agency_ids is not None:

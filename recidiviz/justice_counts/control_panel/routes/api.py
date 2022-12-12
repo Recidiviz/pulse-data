@@ -169,10 +169,15 @@ def get_api_blueprint(
                     email=email,
                     email_verified=email is None,
                 )
-
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=current_session, agency_ids=get_agency_ids_from_session()
+            )
             if name is not None:
                 UserAccountInterface.create_or_update_user(
-                    session=current_session, name=name, auth0_user_id=auth0_user_id
+                    session=current_session,
+                    name=name,
+                    auth0_user_id=auth0_user_id,
+                    agencies=agencies,
                 )
 
             if email is not None:
@@ -198,10 +203,14 @@ def get_api_blueprint(
         try:
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=current_session, agency_ids=get_agency_ids_from_session()
+            )
             user_account = UserAccountInterface.create_or_update_user(
                 session=current_session,
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
+                agencies=agencies,
             )
             permissions = g.user_context.permissions if "user_context" in g else []
             if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
