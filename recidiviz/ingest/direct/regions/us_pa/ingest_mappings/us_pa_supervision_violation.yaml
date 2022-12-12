@@ -107,6 +107,8 @@ output:
                             - "L04"
                             - "L05"
                             - "L06"
+                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - "H09"
                           StateSupervisionViolatedConditionType.LAW:
                             - "H04"
                             - "M13"
