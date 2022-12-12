@@ -211,6 +211,33 @@ LBAKRDTA_TAK001 = f"""
             COALESCE(EK$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK015 = f"""
+    SELECT 
+        BL$DOC,
+        BL$CYC,
+        BL$CNO,
+        BL$CAT,
+        BL$CAV,
+        BL$ICA,
+        BL$IC,
+        BL$ICO,
+        BL$OD,
+        BL$PON,
+        BL$NH,
+        BL@CSQ,
+        BL$UID,
+        BL$DCR,
+        BL$TCR,
+        BL$UIU,
+        BL$DLU,
+        BL$TLU
+    FROM
+        LBAKRDTA.TAK015
+    WHERE
+        MAX(COALESCE(BL$DLU, 0),
+            COALESCE(BL$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK017 = f"""
     SELECT 
         BN$DOC,
@@ -607,6 +634,36 @@ LBAKRDTA_TAK042 = f"""
             COALESCE(CF$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK044 = f"""
+    SELECT 
+        CG$DOC,
+        CG$CYC,
+        CG$ESN,
+        CG$RC,
+        CG$PON,
+        CG$PIN,
+        CG$PLN,
+        CG$FML,
+        CG$MD,
+        CG$GL,
+        CG$GD,
+        CG$GT,
+        CG$RR,
+        CG$RF,
+        CG$RT,
+        CG$MM,
+        CG$MMP,
+        CG$DCR,
+        CG$TCR,
+        CG$DLU,
+        CG$TLU
+    FROM
+        LBAKRDTA.TAK044
+    WHERE
+        MAX(COALESCE(CG$DLU, 0),
+            COALESCE(CG$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK065 = f"""
     SELECT 
         CS$DOC,
@@ -778,6 +835,94 @@ LBAKRDTA_TAK158 = """
         LBAKRDTA.TAK158;
     """
 
+LBAKRDTA_TAK233 = f"""
+    SELECT 
+        IZ$DOC,
+        IZ$CYC,
+        IZCSEQ,
+        IZWDTE,
+        IZVRUL,
+        IZ$II,
+        IZVTIM,
+        IZ$PON,
+        IZ$MO1,
+        IZTPRE,
+        IZCTRK,
+        IZCSTS,
+        IZ$PLN,
+        IZ$PIN,
+        IZ$LOC,
+        IZ$COM,
+        IZ$LRM,
+        IZCSQ#,
+        IZHPLN,
+        IZHPIN,
+        IZHLOC,
+        IZHCOM,
+        IZHLRM,
+        IZHLBD,
+        IZ$WSN,
+        IZ$DCR,
+        IZ$TCR,
+        IZ$DLU,
+        IZ$TLU,
+        IZ$UID,
+        IZ$UIU
+    FROM
+        LBAKRDTA.TAK233
+    WHERE
+        MAX(COALESCE(IZ$DLU, 0),
+            COALESCE(IZ$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK234 = f"""
+    SELECT 
+        IR$DOC,
+        IR$CYC,
+        IRCSEQ,
+        IRPSEQ,
+        IRPTYP,
+        IR$OFW,
+        IR$PON,
+        IR$ADL,
+        IR$ADF,
+        IR$ANM,
+        IR$SEX,
+        IRCSQ#,
+        IR$DCR,
+        IR$TCR,
+        IR$DLU,
+        IR$TLU,
+        IR$UID,
+        IR$UIU
+    FROM
+        LBAKRDTA.TAK234
+    WHERE
+        MAX(COALESCE(IR$DLU, 0),
+            COALESCE(IR$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK235 = f"""
+    SELECT 
+        IT$DOC,
+        IT$CYC,
+        ITCSEQ,
+        ITASEQ,
+        ITVRUL,
+        IT$MO1,
+        IT$DCR,
+        IT$TCR,
+        IT$DLU,
+        IT$TLU,
+        IT$UID,
+        IT$UIU
+    FROM
+        LBAKRDTA.TAK235
+    WHERE
+        MAX(COALESCE(IT$DLU, 0),
+            COALESCE(IT$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK291 = f"""
     SELECT 
         JS$DOC,
@@ -818,6 +963,56 @@ LBAKRDTA_TAK292 = f"""
     WHERE
         MAX(COALESCE(JT$DLU, 0),
             COALESCE(JT$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK293 = f"""
+    SELECT
+        JU$DOC,
+        JU$CYC,
+        JU$SEQ,
+        JU@CSQ,
+        JU$FOR,
+        JU$BA,
+        JU$HRT,
+        JU$PIN,
+        JU$PLN,
+        JU$PON,
+        JU$PO1,
+        JU$PO2,
+        JU$PO3,
+        JU$RM1,
+        JU$RM2,
+        JU$FDP,
+        JU$DFC,
+        JU$AY,
+        JU$DCR,
+        JU$TCR,
+        JU$UID,
+        JU$DLU,
+        JU$TLU,
+        JU$UIU
+    FROM
+        LBAKRDTA.TAK293
+    WHERE
+        MAX(COALESCE(JU$DLU, 0),
+            COALESCE(JU$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK294 = f"""
+    SELECT
+        ISCSQ#,
+        ISCLN#,
+        ISCMNT,
+        ISDCRT,
+        ISTCRT,
+        ISUIDC,
+        ISDUPT,
+        ISTUPT,
+        ISUIDU
+    FROM
+        LBAKRDTA.TAK294
+    WHERE
+        MAX(COALESCE(ISDUPT, '0001-01-01'), COALESCE(ISDCRT, '0001-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
 
 LBAKRDTA_VAK003 = f"""
@@ -1044,6 +1239,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LANTERN_DA_RA_LIST", LANTERN_DA_RA_LIST),
         ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
         ("LBAKRDTA_TAK001", LBAKRDTA_TAK001),
+        ("LBAKRDTA_TAK015", LBAKRDTA_TAK015),
         ("LBAKRDTA_TAK017", LBAKRDTA_TAK017),
         ("LBAKRDTA_TAK020", LBAKRDTA_TAK020),
         ("LBAKRDTA_TAK022", LBAKRDTA_TAK022),
@@ -1056,6 +1252,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK039", LBAKRDTA_TAK039),
         ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
+        ("LBAKRDTA_TAK044", LBAKRDTA_TAK044),
         ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
         ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
@@ -1063,8 +1260,13 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
         ("LBAKRDTA_TAK222", LBAKRDTA_TAK222),
         ("LBAKRDTA_TAK223", LBAKRDTA_TAK223),
+        ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
+        ("LBAKRDTA_TAK234", LBAKRDTA_TAK234),
+        ("LBAKRDTA_TAK235", LBAKRDTA_TAK235),
         ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
+        ("LBAKRDTA_TAK293", LBAKRDTA_TAK293),
+        ("LBAKRDTA_TAK294", LBAKRDTA_TAK294),
         ("LBAKRDTA_VAK003", LBAKRDTA_VAK003),
         ("LBCMDATA_APFX90", LBCMDATA_APFX90),
         ("LBCMDATA_APFX91", LBCMDATA_APFX91),
