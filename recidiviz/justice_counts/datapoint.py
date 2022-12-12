@@ -180,14 +180,32 @@ class DatapointInterface:
                     # If a datapoint represents a context, add it into a dictionary
                     # formatted as {context_key: datapoint}
                     if datapoint.context_key == REPORTING_FREQUENCY_CONTEXT_KEY:
+                        # contexts special case 1
                         metric_datapoints.custom_reporting_frequency = (
                             CustomReportingFrequency.from_datapoint(datapoint=datapoint)
                         )
-                    if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS:
+                    elif (
+                        datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+                    ):
+                        # contexts special case 2
                         metric_datapoints.disaggregated_by_supervision_subsystems = (
                             datapoint.value == "True"
                         )
+                    elif datapoint.dimension_identifier_to_member is not None:
+                        # general contexts for particular dimensions
+                        (
+                            dimension_id,
+                            dimension_member,
+                        ) = datapoint.get_dimension_id_and_member()
+                        if dimension_id is not None:
+                            dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
+                                dimension_member
+                            ]  # type: ignore[misc]
+                            metric_datapoints.dimension_to_context_key_to_datapoints[
+                                dimension
+                            ][datapoint.context_key] = datapoint
                     else:
+                        # general contexts for top level metric
                         metric_datapoints.context_key_to_agency_datapoint[
                             key
                         ] = datapoint
