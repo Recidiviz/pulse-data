@@ -57,14 +57,28 @@ US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
     WHERE state_code = 'US_TN'
     )
+    ,
+    sentences_dedup AS
+    (
+    /*
+    Dedup to external_id prioritizing the incarceration sentence. This is the same dedup methodology that is implemented
+    in `us_tn_sentences_preprocessed`. Without this dedup step, we will incorrectly drop sentence imposed groups when we
+    have a supervision sentence and an incarceration sentence with the same external_id and additional supervision 
+    sentences that marked as consecutive to that external id.
+    */
+    SELECT 
+        * 
+    FROM sentences
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY IF(sentence_type = 'INCARCERATION',0,1))=1
+    )
     SELECT
         s.person_id,
         s.state_code,
         s.sentence_id,
         s.sentence_type,
         cs.sentence_id AS consecutive_sentence_id
-    FROM sentences s
-    LEFT JOIN sentences cs
+    FROM sentences_dedup s
+    LEFT JOIN sentences_dedup cs
         ON s.consecutive_sentence_external_id = cs.external_id
         ---TODO(#13829): Investigate options for consecutive sentence relationship where supervision sentences are consecutive to incarceration sentences
         AND s.sentence_type = cs.sentence_type

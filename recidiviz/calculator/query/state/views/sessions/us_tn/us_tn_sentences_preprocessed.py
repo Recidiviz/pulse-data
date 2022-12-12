@@ -248,7 +248,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     --dedup to a single external id value,
     --prioritize the incarceration sentence over the supervision version when 1 sentence is in both tables
     QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY effective_date,
-        sentence_type, ABS(sentence_to_session_offset_days) ASC, ses.session_id ASC) = 1
+        IF(sentence_type = 'INCARCERATION',0,1), ABS(sentence_to_session_offset_days) ASC, ses.session_id ASC) = 1
 """
 
 US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
