@@ -30,7 +30,7 @@ between the existing database and the current schema. These operations proceed i
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.migrations.autogenerate_migration --database JAILS --message add_field_foo
+python -m recidiviz.tools.migrations.autogenerate_migration --database OPERATIONS --message add_field_foo
 """
 import argparse
 import logging

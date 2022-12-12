@@ -15,12 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the PostgresDirectIngestInstanceStatusManager."""
+import datetime
 from typing import List, Optional
 from unittest.case import TestCase
 
 import mock
 import pytest
+import pytz
+from freezegun import freeze_time
 from mock import patch
+from more_itertools import one
+from parameterized import parameterized
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
@@ -589,3 +594,39 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             ],
             expected_raw_data_source=DirectIngestInstance.PRIMARY,
         )
+
+    @parameterized.expand(
+        [
+            (
+                "UTC",
+                datetime.datetime(2020, 1, 2, 3, 4, 5, 6, tzinfo=pytz.UTC),
+            ),
+            (
+                "EST",
+                datetime.datetime(
+                    2020, 1, 2, 3, 4, 5, 6, tzinfo=pytz.timezone("America/New_York")
+                ),
+            ),
+            (
+                "PST",
+                datetime.datetime(
+                    2020, 1, 2, 3, 4, 5, 6, tzinfo=pytz.timezone("America/Los_Angeles")
+                ),
+            ),
+        ]
+    )
+    def test_read_write_timestamps(
+        self, _name: str, status_date: datetime.datetime
+    ) -> None:
+        # Use a new status manager for US_YY that doesn't have initial statuses added
+        # in setUp.
+        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value,
+            DirectIngestInstance.PRIMARY,
+        )
+        with freeze_time(status_date):
+            us_yy_primary_manager.add_instance_status(
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS
+            )
+        status = one(us_yy_primary_manager.get_all_statuses())
+        self.assertEqual(status_date, status.status_timestamp)

@@ -379,7 +379,7 @@ class OperationsSchemaTest(unittest.TestCase):
             metadata = schema.DirectIngestInstanceStatus(
                 region_code=StateCode.US_XX.value,
                 instance=DirectIngestInstance.PRIMARY.value,
-                timestamp=shared_datetime,
+                status_timestamp=shared_datetime,
                 status=DirectIngestStatus.STANDARD_RERUN_STARTED.value,
             )
             session.add(metadata)
@@ -391,7 +391,7 @@ class OperationsSchemaTest(unittest.TestCase):
                 region_code=StateCode.US_XX.value,
                 instance=DirectIngestInstance.PRIMARY.value,
                 # Different status, but same timestamp
-                timestamp=shared_datetime,
+                status_timestamp=shared_datetime,
                 status=DirectIngestStatus.UP_TO_DATE.value,
             )
 
@@ -405,7 +405,7 @@ class OperationsSchemaTest(unittest.TestCase):
             metadata = schema.DirectIngestInstanceStatus(
                 region_code=StateCode.US_XX.value,
                 instance=DirectIngestInstance.PRIMARY.value,
-                timestamp=shared_datetime,
+                status_timestamp=shared_datetime,
                 status=DirectIngestStatus.STANDARD_RERUN_STARTED.value,
             )
             session.add(metadata)
@@ -417,7 +417,7 @@ class OperationsSchemaTest(unittest.TestCase):
                 region_code=StateCode.US_XX.value,
                 instance=DirectIngestInstance.PRIMARY.value,
                 # Add new row whose datetime is earlier than previous row
-                timestamp=shared_datetime - datetime.timedelta(days=1),
+                status_timestamp=shared_datetime - datetime.timedelta(days=1),
                 status=DirectIngestStatus.UP_TO_DATE.value,
             )
 

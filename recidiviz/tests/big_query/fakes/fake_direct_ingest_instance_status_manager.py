@@ -47,7 +47,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             DirectIngestInstanceStatus(
                 region_code=self.region_code,
                 instance=self.ingest_instance,
-                timestamp=datetime.datetime.now(),
+                status_timestamp=datetime.datetime.now(),
                 status=status,
             )
             for status in initial_statuses
@@ -77,7 +77,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
         new_ingest_instance_status = DirectIngestInstanceStatus(
             region_code=self.region_code,
             instance=self.ingest_instance,
-            timestamp=datetime.datetime.now(),
+            status_timestamp=datetime.datetime.now(),
             status=new_status,
         )
         self.statuses.append(new_ingest_instance_status)
@@ -99,7 +99,7 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
         new_ingest_instance_status = DirectIngestInstanceStatus(
             region_code=self.region_code,
             instance=self.ingest_instance,
-            timestamp=datetime.datetime.now(),
+            status_timestamp=datetime.datetime.now(),
             status=status,
         )
         self.statuses.append(new_ingest_instance_status)

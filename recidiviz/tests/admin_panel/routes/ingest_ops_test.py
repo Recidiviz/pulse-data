@@ -20,6 +20,7 @@
 from datetime import datetime
 from unittest import TestCase, mock
 
+import pytz
 from flask import Flask
 from freezegun import freeze_time
 from mock import Mock
@@ -74,10 +75,10 @@ class IngestOpsEndpointTests(TestCase):
         self.assertEqual(response.json, {})
         self.assertEqual(200, response.status_code)
 
-    @freeze_time("2022-08-29")
+    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
     def test_all_different_statuses(self) -> None:
         # Arrange
-        timestamp = datetime(2022, 8, 29)
+        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
 
         self.mock_current_ingest_statuses.return_value = {
             StateCode.US_XX: {
@@ -85,13 +86,13 @@ class IngestOpsEndpointTests(TestCase):
                     region_code=StateCode.US_XX.value,
                     instance=DirectIngestInstance.PRIMARY,
                     status=DirectIngestStatus.READY_TO_FLASH,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_XX.value,
                     instance=DirectIngestInstance.SECONDARY,
                     status=DirectIngestStatus.UP_TO_DATE,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
             },
             StateCode.US_YY: {
@@ -99,13 +100,13 @@ class IngestOpsEndpointTests(TestCase):
                     region_code=StateCode.US_YY.value,
                     instance=DirectIngestInstance.PRIMARY,
                     status=DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_YY.value,
                     instance=DirectIngestInstance.SECONDARY,
                     status=DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
             },
         }
@@ -125,13 +126,13 @@ class IngestOpsEndpointTests(TestCase):
                         "instance": "PRIMARY",
                         "regionCode": "US_XX",
                         "status": "READY_TO_FLASH",
-                        "timestamp": "2022-08-29T00:00:00+00:00",
+                        "status_timestamp": "2022-08-29T00:00:00+00:00",
                     },
                     "secondary": {
                         "instance": "SECONDARY",
                         "regionCode": "US_XX",
                         "status": "UP_TO_DATE",
-                        "timestamp": "2022-08-29T00:00:00+00:00",
+                        "status_timestamp": "2022-08-29T00:00:00+00:00",
                     },
                 },
                 "US_YY": {
@@ -139,13 +140,13 @@ class IngestOpsEndpointTests(TestCase):
                         "instance": "PRIMARY",
                         "regionCode": "US_YY",
                         "status": "STANDARD_RERUN_STARTED",
-                        "timestamp": "2022-08-29T00:00:00+00:00",
+                        "status_timestamp": "2022-08-29T00:00:00+00:00",
                     },
                     "secondary": {
                         "instance": "SECONDARY",
                         "regionCode": "US_YY",
                         "status": "FLASH_IN_PROGRESS",
-                        "timestamp": "2022-08-29T00:00:00+00:00",
+                        "status_timestamp": "2022-08-29T00:00:00+00:00",
                     },
                 },
             },

@@ -22,6 +22,7 @@ from unittest import mock
 from unittest.case import TestCase
 
 import pytest
+import pytz
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import create_autospec
@@ -146,13 +147,13 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
             DirectIngestInstance.SECONDARY,
         )
 
-    @freeze_time("2022-08-29")
+    @freeze_time(datetime(2022, 8, 29, tzinfo=pytz.UTC))
     def test_all_different_statuses(self) -> None:
         """
         Assert that the correct dictionary exists when all primary and secondary statuses
         are different
         """
-        timestamp = datetime(2022, 8, 29)
+        timestamp = datetime(2022, 8, 29, tzinfo=pytz.UTC)
         self.us_xx_primary_status_manager.add_instance_status(
             DirectIngestStatus.STANDARD_RERUN_STARTED
         )
@@ -174,13 +175,13 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
                     region_code=StateCode.US_XX.value,
                     instance=DirectIngestInstance.PRIMARY,
                     status=DirectIngestStatus.STANDARD_RERUN_STARTED,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_XX.value,
                     instance=DirectIngestInstance.SECONDARY,
                     status=DirectIngestStatus.UP_TO_DATE,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
             },
             StateCode.US_YY: {
@@ -188,13 +189,13 @@ class IngestOperationsStoreGetAllCurrentIngestInstanceStatusesTest(
                     region_code=StateCode.US_YY.value,
                     instance=DirectIngestInstance.PRIMARY,
                     status=DirectIngestStatus.FLASH_IN_PROGRESS,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
                 DirectIngestInstance.SECONDARY: DirectIngestInstanceStatus(
                     region_code=StateCode.US_YY.value,
                     instance=DirectIngestInstance.SECONDARY,
                     status=DirectIngestStatus.FLASH_COMPLETED,
-                    timestamp=timestamp,
+                    status_timestamp=timestamp,
                 ),
             },
         }
