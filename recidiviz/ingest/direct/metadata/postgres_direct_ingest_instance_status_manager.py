@@ -80,7 +80,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 region_code=self.region_code,
                 instance=self.ingest_instance.value,
             )
-            .order_by(schema.DirectIngestInstanceStatus.timestamp.desc())
+            .order_by(schema.DirectIngestInstanceStatus.status_timestamp.desc())
             .limit(1)
             .one_or_none()
         )
@@ -103,7 +103,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 instance=self.ingest_instance.value,
                 status=status.value,
             )
-            .order_by(schema.DirectIngestInstanceStatus.timestamp.desc())
+            .order_by(schema.DirectIngestInstanceStatus.status_timestamp.desc())
             .limit(1)
             .one_or_none()
         )
@@ -114,10 +114,10 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         return None
 
     def _get_rows_after_timestamp(
-        self, session: Session, timestamp: datetime
+        self, session: Session, status_timestamp: datetime
     ) -> List[DirectIngestInstanceStatus]:
         """Returns all rows, if any, whose timestamps are strictly after the passed in
-        timestamp.
+        status_timestamp.
         """
         results = (
             session.query(schema.DirectIngestInstanceStatus)
@@ -125,9 +125,9 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 schema.DirectIngestInstanceStatus.region_code == self.region_code,
                 schema.DirectIngestInstanceStatus.instance
                 == self.ingest_instance.value,
-                schema.DirectIngestInstanceStatus.timestamp > timestamp,
+                schema.DirectIngestInstanceStatus.status_timestamp > status_timestamp,
             )
-            .order_by(schema.DirectIngestInstanceStatus.timestamp.desc())
+            .order_by(schema.DirectIngestInstanceStatus.status_timestamp.desc())
             .all()
         )
 
@@ -143,7 +143,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 new_row = schema.DirectIngestInstanceStatus(
                     region_code=self.region_code,
                     instance=self.ingest_instance.value,
-                    timestamp=datetime.now(tz=pytz.UTC),
+                    status_timestamp=datetime.now(tz=pytz.UTC),
                     status=status.value,
                 )
                 session.add(new_row)
@@ -175,12 +175,14 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             current_rerun_status_rows: List[
                 DirectIngestInstanceStatus
             ] = self._get_rows_after_timestamp(
-                session=session, timestamp=most_recent_completed.timestamp
+                session=session, status_timestamp=most_recent_completed.status_timestamp
             )
             return current_rerun_status_rows
 
         # If there isn't yet a completed rerun, return all status rows.
-        return self._get_rows_after_timestamp(session=session, timestamp=datetime.min)
+        return self._get_rows_after_timestamp(
+            session=session, status_timestamp=datetime.min
+        )
 
     def get_raw_data_source_instance(
         self, session: Optional[Session] = None
@@ -247,7 +249,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             new_row = schema.DirectIngestInstanceStatus(
                 region_code=self.region_code,
                 instance=self.ingest_instance.value,
-                timestamp=datetime.now(tz=pytz.UTC),
+                status_timestamp=datetime.now(tz=pytz.UTC),
                 status=status.value,
             )
             session.add(new_row)

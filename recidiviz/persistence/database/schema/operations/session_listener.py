@@ -70,20 +70,19 @@ def session_listener(session: Session) -> None:
                     region_code=instance.region_code,
                     instance=instance.instance,
                 )
-                .order_by(DirectIngestInstanceStatus.timestamp.desc())
+                .order_by(DirectIngestInstanceStatus.status_timestamp.desc())
                 .limit(1)
                 .one_or_none()
             )
 
-            # set the row's timestamp to be offset-naive (tzinfo=None) to be able to be compared with the instance ts
             if (
                 most_recent_row
-                and most_recent_row.timestamp > instance.timestamp.replace(tzinfo=None)
+                and most_recent_row.status_timestamp > instance.status_timestamp
             ):
                 raise IntegrityError(
                     "Attempting to commit a DirectIngestInstanceStatus row for "
                     f"region_code={instance.region_code} and instance={instance.instance} whose timestamp is less "
                     f"than the timestamp of the most recent row. The timestamp of the most recent row is "
-                    f"{most_recent_row.timestamp} and the timestamp of the attempted committed row is "
-                    f"{instance.timestamp}."
+                    f"{most_recent_row.status_timestamp} and the timestamp of the attempted committed row is "
+                    f"{instance.status_timestamp}."
                 )

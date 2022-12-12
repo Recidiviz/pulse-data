@@ -2,7 +2,7 @@
 """fix_sftp_tables
 
 Revision ID: 495f39d5e421
-Revises: 7c1417512022
+Revises: fb70f3bee078
 Create Date: 2022-12-12 11:38:23.546312
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "495f39d5e421"
-down_revision = "7c1417512022"
+down_revision = "fb70f3bee078"
 branch_labels = None
 depends_on = None
 
