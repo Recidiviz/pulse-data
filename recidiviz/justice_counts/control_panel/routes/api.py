@@ -220,7 +220,6 @@ def get_api_blueprint(
                 agencies = AgencyInterface.get_agencies_by_id(
                     session=current_session, agency_ids=agency_ids
                 )
-
             current_session.commit()
             return jsonify(
                 {
