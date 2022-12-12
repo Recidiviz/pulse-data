@@ -49,6 +49,7 @@ columns:
   - name: DISCIPLINARY_CASE_SUMMARY_TX
     is_pii: True
   - name: HEARING_ACTUALLY_HELD_DATE
+    description: Hearing date
   - name: HEARING_CLIENT_EXPLANATION_COMMENTS_TX
     is_pii: True
   - name: HEARING_EXHIBITS_PRESENTED_COMMENTS_TX
@@ -88,6 +89,7 @@ columns:
   - name: LOCATION_CODE
   - name: LOCKING_TSP
   - name: LOGICAL_DELETE_IND
+    description: Delete if 'Y'
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
