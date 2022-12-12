@@ -52,7 +52,12 @@ def reset_operations_db_fixtures(engine: Engine) -> None:
     """Deletes all operations DB data and re-imports data from our fixture files"""
     reset_fixtures(
         engine=engine,
-        tables=list(get_operations_table_classes()),
+        # TODO(#10214): Add admin panel fixtures for the SFTP table.
+        tables=[
+            table
+            for table in get_operations_table_classes()
+            if "sftp" not in table.name
+        ],
         fixture_directory=os.path.join(
             os.path.dirname(__file__),
             "../../..",

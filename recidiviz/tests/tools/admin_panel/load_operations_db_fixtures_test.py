@@ -77,8 +77,8 @@ class TestOperationsLoadFixtures(unittest.TestCase):
             self.database_key, autocommit=False
         ) as read_session:
             for fixture_class in get_operations_table_classes():
-                if fixture_class.name == "direct_ingest_sftp_file_metadata":
-                    # TODO(#10214): Add admin panel fixtures for the SFTP table.
+                # TODO(#10214): Add admin panel fixtures for the SFTP table.
+                if "sftp" in fixture_class.name:
                     continue
                 row_count = len(read_session.query(fixture_class).all())
                 self.assertTrue(
