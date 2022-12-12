@@ -27,9 +27,9 @@ def prompt_for_confirmation(
     input_text: str,
     accepted_response_override: Optional[str] = None,
     dry_run: bool = False,
-) -> None:
+    exit_on_cancel: bool = True,
+) -> Optional[bool]:
     input_prompt = f"{input_text}"
-
     accepted_response = accepted_response_override or "Y"
     if accepted_response_override:
         input_prompt += (
@@ -37,15 +37,15 @@ def prompt_for_confirmation(
         )
     else:
         input_prompt += " [y/n]: "
-
     if dry_run:
         logging.info("[DRY RUN] %s **DRY RUN - SKIPPED CONFIRMATION**", input_prompt)
-        return
-
+        return None
     check = input(input_prompt)
-    if check.lower() != accepted_response.lower():
+    if not (confirm := check.lower() == accepted_response.lower()):
         logging.warning("\nResponded with [%s]. Confirmation aborted.", check)
-        sys.exit(1)
+        if exit_on_cancel:
+            sys.exit(1)
+    return confirm
 
 
 def _get_run_as_user_fn(password_record: pwd.struct_passwd) -> Callable[[], None]:
