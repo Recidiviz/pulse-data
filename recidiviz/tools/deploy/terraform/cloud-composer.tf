@@ -46,7 +46,7 @@ resource "google_composer_environment" "default_v2" {
       enable_private_endpoint = true
     }
 
-    environment_size = "ENVIRONMENT_SIZE_MEDIUM"
+    environment_size = "ENVIRONMENT_SIZE_LARGE"
 
   }
 
