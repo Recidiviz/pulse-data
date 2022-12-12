@@ -35,6 +35,7 @@ from .approx import ApproxBase
 from .mark import MarkGenerator
 
 mark: MarkGenerator
+param: Callable
 
 _Scope = Literal["session", "package", "module", "class", "function"]
 
