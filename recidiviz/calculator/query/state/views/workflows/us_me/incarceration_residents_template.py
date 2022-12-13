@@ -55,6 +55,7 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
               AND CURRENT_DATE('US/Eastern') 
                     BETWEEN {nonnull_start_date_clause('t.start_date')} 
                         AND {nonnull_end_date_clause('t.end_date')} 
+              AND t.status='1' -- only 'Active terms'
         WHERE dataflow.state_code = 'US_ME' AND dataflow.included_in_state_population
             AND dataflow.end_date_exclusive IS NULL
         WINDOW w as (PARTITION BY dataflow.state_code, dataflow.person_id)
