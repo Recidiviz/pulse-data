@@ -291,6 +291,33 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 {"metric/prisons/funding/type": "OTHER"},
             )
 
+            # Test build_metric_key_to_datapoints() and get_aggregated_dimension_data()
+            metric_key_to_data_points = (
+                DatapointInterface.build_metric_key_to_datapoints(datapoints)
+            )
+            metric_datapoints = metric_key_to_data_points[
+                datapoint.metric_definition_key
+            ]
+            self.assertEqual(
+                metric_datapoints.dimension_to_context_key_to_datapoints,
+                {PrisonsFundingType.OTHER: {datapoint.context_key: datapoint}},
+            )
+
+            agg_dims = metric_datapoints.get_aggregated_dimension_data(
+                agency_metric.metric_definition
+            )
+            self.assertEqual(
+                agg_dims[0].dimension_to_contexts,
+                {
+                    PrisonsFundingType.OTHER: [
+                        MetricContextData(
+                            key=ContextKey(datapoint.context_key),
+                            value=datapoint.get_value(),
+                        )
+                    ]
+                },
+            )
+
     def test_save_agency_datapoints_contexts(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             agency = self.test_schema_objects.test_agency_A

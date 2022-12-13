@@ -203,7 +203,7 @@ class DatapointInterface:
                             ]  # type: ignore[misc]
                             metric_datapoints.dimension_to_context_key_to_datapoints[
                                 dimension
-                            ][datapoint.context_key] = datapoint
+                            ] = {datapoint.context_key: datapoint}
                     else:
                         # general contexts for top level metric
                         metric_datapoints.context_key_to_agency_datapoint[
