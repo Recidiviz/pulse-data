@@ -56,6 +56,7 @@ class UsIxController(BaseDirectIngestController):
                     "supervision_sentence",
                     "employment_periods",
                     "charges",
+                    "supervision_violation",
                 ]
             )
 
