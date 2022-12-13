@@ -18,6 +18,10 @@
 """Defines a criteria view that shows spans of time for
 which residents are within 90 days of having received a A or B violaiton.
 """
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -44,10 +48,14 @@ WITH disciplinary_cases_cte AS (
   SELECT 
       "US_ME" AS state_code,
       ei.person_id,
-      vdt.E_Violation_Disposition_Type_Desc AS disp_type,
+      IF(vd.Cis_1813_Disposition_Outcome_Type_Cd IS NULL,
+         CONCAT('Pending since ', SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS STRING)),
+         vdt.E_Violation_Disposition_Type_Desc) 
+            AS disp_type,
       vdc.E_Violation_Disposition_Class_Desc AS disp_class,
       vd.Cis_1813_Disposition_Outcome_Type_Cd AS disp_outcome,
-      SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS DATE) AS start_date,
+      SAFE_CAST(LEFT(dc.HEARING_ACTUALLY_HELD_DATE, 10) AS DATE) AS start_date,
+      SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS DATE) AS pending_violation_start_date,
       dc.CIS_462_CLIENTS_INVOLVED_ID,
       ci.Cis_100_Client_Id,
   FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_181_VIOLATION_DISPOSITION_latest`  vd
@@ -64,14 +72,34 @@ WITH disciplinary_cases_cte AS (
       AND id_type = 'US_ME_DOC'
   WHERE
       vdc.E_Violation_Disposition_Class_Desc in ('A', 'B')
+      # Drop if logical delete = yes
+      AND COALESCE(dc.LOGICAL_DELETE_IND, 'N') != 'Y'
+      AND COALESCE(vd.Logical_Delete_Ind , 'N') != 'Y'
+      
 ),
 cases_wstart_end_cte AS (
+  -- Resolved disciplines
   SELECT
-        *,
+        * EXCEPT (start_date, pending_violation_start_date),
+        start_date,
         DATE_ADD(start_date, INTERVAL 90 DAY) AS end_date,
         -- Keep another date so it doesn't get lost in a sub-session later
         DATE_ADD(start_date, INTERVAL 90 DAY) AS eligible_date,
   FROM disciplinary_cases_cte
+  WHERE disp_outcome IS NOT NULL
+
+  UNION ALL
+
+  -- Pending disciplines
+  SELECT
+  -- Create an open span on the pending start date if the violation disposition outcome is not set
+        * EXCEPT (start_date, pending_violation_start_date),
+        pending_violation_start_date AS start_date,
+        NULL AS end_date,
+        -- Keep another date so it doesn't get lost in a sub-session later
+        NULL AS eligible_date,
+  FROM disciplinary_cases_cte
+  WHERE disp_outcome IS NULL
 ),
 {create_sub_sessions_with_attributes(table_name='cases_wstart_end_cte')},
 no_dup_subsessions_cte AS (
@@ -83,7 +111,7 @@ no_dup_subsessions_cte AS (
         'More than 1',
         disp_type) AS disp_type_wmorethan1,
       -- When 2 duplicates subsessions are present, we keep the highest eligible date
-      MAX(eligible_date) OVER(PARTITION BY person_id, state_code, start_date, end_date)
+      MAX({nonnull_end_date_clause('eligible_date')}) OVER(PARTITION BY person_id, state_code, start_date, end_date)
         AS eligible_date,
   FROM sub_sessions_with_attributes
   -- Drop cases where resident was 'Found Not Guilty' or 'Dismissed (Technical)'
@@ -102,11 +130,8 @@ SELECT
     False AS meets_criteria,
     TO_JSON(STRUCT(disp_class AS highest_class_viol,
                    disp_type_wmorethan1 AS viol_type,
-                   eligible_date AS eligible_date)) AS reason
+                   {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date)) AS reason
 FROM no_dup_subsessions_cte
--- TODO(#16945) We need to double check if we are identifying and treating 
--- pending disciplines the right way, we're currently just treating them like
--- other disciplines: they only determine ineligibility for 90 days.
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

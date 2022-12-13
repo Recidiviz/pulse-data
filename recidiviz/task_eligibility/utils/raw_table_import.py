@@ -41,6 +41,7 @@ def cis_319_term_cte() -> str:
         person_id,
         {revert_nonnull_start_date_clause('start_date')} AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
+        Cis_1200_Term_Status_Cd AS status,
     FROM (
             SELECT
                 *,
@@ -56,3 +57,30 @@ def cis_319_term_cte() -> str:
     WHERE start_date != end_date -- Drop if intake date is = Expected release date
         AND start_date < end_date -- Drop if end_datetime is before start_datetime
 )"""
+
+
+def cis_319_after_csswa() -> str:
+    """Helper method to drop repeated subsessions and incorrect
+    final spans. Meant to be used after create_sub_sessions_with_attributes (csswa).
+    """
+
+    return f"""
+    -- Drop repeated subsessions and drop completed and end_date=NULL
+    SELECT * EXCEPT(null_end_date_and_completed)
+    FROM (SELECT 
+             * EXCEPT(start_date, end_date),
+             start_date AS start_datetime,
+             end_date AS end_datetime,
+             -- Completed terms that are the last subsession of one resident
+             IF((end_date IS NULL AND status = '2'),
+                True,
+                False)
+             AS null_end_date_and_completed
+         FROM sub_sessions_with_attributes
+         -- Drop subsessions when repeated on the basis of status (drop 'Completed' first)
+         -- and critical date (drop more recent ones first)
+         QUALIFY ROW_NUMBER() 
+                 OVER(PARTITION BY state_code, person_id, start_date, end_date 
+                 ORDER BY status, {nonnull_end_date_clause('critical_date')} DESC) = 1)
+    WHERE null_end_date_and_completed IS False
+    """

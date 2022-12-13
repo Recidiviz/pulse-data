@@ -41,7 +41,10 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import cis_319_term_cte
+from recidiviz.task_eligibility.utils.raw_table_import import (
+    cis_319_after_csswa,
+    cis_319_term_cte,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -84,16 +87,7 @@ term_cte_crit_date AS (
 ),
 {create_sub_sessions_with_attributes('term_cte_crit_date')},
 critical_date_spans AS (
-    -- only keep the latest critical date in case of a repeated subsession
-  SELECT 
-        state_code,
-        person_id, 
-        start_date AS start_datetime,
-        end_date AS end_datetime,
-        critical_date
-  FROM sub_sessions_with_attributes
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, state_code, start_date, end_date
-                    ORDER BY {nonnull_end_date_clause('critical_date')} DESC) = 1
+    {cis_319_after_csswa()}
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
