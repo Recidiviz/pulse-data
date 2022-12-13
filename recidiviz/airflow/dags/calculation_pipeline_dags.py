@@ -25,7 +25,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional
 
 from airflow.decorators import dag
-from airflow.operators.python import ShortCircuitOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.operators.python import BranchPythonOperator, ShortCircuitOperator
 from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.state import State
@@ -352,6 +353,16 @@ def create_bq_refresh_nodes(
     return bq_refresh_completion
 
 
+def update_all_views_branch_func(
+    should_update_all_views: bool, trigger_update_all_views_task_id: str
+) -> str:
+    return (
+        trigger_update_all_views_task_id
+        if should_update_all_views
+        else "do_not_update_all_views"
+    )
+
+
 def execute_calculations(should_update_all_views: bool) -> None:
     """This represents the overall execution of our calculation pipelines.
 
@@ -389,26 +400,38 @@ def execute_calculations(should_update_all_views: bool) -> None:
         timeout=(60 * 60 * 4),
     )
 
-    if should_update_all_views:
-        trigger_update_all_views = trigger_update_all_managed_views_operator()
+    trigger_update_all_views = trigger_update_all_managed_views_operator()
 
-        wait_for_update_all_views = BQResultSensor(
-            task_id="wait_for_view_update_all_success",
-            query_generator=FinishedCloudTaskQueryGenerator(
-                project_id=project_id,
-                cloud_task_create_operator_task_id=trigger_update_all_views.task_id,
-                tracker_dataset_id="view_update_metadata",
-                tracker_table_id="view_update_tracker",
-            ),
-            timeout=(60 * 60 * 4),
-        )
+    update_all_views_branch = BranchPythonOperator(
+        task_id="update_all_views_branch",
+        provide_context=True,
+        python_callable=update_all_views_branch_func,
+        op_kwargs={
+            "should_update_all_views": should_update_all_views,
+            "trigger_update_all_views_task_id": trigger_update_all_views.task_id,
+        },
+    )
 
-        (
-            [state_bq_refresh_completion, operations_bq_refresh_completion]
-            >> trigger_update_all_views
-            >> wait_for_update_all_views
-            >> trigger_view_rematerialize
-        )
+    do_not_update_all_views = EmptyOperator(task_id="do_not_update_all_views")
+
+    (
+        [state_bq_refresh_completion, operations_bq_refresh_completion]
+        >> update_all_views_branch
+        >> [trigger_update_all_views, do_not_update_all_views]
+    )
+
+    wait_for_update_all_views = BQResultSensor(
+        task_id="wait_for_view_update_all_success",
+        query_generator=FinishedCloudTaskQueryGenerator(
+            project_id=project_id,
+            cloud_task_create_operator_task_id=trigger_update_all_views.task_id,
+            tracker_dataset_id="view_update_metadata",
+            tracker_table_id="view_update_tracker",
+        ),
+        timeout=(60 * 60 * 4),
+    )
+
+    trigger_update_all_views >> wait_for_update_all_views >> trigger_view_rematerialize
 
     update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 
