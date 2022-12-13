@@ -44,6 +44,7 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
 _WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
+_UPDATE_ALL_VIEWS_BRANCH_TASK_ID = "update_all_views_branch"
 _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "trigger_update_all_managed_views_task"
 _WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "wait_for_view_update_all_success"
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
@@ -378,10 +379,34 @@ class TestCalculationPipelineDags(unittest.TestCase):
             wait_task.upstream_task_ids,
         )
 
-    def test_state_bq_refresh_completion_task_upstream_of_update_all_managed_views(
+    def test_state_bq_refresh_completion_task_upstream_of_update_all_views_branch(
         self,
     ) -> None:
-        """Tests that state_bq_refresh_completion happens directly before we call update_all_managed_views."""
+        """Tests that state_bq_refresh_completion happens directly before we call update_all_views_branch."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_UPDATE_ALL_VIEWS_BRANCH_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_UPDATE_ALL_VIEWS_BRANCH_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {
+                get_post_refresh_short_circuit_task_id("STATE"),
+                get_post_refresh_short_circuit_task_id("OPERATIONS"),
+            },
+            wait_task.upstream_task_ids,
+        )
+
+    def test_update_all_views_branch_task_upstream_of_update_all_managed_views(
+        self,
+    ) -> None:
+        """Tests that update_all_views_branch happens directly before we call update_all_managed_views."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
@@ -396,8 +421,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
         self.assertEqual(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
         self.assertEqual(
             {
-                get_post_refresh_short_circuit_task_id("STATE"),
-                get_post_refresh_short_circuit_task_id("OPERATIONS"),
+                _UPDATE_ALL_VIEWS_BRANCH_TASK_ID,
             },
             wait_task.upstream_task_ids,
         )
@@ -461,20 +485,6 @@ class TestCalculationPipelineDags(unittest.TestCase):
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
             "/cloud_sql_to_bq/refresh_bq_dataset/STATE",
         )
-
-    def test_update_all_managed_views_only_called_in_historic_dag(self) -> None:
-        """Tests that update_all_managed_views is only called in the historical dag."""
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            if dag_id == self.HISTORICAL_DAG_ID:
-                continue
-            dag = dag_bag.dags[dag_id]
-            with self.assertRaises(Exception) as context:
-                dag.get_task(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
-            self.assertTrue(
-                f"Task {_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID} not found"
-                in str(context.exception)
-            )
 
     def test_validations_endpoint(self) -> None:
         """Tests that validation triggers the proper endpoint."""
