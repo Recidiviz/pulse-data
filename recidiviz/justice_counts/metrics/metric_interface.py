@@ -81,7 +81,7 @@ class MetricInterface:
     # Values for includes_excludes settings at the metric level.
     includes_excludes_member_to_setting: Dict[
         enum.Enum, Optional[IncludesExcludesSetting]
-    ] = attr.field(default={})
+    ] = attr.Factory(dict)
 
     # Values for the metric's custom reporting frequency.
     custom_reporting_frequency: CustomReportingFrequency = CustomReportingFrequency()

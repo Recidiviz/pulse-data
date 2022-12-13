@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set, TypeVar
 
 import attr
 
+from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -87,7 +88,7 @@ class DatapointsForMetric:
     # a mapping of context_keys to datapoints at the dimension level.
     dimension_to_context_key_to_datapoints: Dict[
         DimensionBase, Dict[str, schema.Datapoint]
-    ] = attr.field(default={})
+    ] = attr.Factory(dict)
 
     ### Top level methods used to construct MetricInterface ###
 
@@ -147,6 +148,15 @@ class DatapointsForMetric:
                     dimension_to_includes_excludes_member_to_setting=self._get_dimension_to_includes_excludes_member_to_setting(
                         aggregated_dimension_definition=aggregated_dimension
                     ),
+                    dimension_to_contexts={
+                        dim_base: [
+                            MetricContextData(
+                                key=ContextKey(context_key), value=datapoint.get_value()
+                            )
+                            for context_key, datapoint in context_key_to_datapoints.items()
+                        ]
+                        for dim_base, context_key_to_datapoints in self.dimension_to_context_key_to_datapoints.items()
+                    },
                 ),
             )
 

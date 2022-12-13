@@ -54,10 +54,10 @@ class MetricAggregatedDimensionData:
     )
     dimension_to_includes_excludes_member_to_setting: Dict[
         DimensionBase, Dict[enum.Enum, Optional[IncludesExcludesSetting]]
-    ] = attr.field(default={})
-    dimension_to_contexts: Optional[
-        Dict[DimensionBase, List[MetricContextData]]
-    ] = attr.field(default=None)
+    ] = attr.Factory(dict)
+    dimension_to_contexts: Dict[DimensionBase, List[MetricContextData]] = attr.Factory(
+        dict
+    )
 
     def dimension_identifier(self) -> str:
         # Identifier of the Dimension class that this breakdown corresponds to
