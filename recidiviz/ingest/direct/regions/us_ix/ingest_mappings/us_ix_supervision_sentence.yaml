@@ -55,6 +55,8 @@ output:
                         - Inactive
                       StateSentenceStatus.SERVING:
                         - Active - Community
+                        - Contract
+                        - Discretionary Parole
                         - Escape
                       StateSentenceStatus.REVOKED:
                         - Active - Incarceration # Doesn't appear too often, only n=549
