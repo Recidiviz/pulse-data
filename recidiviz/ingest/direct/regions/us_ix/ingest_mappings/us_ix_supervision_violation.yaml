@@ -31,6 +31,7 @@ output:
                     $raw_text: ViolationTypeDesc
                     $mappings:
                       StateSupervisionViolationType.ABSCONDED:
+                        - Abscond
                         - Absconded # [ARS] Don't think this is used yet
                         - Non-technical - Abscond
                       StateSupervisionViolationType.LAW:
@@ -38,6 +39,8 @@ output:
                       StateSupervisionViolationType.TECHNICAL:
                         - Technical
                       StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        - Non-Technical
+                        - Technical/Non-Technical
                         - Pending / In Progress
 #          supervision_violated_conditions: # TODO(#17014): Revisit adding in Violated conditions
 #            - $foreach:
