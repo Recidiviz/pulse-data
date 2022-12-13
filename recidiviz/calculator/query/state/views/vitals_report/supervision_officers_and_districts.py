@@ -29,29 +29,35 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_DESCRIPTION = """
 Mapping of supervision officers and their districts
 """
 
-enabled_states = ("US_ND", "US_ID")
+enabled_states = ("US_ND", "US_ID", "US_IX")
 
 SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
-   WITH us_id_roster AS (
+   WITH us_id_ix_roster AS (
         SELECT DISTINCT 
             'US_ID' AS state_code,
             external_id AS supervising_officer_external_id, 
             district AS supervising_district_external_id
         FROM `{{project_id}}.{{static_reference_tables_dataset}}.us_id_roster`
+        UNION ALL
+        SELECT DISTINCT 
+            'US_IX' AS state_code,
+            external_id AS supervising_officer_external_id, 
+            district AS supervising_district_external_id
+        FROM `{{project_id}}.{{static_reference_tables_dataset}}.us_ix_roster`
    )
    SELECT 
         sup_pop.state_code,
-        IF(us_id_roster.supervising_district_external_id IS NOT NULL, us_id_roster.supervising_district_external_id, sup_pop.supervising_district_external_id) AS supervising_district_external_id,
-        IF(us_id_roster.supervising_officer_external_id IS NOT NULL, us_id_roster.supervising_officer_external_id, sup_pop.supervising_officer_external_id) AS supervising_officer_external_id,
+        IF(us_id_ix_roster.supervising_district_external_id IS NOT NULL, us_id_ix_roster.supervising_district_external_id, sup_pop.supervising_district_external_id) AS supervising_district_external_id,
+        IF(us_id_ix_roster.supervising_officer_external_id IS NOT NULL, us_id_ix_roster.supervising_officer_external_id, sup_pop.supervising_officer_external_id) AS supervising_officer_external_id,
         {{vitals_state_specific_district_id}},
         {{vitals_state_specific_district_name}}
    FROM (
       SELECT * FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` 
       WHERE included_in_state_population
     ) sup_pop
-   LEFT JOIN us_id_roster 
-      ON sup_pop.state_code = us_id_roster.state_code
-      AND sup_pop.supervising_officer_external_id = us_id_roster.supervising_officer_external_id 
+   LEFT JOIN us_id_ix_roster 
+      ON sup_pop.state_code = us_id_ix_roster.state_code
+      AND sup_pop.supervising_officer_external_id = us_id_ix_roster.supervising_officer_external_id 
    LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized` locations
         ON sup_pop.state_code = locations.state_code
         AND {{vitals_state_specific_join_with_supervision_location_ids}}
@@ -59,10 +65,10 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
    WHERE COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern')) > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
         AND sup_pop.state_code in {enabled_states}
         AND (
-            (us_id_roster.supervising_officer_external_id IS NOT NULL 
-                AND us_id_roster.supervising_district_external_id = sup_pop.level_2_supervision_location_external_id
-                AND sup_pop.state_code = 'US_ID')
-            OR (us_id_roster.supervising_officer_external_id IS NULL AND sup_pop.state_code != 'US_ID')
+            (us_id_ix_roster.supervising_officer_external_id IS NOT NULL 
+                AND us_id_ix_roster.supervising_district_external_id = sup_pop.level_2_supervision_location_external_id
+                AND sup_pop.state_code IN ('US_ID', 'US_IX'))
+            OR (us_id_ix_roster.supervising_officer_external_id IS NULL AND sup_pop.state_code NOT IN ('US_ID', 'US_IX'))
         )
    GROUP BY 1,2,3,4,5
 """
