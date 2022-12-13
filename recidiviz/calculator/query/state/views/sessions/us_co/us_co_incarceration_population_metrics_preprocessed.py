@@ -53,6 +53,8 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             CAST(NULL AS STRING) AS supervising_officer_external_id,
             CAST(NULL AS STRING) AS case_type,
             judicial_district_code,
+            prioritized_race_or_ethnicity,
+            gender,
         FROM
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
         WHERE
@@ -76,6 +78,8 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.supervising_officer_external_id,
         pop.case_type,
         pop.judicial_district_code,
+        pop.prioritized_race_or_ethnicity,
+        pop.gender,
     FROM incarceration_population_cte pop
     --- TODO(#14601): Replace with common facility reference table
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_community_correction_facilities` facilities
