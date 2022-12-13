@@ -162,9 +162,12 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         DirectIngestStatus.FLASH_CANCELED: [
             DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
         ],
-        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS: [
-            DirectIngestStatus.READY_TO_FLASH,
-        ],
+        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS:
+        # ANY valid secondary status is allowed before proceeding with a flash cancellation
+        list(
+            (set(DirectIngestStatus))
+            - set(INVALID_STATUSES[DirectIngestInstance.SECONDARY])
+        ),
         DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
         ],

@@ -568,6 +568,22 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
                 expected_raw_data_source=DirectIngestInstance.PRIMARY,
             )
 
+    def test_any_secondary_status_valid_to_flash_cancellation_in_progress(self) -> None:
+        valid_secondary_statuses = list(
+            (set(DirectIngestStatus))
+            - set(INVALID_STATUSES[DirectIngestInstance.SECONDARY])
+        )
+        for status in valid_secondary_statuses:
+            us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+                StateCode.US_YY.value,
+                DirectIngestInstance.SECONDARY,
+            )
+            us_yy_secondary_manager.validate_transition(
+                DirectIngestInstance.SECONDARY,
+                status,
+                DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
+            )
+
     def test_ingest_view_materialization_to_done(self) -> None:
         self._run_test_for_status_transitions(
             self.us_xx_primary_manager,
