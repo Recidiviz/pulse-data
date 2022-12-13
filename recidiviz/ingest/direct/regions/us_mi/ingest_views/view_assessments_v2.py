@@ -114,14 +114,14 @@ STATIC_STABLE as (
 select 
   source,
   RecId,   
-  offendernumber,
+  OffenderNumber,
   FkCoSyScale,
   corfscaleset_name,
   cosyscale_name,
   dateofscreening,
-  rawscore,
-  scoretext,
-  fkshuserscreener,
+  RawScore,
+  ScoreText,
+  FkShUserScreener,
   FirstName,
   MiddleInitial,
   LastName
