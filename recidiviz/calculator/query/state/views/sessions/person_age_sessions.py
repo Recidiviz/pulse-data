@@ -37,6 +37,7 @@ PERSON_AGE_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         last_day_of_data,
         MIN(start_date) AS first_population_date,
+        MAX(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data)) AS last_population_date,        
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`
     GROUP BY 1,2,3
     )
@@ -54,6 +55,7 @@ PERSON_AGE_SESSIONS_QUERY_TEMPLATE = """
     -- that start during or after a person first entering the system     
     UNNEST(GENERATE_DATE_ARRAY(birthdate, last_day_of_data, INTERVAL 1 YEAR)) AS start_date
     WHERE DATE_ADD(start_date, INTERVAL 1 YEAR)>=first_population_date
+        AND start_date<=last_population_date
 """
 PERSON_AGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,

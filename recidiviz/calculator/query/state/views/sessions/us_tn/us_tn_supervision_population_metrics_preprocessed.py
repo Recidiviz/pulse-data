@@ -64,6 +64,8 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
+        prioritized_race_or_ethnicity,
+        gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` df
     WHERE df.state_code = 'US_TN'
     
@@ -86,6 +88,8 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
+        CAST(NULL AS STRING) AS prioritized_race_or_ethnicity,
+        CAST(NULL AS STRING) AS gender,
     FROM `{{project_id}}.{{sessions_dataset}}.us_tn_judicial_district_sessions_materialized` s
     )
     ,
@@ -122,7 +126,9 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = f"""
         correctional_level_raw_text,
         supervising_officer_external_id,
         case_type,
-        judicial_district_code
+        judicial_district_code,
+        prioritized_race_or_ethnicity,
+        gender,
     FROM sub_sessions_with_attributes_dedup
 """
 

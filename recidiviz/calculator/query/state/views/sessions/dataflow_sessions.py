@@ -107,6 +107,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
         judicial_district_code,
+        prioritized_race_or_ethnicity,
+        gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
     WHERE state_code NOT IN ('{{incarceration_special_states}}')
             
@@ -143,6 +145,8 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         supervising_officer_external_id,
         case_type,
         judicial_district_code,
+        prioritized_race_or_ethnicity,
+        gender,
     FROM
         `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
     WHERE state_code NOT IN ('{{supervision_special_states}}')
@@ -210,7 +214,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                judicial_district_code
+                judicial_district_code,
+                prioritized_race_or_ethnicity,
+                gender
                 )
             ORDER BY
                 metric_source,
@@ -224,7 +230,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 correctional_level_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                judicial_district_code
+                judicial_district_code,
+                prioritized_race_or_ethnicity,
+                gender
             ) AS session_attributes,
     FROM sub_sessions_with_attributes
     WHERE start_date != end_date_exclusive

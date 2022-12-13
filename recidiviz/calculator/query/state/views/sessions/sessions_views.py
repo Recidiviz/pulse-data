@@ -72,6 +72,12 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sessions_closes
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions_unnested import (
     COMPARTMENT_SESSIONS_UNNESTED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
+    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions_preprocessed import (
+    COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.consecutive_sentences_preprocessed import (
     CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -251,6 +257,8 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
     COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,
+    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_SUB_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     DATAFLOW_SESSIONS_VIEW_BUILDER,
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
