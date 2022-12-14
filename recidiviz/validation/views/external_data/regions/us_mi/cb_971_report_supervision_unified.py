@@ -29,7 +29,6 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2022, 8, 19),
     date(2022, 9, 23),
     date(2022, 10, 21),
-    date(2022, 11, 18),
 ]
 
 
