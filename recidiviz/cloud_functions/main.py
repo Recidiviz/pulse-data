@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This file contains all of the relevant cloud functions"""
+import base64
 import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Tuple, TypeVar
@@ -41,6 +42,10 @@ from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
 
+TRIGGER_SOURCE_POST_DEPLOY = "POST_DEPLOY"
+TRIGGER_SOURCE_DAILY = "DAILY"
+TRIGGER_SOURCES = [TRIGGER_SOURCE_POST_DEPLOY, TRIGGER_SOURCE_DAILY]
+
 
 def _build_url(
     project_id: str,
@@ -54,7 +59,7 @@ def _build_url(
 
 
 def trigger_calculation_pipeline_dag(
-    data: Dict[str, Any], _context: ContextType
+    event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the calculation pipelines (either daily or historical) run simultaneously.
@@ -79,10 +84,26 @@ def trigger_calculation_pipeline_dag(
         cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
+    if "data" in event:
+        trigger_source = base64.b64decode(event["data"]).decode("utf-8")
+    else:
+        error_str = f"Could not find data needs in event parameter: {event}"
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    if trigger_source not in TRIGGER_SOURCES:
+        error_str = (
+            f"data needs to pass in the trigger source, but received: {trigger_source}"
+        )
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
 
-    monitor_response = trigger_dag(airflow_uri, dag_name, data)
+    monitor_response = trigger_dag(
+        airflow_uri, dag_name, {"TRIGGER_SOURCE": trigger_source}
+    )
     cloud_functions_log(
         severity="INFO",
         message=f"The monitoring Airflow response is {monitor_response}",
