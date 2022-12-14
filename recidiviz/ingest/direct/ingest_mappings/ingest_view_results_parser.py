@@ -34,7 +34,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # This key tracks the version number for the actual mappings manifest structure,
@@ -116,16 +115,13 @@ class IngestViewResultsParser:
         """
         manifest_dict = YAMLDict.from_path(manifest_path)
 
-        # Don't pop manifest version key, otherwise schema won't validate
-        version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
+        version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
 
         json_schema_dir_path = os.path.join(
             os.path.dirname(yaml_schema.__file__), version
         )
         if not os.path.exists(json_schema_dir_path):
             raise ValueError(f"Unsupported language version: [{version}]")
-
-        _ = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
 
         # TODO(#8981): Add logic to enforce that version changes are accompanied with
         #  proper migrations / reruns.
@@ -175,19 +171,6 @@ class IngestViewResultsParser:
             input_variables=set(variable_manifests.keys()),
             referenced_variables=output_manifest.variables_referenced(),
         )
-
-        # Validates the original manifest file against our JSON schema. We do this last
-        # because these errors are very cryptic and its much easier to debug errors
-        # from crashes in the EntityTreeManifestFactory.from_raw_manifest() call.
-        # However, we still want to do this validation so that we don't forget to add
-        # JSON schema (and therefore IDE) support for new features in the language.
-        if not environment.in_gcp():
-            # Run schema validation in tests / CI
-            YAMLDict.from_path(manifest_path).validate(
-                json_schema_path=os.path.join(
-                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
-                )
-            )
 
         return output_manifest, set(input_columns)
 
