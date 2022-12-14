@@ -18,6 +18,8 @@ columns:
   - name: CURRENT_STATUS
   - name: RESPONSIBLE_LOCATION
   - name: ID_NUMBER
+    description: |-
+      Unique DOCNO for each adult in custody.
   - name: RESPONSIBLE_DIVISION
   - name: SUPERVISING_AUTHORITY
   - name: FIRST_NAME
