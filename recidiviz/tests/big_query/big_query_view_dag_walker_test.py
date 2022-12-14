@@ -1473,6 +1473,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="population_projection_data", table_id="simulation_run_dates"
             ),
             BigQueryAddress(dataset_id="sessions", table_id="cohort_month_index"),
+            BigQueryAddress(
+                dataset_id="aggregated_metrics", table_id="metric_time_periods"
+            ),
         }
         if node.dag_key.view_address in known_empty_parent_view_addresss:
             return

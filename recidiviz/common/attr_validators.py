@@ -64,3 +64,7 @@ is_opt_bool = is_opt(bool)
 # List field validators
 is_list = attr.validators.instance_of(list)
 is_opt_list = is_opt(list)
+
+# Dict field validators
+is_dict = attr.validators.instance_of(dict)
+is_opt_dict = is_opt(dict)

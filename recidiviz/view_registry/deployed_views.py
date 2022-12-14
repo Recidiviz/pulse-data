@@ -19,6 +19,9 @@ import itertools
 import logging
 from typing import Dict, List, Set
 
+from recidiviz.aggregated_metrics.view_config import (
+    get_aggregated_metrics_view_builders,
+)
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.experiments.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
@@ -58,6 +61,7 @@ def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
     logging.info("Gathering all deployed view builders...")
     return list(
         itertools.chain(
+            get_aggregated_metrics_view_builders(),
             CASE_TRIAGE_VIEW_BUILDERS,
             get_direct_ingest_view_builders(),
             EXPERIMENTS_VIEW_BUILDERS,
@@ -92,6 +96,7 @@ def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
 # DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
 # DELETED FROM BOTH PROD AND STAGING.
 DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
+    "aggregated_metrics",
     "analyst_data",
     "case_triage",
     "census_managed_views",
