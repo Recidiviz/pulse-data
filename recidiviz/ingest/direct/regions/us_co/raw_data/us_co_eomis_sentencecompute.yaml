@@ -51,7 +51,7 @@ columns:
       Maximum prison term (Y/M/D).
   - name: MAXSENTDAYSMR
     description: |-
-      Max sentence in days (MR).
+      Max sentence in days to Mandatory Release (MR). Should always be the same as MINSENTDAYS except for "lifers".
   - name: CNTYJAILTIME
     description: |-
       Time spent in a county jail in days (CJT).
@@ -60,7 +60,7 @@ columns:
       Max time spent in a county jail in days (CJT). #TODO(#12372) Update with answer from CO onwhy is it always the same as CNTYJAILTIME except for 24 rows
   - name: CNTYJAILCREDIT
     description: |-
-      Credit received for county jail time in days.
+      Credit received for county jail time in days, or awarded by court upon sentencing.
   - name: CNTYJAILCREDITMAX
     description: |-
       Max credit received for county jail time in days #TODO(#12372) Update with answer on difference from CNTYJAILCREDIT
@@ -75,7 +75,7 @@ columns:
       OTMX- Null time during maximum #TODO(#12372) Update with answer from CDOC
   - name: MANDATORYRELEASEDATECTRL
     description: |-
-      Flat control release date (FMD) #TODO(#12372) Update with answer from CDOC
+      Flat control release date (FMD), not used in favor of ACTUAL or ESTIMATED.
   - name: STATUTORYGOODTIME
     description: |-
       Old law statutory good time (earned credit) #TODO(#12372) Update with answer from CDOC
@@ -87,7 +87,7 @@ columns:
       Old Law Trusty Time Lost #TODO(#12372) Update with answer from CDOC
   - name: EARNEDTIMEVESTED
     description: |-
-      Earned time vested #TODO(#12372) Update with answer from CDOC
+      Earned time vested, time applied to last official time computation.
   - name: EARNEDTIMEDISASTERRELIEFVESTED
     description: |-
       Earned Time Disaster Relief Vested.
@@ -105,10 +105,10 @@ columns:
       Provisional projected earned time.
   - name: MANDATORYRELEASEDATEACTUAL
     description: |-
-      Actual mandatory release date.  #TODO(#12372) Update with answer from CDOC on if this includes all earned time.
+      Actual mandatory release date, official mandatory release date from last time computation.
   - name: EARNEDTIME
     description: |-
-      Earned time - #TODO(#12372) in days?
+      Days of earned time since last official time computation.
   - name: EARNEDTIMEDISASTERRELIEF
     description: |-
       Earned time disaster relief - can earn one day of earned time for each day spent working at disaster site.
@@ -123,25 +123,25 @@ columns:
       TODO(#12372)
   - name: MANDATORYRELEASEDATEESTIMATED
     description: |-
-      TODO(#12372)
+      The most up to date mandatory release date, once the next time commputation is complete it becomes ACTUAL.
   - name: EARNEDTIMEPOSSIBLEMONTHS
     description: |-
-      TODO(#12372)
+      Earned time possible in months if continued earning at their current rate, not used.
   - name: EARNEDTIMEPOSSIBLE
     description: |-
-      Earned time possible is the calculation for if one keeps earning at their current rate.
+      Earned time in days if one keeps earning at their current rate, not used for calculations.
   - name: MANDATORYRELEASEDATEPOSSIBLE
     description: |-
-      The mandatory release date if person keeps earning time at their current rate.
+      The mandatory release date if person keeps earning time at their current rate, not used for calculations.
   - name: EARNEDTIMEPOTENTIALMONTHS
     description: |-
-      The potential earned time in months if earning the max each month.
+      The potential earned time in months if earning the max each month, not used for calculations.
   - name: EARNEDTIMEPOTENTIAL
     description: |-
-      The potential earned time if earning the max each month.
+      The potential earned time in days if earning the max each month, not used for calculations.
   - name: MANDATORYRELEASEDATEPOTENTIAL
     description: |-
-      The mandatory release date if person earns the max each month.
+      The mandatory release date if person was to earn the max each month.
   - name: EARNEDRELEASETIME
     description: |-
       TODO(#12372)
@@ -257,7 +257,7 @@ columns:
       TODO(#12372)
   - name: MINSENTDAYS
     description: |-
-      TODO(#12372)
+      Minimum sentence days, always set as equal to max except for "lifers".
   - name: STATUTORYGOODTIMEMIN
     description: |-
       TODO(#12372)

@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing external movements information."""
+"""Query containing sentence information from the following tables: eomis_sentencecomponent, eomis_sentencecompute,
+    eomis_commitmentsummary, eomis_sentcompchaining, eomis_sentcreditdbt, and eomis_inmateprofile
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -69,6 +71,7 @@ sequences AS (
             sc.TIMESERVEDTO AS INITIAL_TIME_SERVED_DAYS, 
             sc.MINSENTDAYS AS MIN_LENGTH_DAYS, --or MINIMUMTERM, s.MINPRISONTERMD
             sc.MAXSENTDAYSMR AS MAX_LENGTH_DAYS, --MAXIMUMTERM, MAXPRISONTERMD, c.MAXIMUMPRISONTERM
+            sc.MANDATORYRELEASEDATEESTIMATED,
             sc.EARNEDTIME, -- or EARNEDRELEASETIME,EARNEDTIMEPE,
             scc.GOVERNS, 
             scc.SENTENCECOMPONENT,
@@ -91,7 +94,7 @@ SELECT
     SENTENCEFINDINGDATE, 
     COMPONENTEFFECTIVEDATE, 
     p.PAROLEELIGIBILITYDATE AS PROJ_MIN_RELEASE, -- OR PAROLEELIGIBILITYDATECTRL, sc.PAROLEELIGIBILITYDATEACTUAL,PAROLEELIGIBILITYDATEESTIMATED,PAROLEELIGIBILITYDATEPOSSIBLE, PAROLEELIGIBILITYDATEPOTENTIAL,
-    p.PROJRELEASEDTACTUAL AS PROJ_MAX_RELEASE, -- OR sc.MANDATORYRELEASEDAYEACTUAL, MANDATORYRELEASEDATEACTUAL, MANDATORYRELEASEDATECTRL, MANDATORYRELEASEDATEESTIMATED, MANDATORYRELEASEDATEPOSSIBLE, MANDATORYRELEASEDATEPOTENTIAL,
+    MANDATORYRELEASEDATEESTIMATED AS PROJ_MAX_RELEASE, -- Most up to date calculation of release date #TODO(#17262): Revisit with release list
     COMPLETION_DATE, #COMPSTATUSDATE
     p.PAROLEELIGIBILITYDATE, 
     STATECOUNTY,

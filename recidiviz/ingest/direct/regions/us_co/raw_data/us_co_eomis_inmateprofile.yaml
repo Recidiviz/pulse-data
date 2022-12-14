@@ -847,7 +847,7 @@ columns:
       Final MR count.
   - name: PROJRELEASEDT
     description: |-
-      Mandatory release date (MRD) - projected release date.
+      Most up to date working projected release date, ends up being release date.
   - name: SGTLAWUSEDTOCALCMR
     description: |-
       SGT law used to caculate mandatory release - Mandatory or Discretionary.
@@ -1273,10 +1273,10 @@ columns:
         description: Not Applicable
   - name: NEXTHEARINGREVIEWMONTH
     description: |-
-      Next Hearing/Review Month.
+      Next Hearing/Review Month for Parole (generally 3 months before PED), part of Next Parole Hearing Date (NPHD).
   - name: NEXTHEARINGREVIEWYEAR
     description: |-
-      Next Hearing/Review Year.
+      Next Hearing/Review Year for Parole (generally 3 months before PED), part of Next Parole Hearing Date (NPHD).
   - name: LATESTINMATERISKASMTTOTALSCORE
     description: |-
       Latest Inmate Risk Assessment Total Score.
@@ -1291,6 +1291,7 @@ columns:
       Sentence Discharge Date Actual (SDD).
   - name: PROJRELEASEDTACTUAL
     description: |-
+      Once the projected release date becomes actual there was an official time computation report filed and it becomes
       Mandatory Release Date Actual (MRD).
   - name: PAROLEELIGIBILITYDATEACTUAL
     description: |-
