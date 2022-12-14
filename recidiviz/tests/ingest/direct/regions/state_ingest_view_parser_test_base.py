@@ -29,11 +29,13 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
+from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewResultsParser,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
@@ -175,6 +177,25 @@ class StateIngestViewParserTestBase:
                 continue
             result.append(manifest_path)
         return result
+
+    def test_all_ingest_view_manifests_conform_to_schema(self) -> None:
+        """
+        Validates ingest view mapping YAML files against our JSON schema.
+        We want to do this validation so that we
+        don't forget to add JSON schema (and therefore
+        IDE) support for new features in the language.
+        """
+        if self.region_code() == StateCode.US_XX.value:
+            # Skip template region
+            return
+        for manifest_path in self._v2_manifest_paths():
+            manifest_dict = YAMLDict.from_path(manifest_path)
+            version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
+            manifest_dict.validate(
+                json_schema_path=os.path.join(
+                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
+                )
+            )
 
     def test_all_ingest_view_manifests_parse(self) -> None:
         if self.region_code() == StateCode.US_XX.value:
