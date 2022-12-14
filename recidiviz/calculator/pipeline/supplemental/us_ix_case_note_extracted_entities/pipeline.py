@@ -64,7 +64,7 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
 
     @classmethod
     def table_fields(cls) -> Dict[str, Type]:
-        fields_from_case_updates: Dict[str, Type] = {
+        fields_from_case_updates: Dict[str, Type[Any]] = {
             "person_id": int,
             "person_external_id": str,
             "state_code": str,
@@ -129,9 +129,10 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
                         continue
                     entity_mapping[entity_mapping_key] = True
             final_row: Dict[str, Any] = {**row, **entity_mapping}
-            final_row["NoteDate"] = datetime.datetime.strptime(
-                final_row["NoteDate"], "%Y-%m-%d %H:%M:%S"
-            ).date()
+            if final_row["NoteDate"]:
+                final_row["NoteDate"] = datetime.datetime.strptime(
+                    final_row["NoteDate"], "%Y-%m-%d %H:%M:%S"
+                ).date()
             final_rows.append(json_serializable_dict(final_row))
 
         return final_rows
