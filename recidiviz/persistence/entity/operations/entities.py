@@ -155,5 +155,5 @@ class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
             "regionCode": self.region_code,
             "instance": self.instance.value,
             "status": self.status.value,
-            "status_timestamp": self.status_timestamp.isoformat(),
+            "statusTimestamp": self.status_timestamp.isoformat(),
         }

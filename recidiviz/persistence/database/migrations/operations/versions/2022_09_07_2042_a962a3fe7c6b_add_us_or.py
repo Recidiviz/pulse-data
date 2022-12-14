@@ -17,13 +17,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        """
-                INSERT INTO direct_ingest_instance_pause_status (region_code, instance, is_paused) VALUES
-                ('US_OR', 'PRIMARY', TRUE),
-                ('US_OR', 'SECONDARY', TRUE);
-            """
-    )
+    pass
+    # This migration was crashing for local alembic migrations, claming that the PK ('US_OR', 'PRIMARY')
+    # already existed. This was thereby causing all pursuant migrations to not be run locally.
+    # Because direct_ingest_instance_pause_status no longer exists anyway, we can safely set this upgrade to `pass`.
 
 
 def downgrade() -> None:

@@ -1,3 +1,4 @@
+file_id,region_code,file_tag,normalized_file_name,discovery_time,processed_time,datetimes_contained_upper_bound_inclusive,raw_data_instance,is_invalidated
 90731,US_CO,Base_Curr_Off_Pop,unprocessed_2022-04-26T16:37:33:781474_raw_Base_Curr_Off_Pop.csv,2022-04-27T21:58:51.992436,2022-04-27T21:59:14.364985,2022-04-26T16:37:33.781474,PRIMARY,false
 90743,US_CO,Base_Curr_Off_Pop,unprocessed_2022-04-27T14:26:50:834783_raw_Base_Curr_Off_Pop.csv,2022-04-27T22:12:24.234349,2022-04-27T22:12:48.581480,2022-04-27T14:26:50.834783,PRIMARY,false
 92239,US_CO,Base_Curr_Off_Pop,unprocessed_2022-04-29T14:52:56:254568_raw_Base_Curr_Off_Pop.csv,2022-04-29T20:49:46.586737,2022-04-29T20:50:30.631857,2022-04-29T14:52:56.254568,PRIMARY,false

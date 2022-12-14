@@ -63,6 +63,7 @@ def reset_operations_db_fixtures(engine: Engine) -> None:
             "../../..",
             "recidiviz/tools/admin_panel/fixtures/operations_db",
         ),
+        csv_headers=True,
     )
 
 

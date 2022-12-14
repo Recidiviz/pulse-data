@@ -1,3 +1,4 @@
+job_id,region_code,instance,ingest_view_name,upper_bound_datetime_inclusive,lower_bound_datetime_exclusive,job_creation_time,materialization_time,is_invalidated
 46606,US_CO,PRIMARY,IncarcerationPeriod,2022-04-26T16:40:09.013015,,2022-06-23T22:20:50.135539,2022-06-23T22:21:36.089394,false
 46607,US_CO,PRIMARY,IncarcerationPeriod,2022-04-27T14:29:01.823501,2022-04-26T16:40:09.013015,2022-06-23T22:20:50.161285,2022-06-23T22:21:17.958188,false
 46608,US_CO,PRIMARY,IncarcerationPeriod,2022-04-29T14:54:41.189617,2022-04-27T14:29:01.823501,2022-06-23T22:20:50.187840,2022-06-23T22:21:22.206535,false
