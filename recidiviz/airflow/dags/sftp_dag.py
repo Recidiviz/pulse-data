@@ -21,7 +21,8 @@ from typing import Dict, List
 from airflow.decorators import dag
 from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
+from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.task_group import TaskGroup
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
@@ -67,6 +68,12 @@ def _upload_files(state_code: str, file: str) -> str:
     return f"{state_code}_{file}"
 
 
+def check_if_lock_does_not_exist(lock_id: str) -> bool:
+    return not GCSHook().exists(
+        bucket_name=f"{project_id}-gcslock", object_name=lock_id
+    )
+
+
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     default_args=DEFAULT_ARGS,
@@ -76,6 +83,13 @@ def _upload_files(state_code: str, file: str) -> str:
 )
 def sftp_dag() -> None:
     """This executes operations to handle files downloaded from SFTP servers."""
+
+    start_sftp = ShortCircuitOperator(
+        task_id="start_sftp",
+        python_callable=check_if_lock_does_not_exist,
+        op_kwargs={"lock_id": "EXPORT_PROCESS_RUNNING_OPERATIONS"},
+        ignore_downstream_trigger_rules=True,
+    )
     end_sftp = EmptyOperator(task_id="end_sftp")
     for state_code in ["US_ID", "US_MI", "US_ME", "US_PA"]:
         with TaskGroup(group_id=state_code) as task_group:
@@ -97,7 +111,7 @@ def sftp_dag() -> None:
             ).expand(op_kwargs=bridge.output)
             find_files_to_download >> transform_files >> bridge >> upload_files
 
-        task_group >> end_sftp
+        start_sftp >> task_group >> end_sftp
 
 
 dag = sftp_dag()
