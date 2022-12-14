@@ -63,7 +63,7 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
     const IngestInstanceStatusPopoverContent = (
       <div>
         {statusInfo
-          ? getStatusMessage(statusInfo.status, statusInfo.timestamp)
+          ? getStatusMessage(statusInfo.status, statusInfo.statusTimestamp)
           : null}
       </div>
     );

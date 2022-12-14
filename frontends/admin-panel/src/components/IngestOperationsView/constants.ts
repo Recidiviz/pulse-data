@@ -43,7 +43,7 @@ export type QueueMetadata = {
 
 export type IngestInstanceStatusInfo = {
   status: string;
-  timestamp: string;
+  statusTimestamp: string;
 };
 
 export type IngestInstanceStatusResponse = {

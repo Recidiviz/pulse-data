@@ -124,8 +124,8 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
 
     const secondaryStatus: string = secondaryInstanceInfo.status;
 
-    const primaryTimestamp: string = primaryInstanceInfo.timestamp;
-    const secondaryTimestamp: string = secondaryInstanceInfo.timestamp;
+    const primaryTimestamp: string = primaryInstanceInfo.statusTimestamp;
+    const secondaryTimestamp: string = secondaryInstanceInfo.statusTimestamp;
 
     return {
       stateCode: key,
