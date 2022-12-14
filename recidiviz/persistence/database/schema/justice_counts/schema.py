@@ -68,6 +68,17 @@ JusticeCountsBase: DeclarativeMeta = declarative_base(
 )
 
 
+class UserAccountInvitationStatus(enum.Enum):
+    NOT_SENT = "NOT_SENT"
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    ERRORED = "ERRORED"
+
+
+class UserAccountRole(enum.Enum):
+    ADMIN = "ADMIN"
+
+
 class AcquisitionMethod(enum.Enum):
     SCRAPED = "SCRAPED"
     UPLOADED = "UPLOADED"
@@ -347,6 +358,14 @@ class UserAccount(JusticeCountsBase):
 
     # Name that will be displayed in the Control Panel
     name = Column(String(255), nullable=True)
+
+    # name, invitation_status, and role will be displayed
+    # in the team management tool within agency settings.
+    email = Column(String(255), nullable=True)
+
+    invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
+
+    role = Column(Enum(UserAccountRole), nullable=True)
 
     # Auth0 is an authentication and authorization platform we use for users of the Control Panel.
     # This field refers to the Auth0 `user_id` property:
