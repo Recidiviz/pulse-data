@@ -17,8 +17,6 @@
 """ Contains Justice Counts constants """
 import enum
 
-from recidiviz.persistence.database.schema.justice_counts.schema import System
-
 REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
 
 DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS"
@@ -27,11 +25,3 @@ DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTE
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
     METRICS_TAB = "METRICS_TAB"
-
-
-SUPERVISION_SYSTEMS = [
-    System.POST_RELEASE,
-    System.PAROLE,
-    System.PROBATION,
-    System.SUPERVISION,
-]

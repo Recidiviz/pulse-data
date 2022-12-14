@@ -1711,17 +1711,16 @@ class TestMetricInterface(TestCase):
 
         # When termination metric is disaggregated, then we should that metric
         # for parole and post_release and NOT for supervision,
-        supervision_metrics_and_parole = (
-            MetricInterface.get_metric_definitions_for_systems(
-                {
-                    schema.System.SUPERVISION,
-                    schema.System.PAROLE,
-                    schema.System.POST_RELEASE,
-                },
-                metric_key_to_disaggregation_status={
-                    supervision.supervision_terminations.key: True
-                },
-            )
+        agency_metrics = MetricInterface.get_metric_definitions_for_systems(
+            {
+                schema.System.SUPERVISION,
+                schema.System.PAROLE,
+                schema.System.POST_RELEASE,
+                schema.System.PRISONS,
+            },
+            metric_key_to_disaggregation_status={
+                supervision.supervision_terminations.key: True
+            },
         )
         parole_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
             supervision.supervision_terminations.key.replace(
@@ -1736,11 +1735,13 @@ class TestMetricInterface(TestCase):
         ]
 
         self.assertEqual(
-            {m.key for m in supervision_metrics_and_parole},
+            {m.key for m in agency_metrics},
             {
                 m.key
-                for m in supervision_metrics
+                for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
+                + supervision_metrics
                 + [parole_terminations, post_release_terminations]
                 if m.key != supervision.supervision_terminations.key
+                and m.disabled is False
             },
         )
