@@ -46,7 +46,26 @@ resource "google_composer_environment" "default_v2" {
       enable_private_endpoint = true
     }
 
-    environment_size = "ENVIRONMENT_SIZE_LARGE"
+    workloads_config {
+      scheduler {
+        count      = 1
+        cpu        = 0.5
+        memory_gb  = 1.875
+        storage_gb = 1
+      }
+      web_server {
+        cpu        = 0.5
+        memory_gb  = 1.875
+        storage_gb = 1
+      }
+      worker {
+        cpu        = 0.5
+        memory_gb  = 1.875
+        storage_gb = 1
+        min_count  = 2
+        max_count  = 6
+      }
+    }
 
   }
 
