@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -274,6 +274,20 @@ def non_active_supervision_levels() -> str:
     )
 
 
+def nonnull_current_date_clause(column_name: str) -> str:
+    """Convert NULL end dates to current date to help with date logic"""
+    return f'COALESCE({column_name}, CURRENT_DATE("US/Eastern"))'
+
+
+def nonnull_current_date_exclusive_clause(column_name: str) -> str:
+    """Convert NULL exclusive end dates to the day after current date to help with date logic.
+    For use in views that use exclusive end dates, where we might want to calculate the number
+    of days in a span."""
+    return (
+        f'COALESCE({column_name}, DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY))'
+    )
+
+
 def nonnull_end_date_clause(column_name: str) -> str:
     """Convert NULL end dates to dates far in the future to help with the date logic"""
     return f'COALESCE({column_name}, "{MAGIC_END_DATE}")'
@@ -307,3 +321,10 @@ def array_concat_with_null(arrays_to_concat: List[str]) -> str:
         array_expr.append(f"IFNULL({arr}, [])")
 
     return f'ARRAY_CONCAT({", ".join(array_expr)})'
+
+
+def list_to_query_string(string_list: List[str], quoted: bool = False) -> str:
+    """Combines a list of strings into a comma-separated string, with the option to maintain quoted strings"""
+    if quoted:
+        return ", ".join([f'"{string}"' for string in string_list])
+    return ", ".join(string_list)

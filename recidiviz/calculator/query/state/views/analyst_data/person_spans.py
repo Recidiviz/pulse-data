@@ -60,7 +60,7 @@ SELECT
     state_code,
     person_id,
     "PERSON_DEMOGRAPHICS" AS span,
-    MIN(start_date) AS start_date,
+    MIN(birthdate) AS start_date,
     DATE_ADD(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY) AS end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         birthdate,
@@ -68,11 +68,7 @@ SELECT
         pd.prioritized_race_or_ethnicity
     ))[OFFSET(0)]) AS span_attributes,
 FROM
-    `{project_id}.{sessions_dataset}.compartment_sessions_materialized` cs
-INNER JOIN
     `{project_id}.{sessions_dataset}.person_demographics_materialized` pd
-USING
-    (state_code, person_id)
 GROUP BY 1, 2, 3
 
 UNION ALL
