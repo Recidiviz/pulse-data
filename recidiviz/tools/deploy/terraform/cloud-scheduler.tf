@@ -24,6 +24,6 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
   pubsub_target {
     # topic's full resource name.
     topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_incremental_pipelines"
-    data       = base64encode("trigger") # Added to fulfill requirement for data or attributes to be passed.
+    data       = base64encode("DAILY")
   }
 }
