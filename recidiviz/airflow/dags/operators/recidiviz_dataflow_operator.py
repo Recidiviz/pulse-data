@@ -28,16 +28,39 @@ from airflow.utils.context import Context
 
 
 class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
+    """A custom implementation of the DataflowTemplatedJobStartOperator that overrides
+    job_ids to have the same id over time."""
+
     def execute(
         self,
         # Some context about the context: https://bcb.github.io/airflow/execute-context
         context: Context,  # pylint: disable=unused-argument
     ) -> Dict[Any, Any]:
+        """Checks if a Dataflow job is running (in case of task retry), otherwise starts
+        the job. Polls the status of the job until it's finished or failed."""
+
         hook = DataflowHook(
             gcp_conn_id=self.gcp_conn_id,
             delegate_to=self.delegate_to,
             poll_sleep=self.poll_sleep,
         )
+
+        # If the operator is on a retry loop, we ignore the start operation by checking
+        # if the job is running.
+        if hook.is_job_dataflow_running(
+            name=self.task_id,
+            project_id=self.project_id,
+        ):
+            hook.wait_for_done(
+                job_name=self.task_id,
+                project_id=self.project_id,
+                location=self.dataflow_default_options["region"],
+            )
+            return hook.get_job(
+                job_id=self.task_id,
+                project_id=self.project_id,
+                location=self.dataflow_default_options["region"],
+            )
 
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
         # so it adds a unique-id to the end of the job name. This overwrites that default argument.
