@@ -17,7 +17,6 @@
 """Base class for the reported value(s) for a Justice Counts metric."""
 
 import enum
-import itertools
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Type, TypeVar
 
 import attr
@@ -286,33 +285,30 @@ class MetricInterface:
         # Sort systems so that Supervision, Parole, Probation, and Post-Release
         # are always grouped together, in that order
         systems_ordered = schema.System.sort(systems=list(systems))
+        supervision_metrics = METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
         metrics = []
-        if schema.System.SUPERVISION in systems:
-            supervision_metrics = METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
-            for metric in supervision_metrics:
-                if metric_key_to_disaggregation_status.get(metric.key) is True:
-                    # If reported disaggregated, iterate through each subsystem and add
-                    # a metric for a disaggregation.
-                    for supervision_subsystem in systems - {schema.System.SUPERVISION}:
-                        # e.g. supervision_subsystem = PAROLE
-                        # Get the copy of the current supervision metric for that system.
+        for system in systems_ordered:
+            if system == schema.System.SUPERVISION:
+                for metric in supervision_metrics:
+                    if metric_key_to_disaggregation_status.get(metric.key) is not True:
+                        # If reported as an aggregate, only add a the 'umbrella category'
+                        # metric for supervision.
+                        metrics.append(metric)
+            elif (
+                system in schema.System.supervision_subsystems()
+                and schema.System.SUPERVISION in systems
+            ):
+                for metric in supervision_metrics:
+                    if metric_key_to_disaggregation_status.get(metric.key) is True:
+                        # If reported disaggregated, add metrics for the subsystem to the list of metrics
                         subsystem_metric = METRIC_KEY_TO_METRIC[
                             # Change the key from e.g. SUPERVISION_TOTAL_STAFF
                             # to PAROLE_TOTAL_STAFF.
-                            metric.key.replace(
-                                "SUPERVISION", supervision_subsystem.value, 1
-                            )
+                            metric.key.replace("SUPERVISION", system.value, 1)
                         ]
                         metrics.append(subsystem_metric)
-                else:
-                    metrics.append(metric)
-
-        else:
-            metrics = list(
-                itertools.chain(
-                    *[METRICS_BY_SYSTEM[system.value] for system in systems_ordered]
-                )
-            )
+            else:
+                metrics += METRICS_BY_SYSTEM[system.value]
 
         metric_definitions = [
             metric for metric in metrics if metric.disabled is not True
