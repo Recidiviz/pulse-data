@@ -96,6 +96,7 @@ output:
                   - Death Row
                   - Home Electronic Monitoring
                   - Independent Living Program
+                  - Intensive Re-entry Program
                   - Pre-Release Assignment
                   - Segregation -Administration
                   - Segregation -Mental Health
@@ -138,6 +139,7 @@ output:
                   - Administrative
                   - Administrative Transfer
                   - Assigned To Jail
+                  - Civil Commitment
                   - Civil Commitment Pending
                   - Court Action
                   - Initial Facility Intake
@@ -146,6 +148,7 @@ output:
                   - Pending Custody Intake
                   - Release Court Order
                   - Return From Bond
+                  - Return From Parole
                   - Return Other Jurisdictions
                   - Substance Abuse And Therapeutic Program Assignment
                   - Temporary Remand To Custody
@@ -173,6 +176,7 @@ output:
                   - Segregation -Protective Custody
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                   - Authorized Temporary Release
+                  - Temporary Remand To Community
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   - Emergency Transfer
                   - Jail To Jail
