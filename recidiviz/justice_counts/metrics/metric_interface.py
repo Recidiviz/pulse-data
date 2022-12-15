@@ -161,7 +161,7 @@ class MetricInterface:
             "value": self.value,
             "settings": settings_json,
             "unit": self.metric_definition.metric_type.unit,
-            "category": self.metric_definition.category.value,
+            "category": self.metric_definition.category.human_readable_string,
             "label": self.metric_definition.display_name,
             "enabled": self.is_metric_enabled
             if self.is_metric_enabled is not None
