@@ -57,14 +57,42 @@ PSEUDONYMIZED_ID = """
 
 CLIENT_RECORD_QUERY_TEMPLATE = f"""
     WITH 
+    id_lsu_eligibility AS (
+        SELECT
+            state_code,
+            external_id AS person_external_id,
+            "LSU" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_transfer_to_limited_supervision_form_record_materialized`
+    ),
+    id_earned_discharge_eligibility AS (
+        SELECT
+            state_code,
+            external_id AS person_external_id,
+            "earnedDischarge" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
+    ),
+    id_past_FTRD_eligibility AS (
+        SELECT
+            state_code,
+            external_id AS person_external_id,
+            "pastFTRD" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_full_term_discharge_from_supervision_request_record_materialized`
+    ),
+    nd_early_termination_eligibility AS (
+        SELECT
+            state_code,
+            external_id AS person_external_id,
+            "earlyTermination" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
+    ),
         {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
         {US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
         {US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE}
     SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
     UNION ALL
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM nd_clients
+    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM us_nd_clients
     UNION ALL
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM id_clients
+    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM us_id_clients
 """
 
 CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

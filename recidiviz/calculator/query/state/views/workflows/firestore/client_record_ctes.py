@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """CTEs used across multiple states' client record queries."""
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from typing import List
+
+from recidiviz.calculator.query.bq_utils import (
+    columns_to_array,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
 )
@@ -108,4 +113,66 @@ def client_record_supervision_super_sessions_cte(state_code: str) -> str:
         WHERE state_code = "{state_code}"
         AND end_date IS NULL
     ),
+    """
+
+
+def client_record_join_clients_cte(state_code: str) -> str:
+    return f"""
+    join_{state_code.lower()}_clients AS (
+        SELECT DISTINCT
+          "{state_code}" AS state_code,
+          sc.person_id,
+          sc.person_external_id,
+          sp.full_name as person_name,
+          sp.current_address as address,
+          CAST(ph.phone_number AS INT64) AS phone_number,
+          sc.supervision_type,
+          sc.officer_id,
+          sc.district,
+          sl.supervision_level,
+          sl.supervision_level_start,
+          ss.start_date AS supervision_start_date,
+          FIRST_VALUE(sc.expiration_date IGNORE NULLS) OVER (
+            PARTITION BY sc.person_id
+            ORDER BY sc.expiration_date DESC
+          ) AS expiration_date,
+        FROM {state_code.lower()}_supervision_cases sc 
+        INNER JOIN {state_code.lower()}_supervision_level_start sl USING(person_id)
+        INNER JOIN {state_code.lower()}_supervision_super_sessions ss USING(person_id)
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
+        LEFT JOIN {state_code.lower()}_phone_numbers ph USING(person_external_id)
+    ),
+    """
+
+
+def clients_cte(state_code: str, opportunity_ctes: List[str]) -> str:
+    newline = "\n        "
+    return f"""
+    {state_code.lower()}_clients AS (
+        # Values set to NULL are not applicable for this state
+        SELECT
+            person_external_id,
+            state_code,
+            person_name,
+            officer_id,
+            supervision_type,
+            supervision_level,
+            supervision_level_start,
+            address,
+            phone_number,
+            supervision_start_date,
+            expiration_date,
+            NULL AS current_balance,
+            NULL AS last_payment_amount,
+            CAST(NULL AS DATE) AS last_payment_date,
+            CAST(NULL AS ARRAY<string>) AS special_conditions,
+            CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
+            district,
+            {columns_to_array(f"{opportunity_cte}.opportunity_name" for opportunity_cte in opportunity_ctes)}
+                AS all_eligible_opportunities,
+        FROM join_{state_code.lower()}_clients
+        {newline.join([f"LEFT JOIN {opportunity_cte} USING (state_code, person_external_id)" for opportunity_cte in opportunity_ctes])}
+        # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
+        WHERE person_name IS NOT NULL
+    )
     """

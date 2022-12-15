@@ -22,7 +22,7 @@ def us_id_latest_phone_number() -> str:
     SELECT
         pei.person_id,
         pei.external_id AS person_external_id,
-        c.phonenumber,
+        c.phonenumber AS phone_number,
       FROM `{project_id}.{us_id_raw_data}.cis_personphonenumber_latest` a
       LEFT JOIN `{project_id}.{us_id_raw_data}.cis_codephonenumbertype_latest` b
         ON a.codephonenumbertypeid = b.id
