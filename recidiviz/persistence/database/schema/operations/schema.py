@@ -92,7 +92,8 @@ class DirectIngestSftpRemoteFileMetadata(OperationsBase):
 
     __table_args__ = (
         CheckConstraint(
-            "discovery_time IS NOT NULL", name="nonnull_sftp_remote_file_discovery_time"
+            "file_discovery_time IS NOT NULL",
+            name="nonnull_sftp_remote_file_discovery_time",
         ),
         CheckConstraint(
             "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_path"
@@ -107,10 +108,10 @@ class DirectIngestSftpRemoteFileMetadata(OperationsBase):
     remote_file_path = Column(String(255), index=True)
 
     # Time when the file is actually discovered by the SFTP Airflow DAG
-    discovery_time = Column(DateTime)
+    file_discovery_time = Column(DateTime(timezone=True))
 
     # Time when the file is finished fully downloaded to the SFTP bucket
-    download_time = Column(DateTime)
+    file_download_time = Column(DateTime(timezone=True))
 
 
 class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
@@ -121,8 +122,8 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
 
     __table_args__ = (
         CheckConstraint(
-            "discovery_time IS NOT NULL",
-            name="nonnull_sftp_ingest_ready_discovery_time",
+            "file_discovery_time IS NOT NULL",
+            name="nonnull_sftp_ingest_ready_file_discovery_time",
         ),
         CheckConstraint(
             "post_processed_normalized_file_path IS NOT NULL AND remote_file_path IS NOT NULL",
@@ -141,10 +142,10 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
     remote_file_path = Column(String(255))
 
     # Time when the file is actually discovered by the SFTP Airflow DAG in the SFTP bucket.
-    discovery_time = Column(DateTime)
+    file_discovery_time = Column(DateTime(timezone=True))
 
     # Time when the file is finished fully uploaded to the ingest bucket
-    upload_time = Column(DateTime)
+    file_upload_time = Column(DateTime(timezone=True))
 
 
 class DirectIngestRawFileMetadata(OperationsBase):
