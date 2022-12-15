@@ -90,12 +90,27 @@ class CallsRespondedOptions(enum.Enum):
 
 
 class MetricCategory(enum.Enum):
-    CAPACITY_AND_COST = "CAPACITY AND COST"
+    CAPACITY_AND_COST = "CAPACITY_AND_COST"
     OPERATIONS_AND_DYNAMICS = "OPERATIONS_AND_DYNAMICS"
     POPULATIONS = "POPULATIONS"
     PUBLIC_SAFETY = "PUBLIC_SAFETY"
     EQUITY = "EQUITY"
     FAIRNESS = "FAIRNESS"
+
+    @property
+    def human_readable_string(self) -> str:
+        """The name of the metric category
+
+        E.g. 'OPERATIONS_AND_DYNAMICS' --> 'Operations and Dynamics'
+        """
+        metric_category = self.value
+        # Replace underscores with spaces
+        # Transform all capitals to titlecase
+        # Replace "And" with "and"
+        metric_category = (
+            metric_category.replace("_", " ").title().replace("And", "and")
+        )
+        return metric_category.strip()
 
 
 @attr.define()
