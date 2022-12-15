@@ -63,6 +63,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 name="User",
                 auth0_user_id="id0",
+                email="test@email.com",
             )
 
     def test_create_or_update_user(self) -> None:
@@ -91,6 +92,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session, auth0_user_id="id0"
             )
             self.assertEqual(user.name, "User")
+            self.assertEqual(user.email, "test@email.com")
             self.assertEqual(
                 {a.name for a in user.agencies}, {"Agency Alpha", "Agency Beta"}
             )
