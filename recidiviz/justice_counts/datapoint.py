@@ -566,18 +566,34 @@ class DatapointInterface:
                 session,
             )
 
-        # 4. Add datapoint to record that metric is disaggregated_by_supervision_subsystems
+        # 4. Add datapoints to record that metric is disaggregated_by_supervision_subsystems
         if agency_metric.disaggregated_by_supervision_subsystems is not None:
-            update_existing_or_create(
-                schema.Datapoint(
-                    metric_definition_key=agency_metric.key,
-                    source=agency,
-                    context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-                    dimension_identifier_to_member=None,
-                    value=str(agency_metric.disaggregated_by_supervision_subsystems),
-                ),
-                session,
-            )
+            current_system = agency_metric.metric_definition.system.value
+            for system in agency.systems:
+                # Add a datapoint for disaggregated_by_supervision_subsystems for every
+                # supervision system that an agency belongs to.
+                if (
+                    schema.System[system] == schema.System.SUPERVISION
+                    or schema.System[system] in schema.System.supervision_subsystems()
+                ):
+
+                    metric_definition_key = (
+                        agency_metric.key
+                        if system == current_system
+                        else agency_metric.key.replace(current_system, system, 1)
+                    )
+                    update_existing_or_create(
+                        schema.Datapoint(
+                            metric_definition_key=metric_definition_key,
+                            source=agency,
+                            context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                            dimension_identifier_to_member=None,
+                            value=str(
+                                agency_metric.disaggregated_by_supervision_subsystems
+                            ),
+                        ),
+                        session,
+                    )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
             for (dimension, contexts_lst) in (

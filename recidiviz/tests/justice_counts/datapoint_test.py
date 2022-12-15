@@ -423,11 +423,11 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
 
     def test_save_disaggregated_by_supervision_subsystems_boolean(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
-            agency = self.test_schema_objects.test_agency_A
+            agency = self.test_schema_objects.test_agency_E
             user = self.test_schema_objects.test_user_A
             session.add_all([user, agency])
             agency_metric = MetricInterface(
-                key=prisons.daily_population.key,
+                key=supervision.annual_budget.key,
                 disaggregated_by_supervision_subsystems=True,
             )
             DatapointInterface.add_or_update_agency_datapoints(
@@ -437,11 +437,30 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 1)
-            self.assertEqual(datapoints[0].value, "True")
-            self.assertEqual(
-                datapoints[0].context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+            self.assertEqual(len(datapoints), 3)
+            for datapoint in datapoints:
+                self.assertEqual(datapoint.value, "True")
+                self.assertEqual(
+                    datapoint.context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+                )
+
+            agency_metric = MetricInterface(
+                key=supervision.annual_budget.key,
+                disaggregated_by_supervision_subsystems=False,
             )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 3)
+            for datapoint in datapoints:
+                self.assertEqual(datapoint.value, "False")
+                self.assertEqual(
+                    datapoint.context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+                )
 
     def test_save_invalid_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
