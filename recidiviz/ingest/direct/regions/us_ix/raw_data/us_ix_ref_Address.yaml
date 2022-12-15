@@ -48,9 +48,11 @@ columns:
   - name: JurisdictionId
     description: |-
       Code for jurisdiction of this address. Joins to `ref_Location.LocationId`.
+      In reality this seems to be the code for the county of this address.
   - name: CountyId
     description: |-
       Code for county of this address. Joins to `ref_Location.LocationId`.
+      In reality this seems to be the code for the city of this address.
   - name: StateId
     description: |-
       Code for state of this address. Joins to `ref_Location.LocationId`.

@@ -39,7 +39,10 @@ VIEW_QUERY_TEMPLATE = """
               EndDate,
               a.StreetNumber,
               a.StreetName,
-              COALESCE(j.LocationName, a.OutOfStatePlace) AS LocationName,
+              -- In Atlas, the city / county association fields are named confusingly /
+              -- backwards, so CountyId actually leads us to the location record of the
+              -- relevant city for the address.
+              COALESCE(county.LocationName, a.OutOfStatePlace) AS LocationName,
               s.LocationCode AS State_LocationCode,
               a.ZipCode,
               ROW_NUMBER() OVER (
@@ -49,8 +52,10 @@ VIEW_QUERY_TEMPLATE = """
           FROM {ind_Offender_Address} o
           LEFT JOIN {ref_Address} a
               ON o.AddressID = a.AddressID
-          LEFT JOIN {ref_Location} j
-              ON a.JurisdictionId = j.LocationId
+          LEFT JOIN {ref_Location} jurisdiction
+              ON a.JurisdictionId = jurisdiction.LocationId
+          LEFT JOIN {ref_Location} county
+              ON a.CountyId = county.LocationId
           LEFT JOIN {ref_Location} s
               ON a.StateId = s.LocationId
         ) a
