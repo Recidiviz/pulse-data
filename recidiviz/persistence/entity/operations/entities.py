@@ -42,9 +42,9 @@ class DirectIngestSftpRemoteFileMetadata(Entity, BuildableAttr, DefaultableAttr)
     # The remote file path on the SFTP server
     remote_file_path: str = attr.ib()
     # Time when the file is actually discovered by the SFTP Airflow DAG
-    discovery_time: datetime.datetime = attr.ib()
+    file_discovery_time: datetime.datetime = attr.ib()
     # Time when the file is finished fully downloaded to the SFTP bucket
-    download_time: Optional[datetime.datetime] = attr.ib()
+    file_download_time: Optional[datetime.datetime] = attr.ib()
 
 
 @attr.s(eq=False)
@@ -59,9 +59,9 @@ class DirectIngestSftpIngestReadyFileMetadata(Entity, BuildableAttr, Defaultable
     # The original remote_file_path that should match the remote_file_metadata table.
     remote_file_path: str = attr.ib()
     # Time when the file is actually discovered by the SFTP Airflow DAG
-    discovery_time: datetime.datetime = attr.ib()
+    file_discovery_time: datetime.datetime = attr.ib()
     # Time when the file is finished fully uploaded to the ingest bucket
-    upload_time: Optional[datetime.datetime] = attr.ib()
+    file_upload_time: Optional[datetime.datetime] = attr.ib()
 
 
 @attr.s(eq=False)
