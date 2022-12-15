@@ -71,11 +71,13 @@ class TestCalculationPipelineDags(unittest.TestCase):
 
     INCREMENTAL_DAG_ID = f"{_PROJECT_ID}_incremental_calculation_pipeline_dag"
     HISTORICAL_DAG_ID = f"{_PROJECT_ID}_historical_calculation_pipeline_dag"
+    CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
 
     def setUp(self) -> None:
         self.calc_pipeline_dag_ids = [
             self.INCREMENTAL_DAG_ID,
             self.HISTORICAL_DAG_ID,
+            self.CALCULATION_DAG_ID,
         ]
 
     def test_update_normalized_state_upstream_of_rematerialization(self) -> None:
