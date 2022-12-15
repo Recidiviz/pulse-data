@@ -354,16 +354,17 @@ def create_bq_refresh_nodes(
 
 
 def update_all_views_branch_func(
-    should_update_all_views: bool, trigger_update_all_views_task_id: str
+    trigger_update_all_views_task_id: str, trigger_source: str
 ) -> str:
-    return (
-        trigger_update_all_views_task_id
-        if should_update_all_views
-        else "do_not_update_all_views"
-    )
+    print(trigger_source)
+    if trigger_source == "POST_DEPLOY":
+        return trigger_update_all_views_task_id
+    if trigger_source == "DAILY":
+        return "do_not_update_all_views"
+    raise ValueError(f" TRIGGER_SOURCE unexpected value: {trigger_source}")
 
 
-def execute_calculations(should_update_all_views: bool) -> None:
+def execute_calculations() -> None:
     """This represents the overall execution of our calculation pipelines.
 
     The series of steps is as follows:
@@ -407,9 +408,10 @@ def execute_calculations(should_update_all_views: bool) -> None:
         provide_context=True,
         python_callable=update_all_views_branch_func,
         op_kwargs={
-            "should_update_all_views": should_update_all_views,
             "trigger_update_all_views_task_id": trigger_update_all_views.task_id,
+            "trigger_source": "{{ dag_run.conf['TRIGGER_SOURCE'] }}",
         },
+        retries=0,
     )
 
     do_not_update_all_views = EmptyOperator(task_id="do_not_update_all_views")
@@ -558,7 +560,7 @@ def execute_calculations(should_update_all_views: bool) -> None:
 def incremental_dag() -> None:
     """This executes the calculations for all of the pipelines on a daily basis."""
 
-    execute_calculations(should_update_all_views=False)
+    execute_calculations()
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -576,7 +578,7 @@ def historical_dag() -> None:
     """This executes the calculations for all of the pipelines after a calc code change
     gets deployed."""
 
-    execute_calculations(should_update_all_views=True)
+    execute_calculations()
 
 
 incremental_dag = incremental_dag()
