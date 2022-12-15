@@ -396,6 +396,7 @@ class UserAccount(JusticeCountsBase):
             "id": self.id,
             "auth0_user_id": self.auth0_user_id,
             "name": self.name,
+            "email": self.email,
             "agencies": [agency.to_json() for agency in agencies or []],
             "permissions": permissions or [],
         }

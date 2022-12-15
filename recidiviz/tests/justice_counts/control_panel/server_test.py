@@ -774,6 +774,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
     def test_create_user_if_necessary(self) -> None:
         name = self.test_schema_objects.test_user_A.name
+        email = "test@email.com"
         auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
         agency = self.test_schema_objects.test_agency_A
         self.session.add(agency)
@@ -788,6 +789,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "/api/users",
                 json={
                     "name": name,
+                    "email": email,
                 },
             )
 
@@ -811,6 +813,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # New user is added to the database
         db_item = self.session.query(UserAccount).one()
         self.assertEqual(db_item.name, name)
+        self.assertEqual(db_item.email, email)
         self.assertEqual(db_item.auth0_user_id, auth0_user_id)
         self.assertEqual(len(db_item.agencies), 1)
         self.assertEqual(db_item.agencies[0].id, agency.id)
@@ -904,6 +907,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         db_user = self.session.query(UserAccount).one()
         self.assertEqual(db_user.name, new_name)
+        self.assertEqual(db_user.email, new_email_address)
 
     def test_update_report(self) -> None:
         report = self.test_schema_objects.test_report_monthly

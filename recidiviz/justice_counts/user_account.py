@@ -35,11 +35,13 @@ class UserAccountInterface:
         agencies: Optional[List[schema.Agency]] = None,
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
+        email: Optional[str] = None,
     ) -> UserAccount:
         """Creates a user or updates an existing user"""
         insert_statement = insert(UserAccount).values(
             name=name,
             auth0_user_id=auth0_user_id,
+            email=email,
         )
 
         insert_statement = insert_statement.on_conflict_do_update(
@@ -50,6 +52,7 @@ class UserAccountInterface:
                     UserAccount.auth0_user_id,  # this refers to the existing row to be updated.
                 ),  # Altogether, this statement updates the existing value with the new value if the new value is not null
                 name=coalesce(insert_statement.excluded.name, UserAccount.name),
+                email=coalesce(insert_statement.excluded.email, UserAccount.email),
             ),
         )
         result = session.execute(insert_statement)
