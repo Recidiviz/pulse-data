@@ -19,7 +19,7 @@
 # pylint: disable=line-too-long
 
 
-from typing import List, Optional, Set
+from typing import Iterable, List, Optional, Set
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_bigquery,
@@ -328,3 +328,11 @@ def list_to_query_string(string_list: List[str], quoted: bool = False) -> str:
     if quoted:
         return ", ".join([f'"{string}"' for string in string_list])
     return ", ".join(string_list)
+
+
+def columns_to_array(columns: Iterable[str]) -> str:
+    """Aggregate values from multiple columns into an array, ignoring nulls"""
+    return f"""
+        (SELECT ARRAY_AGG(x IGNORE NULLS)
+            FROM UNNEST([{", ".join(columns)}]) x)
+    """

@@ -17,7 +17,7 @@
 """View logic to prepare US_ME Workflows supervision clients."""
 
 from recidiviz.calculator.query.bq_utils import (
-    array_concat_with_null,
+    columns_to_array,
     nonnull_end_date_clause,
     nonnull_start_date_clause,
     revert_nonnull_end_date_clause,
@@ -132,13 +132,13 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
     me_sccp_eligibility AS (
         SELECT
             external_id AS person_external_id,
-            ["usMeSCCP"] AS eligible_opportunities,
+            "usMeSCCP" AS opportunity_name,
         FROM `{{project_id}}.{{workflows_dataset}}.us_me_complete_transfer_to_sccp_form_record_materialized`
     ),
     me_residents AS (
         SELECT
-            * EXCEPT(eligible_opportunities),
-             {array_concat_with_null(["me_sccp_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
+            * EXCEPT(opportunity_name),
+             {columns_to_array(["me_sccp_eligibility.opportunity_name"])} AS all_eligible_opportunities,
         FROM resident_info
         LEFT JOIN me_sccp_eligibility USING(person_external_id)
         WHERE officer_id IS NOT NULL

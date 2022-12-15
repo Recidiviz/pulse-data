@@ -15,11 +15,12 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View logic to prepare US_ND Workflows supervision clients."""
-from recidiviz.calculator.query.bq_utils import array_concat_with_null
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
+    client_record_join_clients_cte,
     client_record_supervision_cte,
     client_record_supervision_level_cte,
     client_record_supervision_super_sessions_cte,
+    clients_cte,
 )
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
@@ -27,7 +28,7 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     {client_record_supervision_cte("US_ND")}
     {client_record_supervision_level_cte("US_ND")}
     {client_record_supervision_super_sessions_cte("US_ND")}
-    nd_phone_numbers AS (
+    us_nd_phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT 
             state_code, 
@@ -38,57 +39,6 @@ US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
     ),
-    join_nd_clients AS (
-        SELECT DISTINCT
-          sc.person_id,
-          sc.person_external_id,
-          sp.full_name as person_name,
-          sp.current_address as address,
-          CAST(ph.phone_number AS INT64) AS phone_number,
-          supervision_type,
-          sc.officer_id,
-          sc.district,
-          sl.supervision_level,
-          sl.supervision_level_start,
-          ss.start_date AS supervision_start_date,
-          FIRST_VALUE(sc.expiration_date IGNORE NULLS) OVER (
-            PARTITION BY sc.person_id
-            ORDER BY sc.expiration_date DESC
-          ) AS expiration_date,
-        FROM us_nd_supervision_cases sc 
-        INNER JOIN us_nd_supervision_level_start sl USING(person_id)
-        INNER JOIN us_nd_supervision_super_sessions ss USING(person_id)
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
-        LEFT JOIN nd_phone_numbers ph USING(person_external_id)
-    ),
-    nd_eligibility AS (
-        SELECT
-            external_id AS person_external_id,
-            ["earlyTermination"] AS eligible_opportunities,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
-    ),
-    nd_clients AS (
-        # Values set to NULL are not applicable for this state
-        SELECT 
-            person_external_id,
-            "US_ND" AS state_code,
-            person_name,
-            officer_id,
-            supervision_type,
-            supervision_level,
-            supervision_level_start,
-            address,
-            phone_number,
-            supervision_start_date,
-            expiration_date,
-            NULL AS current_balance,
-            NULL AS last_payment_amount,
-            CAST(NULL AS DATE) AS last_payment_date,
-            CAST(NULL AS ARRAY<string>) AS special_conditions,
-            CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
-            district,
-            {array_concat_with_null(["nd_eligibility.eligible_opportunities"])} AS all_eligible_opportunities,
-        FROM join_nd_clients
-        LEFT JOIN nd_eligibility USING(person_external_id)
-    )
+    {client_record_join_clients_cte("US_ND")}
+    {clients_cte("US_ND", ["nd_early_termination_eligibility"])}
 """
