@@ -18,7 +18,7 @@
 
 # Query fragments that rely only on raw data tables
 
-BED_ASSIGNMENT_PERIODS_CTE = r"""
+BED_ASSIGNMENT_PERIODS_CTE = """
 -- This cte returns one row per bed assignment period for an incarcerated individual
 -- It includes information on the bed type and bed security level, as well as the ID
 -- of the FacilityLevel (housing unit) in which the bed is located.
@@ -48,7 +48,7 @@ bed_assignment_periods_cte AS (
         USING (SecurityLevelId)
 )"""
 
-LEGAL_STATUS_PERIODS_CTE = r"""
+LEGAL_STATUS_PERIODS_CTE = """
 -- Returns one row per legal status period. End dates are non-null, but current legal
 -- status periods are represented with an EndDate of '9999-12-31'.
 legal_status_periods_cte AS (
@@ -67,7 +67,7 @@ legal_status_periods_cte AS (
         USING (LegalStatusId)
 )"""
 
-LEGAL_STATUS_PERIODS_INCARCERATION_CTE = r"""
+LEGAL_STATUS_PERIODS_INCARCERATION_CTE = """
 -- Filters legal status periods to only incarceration statuses
 legal_status_periods_incarceration_cte AS (
     SELECT *
@@ -80,7 +80,7 @@ legal_status_periods_incarceration_cte AS (
     )
 )"""
 
-LEGAL_STATUS_PERIODS_SUPERVISION_CTE = r"""
+LEGAL_STATUS_PERIODS_SUPERVISION_CTE = """
 -- Filters legal status periods to only supervision statuses
 legal_status_periods_supervision_cte AS (
     SELECT *
@@ -93,7 +93,7 @@ legal_status_periods_supervision_cte AS (
     )
 )"""
 
-LOCATION_DETAILS_CTE = r"""
+LOCATION_DETAILS_CTE = """
 -- helper CTE that joins the primary location table with relevant code tables
 location_details_cte AS (
     SELECT
@@ -108,7 +108,7 @@ location_details_cte AS (
         USING (LocationSubTypeId)
 )"""
 
-SUPERVISING_OFFICER_ASSIGNMENTS_CTE = r"""
+SUPERVISING_OFFICER_ASSIGNMENTS_CTE = """
 -- Returns one row per supervising officer assignment
 -- COALESCE NULL EndDate to '9999-12-31'
 supervising_officer_assignments_cte AS (
@@ -133,7 +133,7 @@ supervising_officer_assignments_cte AS (
         USING (EmployeeTypeId)
 )"""
 
-SUPERVISION_LEVEL_CHANGES_CTE = r"""
+SUPERVISION_LEVEL_CHANGES_CTE = """
 -- Returns one row per supervision level assignment event
 -- COALESCE NULL EndDate to '9999-12-31'
 supervision_level_changes_cte AS (
@@ -162,7 +162,7 @@ supervision_level_changes_cte AS (
 
 # requires BED_ASSIGNMENT_PERIODS_CTE
 # requires FACILITY_LEVEL_DETAILS_CTE
-BED_ASSIGNMENT_PERIODS_WITH_FACILITY_LEVEL_DETAILS_CTE = r"""
+BED_ASSIGNMENT_PERIODS_WITH_FACILITY_LEVEL_DETAILS_CTE = """
 -- Returns one row per bed assignment period, but with all details on bed, facility
 -- level (housing unit), and facility included.
 bed_assignment_periods_with_facility_level_details_cte AS (
@@ -195,7 +195,7 @@ bed_assignment_periods_with_facility_level_details_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-FACILITY_LEVEL_DETAILS_CTE = r"""
+FACILITY_LEVEL_DETAILS_CTE = """
 -- Ideally this would use a recursive query, but BigQuery only allows a recursive cte at the beginning
 -- of a statement. Also I'm sure there would be some errors in the Postgres translation layer.
 
@@ -338,7 +338,7 @@ facility_level_details_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-INVESTIGATION_DETAILS_CTE = r"""
+INVESTIGATION_DETAILS_CTE = """
 -- Returns one row per investigation event. Currently limited to pre-sentencing
 -- investigations, but may eventually be expanded to include additional investigation
 -- types, if they are found to be utilized in Atlas.
@@ -379,7 +379,7 @@ investigation_details_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-OFFENDER_LOCATION_HISTORY_CTE = r"""
+OFFENDER_LOCATION_HISTORY_CTE = """
 -- Returns one row per period of an individuals assigned location. Lines up with transfers,
 -- so no need to add this to a query already utilizing the transfers table.
 -- Open periods indicated with CurrentToDate = '9999-12-31'
@@ -397,7 +397,7 @@ offender_location_history_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-PHYSICAL_LOCATION_PERIODS_CTE = r"""
+PHYSICAL_LOCATION_PERIODS_CTE = """
 -- Returns one row per "physical location" period. This table is used to track
 -- when a person has absconded or is on interstate compact.
 -- COALESCE NULL LocationChangeEndDate to '9999-12-31'
@@ -422,7 +422,7 @@ physical_location_periods_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-TRANSFER_DETAILS_CTE = r"""
+TRANSFER_DETAILS_CTE = """
 -- Returns one row per transfer. This is the primary source of information used in the
 -- construction of supervision and incarceration periods.
 transfer_details_cte AS (
@@ -455,7 +455,7 @@ transfer_details_cte AS (
 )"""
 
 # requires TRANSFER_DETAILS_CTE
-TRANSFER_PERIODS_CTE = r"""
+TRANSFER_PERIODS_CTE = """
 -- Converts the ledger-style of the transfer_details_cte into a period-style result set
 -- with start and end dates.
 -- COALESCE NULL End_TransferDate to '9999-12-31'
@@ -479,7 +479,7 @@ transfer_periods_cte AS (
 )"""
 
 # requires TRANSFER_PERIODS_CTE
-TRANSFER_PERIODS_INCARCERATION_CTE = r"""
+TRANSFER_PERIODS_INCARCERATION_CTE = """
 transfer_periods_incarceration_cte AS (
     SELECT *
     FROM transfer_periods_cte
@@ -509,7 +509,7 @@ transfer_periods_incarceration_cte AS (
 )"""
 
 # requires TRANSFER_PERIODS_CTE
-TRANSFER_PERIODS_SUPERVISION_CTE = r"""
+TRANSFER_PERIODS_SUPERVISION_CTE = """
 transfer_periods_supervision_cte AS (
     SELECT *
     FROM transfer_periods_cte
@@ -523,7 +523,7 @@ transfer_periods_supervision_cte AS (
 )"""
 
 # Filter clauses
-TRANSFER_PERIODS_INCARCERATION_FILTER = r"""
+TRANSFER_PERIODS_INCARCERATION_FILTER = """
 (
     DOCLocationToTypeName IN (
         'Adult Facility/Institution',
@@ -543,14 +543,14 @@ TRANSFER_PERIODS_INCARCERATION_FILTER = r"""
     )
 )"""
 
-TRANSFER_PERIODS_SUPERVISION_FILTER = r"""
+TRANSFER_PERIODS_SUPERVISION_FILTER = """
 (
     DOCLocationToTypeName IN (
         'District Office'
     )
 )"""
 
-LEGAL_STATUS_PERIODS_INCARCERATION_FILTER = r"""
+LEGAL_STATUS_PERIODS_INCARCERATION_FILTER = """
 (
     LegalStatusDesc IN (
         'Investigation',
@@ -561,7 +561,7 @@ LEGAL_STATUS_PERIODS_INCARCERATION_FILTER = r"""
     )
 )"""
 
-LEGAL_STATUS_PERIODS_SUPERVISION_FILTER = r"""
+LEGAL_STATUS_PERIODS_SUPERVISION_FILTER = """
 (
     LegalStatusDesc IN (
         'Investigation',
@@ -575,7 +575,7 @@ LEGAL_STATUS_PERIODS_SUPERVISION_FILTER = r"""
 # Charge/Sentencing
 
 # requires LOCATION_DETAILS_CTE
-CHARGE_DETAILS_CTE = r"""
+CHARGE_DETAILS_CTE = """
 charge_details_cte AS (
     SELECT
         OffenderId,
@@ -590,7 +590,7 @@ charge_details_cte AS (
         ON StateId = LocationId
 )"""
 
-TERM_DETAILS_CTE = r"""
+TERM_DETAILS_CTE = """
 term_details_cte AS (
     SELECT
         OffenderId,
@@ -621,7 +621,7 @@ term_details_cte AS (
         USING (TermStatusId)
 )"""
 
-OFFENSE_DETAILS_CTE = r"""
+OFFENSE_DETAILS_CTE = """
 offense_details_cte AS (
     SELECT
         OffenderId,
@@ -654,7 +654,7 @@ offense_details_cte AS (
         USING (SentenceLinkId)
 )"""
 
-PAROLE_DETAILS_CTE = r"""
+PAROLE_DETAILS_CTE = """
 parole_details_cte AS (
     SELECT
         OffenderId,
@@ -667,7 +667,7 @@ parole_details_cte AS (
         USING (ParoleTypeId)
 )"""
 
-PROBATION_DETAILS_CTE = r"""
+PROBATION_DETAILS_CTE = """
 probation_details_cte AS (
     SELECT
         OffenderId,
@@ -689,7 +689,7 @@ probation_details_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-SUPERVISION_DETAILS_CTE = r"""
+SUPERVISION_DETAILS_CTE = """
 supervision_details_cte AS (
     SELECT
         OffenderId,
@@ -725,7 +725,7 @@ supervision_details_cte AS (
 )"""
 
 # requires LOCATION_DETAILS_CTE
-SENTENCE_ORDER_DETAILS_CTE = r"""
+SENTENCE_ORDER_DETAILS_CTE = """
 sentence_order_details_cte AS (
     SELECT
         OffenderId,
@@ -792,7 +792,7 @@ sentence_order_details_cte AS (
         USING (SentenceLinkId)
 )"""
 
-SENTENCE_DETAILS_CTE = r"""
+SENTENCE_DETAILS_CTE = """
 sentence_details_cte AS (
     SELECT
         OffenderId,
@@ -832,7 +832,7 @@ sentence_details_cte AS (
         USING (OffenseSentenceTypeId)
 )"""
 
-RETAINED_JURISDICTION_DETAILS_CTE = r"""
+RETAINED_JURISDICTION_DETAILS_CTE = """
 retained_jurisdiction_details_cte AS (
     SELECT
         SentenceOrderID,
