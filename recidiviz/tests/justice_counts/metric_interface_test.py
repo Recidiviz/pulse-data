@@ -136,7 +136,10 @@ class TestMetricInterface(TestCase):
             ),
             {
                 "key": reported_metric.key,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "display_name": "Annual Budget",
                 "reporting_note": None,
                 "description": "Measures the total annual budget (in dollars) of your agency.",
@@ -188,7 +191,10 @@ class TestMetricInterface(TestCase):
             ),
             {
                 "key": reported_metric.key,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "datapoints": None,
@@ -289,7 +295,10 @@ class TestMetricInterface(TestCase):
             ),
             {
                 "key": reported_metric.key,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
@@ -339,7 +348,10 @@ class TestMetricInterface(TestCase):
             ),
             {
                 "key": reported_metric.key,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
@@ -690,7 +702,10 @@ class TestMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "label": "Calls for Service",
                 "reporting_note": metric_definition.reporting_note,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "unit": "CALLS",
                 "value": None,
                 "disaggregations": [
@@ -766,7 +781,10 @@ class TestMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "label": "Calls for Service",
                 "reporting_note": metric_definition.reporting_note,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "unit": "CALLS",
                 "value": None,
                 "disaggregations": [
@@ -851,7 +869,10 @@ class TestMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "label": "Calls for Service",
                 "reporting_note": metric_definition.reporting_note,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "unit": "CALLS",
                 "value": None,
                 "datapoints": None,
@@ -930,7 +951,10 @@ class TestMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "label": "Calls for Service",
                 "reporting_note": metric_definition.reporting_note,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "unit": "CALLS",
                 "value": None,
                 "disaggregations": [
@@ -1098,7 +1122,10 @@ class TestMetricInterface(TestCase):
                 "description": metric_definition.description,
                 "label": "Calls for Service",
                 "reporting_note": metric_definition.reporting_note,
-                "system": "Law Enforcement",
+                "system": {
+                    "key": "LAW_ENFORCEMENT",
+                    "display_name": "Law Enforcement",
+                },
                 "unit": "CALLS",
                 "value": None,
                 "disaggregations": [
@@ -1530,7 +1557,10 @@ class TestMetricInterface(TestCase):
         metric_interface_json = {
             "key": prisons.grievances_upheld.key,
             "enabled": True,
-            "system": "Prisons",
+            "system": {
+                "key": "PRISONS",
+                "display_name": "Prisons",
+            },
             "display_name": prisons.grievances_upheld.display_name,
             "description": prisons.grievances_upheld.description,
             "definitions": [
@@ -1622,7 +1652,7 @@ class TestMetricInterface(TestCase):
         metric_interface_json = {
             "key": law_enforcement.annual_budget.key,
             "enabled": True,
-            "system": "Law Enforcement",
+            "system": {"display_name": "Law Enforcement", "key": "LAW_ENFORCEMENT"},
             "display_name": law_enforcement.annual_budget.display_name,
             "description": law_enforcement.annual_budget.description,
             "disaggregated_by_supervision_subsystems": None,
