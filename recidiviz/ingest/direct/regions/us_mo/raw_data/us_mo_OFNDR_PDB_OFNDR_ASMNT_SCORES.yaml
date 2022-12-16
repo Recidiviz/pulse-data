@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFNDR_PDB_OFNDR_ASMNT_SCORES
+file_description: |-
+  XXX
+# TODO(#17289): fill in once we have documentation
+data_classification: source
+primary_key_cols:
+  - CREATE_USER_REF_ID # TODO(#17289): check once we have documentation
+columns:
+  # TODO(#17289): fill in once we have documentation
+  - name: OFNDR_ASMNT_SCORE_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: OFNDR_ASMNT_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: EVALUATION_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: SECTION_EVALUATION_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: SCORING_PART_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: SECTION_CATEGORY_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: SECTION_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: ASMNT_SCORING_TYPE_CD
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: SCORING_TYPE_SCORE_VALUE
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: OVERRIDE_TOOL_SCORE_IND
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: OVERRIDE_TOOL_SCORE_VALUE
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: RAW_TOOL_SCORE_VALUE
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: CREATE_USER_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: CREATE_TS
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: UPDATE_USER_REF_ID
+    is_pii: True
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: UPDATE_TS
+    description: |-
+      XXX
+  # TODO(#17289): fill in once we have documentation
+  - name: DELETE_IND
+    description: |-
+      XXX
