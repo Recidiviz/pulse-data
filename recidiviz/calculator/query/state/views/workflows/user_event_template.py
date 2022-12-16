@@ -24,6 +24,7 @@ def user_event_template(
     if add_columns is None:
         add_columns = []
 
+    # TODO(#17297): Remove frontend_referral_form_copied_to_clipboard conditional once these events are fired with justice_involved_person_id
     return f"""
     WITH 
     -- reidentifies clients from hash
@@ -43,7 +44,7 @@ def user_event_template(
         timestamp,
         session_id,
         user_external_id,
-        {','.join([f"events.{c}" for c in add_columns])},
+        {','.join([f"events.{c}" for c in add_columns])}{',' if add_columns else ''}
     FROM (
         SELECT
             -- default columns for all views
@@ -53,7 +54,7 @@ def user_event_template(
             session_id,
             context_page_url,
             user_id,
-            {','.join(add_columns)},
+            {','.join(add_columns)}{',' if add_columns else ''}
         FROM `{{project_id}}.{{segment_dataset}}.{table_name}`
         -- events from prod deployment only
         WHERE context_page_url LIKE '%://dashboard.recidiviz.org/%'

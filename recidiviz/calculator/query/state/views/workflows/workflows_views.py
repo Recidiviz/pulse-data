@@ -30,14 +30,29 @@ from recidiviz.calculator.query.state.views.workflows.clients_latest_referral_st
 from recidiviz.calculator.query.state.views.workflows.clients_opportunity_previewed import (
     CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_profile_viewed import (
+    CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_referral_completed import (
     CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_referral_form_copied import (
+    CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_referral_form_first_edited import (
+    CLIENTS_REFERRAL_FORM_FIRST_EDITED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_referral_form_printed import (
+    CLIENTS_REFERRAL_FORM_PRINTED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.clients_referral_form_viewed import (
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.clients_referral_implemented import (
     CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.clients_referral_status_updated import (
+    CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.clients_surfaced import (
     CLIENTS_SURFACED_VIEW_BUILDER,
@@ -68,4 +83,9 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_COMPLETED_VIEW_BUILDER,
     CLIENTS_REFERRAL_IMPLEMENTED_VIEW_BUILDER,
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
+    CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_FORM_FIRST_EDITED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_FORM_PRINTED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
 ]
