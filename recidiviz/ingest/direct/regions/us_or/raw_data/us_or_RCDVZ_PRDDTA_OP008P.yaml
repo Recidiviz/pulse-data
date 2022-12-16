@@ -8,9 +8,42 @@ primary_key_cols:
   - CUSTODY_NUMBER
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for record.
   - name: CUSTODY_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CUSTODY_DATE
+    description: |-
+      Date signifying beginning of custody period.
   - name: CUSTODY_TYPE
+    description: |-
+      Type of custody.
+    known_values:
+      - value: C
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: I
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: L
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: N
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: DI
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: P
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: PROB
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: PR
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: IN
+        description: #TODO(#17148): Fill in with answer from OR
   - name: CUSTODY_FROM
+    description: |-
+      County where custody took place.
   - name: DISCHARGE_DATE
+    description: |-
+      Date signifying end of custody period.
   - name: DISCHARGE_TYPE
+    description: |-
+      Type of discharge from custody. #TODO(#17148): Fill in with additional info from OR

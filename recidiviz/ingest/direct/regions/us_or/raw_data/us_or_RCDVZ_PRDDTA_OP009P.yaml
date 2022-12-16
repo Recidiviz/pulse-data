@@ -9,16 +9,47 @@ primary_key_cols:
   - ADMISSION_NUMBER
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for record.
   - name: CUSTODY_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ADMISSION_NUMBER
+    description: |-
+      Number signifying order of admissions.
   - name: ADMISSION_LOCATION
+    description: |-
+      Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: ADMISSION_DATE
+    description: |-
+      Date of current incarceration admission.
   - name: PREVIOUS_STATUS
+    description: |-
+      Previous status of incarceration.
+    known_values: [] #TODO(#17148): Fill in with dataname values from OR
   - name: ADMISSION_FROM_LOCATION
+    description: |-
+      Location of previous period, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: CURRENT_STATUS
+    description: |-
+      Current status of incarceration.
+    known_values: []
   - name: NEW_CRIME_DATE
+    description: |-
+      Date of a new crime, if any.
   - name: LEAVE_SCHEDULED_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: RELEASE_DATE
+    description: |-
+      Date of current incarceration release.
   - name: RELEASE_REASON
+    description: |-
+      Release reason from current period of incarceration.
+    known_values: [] #TODO(#17148): Fill in with values from OR
   - name: VIOLATION_TYPE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: RELEASE_TO_LOCATION
+    description: |-
+      Location where released to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.

@@ -13,19 +13,51 @@ primary_key_cols:
   - MOVE_IN_DATE
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for record.
   - name: CUSTODY_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ADMISSION_NUMBER
+    description: |-
+      Number signifying order of admissions.
   - name: TRANSFER_NUMBER
+    description: |-
+      Number signifying order of transfers.
   - name: FACILITY
+    description: |-
+      Current facility, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: CELL_NUMBER
+    description: |-
+      Cell number where located.
   - name: OUTCOUNT_REASON
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: OUTCOUNT_LOCATION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MOVE_IN_DATE
+    description: |-
+      Date moved in to current facility.
   - name: PREV_FACILITY
+    description: |-
+      Previous facility code, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: PREV_CELL_NUMBER
+    description: |-
+      Previous cell number.
   - name: PREV_OUTCOUNT_REAS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PREV_OUTCOUNT_LOCA
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MOVE_OUT_DATE
+    description: |-
+      Date moved out of facility.
   - name: ENTRY_DATE
+    description: |-
+      Date entered facility.
   - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when last updated.
   - name: CASELOAD
