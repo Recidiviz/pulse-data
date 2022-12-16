@@ -23,9 +23,8 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
   secret = "po_report_cdn_static_IP"
 }
 
-
-resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipeline_dag" {
-  name    = "trigger_incremental_calculation_pipeline_dag"
+resource "google_cloudfunctions_function" "trigger_calculation_dag" {
+  name    = "trigger_calculation_dag"
   runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
@@ -33,7 +32,7 @@ resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipel
 
   event_trigger {
     event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_incremental_pipelines"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
   }
 
   entry_point = "trigger_calculation_pipeline_dag"
@@ -42,34 +41,6 @@ resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipel
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
     "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
     "GCP_PROJECT"       = var.project_id
-    "PIPELINE_DAG_TYPE" = "incremental"
-  }
-
-  source_repository {
-    url = local.repo_url
-  }
-}
-
-
-resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeline_dag" {
-  name    = "trigger_historical_calculation_pipeline_dag"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  event_trigger {
-    event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_historical_pipelines"
-  }
-
-  entry_point = "trigger_calculation_pipeline_dag"
-  environment_variables = {
-    # This is an output variable from the composer environment, relevant docs:
-    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT"       = var.project_id
-    "PIPELINE_DAG_TYPE" = "historical"
   }
 
   source_repository {

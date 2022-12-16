@@ -78,12 +78,6 @@ def trigger_calculation_pipeline_dag(
         cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    pipeline_dag_type = os.environ.get("PIPELINE_DAG_TYPE")
-    if not pipeline_dag_type:
-        error_str = "The environment variable 'PIPELINE_DAG_TYPE' is not set"
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
     if "data" in event:
         trigger_source = base64.b64decode(event["data"]).decode("utf-8")
     else:
@@ -99,7 +93,7 @@ def trigger_calculation_pipeline_dag(
         return error_str, HTTPStatus.BAD_REQUEST
 
     # The name of the DAG you wish to trigger
-    dag_name = f"{project_id}_{pipeline_dag_type}_calculation_pipeline_dag"
+    dag_name = f"{project_id}_calculation_dag"
 
     monitor_response = trigger_dag(
         airflow_uri, dag_name, {"TRIGGER_SOURCE": trigger_source}
