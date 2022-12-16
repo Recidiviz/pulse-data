@@ -18,7 +18,7 @@
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
 import os
 from enum import Enum
-from typing import Dict, Generic, List, Optional, TypeVar
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -117,6 +117,12 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # validators may choose to mark empty files as invalid.
     allow_empty: bool = attr.ib(default=False)
 
+    # If set, the specified columns will have a find/replace of values applied
+    # This is particularly useful when we wish to export data for a "sandbox" state to its production counterpart
+    # For example, `state_code` US_IX -> US_ID
+    # accepts the form of { "column": { "SEARCH_VALUE": "REPLACE_VALUE" } }
+    remap_columns: Dict[str, Dict[Any, Any]] = attr.ib(factory=dict)
+
     @export_output_formats_and_validations.default
     def _default_export_output_formats_and_validations(
         self,
@@ -136,7 +142,31 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
 
     @property
     def query(self) -> str:
-        return f"{self.view.select_query} {self.view_filter_clause}"
+        query = f"{self.view.select_query} {self.view_filter_clause}"
+
+        if self.remap_columns is not None and len(self.remap_columns) > 0:
+            remapped_columns_clauses = []
+
+            for column, mappings in self.remap_columns.items():
+                cases = "\n".join(
+                    [
+                        f"WHEN {column} = {repr(value)} THEN {repr(mapped_value)}"
+                        for value, mapped_value in mappings.items()
+                    ]
+                )
+                remapped_columns_clauses.append(
+                    f"""CASE\n{cases}\n ELSE {column} END AS {column}"""
+                )
+
+            return f"""
+                WITH base_data AS (
+                    {query}
+                )
+                SELECT {",".join(remapped_columns_clauses)}, * EXCEPT ({",".join(self.remap_columns.keys())})
+                FROM base_data
+            """
+
+        return query
 
     def as_export_query_config(
         self, output_format: bigquery.DestinationFormat

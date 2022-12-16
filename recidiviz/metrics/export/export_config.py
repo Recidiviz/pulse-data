@@ -16,7 +16,7 @@
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
 import os
-from typing import Dict, List, Optional, Sequence, Set, TypedDict
+from typing import Any, Dict, List, Optional, Sequence, Set, TypedDict
 
 import attr
 
@@ -69,7 +69,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
+from recidiviz.common.constants.states import StateCode, _FakeStateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 from recidiviz.metrics import export as export_module
 from recidiviz.utils import environment
@@ -172,6 +172,9 @@ class ProductConfig:
                 if state.is_state_launched_in_env()
             }
         )
+
+
+RemapColumns = Dict[str, Dict[Any, Any]]
 
 
 class ProductExportConfig(TypedDict):
@@ -332,6 +335,9 @@ class ProductConfigs:
         return cls(products=products)
 
 
+EXPORT_OVERRIDE_STATE_CODES = {"US_ID": "US_IX"}
+
+
 @attr.s(frozen=True)
 class ExportViewCollectionConfig:
     """Stores information necessary for exporting metric data from a list of views in a dataset to a Google Cloud
@@ -355,6 +361,8 @@ class ExportViewCollectionConfig:
     # validators may choose to mark empty files as invalid.
     allow_empty: bool = attr.ib(default=False)
 
+    export_override_state_codes: Dict[str, str] = attr.ib(factory=dict)
+
     def export_configs_for_views_to_export(
         self,
         project_id: str,
@@ -376,13 +384,28 @@ class ExportViewCollectionConfig:
             output_directory = StrictStringFormatter().format(
                 self.output_directory_uri_template, project_id=project_id
             )
-        if state_code_filter:
+
+        remap_columns: RemapColumns = {}
+
+        if (
+            state_code_filter
+            and state_code_filter in self.export_override_state_codes.keys()
+        ):
+            override_state_code = self.export_override_state_codes[state_code_filter]
+            remap_columns = {
+                "state_code": {state_code_filter: override_state_code},
+            }
+
+            intermediate_table_name_template += f"_{override_state_code}"
+            output_directory += f"/{override_state_code}"
+        elif state_code_filter:
             intermediate_table_name_template += f"_{state_code_filter}"
             output_directory += f"/{state_code_filter}"
 
         configs = []
         for vb in self.view_builders_to_export:
             view = vb.build(address_overrides=address_overrides)
+
             optional_args = {}
             if self.export_output_formats_and_validations is not None:
                 optional_args[
@@ -401,6 +424,7 @@ class ExportViewCollectionConfig:
                     output_directory=GcsfsDirectoryPath.from_absolute_path(
                         output_directory
                     ),
+                    remap_columns=remap_columns,
                     allow_empty=self.allow_empty,
                     **optional_args,
                 )
@@ -428,6 +452,8 @@ INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 
+
+EXPORT_ATLAS_TO_ID = {_FakeStateCode.US_IX.value: _FakeStateCode.US_ID.value}
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # PO Report views
@@ -596,6 +622,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="WORKFLOWS_FIRESTORE",
         # We export all opportunities for all states, so we expect some files to be empty.
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
 ]
 
