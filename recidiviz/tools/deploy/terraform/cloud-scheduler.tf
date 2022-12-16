@@ -23,7 +23,7 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
 
   pubsub_target {
     # topic's full resource name.
-    topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_incremental_pipelines"
+    topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
     data       = base64encode("DAILY")
   }
 }
