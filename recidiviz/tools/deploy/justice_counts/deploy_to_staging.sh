@@ -122,7 +122,6 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${PROJECT_ID}" \
     --skip-db-name-check \
-    --using-proxy
 
 echo "Deploying new Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
 run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \

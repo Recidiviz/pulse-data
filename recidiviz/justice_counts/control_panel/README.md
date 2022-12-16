@@ -41,7 +41,6 @@ docker build . -f Dockerfile.recidiviz-base -t us.gcr.io/recidiviz-staging/recid
 ```bash
 pipenv run docker-build-jc-publisher \
   --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
-  --build-arg FRONTEND_APP=publisher
 ```
 
 3. Now run the Justice Counts Docker image using `docker-compose`:
