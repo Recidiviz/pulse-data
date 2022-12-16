@@ -10,13 +10,46 @@ primary_key_cols:
   - TRANSFER_NUMBER
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for record.
   - name: CUSTODY_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ADMISSION_NUMBER
+    description: |-
+      Number signifying order of admissions.
   - name: TRANSFER_NUMBER
+    description: |-
+      Number signifying order of transfers.
   - name: RESPONSIBLE_DIVISION
+    description: |-
+      Entity resposible for transfer.
+    known_values:
+      - value: C
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: D
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: I
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: L
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: N
+        description: #TODO(#17148): Fill in with answer from OR
   - name: TRANSFER_IN_LOCATION
+    description: |-
+      Location transferred in to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_IN_DATE
+    description: |-
+      Date transferred in to.
   - name: TRANSFER_REASON
+    description: |-
+      Reason for transfer.
   - name: TRANSFER_FROM_LOCATION
+    description: |-
+      Location transferred from, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_TO_LOCATION
+    description: |-
+      Location transferred to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_TO_DATE
+    description: |-
+      Date transferred out.
