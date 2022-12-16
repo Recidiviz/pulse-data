@@ -45,6 +45,10 @@ from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.string import StrictStringFormatter
 
 
+def strip_each_line(text: str) -> str:
+    return "\n".join([line.strip() for line in text.splitlines()])
+
+
 # TODO(#11034): Add a test to make sure products launched in production have the required calc metrics enabled
 # in production.
 class TestProductConfig(unittest.TestCase):
@@ -439,3 +443,74 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         ]
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
+
+    def test_metric_export_remapped_columns(self) -> None:
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
+        export is state-specific."""
+        lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            export_name="TEST_EXPORT",
+            export_override_state_codes={
+                "US_XX": "US_XY",
+                "US_ZZ": "US_ZY",
+            },
+        )
+
+        mock_state_code = "US_XX"
+
+        view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
+            project_id=self.mock_project_id, state_code_filter=mock_state_code
+        )
+        view_config_to_export = view_configs_to_export[0]
+        assert view_config_to_export is not None
+
+        self.assertEqual(
+            strip_each_line(view_config_to_export.query),
+            strip_each_line(
+                """
+                 WITH base_data AS (
+                    SELECT * FROM `fake-recidiviz-project.base_dataset.test_view_materialized`  WHERE state_code = 'US_XX'
+                )
+                SELECT CASE
+                WHEN state_code = 'US_XX' THEN 'US_XY'
+                ELSE state_code END AS state_code, * EXCEPT (state_code)
+                FROM base_data
+                """
+            ),
+        )
+
+    def test_metric_export_override_state_code_destination(self) -> None:
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
+        export is state-specific."""
+        lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            export_name="TEST_EXPORT",
+            export_override_state_codes={
+                "US_XX": "US_XY",
+                "US_ZZ": "US_ZY",
+            },
+        )
+
+        mock_state_code = "US_XX"
+
+        view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
+            project_id=self.mock_project_id, state_code_filter=mock_state_code
+        )
+        view_config_to_export = view_configs_to_export[0]
+        assert view_config_to_export is not None
+
+        # US_XX is exported to the US_XY/ directory
+        self.assertEqual(
+            GcsfsDirectoryPath(
+                bucket_name="fake-recidiviz-project-bucket", relative_path="US_XY/"
+            ),
+            view_config_to_export.output_directory,
+        )
+
+        # Intermediate table name includes the overridden state code
+        self.assertEqual(
+            view_config_to_export.intermediate_table_name,
+            "TEST_EXPORT_base_dataset_test_view_table_US_XY",
+        )
