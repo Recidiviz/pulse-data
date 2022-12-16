@@ -114,7 +114,6 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${PROJECT_ID}" \
     --skip-db-name-check \
-    --using-proxy
 
 # This will deploy and also allocate traffic to the latest revision. 
 # Unlike in the deploy_to_staging script, we don't have to allocate traffic separately, 
