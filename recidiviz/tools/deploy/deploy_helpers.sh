@@ -56,6 +56,32 @@ EOM
     "${THREAD_TS}" > /dev/null
 }
 
+# Uploads local internet speed for benchmarking deployment times
+function upload_internet_speed {
+  local PROJECT_ID=$1
+  local RELEASE_VERSION_TAG=$2
+  local THREAD_TS=$3
+  # Only use this command if running deployments on a MacOS
+  if [ "$(uname)" == "Darwin" ]; then
+    # Only use this command if it is installed. Older versions of Mac don't have it
+    if [[ $(command -v networkQuality) != "" ]]; then
+      NETWORK_SPEED=$(networkQuality)
+      local MESSAGE
+      MESSAGE=$(
+    cat <<- EOM
+    \`\`\`
+    ${NETWORK_SPEED}
+    \`\`\`
+    EOM
+    )
+
+      deployment_bot_message "${PROJECT_ID}" \
+        "${SLACK_CHANNEL_DEPLOYMENT_BOT}" \
+        "${MESSAGE}" \
+        "${THREAD_TS}" > /dev/null
+    fi
+  fi
+}
 
 # Parses a version tag and output a space-separated string of the version regex capture groups.
 # Example usage:
@@ -536,7 +562,8 @@ function update_deployment_status {
       local SUCCESS_MESSAGE_TS
       SUCCESS_MESSAGE_TS=$(deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_SUCCEEDED_MESSAGE}")
       upload_deployment_log "${PROJECT_ID}" "${COMMIT_HASH}" "${RELEASE_VERSION_TAG}" "${SUCCESS_MESSAGE_TS}"
-
+      upload_internet_speed "${PROJECT_ID}" "${RELEASE_VERSION_TAG}" "${SUCCESS_MESSAGE_TS}"
+      
       deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_ENG}" "${DEPLOY_SUCCEEDED_MESSAGE}" > /dev/null
   fi
 }
