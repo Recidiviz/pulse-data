@@ -91,7 +91,9 @@ output:
                         - Other Unspecified Release
                         - Out On Bond
                         - Reinstate Parole
-                        - Temporary Remand to Community
+                        - Return From Temporary Release
+                        - Sanction
+                        - Temporary Remand To Community
                       StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
                         - Release Clemency/Pardon
                         - Release Court Order
@@ -131,6 +133,8 @@ output:
                         - Return From Parole
                         - Return From Temporary Release
                         - Returned To Jail
+                        # TODO(#16848): Is it possible someone isn't admitted to incarceration after this?
+                        - Sanction
                         - Temporary Remand To Custody
                       StateSupervisionPeriodTerminationReason.DEATH:
                         - Death - Natural
@@ -145,7 +149,9 @@ output:
                         - Assigned To Jail
                         - Authorized Temporary Release # TODO(#16848): temp. release from supervision?
                         - Court Action # TODO(#16848): potentially admitted into incarceration - we have as new admission in IP
+                        - Jail To Jail # TODO(#16848): transfer?
                         - Out To Court # TODO(#16848): transfer?
+                        - Other Unspecified Release
                         - Release Clemency/Pardon
                         - Release to Parole
                         - Release to Supervision
@@ -155,7 +161,9 @@ output:
                         - Federal Custody
                         - Interstate Compact Community Out
                         - Interstate Compact Facility Out
+                        - Return Other Jurisdictions
                         - Serving Local Jail Sentence
+                        - Serving Out of State Sentence
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - Offender Moves Location
               - $else_if:
@@ -201,6 +209,7 @@ output:
               $mappings:
                 # TODO(#16848): We should review all of these
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
+                  - Blended Sentence
                   - Dosage Eligible
                   - Drug Court
                   - Sex Offense
