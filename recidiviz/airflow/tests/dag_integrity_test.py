@@ -22,7 +22,7 @@ from unittest.mock import patch
 
 from airflow.models import DagBag
 
-from recidiviz.airflow.tests.calculation_pipeline_dags_test import (
+from recidiviz.airflow.tests.calculation_dag_test import (
     CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER
@@ -54,12 +54,10 @@ class TestDagIntegrity(unittest.TestCase):
         Verify that the DAGs discovered have the correct name
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        self.assertEqual(len(dag_bag.dag_ids), 4)
+        self.assertEqual(len(dag_bag.dag_ids), 2)
         self.assertSetEqual(
             set(dag_bag.dag_ids),
             {
-                "recidiviz-testing_incremental_calculation_pipeline_dag",
-                "recidiviz-testing_historical_calculation_pipeline_dag",
                 "recidiviz-testing_calculation_dag",
                 "recidiviz-testing_sftp_dag",
             },
