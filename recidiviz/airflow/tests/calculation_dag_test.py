@@ -66,222 +66,194 @@ def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
         "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
     },
 )
-class TestCalculationPipelineDags(unittest.TestCase):
+class TestCalculationPipelineDag(unittest.TestCase):
     """Tests the calculation pipeline DAGs."""
 
-    INCREMENTAL_DAG_ID = f"{_PROJECT_ID}_incremental_calculation_pipeline_dag"
-    HISTORICAL_DAG_ID = f"{_PROJECT_ID}_historical_calculation_pipeline_dag"
     CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
-
-    def setUp(self) -> None:
-        self.calc_pipeline_dag_ids = [
-            self.INCREMENTAL_DAG_ID,
-            self.HISTORICAL_DAG_ID,
-            self.CALCULATION_DAG_ID,
-        ]
 
     def test_update_normalized_state_upstream_of_rematerialization(self) -> None:
         """Tests that the `normalized_state` dataset update happens before views
         are rematerialized (and therefore before metric export, where relevant)."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        normalized_state_downstream_dag = dag.partial_subset(
+            task_ids_or_regex=["update_normalized_state"],
+            include_downstream=True,
+            include_upstream=False,
+        )
 
-            normalized_state_downstream_dag = dag.partial_subset(
-                task_ids_or_regex=["update_normalized_state"],
-                include_downstream=True,
-                include_upstream=False,
-            )
+        self.assertNotEqual(0, len(normalized_state_downstream_dag.task_ids))
 
-            self.assertNotEqual(0, len(normalized_state_downstream_dag.task_ids))
-
-            self.assertIn(
-                _TRIGGER_REMATERIALIZATION_TASK_ID,
-                normalized_state_downstream_dag.task_ids,
-            )
+        self.assertIn(
+            _TRIGGER_REMATERIALIZATION_TASK_ID,
+            normalized_state_downstream_dag.task_ids,
+        )
 
     def test_update_normalized_state_upstream_of_normalization_pipelines(self) -> None:
         """Tests that the `normalized_state` dataset update happens after all
         normalization pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        normalization_pipeline_task_ids: Set[str] = {
+            task.task_id
+            for task in dag.tasks
+            if isinstance(task, RecidivizDataflowTemplateOperator)
+            and "normalization" in task.task_id
+        }
 
-            normalization_pipeline_task_ids: Set[str] = {
-                task.task_id
-                for task in dag.tasks
-                if isinstance(task, RecidivizDataflowTemplateOperator)
-                and "normalization" in task.task_id
-            }
+        normalized_state_upstream_dag = dag.partial_subset(
+            task_ids_or_regex=["update_normalized_state"],
+            include_downstream=False,
+            include_upstream=True,
+        )
+        self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
 
-            normalized_state_upstream_dag = dag.partial_subset(
-                task_ids_or_regex=["update_normalized_state"],
-                include_downstream=False,
-                include_upstream=True,
-            )
-            self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
+        upstream_tasks = set()
+        for task in normalized_state_upstream_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
 
-            upstream_tasks = set()
-            for task in normalized_state_upstream_dag.tasks:
-                upstream_tasks.update(task.upstream_task_ids)
-
-            pipeline_tasks_not_upstream = (
-                normalization_pipeline_task_ids - upstream_tasks
-            )
-            self.assertEqual(set(), pipeline_tasks_not_upstream)
+        pipeline_tasks_not_upstream = normalization_pipeline_task_ids - upstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_upstream)
 
     def test_rematerialization_upstream_of_all_exports(
         self,
     ) -> None:
         """Tests that view rematerialization happens before any of the metric exports."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            # TODO(#9010): Remove this once the historical and incremental DAGs have
-            #  the same structure and historical triggers exports.
-            if dag_id == self.HISTORICAL_DAG_ID:
-                continue
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-            export_task_id_regex = ".*bq_metric_export.*"
-            export_tasks = dag.partial_subset(
-                task_ids_or_regex=export_task_id_regex,
-                include_downstream=False,
-                include_upstream=True,
-            )
+        export_task_id_regex = ".*bq_metric_export.*"
+        export_tasks = dag.partial_subset(
+            task_ids_or_regex=export_task_id_regex,
+            include_downstream=False,
+            include_upstream=True,
+        )
 
-            self.assertNotEqual(0, len(export_tasks.leaves))
-            for task in export_tasks.leaves:
-                self.assertRegex(task.task_id, export_task_id_regex)
-                self.assertIn(
-                    _WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids
-                )
+        self.assertNotEqual(0, len(export_tasks.leaves))
+        for task in export_tasks.leaves:
+            self.assertRegex(task.task_id, export_task_id_regex)
+            self.assertIn(_WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids)
 
     def test_rematerialization_upstream_of_validation(
         self,
     ) -> None:
         """Tests that view rematerialization happens before the validations run."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-            wait_for_materialization_downstream_dag = dag.partial_subset(
-                task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
-                include_downstream=True,
-                include_upstream=False,
-            )
+        wait_for_materialization_downstream_dag = dag.partial_subset(
+            task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
+            include_downstream=True,
+            include_upstream=False,
+        )
 
-            self.assertNotEqual(
-                0, len(wait_for_materialization_downstream_dag.task_ids)
-            )
+        self.assertNotEqual(0, len(wait_for_materialization_downstream_dag.task_ids))
 
-            found_downstream = False
-            for upstream_task_id in wait_for_materialization_downstream_dag.task_ids:
-                if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
-                    found_downstream = True
+        found_downstream = False
+        for upstream_task_id in wait_for_materialization_downstream_dag.task_ids:
+            if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                found_downstream = True
 
-            self.assertTrue(found_downstream)
+        self.assertTrue(found_downstream)
 
-            wait_for_materialization_upstream_dag = dag.partial_subset(
-                task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
-                include_downstream=False,
-                include_upstream=True,
-            )
+        wait_for_materialization_upstream_dag = dag.partial_subset(
+            task_ids_or_regex=[_WAIT_FOR_REMATERIALIZATION_TASK_ID],
+            include_downstream=False,
+            include_upstream=True,
+        )
 
-            found_upstream = False
-            for upstream_task_id in wait_for_materialization_upstream_dag.task_ids:
-                if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
-                    found_upstream = True
+        found_upstream = False
+        for upstream_task_id in wait_for_materialization_upstream_dag.task_ids:
+            if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                found_upstream = True
 
-            self.assertFalse(found_upstream)
+        self.assertFalse(found_upstream)
 
     def test_trigger_validations_upstream_of_wait(self) -> None:
         """Tests that the validations trigger happens directly before we wait
         for the validations to finish.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-            wait_subdag = dag.partial_subset(
-                task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX,
-                include_downstream=False,
-                include_upstream=True,
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        self.assertNotEqual(0, len(wait_subdag.leaves))
+        for wait_task in wait_subdag.leaves:
+            match = re.match(_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX, wait_task.task_id)
+            if not match:
+                raise ValueError(f"Found unexpected leaf node: {wait_task.task_id}")
+            self.assertEqual(
+                {f"trigger_{match.group(1)}_validations_task"},
+                wait_task.upstream_task_ids,
             )
-            self.assertNotEqual(0, len(wait_subdag.leaves))
-            for wait_task in wait_subdag.leaves:
-                match = re.match(_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX, wait_task.task_id)
-                if not match:
-                    raise ValueError(f"Found unexpected leaf node: {wait_task.task_id}")
-                self.assertEqual(
-                    {f"trigger_{match.group(1)}_validations_task"},
-                    wait_task.upstream_task_ids,
-                )
 
     def test_rematerialization_downstream_of_all_pipelines(
         self,
     ) -> None:
         """Tests that view rematerialization happens after all pipelines have run."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-            pipeline_task_ids: Set[str] = {
-                task.task_id
-                for task in dag.tasks
-                if isinstance(task, RecidivizDataflowTemplateOperator)
-            }
+        pipeline_task_ids: Set[str] = {
+            task.task_id
+            for task in dag.tasks
+            if isinstance(task, RecidivizDataflowTemplateOperator)
+        }
 
-            self.assertNotEqual(0, len(pipeline_task_ids))
+        self.assertNotEqual(0, len(pipeline_task_ids))
 
-            trigger_task_subdag = dag.partial_subset(
-                task_ids_or_regex=_TRIGGER_REMATERIALIZATION_TASK_ID,
-                include_downstream=False,
-                include_upstream=True,
-            )
+        trigger_task_subdag = dag.partial_subset(
+            task_ids_or_regex=_TRIGGER_REMATERIALIZATION_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
 
-            upstream_tasks = set()
-            for task in trigger_task_subdag.tasks:
-                upstream_tasks.update(task.upstream_task_ids)
+        upstream_tasks = set()
+        for task in trigger_task_subdag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
 
-            pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
-            self.assertEqual(set(), pipeline_tasks_not_upstream)
+        pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_upstream)
 
     def test_trigger_rematerialization_upstream_of_wait(self) -> None:
         """Tests that view rematerialization trigger happens directly before we wait
         for the materialization to finish.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            self.assertNotEqual(0, len(dag.task_ids))
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
 
-            wait_subdag = dag.partial_subset(
-                task_ids_or_regex=_WAIT_FOR_REMATERIALIZATION_TASK_ID,
-                include_downstream=False,
-                include_upstream=True,
-            )
-            wait_task = one(wait_subdag.leaves)
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_WAIT_FOR_REMATERIALIZATION_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
 
-            self.assertEqual(_WAIT_FOR_REMATERIALIZATION_TASK_ID, wait_task.task_id)
-            self.assertEqual(
-                {_TRIGGER_REMATERIALIZATION_TASK_ID}, wait_task.upstream_task_ids
-            )
+        self.assertEqual(_WAIT_FOR_REMATERIALIZATION_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {_TRIGGER_REMATERIALIZATION_TASK_ID}, wait_task.upstream_task_ids
+        )
 
     def test_trigger_update_all_managed_views_upstream_of_wait(self) -> None:
         """Tests that update_all_managed_views trigger happens directly before we wait
         for the update all views endpoint to finish.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -302,7 +274,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
         for the refresh dataset endpoint to finish.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -321,7 +293,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     def test_acquire_lock_task_upstream_of_wait_for_acquire_lock_success(self) -> None:
         """Tests that acquire_lock happens directly before we call wait_for_acquire_lock_success."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -342,7 +314,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     ) -> None:
         """Tests that wait_for_acquire_lock_success happens directly before we call trigger_refresh_bq_dataset."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -363,7 +335,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     ) -> None:
         """Tests that wait_for_refresh_bq_dataset happens directly before we call state_bq_refresh_completion."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -386,7 +358,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     ) -> None:
         """Tests that state_bq_refresh_completion happens directly before we call update_all_views_branch."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -410,7 +382,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     ) -> None:
         """Tests that update_all_views_branch happens directly before we call update_all_managed_views."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
@@ -431,27 +403,26 @@ class TestCalculationPipelineDags(unittest.TestCase):
     def test_rematerialization_endpoint(self) -> None:
         """Tests that rematerialization triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            trigger_cloud_task_task = dag.get_task(_TRIGGER_REMATERIALIZATION_TASK_ID)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        trigger_cloud_task_task = dag.get_task(_TRIGGER_REMATERIALIZATION_TASK_ID)
 
-            if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
-                raise ValueError(
-                    f"Expected type CloudTasksTaskCreateOperator, found "
-                    f"[{type(trigger_cloud_task_task)}]."
-                )
-
-            self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
-
-            self.assertEqual(
-                trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-                "/view_update/rematerialize_all_deployed_views",
+        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+            raise ValueError(
+                f"Expected type CloudTasksTaskCreateOperator, found "
+                f"[{type(trigger_cloud_task_task)}]."
             )
+
+        self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
+
+        self.assertEqual(
+            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+            "/view_update/rematerialize_all_deployed_views",
+        )
 
     def test_update_all_managed_views_endpoint(self) -> None:
         """Tests that update_all_managed_views triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         trigger_cloud_task_task = dag.get_task(
             _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID
         )
@@ -472,7 +443,7 @@ class TestCalculationPipelineDags(unittest.TestCase):
     def test_trigger_refresh_bq_dataset_task_endpoint(self) -> None:
         """Tests that trigger_refresh_bq_dataset_task triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.HISTORICAL_DAG_ID]
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         trigger_cloud_task_task = dag.get_task(_TRIGGER_REFRESH_BQ_DATASET_TASK_ID)
 
         if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
@@ -491,19 +462,18 @@ class TestCalculationPipelineDags(unittest.TestCase):
     def test_validations_endpoint(self) -> None:
         """Tests that validation triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        for dag_id in self.calc_pipeline_dag_ids:
-            dag = dag_bag.dags[dag_id]
-            trigger_cloud_task_task = dag.get_task("trigger_us_nd_validations_task")
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        trigger_cloud_task_task = dag.get_task("trigger_us_nd_validations_task")
 
-            if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
-                raise ValueError(
-                    f"Expected type CloudTasksTaskCreateOperator, found "
-                    f"[{type(trigger_cloud_task_task)}]."
-                )
-
-            self.assertEqual("validations", trigger_cloud_task_task.queue_name)
-
-            self.assertEqual(
-                trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-                "/validation_manager/validate/US_ND",
+        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+            raise ValueError(
+                f"Expected type CloudTasksTaskCreateOperator, found "
+                f"[{type(trigger_cloud_task_task)}]."
             )
+
+        self.assertEqual("validations", trigger_cloud_task_task.queue_name)
+
+        self.assertEqual(
+            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
+            "/validation_manager/validate/US_ND",
+        )

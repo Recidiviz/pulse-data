@@ -263,7 +263,7 @@ def main() -> int:
         )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/dags/calculation_pipeline_dags.py",
+        "recidiviz/airflow/dags/calculation_dag.py",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow",
@@ -275,7 +275,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/airflow/tests/calculation_pipeline_dags_test.py",
+        "recidiviz/airflow/tests/calculation_dag_test.py",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow",

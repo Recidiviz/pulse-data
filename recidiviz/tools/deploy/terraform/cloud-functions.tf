@@ -35,7 +35,7 @@ resource "google_cloudfunctions_function" "trigger_calculation_dag" {
     resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
   }
 
-  entry_point = "trigger_calculation_pipeline_dag"
+  entry_point = "trigger_calculation_dag"
   environment_variables = {
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri

@@ -58,7 +58,7 @@ def _build_url(
     return url
 
 
-def trigger_calculation_pipeline_dag(
+def trigger_calculation_dag(
     event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all

@@ -364,7 +364,18 @@ def update_all_views_branch_func(
     raise ValueError(f" TRIGGER_SOURCE unexpected value: {trigger_source}")
 
 
-def _create_calculation_dag() -> None:
+# By setting catchup to False and max_active_runs to 1, we ensure that at
+# most one instance of this DAG is running at a time. Because we set catchup
+# to false, it ensures that new DAG runs aren't enqueued while the old one is
+# waiting to finish.
+@dag(
+    dag_id=f"{project_id}_calculation_dag",
+    default_args=DEFAULT_ARGS,
+    schedule_interval=None,
+    catchup=False,
+    max_active_runs=1,
+)
+def create_calculation_dag() -> None:
     """This represents the overall execution of our calculation pipelines.
 
     The series of steps is as follows:
@@ -437,8 +448,6 @@ def _create_calculation_dag() -> None:
 
     update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
 
-    # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
-    #  calculation month counts
     metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
 
     metric_pipelines_by_state: Dict[
@@ -546,60 +555,4 @@ def _create_calculation_dag() -> None:
                 (metric_pipeline_operator >> case_triage_export_operator)
 
 
-# TODO(#9010): Merge incremental and historical dag and move dag decorator to _create_calculation_dag
-# By setting catchup to False and max_active_runs to 1, we ensure that at
-# most one instance of this DAG is running at a time. Because we set catchup
-# to false, it ensures that new DAG runs aren't enqueued while the old one is
-# waiting to finish.
-@dag(
-    dag_id=f"{project_id}_incremental_calculation_pipeline_dag",
-    default_args=DEFAULT_ARGS,
-    schedule_interval=None,
-    catchup=False,
-    max_active_runs=1,
-)
-def incremental_dag() -> None:
-    """This executes the calculations for all of the pipelines on a daily basis."""
-
-    _create_calculation_dag()
-
-
-# By setting catchup to False and max_active_runs to 1, we ensure that at
-# most one instance of this DAG is running at a time. Because we set catchup
-# to false, it ensures that new DAG runs aren't enqueued while the old one is
-# waiting to finish.
-@dag(
-    dag_id=f"{project_id}_historical_calculation_pipeline_dag",
-    default_args=DEFAULT_ARGS,
-    schedule_interval=None,
-    catchup=False,
-    max_active_runs=1,
-)
-def historical_dag() -> None:
-    """This executes the calculations for all of the pipelines after a calc code change
-    gets deployed."""
-
-    _create_calculation_dag()
-
-
-# By setting catchup to False and max_active_runs to 1, we ensure that at
-# most one instance of this DAG is running at a time. Because we set catchup
-# to false, it ensures that new DAG runs aren't enqueued while the old one is
-# waiting to finish.
-@dag(
-    dag_id=f"{project_id}_calculation_dag",
-    default_args=DEFAULT_ARGS,
-    schedule_interval=None,
-    catchup=False,
-    max_active_runs=1,
-)
-def create_calculation_dag() -> None:
-    """Orchestration DAG to run normalization and metric pipelines, view update,
-    metric export and validations.
-    """
-    _create_calculation_dag()
-
-
 calculation_dag = create_calculation_dag()
-incremental_dag = incremental_dag()
-historical_dag = historical_dag()
