@@ -1002,7 +1002,7 @@ LBAKRDTA_TAK294 = f"""
     SELECT
         ISCSQ#,
         ISCLN#,
-        ISCMNT,
+        '"' + REPLACE(ISCMNT, '"', '""') + '"' AS ISCMNT,
         ISDCRT,
         ISTCRT,
         ISUIDC,
