@@ -33,6 +33,7 @@ resource "google_composer_environment" "default_v2" {
       airflow_config_overrides = {
         "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
         "api-composer_auth_user_registration_role" = "Op"
+        "celery-max_concurrency"                   = 3
         "webserver-web_server_name"                = "orchestration-v2"
       }
       env_variables = {
