@@ -281,7 +281,7 @@ SELECT
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         IF(supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
         previous_supervision_level,
-        supervision_level
+        supervision_level AS new_supervision_level
     ))[OFFSET(0)]) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
