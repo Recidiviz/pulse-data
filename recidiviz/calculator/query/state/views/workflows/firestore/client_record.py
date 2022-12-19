@@ -15,16 +15,18 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """View to prepare client records for Workflows for export to the frontend."""
+from typing import List
+
+import attr
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
-from recidiviz.calculator.query.state.views.workflows.us_id.supervision_clients_template import (
-    US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
-)
-from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_clients_template import (
-    US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ctes import (
+    full_client_record,
 )
 from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_template import (
     US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
@@ -55,45 +57,79 @@ PSEUDONYMIZED_ID = """
         16
     )"""
 
+
+@attr.s
+class EligibilityQueryConfig:
+    state_code: str = attr.ib()
+    opportunity_name: str = attr.ib()
+    opportunity_record_view: str = attr.ib()
+
+    def eligibility_cte_name(self) -> str:
+        return f"{self.state_code.lower()}_{self.opportunity_name}_eligibility"
+
+
+ELIGIBILITY_QUERY_CONFIGS = [
+    EligibilityQueryConfig(
+        "US_ID",
+        "LSU",
+        "us_id_complete_transfer_to_limited_supervision_form_record_materialized",
+    ),
+    EligibilityQueryConfig(
+        "US_ID",
+        "earnedDischarge",
+        "us_id_complete_discharge_early_from_supervision_request_record_materialized",
+    ),
+    EligibilityQueryConfig(
+        "US_ID",
+        "pastFTRD",
+        "us_id_complete_full_term_discharge_from_supervision_request_record_materialized",
+    ),
+    EligibilityQueryConfig(
+        "US_ND",
+        "earlyTermination",
+        "us_nd_complete_discharge_early_from_supervision_record_materialized",
+    ),
+]
+
+
+def get_eligibility_ctes(configs: List[EligibilityQueryConfig]) -> str:
+    cte_body = "\n        UNION ALL\n".join(
+        [
+            f"""
+        SELECT
+            state_code,
+            external_id AS person_external_id,
+            "{config.opportunity_name}" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.{config.opportunity_record_view}`
+        """
+            for config in configs
+        ]
+    )
+    return f"""
+    opportunities AS (
+        {cte_body}
+    ),
+    opportunities_aggregated AS (
+        SELECT
+            state_code,
+            person_external_id,
+            ARRAY_AGG(DISTINCT opportunity_name) AS all_eligible_opportunities
+        FROM opportunities
+        GROUP BY 1, 2
+    )
+    """
+
+
 CLIENT_RECORD_QUERY_TEMPLATE = f"""
     WITH 
-    id_lsu_eligibility AS (
-        SELECT
-            state_code,
-            external_id AS person_external_id,
-            "LSU" AS opportunity_name,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_transfer_to_limited_supervision_form_record_materialized`
-    ),
-    id_earned_discharge_eligibility AS (
-        SELECT
-            state_code,
-            external_id AS person_external_id,
-            "earnedDischarge" AS opportunity_name,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_discharge_early_from_supervision_request_record_materialized`
-    ),
-    id_past_FTRD_eligibility AS (
-        SELECT
-            state_code,
-            external_id AS person_external_id,
-            "pastFTRD" AS opportunity_name,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_id_complete_full_term_discharge_from_supervision_request_record_materialized`
-    ),
-    nd_early_termination_eligibility AS (
-        SELECT
-            state_code,
-            external_id AS person_external_id,
-            "earlyTermination" AS opportunity_name,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_nd_complete_discharge_early_from_supervision_record_materialized`
-    ),
         {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
-        {US_ND_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
-        {US_ID_SUPERVISION_CLIENTS_QUERY_TEMPLATE}
+        {get_eligibility_ctes(ELIGIBILITY_QUERY_CONFIGS)},
+        {full_client_record()}
     SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
     UNION ALL
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM us_nd_clients
-    UNION ALL
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM us_id_clients
+    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
 """
+
 
 CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
@@ -111,6 +147,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"
     ),
+    workflows_supervision_states=list_to_query_string(["US_ID", "US_ND"], quoted=True),
 )
 
 if __name__ == "__main__":

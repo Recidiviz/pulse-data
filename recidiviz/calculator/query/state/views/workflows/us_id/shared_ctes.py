@@ -20,7 +20,7 @@
 def us_id_latest_phone_number() -> str:
     return """
     SELECT
-        pei.person_id,
+        "US_ID" AS state_code,
         pei.external_id AS person_external_id,
         c.phonenumber AS phone_number,
       FROM `{project_id}.{us_id_raw_data}.cis_personphonenumber_latest` a
@@ -36,5 +36,6 @@ def us_id_latest_phone_number() -> str:
         ON e.offendernumber = pei.external_id
       WHERE b.active = 'T'
         AND a.primaryphone = 'T'
+        AND pei.state_code="US_ID"
       QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id ORDER BY d.startdate)=1
     """

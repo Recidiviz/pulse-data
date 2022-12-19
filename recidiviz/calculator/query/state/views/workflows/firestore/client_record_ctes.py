@@ -15,22 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """CTEs used across multiple states' client record queries."""
-from typing import List
 
-from recidiviz.calculator.query.bq_utils import (
-    columns_to_array,
-    nonnull_end_date_exclusive_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
 )
+from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
+    us_id_latest_phone_number,
+)
 
-
-def client_record_supervision_cte(state_code: str) -> str:
-    return f"""
-    {state_code.lower()}_supervision_cases AS (
+_CLIENT_RECORD_SUPERVISION_CTE = f"""
+    supervision_cases AS (
         SELECT
           sessions.person_id,
+          sessions.state_code,
           pei.external_id AS person_external_id,
           sessions.compartment_level_2 AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
@@ -69,7 +67,7 @@ def client_record_supervision_cte(state_code: str) -> str:
         ) locations
             ON locations.state_code = sessions.state_code
             AND locations.level_2_supervision_location_external_id = SPLIT(sessions.compartment_location_end, "|")[OFFSET(1)]
-        WHERE sessions.state_code = '{state_code}'
+        WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
           AND sessions.supervising_officer_external_id_end IS NOT NULL
@@ -81,9 +79,8 @@ def client_record_supervision_cte(state_code: str) -> str:
     """
 
 
-def client_record_supervision_level_cte(state_code: str) -> str:
-    return f"""
-    {state_code.lower()}_supervision_level_start AS (
+_CLIENT_RECORD_SUPERVISION_LEVEL_CTE = f"""
+    supervision_level_start AS (
         # This CTE selects the most recent supervision level for each person with an active supervision period,
         # prioritizing the highest level in cases where one person is currently assigned to multiple levels
         SELECT
@@ -95,32 +92,47 @@ def client_record_supervision_level_cte(state_code: str) -> str:
             ON dataflow.person_id = sl.person_id
             AND dataflow.dataflow_session_id = sl.dataflow_session_id_start,
             UNNEST(session_attributes) as session_attributes
-        WHERE sl.state_code = "{state_code}"
+        WHERE sl.state_code IN ({{workflows_supervision_states}})
         AND sl.end_date IS NULL
     ),
     """
 
 
-def client_record_supervision_super_sessions_cte(state_code: str) -> str:
-    return f"""
-    {state_code.lower()}_supervision_super_sessions AS (
+_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = """
+    supervision_super_sessions AS (
         # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
         # the earliest start date for dual supervision periods.
         SELECT
             person_id,
             start_date
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
-        WHERE state_code = "{state_code}"
+        FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
+        WHERE state_code IN ({workflows_supervision_states})
         AND end_date IS NULL
     ),
     """
 
+_CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
+    phone_numbers AS (
+        # TODO(#14676): Pull from state_person.phone_number once hydrated
+        {us_id_latest_phone_number()}
+        UNION ALL
+        
+        # TODO(#14676): Pull from state_person.phone_number once hydrated
+        SELECT
+            "US_ND" AS state_code,
+            pei.external_id AS person_external_id, 
+            doc.PHONE AS phone_number
+        FROM `{{project_id}}.{{us_nd_raw_data}}.docstars_offenders_latest` doc
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+        ON doc.SID = pei.external_id
+        AND pei.id_type = "US_ND_SID"
+    ),
+"""
 
-def client_record_join_clients_cte(state_code: str) -> str:
-    return f"""
-    join_{state_code.lower()}_clients AS (
+_CLIENT_RECORD_JOIN_CLIENTS_CTE = """
+    join_clients AS (
         SELECT DISTINCT
-          "{state_code}" AS state_code,
+          sc.state_code,
           sc.person_id,
           sc.person_external_id,
           sp.full_name as person_name,
@@ -136,19 +148,22 @@ def client_record_join_clients_cte(state_code: str) -> str:
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
           ) AS expiration_date,
-        FROM {state_code.lower()}_supervision_cases sc 
-        INNER JOIN {state_code.lower()}_supervision_level_start sl USING(person_id)
-        INNER JOIN {state_code.lower()}_supervision_super_sessions ss USING(person_id)
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person` sp USING(person_id)
-        LEFT JOIN {state_code.lower()}_phone_numbers ph USING(person_external_id)
+        FROM supervision_cases sc 
+        INNER JOIN supervision_level_start sl USING(person_id)
+        INNER JOIN supervision_super_sessions ss USING(person_id)
+        INNER JOIN `{project_id}.{state_dataset}.state_person` sp USING(person_id)
+        LEFT JOIN phone_numbers ph
+            -- join on state_code / person_external_id instead of person_id alone because state data
+            -- may have multiple external_ids for a given person_id, and by this point in the
+            -- query we've already decided which person_external_id we're using
+            ON sc.state_code = ph.state_code
+            AND sc.person_external_id = ph.person_external_id 
     ),
     """
 
 
-def clients_cte(state_code: str, opportunity_ctes: List[str]) -> str:
-    newline = "\n        "
-    return f"""
-    {state_code.lower()}_clients AS (
+_CLIENTS_CTE = """
+    clients AS (
         # Values set to NULL are not applicable for this state
         SELECT
             person_external_id,
@@ -168,11 +183,21 @@ def clients_cte(state_code: str, opportunity_ctes: List[str]) -> str:
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             district,
-            {columns_to_array(f"{opportunity_cte}.opportunity_name" for opportunity_cte in opportunity_ctes)}
-                AS all_eligible_opportunities,
-        FROM join_{state_code.lower()}_clients
-        {newline.join([f"LEFT JOIN {opportunity_cte} USING (state_code, person_external_id)" for opportunity_cte in opportunity_ctes])}
+            opportunities_aggregated.all_eligible_opportunities
+        FROM join_clients
+        LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
         # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
         WHERE person_name IS NOT NULL
     )
+    """
+
+
+def full_client_record() -> str:
+    return f"""
+    {_CLIENT_RECORD_SUPERVISION_CTE}
+    {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
+    {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
+    {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
+    {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
+    {_CLIENTS_CTE}
     """
