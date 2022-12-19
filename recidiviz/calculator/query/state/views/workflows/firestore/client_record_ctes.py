@@ -126,6 +126,19 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
         INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
+
+        UNION ALL
+
+        SELECT
+            sp.state_code,
+            pei.external_id AS person_external_id,
+            sp.current_phone_number
+        FROM `{{project_id}}.{{state_dataset}}.state_person` sp
+        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+            USING (person_id)
+        WHERE
+            sp.state_code IN ({{workflows_supervision_states}})
+            AND sp.state_code NOT IN ("US_ID", "US_ND")
     ),
 """
 

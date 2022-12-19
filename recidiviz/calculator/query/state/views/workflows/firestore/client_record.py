@@ -147,7 +147,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"
     ),
-    workflows_supervision_states=list_to_query_string(["US_ID", "US_ND"], quoted=True),
+    workflows_supervision_states=list_to_query_string(
+        ["US_ID", "US_ND", "US_IX"], quoted=True
+    ),
 )
 
 if __name__ == "__main__":
