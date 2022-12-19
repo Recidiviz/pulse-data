@@ -248,6 +248,7 @@ def add_supervision_period_to_person(
     custodial_authority: Optional[StateCustodialAuthority] = None,
     supervision_level: Optional[StateSupervisionLevel] = None,
     supervision_level_raw_text: Optional[str] = None,
+    case_type_entries: Optional[List[entities.StateSupervisionCaseTypeEntry]] = None,
 ) -> None:
     """Append a supervision period to the person (updates the person entity in place)."""
 
@@ -271,7 +272,13 @@ def add_supervision_period_to_person(
         supervision_level_raw_text=supervision_level_raw_text,
         custodial_authority_raw_text=custodial_authority_raw_text,
         custodial_authority=custodial_authority,
+        case_type_entries=case_type_entries or [],
     )
+
+    if case_type_entries:
+        for case_type_entry in case_type_entries:
+            case_type_entry.supervision_period = supervision_period
+            case_type_entry.person = person
 
     person.supervision_periods.append(supervision_period)
 
