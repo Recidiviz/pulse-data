@@ -25,7 +25,9 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     PO_REPORT_DATASET,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,7 +43,7 @@ SELECT
     officer_external_id,
     "CASE_TRIAGE_FEEDBACK" AS event,
     feedback_date AS event_date,
-    feedback_type AS attribute_1,
+    TO_JSON_STRING(STRUCT(feedback_type)) AS event_attributes,
 FROM
     `{project_id}.{experiments_dataset}.case_triage_feedback_actions`
 
@@ -52,8 +54,8 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "CASE_TRIAGE_ACTION" AS event,
-    EXTRACT(DATETIME FROM tracks.timestamp AT TIME ZONE 'US/Eastern') AS event_date,
-    event AS attribute_1,  -- kind of action taken
+    EXTRACT(DATETIME FROM tracks.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(event)) AS event_attributes,  -- kind of action taken
 FROM (
     -- dedup tracks
     SELECT
@@ -75,8 +77,8 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "CASE_TRIAGE_PAGE" AS event,
-    EXTRACT(DATETIME FROM pages.timestamp AT TIME ZONE 'US/Eastern') AS event_date,
-    path as attribute_1,  -- which page the user saw
+    EXTRACT(DATETIME FROM pages.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(path)) AS event_attributes,  -- which page the user saw
 FROM (
     -- dedup pages
     SELECT
@@ -98,8 +100,8 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "PO_MONTHLY_REPORT_ACTION" AS event,
-    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Eastern') AS event_date,
-    event AS attribute_1, -- kind of action taken
+    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(event)) AS event_attributes, -- kind of action taken
 FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
 INNER JOIN
     `{project_id}.{static_reference_dataset}.po_report_recipients` users
@@ -112,15 +114,164 @@ SELECT
     users.state_code,
     users.officer_external_id,
     "PO_MONTHLY_REPORT_ACTION_FIRST" AS event,
-    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE 'US/Eastern') AS event_date,
-    event AS attribute_1, -- kind of action taken
+    EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(event)) AS event_attributes, -- kind of action taken
 FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
 INNER JOIN
     `{project_id}.{static_reference_dataset}.po_report_recipients` users
 ON events.email = users.email_address
-WHERE TRUE QUALIFY
-    ROW_NUMBER() OVER (PARTITION BY message_id, email, attribute_1
+QUALIFY
+    ROW_NUMBER() OVER (PARTITION BY message_id, email, event
         ORDER BY events.event_datetime) = 1
+        
+UNION ALL
+
+-- officer views client profile in workflows
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_PAGE" AS event,
+    EXTRACT(DATETIME FROM pv.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "PROFILE_VIEWED" AS event_type, 
+        CAST(NULL AS STRING) AS opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_profile_viewed` pv
+-- dedup to the last entry per user per person per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, DATE(event_date) ORDER BY timestamp DESC) = 1
+
+UNION ALL
+
+-- officer views client preview in workflows
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_PAGE" AS event,
+    EXTRACT(DATETIME FROM ov.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "OPPORTUNITY_PREVIEWED" AS event_type, 
+        opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_opportunity_previewed` ov
+-- dedup to the last entry per user person per opportunity per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
+
+UNION ALL
+
+-- officer views form in workflows
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_PAGE" AS event,
+    EXTRACT(DATETIME FROM fv.timestamp AT TIME ZONE "US/Eastern") AS event_date, 
+    TO_JSON_STRING(STRUCT(
+        "FORM_VIEWED" AS event_type,
+        opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_referral_form_viewed` fv
+-- dedup to the last entry per user person per opportunity per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
+        
+UNION ALL        
+
+-- workflows user identified 
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_ACTION" AS event,
+    EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_date, 
+    TO_JSON_STRING(STRUCT(
+        "USER_IDENTIFIED" AS event_type, 
+        CAST(NULL AS STRING) AS opportunity_type,
+        CAST(NULL AS STRING) AS person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_segment_dataset}.identifies` 
+INNER JOIN 
+    `{project_id}.{workflows_views_dataset}.reidentified_dashboard_users`
+    USING (user_id)
+-- dedup to the last entry per user per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id, DATE(event_date) ORDER BY timestamp DESC) = 1
+
+  
+UNION ALL
+
+-- workflows user copies form to clipboard
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_ACTION" AS event,
+    EXTRACT(DATETIME FROM copied.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "FORM_COPIED" AS event_type, 
+        opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_referral_form_copied` copied
+-- dedup to the last entry per user person per opportunity per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
+    
+UNION ALL
+
+-- workflows user prints form
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_ACTION" AS event,
+    EXTRACT(DATETIME FROM printed.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "FORM_PRINTED" AS event_type,  
+        opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_referral_form_printed` printed
+-- dedup to the last entry per user person per opportunity per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
+
+UNION ALL 
+
+-- workflows user edits form for the first time
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_ACTION" AS event,
+    EXTRACT(DATETIME FROM first_edit.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "FORM_FIRST_EDITED" AS event_type, 
+        opportunity_type,
+        person_id
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_referral_form_first_edited` first_edit
+-- dedup to the last entry per user person per opportunity per day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
+    
+UNION ALL
+
+-- clients referral status history
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "WORKFLOWS_CLIENT_STATUS_UPDATE" AS event,
+    EXTRACT(DATETIME FROM referral_status_history.timestamp AT TIME ZONE "US/Eastern") AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "LATEST_REFERRAL_STATUS" AS event_type,
+        opportunity_type,
+        person_id,
+        status AS new_status
+    )) AS event_attributes,
+FROM 
+    `{project_id}.{workflows_views_dataset}.clients_referral_status_updated` referral_status_history
+-- dedup to the last status of the person by opportunity by day
+QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, opportunity_type, DATE(event_date) ORDER BY timestamp DESC) = 1
 """
 
 OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -134,6 +285,8 @@ OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=PO_REPORT_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "officer_external_id"],
+    workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
+    workflows_segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
 )
 
 if __name__ == "__main__":
