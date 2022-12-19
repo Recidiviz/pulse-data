@@ -16,10 +16,10 @@
 # =============================================================================
 
 resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline_topic" {
-  name             = "schedule_incremental_calculation_pipeline_cloud_function"
-  schedule         = "0 6 * * *" # Every day at 6 am
-  description      = "Schedules the running of the incremental calculation pipeline topic"
-  time_zone        = "America/Los_Angeles"
+  name        = "schedule_incremental_calculation_pipeline_cloud_function"
+  schedule    = "0 6 * * *" # Every day at 6 am
+  description = "Schedules the running of the incremental calculation pipeline topic"
+  time_zone   = "America/Los_Angeles"
 
   pubsub_target {
     # topic's full resource name.

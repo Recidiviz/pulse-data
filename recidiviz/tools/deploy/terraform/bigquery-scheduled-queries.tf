@@ -44,7 +44,7 @@ resource "google_project_iam_member" "bigquery_scheduled_queries_permissions" {
 resource "google_project_iam_member" "bigquery_datatransfer_admin" {
   project = var.project_id
   role    = "roles/bigquery.admin"
-  member = "serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"
+  member  = "serviceAccount:${google_service_account.bigquery_scheduled_queries.email}"
 }
 
 # Create a dataset

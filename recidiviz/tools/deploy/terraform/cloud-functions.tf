@@ -39,8 +39,8 @@ resource "google_cloudfunctions_function" "trigger_calculation_dag" {
   environment_variables = {
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
-    "AIRFLOW_URI"       = google_composer_environment.default_v2.config.0.airflow_uri
-    "GCP_PROJECT"       = var.project_id
+    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+    "GCP_PROJECT" = var.project_id
   }
 
   source_repository {
