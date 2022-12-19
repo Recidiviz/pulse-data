@@ -80,9 +80,9 @@ module "case-triage-db-operations-queue" {
 module "validations-queue" {
   source = "./modules/base-task-queue"
 
-  queue_name         = "validations"
-  region             = var.app_engine_region
-  max_retry_attempts = 1
+  queue_name                = "validations"
+  region                    = var.app_engine_region
+  max_retry_attempts        = 1
   max_concurrent_dispatches = 50
 }
 
