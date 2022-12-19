@@ -47,40 +47,56 @@ from recidiviz.utils.string import StrictStringFormatter
 # Query fragment that can be formatted with criteria-specific naming. Once formatted,
 # the string will look like a standard view query template string:
 #         SELECT
-#             * EXCEPT(end_date),
-#             COALESCE(end_date, "9999-12-31") AS end_date,
-#             'my_criteria' AS criteria_name
-#         FROM `{project_id}.{task_eligibility_criteria_xxx_dataset}.my_criteria`
-#         WHERE state_code = 'US_XX'
+#             *,
+#             "my_criteria" AS criteria_name
+#         FROM `{project_id}.{task_eligibility_criteria_xxx_dataset}.my_criteria_materialized`
+#         WHERE state_code = "US_XX"
 #     )
 STATE_SPECIFIC_CRITERIA_FRAGMENT = """
     SELECT
         *,
-        '{criteria_name}' AS criteria_name
+        "{criteria_name}" AS criteria_name
     FROM `{{project_id}}.{{{criteria_dataset_id}_dataset}}.{criteria_view_id}`
-    WHERE state_code = '{state_code}'
+    WHERE state_code = "{state_code}"
 """
 
 # CTE that can be formatted with population-specific naming. Once formatted,
 # the string will look like a standard view query template string:
 #     candidate_population AS (
 #         SELECT
-#             * EXCEPT(end_date),
-#             COALESCE(end_date, "9999-12-31") AS end_date,
-#         FROM `{project_id}.{task_eligibility_candidates_xxx_dataset}.my_population`
-#         WHERE state_code = 'US_XX'
+#             *,
+#         FROM `{project_id}.{task_eligibility_candidates_xxx_dataset}.my_population_materialized`
+#         WHERE state_code = "US_XX"
 #     )
 STATE_SPECIFIC_POPULATION_CTE = """candidate_population AS (
     SELECT
         *
     FROM `{{project_id}}.{{{population_dataset_id}_dataset}}.{population_view_id}`
-    WHERE state_code = '{state_code}'
+    WHERE state_code = "{state_code}"
 )"""
 
-CRITERIA_INFO_STRUCT_FRAGMENT = (
-    "STRUCT('{state_code}' AS state_code, '{criteria_name}' AS criteria_name, "
-    "{meets_criteria_default} AS meets_criteria_default)"
-)
+CRITERIA_INFO_STRUCT_FRAGMENT = """STRUCT(
+            "{state_code}" AS state_code,
+            "{criteria_name}" AS criteria_name,
+            {meets_criteria_default} AS meets_criteria_default
+        )"""
+
+# CTE that can be formatted with completion-event-specific naming. Once formatted,
+# the string will look like a standard view query template string:
+#     candidate_population AS (
+#         SELECT
+#             * EXCEPT(completion_date),
+#             completion_date AS end_date,
+#         FROM `{project_id}.{task_eligibility_completion_events_dataset}.my_event_materialized`
+#         WHERE state_code = "US_XX"
+#     )
+TASK_COMPLETION_EVENT_CTE = """task_completion_events AS (
+    SELECT
+        * EXCEPT(completion_event_date),
+        completion_event_date AS end_date,
+    FROM `{{project_id}}.{{{completion_events_dataset_id}_dataset}}.{completion_events_view_id}`
+    WHERE state_code = "{state_code}"
+)"""
 
 
 # TODO(#16091): Write tests for this class
@@ -106,9 +122,12 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             task_name,
             candidate_population_view_builder,
             criteria_spans_view_builders,
+            completion_event_builder,
         )
         query_format_kwargs = self._dataset_query_format_args(
-            candidate_population_view_builder, criteria_spans_view_builders
+            candidate_population_view_builder,
+            criteria_spans_view_builders,
+            completion_event_builder,
         )
         super().__init__(
             dataset_id=task_eligibility_spans_state_specific_dataset(state_code),
@@ -126,7 +145,6 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.task_name = task_name
         self.candidate_population_view_builder = candidate_population_view_builder
         self.criteria_spans_view_builders = criteria_spans_view_builders
-        # TODO(#16808): Pull this view in to the query to populate a new end_reason column.
         self.completion_event_builder = completion_event_builder
 
     @staticmethod
@@ -135,6 +153,7 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         task_name: str,
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> str:
         """Builds the view query template that does span collapsing logic to generate
         task eligibility spans from component criteria and population spans views.
@@ -177,9 +196,20 @@ class SingleTaskEligibilitySpansBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             )
 
         all_criteria_spans_cte_str = (
-            f"criteria_spans AS ({'UNION ALL'.join(criteria_span_ctes)})"
+            f"""criteria_spans AS ({"UNION ALL".join(criteria_span_ctes)})"""
         )
         criteria_info_structs_str = ",\n\t\t".join(criteria_info_structs)
+
+        if not completion_event_builder.materialized_address:
+            raise ValueError(
+                f"Expected materialized_address for view [{completion_event_builder.address}]"
+            )
+        completion_event_span_cte = StrictStringFormatter().format(
+            TASK_COMPLETION_EVENT_CTE,
+            state_code=state_code.value,
+            completion_events_dataset_id=completion_event_builder.materialized_address.dataset_id,
+            completion_events_view_id=completion_event_builder.materialized_address.table_id,
+        )
 
         return f"""
 WITH
@@ -191,6 +221,7 @@ all_criteria AS (
 ),
 {all_criteria_spans_cte_str},
 {population_span_cte},
+{completion_event_span_cte},
 combined_cte AS (
     SELECT * EXCEPT(meets_criteria, reason) FROM criteria_spans
     UNION ALL
@@ -241,7 +272,7 @@ sub-span represents an eligible or ineligible period for each individual.
         ON spans.state_code = criteria.state_code
         AND spans.person_id = criteria.person_id
         AND spans.start_date BETWEEN criteria.start_date
-            AND DATE_SUB({nonnull_end_date_clause('criteria.end_date')}, INTERVAL 1 DAY)
+            AND DATE_SUB({nonnull_end_date_clause("criteria.end_date")}, INTERVAL 1 DAY)
         AND all_criteria.criteria_name = criteria.criteria_name
     GROUP BY 1,2,3,4
 ),
@@ -268,7 +299,7 @@ type switches.
         ) AS new_span,
         FROM (
             SELECT 
-                *, ARRAY_TO_STRING(ineligible_criteria, ",") AS ineligible_reasons_str
+                *, COALESCE(ARRAY_TO_STRING(ineligible_criteria, ","), "") AS ineligible_reasons_str
             FROM eligibility_sub_spans
         )
         WINDOW state_person_window AS (PARTITION BY state_code, person_id
@@ -278,33 +309,66 @@ type switches.
 SELECT
     state_code,
     person_id,
-    '{task_name}' AS task_name,
+    "{task_name}" AS task_name,
     task_eligibility_span_id,
     MIN(start_date) OVER (PARTITION BY state_code, person_id, task_eligibility_span_id) AS start_date,
-    {revert_nonnull_end_date_clause('end_date')} AS end_date,
+    {revert_nonnull_end_date_clause("eligibility_sub_spans_with_id.end_date")} AS end_date,
     is_eligible,
     reasons,
     ineligible_criteria,
+    -- Infer the task eligibility span end reason
+    CASE
+        -- No end reason if the span is still open
+        WHEN {revert_nonnull_end_date_clause("eligibility_sub_spans_with_id.end_date")} IS NULL THEN NULL
+        -- Mark completed if there is a completion event on the span end date
+        WHEN task_completion_events.end_date IS NOT NULL THEN "TASK_COMPLETED"
+        -- Left candidate population if there is a gap between spans
+        WHEN end_date < {nonnull_end_date_clause("LEAD(start_date) OVER w")} THEN "LEFT_CANDIDATE_POPULATION"
+        WHEN NOT is_eligible THEN
+            CASE
+                -- Became eligible
+                WHEN LEAD(is_eligible) OVER w THEN "BECAME_ELIGIBLE"
+                -- TODO(#14445): refine logic when the `reasons` array changes
+                -- and add "INELIGIBLE_REASONS_CHANGED" `end_reason`
+                ELSE "INELIGIBLE_CRITERIA_CHANGED"
+            END
+        WHEN is_eligible THEN
+            CASE
+                -- Became ineligible
+                WHEN NOT LEAD(is_eligible) OVER w THEN "BECAME_INELIGIBLE"
+                -- TODO(#14445): refine logic when the `reasons` array changes
+                -- and add "ELIGIBLE_REASONS_CHANGED" `end_reason`
+                ELSE "UNKNOWN"
+            END
+        -- Edge case that should never occur
+        ELSE "UNKNOWN" 
+    END AS end_reason,
 FROM eligibility_sub_spans_with_id
+LEFT JOIN task_completion_events
+    USING (state_code, person_id, end_date)
 -- Pick the row with the latest end date for each task_eligibility_span_id
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY state_code, person_id, task_eligibility_span_id
-    ORDER BY {nonnull_end_date_clause('end_date')} DESC
+    ORDER BY {nonnull_end_date_clause("end_date")} DESC
 ) = 1
+WINDOW w AS (PARTITION BY state_code, person_id ORDER BY start_date ASC)
 """
 
     @staticmethod
     def _dataset_query_format_args(
         candidate_population_view_builder: TaskCandidatePopulationBigQueryViewBuilder,
         criteria_spans_view_builders: List[TaskCriteriaBigQueryViewBuilder],
+        completion_event_builder: TaskCompletionEventBigQueryViewBuilder,
     ) -> Dict[str, str]:
         """Returns the query format args for the datasets in the query template. All
         datasets are injected as query format args so that these views work when
         deployed to sandbox datasets.
         """
-        datasets = [candidate_population_view_builder.dataset_id] + [
-            vb.dataset_id for vb in criteria_spans_view_builders
-        ]
+        datasets = (
+            [candidate_population_view_builder.dataset_id]
+            + [vb.dataset_id for vb in criteria_spans_view_builders]
+            + [completion_event_builder.dataset_id]
+        )
 
         return {f"{dataset_id}_dataset": dataset_id for dataset_id in datasets}
 
