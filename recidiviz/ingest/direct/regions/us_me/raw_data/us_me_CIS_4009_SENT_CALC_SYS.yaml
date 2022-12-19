@@ -17,6 +17,7 @@ columns:
     description: |-
       Indicates that this sentence was attributed to a juvenile, not an adult.
   - name: Logical_Delete_Ind
+    description: Delete if 'Y'
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
