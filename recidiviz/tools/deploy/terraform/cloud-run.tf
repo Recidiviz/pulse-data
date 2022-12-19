@@ -184,7 +184,7 @@ resource "google_cloud_run_service" "case-triage" {
 
   metadata {
     annotations = {
-      "run.googleapis.com/ingress"        = "all"
+      "run.googleapis.com/ingress"        = "internal-and-cloud-load-balancing"
       "run.googleapis.com/ingress-status" = "all"
     }
   }
