@@ -45,6 +45,8 @@ columns:
   - name: CREATED_BY_TX
     is_pii: True
   - name: CREATED_ON_DATE
+    description: Date of creation
   - name: MODIFIED_BY_TX
+    description: Date of modification
     is_pii: True
   - name: MODIFIED_ON_DATE

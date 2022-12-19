@@ -44,6 +44,7 @@ columns:
   - name: CREATED_ON_DATE
     description: Date the record was created on
   - name: DISCIPLINARY_ACTION_FORMAL_IND
+    description: Flags if the disciplinary violation was followed by a formal action.
   - name: DISCIPLINARY_CASE_ID
     description: Primary key
   - name: DISCIPLINARY_CASE_SUMMARY_TX

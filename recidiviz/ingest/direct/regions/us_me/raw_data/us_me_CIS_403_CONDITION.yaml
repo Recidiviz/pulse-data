@@ -31,6 +31,7 @@ columns:
   - name: General_Comments_Tx
     is_pii: True
   - name: Logical_Delete_Ind
+    description: Delete if 'Y'
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
