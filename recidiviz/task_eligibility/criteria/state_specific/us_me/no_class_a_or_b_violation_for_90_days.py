@@ -75,6 +75,7 @@ WITH disciplinary_cases_cte AS (
       # Drop if logical delete = yes
       AND COALESCE(dc.LOGICAL_DELETE_IND, 'N') != 'Y'
       AND COALESCE(vd.Logical_Delete_Ind , 'N') != 'Y'
+      AND COALESCE(dc.DISCIPLINARY_ACTION_FORMAL_IND, 'Y') != 'N'
       
 ),
 cases_wstart_end_cte AS (
