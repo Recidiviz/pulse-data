@@ -344,11 +344,10 @@ class DatapointsForMetric:
                 metric_key: d.disaggregated_by_supervision_subsystems
                 for metric_key, d in metric_key_to_datapoints.items()
             }
-            if schema.System.SUPERVISION.value in systems
+            if schema.System.SUPERVISION in systems
             else {},
         )
         metric_definitions = []
-
         for metric in metrics:
             datapoints = metric_key_to_datapoints.get(metric.key, DatapointsForMetric())  # type: ignore[arg-type]
             if datapoints.aggregated_value is not None or any(
