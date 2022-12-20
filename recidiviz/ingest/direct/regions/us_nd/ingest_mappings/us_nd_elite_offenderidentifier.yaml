@@ -1,13 +1,25 @@
-key_mappings:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-child_key_mappings:
-  IDENTIFIER: state_person_external_id.state_person_external_id_id
-  IDENTIFIER_TYPE: state_person_external_id.id_type
-
-primary_key:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-keys_to_ignore:
-  - CREATE_DATETIME # No apparent use for these at the moment
-  - MODIFY_DATETIME # No apparent use for these at the moment
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - ROOT_OFFENDER_ID
+  - IDENTIFIER
+  - IDENTIFIER_TYPE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+unused_columns:
+  - IDENTIFIER_TYPE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id:
+            $custom:
+              $function: us_nd_custom_parsers.decimal_str_as_int_str
+              $args:
+                dec_str: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+      - StatePersonExternalId:
+          external_id: IDENTIFIER
+          id_type: $literal("US_ND_SID")
