@@ -72,9 +72,6 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_unnested_me
 from recidiviz.calculator.query.state.views.analyst_data.supervision_unnested_metrics_preprocessed_sessions import (
     SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.analyst_data.task_events import (
-    TASK_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
 )
@@ -202,7 +199,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
         SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,
         SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
-        TASK_EVENTS_VIEW_BUILDER,
         US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
         US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
         US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,

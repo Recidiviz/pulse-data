@@ -1465,6 +1465,10 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="analyst_data",
                 table_id="us_pa_raw_treatment_classification_codes",
             ),
+            BigQueryAddress(
+                dataset_id="reference_views",
+                table_id="task_to_completion_event",
+            ),
             # Generate data using pure date functions
             BigQueryAddress(
                 dataset_id="reference_views", table_id="covid_report_weeks"

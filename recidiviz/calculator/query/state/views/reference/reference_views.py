@@ -51,6 +51,9 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_judicia
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.task_to_completion_event import (
+    TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
 )
@@ -76,4 +79,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+    TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
 ]
