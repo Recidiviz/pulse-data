@@ -197,8 +197,7 @@ INNER JOIN
     `{project_id}.{workflows_views_dataset}.reidentified_dashboard_users`
     USING (user_id)
 -- dedup to the last entry per user per day
-QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id, DATE(event_date) ORDER BY timestamp DESC) = 1
-
+QUALIFY ROW_NUMBER() OVER (PARTITION BY user_external_id, DATE(event_date) ORDER BY timestamp DESC) = 1
   
 UNION ALL
 
