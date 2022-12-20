@@ -100,6 +100,9 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.statute = statute.Offense
     WHERE sis.external_id IS NOT NULL
         AND sis.state_code = 'US_TN'
+        /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
+        and the new sentencing information can be validated, this can be removed */
+        AND COALESCE(SPLIT(sis.external_id, "-")[SAFE_OFFSET(5)],'') NOT IN ('ISC', 'DIVERSION')
            
     UNION ALL
      
@@ -139,6 +142,9 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.statute = statute.Offense
     WHERE sss.external_id IS NOT NULL
         AND sss.state_code = 'US_TN'
+        /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
+        and the new sentencing information can be validated, this can be removed */
+        AND COALESCE(SPLIT(sss.external_id, "-")[SAFE_OFFSET(5)],'') NOT IN ('ISC', 'DIVERSION')
     )
     ,
     dedup_external_id_fields AS
