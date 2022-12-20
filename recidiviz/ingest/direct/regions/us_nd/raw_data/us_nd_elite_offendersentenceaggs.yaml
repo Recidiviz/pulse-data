@@ -11,6 +11,9 @@ columns:
   - name: OFFENDER_BOOK_ID
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: MAX_TERM
+    description: |-
+      The length of the maximum possible term that could be served for this booking.
   - name: EARLIEST_SENT_START_DATE
     is_datetime: True
     description: |-
@@ -35,9 +38,6 @@ columns:
     is_datetime: True
     description: |-
       When the next parole hearing is scheduled to occur.
-  - name: MAX_TERM
-    description: |-
-      The length of the maximum possible term that could be served for this booking.
   - name: CREATE_DATETIME
     is_datetime: True
     description: |-

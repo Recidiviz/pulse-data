@@ -25,6 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT * 
 FROM {elite_offendersentenceaggs}
+WHERE PAROLE_DATE IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
