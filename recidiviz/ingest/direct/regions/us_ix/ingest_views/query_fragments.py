@@ -122,6 +122,9 @@ supervising_officer_assignments_cte AS (
         EmployeeId,
         StaffId,
         EmployeeTypeName,
+        FirstName,
+        MiddleName,
+        LastName
     FROM {sup_SupervisionAssignment} sa
     LEFT JOIN {scl_MasterTerm}
         USING (MasterTermId)
