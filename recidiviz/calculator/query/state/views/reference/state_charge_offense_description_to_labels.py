@@ -25,7 +25,7 @@ MATCH_PROBABILITY_CUTOFF = "0.5"
 
 def hydrate_by_probability(column: str) -> str:
     cleaned_column = column if "." not in column else column.partition(".")[2]
-    return f"""CASE WHEN probability IS NULL THEN "EXTERNAL_UNKNONWN"
+    return f"""CASE WHEN probability IS NULL THEN "EXTERNAL_UNKNOWN"
     WHEN probability < {MATCH_PROBABILITY_CUTOFF} THEN "INTERNAL_UNKNOWN"
     ELSE {column} END AS {cleaned_column}"""
 
