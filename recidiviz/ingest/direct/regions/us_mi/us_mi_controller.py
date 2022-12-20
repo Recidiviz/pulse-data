@@ -22,6 +22,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils import environment
 
 
 class UsMiController(BaseDirectIngestController):
@@ -39,11 +40,10 @@ class UsMiController(BaseDirectIngestController):
         processed for data we received on a particular date.
         """
 
-        # BL QUESTION: do we need the second condition? saw it in the docs but not sure why
+        # staging or secondary
         if (
-            self.ingest_instance
-            == DirectIngestInstance.SECONDARY
-            # and not environment.in_gcp_production()
+            not environment.in_gcp_production()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
         ):
             return [
                 "person_external_ids",
@@ -55,6 +55,7 @@ class UsMiController(BaseDirectIngestController):
                 "assessments_v2",
             ]
 
+        # prod primary
         return [
             "state_persons",
             "incarceration_periods",
