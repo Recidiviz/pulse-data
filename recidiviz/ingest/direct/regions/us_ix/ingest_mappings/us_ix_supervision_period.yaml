@@ -321,6 +321,7 @@ output:
                         - Drug Court
                         - Drug Court Div
                       StateSupervisionCaseType.MENTAL_HEALTH_COURT:
+                        - Mental Health Court
                         - Mental Hlth Crt Div
                       StateSupervisionCaseType.VETERANS_COURT:
                         - Veterans Court
@@ -329,6 +330,7 @@ output:
                         - Family Court
                       StateSupervisionCaseType.INTERNAL_UNKNOWN:
                         - Administrative
+                        - Blended Sentence
                         - Dosage Eligible
                         - Close Comm Supervision
                         - Special Needs
