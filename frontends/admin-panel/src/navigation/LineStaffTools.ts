@@ -22,3 +22,4 @@ export const EMAIL_REPORTS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/email_reports`;
 export const UPLOAD_ROSTERS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/upload_rosters`;
 export const UPLOAD_RAW_FILES_ROUTE = `${LINE_STAFF_TOOLS_BASE}/upload_raw_files`;
 export const STATE_USER_PERMISSIONS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/state_user_permissions`;
+export const STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/state_role_default_permissions`;

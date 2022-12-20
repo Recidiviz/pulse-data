@@ -121,6 +121,11 @@ export const getStateUserPermissions = async (): Promise<Response> => {
   return getAuthResource("/users");
 };
 
+// State Role Permissions
+export const getStateRoleDefaultPermissions = async (): Promise<Response> => {
+  return getAuthResource("/states");
+};
+
 export const createNewUser = async (
   email: string,
   stateCode: string,

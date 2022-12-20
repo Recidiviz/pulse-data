@@ -121,6 +121,7 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.delete_user",
                 email="parameter@domain.org",
             )
+            self.states = flask.url_for("auth_endpoint_blueprint.states")
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -1409,3 +1410,26 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, delete.status_code)
+
+    def test_get_states(self) -> None:
+        default = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            routes={"A": "B", "B": "C"},
+        )
+        add_entity_to_database_session(self.database_key, [default])
+        with self.app.test_request_context():
+            response = self.client.get(self.states, headers=self.headers)
+            expected_response = [
+                {
+                    "stateCode": "US_MO",
+                    "role": "leadership_role",
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "shouldSeeBetaCharts": None,
+                    "routes": {"A": "B", "B": "C"},
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))

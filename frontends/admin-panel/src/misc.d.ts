@@ -69,3 +69,13 @@ interface StateUserPermissionsResponse {
   district: string;
   useCustomPermissions: boolean;
 }
+
+// State Role Permissions
+interface StateRolePermissionsResponse {
+  stateCode: string;
+  role: string;
+  canAccessLeadershipDashboard: boolean;
+  canAccessCaseTriage: boolean;
+  shouldSeeBetaCharts: boolean;
+  routes: string; // converted into JSON after response
+}

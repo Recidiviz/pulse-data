@@ -42,6 +42,7 @@ import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView"
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
+import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import UploadRostersView from "./UploadRostersView";
@@ -128,6 +129,10 @@ const items: MenuProps["items"] = [
     getItem(
       "State User Permissions",
       LineStaffTools.STATE_USER_PERMISSIONS_ROUTE
+    ),
+    getItem(
+      "State Role Default Permissions",
+      LineStaffTools.STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE
     ),
   ]),
   getItem("Justice Counts", "justice_counts_group", null, [
@@ -243,6 +248,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.STATE_USER_PERMISSIONS_ROUTE}
             component={StateUserPermissionsView}
+          />
+          <Route
+            path={LineStaffTools.STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE}
+            component={StateRoleDefaultPermissionsView}
           />
           <Route
             path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}

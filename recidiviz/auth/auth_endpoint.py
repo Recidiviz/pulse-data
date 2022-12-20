@@ -497,6 +497,27 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
         )
 
 
+@auth_endpoint_blueprint.route("/states", methods=["GET"])
+@requires_gae_auth
+def states() -> Response:
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    with SessionFactory.using_database(database_key, autocommit=False) as session:
+        state_permissions = session.query(StateRolePermissions).all()
+        return jsonify(
+            [
+                {
+                    "stateCode": res.state_code,
+                    "role": res.role,
+                    "canAccessLeadershipDashboard": res.can_access_leadership_dashboard,
+                    "canAccessCaseTriage": res.can_access_case_triage,
+                    "shouldSeeBetaCharts": res.should_see_beta_charts,
+                    "routes": res.routes,
+                }
+                for res in state_permissions
+            ]
+        )
+
+
 @auth_endpoint_blueprint.route("/state/<state_code>", methods=["GET"])
 @requires_gae_auth
 def state_info(state_code: str) -> Response:
