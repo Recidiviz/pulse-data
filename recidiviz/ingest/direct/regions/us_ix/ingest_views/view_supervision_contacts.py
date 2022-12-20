@@ -39,7 +39,9 @@ WITH contact_modes AS (
         TRIM(REGEXP_EXTRACT(Details, r'Contact Result: ([a-zA-Z0-9_ ]+).* Contact Subtype')) AS contact_result,
         TRIM(REGEXP_EXTRACT(Details, r'Employment Verification: ([a-zA-Z0-9_ ]+).* Drug Related ')) AS verified_employment,
         TRIM(REGEXP_EXTRACT(Details, r'Contact Result: ARREST')) AS resulted_in_arrest,  -- resulted_in_arrest,
-        e.StaffId -- contact_agent_id
+        -- Some of the converted notes have a placeholder employee in `StaffId`, but the
+        -- actual agent that performed the contact is in `InsertUserId`.
+        IFNULL(staff_employee.StaffId, insert_employee.StaffId) AS StaffId,
     FROM {ind_OffenderNote}
     LEFT JOIN {ind_OffenderNoteInfo} oni
         USING (OffenderNoteInfoId)
@@ -52,8 +54,10 @@ WITH contact_modes AS (
         -- single legacy contact. Instead of aggregating like we do for Atlas contacts,
         -- we just pick one.
         ON cms.ContactModeIds[ORDINAL(1)] = cm.ContactModeId
-    LEFT JOIN {ref_Employee} e
-        ON oni.StaffId = e.EmployeeId
+    LEFT JOIN {ref_Employee} staff_employee
+        ON oni.StaffId = staff_employee.EmployeeId
+    LEFT JOIN {ref_Employee} insert_employee
+        ON oni.InsertUserId = insert_employee.EmployeeId
     WHERE NoteTypeId = '3' -- Filter for only Id = 3 to get "Supervision Notes"
     AND Details LIKE 'Contact Location:%'
     AND CAST(NoteDate AS DATETIME) < '2022-11-14' -- We only want to see legacy contacts from before Atlas goes live on this date
