@@ -22,9 +22,12 @@ from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DA
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    SHARED_METRIC_VIEWS_DATASET,
     STATE_BASE_DATASET,
+)
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
+    SingleTaskEligibilityBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.task_eligiblity_spans import TASK_ELIGIBILITY_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -62,6 +65,8 @@ grouping by person-event-event_date when events should only be tracked once per
 person-event-event_date. In situations where events can occur multiple times per 
 person-day, the GROUP BY clause should include all attribute name columns as well.
 """
+
+TASK_VIEW_BUILDERS = SingleTaskEligibilityBigQueryViewCollector()
 
 PERSON_EVENTS_QUERY_TEMPLATE = """
 
@@ -553,23 +558,23 @@ UNION ALL
 
 -- opportunity eligibility starts and ends
 -- keep one eligibility start per person-day-task_name
+-- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBILITY_START" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         task_name
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
 WHERE
     is_eligible
-GROUP BY 1, 2, 3, 4, task_name
 
 UNION ALL
 
--- TODO(#14994): remove once downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
 -- keep one eligibility start per person-day-task_name
 SELECT DISTINCT
     state_code,
@@ -588,12 +593,12 @@ UNION ALL
 
 -- surfaced eligible opportunities granted
 -- supervision downgrade recommendations corrected after being surfaced to staff
--- TODO(#14995): reference `all_tasks` once end_reason column added
+-- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
 -- keep one eligibility grant per person-day-task_name
 SELECT DISTINCT
     state_code,
     person_id,
-    "TASK_ELIGIBILITY_GRANT" AS event,
+    "TASK_COMPLETED" AS event,
     end_date AS event_date,
     TO_JSON_STRING(STRUCT(
         "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
@@ -602,38 +607,20 @@ FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
 WHERE
     mismatch_corrected
-
-UNION ALL 
-
--- Overdue discharge reports corrected (by releasing the person)
--- TODO(#14995): reference `all_tasks` once end_reason column added
--- keep one eligibility grant per person-day-task_name
-SELECT DISTINCT
-    state_code, 
-    person_id,
-    "TASK_ELIGIBILITY_GRANT" AS event,
-    discharge_date AS event_date,
-    TO_JSON_STRING(STRUCT(
-        "COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION" AS task_name
-    )) AS event_attributes,
-FROM 
-    `{project_id}.{shared_metric_views_dataset}.overdue_discharge_outcomes`
-WHERE
-    discharge_date IS NOT NULL
-    AND discharge_outflow = "LIBERTY"
     
 UNION ALL
 
 -- late responses to eligible opportunities eligibility
 -- 7 days
+-- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBLE_7_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 7 DAY) AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         task_name
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
 WHERE
@@ -642,11 +629,10 @@ WHERE
             IFNULL(end_date, CURRENT_DATE("US/Eastern")),
             CURRENT_DATE("US/Eastern")
         ) > DATE_ADD(start_date, INTERVAL 7 DAY)
-GROUP BY 1, 2, 3, 4, task_name
 
 UNION ALL
 
--- TODO(#14994): remove once downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
 SELECT DISTINCT
     state_code,
     person_id,
@@ -667,14 +653,15 @@ WHERE
 UNION ALL
 
 -- 30 days
+-- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBLE_30_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 30 DAY) AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         task_name
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
 WHERE
@@ -683,11 +670,10 @@ WHERE
             IFNULL(end_date, CURRENT_DATE("US/Eastern")),
             CURRENT_DATE("US/Eastern")
         ) > DATE_ADD(start_date, INTERVAL 30 DAY)
-GROUP BY 1, 2, 3, 4, task_name
 
 UNION ALL
 
--- TODO(#14994): remove once downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
 SELECT DISTINCT
     state_code,
     person_id,
@@ -747,10 +733,16 @@ SELECT
     state_code,
     person_id,
     "TASK_COMPLETED" AS event,
-    event_date,
-    TO_JSON_STRING(STRUCT(task_type)) AS event_attributes,
+    end_date AS event_date,
+    TO_JSON_STRING(
+        STRUCT(task_name, completion_event_type AS task_type)
+    ) AS event_attributes,
 FROM
-    `{project_id}.{analyst_dataset}.task_events_materialized`
+    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+INNER JOIN `{project_id}.{reference_views_dataset}.task_to_completion_event`
+    USING (task_name)
+WHERE
+    end_reason = "TASK_COMPLETED"
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -760,7 +752,7 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PERSON_EVENTS_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    shared_metric_views_dataset=SHARED_METRIC_VIEWS_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     state_base_dataset=STATE_BASE_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
