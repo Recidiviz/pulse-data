@@ -13,6 +13,9 @@ input_columns:
   - LegalStatusDesc
   - StaffId
   - EmployeeTypeName
+  - FirstName
+  - MiddleName
+  - LastName
   - RequestedSupervisionAssignmentLevel
   - PhysicalLocationTypeDesc
   - LocationName
@@ -44,6 +47,11 @@ output:
                 $then:
                   StateAgent:
                     external_id: StaffId
+                    full_name:
+                      $person_name:
+                        $given_names: FirstName
+                        $surname: LastName
+                        $middle_names: MiddleName
                     # TODO(#16848): Add mappings based on `EmployeeTypeName`
                     agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           supervision_type:
