@@ -465,7 +465,9 @@ SELECT
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         assessment_type,
         assessment_score,
-        assessment_score_change
+        CAST(assessment_score_change AS STRING) AS assessment_score_change,
+        CAST(assessment_score_change > 0 AS STRING) AS assessment_score_increase,
+        CAST(assessment_score_change < 0 AS STRING) AS assessment_score_decrease
     ))[OFFSET(0)]) AS event_attributes, 
 FROM (
     SELECT
@@ -475,10 +477,10 @@ FROM (
         assessment_date,
         CAST(assessment_score AS STRING) AS assessment_score,     
         # assessment score change within the same SSS
-        IFNULL(CAST(assessment_score - LAG(assessment_score) OVER (PARTITION BY 
+        IFNULL(assessment_score - LAG(assessment_score) OVER (PARTITION BY 
             a.state_code, a.person_id, assessment_type, sss.start_date
             ORDER BY assessment_date
-        ) AS STRING), CAST(NULL AS STRING)) AS assessment_score_change,
+        ), NULL) AS assessment_score_change,
     FROM
         `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
     LEFT JOIN

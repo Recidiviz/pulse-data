@@ -22,7 +22,9 @@ import attr
 
 from recidiviz.common import attr_validators
 
-# Mapping between clean index column names and their source column names
+# This object contains a mapping from original column names in Recidiviz's
+# schema to abbreviated column names. Note that we do not rename state_code
+# or facility, so those columns are omitted from this object.
 COLUMN_SOURCE_DICT = {
     "district": "supervision_district",
     "office": "supervision_office",
@@ -57,19 +59,30 @@ class MetricAggregationLevel:
 
     @property
     def level_name_short(self) -> str:
+        """Returns lowercase enum name"""
         return self.level_type.value.lower()
 
     def get_index_columns_query_string(self, prefix: Optional[str] = None) -> str:
-        if prefix:
-            return ", ".join([prefix + "." + column for column in self.index_columns])
-        return ", ".join(self.index_columns)
+        """Returns string containing comma separated index column names with optional prefix"""
+        prefix_str = f"{prefix}." if prefix else ""
+        return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
+
+    def get_original_columns_query_string(self, prefix: Optional[str] = None) -> str:
+        """Returns string containing comma separated column names from the source table with optional prefix"""
+        prefix_str = f"{prefix}." if prefix else ""
+        return ", ".join(
+            f"{prefix_str}{COLUMN_SOURCE_DICT.get(column, column)}"
+            for column in self.index_columns
+        )
 
     def get_index_column_rename_query_string(self, prefix: Optional[str] = None) -> str:
-        full_prefix = f"{prefix}." if prefix else ""
+        """
+        Returns string containing comma separated column names from the source table aliased with new index columns
+        where present in COLUMN_SOURCE_DICT, with optional prefix
+        """
+        prefix_str = f"{prefix}." if prefix else ""
         renamed_columns = [
-            f"{full_prefix}{COLUMN_SOURCE_DICT[column]} AS {column}"
-            if column in COLUMN_SOURCE_DICT
-            else f"{full_prefix}{column}"
+            f"{prefix_str}{COLUMN_SOURCE_DICT.get(column, column)} AS {column}"
             for column in self.index_columns
         ]
         return ", ".join(renamed_columns)

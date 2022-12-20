@@ -21,7 +21,11 @@ from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
 )
 from recidiviz.aggregated_metrics.models.metric_population_type import MetricPopulation
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import MAGIC_END_DATE, nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    MAGIC_END_DATE,
+    nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -34,7 +38,6 @@ def generate_metric_assignment_sessions_view_builder(
 ) -> SimpleBigQueryViewBuilder:
     """
     Takes as input the aggregation level and population.
-
     Returns a SimpleBigQueryViewBuilder where each row is a continuous time period during which
     a client in the population is associated with the specified aggregation level (e.g. officer).
     """
@@ -48,7 +51,6 @@ for use in the {level_name}_metrics table.
     client_period_table = f"{{project_id}}.{{sessions_dataset}}.{aggregation_level.client_assignment_sessions_view_name}"
 
     query_template = f"""
-
 WITH
 -- define population
 sample AS (
@@ -92,8 +94,7 @@ sample AS (
             OR assign.start_date BETWEEN sample.start_date AND {nonnull_end_date_clause("sample.end_date_exclusive")}
         )
     WHERE
-        CONCAT({aggregation_level.get_index_columns_query_string(prefix="assign")}) IS NOT NULL
-)
+        CONCAT({aggregation_level.get_original_columns_query_string(prefix="assign")}) IS NOT NULL)
 ,
 {create_sub_sessions_with_attributes("potentially_adjacent_spans")}
 -- Re-sessionize all intersecting spans
@@ -103,7 +104,7 @@ sample AS (
         person_id,
         session_id,
         MIN(start_date) AS assignment_date,
-        {nonnull_end_date_clause("MAX(end_date)")} AS end_date,
+        MAX({nonnull_end_date_clause("end_date")}) AS end_date,
     FROM (
         SELECT
             * EXCEPT(date_gap),
@@ -124,7 +125,10 @@ sample AS (
     )
     GROUP BY {aggregation_level.get_index_columns_query_string()}, person_id, session_id
 )
-SELECT * EXCEPT(session_id) FROM {level_name}_assignments
+SELECT 
+    * EXCEPT(session_id, end_date),
+    {revert_nonnull_end_date_clause("end_date")} AS end_date,
+FROM {level_name}_assignments
 """
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
