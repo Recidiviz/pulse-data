@@ -25,6 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT *
 FROM {elite_offenderidentifier}
+WHERE IDENTIFIER_TYPE = 'SID'
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
