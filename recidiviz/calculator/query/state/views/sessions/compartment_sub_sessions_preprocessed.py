@@ -229,14 +229,14 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         AND sessions.start_date = starts.start_date
         AND sessions.first_sub_session
         AND (sessions.compartment_level_1 = starts.compartment_level_1
-        OR (starts.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
+        OR (starts.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 IN ('SUPERVISION_OUT_OF_STATE', 'INVESTIGATION'))
         OR (starts.compartment_level_1 = 'INCARCERATION' AND sessions.compartment_level_1 = 'INCARCERATION_OUT_OF_STATE'))
     LEFT JOIN `{project_id}.{sessions_dataset}.compartment_session_end_reasons_materialized` ends
         ON ends.release_termination_date = sessions.end_date_exclusive
         AND ends.person_id = sessions.person_id
         AND sessions.last_sub_session
         AND (sessions.compartment_level_1 = ends.compartment_level_1
-        OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 = 'SUPERVISION_OUT_OF_STATE')
+        OR (ends.compartment_level_1 = 'SUPERVISION' AND sessions.compartment_level_1 IN ('SUPERVISION_OUT_OF_STATE', 'INVESTIGATION'))
         OR (ends.compartment_level_1 = 'INCARCERATION' AND sessions.compartment_level_1 = 'INCARCERATION_OUT_OF_STATE'))
     )
     ,
