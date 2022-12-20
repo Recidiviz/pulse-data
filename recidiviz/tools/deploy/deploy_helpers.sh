@@ -45,7 +45,7 @@ gsutil cat ${LOG_OBJECT_URI}
 \`\`\`
 
 \`\`\`
-$(tail -n 30 "${DEPLOYMENT_LOG_PATH}" | sed -e 's/\x1b\[[0-9;]*m//g')
+$(tail -n 30 "${DEPLOYMENT_LOG_PATH}" | sed -e $'s/\x1b\[[0-9;]*m//g')
 \`\`\`
 EOM
 )
