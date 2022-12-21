@@ -31,7 +31,7 @@ from recidiviz.utils.metadata import local_project_id_override
 DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
 INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_ID", "US_IX", "US_TN")
-SUPERVISION_POPULATION_SPECIAL_STATES = ("US_PA", "US_TN")
+SUPERVISION_POPULATION_SPECIAL_STATES = ("US_IX", "US_PA", "US_TN")
 
 DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
 ## Overview
@@ -151,6 +151,11 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized`
     WHERE state_code NOT IN ('{{supervision_special_states}}')
             
+    UNION ALL
+    -- TODO(#17392): Remove IX preprocessing file when bench warrants are flagged in ingest/dataflow
+    SELECT *
+    FROM `{{project_id}}.{{sessions_dataset}}.us_ix_supervision_population_metrics_preprocessed_materialized`
+
     UNION ALL
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
     -- TODO(#10747): Remove TN judicial district preprocessing once hydrated in population metrics
