@@ -16,10 +16,10 @@
 # =============================================================================
 """Factory for GCSFileSystem objects"""
 import requests
-
 from google.cloud import storage
 
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GCSFileSystemImpl
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 
 # Adjust these variables if there are connection pool full errors to storage.googleapis
 POOL_CONNECTIONS = 128

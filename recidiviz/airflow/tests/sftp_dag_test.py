@@ -34,6 +34,7 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 )
 
 _START_SFTP_TASK_ID = "start_sftp"
+_END_SFTP_TASK_ID = "end_sftp"
 
 
 @patch(
@@ -65,3 +66,52 @@ class TestSftpPipelineDag(unittest.TestCase):
             upstream_tasks.update(task.upstream_task_ids)
 
         self.assertIn(_START_SFTP_TASK_ID, upstream_tasks)
+
+    def test_set_locks_upstream_of_rest_of_state_specific_tasks(self) -> None:
+        """Tests that the state-specific locks get set before the rest of the files
+        start executing."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        state_specific_lock_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.find_sftp_files_to_download",
+            include_downstream=False,
+            include_upstream=False,
+            include_direct_upstream=True,
+        )
+        self.assertNotEqual(0, len(state_specific_lock_tasks_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in state_specific_lock_tasks_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+
+        for task in upstream_tasks:
+            self.assertRegex(task, r"US_[A-Z][A-Z]\..*_lock")
+
+    def test_release_locks_downstream_of_rest_of_state_specific_tasks(self) -> None:
+        """Tests that the state-specific locks get released after the rest of the state
+        tasks get executed and right before the end."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        end_dag = dag.partial_subset(
+            task_ids_or_regex=[_END_SFTP_TASK_ID],
+            include_direct_upstream=True,
+            include_upstream=False,
+            include_downstream=False,
+        )
+        self.assertNotEqual(0, len(end_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in end_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+        for task in upstream_tasks:
+            self.assertRegex(task, r"US_[A-Z][A-Z]\.release\_.*\_lock")
+
+        state_specific_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.release\_.*\_lock",
+            include_upstream=True,
+            include_downstream=False,
+        )
+        self.assertNotEqual(0, state_specific_dag.leaves)
+        for task in state_specific_dag.leaves:
+            if task != "start_sftp":
+                self.assertRegex(task.task_id, r"US_[A-Z][A-Z]\..*")

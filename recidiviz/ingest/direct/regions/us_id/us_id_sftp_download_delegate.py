@@ -59,3 +59,6 @@ class UsIdSftpDownloadDelegate(BaseSftpDownloadDelegate):
     ) -> List[str]:
         """The US_ID server doesn't require any post-processing."""
         return [downloaded_path.abs_path()]
+
+    def supported_environments(self) -> List[str]:
+        return []

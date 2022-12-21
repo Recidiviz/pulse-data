@@ -23,6 +23,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
 
 
 class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -60,3 +61,6 @@ class UsMeSftpDownloadDelegate(BaseSftpDownloadDelegate):
     ) -> List[str]:
         """For US_ME, the downloaded path is the same that will be streamed directly to GCS."""
         return [downloaded_path.abs_path()]
+
+    def supported_environments(self) -> List[str]:
+        return GCP_PROJECTS

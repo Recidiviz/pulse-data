@@ -18,7 +18,7 @@
 import copy
 import json
 import os
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import IO, Any, Dict, List, Optional, Type, TypeVar, Union
 from urllib.parse import urlparse
 
 import jsonschema
@@ -50,6 +50,11 @@ class YAMLDict:
                     f"received: {type(loaded_raw_yaml)} at path [{yaml_path}]."
                 )
             return YAMLDict(loaded_raw_yaml)
+
+    @classmethod
+    def from_io(cls, contents: IO[bytes]) -> "YAMLDict":
+        loaded_raw_yaml = yaml.safe_load(contents)
+        return YAMLDict(loaded_raw_yaml)
 
     @classmethod
     def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> T:

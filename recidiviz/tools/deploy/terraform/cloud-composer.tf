@@ -20,6 +20,16 @@ locals {
   # Transforms the dag_gcs_prefix output variable from composer into just the gcs bucket name. Output docs:
   # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.dag_gcs_prefix
   composer_dag_bucket = trimprefix(trimsuffix(google_composer_environment.default_v2.config.0.dag_gcs_prefix, "/dags"), "gs://")
+  airflow_files_to_copy_to_bucket = toset(flatten([
+    for path_sequence in yamldecode(file("${path.module}/config/cloud_composer_airflow_files_to_copy.yaml")) : [
+      for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
+    ]
+  ]))
+  source_files_to_copy_to_bucket = toset(flatten([
+    for path_sequence in yamldecode(file("${path.module}/config/cloud_composer_source_files_to_copy.yaml")) : [
+      for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
+    ]
+  ]))
 }
 
 resource "google_composer_environment" "default_v2" {
@@ -38,6 +48,9 @@ resource "google_composer_environment" "default_v2" {
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
+      }
+      pypi_packages = {
+        "us" = "*"
       }
       image_version = "composer-2.0.31-airflow-2.3.3"
     }
@@ -72,54 +85,22 @@ resource "google_composer_environment" "default_v2" {
 
 }
 
-resource "google_storage_bucket_object" "dags_file" {
-  for_each = fileset("${local.recidiviz_root}/airflow/dags", "*dag*.py")
+resource "google_storage_bucket_object" "recidiviz_airflow_file" {
+  for_each = local.airflow_files_to_copy_to_bucket
+  name     = "dags/${trimprefix(each.key, "recidiviz/airflow/dags/")}"
+  bucket   = local.composer_dag_bucket
+  source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
+}
+
+resource "google_storage_bucket_object" "recidiviz_source_file" {
+  for_each = local.source_files_to_copy_to_bucket
   name     = "dags/${each.key}"
   bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/airflow/dags/${each.key}"
-}
-
-resource "google_storage_bucket_object" "operators_file" {
-  for_each = fileset("${local.recidiviz_root}/airflow/dags/operators", "*.py")
-  name     = "dags/operators/${each.key}"
-  bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/airflow/dags/operators/${each.key}"
-}
-
-resource "google_storage_bucket_object" "utils_file" {
-  for_each = fileset("${local.recidiviz_root}/airflow/dags/utils", "*.py")
-  name     = "dags/utils/${each.key}"
-  bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/airflow/dags/utils/${each.key}"
-}
-
-resource "google_storage_bucket_object" "calculation_file" {
-  for_each = fileset("${local.recidiviz_root}/airflow/dags/calculation", "*.py")
-  name     = "dags/calculation/${each.key}"
-  bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/airflow/dags/calculation/${each.key}"
-}
-
-resource "google_storage_bucket_object" "pipeline_templates" {
-  name   = "dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
-  bucket = local.composer_dag_bucket
-  source = "${local.recidiviz_root}/calculator/pipeline/calculation_pipeline_templates.yaml"
-}
-
-resource "google_storage_bucket_object" "cloud_function_utils" {
-  name   = "dags/recidiviz/cloud_functions/cloud_function_utils.py"
-  bucket = local.composer_dag_bucket
-  source = "${local.recidiviz_root}/cloud_functions/cloud_function_utils.py"
+  source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
 }
 
 resource "google_storage_bucket_object" "airflow_cfg" {
   name   = "airflow.cfg"
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/airflow/airflow.cfg"
-}
-
-resource "google_storage_bucket_object" "yaml_dict" {
-  name   = "dags/recidiviz/utils/yaml_dict.py"
-  bucket = local.composer_dag_bucket
-  source = "${local.recidiviz_root}/utils/yaml_dict.py"
 }
