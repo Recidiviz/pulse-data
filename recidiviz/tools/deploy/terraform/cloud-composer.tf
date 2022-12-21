@@ -50,7 +50,7 @@ resource "google_composer_environment" "default_v2" {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
       }
       pypi_packages = {
-        "us" = "*"
+        "us" = ""
       }
       image_version = "composer-2.0.31-airflow-2.3.3"
     }
