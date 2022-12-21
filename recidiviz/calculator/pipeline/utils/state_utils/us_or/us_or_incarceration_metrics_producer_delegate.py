@@ -28,7 +28,7 @@ class UsOrIncarcerationMetricsProducerDelegate(
     """US_OR implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_OR_DOC"
+        return "US_OR_ID"
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_OR_SID"
+        return "US_OR_RECORD_KEY"

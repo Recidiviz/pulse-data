@@ -36,7 +36,9 @@ US_MO_SID = "US_MO_SID"
 US_MO_FBI = "US_MO_FBI"
 US_MO_OLN = "US_MO_OLN"
 
+# OffenderId
 US_CO_DOC = "US_CO_DOC"
+# PersonId
 US_CO_PID = "US_CO_PID"
 
 # ND Elite ID - tracks someone across all incarceration stays
@@ -46,6 +48,11 @@ US_ND_ELITE = "US_ND_ELITE"
 US_ND_ELITE_BOOKING = "US_ND_ELITE_BOOKING"
 # ND State ID
 US_ND_SID = "US_ND_SID"
+
+# OR ID_NUMBER
+US_OR_ID = "US_OR_ID"
+# RECORD_KEY linking tables, each person should only have one doc and id number
+US_OR_RECORD_KEY = "US_OR_RECORD_KEY"
 
 # PA Control Number - tracks someone across all incarceration stays (theoretically)
 US_PA_CONTROL = "US_PA_CONT"
