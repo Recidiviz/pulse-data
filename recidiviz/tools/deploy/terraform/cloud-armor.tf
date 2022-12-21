@@ -27,7 +27,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1000"
-        expression  = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1})"
+        expression  = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id942432-sqli']})"
         description = "SQL Injection"
       },
       {
@@ -69,7 +69,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1007"
-        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 3})"
+        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 3, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack']})"
         description = "Protocol attack"
       },
       {
