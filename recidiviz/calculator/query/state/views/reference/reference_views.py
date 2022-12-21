@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.views.reference.normalized_supervision_per
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_roster import (
+    PRODUCT_ROSTER_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.sentence_judicial_district_association import (
     SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
@@ -80,4 +83,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     NORMALIZED_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
+    PRODUCT_ROSTER_VIEW_BUILDER,
 ]
