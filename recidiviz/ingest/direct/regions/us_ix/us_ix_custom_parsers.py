@@ -43,3 +43,22 @@ def parse_duration_from_two_dates(
     except ValueError:
         return None
     return None
+
+
+def parse_supervision_violation_is_violent(new_crime_types: str) -> bool:
+
+    for new_crime_type in new_crime_types.split(","):
+        if (
+            "VIOLENT" in new_crime_type.upper()
+            and "NON-VIOLENT" not in new_crime_type.upper()
+        ):
+            return True
+    return False
+
+
+def parse_supervision_violation_is_sex_offense(new_crime_types: str) -> bool:
+
+    for new_crime_type in new_crime_types.split(","):
+        if "SEX" in new_crime_type.upper():
+            return True
+    return False
