@@ -100,9 +100,8 @@ class MetricAggregatedDimensionData:
             or dimension_definition.dimension.display_name(),
             "dimensions": self.dimension_to_json(
                 entry_point=entry_point,
-                dimension_to_includes_excludes=dimension_definition.dimension_to_includes_excludes,
                 dimension_member_to_datapoints_json=dimension_member_to_datapoints_json,
-                dimension_to_description=dimension_definition.dimension_to_description,
+                dimension_definition=dimension_definition,
             ),
             "enabled": is_disaggregation_enabled,
         }
@@ -240,10 +239,7 @@ class MetricAggregatedDimensionData:
     def dimension_to_json(
         self,
         entry_point: DatapointGetRequestEntryPoint,
-        dimension_to_description: Optional[Dict[DimensionBase, str]] = None,
-        dimension_to_includes_excludes: Optional[
-            Dict[DimensionBase, IncludesExcludesSet]
-        ] = None,
+        dimension_definition: AggregatedDimension,
         dimension_member_to_datapoints_json: Optional[
             Dict[str, List[DatapointJson]]
         ] = None,
@@ -252,6 +248,11 @@ class MetricAggregatedDimensionData:
         a report metric which will have both dimension_to_enabled_status and dimension_to_value
         populated or 2) We are getting the json of an agency metric which will only have
         dimension_to_enabled_status populated."""
+        dimension_to_includes_excludes = (
+            dimension_definition.dimension_to_includes_excludes
+        )
+        dimension_to_description = dimension_definition.dimension_to_description
+        dimension_to_contexts = dimension_definition.dimension_to_contexts
         dimensions = []
         if self.dimension_to_enabled_status is not None:
             for dimension, status in self.dimension_to_enabled_status.items():
@@ -265,6 +266,25 @@ class MetricAggregatedDimensionData:
                     if dimension_member_to_datapoints_json is not None
                     else None,
                 }
+                json["contexts"] = []
+                if dimension_to_contexts is not None:
+                    # contexts we expect for this dimension, according to its definition. For OTHER contexts, this should always be a singleton list
+                    definition_contexts = dimension_to_contexts.get(dimension, [])
+                    # contexts that were actually passed in via POST
+                    # construct dict of actual context key to actual context value
+                    actual_contexts = {}
+                    for actual_context in self.dimension_to_contexts.get(dimension, []):
+                        actual_contexts[actual_context.key.value] = actual_context.value
+                    for context in definition_contexts:
+                        # check to see if definition context has already been saved in db
+                        if actual_contexts.get(context.key.value) is not None:
+                            json_context = {
+                                "key": context.key.value,
+                                "value": actual_contexts.get(context.key.value),
+                            }
+                        else:
+                            json_context = {"key": context.key.value, "value": None}
+                        json["contexts"].append(json_context)
                 if (
                     dimension_to_includes_excludes is not None
                     and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB

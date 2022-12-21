@@ -261,6 +261,7 @@ class TestMetricInterface(TestCase):
                                 "value": 20,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -269,6 +270,7 @@ class TestMetricInterface(TestCase):
                                 "value": 60,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -277,6 +279,7 @@ class TestMetricInterface(TestCase):
                                 "value": 20,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -409,6 +412,7 @@ class TestMetricInterface(TestCase):
                                 "value": 60,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -417,6 +421,7 @@ class TestMetricInterface(TestCase):
                                 "value": 10,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -425,6 +430,7 @@ class TestMetricInterface(TestCase):
                                 "value": 40,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -433,6 +439,7 @@ class TestMetricInterface(TestCase):
                                 "value": 10,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -441,6 +448,9 @@ class TestMetricInterface(TestCase):
                                 "value": 0,
                                 "enabled": True,
                                 "description": None,
+                                "contexts": [
+                                    {"key": "ADDITIONAL_CONTEXT", "value": None}
+                                ],
                             },
                         ],
                     }
@@ -723,6 +733,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -730,6 +741,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -737,6 +749,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -802,6 +815,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -809,6 +823,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -816,6 +831,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -891,6 +907,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -898,6 +915,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -905,6 +923,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -972,6 +991,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -979,6 +999,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": None,
@@ -986,6 +1007,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -1147,6 +1169,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
@@ -1158,6 +1181,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
                                 "description": None,
+                                "contexts": [],
                             },
                             {
                                 "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
@@ -1169,6 +1193,7 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "description": None,
+                                "contexts": [],
                             },
                         ],
                     }
@@ -1709,6 +1734,7 @@ class TestMetricInterface(TestCase):
                     "race": dim.race,
                     "value": 10,
                     "description": None,
+                    "contexts": [],
                 }
                 for dim in RaceAndEthnicity
             ],
