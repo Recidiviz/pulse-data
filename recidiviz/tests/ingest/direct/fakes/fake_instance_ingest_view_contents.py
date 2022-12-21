@@ -30,7 +30,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
-from recidiviz.cloud_storage.gcs_file_system import generate_random_temp_path
+from recidiviz.cloud_storage.gcs_file_system_impl import generate_random_temp_path
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContents,

@@ -29,8 +29,8 @@ import attr
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSBlobDoesNotExistError,
     GCSFileSystem,
-    generate_random_temp_path,
 )
+from recidiviz.cloud_storage.gcs_file_system_impl import generate_random_temp_path
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,

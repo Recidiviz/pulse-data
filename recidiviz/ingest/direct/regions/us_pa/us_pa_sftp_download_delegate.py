@@ -26,6 +26,7 @@ from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
+from recidiviz.utils.environment import GCP_PROJECTS
 
 
 class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -87,3 +88,6 @@ class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
             return post_processed_files
 
         return [downloaded_path.abs_path()]
+
+    def supported_environments(self) -> List[str]:
+        return GCP_PROJECTS

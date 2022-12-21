@@ -30,6 +30,7 @@ from recidiviz.common.io.zip_file_contents_handle import ZipFileContentsHandle
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -99,3 +100,6 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
                 )
                 return [new_path.abs_path()]
         return [downloaded_path.abs_path()]
+
+    def supported_environments(self) -> List[str]:
+        return [GCP_PROJECT_PRODUCTION]

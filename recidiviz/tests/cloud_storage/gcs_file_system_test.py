@@ -23,7 +23,7 @@ from google.cloud.storage import Blob, Bucket
 from mock import create_autospec
 from mock.mock import call, patch
 
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystemImpl
+from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 
 
@@ -102,7 +102,7 @@ class TestGcsFileSystem(TestCase):
 
     # Disable retries for "transient" errors to make test easier to mock / follow.
     @patch(
-        "recidiviz.cloud_storage.gcs_file_system.retry.if_transient_error",
+        "recidiviz.cloud_storage.gcs_file_system_impl.retry.if_transient_error",
         no_retries_predicate,
     )
     def test_copy_failure(self) -> None:

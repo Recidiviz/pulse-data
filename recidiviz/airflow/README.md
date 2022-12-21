@@ -86,5 +86,24 @@ process.
 
 To test DAGs in GCP, you will need to first upload all of your source code to the GCS
 bucket for the `experiment` Cloud Composer environment (you can see the GCS bucket by
-clicking on DAGS folder). You can then refresh the appropriate DAG you're working on
-and trigger a test run.
+clicking on DAGS folder). To do this, you must:
+
+First, exit the Airflow virtualenv and go back to the main root virtualenv. 
+
+Then, run the following script:
+
+```
+python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --dry-run False
+```
+
+You can then refresh the appropriate DAG you're working on and trigger a test run.
+
+## Adding New Source Files
+
+If you're referencing new source files from pulse-data in Airflow or you need to add
+new paths within the `recidiviz/airflow` package, be sure to update the Terraform config
+under `recidiviz/tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml` 
+or `recidiviz/tools/deploy/terraform/config/cloud_composer_airflow_files_to_copy.yaml`. 
+The first entry is the innermost directory that doesn't have a wildcard. The second entry
+is the path that either is the file name or the wildcard pattern. See Testing for ways
+to then update the experiment bucket.

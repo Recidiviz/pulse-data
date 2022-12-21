@@ -40,3 +40,8 @@ class BaseSftpDownloadDelegate(abc.ABC):
     ) -> List[str]:
         """Should be implemented if any of the downloaded values need post-processing prior to sending to ingest
         (e.g. unzipping a zip file). Returns the absolute path of the post-processed download(s)."""
+
+    @abc.abstractmethod
+    def supported_environments(self) -> List[str]:
+        """Should be implemented to indicate which environments the SFTP download should
+        occur."""

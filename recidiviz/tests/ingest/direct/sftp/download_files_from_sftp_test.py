@@ -139,6 +139,9 @@ class _TestSftpDownloadDelegate(BaseSftpDownloadDelegate):
     ) -> List[str]:
         return [downloaded_path.abs_path()]
 
+    def supported_environments(self) -> List[str]:
+        return []
+
 
 class BrokenGCSFSFakeSystem(FakeGCSFileSystem):
     def upload_from_contents_handle_stream(
@@ -237,7 +240,10 @@ class TestSftpAuth(unittest.TestCase):
 
 
 @patch.object(
-    SftpDownloadDelegateFactory, "build", return_value=_TestSftpDownloadDelegate()
+    # pylint: disable=abstract-class-instantiated
+    SftpDownloadDelegateFactory,
+    "build",
+    return_value=_TestSftpDownloadDelegate(),  # type: ignore
 )
 @patch.object(
     SftpAuth,
