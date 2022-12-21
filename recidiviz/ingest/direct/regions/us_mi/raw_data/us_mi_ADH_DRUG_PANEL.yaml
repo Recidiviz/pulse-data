@@ -48,7 +48,7 @@ columns:
       - value: "5654"
         description: PCP
   - name: active_flag
-    description: Flag for whether this component of the drug panel is still teste
+    description: Flag for whether this component of the drug panel is still tested
   - name: begin_date
     description: Date of when this compenent of the drug panel began being tested
     is_datetime: True
