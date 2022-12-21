@@ -41,6 +41,9 @@ from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_delegate i
 from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_delegate import (
     UsNdMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.us_or.us_or_matching_delegate import (
+    UsOrMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.state.us_oz.us_oz_matching_delegate import (
     UsOzMatchingDelegate,
 )
@@ -65,6 +68,8 @@ class StateMatchingDelegateFactory:
             return UsMoMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ND":
             return UsNdMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_OR":
+            return UsOrMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_PA":
             return UsPaMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_TN":

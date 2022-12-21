@@ -28,4 +28,4 @@ class UsOrRecidivismMetricsProducerDelegate(
     """US_OR implementation of the StateSpecificRecidivismMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_OR_DOC"
+        return "US_OR_ID"

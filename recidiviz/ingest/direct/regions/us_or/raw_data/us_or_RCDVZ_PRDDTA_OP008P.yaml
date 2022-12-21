@@ -21,13 +21,13 @@ columns:
       Type of custody.
     known_values:
       - value: C
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Community
       - value: I
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Institution
       - value: L
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Local Control Jail
       - value: N
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not State Agency
       - value: DI
         description: #TODO(#17148): Fill in with answer from OR
       - value: P
