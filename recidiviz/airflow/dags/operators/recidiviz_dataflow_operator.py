@@ -47,19 +47,19 @@ class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
 
         # If the operator is on a retry loop, we ignore the start operation by checking
         # if the job is running.
+        region = self.dataflow_default_options["region"]
         if hook.is_job_dataflow_running(
-            name=self.task_id,
-            project_id=self.project_id,
+            name=self.task_id, project_id=self.project_id, location=region
         ):
             hook.wait_for_done(
                 job_name=self.task_id,
                 project_id=self.project_id,
-                location=self.dataflow_default_options["region"],
+                location=region,
             )
             return hook.get_job(
                 job_id=self.task_id,
                 project_id=self.project_id,
-                location=self.dataflow_default_options["region"],
+                location=region,
             )
 
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
