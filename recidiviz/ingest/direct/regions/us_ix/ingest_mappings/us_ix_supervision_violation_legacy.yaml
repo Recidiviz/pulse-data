@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ofndr_num
+  - body_loc_cd
+  - ofndr_tst_id
+  - assess_tst_id
+  - tst_dt
+  - score_by_name
+  - violation_types
+  - new_crime_types
+  - pv_initiated_by_prosecutor
+  - parolee_placement_recommendation
+  - probationer_placement_recommendation
+  - legal_status
+unused_columns:
+  # in the US_ID ingest view so keeping for now
+  - body_loc_cd
+  - assess_tst_id
+  - score_by_name
+  - pv_initiated_by_prosecutor
+  - parolee_placement_recommendation
+  - probationer_placement_recommendation
+  - legal_status
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_IX_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - ofndr_num
+                - ofndr_tst_id
+                - $literal("OLD") # appending this to make sure the external ids come out unique
+          violation_date: tst_dt # date of violation report form
+          supervision_violation_types:
+            - $foreach:
+                $iterable: violation_types
+                $result:
+                  StateSupervisionViolationTypeEntry:
+                    violation_type:
+                      $enum_mapping:
+                        $raw_text: $iter_item
+                        $mappings:
+                          StateSupervisionViolationType.ABSCONDED:
+                            - Absconding
+                            - Absconder
+                          StateSupervisionViolationType.TECHNICAL:
+                            - Technical
+                            - Technical (enter details below)
+                          StateSupervisionViolationType.FELONY:
+                            - New Felony
+                          StateSupervisionViolationType.MISDEMEANOR:
+                            - New Misdemeanor
+          is_violent:
+            $custom:
+              $function: us_ix_custom_parsers.parse_supervision_violation_is_violent
+              $args:
+                new_crime_types: new_crime_types
+          is_sex_offense:
+            $custom:
+              $function: us_ix_custom_parsers.parse_supervision_violation_is_sex_offense
+              $args:
+                new_crime_types: new_crime_types

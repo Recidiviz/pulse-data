@@ -51,12 +51,13 @@ class UsIxController(BaseDirectIngestController):
                     "drug_screen",
                     "incarceration_period",
                     "supervision_period",
-                    "supervision_contacts",
                     "incarceration_sentence",
                     "supervision_sentence",
                     "employment_periods",
                     "charges",
                     "supervision_violation",
+                    "supervision_violation_legacy",
+                    "supervision_contacts",
                 ]
             )
 

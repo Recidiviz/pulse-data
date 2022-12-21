@@ -266,6 +266,33 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                 {"recidiviz/calculator/pipeline/utils/state_utils/us_ix/"}
             ),
         ),
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {
+                    "recidiviz/ingest/direct/regions/us_ix/ingest_mappings/us_ix_supervision_violation_legacy.yaml"
+                }
+            ),
+            then_modified_files=frozenset(
+                {
+                    "recidiviz/ingest/direct/regions/us_id/ingest_mappings/us_id_ofndr_tst_tst_qstn_rspns_violation_reports.yaml",
+                    "recidiviz/ingest/direct/regions/us_id/ingest_mappings/us_id_ofndr_tst_tst_qstn_rspns_violation_reports_old.yaml",
+                }
+            ),
+        ),
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {
+                    "recidiviz/ingest/direct/regions/us_ix/ingest_views/view_supervision_violation_legacy.py"
+                }
+            ),
+            then_modified_files=frozenset(
+                {
+                    "recidiviz/ingest/direct/regions/us_id/ingest_views/view_ofndr_tst_tst_qstn_rspns_violation_reports.py",
+                    "recidiviz/ingest/direct/regions/us_id/ingest_views/view_ofndr_tst_tst_qstn_rspns_violation_reports_old.py",
+                    "recidiviz/ingest/direct/regions/us_id/ingest_views/templates_test_questions.py",
+                }
+            ),
+        ),
     ],
 }
 
