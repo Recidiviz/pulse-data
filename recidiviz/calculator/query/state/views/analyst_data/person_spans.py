@@ -158,6 +158,21 @@ FROM (
 
 UNION ALL
 
+-- supervision levels
+SELECT
+    state_code,
+    person_id,
+    "SUPERVISION_LEVEL_SESSION" AS span,
+    start_date,
+    end_date_exclusive AS end_date,
+    TO_JSON_STRING(STRUCT(
+        IFNULL(supervision_level, "INTERNAL_UNKNOWN") AS supervision_level
+    )) AS span_attributes,
+FROM
+    `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+    
+UNION ALL
+
 -- open supervision mismatch (downgrades only)
 -- ends when mismatch corrected or supervision period ends
 SELECT

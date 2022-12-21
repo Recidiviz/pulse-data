@@ -232,6 +232,27 @@ AVG_DAILY_POPULATION_SHOCK_INCARCERATION = DailyAvgSpanCountMetric(
     },
 )
 
+_SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT = {
+    "limited": ["LIMITED"],
+    "minimum": ["MINIMUM"],
+    "medium": ["MEDIUM"],
+    "maximum": ["HIGH", "MAXIMUM"],
+    "unknown": 'NOT IN ("LIMITED", "MINIMUM", "MEDIUM", "HIGH", "MAXIMUM", '
+    '"EXTERNAL_UNKNOWN", "INTERVAL_UNKNOWN")',
+    "other": ["EXTERNAL_UNKNOWN", "INTERVAL_UNKNOWN"],
+}
+AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_{level}_supervision_level",
+        display_name=f"Average Population: {level.capitalize()} Supervision Level",
+        description=f"Average daily count of clients with "
+        f"{'an' if level[0] in 'aeiou' else 'a'} {level} supervision level",
+        span_types=["SUPERVISION_LEVEL_SESSION"],
+        span_attribute_filters={"supervision_level": conditions},
+    )
+    for level, conditions in _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT.items()
+]
+
 AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
     name="avg_population_treatment_in_prison",
     display_name="Average Population: Treatment In Prison",
@@ -245,7 +266,7 @@ AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
 
 AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_unknown_case_type",
-    display_name="Average Population: unknown Case Type",
+    display_name="Average Population: Unknown Case Type",
     description="Average daily count of clients on supervision with unknown case type",
     span_types=["COMPARTMENT_SESSION"],
     span_attribute_filters={

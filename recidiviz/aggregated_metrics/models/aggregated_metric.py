@@ -16,7 +16,7 @@
 # =============================================================================
 """Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
 import abc
-from typing import Dict, List, Union
+from typing import Dict, List, Sequence, Union
 
 import attr
 
@@ -127,7 +127,7 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
 
     # A dictionary mapping fields from the JSON object `span_attributes` in `person_spans` to either
     # a list of accepted values or a query string for a custom condition.
-    span_attribute_filters: Dict[str, Union[List[str], str]] = attr.field(
+    span_attribute_filters: Dict[str, Union[Sequence[str], str]] = attr.field(
         validator=attr_validators.is_dict
     )
 
@@ -138,15 +138,15 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
 
         for attribute in self.span_attribute_filters.keys():
             conditions = self.span_attribute_filters[attribute]
-            if isinstance(conditions, List):
+            if isinstance(conditions, str):
+                attribute_condition_string = conditions
+            elif isinstance(conditions, Sequence):
                 attribute_condition_string = (
                     f" IN ({list_to_query_string(conditions, quoted=True)})"
                 )
-            elif isinstance(conditions, str):
-                attribute_condition_string = conditions
             else:
                 raise TypeError(
-                    "All values in `span_attribute_filters` dictionary must have type str or List[str]"
+                    "All values in `span_attribute_filters` dictionary must have type str or Sequence[str]"
                 )
             condition_strings.append(
                 f"""
@@ -165,7 +165,7 @@ class EventMetricConditionsMixin(MetricConditionsMixin):
 
     # A dictionary mapping fields from the JSON object `event_attributes` in `person_events` to either
     # a list of accepted values or a query string for a custom condition.
-    event_attribute_filters: Dict[str, Union[List[str], str]] = attr.field(
+    event_attribute_filters: Dict[str, Union[Sequence[str], str]] = attr.field(
         validator=attr_validators.is_dict
     )
 
@@ -175,15 +175,15 @@ class EventMetricConditionsMixin(MetricConditionsMixin):
         ]
         for attribute in self.event_attribute_filters.keys():
             conditions = self.event_attribute_filters[attribute]
-            if isinstance(conditions, List):
+            if isinstance(conditions, str):
+                attribute_condition_string = conditions
+            elif isinstance(conditions, Sequence):
                 attribute_condition_string = f"""
                         IN ({list_to_query_string(conditions, quoted=True)})
                     """
-            elif isinstance(conditions, str):
-                attribute_condition_string = conditions
             else:
                 raise TypeError(
-                    "All values in `event_attribute_filters` dictionary must have type str or List[str]"
+                    "All values in `event_attribute_filters` dictionary must have type str or Sequence[str]"
                 )
             condition_strings.append(
                 f"""
