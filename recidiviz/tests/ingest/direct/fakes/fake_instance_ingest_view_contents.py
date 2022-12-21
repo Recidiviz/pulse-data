@@ -20,11 +20,13 @@ batches.
 import datetime
 from collections import defaultdict
 from math import ceil
-from typing import Dict, Iterable, List, Optional
+from typing import Callable, Dict, Iterable, Iterator, List, Optional
 
 import attr
 import numpy as np
 import pandas as pd
+from google.cloud import bigquery
+from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_results_contents_handle import (
@@ -37,8 +39,63 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
     ResultsBatchInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tests.big_query.fakes.fake_big_query_client import FakeQueryJob
 from recidiviz.utils.types import assert_type
+
+
+class _ResultsIter:
+    def __init__(self, results_df: DataFrame) -> None:
+        field_to_index = {col_name: i for i, col_name in enumerate(results_df.columns)}
+
+        self.results: List[bigquery.table.Row] = [
+            bigquery.table.Row(row_values, field_to_index)
+            for row_values in results_df.values
+        ]
+
+    def __iter__(self) -> Iterator[bigquery.table.Row]:
+        return self
+
+    def __next__(self) -> bigquery.table.Row:
+        if not self.results:
+            raise StopIteration
+        return self.results.pop(0)
+
+
+class FakeQueryJob:
+    """A fake implementation of bigquery.QueryJob for use in tests."""
+
+    def __init__(self, run_query_fn: Callable[[], DataFrame]) -> None:
+        self.run_query_fn = run_query_fn
+
+    def __iter__(self) -> Iterator[bigquery.table.Row]:
+        return self.result()
+
+    def result(
+        self,
+        page_size: Optional[int] = None,
+        max_results: Optional[int] = None,
+        retry: Optional[int] = None,
+        timeout: Optional[int] = None,
+    ) -> Iterator[bigquery.table.Row]:
+        if page_size is not None:
+            raise NotImplementedError(
+                f"No test support for paging fake results. Found page_size "
+                f"[{page_size}]."
+            )
+        if max_results is not None:
+            raise NotImplementedError(
+                f"No test support for limiting result size. Found max_results "
+                f"[{max_results}]."
+            )
+        if retry is not None:
+            raise NotImplementedError(
+                f"No test support for retrying queries. Found retry [{retry}]."
+            )
+        if timeout is not None:
+            raise NotImplementedError(
+                f"No test support for timeouts in test queries. Found timeout "
+                f"[{timeout}]."
+            )
+        return _ResultsIter(self.run_query_fn())
 
 
 @attr.define
