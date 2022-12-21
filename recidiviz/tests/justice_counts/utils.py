@@ -566,6 +566,12 @@ class JusticeCountsSchemaTestObjects:
                                     "key": PrisonsStaffType.OTHER.value,
                                     "enabled": True,
                                     "settings": [],
+                                    "contexts": [
+                                        {
+                                            "key": "ADDITIONAL_CONTEXT",
+                                            "value": "User entered text...",
+                                        }
+                                    ],
                                 },
                                 {
                                     "key": PrisonsStaffType.UNKNOWN.value,

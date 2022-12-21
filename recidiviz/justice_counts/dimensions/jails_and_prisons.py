@@ -26,7 +26,7 @@ class PrisonsReadmissionType(DimensionBase, enum.Enum):
     NEW_CONVICTION = "New Conviction"
     RETURN_FROM_PROBATION = "Return from Probation"
     RETURN_FROM_PAROLE = "Return from Parole"
-    OTHER_READMISSIONS = "Other Readmissions"
+    OTHER = "Other Readmissions"
     UNKNOWN_READMISSIONS = "Unknown Post-Adjudication Readmission"
 
     @classmethod

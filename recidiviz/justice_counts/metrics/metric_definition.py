@@ -176,7 +176,7 @@ class AggregatedDimension:
         for that dimension. This is used in the UI to provide additional context text
         boxes for OTHER dimensions."""
         for member in self.dimension:  # type: ignore[attr-defined]
-            if member.name == "OTHER":
+            if member.name.strip() == "OTHER":
                 return {
                     member: [
                         Context(

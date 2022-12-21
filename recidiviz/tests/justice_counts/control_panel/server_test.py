@@ -41,6 +41,9 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
+from recidiviz.justice_counts.dimensions.dimension_registry import (
+    DIMENSION_IDENTIFIER_TO_DIMENSION,
+)
 from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsOffenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.includes_excludes.prisons import (
@@ -1082,6 +1085,128 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [ControlPanelPermission.RECIDIVIZ_ADMIN.value],
         )
 
+    def test_get_metric_settings_contexts(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_G,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+            # GET request
+            response = self.client.get(f"/api/agencies/{agency.id}/metrics")
+            # Check that GET request suceeded
+            self.assertEqual(response.status_code, 200)
+            # Check that all dimensions have either empty list for contexts (not an OTHER member)
+            # or has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no data provided by user)
+            if response.json is not None:
+                for settings in response.json:
+                    for disaggregations in settings["disaggregations"]:
+                        for dimension in disaggregations["dimensions"]:
+                            dimension_class = DIMENSION_IDENTIFIER_TO_DIMENSION[
+                                disaggregations["key"]
+                            ]
+                            dimension_enum = dimension_class(
+                                dimension["key"]
+                            )  # type: ignore[abstract]
+                            if dimension_enum.name.strip() == "OTHER":  # type: ignore[attr-defined]
+                                # OTHER dimension within the aggregation, but a user has yet to provide that data
+                                self.assertEqual(
+                                    dimension["contexts"],
+                                    [{"key": "ADDITIONAL_CONTEXT", "value": None}],
+                                )
+                            else:
+                                # When dimension_to_contexts is None (not an OTHER member within the aggregation)
+                                self.assertEqual(dimension["contexts"], [])
+
+    def test_update_and_get_metric_settings(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_G,
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        request_body = self.test_schema_objects.get_agency_datapoints_request(
+            agency_id=agency.id
+        )
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            g.user_context = UserContext(
+                user_account=user_account,
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+                agency_ids=[agency.id],
+            )
+
+            # PUT request
+            response = self.client.put(
+                f"/api/agencies/{agency.id}/metrics",
+                json=request_body,
+            )
+
+            # Check that PUT request suceeded
+            self.assertEqual(response.status_code, 200)
+            agency_datapoints = self.session.query(Datapoint).all()
+            datapoints_with_additional_context = []
+            for d in agency_datapoints:
+                if (
+                    d.context_key is not None
+                    and d.value is not None
+                    and d.dimension_identifier_to_member is not None
+                ):
+                    datapoints_with_additional_context.append(d)
+            self.assertEqual(len(datapoints_with_additional_context), 1)
+            self.assertEqual(
+                datapoints_with_additional_context[0].metric_definition_key,
+                "PRISONS_TOTAL_STAFF",
+            )
+            self.assertEqual(datapoints_with_additional_context[0].source, agency)
+            self.assertEqual(
+                datapoints_with_additional_context[0].context_key, "ADDITIONAL_CONTEXT"
+            )
+            self.assertEqual(
+                datapoints_with_additional_context[0].value,
+                "User entered text...",
+            )
+            self.assertEqual(
+                datapoints_with_additional_context[0].dimension_identifier_to_member,
+                {"metric/prisons/staff/type": "OTHER"},
+            )
+
+            # GET request
+            response = self.client.get(f"/api/agencies/{agency.id}/metrics")
+            # Check that GET request suceeded
+            self.assertEqual(response.status_code, 200)
+            # Check that the we can get the previoulsy stored additional context
+            if response.json is not None:
+                contexts = response.json[2]["disaggregations"][0]["dimensions"][5][
+                    "contexts"
+                ]
+            self.assertEqual(
+                contexts,
+                [
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "value": "User entered text...",
+                    }
+                ],
+            )
+
     def test_update_metric_settings(self) -> None:
         self.session.add_all(
             [
@@ -1113,12 +1238,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 0)
             agency_datapoints = self.session.query(Datapoint).all()
 
-            # 19 total datapoints:
+            # 20 total datapoints:
             #  3 enabled/disabled metric datapoints (one for each metric): PRISONS_BUDGET, PRISONS_TOTAL_STAFF, PRISONS_GRIEVANCES_UPHELD
             #  7 enabled/disabled dimension datapoints (one for each dimension)
             #  8 includes/excludes datapoints (2 at the metric level, 6 at the disaggregation level)
-            #  1 context datapoint
-            self.assertEqual(len(agency_datapoints), 19)
+            #  2 context datapoint
+            self.assertEqual(len(agency_datapoints), 20)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
@@ -1188,7 +1313,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 2)
             agency_datapoints = self.session.query(Datapoint).all()
             # Amount of agency_datapoints won't change. Only two datapoints were updated.
-            self.assertEqual(len(agency_datapoints), 19)
+            self.assertEqual(len(agency_datapoints), 20)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
