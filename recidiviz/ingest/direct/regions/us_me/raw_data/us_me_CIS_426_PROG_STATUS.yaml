@@ -13,13 +13,14 @@ columns:
       A code that maps to a value in the CIS_9900_STATUS_TYPE table. This code indicates the status of the program enrollment.
   - name: Comments_Tx
     is_pii: True
+    description: Free text description of status change
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
   - name: Effct_Datetime
     is_datetime: true
     description: |-
-      The datetime when the person is enrolled in the program.
+      The datetime when the status change took effect.
   - name: Locking_Tsp
   - name: Modified_By_Tx
     is_pii: True
