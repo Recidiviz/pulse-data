@@ -57,6 +57,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_PROBATION,
     AVG_DAILY_POPULATION_SEX_OFFENSE_CASE_TYPE,
     AVG_DAILY_POPULATION_SHOCK_INCARCERATION,
+    AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS,
     AVG_DAILY_POPULATION_TREATMENT_IN_PRISON,
     AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE,
     AVG_LSIR_SCORE,
@@ -174,6 +175,9 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_DAILY_POPULATION_OTHER_CASE_TYPE,
         AVG_DAILY_POPULATION_SEX_OFFENSE_CASE_TYPE,
         AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE,
+    ]  # Average daily population, supervision level
+    + AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS
+    + [
         # Average daily population, other attributes
         AVG_DAILY_POPULATION_EMPLOYED,
         # Risk score

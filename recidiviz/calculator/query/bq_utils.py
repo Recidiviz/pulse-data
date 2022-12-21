@@ -19,7 +19,7 @@
 # pylint: disable=line-too-long
 
 
-from typing import Iterable, List, Optional, Set
+from typing import Iterable, List, Optional, Sequence, Set
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_bigquery,
@@ -323,8 +323,9 @@ def array_concat_with_null(arrays_to_concat: List[str]) -> str:
     return f'ARRAY_CONCAT({", ".join(array_expr)})'
 
 
-def list_to_query_string(string_list: List[str], quoted: bool = False) -> str:
-    """Combines a list of strings into a comma-separated string, with the option to maintain quoted strings"""
+def list_to_query_string(string_list: Sequence[str], quoted: bool = False) -> str:
+    """Combines a list or tuple of strings into a comma-separated string, with the
+    option to maintain quoted strings"""
     if quoted:
         return ", ".join([f'"{string}"' for string in string_list])
     return ", ".join(string_list)
