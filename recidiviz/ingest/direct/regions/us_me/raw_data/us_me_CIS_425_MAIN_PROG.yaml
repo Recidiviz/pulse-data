@@ -47,6 +47,7 @@ columns:
   - name: CREATED_ON_DATE
     description: Date of creation
   - name: MODIFIED_BY_TX
-    description: Date of modification
+    description: Person who modified
     is_pii: True
   - name: MODIFIED_ON_DATE
+    description: Date it was modified on
