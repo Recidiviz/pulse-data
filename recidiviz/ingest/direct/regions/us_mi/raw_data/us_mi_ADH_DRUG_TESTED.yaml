@@ -6,21 +6,92 @@ primary_key_cols:
   - drug_tested_id
 columns:
   - name: drug_tested_id
-    description: TODO(#16348)
+    description: OMNI-database generated ID for a drug test record
   - name: substance_abuse_test_id
-    description: TODO(#16348)
+    description: OMNI-database generated ID for a substance abuse test record
   - name: tested_drug_code_id
-    description: TODO(#16348)
+    description: Code for the name of the drug tested
+    known_values:
+      - value: 13718
+        description: None
+      - value: 19568
+        description: THC
+      - value: 19569
+        description: Tramandol
+      - value: 19591
+        description: Tramadol
+      - value: 3746
+        description: Alcohol
+      - value: 5476
+        description: Propoxyphene
+      - value: 5477
+        description: Benzodiazepine
+      - value: 5478
+        description: Barbiturates
+      - value: 5479
+        description: Amphetamines
+      - value: 5483
+        description: Methadone
+      - value: 5484
+        description: Cocaine
+      - value: 5486
+        description: Phencyclidine
+      - value: 5654
+        description: PCP
+      - value: 5487
+        description: Marijuana
+      - value: 19541
+        description: Acetaminophen
+      - value: 19542
+        description: Benzoylecgoninie
+      - value: 19543
+        description: Buprenorphine
+      - value: 19544
+        description: Fentanyl
+      - value: 19545
+        description: MDMA
+      - value: 19546
+        description: Methqualone
+      - value: 19547
+        description: Benzodiazepines
+      - value: 19548
+        description: 6-Acetylmorphine
+      - value: 5482
+        description: Opiates
+      - value: 11581
+        description: Cannabinoids
+      - value: 13444
+        description: Methamphetamine
+      - value: 13445
+        description: Oxycodone
+      - value: 13446
+        description: LSD
+      - value: 13447
+        description: Ecstasy
+      - value: 13448
+        description: Other
   - name: positive_negative_id
-    description: TODO(#16348)
+    description: Result of the test.
+    known_values:
+      - value: 3747
+        description: Positive
+      - value: 3748
+        description: Negative
+      - value: 3749
+        description: Positive Approved
   - name: drug_level
-    description: TODO(#16348)
+    description: Measurement of prevalence of the specified drug in the individual's test result.
   - name: drug_level_unit_id
-    description: TODO(#16348)
+    description: Units of measurement for prevalence of drugs in test results.
+    known_values:
+      - value: 5217
+        description: Gram Percent
+      - value: 5218
+        description: Nanograms per Milliliter
   - name: additional_drug_flag
-    description: TODO(#16348)
+    description: Flag demarcating the presence of additional drugs in the test result.
   - name: notes
-    description: TODO(#16348)
+    description: Notes.
     is_pii: True
   - name: last_update_user
     description: user who last updated the record
@@ -33,4 +104,9 @@ columns:
   - name: last_update_node
     description: TODO(#16348)
   - name: record_source_id
-    description: TODO(#16348)
+    description: source of the record
+    known_values:
+      - value: 14401
+        description: Community Provider
+      - value: 14402
+        description: Agent

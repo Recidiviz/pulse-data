@@ -53,6 +53,7 @@ class UsMiController(BaseDirectIngestController):
                 "sentences_v2",
                 "state_charge_v2",
                 "assessments_v2",
+                "state_drug_screen",
             ]
 
         # prod primary

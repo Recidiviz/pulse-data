@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - substance_abuse_test_id
+  - offender_booking_id
+  - specimen_date
+  - overall_result_id
+  - sample_type_id
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    drug_screens:
+      - StateDrugScreen:
+          external_id: substance_abuse_test_id
+          drug_screen_date: specimen_date
+          drug_screen_result:
+            $enum_mapping:
+              $raw_text: overall_result_id
+              $mappings:
+                StateDrugScreenResult.POSITIVE:
+                  - "3730" # Positive
+                  - "3732" # Positive Approved
+                StateDrugScreenResult.NEGATIVE:
+                  - "3731" # Negative
+                StateDrugScreenResult.NO_RESULT:
+                  - "5468" # Void
+          sample_type:
+            $enum_mapping:
+              $raw_text: sample_type_id
+              $mappings:
+                StateDrugScreenSampleType.SALIVA:
+                  - "7731" # On-Site Saliva Test
+                StateDrugScreenSampleType.URINE:
+                  - "3710" # On-Site Urine Test
+                  - "3711" # Lab Urine Test
+                StateDrugScreenSampleType.BREATH:
+                  - "3712" # PBT
+                  - "8170" # Breathalyzer/PBT
+                StateDrugScreenSampleType.INTERNAL_UNKNOWN:
+                  - "13540" # STOP Test
+                  - "3709" # Patch
+                  - "7156" # Admissions
