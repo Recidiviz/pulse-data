@@ -16,188 +16,104 @@
 # =============================================================================
 """Tests for BigQueryResultsContentsHandle."""
 
-import unittest
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterator, Union
 
-import pandas as pd
 import pytest
-from sqlalchemy.sql import sqltypes
+from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
-from recidiviz.tests.big_query.fakes.fake_big_query_client import FakeBigQueryClient
-from recidiviz.tests.big_query.fakes.fake_big_query_database import FakeBigQueryDatabase
-from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
-from recidiviz.tools.postgres import local_postgres_helpers
 
 
-@pytest.mark.uses_db
-class BigQueryResultsContentsHandleTest(unittest.TestCase):
-    """Tests for BigQueryResultsContentsHandle."""
+def test_simple_empty() -> None:
+    handle: BigQueryResultsContentsHandle[
+        Dict[str, Any]
+    ] = BigQueryResultsContentsHandle(query_job=iter(()))
+    results = list(handle.get_contents_iterator())
+    assert not results
 
-    temp_db_dir: str
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+def test_iterate_twice() -> None:
+    class FakeQueryJob:
+        def __iter__(self) -> Iterator[Row]:
+            return iter(
+                (
+                    Row((2010, "00001"), {"bar": 0, "foo": 1}),
+                    Row((2020, "00002"), {"bar": 0, "foo": 1}),
+                    Row((2030, "00003"), {"bar": 0, "foo": 1}),
+                )
+            )
 
-    def setUp(self) -> None:
-        self.project_id = "recidiviz-456"
-        self.fake_bq_db = FakeBigQueryDatabase()
-        self.fake_bq_client = FakeBigQueryClient(
-            project_id=self.project_id, database=self.fake_bq_db
-        )
+    handle: BigQueryResultsContentsHandle[
+        Dict[str, Any]
+    ] = BigQueryResultsContentsHandle(query_job=FakeQueryJob())
 
-        self.fake_bq_db.create_mock_bq_table(
-            dataset_id="my_dataset",
-            table_id="my_table",
-            mock_schema=PostgresTableSchema(
-                data_types={"foo": sqltypes.String(255), "bar": sqltypes.Integer()}
-            ),
-            mock_data=pd.DataFrame(
-                pd.DataFrame(
-                    [
-                        ["00001", 2010],
-                        ["00002", 2020],
-                        ["00003", 2030],
-                    ],
-                    columns=["foo", "bar"],
+    expected_results = [
+        {"bar": 2010, "foo": "00001"},
+        {"bar": 2020, "foo": "00002"},
+        {"bar": 2030, "foo": "00003"},
+    ]
+
+    iterator = handle.get_contents_iterator()
+
+    assert {"bar": 2010, "foo": "00001"} == next(iterator)
+    assert {"bar": 2020, "foo": "00002"} == next(iterator)
+    assert {"bar": 2030, "foo": "00003"} == next(iterator)
+    with pytest.raises(StopIteration):
+        next(iterator)
+
+    results = list(handle.get_contents_iterator())
+    assert expected_results == results
+
+
+def test_iterate_with_value_converter() -> None:
+    def flip_types(field_name: str, value: Any) -> Union[str, int]:
+        if field_name == "foo":
+            return int(value)
+        if field_name == "bar":
+            return str(value)
+        raise ValueError(f"Unexpected field name [{field_name}] for value [{value}].")
+
+    handle = BigQueryResultsContentsHandle(
+        query_job=iter(
+            (
+                Row((2010, "00001"), {"bar": 0, "foo": 1}),
+                Row((2020, "00002"), {"bar": 0, "foo": 1}),
+                Row((2030, "00003"), {"bar": 0, "foo": 1}),
+            )
+        ),
+        value_converter=flip_types,
+    )
+    expected_results = [
+        {"bar": "2010", "foo": 1},
+        {"bar": "2020", "foo": 2},
+        {"bar": "2030", "foo": 3},
+    ]
+    results = list(handle.get_contents_iterator())
+    assert expected_results == results
+
+
+def test_more_than_max_rows() -> None:
+    with pytest.raises(ValueError, match=r"^Found more than \[2\] rows in result\.$"):
+        list(
+            BigQueryResultsContentsHandle(
+                query_job=iter(
+                    (
+                        Row((2010, "00001"), {"bar": 0, "foo": 1}),
+                        Row((2020, "00002"), {"bar": 0, "foo": 1}),
+                        Row((2030, "00003"), {"bar": 0, "foo": 1}),
+                    )
                 ),
-            ),
+                max_expected_rows=2,
+            ).get_contents_iterator()
         )
 
-    def tearDown(self) -> None:
-        self.fake_bq_db.teardown_databases()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+def test_query_object_must_be_iterator_of_gcloud_rows() -> None:
+    with pytest.raises(ValueError, match=r"^Found unexpected type for row: \[.*\]\.$"):
+        list(
+            BigQueryResultsContentsHandle(
+                query_job=iter(("test string",)),
+            ).get_contents_iterator()
         )
-
-    def test_simple_empty(self) -> None:
-        self.fake_bq_db.create_mock_bq_table(
-            dataset_id="my_dataset",
-            table_id="my_empty_table",
-            mock_schema=PostgresTableSchema({"foo": sqltypes.Integer()}),
-            mock_data=pd.DataFrame([]),
-        )
-
-        handle: BigQueryResultsContentsHandle[
-            Dict[str, Any]
-        ] = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_empty_table`;",
-                use_query_cache=True,
-            )
-        )
-        results = list(handle.get_contents_iterator())
-        self.assertEqual([], results)
-
-    def test_simple(self) -> None:
-        handle: BigQueryResultsContentsHandle[
-            Dict[str, Any]
-        ] = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
-            )
-        )
-        results = list(handle.get_contents_iterator())
-        self.assertEqual(
-            [
-                {"bar": 2010, "foo": "00001"},
-                {"bar": 2020, "foo": "00002"},
-                {"bar": 2030, "foo": "00003"},
-            ],
-            results,
-        )
-
-    def test_iterate_twice(self) -> None:
-        handle: BigQueryResultsContentsHandle[
-            Dict[str, Any]
-        ] = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
-            )
-        )
-
-        expected_results = [
-            {"bar": 2010, "foo": "00001"},
-            {"bar": 2020, "foo": "00002"},
-            {"bar": 2030, "foo": "00003"},
-        ]
-
-        results = list(handle.get_contents_iterator())
-        self.assertEqual(expected_results, results)
-
-        results = list(handle.get_contents_iterator())
-        self.assertEqual(expected_results, results)
-
-    def test_iterate_one_at_a_time(self) -> None:
-        handle: BigQueryResultsContentsHandle[
-            Dict[str, Any]
-        ] = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
-            )
-        )
-        iterator = handle.get_contents_iterator()
-
-        self.assertEqual({"bar": 2010, "foo": "00001"}, next(iterator))
-        self.assertEqual({"bar": 2020, "foo": "00002"}, next(iterator))
-        self.assertEqual({"bar": 2030, "foo": "00003"}, next(iterator))
-        with self.assertRaises(StopIteration):
-            _ = next(iterator)
-
-    def test_partial_iteration(self) -> None:
-        handle: BigQueryResultsContentsHandle[
-            Dict[str, Any]
-        ] = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
-            )
-        )
-        iterator = handle.get_contents_iterator()
-
-        self.assertEqual({"bar": 2010, "foo": "00001"}, next(iterator))
-
-        expected_results = [
-            {"bar": 2010, "foo": "00001"},
-            {"bar": 2020, "foo": "00002"},
-            {"bar": 2030, "foo": "00003"},
-        ]
-
-        results = list(handle.get_contents_iterator())
-        self.assertEqual(expected_results, results)
-
-    def test_iterate_with_value_converter(self) -> None:
-        def flip_types(field_name: str, value: Any) -> Union[str, int]:
-            if field_name == "foo":
-                return int(value)
-            if field_name == "bar":
-                return str(value)
-            raise ValueError(
-                f"Unexpected field name [{field_name}] for value [{value}]."
-            )
-
-        handle = BigQueryResultsContentsHandle(
-            self.fake_bq_client.run_query_async(
-                query_str="SELECT * FROM `recidiviz-456.my_dataset.my_table` ORDER BY foo;",
-                use_query_cache=True,
-            ),
-            value_converter=flip_types,
-        )
-
-        expected_results = [
-            {"bar": "2010", "foo": 1},
-            {"bar": "2020", "foo": 2},
-            {"bar": "2030", "foo": 3},
-        ]
-
-        results = list(handle.get_contents_iterator())
-        self.assertEqual(expected_results, results)
