@@ -85,7 +85,7 @@ class TestBQResultSensor(unittest.TestCase):
 
         # Act
         start = datetime.now()
-        execute_task(self.dag, self.sensor_task)
+        _ = execute_task(self.dag, self.sensor_task)
         end = datetime.now()
 
         runtime = (end - start).total_seconds()
@@ -108,7 +108,7 @@ class TestBQResultSensor(unittest.TestCase):
 
         # Act
         start = datetime.now()
-        execute_task(self.dag, self.sensor_task)
+        _ = execute_task(self.dag, self.sensor_task)
         end = datetime.now()
 
         runtime = (end - start).total_seconds()
@@ -133,4 +133,4 @@ class TestBQResultSensor(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, r"Expected exactly one result row, found \[2\]."
         ):
-            execute_task(self.dag, self.sensor_task)
+            _ = execute_task(self.dag, self.sensor_task)

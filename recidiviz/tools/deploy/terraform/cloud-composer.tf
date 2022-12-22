@@ -45,12 +45,15 @@ resource "google_composer_environment" "default_v2" {
         "api-composer_auth_user_registration_role" = "Op"
         "celery-worker_concurrency"                = 3
         "webserver-web_server_name"                = "orchestration-v2"
+        "secrets-backend"                          = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
+        "secrets-backend_kwargs"                   = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
       }
       pypi_packages = {
-        "us" = ""
+        "us"                            = "==2.0.2"
+        "apache-airflow-providers-sftp" = "==4.2.0"
       }
       image_version = "composer-2.0.31-airflow-2.3.3"
     }
