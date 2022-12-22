@@ -41,6 +41,8 @@ class DirectIngestSftpRemoteFileMetadata(Entity, BuildableAttr, DefaultableAttr)
     region_code: str = attr.ib()
     # The remote file path on the SFTP server
     remote_file_path: str = attr.ib()
+    # The original SFTP mtime (UNIX seconds since epoch) of the remote_file_path on the SFTP server
+    sftp_timestamp: float = attr.ib()
     # Time when the file is actually discovered by the SFTP Airflow DAG
     file_discovery_time: datetime.datetime = attr.ib()
     # Time when the file is finished fully downloaded to the SFTP bucket
