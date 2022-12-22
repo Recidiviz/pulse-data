@@ -21,7 +21,10 @@ urine analysis test and no positive result within 90 days.
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -56,10 +59,10 @@ _QUERY_TEMPLATE = f"""
         cs.person_id,
         ds.drug_screen_date AS start_date,
         DATE_ADD(ds.drug_screen_date, INTERVAL 90 DAY) AS end_date,
-        ds.is_positive_result,
+        IF(ds.drug_screen_result = "NEGATIVE", false, true) AS is_positive_result,
         ds.drug_screen_date,
         FALSE AS needs_ua_check,
-    FROM `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized` ds
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_drug_screen` ds
     INNER JOIN check_spans cs
         ON cs.person_id = ds.person_id
         AND cs.state_code = ds.state_code
@@ -104,6 +107,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
     )
 )
