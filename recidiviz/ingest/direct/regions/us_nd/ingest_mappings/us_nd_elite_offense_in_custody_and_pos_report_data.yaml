@@ -1,50 +1,219 @@
-key_mappings:
-  INCIDENT_TYPE: state_incarceration_incident.incident_type
-  INCIDENT_DATE: state_incarceration_incident.incident_date
-  INCIDENT_DETAILS: state_incarceration_incident.incident_details
-  AGY_LOC_ID: state_incarceration_incident.facility
-
-ancestor_keys:
-  ROOT_OFFENDER_ID: state_person.state_person_id
-
-child_key_mappings:
-  OIC_SANCTION_CODE: state_incarceration_incident_outcome.outcome_type
-  OIC_SANCTION_DESC: state_incarceration_incident_outcome.outcome_description
-  EFFECTIVE_DATE: state_incarceration_incident_outcome.date_effective
-
-# There is a primary key override in us_nd_controller for this file
-
-keys_to_ignore:
-  - LAST_NAME # Unused for now - Person last name
-  - FIRST_NAME # Unused for now - Person first name
-  - OIC_INCIDENT_ID # Used in primary key override
-  - AGENCY_INCIDENT_ID # Used in primary key override
-  - INCIDENT_TYPE_DESC # Unused, maps 1:1 to INCIDENT_TYPE
-  - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION # Referenced manually in scraper to infer location_within_facility
-  - REPORT_DATE # Unused for now
-  - OIC_HEARING_ID # Unused for now - schema doesn't encode info about hearings TODO(#2330): Include these if/when we add hearing information
-  - OIC_HEARING_TYPE # Unused for now - schema doesn't encode info about hearings
-  - OIC_HEARING_TYPE_DESC # Unused for now - schema doesn't encode info about hearings
-  - HEARING_DATE # Unused for now - schema doesn't encode info about hearings
-  - HEARING_STAFF_NAME # Unused for now - schema doesn't encode info about hearings
-  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT # Unused for now
-  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION # Unused, same values as OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
-  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ # Unused for now
-  - OIC_OFFENCE_CATEGORY # Unused for now
-  - OIC_OFFENCE_CODE # Referenced manually in scraper to inform incident_type
-  - OIC_OFFENCE_DESCRIPTION # Referenced manually in scraper to inform incident_type
-  - PLEA_DESCRIPTION # Unused
-  - FINDING_DESCRIPTION # Referenced manually in scraper to inform outcome_type
-  - RESULT_OIC_OFFENCE_CATEGORY # Unused
-  - RESULT_OIC_OFFENCE_CODE # Referenced manually in scraper to inform incident_type
-  - RESULT_OIC_OFFENCE_DESCRIPTION # Referenced manually in scraper to inform incident_type
-  - Expr1030 # Unused, same values as OIC_SANCTION_CODE
-  - SANCTION_SEQ # Referenced manually in scraper to inform state_incarceration_incident_outcome_id
-  - COMPENSATION_AMOUNT # Unused
-  - SANCTION_MONTHS # Referenced manually in scraper to inform punishment_length_days
-  - SANCTION_DAYS # Referenced manually in scraper to inform punishment_length_days
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT # Unused for now
-  - EFFECTIVE_DATE # Referenced manually in scraper to inform punishment_length_days
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ # Unused, same info as OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
-  - ALIAS_NAME_TYPE # Provided by Aliases file
-  - OFFENDER_BOOK_ID # Unused - connected to person via ROOT_OFFENDER_ID
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - INCIDENT_TYPE
+  - INCIDENT_DATE
+  - INCIDENT_DETAILS
+  - AGY_LOC_ID
+  - ROOT_OFFENDER_ID
+  - OIC_SANCTION_CODE
+  - OIC_SANCTION_DESC
+  - EFFECTIVE_DATE
+  - LAST_NAME
+  - FIRST_NAME
+  - OIC_INCIDENT_ID
+  - AGENCY_INCIDENT_ID
+  - INCIDENT_TYPE_DESC
+  - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
+  - REPORT_DATE
+  - OIC_HEARING_ID
+  - OIC_HEARING_TYPE
+  - OIC_HEARING_TYPE_DESC
+  - HEARING_DATE
+  - HEARING_STAFF_NAME
+  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT
+  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION
+  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
+  - OIC_OFFENCE_CATEGORY
+  - OIC_OFFENCE_CODE
+  - OIC_OFFENCE_DESCRIPTION
+  - PLEA_DESCRIPTION
+  - FINDING_DESCRIPTION
+  - RESULT_OIC_OFFENCE_CATEGORY
+  - RESULT_OIC_OFFENCE_CODE
+  - RESULT_OIC_OFFENCE_DESCRIPTION
+  - Expr1030
+  - SANCTION_SEQ
+  - COMPENSATION_AMOUNT
+  - SANCTION_MONTHS
+  - SANCTION_DAYS
+  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT
+  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ
+  - OFFENDER_BOOK_ID
+unused_columns:
+  - LAST_NAME
+  - FIRST_NAME
+  - INCIDENT_TYPE_DESC
+  - REPORT_DATE
+  - OIC_HEARING_ID
+  - OIC_HEARING_TYPE
+  - OIC_HEARING_TYPE_DESC
+  - HEARING_DATE
+  - HEARING_STAFF_NAME
+  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT
+  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION
+  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
+  - OIC_OFFENCE_CATEGORY
+  - OIC_OFFENCE_CODE
+  - OIC_OFFENCE_DESCRIPTION
+  - PLEA_DESCRIPTION
+  - RESULT_OIC_OFFENCE_CATEGORY
+  - RESULT_OIC_OFFENCE_CODE
+  - RESULT_OIC_OFFENCE_DESCRIPTION
+  - Expr1030
+  - COMPENSATION_AMOUNT
+  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT
+  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ
+  - OFFENDER_BOOK_ID
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ROOT_OFFENDER_ID
+          id_type: $literal("US_ND_ELITE")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $separator: "-"
+              $values:
+                - AGENCY_INCIDENT_ID
+                - OIC_INCIDENT_ID
+          incident_date: INCIDENT_DATE
+          facility: AGY_LOC_ID
+          location_within_facility:
+            $custom:
+              $function: us_nd_custom_parsers.get_loc_within_facility
+              $args:
+                facility: AGY_LOC_ID
+                facility_with_loc: OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
+          incident_details: INCIDENT_DETAILS
+          incident_type:
+            $conditional:
+              - $if:
+                  $not_in:
+                    $value: INCIDENT_TYPE
+                    $options:
+                      - $literal("MISC")
+                $then:
+                  $enum_mapping:
+                    $raw_text: INCIDENT_TYPE
+                    $mappings:
+                      StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                        - DAMAGE
+                        - DISCON
+                        - ESCAPE_ATT
+                        - INS
+                        - SEXCONTACT
+                        - UNAUTH
+                        - NON
+                      StateIncarcerationIncidentType.CONTRABAND:
+                        - CONT
+                        - GANG
+                        - GANGREL
+                        - PROP
+                        - TOB
+                      StateIncarcerationIncidentType.MINOR_OFFENSE:
+                        - SWIFT
+                        - MINOR
+                      StateIncarcerationIncidentType.POSITIVE:
+                        - POSREPORT
+                      StateIncarcerationIncidentType.REPORT:
+                        - STAFFREP
+                      StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
+                        - CONV
+                      StateIncarcerationIncidentType.VIOLENCE:
+                        - IIASSAULT
+                        - IIASSAULTINJ
+                        - IIFIGHT
+                        - FGHT
+                        - IISUBNOINJ
+                        - ISASSAULT
+                        - ISASSAULTINJ
+                        - ISSUBNOINJ
+                        - SEXUAL
+                        - THREAT
+          incarceration_incident_outcomes:
+            - $conditional:
+                - $if:
+                    $and:
+                      - $not_null: AGENCY_INCIDENT_ID
+                      - $not_null: OIC_INCIDENT_ID
+                      - $not_null: SANCTION_SEQ
+                  $then:
+                    StateIncarcerationIncidentOutcome:
+                      external_id:
+                        $concat:
+                          $separator: "-"
+                          $values:
+                            - AGENCY_INCIDENT_ID
+                            - OIC_INCIDENT_ID
+                            - SANCTION_SEQ
+                      date_effective: EFFECTIVE_DATE
+                      outcome_description: OIC_SANCTION_DESC
+                      punishment_length_days:
+                        $custom:
+                          $function: us_nd_custom_parsers.get_punishment_days
+                          $args:
+                            months: SANCTION_MONTHS
+                            days: SANCTION_DAYS
+                            effective_date: EFFECTIVE_DATE
+                      outcome_type:
+                        $conditional:
+                          - $if:
+                              $equal:
+                                - FINDING_DESCRIPTION
+                                - $literal("NOT GUILTY")
+                            $then:
+                              $enum_mapping:
+                                $raw_text: FINDING_DESCRIPTION
+                                $mappings:
+                                  StateIncarcerationIncidentOutcomeType.NOT_GUILTY: "NOT GUILTY"
+                          - $else:
+                              $enum_mapping:
+                                $raw_text: OIC_SANCTION_CODE
+                                $mappings:
+                                  StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                                    - LCP
+                                    - LOR
+                                    - LCO
+                                    - LVPVV
+                                    - LOP
+                                    - LVP
+                                    - LPJES
+                                    - FREM
+                                    - RTQ
+                                    - UREST
+                                    - LPH
+                                    - LSE
+                                    - CCF
+                                    - SREM
+                                  StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                                    - RES
+                                    - PAY
+                                    - FIN
+                                    - PRO
+                                    - LJB
+                                  StateIncarcerationIncidentOutcomeType.SOLITARY:
+                                    - SEG
+                                    - DD
+                                    - RAS
+                                  StateIncarcerationIncidentOutcomeType.TREATMENT:
+                                    - RTX
+                                  StateIncarcerationIncidentOutcomeType.DISMISSED:
+                                    - DSM
+                                  StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION:
+                                    - RSA
+                                  StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                                    - COMB
+                                    - DELETED
+                                    - RED
+                                    - TRA
+                                  StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                                    - EXD
+                                  StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                                    - LG
+                                    - STP
+                                  StateIncarcerationIncidentOutcomeType.WARNING:
+                                    - WAR
+                                    - NS
