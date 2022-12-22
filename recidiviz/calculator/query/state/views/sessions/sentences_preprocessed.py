@@ -249,7 +249,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
                 total_literary_credits,
                 total_drug_alcohol_credits,
                 total_education_attendance_credits,
-                total_treatment_credits)
+                total_treatment_credits,
+                lifetime_supervision)
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
     )
     SELECT

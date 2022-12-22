@@ -1,0 +1,137 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2022 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Spans of time with the projected max completion date for clients under supervision
+as indicated by the sentences that were active during that span."""
+
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+_VIEW_NAME = "us_tn_supervision_projected_completion_date_spans"
+
+_VIEW_DESCRIPTION = """
+Spans of time with the projected max completion date for clients under supervision as
+indicated by the sentences that were active during that span.
+"""
+
+_QUERY_TEMPLATE = f"""
+/*
+TODO(#16709): Once ISC and Diversion data is ingested and validated, this CTE can be removed.
+This CTE is a crude way of excluding anyone who shows up with ISC or Diversion sentencing data from being 
+surfaced as eligible since they won't have any sentence spans. This is because without ISC / Diversion data ingested,
+if someone who is on ISC / Diversion shows up in all_states_spans, it likely means they have some data in the Sentence
+table (ingested) that may flag them as due for discharge, but their latest sentencing data is actually in ISC/Diversion
+and not yet ingested. There are some false-negatives here (people with ISC / Diversion data, whose latest data is
+in the Sentence table) but largely this captures people who shouldn't be surfaced. 
+*/
+WITH isc_and_diversion_raw AS (
+    SELECT DISTINCT person_id
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Diversion_latest` d
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON pei.external_id = OffenderID
+        AND pei.state_code = 'US_TN'
+    
+    UNION DISTINCT
+    
+    SELECT DISTINCT person_id 
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ISCSentence_latest` isc
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON pei.external_id = OffenderID
+        AND pei.state_code = 'US_TN'
+    ),
+    all_states_spans AS (
+        SELECT
+            span.state_code,
+            span.person_id,
+            span.start_date,
+            span.end_date_exclusive,
+            /* Completion date comes from ExpirationDate which accounts for sentence credits. Projected completion date
+            comes from FullExpirationDate which doesn't */
+            -- TODO(#17246): use `state_task_deadline.eligibility_date` once ExpirationDate is ingested there
+            MAX(sent.completion_date) AS projected_completion_date_max,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+        UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+          USING (state_code, person_id, sentences_preprocessed_id)
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
+            ON span.state_code = sess.state_code
+            AND span.person_id = sess.person_id
+            -- Restrict to spans that overlap with supervision sessions
+            AND sess.compartment_level_1 = "SUPERVISION"
+            -- Use strictly less than for exclusive end_dates
+            AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
+            AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+        -- TODO(#16709): Once ISC and Diversion data is ingested and validated, this can be removed.
+        LEFT JOIN isc_and_diversion_raw
+            ON span.person_id = isc_and_diversion_raw.person_id
+        WHERE
+            span.state_code = 'US_TN'
+            AND isc_and_diversion_raw.person_id IS NULL
+        GROUP BY 1, 2, 3, 4
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        -- For the most recent span, make the end_date NULL
+        IF(
+            MAX({nonnull_end_date_exclusive_clause('end_date_exclusive')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date_exclusive')},
+            NULL, 
+            end_date_exclusive
+        ) AS end_date_exclusive,
+        IF(
+            MAX({nonnull_end_date_exclusive_clause('end_date_exclusive')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date_exclusive')},
+            NULL, 
+            end_date_exclusive
+        ) AS end_date,
+        projected_completion_date_max,
+    FROM all_states_spans 
+"""
+
+US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = (
+    SimpleBigQueryViewBuilder(
+        dataset_id=SESSIONS_DATASET,
+        view_id=_VIEW_NAME,
+        view_query_template=_QUERY_TEMPLATE,
+        description=_VIEW_DESCRIPTION,
+        sessions_dataset=SESSIONS_DATASET,
+        should_materialize=True,
+        clustering_fields=["state_code", "person_id"],
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+    )
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER.build_and_print()
