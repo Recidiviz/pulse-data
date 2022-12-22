@@ -24,6 +24,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    Float,
     Integer,
     PrimaryKeyConstraint,
     String,
@@ -98,6 +99,7 @@ class DirectIngestSftpRemoteFileMetadata(OperationsBase):
         CheckConstraint(
             "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_path"
         ),
+        CheckConstraint("sftp_timestamp IS NOT NULL", name="nonnull_sftp_timestamp"),
     )
 
     file_id = Column(Integer, primary_key=True)
@@ -106,6 +108,9 @@ class DirectIngestSftpRemoteFileMetadata(OperationsBase):
 
     # The remote file path on the SFTP server
     remote_file_path = Column(String(255), index=True)
+
+    # The original SFTP mtime (UNIX seconds since epoch) of the remote_file_path on the SFTP server
+    sftp_timestamp = Column(Float)
 
     # Time when the file is actually discovered by the SFTP Airflow DAG
     file_discovery_time = Column(DateTime(timezone=True))
