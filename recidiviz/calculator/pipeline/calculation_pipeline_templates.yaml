@@ -182,7 +182,7 @@ metric_pipelines:
   - pipeline: supervision_metrics
     job_name: full-us-pa-supervision-metrics
     state_code: US_PA
-    metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
+    metric_types: SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-west1
   - pipeline: incarceration_metrics
     job_name: full-us-pa-incarceration-metrics
