@@ -279,7 +279,11 @@ def _get_commitment_from_supervision_supervision_period(
     admission_reason = incarceration_period.admission_reason
     admission_reason_raw_text = incarceration_period.admission_reason_raw_text
 
-    if not is_commitment_from_supervision(admission_reason):
+    if (
+        not is_commitment_from_supervision(admission_reason)
+        and admission_reason
+        != StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+    ):
         raise ValueError(
             "This function should only be called with an "
             "incarceration_period that is a commitment from supervision. "
