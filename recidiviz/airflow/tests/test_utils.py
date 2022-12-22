@@ -17,6 +17,7 @@
 """Test utilities for DAG tests"""
 import os
 from datetime import datetime
+from typing import Any
 
 from airflow import DAG
 from airflow.models import BaseOperator, DagRun, TaskInstance
@@ -29,7 +30,7 @@ DAG_FOLDER = "dags"
 _FAKE_RUN_ID = "abc123"
 
 
-def execute_task(dag: DAG, task: BaseOperator) -> None:
+def execute_task(dag: DAG, task: BaseOperator) -> Any:
     """Executes a task in a given DAG, passing the appropriate context dictionary."""
     execution_date = datetime.now()
     context = {
@@ -41,4 +42,4 @@ def execute_task(dag: DAG, task: BaseOperator) -> None:
             task=task, execution_date=execution_date, run_id=_FAKE_RUN_ID
         ),
     }
-    task.execute(context)
+    return task.execute(context)

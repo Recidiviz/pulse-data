@@ -18,10 +18,9 @@
 import logging
 import os
 import uuid
-from typing import Dict, List
+from typing import List
 
 from airflow.decorators import dag
-from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
@@ -39,8 +38,12 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # import the recidiviz-top-level.
 # pylint: disable=ungrouped-imports
 try:
+    from operators.find_sftp_files_operator import FindSftpFilesOperator  # type: ignore
     from utils.default_args import DEFAULT_ARGS  # type: ignore
 except ImportError:
+    from recidiviz.airflow.dags.operators.find_sftp_files_operator import (
+        FindSftpFilesOperator,
+    )
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
@@ -52,34 +55,6 @@ project_id = os.environ.get("GCP_PROJECT")
 # TODO(#17283): Remove test buckets once SFTP is switched over
 GCS_LOCK_BUCKET = f"{project_id}-test-gcslock"
 GCS_CONFIG_BUCKET = f"{project_id}-test-configs"
-
-
-def _files_to_download(state_code: str) -> List[Dict[str, str]]:
-    if state_code == "US_PA":
-        return [{"state_code": state_code, "file": "file.zip"}]
-    return [
-        {"state_code": state_code, "file": file}
-        for file in ["file_1.csv", "file_2.csv", "file_3.csv"]
-    ]
-
-
-def _transform_files(state_code: str, file: str) -> List[Dict[str, str]]:
-    if ".zip" in file:
-        return [
-            {"state_code": state_code, "file": file}
-            for file in ["file_1.csv", "file_2.csv", "file_3.csv"]
-        ]
-    return [{"state_code": state_code, "file": file}]
-
-
-def _collect_all_files(
-    files_to_transform: List[List[Dict[str, str]]]
-) -> List[Dict[str, str]]:
-    return [item for inner_list in files_to_transform for item in inner_list]
-
-
-def _upload_files(state_code: str, file: str) -> str:
-    return f"{state_code}_{file}"
 
 
 def sftp_enabled_states() -> List[str]:
@@ -166,22 +141,22 @@ def sftp_dag() -> None:
                 for lock_name, lock_id in lock_names_with_lock_ids.items()
             ]
 
-            find_files_to_download = PythonOperator(
+            # Discovery flow
+            find_sftp_files_from_server = FindSftpFilesOperator(
                 task_id="find_sftp_files_to_download",
-                python_callable=_files_to_download,
-                op_kwargs={"state_code": state_code},
+                state_code=state_code,
             )
-            transform_files = PythonOperator.partial(
-                task_id="transform_files", python_callable=_transform_files
-            ).expand(op_kwargs=find_files_to_download.output)
-            bridge = PythonOperator(
-                task_id="collect_all_files",
-                python_callable=_collect_all_files,
-                op_args=[XComArg(transform_files)],
-            )
-            upload_files = PythonOperator.partial(
-                task_id="upload_files", python_callable=_upload_files
-            ).expand(op_kwargs=bridge.output)
+            # TODO(#17333): Replace with a proper database check in Postgres
+            verify_files = PythonOperator.partial(
+                task_id="file_print_out",
+                python_callable=lambda file, timestamp: logging.info(
+                    "%s %d", file, timestamp
+                ),
+            ).expand(op_kwargs=find_sftp_files_from_server.output)
+
+            # TODO(#17334): Implement download flow
+
+            # TODO(#17335): Implement upload flow
 
             # TODO(#17387): Add ability to pause scheduler queue when upload operation starts
 
@@ -200,10 +175,8 @@ def sftp_dag() -> None:
             (
                 check_config
                 >> set_locks
-                >> find_files_to_download
-                >> transform_files
-                >> bridge
-                >> upload_files
+                >> find_sftp_files_from_server
+                >> verify_files
                 >> release_locks
             )
 
