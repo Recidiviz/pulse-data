@@ -577,9 +577,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_recidivism_metr
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_sentence_normalization_delegate import (
     UsPaSentenceNormalizationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
-    UsPaSupervisionCaseCompliance,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
@@ -780,19 +777,6 @@ def get_state_specific_case_compliance_manager(
 
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
-            person,
-            supervision_period,
-            case_type,
-            start_of_supervision,
-            assessments,
-            supervision_contacts,
-            violation_responses,
-            incarceration_sentences,
-            incarceration_period_index,
-            supervision_delegate,
-        )
-    if state_code == StateCode.US_PA.value:
-        return UsPaSupervisionCaseCompliance(
             person,
             supervision_period,
             case_type,
