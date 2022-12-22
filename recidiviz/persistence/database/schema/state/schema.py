@@ -2994,3 +2994,9 @@ class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
             "deadline from the state."
         ),
     )
+
+    task_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "this task deadline.",
+    )

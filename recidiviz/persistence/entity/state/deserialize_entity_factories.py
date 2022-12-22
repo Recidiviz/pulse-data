@@ -383,7 +383,9 @@ class StateTaskDeadlineFactory(EntityFactory):
     ) -> entities.StateTaskDeadline:
         return entity_deserialize(
             cls=entities.StateTaskDeadline,
-            converter_overrides={},
+            converter_overrides={
+                "task_metadata": EntityFieldConverter(str, normalize_flat_json),
+            },
             defaults={},
             **kwargs,
         )

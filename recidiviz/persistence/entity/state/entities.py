@@ -1667,6 +1667,9 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
     task_subtype: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    task_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer

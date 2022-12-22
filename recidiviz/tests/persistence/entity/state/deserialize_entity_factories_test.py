@@ -895,6 +895,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             task_type=StateTaskType.DRUG_SCREEN,
             task_type_raw_text="DRU",
             task_subtype="MY_SUBTYPE",
+            task_metadata='{"sentence_external_id": "a123"}',
         )
 
         # Assert
@@ -906,6 +907,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             task_type=StateTaskType.DRUG_SCREEN,
             task_type_raw_text="DRU",
             task_subtype="MY_SUBTYPE",
+            task_metadata='{"sentence_external_id": "A123"}',
         )
 
         self.assertEqual(expected_result, result)
