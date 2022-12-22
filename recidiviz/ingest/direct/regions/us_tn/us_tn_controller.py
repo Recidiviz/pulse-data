@@ -44,8 +44,13 @@ class UsTnController(BaseDirectIngestController):
             "OffenderMovementIncarcerationPeriod",
             "AssignedStaffSupervisionPeriod_v2",
             "VantagePointAssessments",
-            "SentencesChargesAndCourtCases",
         ]
+
+        tags.extend(
+            ["SentencesChargesAndCourtCases_v2"]
+            if self.ingest_instance == DirectIngestInstance.SECONDARY
+            else ["SentencesChargesAndCourtCases"]
+        )
 
         # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
         #  faster than current infra allows.
