@@ -169,7 +169,7 @@ export const updateUserPermissions = async (
   canAccessLeadershipDashboard: boolean | undefined,
   canAccessCaseTriage: boolean | undefined,
   shouldSeeBetaCharts: boolean | undefined,
-  routes: string | undefined // converted into JSON after response
+  routes: Record<string, boolean> | undefined
 ): Promise<Response> => {
   return putAuthWithURLAndBody(`/users/${email}/permissions`, {
     canAccessLeadershipDashboard,

@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, Form, Input, Modal, Select, Alert } from "antd";
+import { Alert, Button, Form, Input, Modal, Select } from "antd";
 import * as React from "react";
 import { useState } from "react";
 import Draggable from "react-draggable";
+import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "./utils";
 
 export const CreateEditUserForm = ({
@@ -48,7 +49,6 @@ export const CreateEditUserForm = ({
     showPermissions(false);
     editOnCancel();
   };
-
   const handleEdit = () => {
     form.validateFields().then((values) => {
       form.resetFields();
@@ -150,65 +150,11 @@ export const CreateEditUserForm = ({
           </Select>
         </Form.Item>
       </Form>
-      <Form
+      <CustomPermissionsPanel
         form={form}
-        layout="horizontal"
-        onFinish={editOnCreate}
-        disabled={hidePermissions}
-      >
-        <Form.Item
-          name="canAccessLeadershipDashboard"
-          label="Can access leadership dashboard"
-          labelCol={{ span: 15 }}
-        >
-          <Select
-            defaultValue={null}
-            allowClear
-            style={{
-              width: 80,
-            }}
-          >
-            <Option value>True</Option>
-            <Option value={false}>False</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item
-          name="canAccessCaseTriage"
-          label="Can access case triage"
-          labelCol={{ span: 15 }}
-        >
-          <Select
-            defaultValue={null}
-            allowClear
-            style={{
-              width: 80,
-            }}
-          >
-            <Option value>True</Option>
-            <Option value={false}>False</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item
-          name="shouldSeeBetaCharts"
-          label="Should see beta charts"
-          labelCol={{ span: 15 }}
-        >
-          <Select
-            defaultValue={null}
-            allowClear
-            style={{
-              width: 80,
-            }}
-          >
-            <Option value>True</Option>
-            <Option value={false}>False</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item name="routes" label="Routes">
-          {/* TODO(#14749): Change field type to select dropdown menu or checkboxes */}
-          <Input.TextArea placeholder='Format: {"routeOne": boolean, "routeTwo": boolean, ...}' />
-        </Form.Item>
-      </Form>
+        hidePermissions={hidePermissions}
+        editOnCreate={editOnCreate}
+      />
     </Modal>
   );
 };
