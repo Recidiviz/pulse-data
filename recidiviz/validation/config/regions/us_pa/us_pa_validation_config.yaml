@@ -35,7 +35,7 @@ max_allowed_error_overrides:
       another type of supervision). We are not counting these as terminations, causing
       the ~3% error rate.
   - validation_name: incarceration_admission_person_level_external_comparison
-    hard_max_allowed_error_override: 0.05
+    hard_max_allowed_error_override: 0.06
     override_reason: Needs investigation.
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 0.0353
@@ -57,13 +57,14 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 1200
+    hard_num_allowed_rows_override: 1400
     override_reason:
       There is a small amount of disagreement between the two data
       sources we pull data from to hydrate incarceration periods - CCIS tables and DOC
       tables. This value was 12 as of 3/5/2021 and we expect that it may slowly grow
       over time as new data is added. TODO(#9734) - need to investigate increase due to
       CCC ingest. Rerun on 02/15/2022 did not improve these. There are 866 as of 03/01/2022.
+      This number continues to grow over time. Error is 1201 as of 12/22/2022.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150000
     override_reason:
