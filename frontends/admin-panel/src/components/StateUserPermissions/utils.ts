@@ -16,6 +16,7 @@
 // =============================================================================
 import { useRef, useState } from "react";
 import type { DraggableData, DraggableEvent } from "react-draggable";
+import { Routes, ROUTES_PERMISSIONS_LABELS } from "./types";
 
 interface DraggableConstants {
   disabled: boolean;
@@ -49,3 +50,27 @@ export function DraggableModal(): DraggableConstants {
   };
   return { disabled, setDisabled, bounds, dragRef, onStart };
 }
+
+export const updateRoutes = (
+  existingRoutes: Routes,
+  updatedRoutes: Partial<StateUserPermissionsResponse>
+): Routes | undefined => {
+  const newRoutes = Object.entries(updatedRoutes).reduce(
+    (permissions, [permissionType, permissionValue]) => {
+      if (
+        Object.keys(ROUTES_PERMISSIONS_LABELS).includes(permissionType) &&
+        permissionValue !== undefined
+      ) {
+        return {
+          ...permissions,
+          // If the permission type is a route (requirement of this logic branch),
+          // the value will be a boolean
+          [permissionType]: permissionValue as boolean,
+        };
+      }
+      return { ...permissions };
+    },
+    existingRoutes
+  );
+  return Object.keys(newRoutes).length > 0 ? newRoutes : undefined;
+};

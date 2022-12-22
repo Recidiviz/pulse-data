@@ -39,12 +39,12 @@ import {
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddUserForm } from "./AddUserForm";
 import { CreateEditUserForm } from "./EditUsersForm";
+import { updateRoutes } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
     StateUserPermissionsResponse[]
   >(getStateUserPermissions);
-
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -152,9 +152,10 @@ const StateUserPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
-    routes,
+    ...rest
   }: StateUserPermissionsResponse) => {
     const results = [];
+
     for (let index = 0; index < selectedRowKeys.length; index += 1) {
       const email = selectedRows[index].emailAddress;
       const editRow = async () => {
@@ -172,22 +173,17 @@ const StateUserPermissionsView = (): JSX.Element => {
           );
           await checkResponse(updatedUser);
         }
+
         // delete user's custom permissions
         if (useCustomPermissions === false) {
           const deletedPermissions = await deleteCustomUserPermissions(email);
           await checkResponse(deletedPermissions);
         }
+
         // update user's custom permissions
-        if (
-          canAccessLeadershipDashboard != null ||
-          canAccessCaseTriage != null ||
-          shouldSeeBetaCharts != null ||
-          routes != null
-        ) {
-          let newRoutes = routes;
-          if (routes) {
-            newRoutes = JSON.parse(routes);
-          }
+        const existingRoutes = selectedRows[index].routes;
+        const newRoutes = updateRoutes(existingRoutes, rest);
+        if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(
             email,
             canAccessLeadershipDashboard,
