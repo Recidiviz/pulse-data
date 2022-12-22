@@ -82,9 +82,9 @@ final_spans AS (
         a.person_id,
         a.start_date,
         --for the most recent span, make the end_date NULL
-        IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
+        IF(MAX({nonnull_end_date_clause('a.end_date_exclusive')}) OVER(PARTITION BY a.person_id) = {nonnull_end_date_clause('a.end_date_exclusive')},
           NULL, a.end_date_exclusive) AS end_date_exclusive,
-        IF(MAX(COALESCE(a.end_date_exclusive,'9999-12-31')) OVER(PARTITION BY a.person_id) = COALESCE(a.end_date_exclusive,'9999-12-31'),
+        IF(MAX({nonnull_end_date_clause('a.end_date_exclusive')}) OVER(PARTITION BY a.person_id) = {nonnull_end_date_clause('a.end_date_exclusive')},
           NULL, a.end_date_exclusive) AS end_date,
         a.projected_completion_date_max,
     FROM all_states_spans a)
