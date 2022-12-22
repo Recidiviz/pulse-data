@@ -50,6 +50,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(s.TotalEducationAttendanceCredits AS INT64) total_education_attendance_credits,
         CAST(s.TotalTreatmentCredits AS INT64) total_treatment_credits,
         CAST(s.RangePercent AS FLOAT64) release_eligibility_range_percent,
+        js.LifetimeSupervision = "Y" AS lifetime_supervision,
     FROM `{project_id}.{raw_dataset}.JOSentence_latest` js
     JOIN `{project_id}.{raw_dataset}.Sentence_latest` s
         USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -228,6 +229,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         raw.total_drug_alcohol_credits,
         raw.total_education_attendance_credits,
         raw.total_treatment_credits,
+        raw.lifetime_supervision,
         
         cs.consecutive_sentence_id,
         -- Set the session_id_imposed if the sentence date imposed matches the session start date

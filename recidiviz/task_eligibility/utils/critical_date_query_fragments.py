@@ -158,3 +158,33 @@ def critical_date_exists_spans_cte() -> str:
             critical_date,
         FROM critical_date_spans
     )"""
+
+
+def supervision_past_full_term_completion_date(
+    meets_criteria_leading_window_days: int = 0,
+) -> str:
+    """Returns a criteria query that has spans of time when the projected completion date has passed or is
+    coming up while someone is on supervision. This function calls on the `critical_date_has_passed_spans_cte` and
+    takes |meets_criteria_leading_window_days| as a modifier. This is a standalone function that can be called
+    when creating criteria queries.
+    """
+    return f"""
+    WITH critical_date_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date AS start_datetime,
+            end_date AS end_datetime,
+            projected_completion_date_max AS critical_date
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized`
+    ),
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days)}
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+    FROM critical_date_has_passed_spans
+    """

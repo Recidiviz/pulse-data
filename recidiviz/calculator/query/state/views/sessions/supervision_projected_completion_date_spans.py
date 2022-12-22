@@ -58,7 +58,8 @@ _QUERY_TEMPLATE = f"""
         -- sentence data (including parole)
         -- separately in supervision sentences
         (sent.state_code NOT IN ("{{excluded_incarceration_states}}") OR sent.sentence_type = "SUPERVISION")
-        AND sent.state_code NOT IN ("US_ID", "US_IX")
+        -- Exclude states with state-specific logic
+        AND sent.state_code NOT IN ("US_ID", "US_IX", "US_TN")
     GROUP BY 1, 2, 3, 4
 UNION ALL
     SELECT * 
@@ -66,6 +67,9 @@ UNION ALL
 UNION ALL 
     SELECT * 
     FROM `{{project_id}}.{{sessions_dataset}}.us_ix_supervision_projected_completion_date_spans_materialized`
+UNION ALL
+    SELECT * 
+    FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_projected_completion_date_spans_materialized`
 """
 
 SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
