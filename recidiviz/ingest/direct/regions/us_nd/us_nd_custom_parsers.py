@@ -208,3 +208,24 @@ def get_score_sum(
         if score.strip():
             score_sum += int(score.strip())
     return str(score_sum)
+
+
+def get_loc_within_facility(facility: str, facility_with_loc: str) -> Optional[str]:
+    if facility and facility_with_loc:
+        facility_prefix = f"{facility}-"
+        if facility_with_loc.startswith(facility_prefix):
+            return facility_with_loc[len(facility_prefix) :]
+    return None
+
+
+def get_punishment_days(months: str, days: str, effective_date: str) -> Optional[str]:
+    if months or days:
+        return str(
+            parse_days_from_duration_pieces(
+                years_str=None,
+                months_str=months,
+                days_str=days,
+                start_dt_str=effective_date,
+            )
+        )
+    return None
