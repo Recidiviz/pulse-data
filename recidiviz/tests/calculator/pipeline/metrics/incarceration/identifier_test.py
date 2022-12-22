@@ -626,6 +626,40 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
+    def test_admission_event_for_temporary_custody_period(self) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            facility="PRISON3",
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        admission_event = self._run_admission_event_for_period(
+            incarceration_period=incarceration_period,
+        )
+
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
+        self.assertEqual(
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility="PRISON3",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=incarceration_period.admission_reason,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+                case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+            ),
+            admission_event,
+        )
+
     def test_admission_event_for_period_all_admission_reasons(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,

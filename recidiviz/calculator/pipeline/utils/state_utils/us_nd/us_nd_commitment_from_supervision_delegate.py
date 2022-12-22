@@ -145,8 +145,9 @@ class UsNdCommitmentFromSupervisionDelegate(
     ) -> Optional[StateSupervisionPeriodSupervisionType]:
         if (
             not is_commitment_from_supervision(admission_reason)
-            or admission_reason_raw_text is None
-        ):
+            and admission_reason
+            != StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+        ) or admission_reason_raw_text is None:
             # All incarceration periods at by this point must be commitments from supervision.
             raise ValueError(
                 f"Enum case not handled for admission reason raw text: {admission_reason_raw_text} and admission"

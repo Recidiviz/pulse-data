@@ -133,6 +133,29 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
+    def test_us_pa_get_pre_commitment_supervision_type_temporary_custody(self) -> None:
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_PA",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2009, 1, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
+        )
+
+        supervision_type_pre_commitment = (
+            self._test_get_commitment_from_supervision_supervision_type(
+                incarceration_period=incarceration_period
+            )
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_pre_commitment,
+        )
+
     def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(
         self,
     ) -> None:

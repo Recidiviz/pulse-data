@@ -63,17 +63,13 @@ class UsPaCommitmentFromSupervisionDelegate(
 
         if admission_reason in (
             # TODO(#8028): For now the only revocations in US_PA are parole revocations.
+            # We also assume a sanction admission or temporary custody start comes from parole
+            # until we improve the pre-commitment supervision type identification
+            # for US_PA.
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         ):
-            return StateSupervisionPeriodSupervisionType.PAROLE
-
-        if (
-            admission_reason
-            == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
-        ):
-            # TODO(#8028): For now, we assume a sanction admission comes from parole
-            #  until we improve the pre-commitment supervision type identification
-            #  for US_PA.
             return StateSupervisionPeriodSupervisionType.PAROLE
 
         raise ValueError(

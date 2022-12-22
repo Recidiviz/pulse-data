@@ -309,7 +309,16 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 admission_reason
             )
         ):
-            if is_commitment_from_supervision(admission_reason):
+            # We are including TEMPORARY_CUSTODY separately because the function
+            # is_commitment_from_supervision is also used in normalization, and
+            # currently, the use of TEMPORARY_CUSTODY is to support metrics. When the
+            # results are more satisfactory, we can revisit whether to add this to
+            # normalization results as well.
+            if (
+                is_commitment_from_supervision(admission_reason)
+                or admission_reason
+                == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            ):
                 return self._commitment_from_supervision_event_for_period(
                     incarceration_period=incarceration_period,
                     incarceration_period_index=incarceration_period_index,
