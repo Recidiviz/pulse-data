@@ -21,8 +21,17 @@ from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_claus
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    json_to_array_cte,
+    one_criteria_away_from_eligibility,
+    x_time_away_from_eligibility,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,6 +44,7 @@ US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION = """
 US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_incarceration_pop_cte AS (
+    -- Keep incarcerated individuals today
     SELECT pei.external_id,
         tes.state_code,
         tes.reasons,
@@ -48,14 +58,42 @@ WITH current_incarceration_pop_cte AS (
                                          {nonnull_end_date_exclusive_clause('tes.end_date')}
       AND tes.state_code = 'US_ME'
 ),
-json_to_array_cte AS (
-  --I transform the reason json column into an arrray for easier manipulation
-  SELECT 
-      *,
-      JSON_QUERY_ARRAY(reasons) AS array_reasons
-  FROM current_incarceration_pop_cte
 
-)
+case_notes_cte AS (
+  -- Program enrollment notes
+  SELECT 
+      mp.CIS_100_CLIENT_ID AS external_id,
+      "Program Enrollment" AS criteria,
+      CONCAT(pr.NAME_TX,' - ', st.E_STAT_TYPE_DESC) AS note_title,
+      ps.Comments_Tx AS note_body,
+      SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
+  FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
+  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
+    ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
+  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
+    ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
+  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
+    ON mp.CIS_9900_STAT_TYPE_CD = st.STAT_TYPE_CD
+  WHERE pr.NAME_TX IS NOT NULL
+
+  UNION ALL
+  
+  -- SCCP-related notes
+  SELECT 
+    n.Cis_100_Client_Id AS external_id,
+    "SCCP notes" AS criteria,
+    n.Short_Note_Tx AS note_title,
+    n.Note_Tx AS note_body,
+    SAFE_CAST(LEFT(n.Note_Date, 10) AS DATE) AS event_date,
+  FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_204_GEN_NOTE_latest` n
+  # While fuzzy matching is set up
+  WHERE REGEXP_CONTAINS(n.Short_Note_Tx, r'SCCP|sccp|COMMUNITY CONFINEMENT|community confinement|home confinement|HOME CONFINEMENT') 
+        OR REGEXP_CONTAINS(n.Note_Tx, r'SCCP|sccp|COMMUNITY CONFINEMENT|community confinement|home confinement|HOME CONFINEMENT') 
+), 
+
+{json_to_array_cte('current_incarceration_pop_cte')}, 
+
+eligible_and_almost_eligible AS (
 
 -- ELIGIBLE
 SELECT * EXCEPT(is_eligible)
@@ -64,34 +102,42 @@ WHERE is_eligible
 
 UNION ALL 
 
--- ALMOST ELIGIBLE (<6mo remaining)
-SELECT * EXCEPT(eligible_date, is_eligible)
-FROM (SELECT
-      * EXCEPT(array_reasons),
-      -- only keep eligible_date for the relevant criteria
-      CAST(ARRAY(SELECT JSON_VALUE(x.reason.eligible_date)
-            FROM UNNEST(array_reasons) AS x
-            WHERE 
-                STRING(x.criteria_name) = 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')[OFFSET(0)]
-          AS DATE)  AS eligible_date,
-    FROM json_to_array_cte
-    WHERE 
-      -- keep if only ineligible criteria is time remaining on sentence
-      'US_ME_X_MONTHS_REMAINING_ON_SENTENCE' IN UNNEST(ineligible_criteria) 
-      AND ARRAY_LENGTH(ineligible_criteria) = 1
-      )
-WHERE DATE_DIFF(eligible_date, CURRENT_DATE('US/Pacific'), MONTH) < 6
+-- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
+{x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
+    criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')}
+
+UNION ALL
+
+-- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
+{x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
+    criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE')}
 
 UNION ALL
 
 -- ALMOST ELIGIBLE (one discipline away)
-SELECT
-* EXCEPT(array_reasons, is_eligible),
-FROM json_to_array_cte
-WHERE 
-  -- keep if only ineligible criteria is a violation
-  'US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS' IN UNNEST(ineligible_criteria) 
-  AND ARRAY_LENGTH(ineligible_criteria) = 1
+{one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS')}
+),
+
+array_case_notes_cte AS (
+  SELECT 
+      eae.external_id,
+      -- Group all notes into an array within a JSON
+      TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+  FROM eligible_and_almost_eligible eae
+  LEFT JOIN case_notes_cte cn
+    USING(external_id)
+  GROUP BY 1
+)
+
+SELECT 
+    external_id,
+    state_code,
+    reasons,
+    ineligible_criteria,
+    case_notes,
+FROM eligible_and_almost_eligible
+LEFT JOIN array_case_notes_cte
+  USING(external_id)
 """
 
 US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -102,6 +148,9 @@ US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
+    ),
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )
