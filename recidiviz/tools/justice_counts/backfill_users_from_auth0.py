@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Backfills UserAccount tuples with agency information by querying auth0.
+"""Backfills UserAccount tuples with agency information and email by querying auth0.
 
-python -m recidiviz.tools.justice_counts.backfill_users_agencies \
+python -m recidiviz.tools.justice_counts.backfill_users_from_auth0 \
   --project-id=PROJECT_ID \
+  --field=email \
   --dry-run=true
 """
 
@@ -49,12 +50,20 @@ def create_parser() -> argparse.ArgumentParser:
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
+    parser.add_argument(
+        "--field",
+        choices=["agencies", "email", "all"],
+        help="Used to select which field to backfill.",
+        required=True,
+    )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
 
     return parser
 
 
-def backfill_user_agencies(dry_run: bool) -> None:
+def backfill_user_agencies(
+    dry_run: bool, update_email: bool, update_agencies: bool, update_all: bool
+) -> None:
     """
     Backfills a users agencies by querying auth0 and saving them to the JC database.
     """
@@ -76,24 +85,41 @@ def backfill_user_agencies(dry_run: bool) -> None:
 
                 agency_ids = user.get("app_metadata", {}).get("agency_ids", [])
                 name = user["name"]
+                email = user["email"]
                 agencies = AgencyInterface.get_agencies_by_id(
                     session=session,
                     agency_ids=agency_ids,
                 )
                 if dry_run:
-                    logging.info(
-                        "[DRY RUN] Would update %s with %d agencies",
-                        name,
-                        len(agencies),
-                    )
+                    if update_all or update_agencies:
+                        logging.info(
+                            "[DRY RUN] Would update %s with %d agencies",
+                            name,
+                            len(agencies),
+                        )
+                    if update_all or update_email:
+                        logging.info(
+                            "[DRY RUN] Would update %s email to %s",
+                            name,
+                            email,
+                        )
                 else:
-                    logger.info(
-                        "Updating %s's account with the %d agencies.",
-                        name,
-                        len(agency_ids),
-                    )
-                    existing_user.agencies = agencies
-                    session.add(existing_user)
+                    if update_all or update_agencies:
+                        logger.info(
+                            "Updating %s's account with the %d agencies.",
+                            name,
+                            len(agency_ids),
+                        )
+                        existing_user.agencies = agencies
+                    if update_all or update_email:
+                        logger.info(
+                            "Updating %s's email to %s",
+                            name,
+                            email,
+                        )
+                        existing_user.email = email
+                    if not dry_run:
+                        session.add(existing_user)
             if not dry_run:
                 session.commit()
 
@@ -102,4 +128,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        backfill_user_agencies(dry_run=args.dry_run)
+        backfill_user_agencies(
+            dry_run=args.dry_run,
+            update_agencies=args.field == "agencies",
+            update_email=args.field == "email",
+            update_all=args.field == "all",
+        )
