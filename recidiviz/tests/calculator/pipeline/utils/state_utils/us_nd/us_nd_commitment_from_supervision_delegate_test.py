@@ -523,6 +523,23 @@ class TestGetPreIncarcerationSupervisionTypeFromIPAdmissionReason(unittest.TestC
             admission_reason_raw_text=admission_reason_raw_text,
         )
 
+    def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_temporary_custody(
+        self,
+    ) -> None:
+        admission_reason = StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+        admission_reason_raw_text = "INT"
+
+        supervision_type: Optional[
+            StateSupervisionPeriodSupervisionType
+        ] = self._test_get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason,
+            admission_reason_raw_text=admission_reason_raw_text,
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN, supervision_type
+        )
+
     def test_us_nd_get_pre_incarceration_supervision_type_from_ip_admission_reason_not_commitment(
         self,
     ) -> None:
