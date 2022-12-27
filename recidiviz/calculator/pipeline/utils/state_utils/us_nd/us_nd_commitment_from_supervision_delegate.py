@@ -174,6 +174,14 @@ class UsNdCommitmentFromSupervisionDelegate(
         if len(supervision_type_matched_with_raw_text) == 1:
             return supervision_type_matched_with_raw_text[0]
 
+        # If the previous admission reason is TEMPORARY_CUSTODY, return INTERNAL_UNKNOWN since we do not know what the
+        # supervision type is for that period.
+        if (
+            admission_reason
+            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+        ):
+            return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
         # If there are too many or too few supervision type matches for the admission reason raw text, raise an error.
         if len(supervision_type_matched_with_raw_text) > 1:
             raise ValueError(

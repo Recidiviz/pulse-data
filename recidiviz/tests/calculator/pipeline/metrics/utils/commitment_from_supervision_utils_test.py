@@ -38,6 +38,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -46,6 +49,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_commi
 )
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
+    UsNdCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_delegate import (
     UsPaIncarcerationDelegate,
@@ -138,6 +144,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
             list(DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()),
         ),
+        commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate = UsXxCommitmentFromSupervisionDelegate(),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
         supervision_period_to_agent_associations = (
@@ -165,7 +172,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
-            commitment_from_supervision_delegate=UsXxCommitmentFromSupervisionDelegate(),
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
             supervision_delegate=supervision_delegate,
         )
 
@@ -351,6 +358,49 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=terminated_supervision_period.supervision_level,
                 supervision_level_raw_text=terminated_supervision_period.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            ),
+            commitment_details,
+        )
+
+    def test_get_commitment_from_supervision_details_temporary_custody_admission(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            state_code="US_ND",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_site="X",
+        )
+
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            state_code="US_ND",
+            admission_date=date(2018, 5, 25),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="INT",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        commitment_details = self._test_get_commitment_from_supervision_details(
+            incarceration_period,
+            [supervision_period],
+            commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
+        )
+        assert supervision_period.supervision_period_id is not None
+        self.assertEqual(
+            CommitmentDetails(
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+                purpose_for_incarceration_subtype=None,
+                level_1_supervision_location_external_id=None,
+                level_2_supervision_location_external_id=None,
+                supervising_officer_external_id=None,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
             ),
             commitment_details,
         )
