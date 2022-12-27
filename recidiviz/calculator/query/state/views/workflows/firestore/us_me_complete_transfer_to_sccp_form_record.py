@@ -126,6 +126,7 @@ array_case_notes_cte AS (
   FROM eligible_and_almost_eligible eae
   LEFT JOIN case_notes_cte cn
     USING(external_id)
+  WHERE criteria IS NOT NULL
   GROUP BY 1
 )
 
