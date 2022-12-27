@@ -10,12 +10,51 @@ columns:
     description: |-
       Unique identifier for each row.
   - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when information was last entered.
   - name: UPDATE_JOB_NAME
   - name: UPDATE_USER_ID
   - name: CUSTODY_NUMBER
+    description: |-
+      Number signifying order of custody.
   - name: ADMISSION_NUMBER
+    description: |-
+      Number signifying order of admissions.
   - name: TRANSFER_NUMBER
+    description: |-
+      Number signifying order of transfers.
   - name: CURRENT_STATUS
+    description: |-
+      Current status of sentence. Look up in DOCDTA_TBTABL with 'OPS' Application_ID and 'CS' Table_ID.
+    known_values:
+      - value: DI
+        description: Discharge
+      - value: IN
+        description: Adult in Custody (AIC)
+      - value: PR
+        description: Probation
+      - value: PO
+        description: Post Prison
+      - value: IV
+        description: Investigation
+      - value: LC
+        description: Local Control
+      - value: LV
+        description: Leave
+      - value: AP
+        description: Admission Pending
+      - value: PA
+        description: Parole
+      - value: PS
+        description: Post Parole
+      - value: SL
+        description: Second Look Juvenile
+      - value: CD
+        description: Prob/Conditional Discharge
+      - value: DV
+        description: Probation Diversion
+      - value: LP
+        description: Leave Pending
   - name: RESPONSIBLE_LOCATION
   - name: ID_NUMBER
     description: |-
@@ -36,10 +75,20 @@ columns:
     description: |-
       Birthdate of the Adult in Custody (AIC).
   - name: CELL_NUMBER
+    description: |-
+      Current cell number of the Adult in Custody (AIC).
   - name: ADMISSION_DATE
+    description: |-
+      Date adult was admitted into custody.
   - name: ADMISSION_REASON
+    description: |-
+      Reason admitted to current period of incarceration.
   - name: OUTCOUNT_REASON
+    description: |-
+      Reason release from current period of incarceration.
   - name: OUTCOUNT_LOCATION
+    description: |-
+      Location released from.
   - name: BAF_NO
   - name: BAF_GROUP_NO
   - name: ORS_NUMBER
@@ -65,6 +114,10 @@ columns:
   - name: SEX_ASSESSMENT
   - name: ASSESSMENT_SCORE
   - name: MAX_INCAR_DATE
+    description: |-
+      Date of latest possible release.
   - name: ASSESSMENT_DATE
   - name: MINIMUM_DATE
+    description: |-
+      Date of earliest possible release.
   - name: LIFE_OR_DEATH

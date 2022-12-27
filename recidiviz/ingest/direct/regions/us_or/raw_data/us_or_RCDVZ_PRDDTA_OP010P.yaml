@@ -14,7 +14,7 @@ columns:
       Unique identifier for record.
   - name: CUSTODY_NUMBER
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Number signifying order of custody.
   - name: ADMISSION_NUMBER
     description: |-
       Number signifying order of admissions.
@@ -23,18 +23,18 @@ columns:
       Number signifying order of transfers.
   - name: RESPONSIBLE_DIVISION
     description: |-
-      Entity resposible for transfer.
+      Entity resposible for current location. Look up in DOCDTA_TBTABL with APPLICATION_ID = 'CIS' AND TABLE_ID = 'LT'
     known_values:
       - value: C
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Community
       - value: D
-        description: #TODO(#17148): Fill in with answer from OR
+        description: DOC - non institution/CC
       - value: I
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Institution
       - value: L
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Local Control - Jail
       - value: N
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not State Agency
   - name: TRANSFER_IN_LOCATION
     description: |-
       Location transferred in to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
