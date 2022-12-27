@@ -1,29 +1,64 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP970P
 file_description: |-
-  TODO(#16741): Fill in the file description
+  Extensive rollup of all Adult in Custody (AIC) information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each row.
   - name: DATE_LAST_UPDATED
+    description: |-
+      Date when information was last entered.
   - name: TIME_LAST_UPDATED
+    description: |-
+      Time when information was last entered.
   - name: CUSTODY_NUMBER
+    description: |-
+      Number signifying order of custody.
   - name: ADMISSION_NUMBER
+    description: |-
+      Number signifying order of admissions.
   - name: TRANSFER_NUMBER
+    description: |-
+      Number signifying order of transfers.
   - name: CURRENT_STATUS
+    description: |-
+      Current status of sentence. Look up in DOCDTA_TBTABL with 'OPS' Application_ID and 'CS' Table_ID.
   - name: RESPONSIBLE_LOCATION
   - name: ID_NUMBER
+    description: |-
+      Unique DOCNO for each adult in custody.
   - name: RESPONSIBLE_DIVISION
   - name: FIRST_NAME
+    description: |-
+      First Name of the Adult in Custody (AIC).
   - name: LAST_NAME
+    description: |-
+      Last Name of the Adult in Custody (AIC).
   - name: MIDDLE_NAME
+    description: |-
+      Middle Name of the Adult in Custody (AIC).
   - name: BIRTHDATE
+    description: |-
+      Birthdate of the Adult in Custody (AIC).
   - name: CELL_NUMBER
+    description: |-
+      Current cell number of the Adult in Custody (AIC).
   - name: ADMISSION_DATE
+    description: |-
+      Date adult was admitted into custody.
   - name: ADMISSION_REASON
+    description: |-
+      Reason admitted to current period of incarceration.
   - name: OUTCOUNT_REASON
+    description: |-
+      Reason release from current period of incarceration.
   - name: OUTCOUNT_LOCATION
+    description: |-
+      Location released from.
   - name: ORS_NUMBER
   - name: ORS_PARAGRAPH
   - name: CRIME_ABBREVIATION
