@@ -21,11 +21,10 @@ from datetime import datetime
 from unittest import TestCase, mock
 
 import pytz
-from flask import Flask
+from flask import Blueprint, Flask
 from freezegun import freeze_time
 from mock import Mock
 
-from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
@@ -42,7 +41,7 @@ class IngestOpsEndpointTests(TestCase):
 
     def setUp(self) -> None:
         app = Flask(__name__)
-        app.register_blueprint(admin_panel_blueprint)
+        blueprint = Blueprint("admin_panel_blueprint_test", __name__)
         app.config["TESTING"] = True
         self.client = app.test_client()
 
@@ -54,7 +53,8 @@ class IngestOpsEndpointTests(TestCase):
         self.mock_store.get_all_current_ingest_instance_statuses = (
             self.mock_current_ingest_statuses
         )
-        add_ingest_ops_routes(admin_panel_blueprint)
+        add_ingest_ops_routes(blueprint)
+        app.register_blueprint(blueprint)
 
     def tearDown(self) -> None:
         self.get_admin_store_patcher.stop()
