@@ -29,10 +29,19 @@ from recidiviz.justice_counts.dimensions.supervision import (
     SupervisionTerminationType,
     SupervisionViolationType,
 )
+from recidiviz.justice_counts.includes_excludes.supervision import (
+    SupervisionClinicalMedicalStaffIncludesExcludes,
+    SupervisionManagementOperationsStaffIncludesExcludes,
+    SupervisionProgrammaticStaffIncludesExcludes,
+    SupervisionStaffDimIncludesExcludes,
+    SupervisionStaffIncludesExcludes,
+    SupervisionVacantStaffIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     YesNoContext,
@@ -88,8 +97,8 @@ total_staff = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    description="Measures the number of full-time supervision staff employed by your agency.",
+    display_name="Staff",
+    description="The number of full-time equivalent positions budgeted for the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
     definitions=[
         Definition(
             term="Full-time staff",
@@ -99,8 +108,58 @@ total_staff = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionStaffType, required=False)
+        AggregatedDimension(
+            dimension=SupervisionStaffType,
+            required=False,
+            dimension_to_includes_excludes={
+                SupervisionStaffType.SUPERVISION: IncludesExcludesSet(
+                    members=SupervisionStaffDimIncludesExcludes,
+                    excluded_set={SupervisionStaffDimIncludesExcludes.VACANT},
+                ),
+                SupervisionStaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
+                    members=SupervisionManagementOperationsStaffIncludesExcludes,
+                    excluded_set={
+                        SupervisionManagementOperationsStaffIncludesExcludes.VACANT
+                    },
+                ),
+                SupervisionStaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
+                    members=SupervisionClinicalMedicalStaffIncludesExcludes,
+                    excluded_set={
+                        SupervisionClinicalMedicalStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                SupervisionStaffType.PROGRAMMATIC: IncludesExcludesSet(
+                    members=SupervisionProgrammaticStaffIncludesExcludes,
+                    excluded_set={
+                        SupervisionProgrammaticStaffIncludesExcludes.VOLUNTEER,
+                        SupervisionProgrammaticStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                SupervisionStaffType.VACANT: IncludesExcludesSet(
+                    members=SupervisionVacantStaffIncludesExcludes,
+                    excluded_set={
+                        SupervisionVacantStaffIncludesExcludes.FILLED,
+                    },
+                ),
+            },
+            dimension_to_description={
+                SupervisionStaffType.SUPERVISION: "The number of full-time equivalent positions that work directly with people who are on supervision and are responsible for their supervision and case management.",
+                SupervisionStaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are supervised in the community but support the day-to-day operations of the supervision agency.",
+                SupervisionStaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people on probation, parole, or other community supervision and are responsible for their physical or mental health.",
+                SupervisionStaffType.PROGRAMMATIC: "The number of full-time equivalent positions that provide services and programming to people on community supervision but are not medical or clinical staff.",
+                SupervisionStaffType.OTHER: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not supervision staff, management and operations staff, clinical or medical staff, or programmatic staff.",
+                SupervisionStaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are of an unknown type.",
+                SupervisionStaffType.VACANT: "The number of full-time equivalent positions of any type dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are budgeted but not currently filled.",
+            },
+        ),
     ],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionStaffIncludesExcludes,
+        excluded_set={
+            SupervisionStaffIncludesExcludes.VOLUNTEER,
+            SupervisionStaffIncludesExcludes.INTERN,
+        },
+    ),
 )
 
 supervision_violations = MetricDefinition(
