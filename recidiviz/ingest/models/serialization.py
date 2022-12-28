@@ -338,17 +338,6 @@ def convert_ingest_info_to_proto(
                 proto_incident.state_incarceration_incident_id
             )
 
-            if incident.responding_officer:
-                proto_responding_officer = _populate_proto(
-                    "state_agents",
-                    incident.responding_officer,
-                    "state_agent_id",
-                    state_agent_map,
-                )
-                proto_incident.responding_officer_id = (
-                    proto_responding_officer.state_agent_id
-                )
-
             for incident_outcome in incident.state_incarceration_incident_outcomes:
                 proto_incident_outcome = _populate_proto(
                     "state_incarceration_incident_outcomes",
@@ -654,10 +643,6 @@ def convert_proto_to_ingest_info(
         incarceration_incident = state_incarceration_incident_map[
             proto_incident.state_incarceration_incident_id
         ]
-        if proto_incident.responding_officer_id:
-            incarceration_incident.responding_officer = state_agent_map[
-                proto_incident.responding_officer_id
-            ]
 
         incarceration_incident_outcomes = []
         for proto_incident_outcome in proto.state_incarceration_incident_outcomes:

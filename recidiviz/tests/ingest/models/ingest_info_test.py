@@ -118,8 +118,6 @@ class TestIngestInfo(unittest.TestCase):
             "state_early_discharges",
         ]
         incarceration_incident_fields_ignore = [
-            "responding_officer_id",
-            "responding_officer",
             "state_incarceration_incident_outcomes",
             "state_incarceration_incident_outcome_ids",
         ]

@@ -534,12 +534,6 @@ class StateConverter(BaseConverter):
             incident_builder, ingest_incident, self.metadata
         )
 
-        incident_builder.responding_officer = fn(
-            lambda i: state_agent.convert(self.agents[i], self.metadata),
-            "responding_officer_id",
-            ingest_incident,
-        )
-
         converted_outcomes = [
             state_incarceration_incident_outcome.convert(
                 self.incarceration_incident_outcomes[outcome_id], self.metadata
