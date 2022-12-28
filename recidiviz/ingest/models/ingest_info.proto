@@ -85,7 +85,6 @@ message StatePerson {
     repeated string state_incarceration_incident_ids = 21;
     repeated string state_supervision_violation_ids = 22;
     repeated string state_supervision_contact_ids = 23;
-    optional string supervising_officer_id = 19;
     optional string state_code = 20;
 }
 

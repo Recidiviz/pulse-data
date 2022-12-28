@@ -274,12 +274,6 @@ class StateConverter(BaseConverter):
         ]
         state_person_builder.external_ids = converted_external_ids
 
-        if ingest_person.supervising_officer_id:
-            converted_supervising_officer = state_agent.convert(
-                self.agents[ingest_person.supervising_officer_id], self.metadata
-            )
-            state_person_builder.supervising_officer = converted_supervising_officer
-
         return state_person_builder.build(StatePersonFactory.deserialize)
 
     def _convert_supervision_sentence(

@@ -1042,18 +1042,6 @@ class StatePerson(StateBase):
         Text, comment="The current phone number of the person."
     )
 
-    @declared_attr
-    def supervising_officer_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
     external_ids = relationship(
         "StatePersonExternalId", backref="person", lazy="selectin"
     )
@@ -1094,7 +1082,6 @@ class StatePerson(StateBase):
     task_deadlines = relationship(
         "StateTaskDeadline", backref="person", lazy="selectin"
     )
-    supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
 class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
