@@ -389,8 +389,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 key=lambda x: x.key,
             )
             self.assertEqual(len(metrics), 4)
-            self.assertEqual(metrics[0].value, 500)
-            self.assertEqual(metrics[1].value, 200)
+            self.assertEqual(metrics[0].value, 200)
+            self.assertEqual(metrics[1].value, 500)
             self.assertEqual(metrics[2].value, 90)
             self.assertEqual(metrics[3].value, 200)
             self.assertEqual(len(metrics[3].aggregated_dimensions), 1)

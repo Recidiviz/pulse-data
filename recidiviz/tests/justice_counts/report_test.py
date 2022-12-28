@@ -102,12 +102,12 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=monthly_report,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
             datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(datapoints), 3)
+            self.assertEqual(len(datapoints), 2)
 
         with SessionFactory.using_database(self.database_key) as session:
             ReportInterface.delete_reports_by_id(
@@ -556,12 +556,12 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 3)
+            self.assertEqual(len(total_datapoints), 2)
 
             # We should have two datapoints that have a value associated with them, one
             # for the aggregated Law Enforcement budget and one for the context.
@@ -572,7 +572,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
             self.assertEqual(len(datapoints_with_value), 2)
-            report_metric = self.test_schema_objects.reported_budget_metric
+            report_metric = self.test_schema_objects.funding_metric
             self.assertEqual(
                 datapoints_with_value[0].get_value(),
                 report_metric.value,
@@ -587,7 +587,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.get_reported_budget_metric(
+                report_metric=self.test_schema_objects.get_funding_metric(
                     value=None,
                     include_contexts=False,
                 ),
@@ -781,11 +781,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=report,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 3)
+            self.assertEqual(len(total_datapoints), 2)
 
             datapoints_with_value = (
                 session.query(schema.Datapoint)
@@ -800,7 +800,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=report,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
             queried_datapoints_no_op = (
@@ -1027,10 +1027,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         # reported annually starting in February
         self.assertEqual(len(metrics), 4)
 
-        self.assertEqual(metrics[0].key, law_enforcement.annual_budget.key)
         self.assertEqual(
-            metrics[1].key, law_enforcement.civilian_complaints_sustained.key
+            metrics[0].key, law_enforcement.civilian_complaints_sustained.key
         )
+        self.assertEqual(metrics[1].key, law_enforcement.funding.key)
         self.assertEqual(metrics[2].key, law_enforcement.police_officers.key)
         self.assertEqual(
             metrics[3].key, law_enforcement.officer_use_of_force_incidents.key
@@ -1162,12 +1162,12 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.reported_budget_metric,
+                report_metric=self.test_schema_objects.funding_metric,
                 user_account=self.test_schema_objects.test_user_A,
             )
 
             # First update
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+            report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=1000,
             )
             ReportInterface.add_or_update_metric(
@@ -1178,7 +1178,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             # Second update
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+            report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=100,
             )
             ReportInterface.add_or_update_metric(
@@ -1189,7 +1189,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             # Third update
-            report_metric = JusticeCountsSchemaTestObjects.get_reported_budget_metric(
+            report_metric = JusticeCountsSchemaTestObjects.get_funding_metric(
                 value=10,
             )
             ReportInterface.add_or_update_metric(

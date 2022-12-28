@@ -59,7 +59,7 @@ METRICS = [
     jails.releases,
     jails.staff_use_of_force_incidents,
     jails.grievances_upheld,
-    law_enforcement.annual_budget,
+    law_enforcement.funding,
     law_enforcement.police_officers,
     law_enforcement.residents,
     law_enforcement.calls_for_service,

@@ -31,6 +31,19 @@ class CallType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/calls_for_service/type"
 
 
+class LawEnforcementFundingType(DimensionBase, enum.Enum):
+    STATE_APPROPRIATION = "State Appropriation"
+    COUNTY_APPROPRIATION = "County or Municipal Appropriation"
+    ASSET_FORFEITURE = "Asset Forfeiture"
+    GRANTS = "Grants"
+    OTHER = "Other Funding"
+    UNKNOWN = "Unknown Funding"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/law_enforcement/funding/type"
+
+
 class OffenseType(DimensionBase, enum.Enum):
     PERSON = "Person"
     PROPERTY = "Property"

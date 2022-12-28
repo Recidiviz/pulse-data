@@ -402,7 +402,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             user = self.test_schema_objects.test_user_A
             session.add_all([user, agency])
             agency_metric = MetricInterface(
-                key=law_enforcement.annual_budget.key,
+                key=law_enforcement.funding.key,
                 custom_reporting_frequency=CustomReportingFrequency(
                     frequency=ReportingFrequency.ANNUAL, starting_month=3
                 ),
@@ -479,7 +479,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     report=monthly_report,
                     value="123abc",
                     user_account=user,
-                    metric_definition_key=law_enforcement.annual_budget.key,
+                    metric_definition_key=law_enforcement.funding.key,
                     current_time=current_time,
                 )
                 assert True
@@ -503,7 +503,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     report=monthly_report,
                     value="123abc",
                     user_account=user,
-                    metric_definition_key=law_enforcement.annual_budget.key,
+                    metric_definition_key=law_enforcement.funding.key,
                     current_time=current_time,
                 )
 

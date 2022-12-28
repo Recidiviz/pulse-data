@@ -245,9 +245,7 @@ class JusticeCountsSchemaTestObjects:
         )
 
         # Metrics
-        self.reported_budget_metric = (
-            JusticeCountsSchemaTestObjects.get_reported_budget_metric()
-        )
+        self.funding_metric = JusticeCountsSchemaTestObjects.get_funding_metric()
         self.reported_calls_for_service_metric = (
             JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric()
         )
@@ -360,25 +358,21 @@ class JusticeCountsSchemaTestObjects:
         )
 
     @staticmethod
-    def get_reported_budget_metric(
+    def get_funding_metric(
         value: Optional[int] = 100000,
         include_contexts: bool = True,
         nullify_contexts_and_disaggregations: bool = False,
     ) -> MetricInterface:
         return MetricInterface(
-            key=law_enforcement.annual_budget.key,
+            key=law_enforcement.funding.key,
             value=value,
             is_metric_enabled=True,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.PRIMARY_FUNDING_SOURCE,
-                    value="government"
+                    key=ContextKey.ADDITIONAL_CONTEXT,
+                    value="additional context"
                     if not nullify_contexts_and_disaggregations
                     else None,
-                ),
-                MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value=None,
                 ),
             ]
             if include_contexts
@@ -427,7 +421,7 @@ class JusticeCountsSchemaTestObjects:
     ) -> Dict[str, Any]:
         """Returns metric dictionaries that are formatted in /metrics/update [POST] style"""
         metric_json = {
-            "key": law_enforcement.annual_budget.key,
+            "key": law_enforcement.funding.key,
             "enabled": is_metric_enabled,
         }
         if use_partially_disabled_disaggregation:

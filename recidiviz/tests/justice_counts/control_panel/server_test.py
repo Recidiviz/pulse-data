@@ -992,11 +992,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             ],
                         },
                         {
-                            "key": law_enforcement.annual_budget.key,
+                            "key": law_enforcement.funding.key,
                             "value": 2000000,
                             "contexts": [
                                 {
-                                    "key": ContextKey.PRIMARY_FUNDING_SOURCE.value,
+                                    "key": ContextKey.ADDITIONAL_CONTEXT.value,
                                     "value": "test context",
                                 },
                             ],
@@ -1009,7 +1009,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(report.status, ReportStatus.PUBLISHED)
             datapoints = report.datapoints
             self.assertEqual(len(datapoints), 7)
-            self.assertEqual(report.datapoints[0].get_value(), 110)
+            self.assertEqual(datapoints[0].get_value(), 110)
             # Empty CallType dimension values
             self.assertEqual(datapoints[1].get_value(), value)
             self.assertEqual(datapoints[2].get_value(), 10)
@@ -1876,7 +1876,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "Unknown / Unknown Ethnicity",
                     ],
                 },
-                "LAW_ENFORCEMENT_BUDGET": {},
+                "LAW_ENFORCEMENT_FUNDING": {
+                    "Law Enforcement Funding Type": [
+                        "State Appropriation",
+                        "County or Municipal Appropriation",
+                        "Asset Forfeiture",
+                        "Grants",
+                        "Other Funding",
+                        "Unknown Funding",
+                    ]
+                },
                 "LAW_ENFORCEMENT_CALLS_FOR_SERVICE": {
                     "Call Type": ["Emergency", "Non-emergency", "Unknown"]
                 },

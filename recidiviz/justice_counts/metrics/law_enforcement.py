@@ -20,17 +20,26 @@ from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
+    LawEnforcementFundingType,
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.law_enforcement import (
+    LawEnforcementAssetForfeitureIncludesExcludes,
+    LawEnforcementCountyOrMunicipalAppropriation,
+    LawEnforcementFundingIncludesExcludes,
+    LawEnforcementGrantsIncludesExcludes,
+    LawEnforcementStateAppropriationIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     CallsRespondedOptions,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     ReportingFrequency,
@@ -64,24 +73,63 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of your agency.",
-    measurement_type=MeasurementType.INSTANT,
+    display_name="Funding",
+    description="The amount of funding for agency law enforcement activities.",
+    measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe your primary funding source.",
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementFundingIncludesExcludes,
+        excluded_set={
+            LawEnforcementFundingIncludesExcludes.BIENNIUM_FUNDING,
+            LawEnforcementFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
+            LawEnforcementFundingIncludesExcludes.JAIL_OPERATIONS,
+            LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
+            LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
+        },
+    ),
+    specified_contexts=[],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=LawEnforcementFundingType,
+            dimension_to_includes_excludes={
+                LawEnforcementFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=LawEnforcementStateAppropriationIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementStateAppropriationIncludesExcludes.PRELIMINARY,
+                        LawEnforcementStateAppropriationIncludesExcludes.PROPOSED,
+                    },
+                ),
+                LawEnforcementFundingType.COUNTY_APPROPRIATION: IncludesExcludesSet(
+                    members=LawEnforcementStateAppropriationIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementCountyOrMunicipalAppropriation.PRELIMINARY,
+                        LawEnforcementCountyOrMunicipalAppropriation.PROPOSED,
+                    },
+                ),
+                LawEnforcementFundingType.ASSET_FORFEITURE: IncludesExcludesSet(
+                    members=LawEnforcementAssetForfeitureIncludesExcludes,
+                ),
+                LawEnforcementFundingType.GRANTS: IncludesExcludesSet(
+                    members=LawEnforcementGrantsIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                LawEnforcementFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for agency law enforcement activities.",
+                LawEnforcementFundingType.COUNTY_APPROPRIATION: "The amount of funding appropriated by counties or municipalities for agency law enforcement activities.",
+                LawEnforcementFundingType.ASSET_FORFEITURE: "The amount of funding derived by the agency through the seizure of assets.",
+                LawEnforcementFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for agency law enforcement activities.",
+                LawEnforcementFundingType.OTHER: "The amount of funding to be used for agency law enforcement activities that is not appropriations from the state, appropriations from the county or city, asset forfeiture, or grants.",
+                LawEnforcementFundingType.UNKNOWN: "The amount of funding to be used for agency law enforcement activities for which the source is not known.",
+            },
             required=False,
         )
     ],
-    aggregated_dimensions=[],
 )
+
 
 calls_for_service = MetricDefinition(
     system=System.LAW_ENFORCEMENT,

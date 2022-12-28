@@ -124,7 +124,7 @@ funding = MetricDefinition(
             PrisonFundingIncludesExcludes.LAW_ENFORCEMENT,
         },
     ),
-    measurement_type=MeasurementType.INSTANT,
+    measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     specified_contexts=[],
     aggregated_dimensions=[
