@@ -18,9 +18,122 @@
 
 from enum import Enum
 
+
+# Global Definitions
+class SupervisionPersonChargesOffensesIncludesExcludes(Enum):
+    """Includes/Excludes class for Person Charges/Offenses"""
+
+    AGGRAVATED_ASSAULT = "Aggravated assault"
+    SIMPLE_ASSAULT = "Simple assault"
+    INTIMIDATION = "Intimidation"
+    MURDER = "Murder and nonnegligent manslaughter"
+    NEGLIGENT_MANSLAUGHTER = "Negligent manslaughter"
+    COMMERCIAL_SEX_ACTS = "Human trafficking, commercial sex acts"
+    INVOLUNTARY_SERVITUDE = "Human trafficking, involuntary servitude"
+    KIDNAPPING = "Kidnapping/abduction"
+    RAPE = "Rape"
+    SODOMY = "Sodomy"
+    SEXUAL_ASSAULT_OBJECT = "Sexual assault with an object"
+    FONDLING = "Fondling"
+    INCEST = "Incest"
+    STATUTORY_RAPE = "Statutory rape"
+    JUSTIFIABLE_HOMICIDE = "Justifiable homicide"
+
+
+class SupervisionPropertyChargesOffensesIncludesExcludes(Enum):
+    """Includes/Excludes class for Property Charges/Offenses"""
+
+    ARSON = "Arson"
+    BRIBERY = "Bribery"
+    BURGLARY = "Burglary/breaking and entering"
+    COUNTERFEITING = "Counterfeiting/forgery"
+    VANDALISM = "Destruction/damage/vandalism of property"
+    EMBEZZLEMENT = "Embezzlement"
+    EXTORTION = "Extortion/blackmail"
+    FALSE_PRETENSES = "False pretenses/swindle/confidence game"
+    CREDIT_CARD_FRAUD = "Credit card/automated teller machine fraud"
+    IMPERSONATION = "Impersonation"
+    WELFARE_FRAUD = "Welfare fraud"
+    WIRE_FRAUD = "Wire fraud"
+    IDENTITY_THEFT = "Identify theft"
+    HACKING_INVASION = "Hacking/computer invasion"
+    POCKET_PICKING = "Pocket-picking"
+    PURSE_SNATCHING = "Purse-snatching"
+    SHOPLIFTING = "Shoplifting"
+    THEFT_FROM_BUILDING = "Theft from building"
+    THEFT_FROM_MACHINE = "Theft from coin-operated machine or device"
+    THEFT_FROM_MOTOR_VEHICLE = "Theft from motor vehicle"
+    THEFT_MOTOR_VEHICLE_PARTS = "Theft of motor vehicle parts or accessories"
+    LARCENY = "All other larceny"
+    MOTOR_VEHICLE_THEFT = "Motor vehicle theft"
+    ROBBERY = "Robbery"
+    STOLEN_PROPERTY = "Stolen property offenses"
+
+
+class SupervisionPublicOrderChargesOffensesIncludesExcludes(Enum):
+    """Includes/Excludes class for Public Order Charges/Offenses"""
+
+    ANIMAL_CRUELTY = "Animal cruelty"
+    IMPORT_VIOLATIONS = "Import violations"
+    EXPORT_VIOLATIONS = "Export violations"
+    FEDERAL_LIQUOR_OFFENSES = "Federal liquor offenses"
+    FEDERAL_TOBACCO_OFFENSES = "Federal tobacco offenses"
+    WILDLIFE_TRAFFICKING = "Wildlife trafficking"
+    ESPIONAGE = "Espionage"
+    MONEY_LAUNDERING = "Money laundering"
+    HARBORING_ESCAPEE = "Harboring escapee/concealing from arrest"
+    FLIGHT_TO_AVOID_PROSECUTION = "Flight to avoid prosecution"
+    FLIGHT_TO_AVOID_DEPORTATION = "Flight to avoid deportation"
+    BETTING = "Betting/wagering"
+    ASSISTING_GAMBLING = "Operating/promoting/assisting gambling"
+    GAMBLING_EQUIPMENT_VIOLATIONS = "Gambling equipment violations"
+    SPORTS_TAMPERING = "Sports tampering"
+    ILLEGAL_ENTRY = "Illegal entry into the United States"
+    FALSE_CITIZENSHIP = "False citizenship"
+    SMUGGLING = "Smuggling aliens"
+    RE_ENTRY_AFTER_DEPORTATION = "Re-entry after deportation"
+    PORNOGRAPHY = "Pornography/obscene material"
+    PROSTITUTION = "Prostitution"
+    ASSISTING_PROSTITUTION = "Assisting or promoting prostitution"
+    PURCHASING_PROSTITUTION = "Purchasing prostitution"
+    TREASON = "Treason"
+    WEAPON_LAW_VIOLATIONS = "Weapon law violations"
+    VIOLATION_NATIONAL_FIREARM_ACT = "Violation of National Firearm Act of 1934"
+    WEAPONS_OF_MASS_DESTRUCTION = "Weapons of mass destruction"
+    EXPLOSIVES = "Explosives"
+    FAILURE_TO_APPEAR = "Failure to appear"
+    CURFEW_VIOLATIONS = "Curfew/loitering/vagrancy violations"
+    DISORDERLY_CONDUCT = "Disorderly conduct"
+    DRIVING_UNDER_INFLUENCE = "Driving under the influence"
+    FAMILY_OFFENSES_NONVIOLENT = "Family offenses, nonviolent"
+    FEDERAL_RESOURCE_VIOLATIONS = "Federal resource violations"
+    LIQUOR_LAW_VIOLATIONS = "Liquor law violations"
+    PERJURY = "Perjury"
+    TRESPASS_OF_REAL_PROPERTY = "Trespass of real property"
+    DRUG_VIOLATIONS = "Drug/narcotic violations"
+    DRUG_EQUIPMENT_VIOLATIONS = "Drug equipment violations"
+    DRUG_SALES = "Drug sales"
+    DRUG_DISTRIBUTION = "Drug distribution"
+    DRUG_MANUFACTURING = "Drug manufacturing"
+    DRUG_SMUGGLING = "Drug smuggling"
+    DRUG_PRODUCTION = "Drug production"
+    DRUG_POSSESSION = "Drug possession"
+
+
+class SupervisionDrugChargesOffensesIncludesExcludes(Enum):
+    """Includes/Excludes class for Drug Charges/Offenses"""
+
+    DRUG_NARCOTIC_VIOLATIONS = "Drug/narcotic violations"
+    DRUG_EQUIPMENT_VIOLATIONS = "Drug equipment violations"
+    DRUG_SALES = "Drug sales"
+    DRUG_DISTRIBUTION = "Drug distribution"
+    DRUG_MANUFACTURING = "Drug manufacturing"
+    DRUG_SMUGGLING = "Drug smuggling"
+    DRUG_PRODUCTION = "Drug production"
+    DRUG_POSSESSION = "Drug possession"
+
+
 # Supervision Types
-
-
 class SupervisionProbationDefinitionIncludesExcludes(Enum):
     IN_LIEU_INCARCERATION = "People sentenced to a period of probation in lieu of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
     AFTER_INCARCERATION = "People sentenced to a period of probation after a period of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
