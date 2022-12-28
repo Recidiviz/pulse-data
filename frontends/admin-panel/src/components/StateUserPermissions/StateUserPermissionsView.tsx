@@ -140,6 +140,18 @@ const StateUserPermissionsView = (): JSX.Element => {
     }
   };
 
+  const onEnableUser = async ({
+    emailAddress,
+    stateCode,
+  }: StateUserPermissionsResponse) => {
+    const updatedUser = await updateUser({
+      email: emailAddress,
+      stateCode,
+      blocked: false,
+    });
+    finishPromises([checkResponse(updatedUser)], "Enabled");
+  };
+
   const onEdit = async ({
     emailAddress,
     stateCode,
@@ -161,16 +173,15 @@ const StateUserPermissionsView = (): JSX.Element => {
       const editRow = async () => {
         // update user info
         if (role || district || externalId || firstName || lastName) {
-          const state = selectedRows[index].stateCode;
-          const updatedUser = await updateUser(
+          const updatedUser = await updateUser({
             email,
-            state,
+            stateCode,
             externalId,
             role,
             district,
             firstName,
-            lastName
-          );
+            lastName,
+          });
           await checkResponse(updatedUser);
         }
 
@@ -416,10 +427,20 @@ const StateUserPermissionsView = (): JSX.Element => {
     {
       title: "Blocked",
       dataIndex: "blocked",
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
+      width: 150,
+      render: (isBlocked: boolean, record: StateUserPermissionsResponse) => {
+        if (!isBlocked) {
+          return undefined;
         }
+        return (
+          <Button
+            onClick={() => {
+              onEnableUser(record);
+            }}
+          >
+            Enable user
+          </Button>
+        );
       },
     },
   ];
